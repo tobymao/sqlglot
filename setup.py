@@ -1,10 +1,17 @@
 from setuptools import setup
 
-import sqlglot
+version = (
+    open('sqlglot/__init__.py')
+    .read()
+    .split('__version__ = ')[-1]
+    .split("\n")[0]
+    .strip()
+    .replace("'", '')
+)
 
 setup(
     name='sqlglot',
-    version=sqlglot.__version__,
+    version=version,
     description='An easily customizable SQL parser and transpiler',
     url='https://github.com/tobymao/sqlglot',
     author='Toby Mao',

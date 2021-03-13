@@ -35,6 +35,7 @@ class Parser:
         self.functions = {**self.FUNCTIONS, **kwargs.get('functions', {})}
         self._tokens = []
         self._chunks = [[]]
+        self._index = 0
 
         for token in tokens:
             if token.token_type == TokenType.SEMICOLON:
@@ -241,48 +242,48 @@ class Parser:
 
     def _parse_count(self):
         if not self._match(TokenType.L_PAREN):
-            raise ValueError(f"Expected ( after COUNT")
+            raise ValueError("Expected ( after COUNT")
 
         distinct = self._match(TokenType.DISTINCT)
         this = self._parse_union()
 
         if not self._match(TokenType.R_PAREN):
-            raise ValueError(f"Expected ) after COUNT")
+            raise ValueError("Expected ) after COUNT")
 
         return exp.Count(this=this, distinct=distinct)
 
     def _parse_cast(self):
         if not self._match(TokenType.L_PAREN):
-            raise ValueError(f"Expected ( after CAST")
+            raise ValueError("Expected ( after CAST")
 
         this = self._parse_union()
 
         if not self._match(TokenType.ALIAS):
-            raise ValueError(f"Expected AS after CAST")
+            raise ValueError("Expected AS after CAST")
 
         if not self._match(*self.TYPE_TOKENS):
-            raise ValueError(f"Expected type after CAST")
+            raise ValueError("Expected type after CAST")
 
         to = self._prev
 
         if not self._match(TokenType.R_PAREN):
-            raise ValueError(f"Expected ) after CAST")
+            raise ValueError("Expected ) after CAST")
 
         return exp.Cast(this=this, to=to)
 
     def _parse_type(self):
         if not self._match(TokenType.L_PAREN):
-            raise ValueError(f"Expected ( after CAST")
+            raise ValueError("Expected ( after CAST")
 
         this = self._parse_primary()
 
         if not self._match(TokenType.ALIAS):
-            raise ValueError(f"Expected AS after CAST")
+            raise ValueError("Expected AS after CAST")
 
         expression = self._parse_primary()
 
         if not self._match(TokenType.R_PAREN):
-            raise ValueError(f"Expected ) after CAST")
+            raise ValueError("Expected ) after CAST")
 
         return exp.Cast(this=this, expression=expression)
 
@@ -371,10 +372,3 @@ class Parser:
                 return True
 
         return False
-
-
-def parse(code, parse=None, tokenize=None):
-    from sqlglot.tokens import Tokenizer
-    tokenize = tokenize or {}
-    parse = parse or {}
-    return Parser(Tokenizer(code, **tokenize).tokenize(), **parse).parse()

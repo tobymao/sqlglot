@@ -1,0 +1,14 @@
+[MESSAGES CONTROL]
+
+disable=
+    invalid-name,
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-module-docstring,
+    too-few-public-methods,
+    too-many-public-methods,
+    too-many-instance-attributes,
+
+[FORMAT]
+
+max-line-length=120

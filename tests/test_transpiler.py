@@ -1,7 +1,7 @@
 import os
 import unittest
 
-import sqlglot.transpiler as transpiler
+import sqlglot
 
 class TestTranspiler(unittest.TestCase):
     file_dir = os.path.dirname(__file__)
@@ -10,7 +10,7 @@ class TestTranspiler(unittest.TestCase):
     def test_identity(self):
         with open(os.path.join(self.fixtures_dir, 'identity.sql')) as f:
             for sql in f:
-                self.assertEqual(transpiler.transpile(sql)[0], sql.strip())
+                self.assertEqual(sqlglot.transpile(sql)[0], sql.strip())
 
     def test_pretty(self):
         with open(os.path.join(self.fixtures_dir, 'pretty.sql')) as f:
@@ -21,4 +21,4 @@ class TestTranspiler(unittest.TestCase):
                 if i + 2 < size:
                     sql = lines[i]
                     pretty = lines[i + 1].strip()
-                    self.assertEqual(transpiler.transpile(sql, transpile={'pretty': True})[0], pretty)
+                    self.assertEqual(sqlglot.transpile(sql, transpile_opts={'pretty': True})[0], pretty)

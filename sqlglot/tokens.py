@@ -98,7 +98,7 @@ class Token:
         attributes = ", ".join([f"{k}: {v}" for k, v in self.__dict__.items()])
         return f"<Token {attributes}>"
 
-    def to_s(self, level=0):
+    def to_s(self, _level=0):
         return self.text
 
 class Tokenizer:
@@ -201,6 +201,7 @@ class Tokenizer:
         self._col = 0
 
     def tokenize(self):
+        # pylint: disable=too-many-branches
         while self._current < len(self.code):
             self._start = self._current
             self._advance()

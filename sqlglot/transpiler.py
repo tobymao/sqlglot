@@ -23,6 +23,8 @@ class Transpiler:
         exp.LN: lambda self, e: self.simple_func(e, 'LN'),
         exp.Max: lambda self, e: self.simple_func(e, 'MAX'),
         exp.Min: lambda self, e: self.simple_func(e, 'MIN'),
+        exp.Rank: lambda self, e: self.simple_func(e, 'RANK'),
+        exp.RowNumber: lambda self, e: self.simple_func(e, 'ROW_NUMBER'),
         exp.Sum: lambda self, e: self.simple_func(e, 'SUM'),
     }
 
@@ -122,8 +124,8 @@ class Transpiler:
         this_sql = self.nested(expression)
         return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
 
-    def order_sql(self, expression):
-        sql = self.op_expressions('ORDER BY', expression)
+    def order_sql(self, expression, flat=False):
+        sql = self.op_expressions('ORDER BY', expression, flat=flat)
         if expression.args['desc']:
             sql = f"{sql} DESC"
         return sql
@@ -137,6 +139,14 @@ class Transpiler:
 
     def where_sql(self, expression):
         return self.op_expression('WHERE', expression)
+
+    def window_sql(self, expression):
+        this = self.sql(expression, 'this')
+        partition = expression.args.get('partition')
+        partition = 'PARTITION BY ' +  ', '.join(self.sql(by) for by in partition) if partition else ''
+        order = expression.args.get('order')
+        order = self.order_sql(order, flat=True) if order else ''
+        return f"{this} OVER({partition + ' ' if partition and order else partition}{order})"
 
     def between_sql(self, expression):
         this = self.sql(expression, 'this')
@@ -251,10 +261,13 @@ class Transpiler:
         expression_sql = self.indent(self.sql(expression, 'expression'), pad=self.pad)
         return f"{this_sql}{op_sql}{self.sep()}{expression_sql}"
 
-    def op_expressions(self, op, expression):
+    def op_expressions(self, op, expression, flat=False):
         this_sql = self.sql(expression, 'this')
         op_sql = self.seg(op)
-        expressions_sql = self.expressions(expression)
+        expressions_sql = self.expressions(expression, flat=flat)
+        if flat:
+            this_sql = f"{this_sql} " if this_sql else ''
+            return f"{this_sql}{op} {expressions_sql}"
         return f"{this_sql}{op_sql}{self.sep()}{expressions_sql}"
 
     def nested(self, expression):

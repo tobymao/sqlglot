@@ -12,6 +12,8 @@ class Parser:
         'MAX': lambda args: exp.Max(this=args[0]),
         'MIN': lambda args: exp.Min(this=args[0]),
         'SUM': lambda args: exp.Sum(this=args[0]),
+        'RANK': lambda args: exp.Rank(this=args[0]),
+        'ROW_NUMBER': lambda args: exp.RowNumber(this=args[0]),
     }
 
     TYPE_TOKENS = {
@@ -200,7 +202,7 @@ class Parser:
         return exp.Union(this=this, expression=self._parse_select(), distinct=distinct)
 
     def _parse_expression(self):
-        return self._parse_alias(self._parse_conjunction())
+        return self._parse_alias(self._parse_window(self._parse_conjunction()))
 
     def _parse_conjunction(self):
         return self._parse_tokens(self._parse_equality, exp.And, exp.Or)
@@ -363,6 +365,27 @@ class Parser:
             return exp.Paren(this=this)
 
         return None
+
+    def _parse_window(self, this):
+        if not self._match(TokenType.OVER):
+            return this
+
+        if not self._match(TokenType.L_PAREN):
+            raise ValueError('Expecting ( after OVER')
+
+        partition = None
+
+        if self._match(TokenType.PARTITION):
+            if not self._match(TokenType.BY):
+                raise ValueError('Expecting BY after PARTITION')
+            partition = self._parse_csv(self._parse_primary)
+
+        order = self._parse_order(None)
+
+        if not self._match(TokenType.R_PAREN):
+            raise ValueError('Expecting )')
+
+        return exp.Window(this=this, partition=partition, order=order)
 
     def _parse_alias(self, this):
         self._match(TokenType.ALIAS)

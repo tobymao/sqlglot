@@ -77,6 +77,7 @@ class TokenType(Enum):
     NULL = auto()
     ON = auto()
     ORDER = auto()
+    OVER = auto()
     PARTITION = auto()
     SELECT = auto()
     RIGHT = auto()
@@ -149,7 +150,7 @@ class Tokenizer:
         'ON': TokenType.ON,
         'OR': TokenType.OR,
         'ORDER': TokenType.ORDER,
-        'OVER': TokenType.BY,
+        'OVER': TokenType.OVER,
         'PARTITION': TokenType.PARTITION,
         'RIGHT': TokenType.RIGHT,
         'SELECT': TokenType.SELECT,

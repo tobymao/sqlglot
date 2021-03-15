@@ -81,6 +81,11 @@ class Select(Expression):
     token_type = TokenType.SELECT
     arg_types = {'expressions': True}
 
+
+class Window(Expression):
+    token_type = TokenType.OVER
+    arg_types = {'this': True, 'partition': False, 'order': False}
+
 # Binary Expressions
 # (PLUS a b)
 # (FROM table selects)
@@ -236,6 +241,14 @@ class Max(Func):
 
 
 class Min(Func):
+    pass
+
+
+class Rank(Func):
+    pass
+
+
+class RowNumber(Func):
     pass
 
 

@@ -30,6 +30,12 @@ class Parser:
         TokenType.JSON,
     }
 
+    COLUMN_TOKENS = {
+        TokenType.VAR,
+        TokenType.IDENTIFIER,
+        TokenType.STAR,
+    }
+
     def __init__(self, tokens, **kwargs):
         self.raw_tokens = tokens
         self.functions = {**self.FUNCTIONS, **kwargs.get('functions', {})}
@@ -78,7 +84,22 @@ class Parser:
             return None
 
     def _parse_statement(self):
-        return self._parse_select()
+        if not self._match(TokenType.WITH):
+            return self._parse_select()
+
+        expressions = self._parse_csv(self._parse_cte)
+        return exp.CTE(this=self._parse_select(), expressions=expressions)
+
+    def _parse_cte(self):
+        if not self._match(TokenType.IDENTIFIER, TokenType.VAR):
+            raise ValueError('Expected alias after WITH')
+
+        alias = self._prev
+
+        if not self._match(TokenType.ALIAS):
+            raise ValueError('Expected AS after WITH')
+
+        return exp.Alias(this=self._parse_table(), to=alias)
 
     def _parse_select(self):
         if not self._match(TokenType.SELECT):
@@ -310,14 +331,14 @@ class Parser:
 
                 if self._match(TokenType.DOT):
                     table = this
-                    if not self._match(TokenType.VAR, TokenType.IDENTIFIER):
+                    if not self._match(*self.COLUMN_TOKENS):
                         raise ValueError('Expected column name')
                     this = self._prev
 
                     if self._match(TokenType.DOT):
                         db = table
                         table = this
-                        if not self._match(TokenType.VAR, TokenType.IDENTIFIER):
+                        if not self._match(*self.COLUMN_TOKENS):
                             raise ValueError('Expected column name')
                         this = self._prev
 
@@ -350,12 +371,6 @@ class Parser:
         return this
 
     def _parse_csv(self, parse):
-        items = [parse()]
-        while self._match(TokenType.COMMA):
-            items.append(parse())
-        return items
-
-    def _parse_function_args(self, parse):
         items = [parse()]
         while self._match(TokenType.COMMA):
             items.append(parse())

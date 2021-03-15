@@ -91,6 +91,7 @@ class Parser:
         this = self._parse_group(this)
         this = self._parse_having(this)
         this = self._parse_order(this)
+        this = self._parse_union(this)
 
         return this
 
@@ -144,7 +145,7 @@ class Parser:
     def _parse_where(self, this):
         if not self._match(TokenType.WHERE):
             return this
-        return exp.Where(this=this, expression=self._parse_union())
+        return exp.Where(this=this, expression=self._parse_conjunction())
 
     def _parse_group(self, this):
         if not self._match(TokenType.GROUP):
@@ -158,7 +159,7 @@ class Parser:
     def _parse_having(self, this):
         if not self._match(TokenType.HAVING):
             return this
-        return exp.Having(this=this, expression=self._parse_union())
+        return exp.Having(this=this, expression=self._parse_conjunction())
 
     def _parse_order(self, this):
         if not self._match(TokenType.ORDER):
@@ -169,10 +170,18 @@ class Parser:
 
         return exp.Order(this=this, expressions=self._parse_csv(self._parse_primary), desc=self._match(TokenType.DESC))
 
-    def _parse_expression(self):
-        return self._parse_alias(self._parse_union())
+    def _parse_union(self, this):
+        if not self._match(TokenType.UNION):
+            return this
 
-    def _parse_union(self):
+        distinct = not self._match(TokenType.ALL)
+
+        return exp.Union(this=this, expression=self._parse_select(), distinct=distinct)
+
+    def _parse_expression(self):
+        return self._parse_alias(self._parse_conjunction())
+
+    def _parse_conjunction(self):
         return self._parse_tokens(self._parse_equality, exp.And, exp.Or)
 
     def _parse_equality(self):
@@ -245,7 +254,7 @@ class Parser:
             raise ValueError("Expected ( after COUNT")
 
         distinct = self._match(TokenType.DISTINCT)
-        this = self._parse_union()
+        this = self._parse_conjunction()
 
         if not self._match(TokenType.R_PAREN):
             raise ValueError("Expected ) after COUNT")
@@ -256,7 +265,7 @@ class Parser:
         if not self._match(TokenType.L_PAREN):
             raise ValueError("Expected ( after CAST")
 
-        this = self._parse_union()
+        this = self._parse_conjunction()
 
         if not self._match(TokenType.ALIAS):
             raise ValueError("Expected AS after CAST")

@@ -3,12 +3,14 @@ import sqlglot.expressions as exp
 
 class Transpiler:
     BODY_TOKENS = {
+        TokenType.SELECT,
         TokenType.FROM,
         TokenType.JOIN,
         TokenType.WHERE,
         TokenType.GROUP,
         TokenType.HAVING,
         TokenType.ORDER,
+        TokenType.UNION,
     }
 
     FUNCTIONS = {
@@ -126,6 +128,10 @@ class Transpiler:
         if expression.args['desc']:
             sql = f"{sql} DESC"
         return sql
+
+    def union_sql(self, expression):
+        distinct = '' if expression.args['distinct'] else ' ALL'
+        return self.op_expression(f"UNION{distinct}", expression)
 
     def where_sql(self, expression):
         return self.op_expression('WHERE', expression)

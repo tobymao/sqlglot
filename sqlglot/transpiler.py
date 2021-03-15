@@ -53,9 +53,6 @@ class Transpiler:
     def transpile(self, expression):
         return self.sql(expression)
 
-    def sep(self, sep=' '):
-        return f"{sep.strip()}\n" if self.pretty else sep
-
     def indent(self, sql, level=None, pad=0):
         if level is None:
             level = self._level
@@ -63,8 +60,11 @@ class Transpiler:
             sql = f"{' ' * (level * self._indent + pad)}{sql}"
         return sql
 
-    def seg(self, sql, sep=' ', pad=0):
-        return f"{self.sep(sep)}{self.indent(sql, pad=pad)}"
+    def sep(self, sep=' '):
+        return f"{sep.strip()}\n" if self.pretty else sep
+
+    def seg(self, sql, sep=' ', level=None, pad=0):
+        return f"{self.sep(sep)}{self.indent(sql, level=level, pad=pad)}"
 
     def sql(self, expression, key=None):
         if not expression:
@@ -83,6 +83,14 @@ class Transpiler:
             self.sql(expression, 'this'),
         ] if part)
 
+    def cte_sql(self, expression):
+        sql = ', '.join(
+            f"{self.sql(e, 'to')} AS ({self.seg(self.nested(e), sep='', level=self._level + 1)}{self.seg(')', sep='')}"
+            for e in expression.args['expressions']
+        )
+
+        return f"WITH {sql}{self.sep()}{self.sql(expression, 'this')}"
+
     def table_sql(self, expression):
         return '.'.join(part for part in [
             self.sql(expression, 'db'),
@@ -90,15 +98,9 @@ class Transpiler:
             self.sql(expression, 'this'),
         ] if part)
 
-    def select_sql(self, expression):
-        return f"SELECT{self.sep()}{self.expressions(expression)}"
-
     def from_sql(self, expression):
         expression_sql = self.sql(expression, 'expression')
-        self._level += 1
-        this_sql = self.sql(expression, 'this')
-        self._level -= 1
-
+        this_sql = self.nested(expression)
         return f"{expression_sql}{self.seg('FROM')} {this_sql}"
 
     def group_sql(self, expression):
@@ -114,20 +116,20 @@ class Transpiler:
 
         if on_sql:
             on_sql = self.seg(on_sql, pad=self.pad)
-            on_sql = f"ON{on_sql}"
+            on_sql = f" ON{on_sql}"
 
         expression_sql = self.sql(expression, 'expression')
-        self._level += 1
-        this_sql = self.sql(expression, 'this')
-        self._level -= 1
-
-        return f"{expression_sql}{op_sql} {this_sql} {on_sql}"
+        this_sql = self.nested(expression)
+        return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
 
     def order_sql(self, expression):
         sql = self.op_expressions('ORDER BY', expression)
         if expression.args['desc']:
             sql = f"{sql} DESC"
         return sql
+
+    def select_sql(self, expression):
+        return f"SELECT{self.sep()}{self.expressions(expression)}"
 
     def union_sql(self, expression):
         distinct = '' if expression.args['distinct'] else ' ALL'
@@ -254,3 +256,9 @@ class Transpiler:
         op_sql = self.seg(op)
         expressions_sql = self.expressions(expression)
         return f"{this_sql}{op_sql}{self.sep()}{expressions_sql}"
+
+    def nested(self, expression):
+        self._level += 1
+        this_sql = self.sql(expression, 'this')
+        self._level -= 1
+        return this_sql

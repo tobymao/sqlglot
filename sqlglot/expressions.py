@@ -42,6 +42,11 @@ class Expression:
         return indent + left + right
 
 
+class CTE(Expression):
+    token_type = TokenType.WITH
+    arg_types = {'this': True, 'expressions': True}
+
+
 class Column(Expression):
     token_type = TokenType.COLUMN
     arg_types = {'this': True, 'db': False, 'table': False}
@@ -50,11 +55,6 @@ class Column(Expression):
 class Table(Expression):
     token_type = TokenType.TABLE
     arg_types = {'this': True, 'db': False}
-
-
-class Select(Expression):
-    token_type = TokenType.SELECT
-    arg_types = {'expressions': True}
 
 
 class Group(Expression):
@@ -75,6 +75,11 @@ class Order(Expression):
 class Union(Expression):
     token_type = TokenType.UNION
     arg_types = {'this': True, 'expression': True, 'distinct': True}
+
+
+class Select(Expression):
+    token_type = TokenType.SELECT
+    arg_types = {'expressions': True}
 
 # Binary Expressions
 # (PLUS a b)

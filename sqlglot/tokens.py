@@ -157,6 +157,7 @@ class Tokenizer:
         'UNION': TokenType.UNION,
         'WHEN': TokenType.WHEN,
         'WHERE': TokenType.WHERE,
+        'WITH': TokenType.WITH,
 
         'BOOL': TokenType.BOOLEAN,
         'BOOLEAN': TokenType.BOOLEAN,

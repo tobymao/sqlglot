@@ -71,6 +71,11 @@ class Order(Expression):
     token_type = TokenType.ORDER
     arg_types = {'this': True, 'expressions': True, 'desc': False}
 
+
+class Union(Expression):
+    token_type = TokenType.UNION
+    arg_types = {'this': True, 'expression': True, 'distinct': True}
+
 # Binary Expressions
 # (PLUS a b)
 # (FROM table selects)

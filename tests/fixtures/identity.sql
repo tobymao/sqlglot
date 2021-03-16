@@ -5,6 +5,9 @@ SELECT a FROM test
 SELECT test.* FROM test
 SELECT a AS b FROM test
 SELECT "a"."b" FROM "a"
+SELECT "a".b FROM a
+SELECT a.b FROM "a"
+SELECT a.b FROM a
 SELECT 1 AS b FROM test
 SELECT 1 AS "b" FROM test
 SELECT 1 + 1 FROM test

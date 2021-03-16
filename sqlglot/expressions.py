@@ -208,6 +208,10 @@ class Func(Expression):
     arg_types = {'this': True}
 
 
+class ApproxDistinct(Func):
+    arg_types = {'this': True, 'accuracy': False}
+
+
 class Avg(Func):
     pass
 

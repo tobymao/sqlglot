@@ -1,23 +1,19 @@
-from sqlglot.parser import Parser
+from sqlglot.dialects import Dialect
+from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer
-from sqlglot.transpiler import Transpiler
+from sqlglot.parser import Parser
 
 
 __version__ = '0.1.0'
 
 
-def parse(code, parse_opts=None, tokenize_opts=None):
-    tokenize_opts = tokenize_opts or {}
-    parse_opts = parse_opts or {}
-    return Parser(Tokenizer(code, **tokenize_opts).tokenize(), **parse_opts).parse()
+def parse(code, read=None):
+    dialect = Dialect.get(read, Dialect)()
+    return dialect.parse(code)
 
 
-def transpile(code, transpile_opts=None, parse_opts=None, tokenize_opts=None):
-    tokenize_opts = tokenize_opts or {}
-    parse_opts = parse_opts or {}
-    transpile_opts = transpile_opts or {}
-
+def transpile(code, read=None, write=None, **opts):
     return [
-        Transpiler(**transpile_opts).transpile(exp)
-        for exp in parse(code, parse_opts=parse_opts, tokenize_opts=tokenize_opts)
+        Dialect.get(write, Dialect)().generate(expression, **opts)
+        for expression in parse(code, read)
     ]

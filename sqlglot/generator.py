@@ -1,7 +1,16 @@
-from sqlglot.tokens import Token, TokenType
-import sqlglot.expressions as exp
+from enum import Enum, auto
 
-class Transpiler:
+import sqlglot.expressions as exp
+from sqlglot.errors import UnsupportedError
+from sqlglot.tokens import Token, TokenType
+
+class UnsupportedLevel(Enum):
+    IGNORE = auto()
+    WARN = auto()
+    RAISE = auto()
+
+
+class Generator:
     BODY_TOKENS = {
         TokenType.SELECT,
         TokenType.FROM,
@@ -44,16 +53,35 @@ class Transpiler:
         TokenType.JSON: 'JSON',
     }
 
-    def __init__(self, **kwargs):
-        self.functions = {**self.FUNCTIONS, **kwargs.get('functions', {})}
-        self.types = {**self.TYPES, **kwargs.get('types', {})}
-        self.pretty = kwargs.get('pretty')
-        self.pad = kwargs.get('pad', 2)
-        self._indent = kwargs.get('indent', 4)
+    def __init__(self, **opts):
+        self.functions = {**self.FUNCTIONS, **opts.get('functions', {})}
+        self.types = {**self.TYPES, **opts.get('types', {})}
+        self.pretty = opts.get('pretty')
+        self.identifier = opts.get('identifier', '"')
+        self.identify = opts.get('identify', False)
+        self.pad = opts.get('pad', 2)
+        self.unsupported_level = opts.get('unsupported_level', UnsupportedLevel.WARN)
+        self.unsupported_messages = []
+        self._indent = opts.get('indent', 4)
         self._level = 0
 
-    def transpile(self, expression):
-        return self.sql(expression)
+    def generate(self, expression):
+        self.unsupported_messages = []
+        sql = self.sql(expression)
+
+        if self.unsupported_level == UnsupportedLevel.IGNORE:
+            return sql
+
+        if self.unsupported_level == UnsupportedLevel.RAISE:
+            raise UnsupportedError
+
+        for msg in self.unsupported_messages:
+            print(msg)
+
+        return sql
+
+    def unsupported(self, message):
+        self.unsupported_messages.append(message)
 
     def indent(self, sql, level=None, pad=0):
         level = self._level if level is None else level
@@ -73,21 +101,26 @@ class Transpiler:
         self._level -= 1
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
-    def sql(self, expression, key=None):
+    def sql(self, expression, key=None, identify=False):
         if not expression:
             return ''
         if isinstance(expression, Token):
-            return expression.text
+            text = expression.text
+            if expression.token_type == TokenType.IDENTIFIER:
+                text = f"{self.identifier}{text[1:-1]}{self.identifier}"
+            elif self.identify and identify:
+                text = f"{self.identifier}{text}{self.identifier}"
+            return text
         if key:
-            return self.sql(expression.args.get(key))
+            return self.sql(expression.args.get(key), identify=identify)
 
         method = 'func' if expression.token_type == TokenType.FUNC else expression.key
         return getattr(self, f"{method}_sql")(expression)
 
     def column_sql(self, expression):
         return '.'.join(part for part in [
-            self.sql(expression, 'table'),
-            self.sql(expression, 'this'),
+            self.sql(expression, 'table', identify=True),
+            self.sql(expression, 'this', identify=True),
         ] if part)
 
     def cte_sql(self, expression):
@@ -100,9 +133,9 @@ class Transpiler:
 
     def table_sql(self, expression):
         return '.'.join(part for part in [
-            self.sql(expression, 'db'),
-            self.sql(expression, 'table'),
-            self.sql(expression, 'this'),
+            self.sql(expression, 'db', identify=True),
+            self.sql(expression, 'table', identify=True),
+            self.sql(expression, 'this', identify=True),
         ] if part)
 
     def from_sql(self, expression):

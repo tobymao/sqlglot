@@ -187,23 +187,26 @@ class Tokenizer:
         "\rn": TokenType.BREAK,
     }
 
-    def __init__(self, code, **kwargs):
-        self.code = code
+    def __init__(self, **opts):
+        self.quote = opts.get('quote', "'")
+        self.identifier = opts.get('identifier', '"')
+        self.single_tokens = {**self.SINGLE_TOKENS, **opts.get('single_tokens', {})}
+        self.keywords = {**self.KEYWORDS, **opts.get('keywords', {})}
+        self.white_space = {**self.WHITE_SPACE, **opts.get('white_space', {})}
+        self.reset()
+
+    def reset(self):
+        self.code = ''
         self.tokens = []
-
-        self.quote = kwargs.get('quote', "'")
-        self.identifier = kwargs.get('identifier', '"')
-        self.single_tokens = {**self.SINGLE_TOKENS, **kwargs.get('single_tokens', {})}
-        self.keywords = {**self.KEYWORDS, **kwargs.get('keywords', {})}
-        self.white_space = {**self.WHITE_SPACE, **kwargs.get('white_space', {})}
-
         self._start = 0
         self._current = 0
         self._line = 0
         self._col = 0
 
-    def tokenize(self):
-        # pylint: disable=too-many-branches
+    def tokenize(self, code): # pylint: disable=too-many-branches
+        self.reset()
+        self.code = code
+
         while self._current < len(self.code):
             self._start = self._current
             self._advance()

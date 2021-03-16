@@ -38,31 +38,34 @@ class Parser:
         TokenType.STAR,
     }
 
-    def __init__(self, tokens, **kwargs):
-        self.raw_tokens = tokens
-        self.functions = {**self.FUNCTIONS, **kwargs.get('functions', {})}
+    def __init__(self, **opts):
+        self.functions = {**self.FUNCTIONS, **opts.get('functions', {})}
+        self.reset()
+
+    def reset(self):
         self._tokens = []
         self._chunks = [[]]
         self._index = 0
 
-        for token in tokens:
+    def parse(self, raw_tokens):
+        self.reset()
+
+        for token in raw_tokens:
             if token.token_type == TokenType.SEMICOLON:
                 self._chunks.append([])
             self._chunks[-1].append(token)
 
-    def parse(self):
         expressions = []
+
         for tokens in self._chunks:
-            self._reset()
+            self._index = -1
+            self._advance()
             self._tokens = tokens
             expressions.append(self._parse_statement())
             if self._index < len(self._tokens):
                 raise ValueError(f"Invalid expression {self._curr}")
-        return expressions
 
-    def _reset(self):
-        self._index = -1
-        self._advance()
+        return expressions
 
     def _advance(self):
         self._index += 1

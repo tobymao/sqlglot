@@ -56,8 +56,7 @@ class Transpiler:
         return self.sql(expression)
 
     def indent(self, sql, level=None, pad=0):
-        if level is None:
-            level = self._level
+        level = self._level if level is None else level
         if self.pretty:
             sql = f"{' ' * (level * self._indent + pad)}{sql}"
         return sql
@@ -67,6 +66,12 @@ class Transpiler:
 
     def seg(self, sql, sep=' ', level=None, pad=0):
         return f"{self.sep(sep)}{self.indent(sql, level=level, pad=pad)}"
+
+    def wrap(self, expression):
+        self._level += 1
+        this_sql = self.indent(self.sql(expression, 'this'))
+        self._level -= 1
+        return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
     def sql(self, expression, key=None):
         if not expression:
@@ -87,7 +92,7 @@ class Transpiler:
 
     def cte_sql(self, expression):
         sql = ', '.join(
-            f"{self.sql(e, 'to')} AS ({self.seg(self.nested(e), sep='', level=self._level + 1)}{self.seg(')', sep='')}"
+            f"{self.sql(e, 'to')} AS {self.wrap(e)}"
             for e in expression.args['expressions']
         )
 
@@ -102,7 +107,7 @@ class Transpiler:
 
     def from_sql(self, expression):
         expression_sql = self.sql(expression, 'expression')
-        this_sql = self.nested(expression)
+        this_sql = self.sql(expression, 'this')
         return f"{expression_sql}{self.seg('FROM')} {this_sql}"
 
     def group_sql(self, expression):
@@ -121,7 +126,7 @@ class Transpiler:
             on_sql = f" ON{on_sql}"
 
         expression_sql = self.sql(expression, 'expression')
-        this_sql = self.nested(expression)
+        this_sql = self.sql(expression, 'this')
         return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
 
     def order_sql(self, expression, flat=False):
@@ -141,12 +146,13 @@ class Transpiler:
         return self.op_expression('WHERE', expression)
 
     def window_sql(self, expression):
-        this = self.sql(expression, 'this')
+        this_sql = self.sql(expression, 'this')
         partition = expression.args.get('partition')
         partition = 'PARTITION BY ' +  ', '.join(self.sql(by) for by in partition) if partition else ''
         order = expression.args.get('order')
-        order = self.order_sql(order, flat=True) if order else ''
-        return f"{this} OVER({partition + ' ' if partition and order else partition}{order})"
+        order_sql = self.order_sql(order, flat=True) if order else ''
+        partition_sql = partition + ' ' if partition and order else partition
+        return f"{this_sql} OVER({partition_sql}{order_sql})"
 
     def between_sql(self, expression):
         this = self.sql(expression, 'this')
@@ -169,8 +175,7 @@ class Transpiler:
 
     def in_sql(self, expression):
         this_sql = self.sql(expression, 'this')
-        values_sql = self.seg(self.expressions(expression, pad=self.pad), sep='')
-        return f"{this_sql} IN ({values_sql}{self.seg(')', sep='', pad=self.pad)}"
+        return f"{this_sql} IN ({self.expressions(expression, flat=True)})"
 
     def func_sql(self, expression):
         return self.functions[expression.__class__](self, expression)
@@ -189,9 +194,8 @@ class Transpiler:
         to_sql = self.sql(expression, 'to')
 
         if expression.args['this'].token_type in self.BODY_TOKENS:
-            this_sql = self.indent(this_sql)
             if self.pretty:
-                return f"(\n{this_sql}\n{self.indent(')', level=self._level-1)} AS {to_sql}"
+                return f"{self.wrap(expression)} AS {to_sql}"
             return f"({this_sql}) AS {to_sql}"
         return f"{this_sql} AS {to_sql}"
 
@@ -269,9 +273,3 @@ class Transpiler:
             this_sql = f"{this_sql} " if this_sql else ''
             return f"{this_sql}{op} {expressions_sql}"
         return f"{this_sql}{op_sql}{self.sep()}{expressions_sql}"
-
-    def nested(self, expression):
-        self._level += 1
-        this_sql = self.sql(expression, 'this')
-        self._level -= 1
-        return this_sql

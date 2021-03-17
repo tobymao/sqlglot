@@ -24,9 +24,11 @@ class Generator:
 
     FUNCTIONS = {
         exp.Avg: lambda self, e: self.simple_func(e, 'AVG'),
+        exp.Ceil: lambda self, e: self.simple_func(e, 'CEIL'),
         exp.Coalesce: lambda self, e: f"COALESCE({self.expressions(e, flat=True)})",
         exp.Count: lambda self, e: f"COUNT({'DISTINCT ' if e.args['distinct'] else ''}{self.sql(e, 'this')})",
         exp.First: lambda self, e: self.simple_func(e, 'FIRST'),
+        exp.Floor: lambda self, e: self.simple_func(e, 'FLOOR'),
         exp.Last: lambda self, e: self.simple_func(e, 'LAST'),
         exp.If: lambda self, e: self.case_sql(exp.Case(ifs=[e], default=e.args['false'])),
         exp.LN: lambda self, e: self.simple_func(e, 'LN'),
@@ -43,7 +45,7 @@ class Generator:
         TokenType.SMALLINT: 'INT2',
         TokenType.INT: 'INT4',
         TokenType.BIGINT: 'INT8',
-        TokenType.REAL: 'FLOAT4',
+        TokenType.FLOAT: 'FLOAT4',
         TokenType.DOUBLE: 'FLOAT8',
         TokenType.DECIMAL: lambda self, e: 'DECIMAL',
         TokenType.CHAR: 'CHAR',
@@ -150,8 +152,9 @@ class Generator:
         return self.op_expression('HAVING', expression)
 
     def join_sql(self, expression):
-        joiner = self.sql(expression, 'joiner')
-        op_sql = self.seg(f"{joiner}{' ' if joiner else ''}JOIN")
+        side = self.sql(expression, 'side')
+        kind = self.sql(expression, 'kind')
+        op_sql = self.seg(' '.join(op for op in [side, kind, 'JOIN'] if op))
         on_sql = self.sql(expression, 'on')
 
         if on_sql:
@@ -193,6 +196,9 @@ class Generator:
         high = self.sql(expression, 'high')
         return f"{this} BETWEEN {low} AND {high}"
 
+    def bracket_sql(self, expression):
+        return f"{self.sql(expression, 'this')}[{self.expressions(expression, flat=True)}]"
+
     def case_sql(self, expression):
         pad = self.pad + 2
 
@@ -207,8 +213,7 @@ class Generator:
         return f"CASE{''.join(ifs)}{self.seg('END', pad=self.pad)}"
 
     def in_sql(self, expression):
-        this_sql = self.sql(expression, 'this')
-        return f"{this_sql} IN ({self.expressions(expression, flat=True)})"
+        return f"{self.sql(expression, 'this')} IN ({self.expressions(expression, flat=True)})"
 
     def func_sql(self, expression):
         return self.functions[expression.__class__](self, expression)

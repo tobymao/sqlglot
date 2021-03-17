@@ -64,7 +64,7 @@ class Group(Expression):
 
 class Join(Expression):
     token_type = TokenType.JOIN
-    arg_types = {'this': True, 'expression': True, 'on': True, 'joiner': True}
+    arg_types = {'this': True, 'expression': True, 'on': True, 'side': False, 'kind': False}
 
 
 class Order(Expression):
@@ -188,6 +188,11 @@ class Between(Expression):
     arg_types = {'this': True, 'low': True, 'high': True}
 
 
+class Bracket(Expression):
+    token_type = TokenType.BRACKET
+    arg_types = {'this': True, 'expressions': True}
+
+
 class Case(Expression):
     token_type = TokenType.CASE
     arg_types = {'ifs': True, 'default': False}
@@ -216,6 +221,10 @@ class Avg(Func):
     pass
 
 
+class Ceil(Func):
+    pass
+
+
 class Coalesce(Func):
     arg_types = {'expressions': True}
 
@@ -225,6 +234,10 @@ class Count(Func):
 
 
 class First(Func):
+    pass
+
+
+class Floor(Func):
     pass
 
 

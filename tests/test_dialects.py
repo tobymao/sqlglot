@@ -37,7 +37,7 @@ class TestDialects(unittest.TestCase):
         )[0]
         self.assertEqual(sql, 'SELECT APPROX_COUNT_DISTINCT(a) FROM foo')
 
-        with self.assertRaises(sqlglot.errors.UnsupportedError):
+        with self.assertRaises(UnsupportedError):
             sqlglot.transpile(
                 'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
                 read='presto',

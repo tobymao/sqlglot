@@ -48,7 +48,7 @@ class Parser:
     }
 
     def __init__(self, **opts):
-        self.functions = {**self.FUNCTIONS, **opts.get('functions', {})}
+        self.functions = {**self.FUNCTIONS, **(opts.get('functions') or {})}
         self.error_level = opts.get('error_level', ErrorLevel.RAISE)
         self.error_message_context = opts.get('error_message_context', 50)
         self.reset()

@@ -1,6 +1,9 @@
-from enum import Enum, auto
+from enum import auto
 
-class TokenType(Enum):
+from sqlglot.helper import AutoName
+
+
+class TokenType(AutoName):
     PAREN = auto()
     L_PAREN = auto()
     R_PAREN = auto()

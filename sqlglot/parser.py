@@ -1,5 +1,12 @@
+import logging
+import os
+
+from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.tokens import TokenType
 import sqlglot.expressions as exp
+
+os.system('')
+
 
 class Parser:
     FUNCTIONS = {
@@ -42,14 +49,18 @@ class Parser:
 
     def __init__(self, **opts):
         self.functions = {**self.FUNCTIONS, **opts.get('functions', {})}
+        self.error_level = opts.get('error_level', ErrorLevel.RAISE)
+        self.error_message_context = opts.get('error_message_context', 50)
         self.reset()
 
     def reset(self):
+        self.error = None
         self._tokens = []
         self._chunks = [[]]
         self._index = 0
 
-    def parse(self, raw_tokens):
+    def parse(self, raw_tokens, code=None):
+        self.code = code or ''
         self.reset()
 
         for token in raw_tokens:
@@ -63,11 +74,42 @@ class Parser:
             self._index = -1
             self._advance()
             self._tokens = tokens
-            expressions.append(self._parse_statement())
-            if self._index < len(self._tokens):
-                raise ValueError(f"Invalid expression {self._curr}")
+            try:
+                expressions.append(self._parse_statement())
+                if self._index < len(self._tokens):
+                    self.raise_error('Invalid expression', self._prev)
+            except ParseError as e:
+                if self.error_level == ErrorLevel.WARN:
+                    logging.error(e)
+                elif self.error_level == ErrorLevel.RAISE:
+                    raise e
 
         return expressions
+
+    def raise_error(self, message, token=None):
+        token = token or self._curr or self._prev
+        start = self._find_token(token, self.code)
+        end = start + len(token.text)
+        start_context = self.code[max(start - self.error_message_context, 0):start]
+        highlight = self.code[start:end]
+        end_context = self.code[end:end + self.error_message_context]
+        self.error = ParseError(f"{message}\n  {start_context}\033[4m{highlight}\033[0m{end_context}")
+        raise self.error
+
+    def _find_token(self, token, code):
+        line = 0
+        col = 0
+        index = 0
+
+        while line < token.line or col < token.col:
+            index += 1
+            if code[index] == '\n':
+                line += 1
+                col = 0
+            else:
+                col += 1
+
+        return index
 
     def _advance(self):
         self._index += 1
@@ -99,12 +141,12 @@ class Parser:
 
     def _parse_cte(self):
         if not self._match(TokenType.IDENTIFIER, TokenType.VAR):
-            raise ValueError('Expected alias after WITH')
+            self.raise_error('Expected alias after WITH')
 
         alias = self._prev
 
         if not self._match(TokenType.ALIAS):
-            raise ValueError('Expected AS after WITH')
+            self.raise_error('Expected AS after WITH')
 
         return exp.Alias(this=self._parse_table(), to=alias)
 
@@ -155,7 +197,7 @@ class Parser:
             nested = self._parse_select()
 
             if not self._match(TokenType.R_PAREN):
-                raise ValueError('Expecting )')
+                self.raise_error('Expecting )')
             expression = nested
         else:
             db = None
@@ -167,7 +209,7 @@ class Parser:
             if self._match(TokenType.DOT):
                 db = table
                 if not self._match(TokenType.VAR, TokenType.IDENTIFIER):
-                    raise ValueError('Expected table name')
+                    self.raise_error('Expected table name')
                 table = self._prev
 
             expression = exp.Table(this=table, db=db)
@@ -184,7 +226,7 @@ class Parser:
             return this
 
         if not self._match(TokenType.BY):
-            raise ValueError('Expecting BY')
+            self.raise_error('Expecting BY')
 
         return exp.Group(this=this, expressions=self._parse_csv(self._parse_primary))
 
@@ -198,7 +240,7 @@ class Parser:
             return this
 
         if not self._match(TokenType.BY):
-            raise ValueError('Expecting BY')
+            self.raise_error('Expecting BY')
 
         return exp.Order(this=this, expressions=self._parse_csv(self._parse_primary), desc=self._match(TokenType.DESC))
 
@@ -227,10 +269,10 @@ class Parser:
 
         if self._match(TokenType.IN):
             if not self._match(TokenType.L_PAREN):
-                raise ValueError('Expected ( after IN')
+                self.raise_error('Expected ( after IN', self._prev)
             expressions = self._parse_csv(self._parse_primary)
             if not self._match(TokenType.R_PAREN):
-                raise ValueError('Expected ) after IN')
+                self.raise_error('Expected ) after IN')
             return exp.In(this=this, expressions=expressions)
 
         if self._match(TokenType.BETWEEN):
@@ -277,38 +319,38 @@ class Parser:
             default = self._parse_expression()
 
         if not self._match(TokenType.END):
-            raise ValueError('Expected END after CASE')
+            self.raise_error('Expected END after CASE', self._prev)
 
         return exp.Case(ifs=ifs, default=default)
 
     def _parse_count(self):
         if not self._match(TokenType.L_PAREN):
-            raise ValueError("Expected ( after COUNT")
+            self.raise_error("Expected ( after COUNT", self._prev)
 
         distinct = self._match(TokenType.DISTINCT)
         this = self._parse_conjunction()
 
         if not self._match(TokenType.R_PAREN):
-            raise ValueError("Expected ) after COUNT")
+            self.raise_error("Expected ) after COUNT")
 
         return exp.Count(this=this, distinct=distinct)
 
     def _parse_cast(self):
         if not self._match(TokenType.L_PAREN):
-            raise ValueError("Expected ( after CAST")
+            self.raise_error("Expected ( after CAST", self._prev)
 
         this = self._parse_conjunction()
 
         if not self._match(TokenType.ALIAS):
-            raise ValueError("Expected AS after CAST")
+            self.raise_error("Expected AS after CAST")
 
         if not self._match(*self.TYPE_TOKENS):
-            raise ValueError("Expected type after CAST")
+            self.raise_error("Expected type after CAST")
 
         to = self._prev
 
         if not self._match(TokenType.R_PAREN):
-            raise ValueError("Expected ) after CAST")
+            self.raise_error("Expected ) after CAST")
 
         return exp.Cast(this=this, to=to)
 
@@ -320,7 +362,7 @@ class Parser:
             this = self._parse_expression()
 
             if not self._match(TokenType.R_PAREN):
-                raise ValueError('Expecting )')
+                self.raise_error('Expecting )')
             return exp.Paren(this=this)
 
         return self._parse_column()
@@ -335,28 +377,28 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             if this.token_type == TokenType.IDENTIFIER:
-                raise ValueError('Unexpected (')
+                self.raise_error('Unexpected (')
 
             function = self.functions.get(this.text.upper())
 
             if not function:
-                raise ValueError(f"Unrecognized function name {this}")
+                self.raise_error(f"Unrecognized function name {this.text}", this)
             function = function(self._parse_csv(self._parse_expression))
             if not self._match(TokenType.R_PAREN):
-                raise ValueError(f"Expected ) after function {this}")
+                self.raise_error(f"Expected ) after function {this}")
             return function
 
         if self._match(TokenType.DOT):
             table = this
             if not self._match(*self.COLUMN_TOKENS):
-                raise ValueError('Expected column name')
+                self.raise_error('Expected column name')
             this = self._prev
 
             if self._match(TokenType.DOT):
                 db = table
                 table = this
                 if not self._match(*self.COLUMN_TOKENS):
-                    raise ValueError('Expected column name')
+                    self.raise_error('Expected column name')
                 this = self._prev
 
         return self._parse_brackets(exp.Column(this=this, db=db, table=table))
@@ -368,7 +410,7 @@ class Parser:
         bracket = exp.Bracket(this=this, expressions=self._parse_csv(self._parse_primary))
 
         if not self._match(TokenType.R_BRACKET):
-            raise ValueError(f"Expected ] after {this}[")
+            self.raise_error('Expected ]')
 
         return bracket
 
@@ -377,19 +419,19 @@ class Parser:
             return this
 
         if not self._match(TokenType.L_PAREN):
-            raise ValueError('Expecting ( after OVER')
+            self.raise_error('Expecting ( after OVER')
 
         partition = None
 
         if self._match(TokenType.PARTITION):
             if not self._match(TokenType.BY):
-                raise ValueError('Expecting BY after PARTITION')
+                self.raise_error('Expecting BY after PARTITION')
             partition = self._parse_csv(self._parse_primary)
 
         order = self._parse_order(None)
 
         if not self._match(TokenType.R_PAREN):
-            raise ValueError('Expecting )')
+            self.raise_error('Expecting )')
 
         return exp.Window(this=this, partition=partition, order=order)
 

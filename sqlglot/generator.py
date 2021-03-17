@@ -35,27 +35,28 @@ class Generator:
     }
 
     TYPES = {
-        TokenType.BOOLEAN: 'BOOL',
-        TokenType.TINYINT: 'SMALLINT',
+        TokenType.BOOLEAN: 'BOOLEAN',
+        TokenType.TINYINT: 'TINYINT',
         TokenType.SMALLINT: 'SMALLINT',
         TokenType.INT: 'INT',
         TokenType.BIGINT: 'BIGINT',
-        TokenType.FLOAT: 'REAL',
-        TokenType.DOUBLE: 'FLOAT',
+        TokenType.FLOAT: 'FLOAT',
+        TokenType.DOUBLE: 'DOUBLE',
         TokenType.DECIMAL: lambda self, e: 'DECIMAL',
         TokenType.CHAR: 'CHAR',
         TokenType.VARCHAR: 'VARCHAR',
         TokenType.TEXT: 'TEXT',
-        TokenType.BINARY: 'BYTEA',
+        TokenType.BINARY: 'BINARY',
         TokenType.JSON: 'JSON',
     }
 
     def __init__(self, **opts):
-        self.functions = {**self.FUNCTIONS, **opts.get('functions', {})}
-        self.types = {**self.TYPES, **opts.get('types', {})}
+        self.functions = {**self.FUNCTIONS, **(opts.get('functions') or {})}
+        self.types = {**self.TYPES, **(opts.get('types') or {})}
         self.pretty = opts.get('pretty')
-        self.identifier = opts.get('identifier', '"')
+        self.identifier = opts.get('identifier') or '"'
         self.identify = opts.get('identify', False)
+        self.quote = opts.get('quote') or "'"
         self.pad = opts.get('pad', 2)
         self.unsupported_level = opts.get('unsupported_level', ErrorLevel.WARN)
         self.unsupported_messages = []

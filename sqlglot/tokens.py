@@ -180,6 +180,8 @@ class Tokenizer:
         'INT8': TokenType.BIGINT,
         'DECIMAL': TokenType.DECIMAL,
         'NUMERIC': TokenType.DECIMAL,
+        'DEC': TokenType.DECIMAL,
+        'FIXED': TokenType.DECIMAL,
         'REAL': TokenType.FLOAT,
         'FLOAT': TokenType.FLOAT,
         'FLOAT4': TokenType.FLOAT,
@@ -201,8 +203,8 @@ class Tokenizer:
     }
 
     def __init__(self, **opts):
-        self.quote = opts.get('quote', "'")
-        self.identifier = opts.get('identifier', '"')
+        self.quote = opts.get('quote') or "'"
+        self.identifier = opts.get('identifier') or '"'
         self.single_tokens = {**self.SINGLE_TOKENS, **opts.get('single_tokens', {})}
         self.keywords = {**self.KEYWORDS, **opts.get('keywords', {})}
         self.white_space = {**self.WHITE_SPACE, **opts.get('white_space', {})}

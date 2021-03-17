@@ -1,13 +1,8 @@
-from enum import Enum, auto
+import logging
 
 import sqlglot.expressions as exp
-from sqlglot.errors import UnsupportedError
+from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.tokens import Token, TokenType
-
-class UnsupportedLevel(Enum):
-    IGNORE = auto()
-    WARN = auto()
-    RAISE = auto()
 
 
 class Generator:
@@ -62,7 +57,7 @@ class Generator:
         self.identifier = opts.get('identifier', '"')
         self.identify = opts.get('identify', False)
         self.pad = opts.get('pad', 2)
-        self.unsupported_level = opts.get('unsupported_level', UnsupportedLevel.WARN)
+        self.unsupported_level = opts.get('unsupported_level', ErrorLevel.WARN)
         self.unsupported_messages = []
         self._indent = opts.get('indent', 4)
         self._level = 0
@@ -71,14 +66,14 @@ class Generator:
         self.unsupported_messages = []
         sql = self.sql(expression)
 
-        if self.unsupported_level == UnsupportedLevel.IGNORE:
+        if self.unsupported_level == ErrorLevel.IGNORE:
             return sql
 
-        if self.unsupported_level == UnsupportedLevel.RAISE:
+        if self.unsupported_level == ErrorLevel.RAISE:
             raise UnsupportedError
 
         for msg in self.unsupported_messages:
-            print(msg)
+            logging.warning(msg)
 
         return sql
 

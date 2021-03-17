@@ -1,29 +1,14 @@
 import sqlglot.expressions as exp
 from sqlglot.generator import Generator
+from sqlglot.helper import RegisteringMeta
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer
 
-class registeringMeta(type):
-    classes = {}
-
-    @classmethod
-    def __getitem__(cls, key):
-        return cls.classes[key]
-
-    @classmethod
-    def get(cls, key, default):
-        return cls.classes.get(key, default)
-
-    def __new__(cls, clsname, bases, attrs):
-        clazz = super().__new__(cls, clsname, bases, attrs)
-        cls.classes[clsname.lower()] = clazz
-        return clazz
 
 
-class Dialect(metaclass=registeringMeta):
-
+class Dialect(metaclass=RegisteringMeta):
     def parse(self, code):
-        return self.parser().parse(self.tokenizer().tokenize(code))
+        return self.parser().parse(self.tokenizer().tokenize(code), code)
 
     def generate(self, expression, **opts):
         return self.generator(**opts).generate(expression)

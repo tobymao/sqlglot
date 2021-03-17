@@ -36,12 +36,12 @@ class Generator:
 
     TYPES = {
         TokenType.BOOLEAN: 'BOOL',
-        TokenType.TINYINT: 'INT2',
-        TokenType.SMALLINT: 'INT2',
-        TokenType.INT: 'INT4',
-        TokenType.BIGINT: 'INT8',
-        TokenType.FLOAT: 'FLOAT4',
-        TokenType.DOUBLE: 'FLOAT8',
+        TokenType.TINYINT: 'SMALLINT',
+        TokenType.SMALLINT: 'SMALLINT',
+        TokenType.INT: 'INT',
+        TokenType.BIGINT: 'BIGINT',
+        TokenType.FLOAT: 'REAL',
+        TokenType.DOUBLE: 'FLOAT',
         TokenType.DECIMAL: lambda self, e: 'DECIMAL',
         TokenType.CHAR: 'CHAR',
         TokenType.VARCHAR: 'VARCHAR',

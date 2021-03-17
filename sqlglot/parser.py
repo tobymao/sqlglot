@@ -66,7 +66,8 @@ class Parser:
         for token in raw_tokens:
             if token.token_type == TokenType.SEMICOLON:
                 self._chunks.append([])
-            self._chunks[-1].append(token)
+            else:
+                self._chunks[-1].append(token)
 
         expressions = []
 
@@ -102,12 +103,12 @@ class Parser:
         index = 0
 
         while line < token.line or col < token.col:
-            index += 1
             if code[index] == '\n':
                 line += 1
                 col = 0
             else:
                 col += 1
+            index += 1
 
         return index
 
@@ -359,10 +360,11 @@ class Parser:
             return self._prev
 
         if self._match(TokenType.L_PAREN):
+            paren = self._prev
             this = self._parse_expression()
 
             if not self._match(TokenType.R_PAREN):
-                self.raise_error('Expecting )')
+                self.raise_error('Expecting )', paren)
             return exp.Paren(this=this)
 
         return self._parse_column()

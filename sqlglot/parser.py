@@ -4,8 +4,10 @@ import sqlglot.expressions as exp
 class Parser:
     FUNCTIONS = {
         'AVG': lambda args: exp.Avg(this=args[0]),
+        'CEIL': lambda args: exp.Ceil(this=args[0]),
         'COALESCE': lambda args: exp.Coalesce(expressions=args),
         'FIRST': lambda args: exp.First(this=args[0]),
+        'FLOOR': lambda args: exp.Floor(this=args[0]),
         'LAST': lambda args: exp.Last(this=args[0]),
         'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2]),
         'LN': lambda args: exp.LN(this=args[0]),
@@ -22,7 +24,7 @@ class Parser:
         TokenType.SMALLINT,
         TokenType.INT,
         TokenType.BIGINT,
-        TokenType.REAL,
+        TokenType.FLOAT,
         TokenType.DOUBLE,
         TokenType.DECIMAL,
         TokenType.CHAR,
@@ -128,10 +130,14 @@ class Parser:
         return exp.From(this=self._parse_table(), expression=this)
 
     def _parse_join(self, this):
-        joiner = None
+        side = None
+        kind = None
 
-        if self._match(TokenType.INNER, TokenType.LEFT, TokenType.RIGHT, TokenType.CROSS):
-            joiner = self._prev
+        if self._match(TokenType.LEFT, TokenType.RIGHT, TokenType.FULL):
+            side = self._prev
+
+        if self._match(TokenType.INNER, TokenType.OUTER, TokenType.CROSS):
+            kind = self._prev
 
         if self._match(TokenType.JOIN):
             on = None
@@ -140,7 +146,7 @@ class Parser:
             if self._match(TokenType.ON):
                 on = self._parse_expression()
 
-            return exp.Join(this=expression, expression=this, joiner=joiner, on=on)
+            return self._parse_join(exp.Join(this=expression, expression=this, side=side, kind=kind, on=on))
 
         return this
 
@@ -306,59 +312,9 @@ class Parser:
 
         return exp.Cast(this=this, to=to)
 
-    def _parse_type(self):
-        if not self._match(TokenType.L_PAREN):
-            raise ValueError("Expected ( after CAST")
-
-        this = self._parse_primary()
-
-        if not self._match(TokenType.ALIAS):
-            raise ValueError("Expected AS after CAST")
-
-        expression = self._parse_primary()
-
-        if not self._match(TokenType.R_PAREN):
-            raise ValueError("Expected ) after CAST")
-
-        return exp.Cast(this=this, expression=expression)
-
     def _parse_primary(self):
-        this = self._curr
-
         if self._match(TokenType.STRING, TokenType.NUMBER, TokenType.STAR, TokenType.NULL):
-            return this
-
-        if self._match(TokenType.VAR) or self._match(TokenType.IDENTIFIER):
-            if not self._match(TokenType.L_PAREN):
-                db = None
-                table = None
-                this = self._prev
-
-                if self._match(TokenType.DOT):
-                    table = this
-                    if not self._match(*self.COLUMN_TOKENS):
-                        raise ValueError('Expected column name')
-                    this = self._prev
-
-                    if self._match(TokenType.DOT):
-                        db = table
-                        table = this
-                        if not self._match(*self.COLUMN_TOKENS):
-                            raise ValueError('Expected column name')
-                        this = self._prev
-
-                return exp.Column(this=this, db=db, table=table)
-
-            if this.token_type == TokenType.IDENTIFIER:
-                raise ValueError('Unexpected (')
-
-            function = self.functions.get(this.text.upper())
-            if not function:
-                raise ValueError(f"Unrecognized function name {this}")
-            function = function(self._parse_csv(self._parse_expression))
-            if not self._match(TokenType.R_PAREN):
-                raise ValueError(f"Expected ) after function {this}")
-            return function
+            return self._prev
 
         if self._match(TokenType.L_PAREN):
             this = self._parse_expression()
@@ -367,7 +323,54 @@ class Parser:
                 raise ValueError('Expecting )')
             return exp.Paren(this=this)
 
-        return None
+        return self._parse_column()
+
+    def _parse_column(self):
+        if not self._match(TokenType.VAR, TokenType.IDENTIFIER):
+            return None
+
+        db = None
+        table = None
+        this = self._prev
+
+        if self._match(TokenType.L_PAREN):
+            if this.token_type == TokenType.IDENTIFIER:
+                raise ValueError('Unexpected (')
+
+            function = self.functions.get(this.text.upper())
+
+            if not function:
+                raise ValueError(f"Unrecognized function name {this}")
+            function = function(self._parse_csv(self._parse_expression))
+            if not self._match(TokenType.R_PAREN):
+                raise ValueError(f"Expected ) after function {this}")
+            return function
+
+        if self._match(TokenType.DOT):
+            table = this
+            if not self._match(*self.COLUMN_TOKENS):
+                raise ValueError('Expected column name')
+            this = self._prev
+
+            if self._match(TokenType.DOT):
+                db = table
+                table = this
+                if not self._match(*self.COLUMN_TOKENS):
+                    raise ValueError('Expected column name')
+                this = self._prev
+
+        return self._parse_brackets(exp.Column(this=this, db=db, table=table))
+
+    def _parse_brackets(self, this):
+        if not self._match(TokenType.L_BRACKET):
+            return this
+
+        bracket = exp.Bracket(this=this, expressions=self._parse_csv(self._parse_primary))
+
+        if not self._match(TokenType.R_BRACKET):
+            raise ValueError(f"Expected ] after {this}[")
+
+        return bracket
 
     def _parse_window(self, this):
         if not self._match(TokenType.OVER):
@@ -392,14 +395,18 @@ class Parser:
 
     def _parse_alias(self, this):
         self._match(TokenType.ALIAS)
+
         if self._match(TokenType.IDENTIFIER, TokenType.VAR):
             return exp.Alias(this=this, to=self._prev)
+
         return this
 
     def _parse_csv(self, parse):
         items = [parse()]
+
         while self._match(TokenType.COMMA):
             items.append(parse())
+
         return items
 
     def _parse_tokens(self, parse, *expressions):

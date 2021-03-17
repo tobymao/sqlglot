@@ -92,7 +92,7 @@ class Spark(Dialect):
 
     def tokenizer(self, **opts):
         return Tokenizer(**{
-            'quote': '"',
+            'quote': "'",
             'identifier': '`',
         }, **opts)
 

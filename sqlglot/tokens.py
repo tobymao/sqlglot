@@ -4,6 +4,7 @@ class TokenType(Enum):
     PAREN = auto()
     L_PAREN = auto()
     R_PAREN = auto()
+    BRACKET = auto()
     L_BRACKET = auto()
     R_BRACKET = auto()
     L_BRACE = auto()
@@ -42,7 +43,7 @@ class TokenType(Enum):
     SMALLINT = auto()
     INT = auto()
     BIGINT = auto()
-    REAL = auto()
+    FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()
     CHAR = auto()
@@ -65,6 +66,7 @@ class TokenType(Enum):
     DISTINCT = auto()
     ELSE = auto()
     END = auto()
+    FULL = auto()
     FUNC = auto()
     FROM = auto()
     GROUP = auto()
@@ -77,6 +79,7 @@ class TokenType(Enum):
     NULL = auto()
     ON = auto()
     ORDER = auto()
+    OUTER = auto()
     OVER = auto()
     PARTITION = auto()
     SELECT = auto()
@@ -137,6 +140,7 @@ class Tokenizer:
         'DISTINCT': TokenType.DISTINCT,
         'ELSE': TokenType.ELSE,
         'END': TokenType.END,
+        'FULL': TokenType.FULL,
         'FROM': TokenType.FROM,
         'GROUP': TokenType.GROUP,
         'HAVING': TokenType.HAVING,
@@ -150,6 +154,7 @@ class Tokenizer:
         'ON': TokenType.ON,
         'OR': TokenType.OR,
         'ORDER': TokenType.ORDER,
+        'OUTER': TokenType.OUTER,
         'OVER': TokenType.OVER,
         'PARTITION': TokenType.PARTITION,
         'RIGHT': TokenType.RIGHT,
@@ -162,6 +167,7 @@ class Tokenizer:
 
         'BOOL': TokenType.BOOLEAN,
         'BOOLEAN': TokenType.BOOLEAN,
+        'TINYINT': TokenType.TINYINT,
         'SMALLINT': TokenType.SMALLINT,
         'INTEGER': TokenType.INT,
         'INT': TokenType.INT,
@@ -170,7 +176,8 @@ class Tokenizer:
         'INT8': TokenType.BIGINT,
         'DECIMAL': TokenType.DECIMAL,
         'NUMERIC': TokenType.DECIMAL,
-        'REAL': TokenType.REAL,
+        'REAL': TokenType.FLOAT,
+        'FLOAT': TokenType.FLOAT,
         'DOUBLE': TokenType.DOUBLE,
         'JSON': TokenType.JSON,
         'CHAR': TokenType.CHAR,

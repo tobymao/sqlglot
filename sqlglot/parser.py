@@ -9,20 +9,16 @@ os.system('')
 
 
 class Parser:
+    def _parse_decimal(args):
+        size = len(args)
+        precision = args[0] if size > 0 else None
+        scale = args[1] if size > 1 else None
+        return exp.Decimal(precision=precision, scale=scale)
+
     FUNCTIONS = {
-        'AVG': lambda args: exp.Avg(this=args[0]),
-        'CEIL': lambda args: exp.Ceil(this=args[0]),
-        'COALESCE': lambda args: exp.Coalesce(expressions=args),
-        'FIRST': lambda args: exp.First(this=args[0]),
-        'FLOOR': lambda args: exp.Floor(this=args[0]),
-        'LAST': lambda args: exp.Last(this=args[0]),
-        'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2]),
-        'LN': lambda args: exp.LN(this=args[0]),
-        'MAX': lambda args: exp.Max(this=args[0]),
-        'MIN': lambda args: exp.Min(this=args[0]),
-        'SUM': lambda args: exp.Sum(this=args[0]),
-        'RANK': lambda args: exp.Rank(this=args[0]),
-        'ROW_NUMBER': lambda args: exp.RowNumber(this=args[0]),
+        'DECIMAL': _parse_decimal,
+        'NUMERIC': _parse_decimal,
+        'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2] if len(args) > 2 else None),
     }
 
     TYPE_TOKENS = {
@@ -345,15 +341,33 @@ class Parser:
         if not self._match(TokenType.ALIAS):
             self.raise_error("Expected AS after CAST")
 
-        if not self._match(*self.TYPE_TOKENS):
-            self.raise_error("Expected type after CAST")
-
-        to = self._prev
+        to = self._parse_type()
 
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expected ) after CAST")
 
         return exp.Cast(this=this, to=to)
+
+    def _parse_type(self):
+        if not self._match(*self.TYPE_TOKENS):
+            self.raise_error("Expected type after CAST")
+
+        return self._parse_function(self._prev)
+
+    def _parse_function(self, this):
+        if not self._match(TokenType.L_PAREN):
+            return this
+
+        args = self._parse_csv(self._parse_expression)
+        function = self.functions.get(this.text.upper())
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error('Expected )')
+
+        if not callable(function):
+            return exp.Unknown(this=this, expressions=args)
+
+        return function(args)
 
     def _parse_primary(self):
         if self._match(TokenType.STRING, TokenType.NUMBER, TokenType.STAR, TokenType.NULL):
@@ -375,20 +389,7 @@ class Parser:
 
         db = None
         table = None
-        this = self._prev
-
-        if self._match(TokenType.L_PAREN):
-            if this.token_type == TokenType.IDENTIFIER:
-                self.raise_error('Unexpected (')
-
-            function = self.functions.get(this.text.upper())
-
-            if not function:
-                self.raise_error(f"Unrecognized function name {this.text}", this)
-            function = function(self._parse_csv(self._parse_expression))
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error(f"Expected ) after function {this}")
-            return function
+        this = self._parse_function(self._prev)
 
         if self._match(TokenType.DOT):
             table = this

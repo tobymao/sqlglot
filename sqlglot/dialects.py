@@ -1,4 +1,4 @@
-# pylint: disable=no-member,no-self-argument,unsubscriptable-object
+# pylint: disable=no-member
 import sqlglot.expressions as exp
 from sqlglot.generator import Generator
 from sqlglot.helper import RegisteringMeta

@@ -207,67 +207,29 @@ class In(Expression):
     token_type = TokenType.IN
     arg_types = {'this': True, 'expressions': True}
 
+
+class Decimal(Expression):
+    token_type = TokenType.DECIMAL
+    arg_types = {'precision': False, 'scale': False}
+
 # Functions
 class Func(Expression):
     token_type = TokenType.FUNC
     arg_types = {'this': True}
 
 
+class Unknown(Expression):
+    token_type = TokenType.FUNC
+    arg_types = {'this': True, 'expressions': True}
+
+
 class ApproxDistinct(Func):
     arg_types = {'this': True, 'accuracy': False}
-
-
-class Avg(Func):
-    pass
-
-
-class Ceil(Func):
-    pass
-
-
-class Coalesce(Func):
-    arg_types = {'expressions': True}
 
 
 class Count(Func):
     arg_types = {'this': False, 'distinct': False}
 
 
-class First(Func):
-    pass
-
-
-class Floor(Func):
-    pass
-
-
-class Last(Func):
-    pass
-
-
 class If(Func):
     arg_types = {'condition': True, 'true': True, 'false': False}
-
-
-class LN(Func):
-    pass
-
-
-class Max(Func):
-    pass
-
-
-class Min(Func):
-    pass
-
-
-class Rank(Func):
-    pass
-
-
-class RowNumber(Func):
-    pass
-
-
-class Sum(Func):
-    pass

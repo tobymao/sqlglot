@@ -18,21 +18,15 @@ class Generator:
     }
 
     FUNCTIONS = {
-        exp.Avg: lambda self, e: self.simple_func(e, 'AVG'),
-        exp.Ceil: lambda self, e: self.simple_func(e, 'CEIL'),
-        exp.Coalesce: lambda self, e: f"COALESCE({self.expressions(e, flat=True)})",
         exp.Count: lambda self, e: f"COUNT({'DISTINCT ' if e.args['distinct'] else ''}{self.sql(e, 'this')})",
-        exp.First: lambda self, e: self.simple_func(e, 'FIRST'),
-        exp.Floor: lambda self, e: self.simple_func(e, 'FLOOR'),
-        exp.Last: lambda self, e: self.simple_func(e, 'LAST'),
         exp.If: lambda self, e: self.case_sql(exp.Case(ifs=[e], default=e.args['false'])),
-        exp.LN: lambda self, e: self.simple_func(e, 'LN'),
-        exp.Max: lambda self, e: self.simple_func(e, 'MAX'),
-        exp.Min: lambda self, e: self.simple_func(e, 'MIN'),
-        exp.Rank: lambda self, e: self.simple_func(e, 'RANK'),
-        exp.RowNumber: lambda self, e: self.simple_func(e, 'ROW_NUMBER'),
-        exp.Sum: lambda self, e: self.simple_func(e, 'SUM'),
     }
+
+    def _decimal_sql(gen, e):
+        if isinstance(e, Token):
+            return 'DECIMAL'
+        args = ', '.join(arg.text for arg in [e.args.get('precision'), e.args.get('scale')] if arg)
+        return f"DECIMAL({args})"
 
     TYPES = {
         TokenType.BOOLEAN: 'BOOLEAN',
@@ -42,7 +36,7 @@ class Generator:
         TokenType.BIGINT: 'BIGINT',
         TokenType.FLOAT: 'FLOAT',
         TokenType.DOUBLE: 'DOUBLE',
-        TokenType.DECIMAL: lambda self, e: 'DECIMAL',
+        TokenType.DECIMAL: _decimal_sql,
         TokenType.CHAR: 'CHAR',
         TokenType.VARCHAR: 'VARCHAR',
         TokenType.TEXT: 'TEXT',
@@ -212,7 +206,12 @@ class Generator:
         return f"{self.sql(expression, 'this')} IN ({self.expressions(expression, flat=True)})"
 
     def func_sql(self, expression):
-        return self.functions[expression.__class__](self, expression)
+        function = self.functions.get(expression.__class__)
+
+        if callable(function):
+            return function(self, expression)
+
+        return self.func(expression)
 
     def paren_sql(self, expression):
         return f"({self.sql(expression, 'this')})"
@@ -237,9 +236,12 @@ class Generator:
         return self.binary(expression, 'AND')
 
     def cast_sql(self, expression):
-        to_sql = self.types[expression.args['to'].token_type]
-        if not isinstance(to_sql, str):
-            to_sql = to_sql(self, expression)
+        to = expression.args['to']
+        to_sql = self.types.get(to.token_type)
+        if not to_sql:
+            to_sql = self.func(to)
+        elif callable(to_sql):
+            to_sql = to_sql(self, to)
         return f"CAST({self.sql(expression, 'this')} AS {to_sql})"
 
     def dot_sql(self, expression):
@@ -290,8 +292,8 @@ class Generator:
             for e in expression.args['expressions']
         )
 
-    def simple_func(self, expression, name):
-        return f"{name}({self.sql(expression, 'this')})"
+    def func(self, expression):
+        return f"{self.sql(expression, 'this').upper()}({self.expressions(expression, flat=True)})"
 
     def op_expression(self, op, expression):
         this_sql = self.sql(expression, 'this')

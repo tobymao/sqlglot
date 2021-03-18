@@ -6,6 +6,10 @@ You can easily customize the parser to support UDF's across dialects as well thr
 
 ## Example
 
+Read in a SQL statement with a CTE and CASTING to a REAL and then transpiling to Spark.
+
+Spark uses backticks as identifiers and the REAL type is transpiled to FLOAT.
+
 ```python
 import sqlglot
 

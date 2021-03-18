@@ -29,7 +29,7 @@ class Expression:
 
         args = {
             k: ', '.join(
-                v.to_s(level + 1)
+                v.to_s(level + 1) if hasattr(v, 'to_s') else str(v)
                 for v in (vs if isinstance(vs, list) else [vs])
                 if v
             )
@@ -183,6 +183,12 @@ class Alias(Expression):
     token_type = TokenType.ALIAS
     arg_types = {'this': True, 'to': True}
 
+
+class Array(Expression):
+    token_type = TokenType.ARRAY
+    arg_types = {'expressions': True}
+
+
 class Between(Expression):
     token_type = TokenType.BETWEEN
     arg_types = {'this': True, 'low': True, 'high': True}
@@ -203,22 +209,23 @@ class Cast(Expression):
     arg_types = {'this': True, 'to': True}
 
 
+class Decimal(Expression):
+    token_type = TokenType.DECIMAL
+    arg_types = {'precision': False, 'scale': False}
+
+
+class Map(Expression):
+    token_type = TokenType.MAP
+    arg_types = {'keys': True, 'values': True}
+
+
 class In(Expression):
     token_type = TokenType.IN
     arg_types = {'this': True, 'expressions': True}
 
 
-class Decimal(Expression):
-    token_type = TokenType.DECIMAL
-    arg_types = {'precision': False, 'scale': False}
-
 # Functions
 class Func(Expression):
-    token_type = TokenType.FUNC
-    arg_types = {'this': True}
-
-
-class Unknown(Expression):
     token_type = TokenType.FUNC
     arg_types = {'this': True, 'expressions': True}
 

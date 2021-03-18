@@ -21,6 +21,12 @@ class Parser:
         'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2] if len(args) > 2 else None),
     }
 
+    NESTED_TYPE_TOKENS = {
+        TokenType.ARRAY,
+        TokenType.DECIMAL,
+        TokenType.MAP,
+    }
+
     TYPE_TOKENS = {
         TokenType.BOOLEAN,
         TokenType.TINYINT,
@@ -29,12 +35,20 @@ class Parser:
         TokenType.BIGINT,
         TokenType.FLOAT,
         TokenType.DOUBLE,
-        TokenType.DECIMAL,
         TokenType.CHAR,
         TokenType.VARCHAR,
         TokenType.TEXT,
         TokenType.BINARY,
         TokenType.JSON,
+        *NESTED_TYPE_TOKENS,
+    }
+
+    PRIMARY_TOKENS = {
+        TokenType.STRING,
+        TokenType.NUMBER,
+        TokenType.STAR,
+        TokenType.NULL,
+        *(TYPE_TOKENS - NESTED_TYPE_TOKENS),
     }
 
     COLUMN_TOKENS = {
@@ -341,18 +355,15 @@ class Parser:
         if not self._match(TokenType.ALIAS):
             self.raise_error("Expected AS after CAST")
 
-        to = self._parse_type()
+        if not self._match(*self.TYPE_TOKENS):
+            self.raise_error("Expected type after CAST")
+
+        to = self._parse_function(self._parse_brackets(self._prev))
 
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expected ) after CAST")
 
         return exp.Cast(this=this, to=to)
-
-    def _parse_type(self):
-        if not self._match(*self.TYPE_TOKENS):
-            self.raise_error("Expected type after CAST")
-
-        return self._parse_function(self._prev)
 
     def _parse_function(self, this):
         if not self._match(TokenType.L_PAREN):
@@ -365,13 +376,16 @@ class Parser:
             self.raise_error('Expected )')
 
         if not callable(function):
-            return exp.Unknown(this=this, expressions=args)
+            return exp.Func(this=this, expressions=args)
 
         return function(args)
 
     def _parse_primary(self):
-        if self._match(TokenType.STRING, TokenType.NUMBER, TokenType.STAR, TokenType.NULL):
+        if self._match(*self.PRIMARY_TOKENS):
             return self._prev
+
+        if self._match(*self.NESTED_TYPE_TOKENS):
+            return self._parse_function(self._parse_brackets(self._prev))
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
@@ -415,7 +429,7 @@ class Parser:
         if not self._match(TokenType.R_BRACKET):
             self.raise_error('Expected ]')
 
-        return bracket
+        return self._parse_brackets(bracket)
 
     def _parse_window(self, this):
         if not self._match(TokenType.OVER):

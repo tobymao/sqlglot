@@ -9,14 +9,14 @@ from sqlglot.tokens import Tokenizer, TokenType
 class Dialect(metaclass=RegisteringMeta):
     identifier = None
     quote = None
-    types = None
     functions = {}
+    transforms = {}
 
     def parse(self, code):
         return self.parser().parse(self.tokenizer().tokenize(code), code)
 
     def generate(self, expression, **opts):
-        return self.generator(types=self.types, **opts).generate(expression)
+        return self.generator(**opts).generate(expression)
 
     def transpile(self, code, **opts):
         return self.generate(self.parse(code), **opts)
@@ -25,12 +25,12 @@ class Dialect(metaclass=RegisteringMeta):
         return Generator(
             identifier=self.identifier,
             quote=self.quote,
-            functions=self.functions.get('generate'),
+            transforms=self.transforms,
             **opts,
         )
 
     def parser(self, **opts):
-        return Parser(functions=self.functions.get('parse'), **opts)
+        return Parser(functions=self.functions, **opts)
 
     def tokenizer(self, **opts):
         return Tokenizer(identifier=self.identifier, quote=self.quote, **opts)
@@ -41,7 +41,7 @@ class MySQL(Dialect):
 
 
 class Postgres(Dialect):
-    types = {
+    transforms = {
         TokenType.TINYINT: 'SMALLINT',
         TokenType.FLOAT: 'REAL',
         TokenType.DOUBLE: 'DOUBLE PRECISION',
@@ -50,11 +50,9 @@ class Postgres(Dialect):
 
 
 class Presto(Dialect):
-    types = {
-        TokenType.INT: 'INTEGER',
-        TokenType.FLOAT: 'REAL',
-        TokenType.BINARY: 'VARBINARY',
-    }
+    def _approx_distinct_sql(gen, e):
+        accuracy = ', ' + gen.sql(e, 'accuracy') if e.args.get('accuracy') else ''
+        return f"APPROX_DISTINCT({gen.sql(e, 'this')}{accuracy})"
 
     def _parse_approx_distinct(args):
         return exp.ApproxDistinct(
@@ -62,24 +60,25 @@ class Presto(Dialect):
             accuracy=args[1] if len(args) > 1 else None,
         )
 
-    def _approx_distinct_sql(gen, e):
-        accuracy = ', ' + gen.sql(e, 'accuracy') if e.args.get('accuracy') else ''
-        return f"APPROX_DISTINCT({gen.sql(e, 'this')}{accuracy})"
-
+    transforms = {
+        TokenType.INT: 'INTEGER',
+        TokenType.FLOAT: 'REAL',
+        TokenType.BINARY: 'VARBINARY',
+        exp.ApproxDistinct: _approx_distinct_sql,
+    }
 
     functions = {
-        'parse': {
-            'APPROX_DISTINCT': _parse_approx_distinct,
-        },
-        'generate': {
-            exp.ApproxDistinct: _approx_distinct_sql,
-        }
+        'APPROX_DISTINCT': _parse_approx_distinct,
     }
 
 class Spark(Dialect):
-    identifier = '`'
+    def _approx_distinct_sql(gen, e):
+        if e.args.get('accuracy'):
+            gen.unsupported('APPROX_COUNT_DISTINCT does not support accuracy')
+        return f"APPROX_COUNT_DISTINCT({gen.sql(e, 'this')})"
 
-    types = {
+    transforms = {
+        exp.ApproxDistinct: _approx_distinct_sql,
         TokenType.TINYINT: 'BYTE',
         TokenType.SMALLINT: 'SHORT',
         TokenType.BIGINT: 'BIGINT',
@@ -89,23 +88,15 @@ class Spark(Dialect):
         TokenType.BINARY: 'ARRAY[BYTE]',
     }
 
-    def _approx_distinct_sql(gen, e):
-        if e.args.get('accuracy'):
-            gen.unsupported('APPROX_COUNT_DISTINCT does not support accuracy')
-        return f"APPROX_COUNT_DISTINCT({gen.sql(e, 'this')})"
-
     functions = {
-        'parse': {
-            'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
-        },
-        'generate': {
-            exp.ApproxDistinct: _approx_distinct_sql,
-        }
+        'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
     }
+
+    identifier = '`'
 
 
 class SQLite(Dialect):
-    types = {
+    transforms = {
         TokenType.BOOLEAN: 'INTEGER',
         TokenType.TINYINT: 'INTEGER',
         TokenType.SMALLINT: 'INTEGER',

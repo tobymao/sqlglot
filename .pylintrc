@@ -11,6 +11,7 @@ disable=
     too-few-public-methods,
     too-many-public-methods,
     too-many-instance-attributes,
+    too-many-return-statements,
     unsubscriptable-object,
 
 [FORMAT]

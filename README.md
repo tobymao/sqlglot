@@ -8,6 +8,14 @@ You can easily customize the parser to support UDF's across dialects as well thr
 
 Syntax errors are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 
+## Install
+From PyPI
+
+```pip3 install sqlglot```
+
+Or with a local checkout 
+
+```pip3 install -e .```
 ## Examples
 
 ### Formatting and Transpiling
@@ -140,3 +148,6 @@ WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
 
 SELECT APPROX_COUNT_DISTINCT(a) FROM foo
 ```
+
+## Run Tests and Lint
+```python -m unittest && python -m pylint sqlglot/ tests/```

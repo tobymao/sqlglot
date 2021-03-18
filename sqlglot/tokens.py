@@ -58,6 +58,7 @@ class TokenType(AutoName):
     # keywords
     ALIAS = auto()
     ALL = auto()
+    ARRAY = auto()
     ASC = auto()
     BETWEEN = auto()
     BY = auto()
@@ -79,6 +80,7 @@ class TokenType(AutoName):
     IS = auto()
     JOIN = auto()
     LEFT = auto()
+    MAP = auto()
     NULL = auto()
     ON = auto()
     ORDER = auto()
@@ -168,6 +170,7 @@ class Tokenizer:
         'WHERE': TokenType.WHERE,
         'WITH': TokenType.WITH,
 
+        'ARRAY': TokenType.ARRAY,
         'BOOL': TokenType.BOOLEAN,
         'BOOLEAN': TokenType.BOOLEAN,
         'TINYINT': TokenType.TINYINT,
@@ -179,6 +182,7 @@ class Tokenizer:
         'BIGINT': TokenType.BIGINT,
         'INT8': TokenType.BIGINT,
         'DECIMAL': TokenType.DECIMAL,
+        'MAP': TokenType.MAP,
         'NUMERIC': TokenType.DECIMAL,
         'DEC': TokenType.DECIMAL,
         'FIXED': TokenType.DECIMAL,

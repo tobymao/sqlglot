@@ -4,8 +4,9 @@ SQLGlot is a pure Python SQL parser and transpiler. It can be used to format SQL
 
 You can easily customize the parser to support UDF's across dialects as well through the transform API.**h**h****
 
-## Example
+## Examples
 
+### Formatting and Transpiling
 Read in a SQL statement with a CTE and CASTING to a REAL and then transpiling to Spark.
 
 Spark uses backticks as identifiers and the REAL type is transpiled to FLOAT.
@@ -36,4 +37,18 @@ JOIN `bar` AS b ON
   `f`.`a` = `b`.`a`
 LEFT JOIN `baz` ON
   `f`.`a` = `baz`.`a`
+```
+
+### Custom Transforms
+A simple transform on types can be accomplished by providing a dict of Expression/TokenType => lambda/string
+```python
+
+from sqlglot import *
+
+transpile("SELECT CAST(a AS INT) FROM x", transforms={TokenType.INT: 'SPECIAL INT'})[0]
+```
+
+```sql
+SELECT CAST(a AS SPECIAL INT) FROM x'
+
 ```

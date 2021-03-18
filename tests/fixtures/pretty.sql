@@ -11,6 +11,8 @@ WITH cte1 AS (
     FROM cte
     CROSS JOIN (
         SELECT 1
+        UNION ALL
+        SELECT 2
     ) x
 )
 SELECT a, b c FROM (
@@ -36,6 +38,9 @@ WITH cte1 AS (
     CROSS JOIN (
         SELECT
           1
+        UNION ALL
+        SELECT
+          2
     ) AS x
 )
 SELECT

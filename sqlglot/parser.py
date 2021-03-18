@@ -159,7 +159,7 @@ class Parser:
         if not self._match(TokenType.ALIAS):
             self.raise_error('Expected AS after WITH')
 
-        return exp.Alias(this=self._parse_table(), to=alias)
+        return self._parse_table(alias=alias)
 
     def _parse_select(self):
         if not self._match(TokenType.SELECT):
@@ -203,7 +203,7 @@ class Parser:
 
         return this
 
-    def _parse_table(self):
+    def _parse_table(self, alias=None):
         if self._match(TokenType.L_PAREN):
             nested = self._parse_select()
 
@@ -225,7 +225,16 @@ class Parser:
 
             expression = exp.Table(this=table, db=db)
 
-        return self._parse_alias(expression)
+        if alias:
+            this = exp.Alias(this=expression, to=alias)
+        else:
+            this = self._parse_alias(expression)
+
+        # some dialects allow not having an alias after a nested sql
+        if this.token_type != TokenType.ALIAS:
+            this = exp.Alias(this=this, to=None)
+
+        return this
 
     def _parse_where(self, this):
         if not self._match(TokenType.WHERE):

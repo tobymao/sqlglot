@@ -164,7 +164,7 @@ class Generator:
 
     def union_sql(self, expression):
         distinct = '' if expression.args['distinct'] else ' ALL'
-        return self.op_expression(f"UNION{distinct}", expression)
+        return self.op_expression(f"UNION{distinct}", expression, pad=0)
 
     def where_sql(self, expression):
         return self.op_expression('WHERE', expression)
@@ -231,12 +231,13 @@ class Generator:
     def alias_sql(self, expression):
         this_sql = self.sql(expression, 'this')
         to_sql = self.sql(expression, 'to')
+        to_sql = f" AS {to_sql}" if to_sql else ''
 
         if expression.args['this'].token_type in self.BODY_TOKENS:
             if self.pretty:
-                return f"{self.wrap(expression)} AS {to_sql}"
-            return f"({this_sql}) AS {to_sql}"
-        return f"{this_sql} AS {to_sql}"
+                return f"{self.wrap(expression)}{to_sql}"
+            return f"({this_sql}){to_sql}"
+        return f"{this_sql}{to_sql}"
 
     def and_sql(self, expression):
         return self.binary(expression, 'AND')
@@ -296,10 +297,11 @@ class Generator:
             for e in expression.args['expressions']
         )
 
-    def op_expression(self, op, expression):
+    def op_expression(self, op, expression, pad=None):
+        pad = self.pad if pad is None else pad
         this_sql = self.sql(expression, 'this')
         op_sql = self.seg(op)
-        expression_sql = self.indent(self.sql(expression, 'expression'), pad=self.pad)
+        expression_sql = self.indent(self.sql(expression, 'expression'), pad=pad)
         return f"{this_sql}{op_sql}{self.sep()}{expression_sql}"
 
     def op_expressions(self, op, expression, flat=False):

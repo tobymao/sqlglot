@@ -106,11 +106,9 @@ The expression tree produced by the parser.
 Finally generating the new SQL.
 
 ```python
-Generator(
-    transforms={
-        SpecialUDF: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
-    }
-).generate(expression)
+Generator(transforms={
+    SpecialUDF: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
+}).generate(expression)
 ```
 
 ```sql

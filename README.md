@@ -1,8 +1,12 @@
 # SQLGlot
 
-SQLGlot is a pure Python SQL parser and transpiler. It can be used to format SQL or translate between different dialects like Presto, Spark, and SQLite.
+SQLGlot is a pure Python SQL parser and transpiler. It can be used to format SQL or translate between different dialects like Presto, Spark, and SQLite. It aims to read a wide variety of SQL inputs and output syntatically correct SQL in the targeted dialects.
+
+This project is actively in development and alpha level quality.
 
 You can easily customize the parser to support UDF's across dialects as well through the transform API.
+
+Syntax errors are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 
 ## Examples
 
@@ -113,3 +117,28 @@ Generator(
 SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
 ```
 
+### Parse Errors
+A syntax error will result in an parse error.
+```python 
+transpile("SELECT foo( FROM bar")
+```
+```
+sqlglot.errors.ParseError: Expected )
+  SELECT foo( __FROM__ bar
+```  
+### Unsupported Errors
+Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.
+
+```python
+transpile(
+    'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
+    read='presto',
+    write='spark',
+)
+```
+
+```sql
+WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
+
+SELECT APPROX_COUNT_DISTINCT(a) FROM foo
+```

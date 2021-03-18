@@ -22,12 +22,12 @@ class Dialect(metaclass=RegisteringMeta):
         return self.generate(self.parse(code), **opts)
 
     def generator(self, **opts):
-        return Generator(
-            identifier=self.identifier,
-            quote=self.quote,
-            transforms=self.transforms,
+        return Generator(**{
+            'identifier': self.identifier,
+            'quote': self.quote,
+            'transforms': {**self.transforms, **opts.pop('transforms', {})},
             **opts,
-        )
+        })
 
     def parser(self, **opts):
         return Parser(functions=self.functions, **opts)

@@ -1,6 +1,7 @@
 from sqlglot.dialects import Dialect
+from sqlglot.expressions import Expression
 from sqlglot.generator import Generator
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.parser import Parser
 
 

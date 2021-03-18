@@ -1,4 +1,4 @@
-# sqlglot
+# SQLGlot
 
 SQLGlot is a pure Python SQL parser and transpiler. It can be used to format SQL or translate between different dialects like Presto, Spark, and SQLite.
 

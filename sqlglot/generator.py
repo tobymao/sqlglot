@@ -18,8 +18,6 @@ class Generator:
     }
 
     TRANSFORMS = {
-        exp.Count: lambda self, e: f"COUNT({'DISTINCT ' if e.args['distinct'] else ''}{self.sql(e, 'this')})",
-        exp.If: lambda self, e: self.case_sql(exp.Case(ifs=[e], default=e.args['false'])),
         TokenType.BOOLEAN: 'BOOLEAN',
         TokenType.TINYINT: 'TINYINT',
         TokenType.SMALLINT: 'SMALLINT',
@@ -212,6 +210,9 @@ class Generator:
         )
         return f"DECIMAL({args})"
 
+    def if_sql(self, expression):
+        return self.case_sql(exp.Case(ifs=[expression], default=expression.args['false']))
+
     def in_sql(self, expression):
         return f"{self.sql(expression, 'this')} IN ({self.expressions(expression, flat=True)})"
 
@@ -242,6 +243,10 @@ class Generator:
 
     def cast_sql(self, expression):
         return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression.args['to'])})"
+
+    def count_sql(self, expression):
+        distinct = 'DISTINCT ' if expression.args['distinct'] else ''
+        return f"COUNT({distinct}{self.sql(expression, 'this')})"
 
     def dot_sql(self, expression):
         return self.binary(expression, '.')

@@ -2,7 +2,7 @@
 
 SQLGlot is a pure Python SQL parser and transpiler. It can be used to format SQL or translate between different dialects like Presto, Spark, and SQLite.
 
-You can easily customize the parser to support UDF's across dialects as well through the transform API.**h**h****
+You can easily customize the parser to support UDF's across dialects as well through the transform API.
 
 ## Examples
 

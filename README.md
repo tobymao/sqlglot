@@ -33,11 +33,11 @@ sqlglot.transpile(sql, write='spark', identify=True, pretty=True)[0])
 ```sql
 WITH baz AS (
     SELECT
-    `a`,
-    `c`
+      `a`,
+      `c`
     FROM `foo`
     WHERE
-    `a` = 1
+      `a` = 1
 )
 SELECT
   `f`.`a`,

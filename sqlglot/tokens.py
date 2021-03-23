@@ -79,11 +79,13 @@ class TokenType(AutoName):
     INNER = auto()
     IS = auto()
     JOIN = auto()
+    LATERAL = auto()
     LEFT = auto()
     MAP = auto()
     NULL = auto()
     ON = auto()
     ORDER = auto()
+    ORDINALITY = auto()
     OUTER = auto()
     OVER = auto()
     PARTITION = auto()
@@ -91,6 +93,8 @@ class TokenType(AutoName):
     RIGHT = auto()
     THEN = auto()
     UNION = auto()
+    UNNEST = auto()
+    VIEW = auto()
     WHEN = auto()
     WHERE = auto()
     WITH = auto()
@@ -102,6 +106,7 @@ class Token:
         self.text = text
         self.line = line
         self.col = col - len(text)
+        self.parent = None
 
     def __repr__(self):
         attributes = ", ".join([f"{k}: {v}" for k, v in self.__dict__.items()])
@@ -153,6 +158,7 @@ class Tokenizer:
         'INNER': TokenType.INNER,
         'IS': TokenType.IS,
         'JOIN': TokenType.JOIN,
+        'LATERAL': TokenType.LATERAL,
         'LEFT': TokenType.LEFT,
         'NOT': TokenType.NOT,
         'NULL': TokenType.NULL,
@@ -166,6 +172,8 @@ class Tokenizer:
         'SELECT': TokenType.SELECT,
         'THEN': TokenType.THEN,
         'UNION': TokenType.UNION,
+        'UNNEST': TokenType.UNNEST,
+        'VIEW': TokenType.VIEW,
         'WHEN': TokenType.WHEN,
         'WHERE': TokenType.WHERE,
         'WITH': TokenType.WITH,

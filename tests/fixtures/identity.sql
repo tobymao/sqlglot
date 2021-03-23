@@ -93,3 +93,8 @@ SELECT MAP(ARRAY[1], ARRAY[2]) FROM x
 SELECT MAX(ARRAY[1, 2, 3]) FROM x
 SELECT ARRAY[ARRAY[0]][0][0] FROM x
 SELECT MAP[ARRAY['x'], ARRAY[0]]['x'] FROM x
+SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) t AS score
+SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) t AS score, name
+SELECT student, score FROM tests LATERAL VIEW OUTER EXPLODE(scores) t AS score, name
+SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (score)
+SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (a, b)

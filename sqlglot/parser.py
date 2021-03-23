@@ -88,12 +88,17 @@ class Parser:
             try:
                 expressions.append(self._parse_statement())
                 if self._index < len(self._tokens):
-                    self.raise_error('Invalid expression', self._prev)
+                    self.raise_error('Invalid expression / Unexpected token')
             except ParseError as e:
                 if self.error_level == ErrorLevel.WARN:
                     logging.error(e)
                 elif self.error_level == ErrorLevel.RAISE:
                     raise e
+
+        for expression in expressions:
+            for _, node, parent in expression.walk():
+                if hasattr(node, 'parent') and parent:
+                    node.parent = parent
 
         return expressions
 
@@ -167,6 +172,7 @@ class Parser:
 
         this = exp.Select(expressions=self._parse_csv(self._parse_expression))
         this = self._parse_from(this)
+        this = self._parse_lateral(this)
         this = self._parse_join(this)
         this = self._parse_where(this)
         this = self._parse_group(this)
@@ -181,6 +187,28 @@ class Parser:
             return this
 
         return exp.From(this=self._parse_table(), expression=this)
+
+    def _parse_lateral(self, this):
+        if not self._match(TokenType.LATERAL):
+            return this
+
+        if not self._match(TokenType.VIEW):
+            self.raise_error('Expected VIEW afteral LATERAL')
+
+        outer = self._match(TokenType.OUTER)
+        function = self._parse_primary()
+        table = self._parse_id_var()
+
+        if self._match(TokenType.ALIAS):
+            columns = self._parse_csv(self._parse_id_var)
+
+        return exp.Lateral(
+            this=this,
+            outer=outer,
+            function=function,
+            table=table,
+            columns=columns,
+        )
 
     def _parse_join(self, this):
         side = None
@@ -204,6 +232,11 @@ class Parser:
         return this
 
     def _parse_table(self, alias=None):
+        unnest = self._parse_unnest()
+
+        if unnest:
+            return unnest
+
         if self._match(TokenType.L_PAREN):
             nested = self._parse_select()
 
@@ -226,15 +259,42 @@ class Parser:
             expression = exp.Table(this=table, db=db)
 
         if alias:
-            this = exp.Alias(this=expression, to=alias)
+            this = exp.Alias(this=expression, alias=alias)
         else:
             this = self._parse_alias(expression)
 
         # some dialects allow not having an alias after a nested sql
         if this.token_type != TokenType.ALIAS:
-            this = exp.Alias(this=this, to=None)
+            this = exp.Alias(this=this, alias=None)
 
         return this
+
+    def _parse_unnest(self):
+        if not self._match(TokenType.UNNEST):
+            return None
+
+        if not self._match(TokenType.L_PAREN):
+            self.raise_error('Expecting ( after unnest')
+
+        expressions = self._parse_csv(self._parse_id_var)
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error('Expecting )')
+
+        ordinality = self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY)
+        self._match(TokenType.ALIAS)
+        table = self._parse_id_var()
+
+        if not self._match(TokenType.L_PAREN):
+            return exp.Unnest(expressions=expressions, ordinality=ordinality, table=table)
+
+        columns = self._parse_csv(self._parse_id_var)
+        unnest = exp.Unnest(expressions=expressions, ordinality=ordinality, table=table, columns=columns)
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error('Expecting )')
+
+        return unnest
 
     def _parse_where(self, this):
         if not self._match(TokenType.WHERE):
@@ -464,10 +524,16 @@ class Parser:
     def _parse_alias(self, this):
         self._match(TokenType.ALIAS)
 
-        if self._match(TokenType.IDENTIFIER, TokenType.VAR):
-            return exp.Alias(this=this, to=self._prev)
+        alias = self._parse_id_var()
+        if alias:
+            return exp.Alias(this=this, alias=alias)
 
         return this
+
+    def _parse_id_var(self):
+        if self._match(TokenType.IDENTIFIER, TokenType.VAR):
+            return self._prev
+        return None
 
     def _parse_csv(self, parse):
         items = [parse()]

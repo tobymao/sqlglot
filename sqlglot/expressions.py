@@ -1,3 +1,5 @@
+import weakref
+
 from sqlglot.tokens import TokenType
 
 
@@ -9,6 +11,28 @@ class Expression:
         self.key = self.__class__.__name__.lower()
         self.args = args
         self.validate()
+        self._parent = None
+
+    @property
+    def parent(self):
+        return self._parent() if self._parent else None
+
+    @parent.setter
+    def parent(self, new_parent):
+        self._parent = weakref.ref(new_parent)
+
+    def walk(self, key=None, parent=None):
+        yield key, self, parent
+
+        for k, v in self.args.items():
+            nodes = v if isinstance(v, list) else [v]
+
+            for node in nodes:
+                if isinstance(node, Expression):
+                    yield from node.walk(k, self)
+                else:
+                    yield k, node, self
+
 
     def validate(self):
         for k, v in self.args.items():
@@ -25,7 +49,7 @@ class Expression:
     def to_s(self, level=0):
         indent = '' if not level else "\n"
         indent += ''.join(['  '] * level)
-        left = f"({self.token_type.name} "
+        left = f"({self.key.upper()} "
 
         args = {
             k: ', '.join(
@@ -67,6 +91,11 @@ class Join(Expression):
     arg_types = {'this': True, 'expression': True, 'on': True, 'side': False, 'kind': False}
 
 
+class Lateral(Expression):
+    token_type = TokenType.LATERAL
+    arg_types = {'this': True, 'outer': False, 'function': True, 'table': False, 'columns': False}
+
+
 class Order(Expression):
     token_type = TokenType.ORDER
     arg_types = {'this': True, 'expressions': True, 'desc': False}
@@ -75,6 +104,11 @@ class Order(Expression):
 class Union(Expression):
     token_type = TokenType.UNION
     arg_types = {'this': True, 'expression': True, 'distinct': True}
+
+
+class Unnest(Expression):
+    token_type = TokenType.UNNEST
+    arg_types = {'expressions': True, 'ordinality': False, 'table': False, 'columns': False}
 
 
 class Select(Expression):
@@ -181,7 +215,7 @@ class Neg(Unary):
 # Special Functions
 class Alias(Expression):
     token_type = TokenType.ALIAS
-    arg_types = {'this': True, 'to': True}
+    arg_types = {'this': True, 'alias': True}
 
 
 class Array(Expression):

@@ -115,7 +115,7 @@ class Generator:
 
     def cte_sql(self, expression):
         sql = ', '.join(
-            f"{self.sql(e, 'to')} AS {self.wrap(e)}"
+            f"{self.sql(e, 'alias')} AS {self.wrap(e)}"
             for e in expression.args['expressions']
         )
 
@@ -153,6 +153,14 @@ class Generator:
         this_sql = self.sql(expression, 'this')
         return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
 
+    def lateral_sql(self, expression):
+        this_sql = self.sql(expression, 'this')
+        op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
+        expression_sql = self.sql(expression, 'function')
+        alias = self.sql(expression, 'table')
+        columns = ', '.join(self.sql(e) for e in expression.args.get('columns', []))
+        return f"{this_sql}{op_sql}{self.sep()}{expression_sql} {alias} AS {columns}"
+
     def order_sql(self, expression, flat=False):
         sql = self.op_expressions('ORDER BY', expression, flat=flat)
         if expression.args['desc']:
@@ -165,6 +173,14 @@ class Generator:
     def union_sql(self, expression):
         distinct = '' if expression.args['distinct'] else ' ALL'
         return self.op_expression(f"UNION{distinct}", expression, pad=0)
+
+    def unnest_sql(self, expression):
+        args = self.expressions(expression, flat=True)
+        table = self.sql(expression, 'table')
+        columns = ', '.join(self.sql(e) for e in expression.args.get('columns', []))
+        alias = f" AS {table}" if table else ''
+        alias = f"{alias} ({columns})" if columns else alias
+        return f"UNNEST({args}){alias}"
 
     def where_sql(self, expression):
         return self.op_expression('WHERE', expression)
@@ -230,7 +246,7 @@ class Generator:
 
     def alias_sql(self, expression):
         this_sql = self.sql(expression, 'this')
-        to_sql = self.sql(expression, 'to')
+        to_sql = self.sql(expression, 'alias')
         to_sql = f" AS {to_sql}" if to_sql else ''
 
         if expression.args['this'].token_type in self.BODY_TOKENS:
@@ -243,7 +259,7 @@ class Generator:
         return self.binary(expression, 'AND')
 
     def cast_sql(self, expression):
-        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression.args['to'])})"
+        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
     def count_sql(self, expression):
         distinct = 'DISTINCT ' if expression.args['distinct'] else ''

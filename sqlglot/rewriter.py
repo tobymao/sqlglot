@@ -12,13 +12,15 @@ class Rewriter:
         create = self.expression.find(exp.Create)
 
         if create:
+            create = create[0]
             create.args['db'] = db
-            create.args['table'] = table
+            create.args['this'] = table
             create.args['file_format'] = file_format
         else:
             create = exp.Create(
-                this=self.expression,
-                table=exp.Table(this=table, db=db),
+                this=exp.Table(this=table, db=db),
+                kind='table',
+                expression=self.expression,
                 file_format = file_format,
             )
 

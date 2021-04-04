@@ -66,6 +66,11 @@ class Expression:
         return indent + left + right
 
 
+class Create(Expression):
+    token_type = TokenType.CREATE
+    arg_types = {'this': True, 'table': True, 'exists': False, 'file_format': False}
+
+
 class CTE(Expression):
     token_type = TokenType.WITH
     arg_types = {'this': True, 'expressions': True}

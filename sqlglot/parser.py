@@ -149,11 +149,50 @@ class Parser:
             return None
 
     def _parse_statement(self):
-        if not self._match(TokenType.WITH):
-            return self._parse_select()
+        if self._match(TokenType.CREATE):
+            return self._parse_create()
 
-        expressions = self._parse_csv(self._parse_cte)
-        return exp.CTE(this=self._parse_select(), expressions=expressions)
+        if self._match(TokenType.WITH):
+            expressions = self._parse_csv(self._parse_cte)
+            return exp.CTE(this=self._parse_select(), expressions=expressions)
+
+        return self._parse_select()
+
+    def _parse_create(self):
+        if not self._match(TokenType.TABLE):
+            self.raise_error('Expected TABLE')
+
+        if self._match(TokenType.IF):
+            self._match(TokenType.NOT)
+            self._match(TokenType.EXISTS)
+            exists = True
+        else:
+            exists = False
+
+        table = self._parse_table()
+
+        if self._match(TokenType.STORED):
+            self._match(TokenType.ALIAS)
+            file_format = self._parse_id_var()
+        elif self._match(TokenType.WITH):
+            self._match(TokenType.L_PAREN)
+            self._match(TokenType.FORMAT)
+            self._match(TokenType.EQ)
+            file_format = self._parse_primary()
+            if not self._match(TokenType.R_PAREN):
+                self.raise_error('Expected ) after format')
+        else:
+            file_format = None
+
+        self._match(TokenType.ALIAS)
+
+        return exp.Create(
+            this=self._parse_select(),
+            table=table,
+            exists=exists,
+            file_format=file_format,
+        )
+
 
     def _parse_cte(self):
         if not self._match(TokenType.IDENTIFIER, TokenType.VAR):
@@ -467,7 +506,7 @@ class Parser:
         return self._parse_column()
 
     def _parse_column(self):
-        if not self._match(TokenType.VAR, TokenType.IDENTIFIER):
+        if not self._match(TokenType.VAR, TokenType.IDENTIFIER, TokenType.IF):
             return None
 
         db = None

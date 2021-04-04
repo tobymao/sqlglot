@@ -113,6 +113,14 @@ class Generator:
             self.sql(expression, 'this', identify=True),
         ] if part)
 
+    def create_sql(self, expression):
+        table_sql = self.sql(expression, 'table')
+        this_sql = self.sql(expression, 'this')
+        exists_sql = ' IF NOT EXISTS ' if expression.args.get('exists') else ' '
+        file_format = self.sql(expression.args.get('file_format')).replace(self.quote, '')
+        file_format = f" STORED AS {file_format} " if file_format else ' '
+        return f"CREATE TABLE{exists_sql}{table_sql}{file_format}AS{self.sep()}{this_sql}"
+
     def cte_sql(self, expression):
         sql = ', '.join(
             f"{self.sql(e, 'alias')} AS {self.wrap(e)}"

@@ -65,16 +65,20 @@ class TokenType(AutoName):
     CASE = auto()
     CAST = auto()
     COUNT = auto()
+    CREATE = auto()
     CROSS = auto()
     DESC = auto()
     DISTINCT = auto()
     ELSE = auto()
     END = auto()
+    EXISTS = auto()
+    FORMAT = auto()
     FULL = auto()
     FUNC = auto()
     FROM = auto()
     GROUP = auto()
     HAVING = auto()
+    IF = auto()
     IN = auto()
     INNER = auto()
     IS = auto()
@@ -90,6 +94,7 @@ class TokenType(AutoName):
     OVER = auto()
     PARTITION = auto()
     SELECT = auto()
+    STORED = auto()
     RIGHT = auto()
     THEN = auto()
     UNION = auto()
@@ -145,15 +150,19 @@ class Tokenizer:
         'CASE': TokenType.CASE,
         'CAST': TokenType.CAST,
         'COUNT': TokenType.COUNT,
+        'CREATE': TokenType.CREATE,
         'CROSS': TokenType.CROSS,
         'DESC': TokenType.DESC,
         'DISTINCT': TokenType.DISTINCT,
         'ELSE': TokenType.ELSE,
         'END': TokenType.END,
+        'EXISTS': TokenType.EXISTS,
+        'FORMAT': TokenType.FORMAT,
         'FULL': TokenType.FULL,
         'FROM': TokenType.FROM,
         'GROUP': TokenType.GROUP,
         'HAVING': TokenType.HAVING,
+        'IF': TokenType.IF,
         'IN': TokenType.IN,
         'INNER': TokenType.INNER,
         'IS': TokenType.IS,
@@ -170,6 +179,8 @@ class Tokenizer:
         'PARTITION': TokenType.PARTITION,
         'RIGHT': TokenType.RIGHT,
         'SELECT': TokenType.SELECT,
+        'STORED': TokenType.STORED,
+        'TABLE': TokenType.TABLE,
         'THEN': TokenType.THEN,
         'UNION': TokenType.UNION,
         'UNNEST': TokenType.UNNEST,

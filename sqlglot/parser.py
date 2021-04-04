@@ -156,7 +156,12 @@ class Parser:
             expressions = self._parse_csv(self._parse_cte)
             return exp.CTE(this=self._parse_select(), expressions=expressions)
 
-        return self._parse_select()
+        select = self._parse_select()
+
+        if select:
+            return select
+
+        return self._parse_expression()
 
     def _parse_create(self):
         if not self._match(TokenType.TABLE):

@@ -296,3 +296,7 @@ class Count(Func):
 
 class If(Func):
     arg_types = {'condition': True, 'true': True, 'false': False}
+
+
+class JSONPath(Func):
+    arg_types = {'this': True, 'path': True}

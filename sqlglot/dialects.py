@@ -53,10 +53,12 @@ class Hive(Dialect):
     transforms = {
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.FileFormat: _fileformat_sql,
+        exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e.args['this'])}, {self.sql(e.args['path'])})",
     }
 
     functions = {
         'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
+        'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
     }
 
 
@@ -97,10 +99,12 @@ class Presto(Dialect):
         TokenType.BINARY: 'VARBINARY',
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.FileFormat: _fileformat_sql,
+        exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e.args['this'])}, {self.sql(e.args['path'])})",
     }
 
     functions = {
         'APPROX_DISTINCT': _parse_approx_distinct,
+        'JSON_EXTRACT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
     }
 
 

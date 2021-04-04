@@ -1,3 +1,7 @@
+SUM(1)
+SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
+x > 1
+x = y OR x > 1
 SELECT * FROM test
 SELECT *, 1 FROM test
 SELECT 1

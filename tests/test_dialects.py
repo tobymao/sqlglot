@@ -42,6 +42,9 @@ class TestDialects(unittest.TestCase):
         sql = transpile(ctas, read='presto', write='spark')[0]
         self.assertEqual(sql, "CREATE TABLE test STORED AS PARQUET AS SELECT 1")
 
+        sql = transpile("SELECT JSON_EXTRACT(x, '$.name')", read='presto', write='spark')[0]
+        self.assertEqual(sql, "SELECT GET_JSON_OBJECT(x, '$.name')")
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
@@ -65,6 +68,9 @@ class TestDialects(unittest.TestCase):
 
         sql = transpile('CREATE TABLE test STORED AS PARQUET AS SELECT 1', read='hive', write='presto')[0]
         self.assertEqual(sql, "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1")
+
+        sql = transpile("SELECT GET_JSON_OBJECT(x, '$.name')", read='hive', write='presto')[0]
+        self.assertEqual(sql, "SELECT JSON_EXTRACT(x, '$.name')")
 
     def test_spark(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write='spark')[0]

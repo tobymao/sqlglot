@@ -114,12 +114,13 @@ class Generator:
         ] if part)
 
     def create_sql(self, expression):
-        table_sql = self.sql(expression, 'table')
-        this_sql = self.sql(expression, 'this')
+        this = self.sql(expression, 'this')
+        kind = expression.args['kind'].upper()
+        expression_sql = self.sql(expression, 'expression')
         exists_sql = ' IF NOT EXISTS ' if expression.args.get('exists') else ' '
         file_format = self.sql(expression.args.get('file_format')).replace(self.quote, '')
         file_format = f" STORED AS {file_format} " if file_format else ' '
-        return f"CREATE TABLE{exists_sql}{table_sql}{file_format}AS{self.sep()}{this_sql}"
+        return f"CREATE {kind}{exists_sql}{this}{file_format}AS{self.sep()}{expression_sql}"
 
     def cte_sql(self, expression):
         sql = ', '.join(
@@ -128,6 +129,12 @@ class Generator:
         )
 
         return f"WITH {sql}{self.sep()}{self.sql(expression, 'this')}"
+
+    def drop_sql(self, expression):
+        this = self.sql(expression, 'this')
+        kind = expression.args['kind'].upper()
+        exists_sql = ' IF EXISTS' if expression.args.get('exists') else ''
+        return f"DROP {kind} {this}{exists_sql}"
 
     def table_sql(self, expression):
         return '.'.join(part for part in [

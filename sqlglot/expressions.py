@@ -25,21 +25,21 @@ class Expression:
         return next(self.findall(expression_type), None)
 
     def findall(self, expression_type):
-        for _, expression, _ in self.walk():
+        for expression, parent, key in self.walk():
             if isinstance(expression, expression_type):
-                yield expression
+                yield expression, parent, key
 
-    def walk(self, key=None, parent=None):
-        yield key, self, parent
+    def walk(self, parent=None, key=None):
+        yield self, parent, key
 
         for k, v in self.args.items():
             nodes = v if isinstance(v, list) else [v]
 
             for node in nodes:
                 if isinstance(node, Expression):
-                    yield from node.walk(k, self)
+                    yield from node.walk(self, k)
                 else:
-                    yield k, node, self
+                    yield node, self, k
 
     def validate(self):
         for k, v in self.args.items():
@@ -75,7 +75,7 @@ class Expression:
 
 class Create(Expression):
     token_type = TokenType.CREATE
-    arg_types = {'this': True, 'table': True, 'exists': False, 'file_format': False}
+    arg_types = {'this': True, 'kind': True, 'expression': False, 'exists': False, 'file_format': False}
 
 
 class CTE(Expression):
@@ -86,6 +86,11 @@ class CTE(Expression):
 class Column(Expression):
     token_type = TokenType.COLUMN
     arg_types = {'this': True, 'db': False, 'table': False}
+
+
+class Drop(Expression):
+    token_type = TokenType.DROP
+    arg_types = {'this': False, 'kind': False, 'exists': False}
 
 
 class Table(Expression):

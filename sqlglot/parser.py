@@ -96,7 +96,7 @@ class Parser:
                     raise e
 
         for expression in expressions:
-            for _, node, parent in expression.walk():
+            for node, parent, _ in expression.walk():
                 if hasattr(node, 'parent') and parent:
                     node.parent = parent
 
@@ -152,6 +152,9 @@ class Parser:
         if self._match(TokenType.CREATE):
             return self._parse_create()
 
+        if self._match(TokenType.DROP):
+            return self._parse_drop()
+
         if self._match(TokenType.WITH):
             expressions = self._parse_csv(self._parse_cte)
             return exp.CTE(this=self._parse_select(), expressions=expressions)
@@ -163,9 +166,29 @@ class Parser:
 
         return self._parse_expression()
 
+    def _parse_drop(self):
+        if self._match(TokenType.TABLE):
+            kind = 'table'
+        elif self._match(TokenType.VIEW):
+            kind = 'view'
+        else:
+            self.raise_error('Expected TABLE or View')
+
+        this = self._parse_table()
+
+        if self._match(TokenType.IF):
+            self._match(TokenType.EXISTS)
+            exists = True
+        else:
+            exists = False
+
+        return exp.Drop(this=this, exists=exists, kind=kind)
+
     def _parse_create(self):
-        if not self._match(TokenType.TABLE):
-            self.raise_error('Expected TABLE')
+        if not self._match(TokenType.TABLE, TokenType.VIEW):
+            self.raise_error('Expected TABLE or View')
+
+        create_token = self._prev
 
         if self._match(TokenType.IF):
             self._match(TokenType.NOT)
@@ -174,30 +197,42 @@ class Parser:
         else:
             exists = False
 
-        table = self._parse_table()
+        this = self._parse_table()
 
-        if self._match(TokenType.STORED):
+        if create_token.token_type == TokenType.TABLE:
+            if self._match(TokenType.STORED):
+                self._match(TokenType.ALIAS)
+                file_format = self._parse_id_var()
+            elif self._match(TokenType.WITH):
+                self._match(TokenType.L_PAREN)
+                self._match(TokenType.FORMAT)
+                self._match(TokenType.EQ)
+                file_format = self._parse_primary()
+                if not self._match(TokenType.R_PAREN):
+                    self.raise_error('Expected ) after format')
+            else:
+                file_format = None
+
             self._match(TokenType.ALIAS)
-            file_format = self._parse_id_var()
-        elif self._match(TokenType.WITH):
-            self._match(TokenType.L_PAREN)
-            self._match(TokenType.FORMAT)
-            self._match(TokenType.EQ)
-            file_format = self._parse_primary()
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error('Expected ) after format')
-        else:
-            file_format = None
 
-        self._match(TokenType.ALIAS)
+            return exp.Create(
+                this=this,
+                kind='table',
+                expression=self._parse_select(),
+                exists=exists,
+                file_format=file_format,
+            )
 
-        return exp.Create(
-            this=self._parse_select(),
-            table=table,
-            exists=exists,
-            file_format=file_format,
-        )
+        if create_token.token_type == TokenType.VIEW:
+            self._match(TokenType.ALIAS)
 
+            return exp.Create(
+                this=this,
+                kind='view',
+                expression=self._parse_select(),
+                exists=exists,
+            )
+        return None
 
     def _parse_cte(self):
         if not self._match(TokenType.IDENTIFIER, TokenType.VAR):

@@ -69,6 +69,7 @@ class TokenType(AutoName):
     CROSS = auto()
     DESC = auto()
     DISTINCT = auto()
+    DROP = auto()
     ELSE = auto()
     END = auto()
     EXISTS = auto()
@@ -154,6 +155,7 @@ class Tokenizer:
         'CROSS': TokenType.CROSS,
         'DESC': TokenType.DESC,
         'DISTINCT': TokenType.DISTINCT,
+        'DROP': TokenType.DROP,
         'ELSE': TokenType.ELSE,
         'END': TokenType.END,
         'EXISTS': TokenType.EXISTS,

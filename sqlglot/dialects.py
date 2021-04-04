@@ -62,12 +62,11 @@ class Presto(Dialect):
         )
 
     def _create_sql(self, expression):
-        table_sql = self.sql(expression, 'table')
-        this_sql = self.sql(expression, 'this')
-        exists_sql = ' IF NOT EXISTS ' if expression.args.get('exists') else ' '
+        sql = self.create_sql(expression)
         file_format = self.sql(expression.args.get('file_format')).replace(self.quote, '')
-        file_format = f" WITH (FORMAT = '{file_format}') " if file_format else ' '
-        return f"CREATE TABLE{exists_sql}{table_sql}{file_format}AS{self.sep()}{this_sql}"
+        if file_format:
+            return sql.replace(f"STORED AS {file_format}", f"WITH (FORMAT = '{file_format}')")
+        return sql
 
     transforms = {
         TokenType.INT: 'INTEGER',

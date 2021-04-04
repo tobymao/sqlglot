@@ -21,6 +21,14 @@ class Expression:
     def parent(self, new_parent):
         self._parent = weakref.ref(new_parent)
 
+    def find(self, expression_type):
+        return next(self.findall(expression_type), None)
+
+    def findall(self, expression_type):
+        for _, expression, _ in self.walk():
+            if isinstance(expression, expression_type):
+                yield expression
+
     def walk(self, key=None, parent=None):
         yield key, self, parent
 
@@ -32,7 +40,6 @@ class Expression:
                     yield from node.walk(k, self)
                 else:
                     yield k, node, self
-
 
     def validate(self):
         for k, v in self.args.items():

@@ -13,7 +13,7 @@ From PyPI
 
 ```pip3 install sqlglot```
 
-Or with a local checkout 
+Or with a local checkout
 
 ```pip3 install -e .```
 ## Examples
@@ -125,13 +125,13 @@ SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
 
 ### Parse Errors
 A syntax error will result in an parse error.
-```python 
+```python
 transpile("SELECT foo( FROM bar")
 ```
 ```
 sqlglot.errors.ParseError: Expected )
   SELECT foo( __FROM__ bar
-```  
+```
 ### Unsupported Errors
 Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.
 
@@ -147,6 +147,21 @@ transpile(
 WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
 
 SELECT APPROX_COUNT_DISTINCT(a) FROM foo
+```
+
+### Rewrite Sql
+Modify sql expressions like adding a CTAS
+
+```python
+from sqlglot import Generator, parse
+from sqlglot.rewriter import Rewriter
+
+expression = parse("SELECT * FROM y")[0]
+Generator().generate(Rewriter(expression).ctas('x').expression)
+```
+
+```sql
+CREATE TABLE x AS SELECT * FROM y
 ```
 
 ## Run Tests and Lint

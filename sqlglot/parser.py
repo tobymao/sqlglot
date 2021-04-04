@@ -202,12 +202,12 @@ class Parser:
         if create_token.token_type == TokenType.TABLE:
             if self._match(TokenType.STORED):
                 self._match(TokenType.ALIAS)
-                file_format = self._parse_id_var()
+                file_format = exp.FileFormat(this=self._parse_id_var())
             elif self._match(TokenType.WITH):
                 self._match(TokenType.L_PAREN)
                 self._match(TokenType.FORMAT)
                 self._match(TokenType.EQ)
-                file_format = self._parse_primary()
+                file_format = exp.FileFormat(this=self._parse_primary())
                 if not self._match(TokenType.R_PAREN):
                     self.raise_error('Expected ) after format')
             else:

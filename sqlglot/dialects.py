@@ -36,6 +36,30 @@ class Dialect(metaclass=RegisteringMeta):
         return Tokenizer(identifier=self.identifier, quote=self.quote, **opts)
 
 
+class Hive(Dialect):
+    identifier = '`'
+
+    def _approx_distinct_sql(self, expression):
+        if expression.args.get('accuracy'):
+            self.unsupported('APPROX_COUNT_DISTINCT does not support accuracy')
+        return f"APPROX_COUNT_DISTINCT({self.sql(expression, 'this')})"
+
+    def _fileformat_sql(self, expression):
+        file_format = self.sql(expression, 'this').replace(self.quote, '')
+        if file_format:
+            return F"STORED AS {file_format}"
+        return ''
+
+    transforms = {
+        exp.ApproxDistinct: _approx_distinct_sql,
+        exp.FileFormat: _fileformat_sql,
+    }
+
+    functions = {
+        'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
+    }
+
+
 class MySQL(Dialect):
     identifier = '`'
 
@@ -61,40 +85,22 @@ class Presto(Dialect):
             accuracy=args[1] if len(args) > 1 else None,
         )
 
-    def _create_sql(self, expression):
-        sql = self.create_sql(expression)
-        file_format = self.sql(expression.args.get('file_format')).replace(self.quote, '')
+    def _fileformat_sql(self, expression):
+        file_format = self.sql(expression, 'this').replace(self.quote, '')
         if file_format:
-            return sql.replace(f"STORED AS {file_format}", f"WITH (FORMAT = '{file_format}')")
-        return sql
+            return F"WITH (FORMAT = '{file_format}')"
+        return ''
 
     transforms = {
         TokenType.INT: 'INTEGER',
         TokenType.FLOAT: 'REAL',
         TokenType.BINARY: 'VARBINARY',
         exp.ApproxDistinct: _approx_distinct_sql,
-        exp.Create: _create_sql,
+        exp.FileFormat: _fileformat_sql,
     }
 
     functions = {
         'APPROX_DISTINCT': _parse_approx_distinct,
-    }
-
-
-class Hive(Dialect):
-    identifier = '`'
-
-    def _approx_distinct_sql(self, expression):
-        if expression.args.get('accuracy'):
-            self.unsupported('APPROX_COUNT_DISTINCT does not support accuracy')
-        return f"APPROX_COUNT_DISTINCT({self.sql(expression, 'this')})"
-
-    transforms = {
-        exp.ApproxDistinct: _approx_distinct_sql,
-    }
-
-    functions = {
-        'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
     }
 
 

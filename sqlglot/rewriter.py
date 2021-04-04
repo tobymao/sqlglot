@@ -15,13 +15,13 @@ class Rewriter:
             create = create[0]
             create.args['db'] = db
             create.args['this'] = table
-            create.args['file_format'] = file_format
+            create.args['file_format'] = exp.FileFormat(this=file_format)
         else:
             create = exp.Create(
                 this=exp.Table(this=table, db=db),
                 kind='table',
                 expression=self.expression,
-                file_format = file_format,
+                file_format = exp.FileFormat(this=file_format),
             )
 
         return Rewriter(create, self.copy)

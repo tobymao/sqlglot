@@ -93,6 +93,11 @@ class Drop(Expression):
     arg_types = {'this': False, 'kind': False, 'exists': False}
 
 
+class FileFormat(Expression):
+    token_type = TokenType.FORMAT
+    arg_types = {'this': False}
+
+
 class Table(Expression):
     token_type = TokenType.TABLE
     arg_types = {'this': True, 'db': False}

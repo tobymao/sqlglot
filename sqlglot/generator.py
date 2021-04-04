@@ -118,8 +118,8 @@ class Generator:
         kind = expression.args['kind'].upper()
         expression_sql = self.sql(expression, 'expression')
         exists_sql = ' IF NOT EXISTS ' if expression.args.get('exists') else ' '
-        file_format = self.sql(expression.args.get('file_format')).replace(self.quote, '')
-        file_format = f" STORED AS {file_format} " if file_format else ' '
+        file_format = self.sql(expression, 'file_format')
+        file_format = f" {file_format} " if file_format else ' '
         return f"CREATE {kind}{exists_sql}{this}{file_format}AS{self.sep()}{expression_sql}"
 
     def cte_sql(self, expression):
@@ -135,6 +135,11 @@ class Generator:
         kind = expression.args['kind'].upper()
         exists_sql = ' IF EXISTS' if expression.args.get('exists') else ''
         return f"DROP {kind} {this}{exists_sql}"
+
+    def fileformat_sql(self, expression):
+        if self.sql(expression, 'this'):
+            self.unsupported('File format unsupported')
+        return ''
 
     def table_sql(self, expression):
         return '.'.join(part for part in [

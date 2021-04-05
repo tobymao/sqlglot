@@ -118,6 +118,7 @@ class Spark(Hive):
         TokenType.VARCHAR: 'VARCHAR',
         TokenType.TEXT: 'STRING',
         TokenType.BINARY: 'ARRAY[BYTE]',
+        exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",
     }
 
 

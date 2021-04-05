@@ -1,7 +1,20 @@
 SUM(1)
 SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
+1
+1.0
+(1 * 2) / (3 - 5)
+'x'
+"x"
+x
+x < 1
+x <= 1
 x > 1
+x >= 1
+x <> 1
 x = y OR x > 1
+1 - -1
+NOT 1
+NOT NOT 1
 SELECT * FROM test
 SELECT *, 1 FROM test
 SELECT 1
@@ -13,6 +26,9 @@ SELECT "a"."b" FROM "a"
 SELECT "a".b FROM a
 SELECT a.b FROM "a"
 SELECT a.b FROM a
+SELECT '"hi' AS x FROM x
+SELECT 1 AS "|sum" FROM x
+SELECT '\"hi' AS x FROM x
 SELECT 1 AS b FROM test
 SELECT 1 AS "b" FROM test
 SELECT 1 + 1 FROM test
@@ -23,6 +39,7 @@ SELECT 1 < 2 FROM test
 SELECT 1 <= 2 FROM test
 SELECT 1 > 2 FROM test
 SELECT 1 >= 2 FROM test
+SELECT 1 <> 2 FROM test
 SELECT (1 > 2) AS x FROM test
 SELECT NOT (1 > 2) FROM test
 SELECT 1 + 2 AS x FROM test

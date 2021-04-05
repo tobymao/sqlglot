@@ -138,7 +138,12 @@ class Generator:
 
     def fileformat_sql(self, expression):
         if self.sql(expression, 'this'):
-            self.unsupported('File format unsupported')
+            self.unsupported('File formats are not supported')
+        return ''
+
+    def hint_sql(self, expression):
+        if self.sql(expression, 'this'):
+            self.unsupported('Hints are not supported')
         return ''
 
     def table_sql(self, expression):
@@ -188,7 +193,7 @@ class Generator:
         return sql
 
     def select_sql(self, expression):
-        return f"SELECT{self.sep()}{self.expressions(expression)}"
+        return f"SELECT{self.sql(expression, 'hint')}{self.sep()}{self.expressions(expression)}"
 
     def union_sql(self, expression):
         distinct = '' if expression.args['distinct'] else ' ALL'
@@ -308,6 +313,9 @@ class Generator:
 
     def minus_sql(self, expression):
         return self.binary(expression, '-')
+
+    def neq_sql(self, expression):
+        return self.binary(expression, '<>')
 
     def or_sql(self, expression):
         return self.binary(expression, 'OR')

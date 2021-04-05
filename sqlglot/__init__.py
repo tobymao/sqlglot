@@ -15,6 +15,6 @@ def parse(code, read=None):
 
 def transpile(code, read=None, write=None, **opts):
     return [
-        Dialect.get(write, Dialect)().generate(expression, **opts)
+        Dialect.get(write or read, Dialect)().generate(expression, **opts)
         for expression in parse(code, read)
     ]

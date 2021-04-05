@@ -85,6 +85,7 @@ class Parser:
             self._index = -1
             self._advance()
             self._tokens = tokens
+
             try:
                 expressions.append(self._parse_statement())
                 if self._index < len(self._tokens):
@@ -96,6 +97,8 @@ class Parser:
                     raise e
 
         for expression in expressions:
+            if not isinstance(expression, exp.Expression):
+                continue
             for node, parent, _ in expression.walk():
                 if hasattr(node, 'parent') and parent:
                     node.parent = parent
@@ -249,7 +252,8 @@ class Parser:
         if not self._match(TokenType.SELECT):
             return None
 
-        this = exp.Select(expressions=self._parse_csv(self._parse_expression))
+        hint = self._parse_hint()
+        this = exp.Select(expressions=self._parse_csv(self._parse_expression), hint=hint)
         this = self._parse_from(this)
         this = self._parse_lateral(this)
         this = self._parse_join(this)
@@ -258,8 +262,15 @@ class Parser:
         this = self._parse_having(this)
         this = self._parse_order(this)
         this = self._parse_union(this)
-
         return this
+
+    def _parse_hint(self):
+        if self._match(TokenType.HINT):
+            hint = self._parse_primary()
+            if not self._match(TokenType.COMMENT_END):
+                self.raise_error('Expected */ after HINT')
+            return exp.Hint(this=hint)
+        return None
 
     def _parse_from(self, this):
         if not self._match(TokenType.FROM):
@@ -384,9 +395,6 @@ class Parser:
         if not self._match(TokenType.GROUP):
             return this
 
-        if not self._match(TokenType.BY):
-            self.raise_error('Expecting BY')
-
         return exp.Group(this=this, expressions=self._parse_csv(self._parse_primary))
 
     def _parse_having(self, this):
@@ -397,9 +405,6 @@ class Parser:
     def _parse_order(self, this):
         if not self._match(TokenType.ORDER):
             return this
-
-        if not self._match(TokenType.BY):
-            self.raise_error('Expecting BY')
 
         return exp.Order(this=this, expressions=self._parse_csv(self._parse_primary), desc=self._match(TokenType.DESC))
 
@@ -589,8 +594,6 @@ class Parser:
         partition = None
 
         if self._match(TokenType.PARTITION):
-            if not self._match(TokenType.BY):
-                self.raise_error('Expecting BY after PARTITION')
             partition = self._parse_csv(self._parse_primary)
 
         order = self._parse_order(None)

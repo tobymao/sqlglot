@@ -88,6 +88,11 @@ class Column(Expression):
     arg_types = {'this': True, 'db': False, 'table': False}
 
 
+class Comment(Expression):
+    token_type = TokenType.COMMENT
+    arg_types = {'this': True, 'comment': True}
+
+
 class Drop(Expression):
     token_type = TokenType.DROP
     arg_types = {'this': False, 'kind': False, 'exists': False}
@@ -95,7 +100,12 @@ class Drop(Expression):
 
 class FileFormat(Expression):
     token_type = TokenType.FORMAT
-    arg_types = {'this': False}
+    arg_types = {'this': True}
+
+
+class Hint(Expression):
+    token_type = TokenType.HINT
+    arg_types = {'this': True}
 
 
 class Table(Expression):
@@ -135,7 +145,7 @@ class Unnest(Expression):
 
 class Select(Expression):
     token_type = TokenType.SELECT
-    arg_types = {'expressions': True}
+    arg_types = {'expressions': True, 'hint': False}
 
 
 class Window(Expression):

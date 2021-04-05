@@ -76,7 +76,7 @@ class TestDialects(unittest.TestCase):
         sql = transpile('SELECT "a"."b" FROM "foo"', write='spark')[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
 
-        sql = transpile('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', read='spark', write='spark')[0]
+        sql = transpile('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', read='spark')[0]
         self.assertEqual(sql, 'SELECT CAST(`a`.`b` AS SHORT) FROM foo')
 
         sql = transpile('SELECT "a"."b" FROM foo', write='spark', identify=True)[0]
@@ -87,6 +87,9 @@ class TestDialects(unittest.TestCase):
 
         sql = transpile('CREATE TABLE test STORED AS PARQUET AS SELECT 1', read='spark', write='presto')[0]
         self.assertEqual(sql, "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1")
+
+        sql = transpile('SELECT /*+ COALESCE(3) */ * FROM x', read='spark')[0]
+        self.assertEqual(sql, 'SELECT /*+ COALESCE(3) */ * FROM x')
 
     def test_sqlite(self):
         sql = transpile('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', read='sqlite', write='sqlite')[0]

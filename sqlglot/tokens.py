@@ -65,6 +65,9 @@ class TokenType(AutoName):
     CASE = auto()
     CAST = auto()
     COUNT = auto()
+    COMMENT = auto()
+    COMMENT_END = auto()
+    COMMENT_START = auto()
     CREATE = auto()
     CROSS = auto()
     DESC = auto()
@@ -79,6 +82,7 @@ class TokenType(AutoName):
     FROM = auto()
     GROUP = auto()
     HAVING = auto()
+    HINT = auto()
     IF = auto()
     IN = auto()
     INNER = auto()
@@ -115,7 +119,11 @@ class Token:
         self.parent = None
 
     def __repr__(self):
-        attributes = ", ".join([f"{k}: {v}" for k, v in self.__dict__.items()])
+        attributes = ", ".join([
+            f"{k}: {v}"
+            for k, v in self.__dict__.items()
+            if k != 'parent'
+        ])
         return f"<Token {attributes}>"
 
     def to_s(self, _level=0):
@@ -129,19 +137,30 @@ class Tokenizer:
         ']': TokenType.R_BRACKET,
         '{': TokenType.L_BRACE,
         '}': TokenType.R_BRACE,
+        ':': TokenType.COLON,
         ',': TokenType.COMMA,
         '.': TokenType.DOT,
         '-': TokenType.DASH,
-        '+': TokenType.PLUS,
-        ':': TokenType.COLON,
-        ';': TokenType.SEMICOLON,
-        '*': TokenType.STAR,
-        '/': TokenType.SLASH,
         '=': TokenType.EQ,
+        '>': TokenType.GT,
+        '<': TokenType.LT,
         '!': TokenType.NOT,
+        '+': TokenType.PLUS,
+        ';': TokenType.SEMICOLON,
+        '/': TokenType.SLASH,
+        '*': TokenType.STAR,
     }
 
     KEYWORDS = {
+        '/*+': TokenType.HINT,
+        '--': TokenType.COMMENT,
+        '/*': TokenType.COMMENT_START,
+        '*/': TokenType.COMMENT_END,
+        '>=': TokenType.GTE,
+        '<=': TokenType.LTE,
+        '<>': TokenType.NEQ,
+        '!=': TokenType.NEQ,
+
         'ALL': TokenType.ALL,
         'AND': TokenType.AND,
         'ASC': TokenType.ASC,
@@ -162,7 +181,7 @@ class Tokenizer:
         'FORMAT': TokenType.FORMAT,
         'FULL': TokenType.FULL,
         'FROM': TokenType.FROM,
-        'GROUP': TokenType.GROUP,
+        'GROUP BY': TokenType.GROUP,
         'HAVING': TokenType.HAVING,
         'IF': TokenType.IF,
         'IN': TokenType.IN,
@@ -175,10 +194,10 @@ class Tokenizer:
         'NULL': TokenType.NULL,
         'ON': TokenType.ON,
         'OR': TokenType.OR,
-        'ORDER': TokenType.ORDER,
+        'ORDER BY': TokenType.ORDER,
         'OUTER': TokenType.OUTER,
         'OVER': TokenType.OVER,
-        'PARTITION': TokenType.PARTITION,
+        'PARTITION BY': TokenType.PARTITION,
         'RIGHT': TokenType.RIGHT,
         'SELECT': TokenType.SELECT,
         'STORED': TokenType.STORED,
@@ -237,6 +256,7 @@ class Tokenizer:
 
     def reset(self):
         self.code = ''
+        self.size = 0
         self.tokens = []
         self._start = 0
         self._current = 0
@@ -246,32 +266,29 @@ class Tokenizer:
     def tokenize(self, code): # pylint: disable=too-many-branches
         self.reset()
         self.code = code
+        self.size = len(code)
 
-        while self._current < len(self.code):
+        ambiguous = {
+            key: self.keywords[key]
+            for key in sorted(self.keywords, key=lambda k: -len(k))
+            if self.keywords[key] not in (TokenType.COMMENT, TokenType.COMMENT_START)
+            and (' ' in key or any(single in key for single in self.single_tokens))
+        }
+
+        comments = {
+            token: key
+            for key, token in self.keywords.items()
+            if token in (TokenType.COMMENT, TokenType.COMMENT_START, TokenType.COMMENT_END)
+        }
+
+        while not self._end:
             self._start = self._current
             self._advance()
 
-            if self._char == '<':
-                if self._peek == '=':
-                    self._advance()
-                    self._add(TokenType.LTE)
-                elif self._peek == '>':
-                    self._advance()
-                    self._add(TokenType.NEQ)
-                else:
-                    self._add(TokenType.LT)
-            elif self._char == '>':
-                if self._peek == '=':
-                    self._advance()
-                    self._add(TokenType.GTE)
-                else:
-                    self._add(TokenType.GT)
-            elif self._char == '!':
-                if self._peek == '=':
-                    self._advance()
-                    self._add(TokenType.NEQ)
-                else:
-                    self._add(TokenType.NOT)
+            if self._scan_ambiguous(ambiguous):
+                pass
+            elif self._scan_comments(comments):
+                pass
             elif self._char in self.single_tokens:
                 self._add(self.single_tokens[self._char])
             elif self._char in self.WHITE_SPACE:
@@ -294,6 +311,13 @@ class Tokenizer:
     def _char(self):
         return self.code[self._current - 1]
 
+    def _chars(self, size):
+        start = self._current - 1
+        end = start + size
+        if end < self.size:
+            return self.code[start:end].upper()
+        return ''
+
     @property
     def _text(self):
         return self.code[self._start:self._current]
@@ -306,14 +330,42 @@ class Tokenizer:
 
     @property
     def _end(self):
-        return self._current >= len(self.code)
+        return self._current >= self.size
 
-    def _advance(self):
-        self._col += 1
-        self._current += 1
+    def _advance(self, i=1):
+        self._col += i
+        self._current += i
 
     def _add(self, token_type, text=None):
         self.tokens.append(Token(token_type, text or self._text, self._line, self._col))
+
+    def _scan_ambiguous(self, ambiguous):
+        for key, token in ambiguous.items():
+            size = len(key)
+            if self._chars(size) == key:
+                self._advance(size)
+                self._add(token)
+                return True
+        return False
+
+    def _scan_comments(self, comments):
+        comment = comments[TokenType.COMMENT]
+
+        if self._chars(len(comment)) == comment:
+            while not self._end and self.WHITE_SPACE.get(self._char) != TokenType.BREAK:
+                self._advance()
+            return True
+
+        comment_start = comments[TokenType.COMMENT_START]
+        comment_end = comments[TokenType.COMMENT_END]
+
+        if self._chars(len(comment_start)) == comment_start:
+            size = len(comment_end)
+            while not self._end and self._chars(size) != comment_end:
+                self._advance()
+            self._advance(size - 1)
+            return True
+        return False
 
     def _scan_number(self):
         while self._peek.isdigit() or self._peek == '.':

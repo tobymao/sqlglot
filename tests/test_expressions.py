@@ -39,3 +39,12 @@ class TestExpressions(unittest.TestCase):
             [table.args['this'].text for table, _, _ in expression.findall(exp.Table)],
             ['d', 'c', 'b'],
         )
+
+    def test_validate(self):
+        exp.Hint(this='')
+
+        with self.assertRaises(ValueError):
+            exp.Hint(y='')
+
+        with self.assertRaises(ValueError):
+            exp.Hint()

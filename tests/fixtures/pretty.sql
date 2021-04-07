@@ -22,7 +22,7 @@ SELECT a, b c FROM (
 ) x
 LEFT JOIN (
     SELECT a, b
-    FROM (SELECT * FROM bar GROUP BY a HAVING a > 1) z
+    FROM (SELECT * FROM bar GROUP BY a HAVING a > 1 LIMIT 10) z
 ) y ON x.a = y.b;
 WITH cte1 AS (
     SELECT
@@ -67,6 +67,7 @@ LEFT JOIN (
           a
         HAVING
           a > 1
+        LIMIT 10
     ) AS z
 ) AS y ON
   x.a = y.b;

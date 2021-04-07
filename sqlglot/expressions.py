@@ -118,6 +118,11 @@ class Group(Expression):
     arg_types = {'this': True, 'expressions': True}
 
 
+class Limit(Expression):
+    token_type = TokenType.GROUP
+    arg_types = {'this': True, 'limit': True}
+
+
 class Join(Expression):
     token_type = TokenType.JOIN
     arg_types = {'this': True, 'expression': True, 'on': True, 'side': False, 'kind': False}
@@ -201,6 +206,10 @@ class LT(Binary):
 
 class LTE(Binary):
     token_type = TokenType.LTE
+
+
+class Mod(Binary):
+    token_type = TokenType.MOD
 
 
 class NEQ(Binary):

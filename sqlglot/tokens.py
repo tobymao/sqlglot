@@ -90,7 +90,9 @@ class TokenType(AutoName):
     JOIN = auto()
     LATERAL = auto()
     LEFT = auto()
+    LIMIT = auto()
     MAP = auto()
+    MOD = auto()
     NULL = auto()
     ON = auto()
     ORDER = auto()
@@ -144,6 +146,7 @@ class Tokenizer:
         '=': TokenType.EQ,
         '>': TokenType.GT,
         '<': TokenType.LT,
+        '%': TokenType.MOD,
         '!': TokenType.NOT,
         '+': TokenType.PLUS,
         ';': TokenType.SEMICOLON,
@@ -190,6 +193,7 @@ class Tokenizer:
         'JOIN': TokenType.JOIN,
         'LATERAL': TokenType.LATERAL,
         'LEFT': TokenType.LEFT,
+        'LIMIT': TokenType.LIMIT,
         'NOT': TokenType.NOT,
         'NULL': TokenType.NULL,
         'ON': TokenType.ON,

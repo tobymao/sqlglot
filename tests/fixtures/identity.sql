@@ -6,6 +6,7 @@ SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
 'x'
 "x"
 x
+x % 1
 x < 1
 x <= 1
 x > 1
@@ -34,12 +35,14 @@ SELECT 1 AS "b" FROM test
 SELECT 1 + 1 FROM test
 SELECT 1 - 1 FROM test
 SELECT 1 * 1 FROM test
+SELECT 1 % 1 FROM test
 SELECT 1 / 1 FROM test
 SELECT 1 < 2 FROM test
 SELECT 1 <= 2 FROM test
 SELECT 1 > 2 FROM test
 SELECT 1 >= 2 FROM test
 SELECT 1 <> 2 FROM test
+SELECT * FROM test LIMIT 100
 SELECT (1 > 2) AS x FROM test
 SELECT NOT (1 > 2) FROM test
 SELECT 1 + 2 AS x FROM test

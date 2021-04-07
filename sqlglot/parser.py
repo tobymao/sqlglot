@@ -261,6 +261,7 @@ class Parser:
         this = self._parse_group(this)
         this = self._parse_having(this)
         this = self._parse_order(this)
+        this = self._parse_limit(this)
         this = self._parse_union(this)
         return this
 
@@ -408,6 +409,15 @@ class Parser:
 
         return exp.Order(this=this, expressions=self._parse_csv(self._parse_primary), desc=self._match(TokenType.DESC))
 
+    def _parse_limit(self, this):
+        if not self._match(TokenType.LIMIT):
+            return this
+
+        if not self._match(TokenType.NUMBER):
+            self.raise_error('Expected NUMBER after LIMIT')
+
+        return exp.Limit(this=this, limit=self._prev)
+
     def _parse_union(self, this):
         if not self._match(TokenType.UNION):
             return this
@@ -448,7 +458,7 @@ class Parser:
         return this
 
     def _parse_term(self):
-        return self._parse_tokens(self._parse_factor, exp.Minus, exp.Plus)
+        return self._parse_tokens(self._parse_factor, exp.Minus, exp.Plus, exp.Mod)
 
     def _parse_factor(self):
         return self._parse_tokens(self._parse_unary, exp.Slash, exp.Star)

@@ -186,6 +186,11 @@ class Generator:
         columns = ', '.join(self.sql(e) for e in expression.args.get('columns', []))
         return f"{this_sql}{op_sql}{self.sep()}{expression_sql} {alias} AS {columns}"
 
+    def limit_sql(self, expression):
+        this_sql = self.sql(expression, 'this')
+        limit = self.sql(expression, 'limit')
+        return f"{this_sql}{self.seg('LIMIT')} {limit}"
+
     def order_sql(self, expression, flat=False):
         sql = self.op_expressions('ORDER BY', expression, flat=flat)
         if expression.args['desc']:
@@ -313,6 +318,9 @@ class Generator:
 
     def minus_sql(self, expression):
         return self.binary(expression, '-')
+
+    def mod_sql(self, expression):
+        return self.binary(expression, '%')
 
     def neq_sql(self, expression):
         return self.binary(expression, '<>')

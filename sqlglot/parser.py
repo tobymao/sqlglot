@@ -253,7 +253,12 @@ class Parser:
             return None
 
         hint = self._parse_hint()
-        this = exp.Select(expressions=self._parse_csv(self._parse_expression), hint=hint)
+        distinct = self._match(TokenType.DISTINCT)
+        this = exp.Select(
+            expressions=self._parse_csv(self._parse_expression),
+            hint=hint,
+            distinct=distinct,
+        )
         this = self._parse_from(this)
         this = self._parse_lateral(this)
         this = self._parse_join(this)

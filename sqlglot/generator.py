@@ -198,7 +198,9 @@ class Generator:
         return sql
 
     def select_sql(self, expression):
-        return f"SELECT{self.sql(expression, 'hint')}{self.sep()}{self.expressions(expression)}"
+        hint_sql = self.sql(expression, 'hint')
+        distinct_sql = ' DISTINCT' if expression.args.get('distinct') else ''
+        return f"SELECT{hint_sql}{distinct_sql}{self.sep()}{self.expressions(expression)}"
 
     def union_sql(self, expression):
         distinct = '' if expression.args['distinct'] else ' ALL'

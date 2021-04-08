@@ -21,6 +21,8 @@ SELECT *, 1 FROM test
 SELECT 1
 SELECT 1 FROM test
 SELECT a FROM test
+SELECT DISTINCT x FROM test
+SELECT DISTINCT x, y FROM test
 SELECT test.* FROM test
 SELECT a AS b FROM test
 SELECT "a"."b" FROM "a"

@@ -150,7 +150,7 @@ class Unnest(Expression):
 
 class Select(Expression):
     token_type = TokenType.SELECT
-    arg_types = {'expressions': True, 'hint': False}
+    arg_types = {'expressions': True, 'hint': False, 'distinct': False}
 
 
 class Window(Expression):

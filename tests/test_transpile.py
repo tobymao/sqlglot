@@ -7,6 +7,19 @@ class TestTranspile(unittest.TestCase):
     file_dir = os.path.dirname(__file__)
     fixtures_dir = os.path.join(file_dir, 'fixtures')
 
+    def test_space(self):
+        sql = transpile('SELECT MIN(3)>MIN(2)')[0]
+        self.assertEqual(sql, 'SELECT MIN(3) > MIN(2)')
+
+        sql = transpile('SELECT MIN(3)>=MIN(2)')[0]
+        self.assertEqual(sql, 'SELECT MIN(3) >= MIN(2)')
+
+        sql = transpile('SELECT 1>0')[0]
+        self.assertEqual(sql, 'SELECT 1 > 0')
+
+        sql = transpile('SELECT 3>=3')[0]
+        self.assertEqual(sql, 'SELECT 3 >= 3')
+
     def test_comments(self):
         sql = transpile('SELECT 1 FROM foo -- comment')[0]
         self.assertEqual(sql, 'SELECT 1 FROM foo')

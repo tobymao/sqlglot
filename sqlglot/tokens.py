@@ -347,7 +347,7 @@ class Tokenizer:
         for key, token in ambiguous.items():
             size = len(key)
             if self._chars(size) == key:
-                self._advance(size)
+                self._advance(size - 1)
                 self._add(token)
                 return True
         return False

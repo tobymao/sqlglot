@@ -586,7 +586,10 @@ class Parser:
                     self.raise_error('Expected column name')
                 this = self._prev
 
-        return self._parse_brackets(exp.Column(this=this, db=db, table=table))
+        if not isinstance(this, exp.Func):
+            this = exp.Column(this=this, db=db, table=table)
+
+        return self._parse_brackets(this)
 
     def _parse_brackets(self, this):
         if not self._match(TokenType.L_BRACKET):

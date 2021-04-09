@@ -5,7 +5,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.parser import Parser
 
 
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 
 
 def parse(code, read=None):

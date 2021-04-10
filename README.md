@@ -11,12 +11,27 @@ Syntax errors are highlighted and dialect incompatibilities can warn or raise de
 ## Install
 From PyPI
 
-```pip3 install sqlglot```
+```
+pip3 install sqlglot
+```
 
 Or with a local checkout
 
-```pip3 install -e .```
+```
+pip3 install -e .
+```
+
 ## Examples
+Easily translate from one dialect to another. For example, date/time functions vary from dialects and can be hard to deal with.
+
+```python
+import sqlglot
+sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read='duckdb', write='hive')
+```
+
+```sql
+SELECT TO_UTC_TIMESTAMP(FROM_UNIXTIME(1618088028295 / 1000, 'yyyy-MM-dd HH:mm:ss'), 'UTC')
+```
 
 ### Formatting and Transpiling
 Read in a SQL statement with a CTE and CASTING to a REAL and then transpiling to Spark.

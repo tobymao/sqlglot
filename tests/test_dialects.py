@@ -4,29 +4,64 @@ from sqlglot import transpile
 from sqlglot.errors import ErrorLevel, UnsupportedError
 
 class TestDialects(unittest.TestCase):
+    def validate(self, sql, target, **kwargs):
+        self.assertEqual(transpile(sql, **kwargs)[0], target)
+
+    def test_duckdb(self):
+        self.validate(
+            "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
+            "STRPTIME('2020-01-01', '%Y-%m-%d')",
+            read='duckdb',
+            write='duckdb',
+        )
+        self.validate('EPOCH(x)', 'EPOCH(x)', read='duckdb')
+        self.validate('EPOCH(x)', 'TO_UNIXTIME(x)', read='duckdb', write='presto')
+        self.validate('EPOCH_MS(x)', 'FROM_UNIXTIME(x / 1000)', read='duckdb', write='presto')
+        self.validate("STRFTIME(x, 'y')", "DATE_FORMAT(x, 'y')", read='duckdb', write='presto')
+        self.validate("STRPTIME(x, 'y')", "DATE_PARSE(x, 'y')", read='duckdb', write='presto')
+
     def test_mysql(self):
-        sql = transpile('SELECT CAST(`a`.`b` AS INT) FROM foo', read='mysql', write='mysql')[0]
-        self.assertEqual(sql, 'SELECT CAST(`a`.`b` AS INT) FROM foo')
+        self.validate(
+            'SELECT CAST(`a`.`b` AS INT) FROM foo', 'SELECT CAST(`a`.`b` AS INT) FROM foo',
+            read='mysql',
+            write='mysql',
+        )
 
     def test_postgres(self):
-        sql = transpile('SELECT CAST(`a`.`b` AS DOUBLE) FROM foo', read='postgres', write='postgres')[0]
-        self.assertEqual(sql, 'SELECT CAST(`a`.`b` AS DOUBLE PRECISION) FROM foo')
+        self.validate(
+            'SELECT CAST(`a`.`b` AS DOUBLE) FROM foo',
+            'SELECT CAST(`a`.`b` AS DOUBLE PRECISION) FROM foo',
+            read='postgres',
+            write='postgres',
+        )
 
     def test_presto(self):
-        sql = transpile('SELECT "a"."b" FROM foo', read='presto', write='presto', identify=True)[0]
-        self.assertEqual(sql, 'SELECT "a"."b" FROM "foo"')
+        self.validate('SELECT "a"."b" FROM foo', 'SELECT "a"."b" FROM "foo"', read='presto', write='presto', identify=True)
+        self.validate('SELECT a.b FROM foo', 'SELECT a.b FROM foo', read='presto', write='spark')
+        self.validate('SELECT "a"."b" FROM foo', 'SELECT `a`.`b` FROM `foo`', read='presto', write='spark', identify=True)
+        self.validate('SELECT a.b FROM foo', 'SELECT `a`.`b` FROM `foo`', read='presto', write='spark', identify=True)
 
-        sql = transpile('SELECT a.b FROM foo', read='presto', write='spark')[0]
-        self.assertEqual(sql, 'SELECT a.b FROM foo')
+        self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
+        self.validate("DATE_PARSE(x, 'y')", "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')", read='presto', write='hive')
+        self.validate(
+            'FROM_UNIXTIME(x)',
+            "TO_UTC_TIMESTAMP(FROM_UNIXTIME(x, 'yyyy-MM-dd HH:mm:ss'), 'UTC')",
+            read='presto',
+            write='hive',
+        )
+        self.validate(
+            'TO_UNIXTIME(x)',
+            "UNIX_TIMESTAMP(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss'), 'yyyy-MM-dd HH:mm:ss')",
+            read='presto',
+            write='hive',
+        )
 
-        sql = transpile('SELECT "a"."b" FROM foo', read='presto', write='spark', identify=True)[0]
-        self.assertEqual(sql, 'SELECT `a`.`b` FROM `foo`')
-
-        sql = transpile('SELECT a.b FROM foo', read='presto', write='spark', identify=True)[0]
-        self.assertEqual(sql, 'SELECT `a`.`b` FROM `foo`')
-
-        sql = transpile('SELECT APPROX_DISTINCT(a) FROM foo', read='presto', write='spark')[0]
-        self.assertEqual(sql, 'SELECT APPROX_COUNT_DISTINCT(a) FROM foo')
+        self.validate(
+            'SELECT APPROX_DISTINCT(a) FROM foo',
+            'SELECT APPROX_COUNT_DISTINCT(a) FROM foo',
+            read='presto',
+            write='spark',
+        )
 
         sql = transpile(
             'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
@@ -56,41 +91,60 @@ class TestDialects(unittest.TestCase):
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write='hive')[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
-
-        sql = transpile('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', read='hive', write='hive')[0]
-        self.assertEqual(sql, 'SELECT CAST(`a`.`b` AS SMALLINT) FROM foo')
-
-        sql = transpile('SELECT "a"."b" FROM foo', write='hive', identify=True)[0]
-        self.assertEqual(sql, 'SELECT `a`.`b` FROM `foo`')
-
-        sql = transpile('SELECT APPROX_COUNT_DISTINCT(a) FROM foo', read='hive', write='presto')[0]
-        self.assertEqual(sql, 'SELECT APPROX_DISTINCT(a) FROM foo')
-
-        sql = transpile('CREATE TABLE test STORED AS PARQUET AS SELECT 1', read='hive', write='presto')[0]
-        self.assertEqual(sql, "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1")
-
-        sql = transpile("SELECT GET_JSON_OBJECT(x, '$.name')", read='hive', write='presto')[0]
-        self.assertEqual(sql, "SELECT JSON_EXTRACT(x, '$.name')")
+        self.validate(
+            'SELECT CAST(`a`.`b` AS SMALLINT) FROM foo',
+            'SELECT CAST(`a`.`b` AS SMALLINT) FROM foo',
+            read='hive',
+            write='hive',
+        )
+        self.validate('SELECT "a"."b" FROM foo', 'SELECT `a`.`b` FROM `foo`', write='hive', identify=True)
+        self.validate(
+            'SELECT APPROX_COUNT_DISTINCT(a) FROM foo',
+            'SELECT APPROX_DISTINCT(a) FROM foo',
+            read='hive',
+            write='presto',
+        )
+        self.validate(
+            'CREATE TABLE test STORED AS PARQUET AS SELECT 1',
+            "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
+            read='hive',
+            write='presto',
+        )
+        self.validate(
+            "SELECT GET_JSON_OBJECT(x, '$.name', '$.name')",
+            "SELECT JSON_EXTRACT(x, '$.name')",
+            read='hive',
+            write='presto',
+        )
 
     def test_spark(self):
-        sql = transpile('SELECT "a"."b" FROM "foo"', write='spark')[0]
-        self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
+        self.validate(
+            'SELECT "a"."b" FROM "foo"',
+            'SELECT `a`.`b` FROM `foo`',
+            write='spark',
+        )
 
-        sql = transpile('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', read='spark')[0]
-        self.assertEqual(sql, 'SELECT CAST(`a`.`b` AS SHORT) FROM foo')
+        self.validate('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', 'SELECT CAST(`a`.`b` AS SHORT) FROM foo', read='spark')
+        self.validate('SELECT "a"."b" FROM foo', 'SELECT `a`.`b` FROM `foo`', write='spark', identify=True)
+        self.validate(
+            'SELECT APPROX_COUNT_DISTINCT(a) FROM foo',
+            'SELECT APPROX_DISTINCT(a) FROM foo',
+            read='spark',
+            write='presto',
+        )
+        self.validate(
+            'CREATE TABLE test STORED AS PARQUET AS SELECT 1',
+            "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
+            read='spark',
+            write='presto',
+        )
 
-        sql = transpile('SELECT "a"."b" FROM foo', write='spark', identify=True)[0]
-        self.assertEqual(sql, 'SELECT `a`.`b` FROM `foo`')
-
-        sql = transpile('SELECT APPROX_COUNT_DISTINCT(a) FROM foo', read='spark', write='presto')[0]
-        self.assertEqual(sql, 'SELECT APPROX_DISTINCT(a) FROM foo')
-
-        sql = transpile('CREATE TABLE test STORED AS PARQUET AS SELECT 1', read='spark', write='presto')[0]
-        self.assertEqual(sql, "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1")
-
-        sql = transpile('SELECT /*+ COALESCE(3) */ * FROM x', read='spark')[0]
-        self.assertEqual(sql, 'SELECT /*+ COALESCE(3) */ * FROM x')
+        self.validate('SELECT /*+ COALESCE(3) */ * FROM x','SELECT /*+ COALESCE(3) */ * FROM x', read='spark')
 
     def test_sqlite(self):
-        sql = transpile('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', read='sqlite', write='sqlite')[0]
-        self.assertEqual(sql, 'SELECT CAST(`a`.`b` AS INTEGER) FROM foo')
+        self.validate(
+            'SELECT CAST(`a`.`b` AS SMALLINT) FROM foo',
+            'SELECT CAST(`a`.`b` AS INTEGER) FROM foo',
+            read='sqlite',
+            write='sqlite',
+        )

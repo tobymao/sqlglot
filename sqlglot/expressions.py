@@ -309,6 +309,10 @@ class ApproxDistinct(Func):
     arg_types = {'this': True, 'accuracy': False}
 
 
+class ArrayAgg(Func):
+    arg_types = {'this': True}
+
+
 class Count(Func):
     arg_types = {'this': False, 'distinct': False}
 

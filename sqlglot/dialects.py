@@ -44,17 +44,18 @@ def _approx_count_distinct_sql(self, expression):
 
 class DuckDB(Dialect):
     def _unix_to_str_sql(self, expression):
-        unix_to_time = f"EPOCH_MS(CAST(({self.sql(expression.args['this'])} AS BIGINT) * 1000))"
-        return f"STRFTIME({unix_to_time}, {self.sql(expression.args['format'])})"
+        unix_to_time = f"EPOCH_MS(CAST(({self.sql(expression, 'this')} AS BIGINT) * 1000))"
+        return f"STRFTIME({unix_to_time}, {self.sql(expression, 'format')})"
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
-        exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e.args['this'])}, {self.sql(e.args['format'])})",
-        exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e.args['this'])}, {self.sql(e.args['format'])}))",
-        exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e.args['this'])}, {self.sql(e.args['format'])})",
-        exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e.args['this'])})",
+        exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
+        exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
+        exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
         exp.UnixToStr: _unix_to_str_sql,
-        exp.UnixToTime: lambda self, e: f"EPOCH_MS(CAST(({self.sql(e.args['this'])} AS BIGINT) * 1000))",
+        exp.UnixToTime: lambda self, e: f"EPOCH_MS(CAST(({self.sql(e, 'this')} AS BIGINT) * 1000))",
     }
 
     functions = {
@@ -64,6 +65,7 @@ class DuckDB(Dialect):
             this=args[0],
             expression=Token(TokenType.NUMBER, '1000', 0, 0)
         )),
+        'LIST_VALUES': lambda args: exp.Array(expressions=args),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
     }
@@ -79,40 +81,43 @@ class Hive(Dialect):
         return ''
 
     def _str_to_unix(self, expression):
-        return f"UNIX_TIMESTAMP({self.sql(expression.args['this'])}, {self.sql(expression.args['format'])})"
+        return f"UNIX_TIMESTAMP({self.sql(expression, 'this')}, {self.sql(expression, 'format')})"
 
     def _str_to_time(self, expression):
-        return f"DATE_FORMAT({self.sql(expression.args['this'])}, 'yyyy-MM-dd HH:mm:ss')"
+        return f"DATE_FORMAT({self.sql(expression, 'this')}, 'yyyy-MM-dd HH:mm:ss')"
 
     def _time_to_str(self, expression):
-        return f"DATE_FORMAT({self.sql(expression.args['this'])}, {self.sql(expression.args['format'])})"
+        return f"DATE_FORMAT({self.sql(expression, 'this')}, {self.sql(expression, 'format')})"
 
     def _time_to_unix(self, expression):
-        time_to_str = f"DATE_FORMAT({self.sql(expression.args['this'])}, 'yyyy-MM-dd HH:mm:ss')"
+        time_to_str = f"DATE_FORMAT({self.sql(expression, 'this')}, 'yyyy-MM-dd HH:mm:ss')"
         return f"UNIX_TIMESTAMP({time_to_str}, 'yyyy-MM-dd HH:mm:ss')"
 
     def _unix_to_time(self, expression):
-        unix_to_str = f"FROM_UNIXTIME({self.sql(expression.args['this'])}, 'yyyy-MM-dd HH:mm:ss')"
+        unix_to_str = f"FROM_UNIXTIME({self.sql(expression, 'this')}, 'yyyy-MM-dd HH:mm:ss')"
         return f"TO_UTC_TIMESTAMP({unix_to_str}, 'UTC')"
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
+        exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.FileFormat: _fileformat_sql,
-        exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e.args['this'])}, {self.sql(e.args['path'])})",
+        exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
         exp.TimeToStr: _time_to_str,
         exp.TimeToUnix: _time_to_unix,
-        exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e.args['this'])}, {self.sql(e.args['format'])})",
+        exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.UnixToTime: _unix_to_time,
     }
 
     functions = {
         'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
+        'ARRAY': lambda args: exp.Array(expressions=args),
+        'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
+        'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'FROM_UNIXTIME': lambda args: exp.UnixToStr(this=args[0], format=args[1]),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
         'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
-        'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
     }
 
 
@@ -126,7 +131,7 @@ class Postgres(Dialect):
         TokenType.FLOAT: 'REAL',
         TokenType.DOUBLE: 'DOUBLE PRECISION',
         TokenType.BINARY: 'BYTEA',
-        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e.args['this'])}, {self.sql(e.args['format'])})",
+        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
     }
 
     functions = {
@@ -157,14 +162,15 @@ class Presto(Dialect):
         TokenType.FLOAT: 'REAL',
         TokenType.BINARY: 'VARBINARY',
         exp.ApproxDistinct: _approx_distinct_sql,
+        exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
         exp.FileFormat: _fileformat_sql,
-        exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e.args['this'])}, {self.sql(e.args['path'])})",
-        exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e.args['this'])}, {self.sql(e.args['format'])})",
-        exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e.args['this'])}, {self.sql(e.args['format'])}))",
-        exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e.args['this'])}, {self.sql(e.args['format'])})",
-        exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e.args['this'])})",
-        exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e.args['this'])}), {self.sql(e.args['format'])})",
-        exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e.args['this'])})",
+        exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format',)}))",
+        exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format',)})",
+        exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
+        exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format',)})",
+        exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')})",
     }
 
     functions = {
@@ -188,7 +194,7 @@ class Spark(Hive):
         TokenType.TEXT: 'STRING',
         TokenType.BINARY: 'ARRAY[BYTE]',
         exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",
-        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e.args['this'])}, {self.sql(e.args['format'])})",
+        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
     }
 
     functions = {

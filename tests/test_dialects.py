@@ -19,6 +19,7 @@ class TestDialects(unittest.TestCase):
         self.validate('EPOCH_MS(x)', 'FROM_UNIXTIME(x / 1000)', read='duckdb', write='presto')
         self.validate("STRFTIME(x, 'y')", "DATE_FORMAT(x, 'y')", read='duckdb', write='presto')
         self.validate("STRPTIME(x, 'y')", "DATE_PARSE(x, 'y')", read='duckdb', write='presto')
+        self.validate("LIST_VALUES(0, 1, 2)", "ARRAY[0, 1, 2]", read='duckdb', write='presto')
 
     def test_mysql(self):
         self.validate(
@@ -117,6 +118,9 @@ class TestDialects(unittest.TestCase):
             write='presto',
         )
 
+        self.validate("COLLECT_LIST(x)", "ARRAY_AGG(x)", read='hive', write='presto')
+        self.validate("ARRAY_AGG(x)", "COLLECT_LIST(x)", read='presto', write='hive')
+
     def test_spark(self):
         self.validate(
             'SELECT "a"."b" FROM "foo"',
@@ -139,6 +143,8 @@ class TestDialects(unittest.TestCase):
             write='presto',
         )
 
+        self.validate("ARRAY(0, 1, 2)", "ARRAY[0, 1, 2]", read='spark', write='presto')
+        self.validate("ARRAY(0, 1, 2)", "LIST_VALUE(0, 1, 2)", read='spark', write='duckdb')
         self.validate('SELECT /*+ COALESCE(3) */ * FROM x','SELECT /*+ COALESCE(3) */ * FROM x', read='spark')
 
     def test_sqlite(self):

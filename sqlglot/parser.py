@@ -18,6 +18,7 @@ class Parser:
     FUNCTIONS = {
         'DECIMAL': _parse_decimal,
         'NUMERIC': _parse_decimal,
+        'ARRAY_AGG': lambda args: exp.ArrayAgg(this=args[0]),
         'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2] if len(args) > 2 else None),
         'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'STR_TO_UNIX': lambda args: exp.StrToUnix(this=args[0], format=args[1]),

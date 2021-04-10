@@ -19,6 +19,12 @@ class Parser:
         'DECIMAL': _parse_decimal,
         'NUMERIC': _parse_decimal,
         'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2] if len(args) > 2 else None),
+        'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
+        'STR_TO_UNIX': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
+        'TIME_TO_STR': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
+        'TIME_TO_UNIX': lambda args: exp.TimeToUnix(this=args[0]),
+        'UNIX_TO_STR': lambda args: exp.UnixToStr(this=args[0], format=args[1]),
+        'UNIX_TO_TIME': lambda args: exp.UnixToTime(this=args[0]),
     }
 
     NESTED_TYPE_TOKENS = {
@@ -40,6 +46,8 @@ class Parser:
         TokenType.TEXT,
         TokenType.BINARY,
         TokenType.JSON,
+        TokenType.TIMESTAMP,
+        TokenType.DATE,
         *NESTED_TYPE_TOKENS,
     }
 

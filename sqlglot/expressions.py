@@ -319,3 +319,27 @@ class If(Func):
 
 class JSONPath(Func):
     arg_types = {'this': True, 'path': True}
+
+
+class StrToTime(Func):
+    arg_types = {'this': True, 'format': True}
+
+
+class StrToUnix(Func):
+    arg_types = {'this': True, 'format': True}
+
+
+class TimeToStr(Func):
+    arg_types = {'this': True, 'format': True}
+
+
+class TimeToUnix(Func):
+    arg_types = {'this': True}
+
+
+class UnixToStr(Func):
+    arg_types = {'this': True, 'format': True}
+
+
+class UnixToTime(Func):
+    arg_types = {'this': True}

@@ -54,6 +54,8 @@ class TokenType(AutoName):
     TEXT = auto()
     BINARY = auto()
     JSON = auto()
+    TIMESTAMP = auto()
+    DATE = auto()
 
     # keywords
     ALIAS = auto()

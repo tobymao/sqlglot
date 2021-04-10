@@ -30,6 +30,8 @@ class Generator:
         TokenType.TEXT: 'TEXT',
         TokenType.BINARY: 'BINARY',
         TokenType.JSON: 'JSON',
+        exp.Array: lambda self, e: f"ARRAY({self.expressions(e, flat=True)})",
+        exp.ArrayAgg: lambda self, e: f"ARRAY_AGG({self.sql(e, 'this')})",
     }
 
     def __init__(self, **opts):

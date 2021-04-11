@@ -259,11 +259,6 @@ class Alias(Expression):
     arg_types = {'this': True, 'alias': True}
 
 
-class Array(Expression):
-    token_type = TokenType.ARRAY
-    arg_types = {'expressions': True}
-
-
 class Between(Expression):
     token_type = TokenType.BETWEEN
     arg_types = {'this': True, 'low': True, 'high': True}
@@ -289,11 +284,6 @@ class Decimal(Expression):
     arg_types = {'precision': False, 'scale': False}
 
 
-class Map(Expression):
-    token_type = TokenType.MAP
-    arg_types = {'keys': True, 'values': True}
-
-
 class In(Expression):
     token_type = TokenType.IN
     arg_types = {'this': True, 'expressions': True}
@@ -307,6 +297,11 @@ class Func(Expression):
 
 class ApproxDistinct(Func):
     arg_types = {'this': True, 'accuracy': False}
+
+
+class Array(Func):
+    token_type = TokenType.ARRAY
+    arg_types = {'expressions': True}
 
 
 class ArrayAgg(Func):
@@ -323,6 +318,11 @@ class If(Func):
 
 class JSONPath(Func):
     arg_types = {'this': True, 'path': True}
+
+
+class Map(Func):
+    token_type = TokenType.MAP
+    arg_types = {'keys': True, 'values': True}
 
 
 class StrToTime(Func):

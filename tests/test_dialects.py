@@ -19,7 +19,8 @@ class TestDialects(unittest.TestCase):
         self.validate('EPOCH_MS(x)', 'FROM_UNIXTIME(x / 1000)', read='duckdb', write='presto')
         self.validate("STRFTIME(x, 'y')", "DATE_FORMAT(x, 'y')", read='duckdb', write='presto')
         self.validate("STRPTIME(x, 'y')", "DATE_PARSE(x, 'y')", read='duckdb', write='presto')
-        self.validate("LIST_VALUES(0, 1, 2)", "ARRAY[0, 1, 2]", read='duckdb', write='presto')
+        self.validate("LIST_VALUE(0, 1, 2)", "ARRAY[0, 1, 2]", read='duckdb', write='presto')
+        self.validate('Array(1, 2)', 'LIST_VALUE(1, 2)', write='duckdb')
 
     def test_mysql(self):
         self.validate(
@@ -41,6 +42,7 @@ class TestDialects(unittest.TestCase):
         self.validate('SELECT a.b FROM foo', 'SELECT a.b FROM foo', read='presto', write='spark')
         self.validate('SELECT "a"."b" FROM foo', 'SELECT `a`.`b` FROM `foo`', read='presto', write='spark', identify=True)
         self.validate('SELECT a.b FROM foo', 'SELECT `a`.`b` FROM `foo`', read='presto', write='spark', identify=True)
+        self.validate('SELECT ARRAY[1, 2]', 'SELECT ARRAY(1, 2)', read='presto', write='spark')
 
         self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
         self.validate("DATE_PARSE(x, 'y')", "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')", read='presto', write='hive')

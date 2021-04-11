@@ -1,7 +1,8 @@
 import os
 import unittest
 
-from sqlglot import transpile
+from sqlglot import TokenType, transpile
+
 
 class TestTranspile(unittest.TestCase):
     file_dir = os.path.dirname(__file__)
@@ -9,6 +10,12 @@ class TestTranspile(unittest.TestCase):
 
     def validate(self, sql, target, write=None):
         self.assertEqual(transpile(sql, write=write)[0], target)
+
+    def test_custom_transform(self):
+        self.assertEqual(
+            transpile('SELECT CAST(a AS INT) FROM x', transforms={TokenType.INT: 'SPECIAL INT'})[0],
+            'SELECT CAST(a AS SPECIAL INT) FROM x',
+        )
 
     def test_space(self):
         self.validate('SELECT MIN(3)>MIN(2)', 'SELECT MIN(3) > MIN(2)')

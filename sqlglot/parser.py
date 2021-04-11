@@ -2,7 +2,7 @@ import logging
 import os
 
 from sqlglot.errors import ErrorLevel, ParseError
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import Token, TokenType
 import sqlglot.expressions as exp
 
 os.system('')
@@ -18,6 +18,8 @@ class Parser:
     FUNCTIONS = {
         'DECIMAL': _parse_decimal,
         'NUMERIC': _parse_decimal,
+        'ARRAY': lambda args: exp.Array(expressions=args),
+        'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
         'ARRAY_AGG': lambda args: exp.ArrayAgg(this=args[0]),
         'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2] if len(args) > 2 else None),
         'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
@@ -26,12 +28,6 @@ class Parser:
         'TIME_TO_UNIX': lambda args: exp.TimeToUnix(this=args[0]),
         'UNIX_TO_STR': lambda args: exp.UnixToStr(this=args[0], format=args[1]),
         'UNIX_TO_TIME': lambda args: exp.UnixToTime(this=args[0]),
-    }
-
-    NESTED_TYPE_TOKENS = {
-        TokenType.ARRAY,
-        TokenType.DECIMAL,
-        TokenType.MAP,
     }
 
     TYPE_TOKENS = {
@@ -49,7 +45,9 @@ class Parser:
         TokenType.JSON,
         TokenType.TIMESTAMP,
         TokenType.DATE,
-        *NESTED_TYPE_TOKENS,
+        TokenType.ARRAY,
+        TokenType.DECIMAL,
+        TokenType.MAP,
     }
 
     PRIMARY_TOKENS = {
@@ -57,7 +55,6 @@ class Parser:
         TokenType.NUMBER,
         TokenType.STAR,
         TokenType.NULL,
-        *(TYPE_TOKENS - NESTED_TYPE_TOKENS),
     }
 
     COLUMN_TOKENS = {
@@ -561,9 +558,6 @@ class Parser:
         if self._match(*self.PRIMARY_TOKENS):
             return self._prev
 
-        if self._match(*self.NESTED_TYPE_TOKENS):
-            return self._parse_function(self._parse_brackets(self._prev))
-
         if self._match(TokenType.L_PAREN):
             paren = self._prev
             this = self._parse_expression()
@@ -575,11 +569,13 @@ class Parser:
         return self._parse_column()
 
     def _parse_column(self):
-        if not self._match(TokenType.VAR, TokenType.IDENTIFIER, TokenType.IF):
-            return None
-
         db = None
         table = None
+
+        if self._curr.token_type in (TokenType.OVER, TokenType.R_PAREN, TokenType.R_BRACKET):
+            return None
+
+        self._advance()
         this = self._parse_function(self._prev)
 
         if self._match(TokenType.DOT):
@@ -595,7 +591,7 @@ class Parser:
                     self.raise_error('Expected column name')
                 this = self._prev
 
-        if not isinstance(this, exp.Func):
+        if not isinstance(this, exp.Func) and this.token_type not in (TokenType.ARRAY, TokenType.MAP):
             this = exp.Column(this=this, db=db, table=table)
 
         return self._parse_brackets(this)
@@ -604,7 +600,12 @@ class Parser:
         if not self._match(TokenType.L_BRACKET):
             return this
 
-        bracket = exp.Bracket(this=this, expressions=self._parse_csv(self._parse_primary))
+        expressions = self._parse_csv(self._parse_primary)
+
+        if isinstance(this, Token) and this.token_type == TokenType.ARRAY:
+            bracket = exp.Array(expressions=expressions)
+        else:
+            bracket = exp.Bracket(this=this, expressions=expressions)
 
         if not self._match(TokenType.R_BRACKET):
             self.raise_error('Expected ]')

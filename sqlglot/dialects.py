@@ -65,7 +65,7 @@ class DuckDB(Dialect):
             this=args[0],
             expression=Token(TokenType.NUMBER, '1000', 0, 0)
         )),
-        'LIST_VALUES': lambda args: exp.Array(expressions=args),
+        'LIST_VALUE': lambda args: exp.Array(expressions=args),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
     }
@@ -112,7 +112,6 @@ class Hive(Dialect):
 
     functions = {
         'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
-        'ARRAY': lambda args: exp.Array(expressions=args),
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'FROM_UNIXTIME': lambda args: exp.UnixToStr(this=args[0], format=args[1]),

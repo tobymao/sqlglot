@@ -242,6 +242,8 @@ class Tokenizer:
         'VARCHAR': TokenType.VARCHAR,
         'TEXT': TokenType.TEXT,
         'BINARY': TokenType.BINARY,
+        'TIMESTAMP': TokenType.TIMESTAMP,
+        'DATE': TokenType.DATE,
     }
 
     WHITE_SPACE = {

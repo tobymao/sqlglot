@@ -104,10 +104,14 @@ class Hive(Dialect):
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
+        exp.TimeStrToTime: lambda self, e: self.sql(e, 'this'),
+        exp.TimeStrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')})",
         exp.TimeToStr: _time_to_str,
+        exp.TimeToTimeStr: lambda self, e: self.sql(e, 'this'),
         exp.TimeToUnix: _time_to_unix,
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.UnixToTime: _unix_to_time,
+        exp.UnixToTimeStr: _unix_to_time,
     }
 
     functions = {
@@ -166,10 +170,14 @@ class Presto(Dialect):
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format',)}))",
+        exp.TimeStrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s')",
+        exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s'))",
         exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format',)})",
+        exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s')",
         exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
         exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format',)})",
         exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')})",
+        exp.UnixToTimeStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), '%Y-%m-%d %H:%i:%s')",
     }
 
     functions = {

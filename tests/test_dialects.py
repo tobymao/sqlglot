@@ -45,9 +45,28 @@ class TestDialects(unittest.TestCase):
         self.validate('SELECT ARRAY[1, 2]', 'SELECT ARRAY(1, 2)', read='presto', write='spark')
         self.validate('CAST(a AS ARRAY(INT))', 'CAST(a AS ARRAY[INTEGER])', read='presto', write='presto')
 
-
         self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
         self.validate("DATE_PARSE(x, 'y')", "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')", read='presto', write='hive')
+        self.validate(
+            'TIME_STR_TO_UNIX(x)',
+            "TO_UNIXTIME(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))",
+            write='presto',
+        )
+        self.validate(
+            'TIME_STR_TO_TIME(x)',
+            "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
+            write='presto',
+        )
+        self.validate(
+            'TIME_TO_TIME_STR(x)',
+            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%s')",
+            write='presto',
+        )
+        self.validate(
+            'UNIX_TO_TIME_STR(x)',
+            "DATE_FORMAT(FROM_UNIXTIME(x), '%Y-%m-%d %H:%i:%s')",
+            write='presto',
+        )
         self.validate(
             'FROM_UNIXTIME(x)',
             "TO_UTC_TIMESTAMP(FROM_UNIXTIME(x, 'yyyy-MM-dd HH:mm:ss'), 'UTC')",
@@ -124,6 +143,26 @@ class TestDialects(unittest.TestCase):
 
         self.validate("COLLECT_LIST(x)", "ARRAY_AGG(x)", read='hive', write='presto')
         self.validate("ARRAY_AGG(x)", "COLLECT_LIST(x)", read='presto', write='hive')
+        self.validate(
+            'TIME_STR_TO_UNIX(x)',
+            "UNIX_TIMESTAMP(x)",
+            write='hive',
+        )
+        self.validate(
+            'TIME_STR_TO_TIME(x)',
+            'x',
+            write='hive',
+        )
+        self.validate(
+            'TIME_TO_TIME_STR(x)',
+            'x',
+            write='hive',
+        )
+        self.validate(
+            'UNIX_TO_TIME_STR(x)',
+            "TO_UTC_TIMESTAMP(FROM_UNIXTIME(x, 'yyyy-MM-dd HH:mm:ss'), 'UTC')",
+            write='hive',
+        )
 
     def test_spark(self):
         self.validate(

@@ -337,7 +337,19 @@ class TimeToStr(Func):
     arg_types = {'this': True, 'format': True}
 
 
+class TimeToTimeStr(Func):
+    arg_types = {'this': True}
+
+
 class TimeToUnix(Func):
+    arg_types = {'this': True}
+
+
+class TimeStrToTime(Func):
+    arg_types = {'this': True}
+
+
+class TimeStrToUnix(Func):
     arg_types = {'this': True}
 
 
@@ -346,4 +358,8 @@ class UnixToStr(Func):
 
 
 class UnixToTime(Func):
+    arg_types = {'this': True}
+
+
+class UnixToTimeStr(Func):
     arg_types = {'this': True}

@@ -8,9 +8,9 @@ class TestExpressions(unittest.TestCase):
         expression = parse("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")[0]
         self.assertTrue(expression.find(exp.Create))
         self.assertFalse(expression.find(exp.Group))
-        self.assertEqual([table.args['this'].text for table, _, _ in expression.findall(exp.Table)], ['x', 'y'])
+        self.assertEqual([table.args['this'].text for table in expression.find_all(exp.Table)], ['y', 'x'])
 
-    def test_findall(self):
+    def test_find_all(self):
         expression = parse(
             """
             SELECT *
@@ -36,8 +36,8 @@ class TestExpressions(unittest.TestCase):
         )[0]
 
         self.assertEqual(
-            [table.args['this'].text for table, _, _ in expression.findall(exp.Table)],
-            ['d', 'c', 'b'],
+            [table.args['this'].text for table in expression.find_all(exp.Table)],
+            ['b', 'c', 'd'],
         )
 
     def test_validate(self):

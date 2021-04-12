@@ -109,9 +109,10 @@ class Parser:
         for expression in expressions:
             if not isinstance(expression, exp.Expression):
                 continue
-            for node, parent, _ in expression.walk():
+            for node, parent, key in expression.walk():
                 if hasattr(node, 'parent') and parent:
                     node.parent = parent
+                    node.arg_key = key
 
         return expressions
 

@@ -121,6 +121,7 @@ class Token:
         self.line = line
         self.col = col - len(text)
         self.parent = None
+        self.arg_key = None
 
     def __repr__(self):
         attributes = ", ".join([

@@ -12,24 +12,37 @@ class Expression:
         self.args = args
         self.validate()
         self._parent = None
+        self.arg_key = None
 
     @property
     def parent(self):
         return self._parent() if self._parent else None
+
+    @property
+    def depth(self):
+        if self.parent:
+            return self.parent.depth + 1
+        return 0
 
     @parent.setter
     def parent(self, new_parent):
         self._parent = weakref.ref(new_parent)
 
     def find(self, expression_type):
-        return next(self.findall(expression_type), None)
+        return next(self.find_all(expression_type), None)
 
-    def findall(self, expression_type):
-        for expression, parent, key in self.walk():
+    def find_all(self, expression_type):
+        for expression, _, _ in self.walk():
             if isinstance(expression, expression_type):
-                yield expression, parent, key
+                yield expression
 
-    def walk(self, parent=None, key=None):
+    def walk(self, bfs=True):
+        if bfs:
+            yield from self.bfs()
+        else:
+            yield from self.dfs(self.parent, self.key)
+
+    def dfs(self, parent, key):
         yield self, parent, key
 
         for k, v in self.args.items():
@@ -37,9 +50,25 @@ class Expression:
 
             for node in nodes:
                 if isinstance(node, Expression):
-                    yield from node.walk(self, k)
+                    yield from node.dfs(self, k)
                 else:
                     yield node, self, k
+
+    def bfs(self):
+        queue = [(self, self.parent, self.key)]
+
+        while queue:
+            item, parent, key = queue.pop()
+
+            yield item, parent, key
+
+            if isinstance(item, Expression):
+                for k, v in item.args.items():
+                    nodes = v if isinstance(v, list) else [v]
+
+                    for node in nodes:
+                        queue.append((node, item, k))
+
 
     def validate(self):
         for k, v in self.args.items():

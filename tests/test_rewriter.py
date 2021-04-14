@@ -36,3 +36,14 @@ class TestRewriter(unittest.TestCase):
             generator.generate(expression),
             'CREATE TABLE x STORED AS ORC AS SELECT * FROM y'
         )
+
+    def test_add_selects(self):
+        expression = parse("SELECT * FROM (SELECT * FROM x) y")[0]
+
+        self.assertEqual(
+            Hive().generate(Rewriter(expression).add_selects(
+                'a',
+                'sum(b) as c',
+            ).expression),
+            'SELECT *, a, SUM(b) AS c FROM (SELECT * FROM x) AS y'
+        )

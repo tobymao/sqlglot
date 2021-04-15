@@ -314,6 +314,9 @@ class Generator:
     def is_sql(self, expression):
         return self.binary(expression, 'IS')
 
+    def like_sql(self, expression):
+        return self.binary(expression, 'LIKE')
+
     def lt_sql(self, expression):
         return self.binary(expression, '<')
 

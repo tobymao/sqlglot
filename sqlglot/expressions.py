@@ -229,6 +229,10 @@ class Is(Binary):
     token_type = TokenType.IS
 
 
+class Like(Binary):
+    token_type = TokenType.LIKE
+
+
 class LT(Binary):
     token_type = TokenType.LT
 

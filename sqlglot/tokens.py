@@ -92,6 +92,7 @@ class TokenType(AutoName):
     JOIN = auto()
     LATERAL = auto()
     LEFT = auto()
+    LIKE = auto()
     LIMIT = auto()
     MAP = auto()
     MOD = auto()
@@ -196,6 +197,7 @@ class Tokenizer:
         'JOIN': TokenType.JOIN,
         'LATERAL': TokenType.LATERAL,
         'LEFT': TokenType.LEFT,
+        'LIKE': TokenType.LIKE,
         'LIMIT': TokenType.LIMIT,
         'NOT': TokenType.NOT,
         'NULL': TokenType.NULL,

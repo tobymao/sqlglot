@@ -452,7 +452,7 @@ class Parser:
         return self._parse_tokens(self._parse_comparison, exp.EQ, exp.NEQ, exp.Is)
 
     def _parse_comparison(self):
-        return self._parse_tokens(self._parse_range, exp.GT, exp.GTE, exp.LT, exp.LTE)
+        return self._parse_tokens(self._parse_range, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Like)
 
     def _parse_range(self):
         this = self._parse_term()

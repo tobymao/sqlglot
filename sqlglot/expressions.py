@@ -40,7 +40,7 @@ class Expression:
         if bfs:
             yield from self.bfs()
         else:
-            yield from self.dfs(self.parent, self.key)
+            yield from self.dfs(self.parent, None)
 
     def dfs(self, parent, key):
         yield self, parent, key
@@ -55,7 +55,7 @@ class Expression:
                     yield node, self, k
 
     def bfs(self):
-        queue = [(self, self.parent, self.key)]
+        queue = [(self, self.parent, None)]
 
         while queue:
             item, parent, key = queue.pop()

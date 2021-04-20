@@ -104,6 +104,15 @@ class TestDialects(unittest.TestCase):
         sql = transpile("SELECT JSON_EXTRACT(x, '$.name')", read='presto', write='spark')[0]
         self.assertEqual(sql, "SELECT GET_JSON_OBJECT(x, '$.name')")
 
+        self.validate("''''", "''''", read='presto', write='presto')
+        self.validate("''''", "'\\''", read='presto', write='hive')
+        self.validate("'x'", "'x'", read='presto', write='presto')
+        self.validate("'x'", "'x'", read='presto', write='hive')
+        self.validate("'''x'''", "'''x'''", read='presto', write='presto')
+        self.validate("'''x'''", "'\\'x\\''", read='presto', write='hive')
+        self.validate("'''x'", "'\\'x'", read='presto', write='hive')
+        self.validate("'x'''", "'x\\''", read='presto', write='hive')
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',

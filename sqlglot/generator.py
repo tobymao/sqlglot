@@ -2,7 +2,7 @@ import logging
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
-from sqlglot.tokens import Token, TokenType
+from sqlglot.tokens import Token, TokenType, Tokenizer
 
 
 class Generator:
@@ -40,6 +40,7 @@ class Generator:
         self.identifier = opts.get('identifier') or '"'
         self.identify = opts.get('identify', False)
         self.quote = opts.get('quote') or "'"
+        self.escape = opts.get('escape') or '\\'
         self.pad = opts.get('pad', 2)
         self.unsupported_level = opts.get('unsupported_level', ErrorLevel.WARN)
         self.unsupported_messages = []
@@ -100,7 +101,7 @@ class Generator:
             return transform
 
         if isinstance(expression, Token):
-            text = expression.text
+            text = expression.text.replace(Tokenizer.ESCAPE_CODE, self.escape)
             if expression.token_type == TokenType.IDENTIFIER:
                 text = f"{self.identifier}{text[1:-1]}{self.identifier}"
             elif self.identify and identify:

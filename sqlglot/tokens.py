@@ -257,9 +257,12 @@ class Tokenizer:
         "\rn": TokenType.BREAK,
     }
 
+    ESCAPE_CODE = '__sqlglot_escape__'
+
     def __init__(self, **opts):
         self.quote = opts.get('quote') or "'"
         self.identifier = opts.get('identifier') or '"'
+        self.escape = opts.get('escape')
         self.single_tokens = {**self.SINGLE_TOKENS, **opts.get('single_tokens', {})}
         self.keywords = {**self.KEYWORDS, **opts.get('keywords', {})}
         self.white_space = {**self.WHITE_SPACE, **opts.get('white_space', {})}
@@ -320,7 +323,9 @@ class Tokenizer:
 
     @property
     def _char(self):
-        return self.code[self._current - 1]
+        if self._current - 1 < self.size:
+            return self.code[self._current - 1]
+        return ''
 
     def _chars(self, size):
         start = self._current - 1
@@ -384,12 +389,22 @@ class Tokenizer:
         self._add(TokenType.NUMBER)
 
     def _scan_string(self):
-        while self._peek != self.quote:
+        text = []
+
+        while True:
             if self._end:
                 raise RuntimeError(f"Missing {self.quote} from {self._line}:{self._start}")
+            text.append(self._char)
             self._advance()
-        self._advance()
-        self._add(TokenType.STRING)
+
+            if self.escape and self._char == self.escape and self._peek == self.quote:
+                text.append(self.ESCAPE_CODE)
+                self._advance()
+            elif self._char == self.quote:
+                break
+
+        text.append(self._char)
+        self._add(TokenType.STRING, ''.join(text))
 
     def _scan_identifier(self):
         while self._peek != self.identifier:

@@ -9,6 +9,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 class Dialect(metaclass=RegisteringMeta):
     identifier = None
     quote = None
+    escape = None
     functions = {}
     transforms = {}
 
@@ -25,6 +26,7 @@ class Dialect(metaclass=RegisteringMeta):
         return Generator(**{
             'identifier': self.identifier,
             'quote': self.quote,
+            'escape': self.escape,
             'transforms': {**self.transforms, **opts.pop('transforms', {})},
             **opts,
         })
@@ -33,7 +35,12 @@ class Dialect(metaclass=RegisteringMeta):
         return Parser(functions=self.functions, **opts)
 
     def tokenizer(self, **opts):
-        return Tokenizer(identifier=self.identifier, quote=self.quote, **opts)
+        return Tokenizer(
+            identifier=self.identifier,
+            quote=self.quote,
+            escape=self.escape,
+            **opts,
+        )
 
 
 def _approx_count_distinct_sql(self, expression):
@@ -143,6 +150,8 @@ class Postgres(Dialect):
 
 
 class Presto(Dialect):
+    escape = "'"
+
     def _approx_distinct_sql(self, expression):
         accuracy = expression.args.get('accuracy')
         accuracy = ', ' + self.sql(accuracy) if accuracy else ''

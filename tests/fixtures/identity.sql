@@ -3,7 +3,9 @@ SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
 1
 1.0
 (1 * 2) / (3 - 5)
+''
 'x'
+'\x'
 "x"
 x
 x % 1

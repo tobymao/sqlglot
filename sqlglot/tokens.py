@@ -243,6 +243,7 @@ class Tokenizer:
         'JSON': TokenType.JSON,
         'CHAR': TokenType.CHAR,
         'VARCHAR': TokenType.VARCHAR,
+        'STRING': TokenType.TEXT,
         'TEXT': TokenType.TEXT,
         'BINARY': TokenType.BINARY,
         'TIMESTAMP': TokenType.TIMESTAMP,

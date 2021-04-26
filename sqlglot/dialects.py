@@ -119,6 +119,7 @@ class Hive(Dialect):
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: _unix_to_time,
+        TokenType.VARCHAR: 'STRING',
     }
 
     functions = {
@@ -206,7 +207,6 @@ class Spark(Hive):
         TokenType.SMALLINT: 'SHORT',
         TokenType.BIGINT: 'BIGINT',
         TokenType.CHAR: 'CHAR',
-        TokenType.VARCHAR: 'VARCHAR',
         TokenType.TEXT: 'STRING',
         TokenType.BINARY: 'ARRAY[BYTE]',
         exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",

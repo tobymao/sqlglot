@@ -73,7 +73,7 @@ class TestTranspile(unittest.TestCase):
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write='hive')
         self.validate(
             "TIME_TO_UNIX(x)",
-            "UNIX_TIMESTAMP(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss'), 'yyyy-MM-dd HH:mm:ss')",
+            "UNIX_TIMESTAMP(x)",
             write='hive',
         )
         self.validate(
@@ -83,7 +83,7 @@ class TestTranspile(unittest.TestCase):
         )
         self.validate(
             "UNIX_TO_TIME(123)",
-            "TO_UTC_TIMESTAMP(FROM_UNIXTIME(123, 'yyyy-MM-dd HH:mm:ss'), 'UTC')",
+            "FROM_UNIXTIME(123)",
             write='hive',
         )
 
@@ -100,13 +100,13 @@ class TestTranspile(unittest.TestCase):
 
         self.validate(
             "TIME_TO_UNIX(x)",
-            "UNIX_TIMESTAMP(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss'), 'yyyy-MM-dd HH:mm:ss')",
+            "UNIX_TIMESTAMP(x)",
             write='spark',
         )
         self.validate("UNIX_TO_STR(123, 'y')", "FROM_UNIXTIME(123, 'y')", write='spark')
         self.validate(
             "UNIX_TO_TIME(123)",
-            "TO_UTC_TIMESTAMP(FROM_UNIXTIME(123, 'yyyy-MM-dd HH:mm:ss'), 'UTC')",
+            "FROM_UNIXTIME(123)",
             write='spark',
         )
 

@@ -22,3 +22,11 @@ class RegisteringMeta(type):
         clazz = super().__new__(cls, clsname, bases, attrs)
         cls.classes[clsname.lower()] = clazz
         return clazz
+
+
+def list_get(arr, index):
+    return arr[index] if index < len(arr) else None
+
+
+def csv(*args):
+    return ', '.join(arg for arg in args if arg)

@@ -1,7 +1,7 @@
 # pylint: disable=no-member
 import sqlglot.expressions as exp
 from sqlglot.generator import Generator
-from sqlglot.helper import RegisteringMeta
+from sqlglot.helper import RegisteringMeta, csv, list_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
@@ -88,7 +88,7 @@ class Hive(Dialect):
         return ''
 
     def _str_to_unix(self, expression):
-        return f"UNIX_TIMESTAMP({self.sql(expression, 'this')}, {self.sql(expression, 'format')})"
+        return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), self.sql(expression, 'format'))})"
 
     def _str_to_time(self, expression):
         return f"DATE_FORMAT({self.sql(expression, 'this')}, 'yyyy-MM-dd HH:mm:ss')"
@@ -97,12 +97,10 @@ class Hive(Dialect):
         return f"DATE_FORMAT({self.sql(expression, 'this')}, {self.sql(expression, 'format')})"
 
     def _time_to_unix(self, expression):
-        time_to_str = f"DATE_FORMAT({self.sql(expression, 'this')}, 'yyyy-MM-dd HH:mm:ss')"
-        return f"UNIX_TIMESTAMP({time_to_str}, 'yyyy-MM-dd HH:mm:ss')"
+        return f"UNIX_TIMESTAMP({self.sql(expression, 'this')})"
 
     def _unix_to_time(self, expression):
-        unix_to_str = f"FROM_UNIXTIME({self.sql(expression, 'this')}, 'yyyy-MM-dd HH:mm:ss')"
-        return f"TO_UTC_TIMESTAMP({unix_to_str}, 'UTC')"
+        return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
 
     transforms = {
         TokenType.TEXT: 'STRING',
@@ -118,7 +116,7 @@ class Hive(Dialect):
         exp.TimeToStr: _time_to_str,
         exp.TimeToTimeStr: lambda self, e: self.sql(e, 'this'),
         exp.TimeToUnix: _time_to_unix,
-        exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), self.sql(e, 'format'))})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: _unix_to_time,
     }
@@ -127,9 +125,9 @@ class Hive(Dialect):
         'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
-        'FROM_UNIXTIME': lambda args: exp.UnixToStr(this=args[0], format=args[1]),
+        'FROM_UNIXTIME': lambda args: exp.UnixToStr(this=args[0], format=list_get(args, 1)),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
-        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
+        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(this=args[0], format=list_get(args, 1)),
     }
 
 
@@ -159,12 +157,6 @@ class Presto(Dialect):
         accuracy = ', ' + self.sql(accuracy) if accuracy else ''
         return f"APPROX_DISTINCT({self.sql(expression, 'this')}{accuracy})"
 
-    def _parse_approx_distinct(args):
-        return exp.ApproxDistinct(
-            this=args[0],
-            accuracy=args[1] if len(args) > 1 else None,
-        )
-
     def _fileformat_sql(self, expression):
         file_format = self.sql(expression, 'this').replace(self.quote, '')
         if file_format:
@@ -193,7 +185,7 @@ class Presto(Dialect):
     }
 
     functions = {
-        'APPROX_DISTINCT': _parse_approx_distinct,
+        'APPROX_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0], accuracy=list_get(args, 1)),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'DATE_PARSE': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'FROM_UNIXTIME': lambda args: exp.UnixToTime(this=args[0]),

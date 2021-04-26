@@ -72,13 +72,13 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             'FROM_UNIXTIME(x)',
-            "TO_UTC_TIMESTAMP(FROM_UNIXTIME(x, 'yyyy-MM-dd HH:mm:ss'), 'UTC')",
+            "FROM_UNIXTIME(x)",
             read='presto',
             write='hive',
         )
         self.validate(
             'TO_UNIXTIME(x)',
-            "UNIX_TIMESTAMP(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss'), 'yyyy-MM-dd HH:mm:ss')",
+            "UNIX_TIMESTAMP(x)",
             read='presto',
             write='hive',
         )
@@ -172,7 +172,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             'UNIX_TO_TIME_STR(x)',
-            "TO_UTC_TIMESTAMP(FROM_UNIXTIME(x, 'yyyy-MM-dd HH:mm:ss'), 'UTC')",
+            "FROM_UNIXTIME(x)",
             write='hive',
         )
 

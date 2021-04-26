@@ -105,6 +105,8 @@ class Hive(Dialect):
         return f"TO_UTC_TIMESTAMP({unix_to_str}, 'UTC')"
 
     transforms = {
+        TokenType.TEXT: 'STRING',
+        TokenType.VARCHAR: 'STRING',
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.FileFormat: _fileformat_sql,
@@ -119,7 +121,6 @@ class Hive(Dialect):
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: _unix_to_time,
-        TokenType.VARCHAR: 'STRING',
     }
 
     functions = {
@@ -174,6 +175,7 @@ class Presto(Dialect):
         TokenType.INT: 'INTEGER',
         TokenType.FLOAT: 'REAL',
         TokenType.BINARY: 'VARBINARY',
+        TokenType.TEXT: 'VARCHAR',
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
         exp.FileFormat: _fileformat_sql,
@@ -207,7 +209,6 @@ class Spark(Hive):
         TokenType.SMALLINT: 'SHORT',
         TokenType.BIGINT: 'BIGINT',
         TokenType.CHAR: 'CHAR',
-        TokenType.TEXT: 'STRING',
         TokenType.BINARY: 'ARRAY[BYTE]',
         exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",

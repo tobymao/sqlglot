@@ -44,6 +44,9 @@ class TestDialects(unittest.TestCase):
         self.validate('SELECT a.b FROM foo', 'SELECT `a`.`b` FROM `foo`', read='presto', write='spark', identify=True)
         self.validate('SELECT ARRAY[1, 2]', 'SELECT ARRAY(1, 2)', read='presto', write='spark')
         self.validate('CAST(a AS ARRAY(INT))', 'CAST(a AS ARRAY[INTEGER])', read='presto', write='presto')
+        self.validate('CAST(a AS TEXT)', 'CAST(a AS VARCHAR)', write='presto')
+        self.validate('CAST(a AS STRING)', 'CAST(a AS VARCHAR)', write='presto')
+        self.validate('CAST(a AS VARCHAR)', 'CAST(a AS STRING)', read='presto', write='spark')
 
         self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
         self.validate("DATE_PARSE(x, 'y')", "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')", read='presto', write='hive')
@@ -180,6 +183,7 @@ class TestDialects(unittest.TestCase):
             write='spark',
         )
 
+        self.validate('CAST(a AS TEXT)', 'CAST(a AS STRING)', write='spark')
         self.validate('SELECT CAST(`a`.`b` AS SMALLINT) FROM foo', 'SELECT CAST(`a`.`b` AS SHORT) FROM foo', read='spark')
         self.validate('SELECT "a"."b" FROM foo', 'SELECT `a`.`b` FROM `foo`', write='spark', identify=True)
         self.validate(

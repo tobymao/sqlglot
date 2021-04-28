@@ -378,6 +378,10 @@ class TimeToUnix(Func):
     arg_types = {'this': True}
 
 
+class TimeStrToDate(Func):
+    arg_types = {'this': True}
+
+
 class TimeStrToTime(Func):
     arg_types = {'this': True}
 

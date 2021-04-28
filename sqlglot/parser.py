@@ -2,6 +2,7 @@ import logging
 import os
 
 from sqlglot.errors import ErrorLevel, ParseError
+from sqlglot.helper import list_get
 from sqlglot.tokens import Token, TokenType
 import sqlglot.expressions as exp
 
@@ -21,9 +22,10 @@ class Parser:
         'ARRAY': lambda args: exp.Array(expressions=args),
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
         'ARRAY_AGG': lambda args: exp.ArrayAgg(this=args[0]),
-        'IF': lambda args: exp.If(condition=args[0], true=args[1], false=args[2] if len(args) > 2 else None),
+        'IF': lambda args: exp.If(condition=args[0], true=args[1], false=list_get(args, 2)),
         'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'STR_TO_UNIX': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
+        'TIME_STR_TO_DATE': lambda args: exp.TimeStrToDate(this=args[0]),
         'TIME_STR_TO_TIME': lambda args: exp.TimeStrToTime(this=args[0]),
         'TIME_STR_TO_UNIX': lambda args: exp.TimeStrToUnix(this=args[0]),
         'TIME_TO_STR': lambda args: exp.TimeToStr(this=args[0], format=args[1]),

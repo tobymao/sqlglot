@@ -71,6 +71,23 @@ class TestTranspile(unittest.TestCase):
             write='hive',
         )
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write='hive')
+
+        self.validate("TIME_STR_TO_TIME(x)", "TIME_STR_TO_TIME(x)", write=None)
+        self.validate("TIME_STR_TO_UNIX(x)", "TIME_STR_TO_UNIX(x)", write=None)
+        self.validate("TIME_TO_TIME_STR(x)", "TIME_TO_TIME_STR(x)", write=None)
+        self.validate("TIME_TO_STR(x, 'y')", "TIME_TO_STR(x, 'y')", write=None)
+        self.validate("TIME_TO_UNIX(x)", "TIME_TO_UNIX(x)", write=None)
+        self.validate("UNIX_TO_STR(x, 'y')", "UNIX_TO_STR(x, 'y')", write=None)
+        self.validate("UNIX_TO_TIME(x)", "UNIX_TO_TIME(x)", write=None)
+        self.validate("UNIX_TO_TIME_STR(x)", "UNIX_TO_TIME_STR(x)", write=None)
+        self.validate("TIME_STR_TO_DATE(x)", "TIME_STR_TO_DATE(x)", write=None)
+
+        self.validate("UNIX_TO_STR(x, 'yyyy-MM-dd HH:mm:ss')", "FROM_UNIXTIME(x)", write='hive')
+        self.validate("STR_TO_UNIX(x, 'yyyy-MM-dd HH:mm:ss')", "UNIX_TIMESTAMP(x)", write='hive')
+        self.validate("IF(x > 1, x + 1)", "IF(x > 1, x + 1)", write='presto')
+        self.validate("IF(x > 1, 1 + 1)", "IF(x > 1, 1 + 1)", write='hive')
+        self.validate("IF(x > 1, 1, 0)", "IF(x > 1, 1, 0)", write='hive')
+
         self.validate(
             "TIME_TO_UNIX(x)",
             "UNIX_TIMESTAMP(x)",

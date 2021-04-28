@@ -49,6 +49,15 @@ def _approx_count_distinct_sql(self, expression):
     return f"APPROX_COUNT_DISTINCT({self.sql(expression, 'this')})"
 
 
+def _if_sql(self, expression):
+    expressions = csv(
+        self.sql(expression, 'condition'),
+        self.sql(expression, 'true'),
+        self.sql(expression, 'false')
+    )
+    return f"IF({expressions})"
+
+
 class DuckDB(Dialect):
     def _unix_to_str_sql(self, expression):
         unix_to_time = f"EPOCH_MS(CAST(({self.sql(expression, 'this')} AS BIGINT) * 1000))"
@@ -81,6 +90,14 @@ class DuckDB(Dialect):
 class Hive(Dialect):
     identifier = '`'
 
+    TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss'
+
+    def _time_format(self, expression):
+        time_format = self.sql(expression, 'format')
+        if time_format.replace("'", '') == Hive.TIME_FORMAT:
+            return None
+        return time_format
+
     def _fileformat_sql(self, expression):
         file_format = self.sql(expression, 'this').replace(self.quote, '')
         if file_format:
@@ -88,10 +105,10 @@ class Hive(Dialect):
         return ''
 
     def _str_to_unix(self, expression):
-        return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), self.sql(expression, 'format'))})"
+        return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), Hive._time_format(self, expression))})"
 
     def _str_to_time(self, expression):
-        return f"DATE_FORMAT({self.sql(expression, 'this')}, 'yyyy-MM-dd HH:mm:ss')"
+        return f"DATE_FORMAT({self.sql(expression, 'this')}, '{Hive.TIME_FORMAT}')"
 
     def _time_to_str(self, expression):
         return f"DATE_FORMAT({self.sql(expression, 'this')}, {self.sql(expression, 'format')})"
@@ -108,15 +125,17 @@ class Hive(Dialect):
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.FileFormat: _fileformat_sql,
+        exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
+        exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')}",
         exp.TimeStrToTime: lambda self, e: self.sql(e, 'this'),
         exp.TimeStrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')})",
         exp.TimeToStr: _time_to_str,
         exp.TimeToTimeStr: lambda self, e: self.sql(e, 'this'),
         exp.TimeToUnix: _time_to_unix,
-        exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), self.sql(e, 'format'))})",
+        exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), Hive._time_format(self, e))})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: _unix_to_time,
     }
@@ -125,9 +144,10 @@ class Hive(Dialect):
         'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
-        'FROM_UNIXTIME': lambda args: exp.UnixToStr(this=args[0], format=list_get(args, 1)),
+        'FROM_UNIXTIME': lambda args: exp.UnixToStr(this=args[0], format=list_get(args, 1) or Hive.TIME_FORMAT),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
-        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(this=args[0], format=list_get(args, 1)),
+        'TO_DATE': lambda args: exp.TimeStrToDate(this=args[0]),
+        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(this=args[0], format=list_get(args, 1) or Hive.TIME_FORMAT),
     }
 
 
@@ -163,6 +183,9 @@ class Presto(Dialect):
             return F"WITH (FORMAT = '{file_format}')"
         return ''
 
+    def _date_parse_sql(self, expression):
+        return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
+
     transforms = {
         TokenType.INT: 'INTEGER',
         TokenType.FLOAT: 'REAL',
@@ -171,15 +194,17 @@ class Presto(Dialect):
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
         exp.FileFormat: _fileformat_sql,
+        exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format',)}))",
-        exp.TimeStrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s')",
+        exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
+        exp.TimeStrToDate: _date_parse_sql,
+        exp.TimeStrToTime: _date_parse_sql,
         exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s'))",
-        exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format',)})",
+        exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s')",
         exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
-        exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format',)})",
+        exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format')})",
         exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')})",
         exp.UnixToTimeStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), '%Y-%m-%d %H:%i:%s')",
     }

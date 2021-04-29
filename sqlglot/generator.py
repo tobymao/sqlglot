@@ -33,6 +33,7 @@ class Generator:
         exp.Array: lambda self, e: f"ARRAY({self.expressions(e, flat=True)})",
         exp.ArrayAgg: lambda self, e: f"ARRAY_AGG({self.sql(e, 'this')})",
         exp.ArrayContains: lambda self, e: f"ARRAY_CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'value')})",
+        exp.ArraySize: lambda self, e: f"ARRAY_SIZE({self.sql(e, 'this')})",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'value')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'value')})",
         exp.DateStrToDate: lambda self, e: f"DATE_STR_TO_DATE({self.sql(e, 'this')})",

@@ -23,6 +23,7 @@ class Parser:
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
         'ARRAY_AGG': lambda args: exp.ArrayAgg(this=args[0]),
         'ARRAY_CONTAINS': lambda args: exp.ArrayContains(this=args[0], value=args[1]),
+        'ARRAY_SIZE': lambda args: exp.ArraySize(this=args[0]),
         'DATE_ADD': lambda args: exp.DateAdd(this=args[0], value=args[1]),
         'DATE_DIFF': lambda args: exp.DateDiff(this=args[0], value=args[1]),
         'DATE_STR_TO_DATE': lambda args: exp.DateStrToDate(this=args[0]),

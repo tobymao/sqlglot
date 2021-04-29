@@ -460,24 +460,30 @@ class Parser:
         return self._parse_tokens(self._parse_comparison, exp.EQ, exp.NEQ, exp.Is)
 
     def _parse_comparison(self):
-        return self._parse_tokens(self._parse_range, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Like)
+        return self._parse_tokens(self._parse_range, exp.GT, exp.GTE, exp.LT, exp.LTE)
 
     def _parse_range(self):
         this = self._parse_bitwise()
 
-        if self._match(TokenType.IN):
+        negate = self._match(TokenType.NOT)
+
+        if self._match(TokenType.LIKE):
+            this = exp.Like(this=this, expression=self._parse_term())
+        elif self._match(TokenType.IN):
             if not self._match(TokenType.L_PAREN):
                 self.raise_error('Expected ( after IN', self._prev)
             expressions = self._parse_csv(self._parse_term)
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expected ) after IN')
-            return exp.In(this=this, expressions=expressions)
-
-        if self._match(TokenType.BETWEEN):
+            this = exp.In(this=this, expressions=expressions)
+        elif self._match(TokenType.BETWEEN):
             low = self._parse_term()
             self._match(TokenType.AND)
             high = self._parse_term()
-            return exp.Between(this=this, low=low, high=high)
+            this = exp.Between(this=this, low=low, high=high)
+
+        if negate:
+            this = exp.Not(this=this)
 
         return this
 

@@ -44,6 +44,11 @@ class TestTranspile(unittest.TestCase):
             'SELECT 1 FROM foo'
         )
 
+    def test_not_range(self):
+        self.validate('a NOT LIKE b', 'NOT a LIKE b')
+        self.validate('a NOT BETWEEN b AND c', 'NOT a BETWEEN b AND c')
+        self.validate('a NOT IN (1, 2)', 'NOT a IN (1, 2)')
+
     def test_if(self):
         self.validate('SELECT IF(a > 1, 1, 0) FROM foo', 'SELECT CASE WHEN a > 1 THEN 1 ELSE 0 END FROM foo')
         self.validate('SELECT IF(a > 1, 1) FROM foo', 'SELECT CASE WHEN a > 1 THEN 1 END FROM foo')

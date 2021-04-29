@@ -283,7 +283,7 @@ class Tokenizer:
     def __init__(self, **opts):
         self.quote = opts.get('quote') or "'"
         self.identifier = opts.get('identifier') or '"'
-        self.escape = opts.get('escape')
+        self.escape = opts.get('escape') or "'"
         self.single_tokens = {**self.SINGLE_TOKENS, **opts.get('single_tokens', {})}
         self.keywords = {**self.KEYWORDS, **opts.get('keywords', {})}
         self.white_space = {**self.WHITE_SPACE, **opts.get('white_space', {})}

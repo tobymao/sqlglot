@@ -24,6 +24,7 @@ x >> 1
 x >> 1 | 1 & 1 ^ 1
 1 - -1
 x IN (-1, 1)
+x IN ('a', 'a''a')
 x BETWEEN -1 AND 1
 ARRAY_CONTAINS(x, 1)
 NOT 1

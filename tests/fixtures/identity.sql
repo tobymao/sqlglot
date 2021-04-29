@@ -23,6 +23,8 @@ x << 1
 x >> 1
 x >> 1 | 1 & 1 ^ 1
 1 - -1
+x IN (-1, 1)
+x BETWEEN -1 AND 1
 NOT 1
 NOT NOT 1
 SELECT * FROM test

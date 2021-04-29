@@ -56,6 +56,9 @@ class TestDialects(unittest.TestCase):
         self.validate('x & 1 > 0', 'BITWISE_AND(x, 1) > 0', read='hive', write='presto')
 
         self.validate('ARRAY_CONTAINS(x, 1)', 'CONTAINS(x, 1)', read='hive', write='presto')
+        self.validate('SIZE(x)', 'CARDINALITY(x)', read='hive', write='presto')
+        self.validate('CARDINALITY(x)', 'SIZE(x)', read='presto', write='hive')
+        self.validate('ARRAY_SIZE(x)', 'CARDINALITY(x)', write='presto', identity=False)
 
         self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
         self.validate("DATE_PARSE(x, 'y')", "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'y'))", read='presto', write='hive')

@@ -132,6 +132,7 @@ class Hive(Dialect):
         TokenType.VARCHAR: 'STRING',
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
+        exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'value')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, 'this'),
         exp.FileFormat: _fileformat_sql,
@@ -169,6 +170,7 @@ class Hive(Dialect):
             format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
+        'SIZE': lambda args: exp.ArraySize(this=args[0]),
         'TO_DATE': lambda args: exp.TsOrDsToDateStr(this=args[0]),
         'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
             this=args[0],
@@ -226,6 +228,7 @@ class Presto(Dialect):
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
         exp.ArrayContains: lambda self, e: f"CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'value')})",
+        exp.ArraySize: lambda self, e: f"CARDINALITY({self.sql(e, 'this')})",
         exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseLeftShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseNot: lambda self, e: f"BITWISE_NOT({self.sql(e, 'this')})",
@@ -254,6 +257,7 @@ class Presto(Dialect):
 
     functions = {
         'APPROX_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0], accuracy=list_get(args, 1)),
+        'CARDINALITY': lambda args: exp.ArraySize(this=args[0]),
         'CONTAINS': lambda args: exp.ArrayContains(this=args[0], value=args[1]),
         'DATE_ADD': lambda args: exp.DateAdd(this=args[2], value=args[1]),
         'DATE_DIFF': lambda args: exp.DateDiff(this=args[2], value=args[1]),

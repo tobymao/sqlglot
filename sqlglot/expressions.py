@@ -369,6 +369,10 @@ class ArrayContains(Func):
     arg_types = {'this': True, 'value': True}
 
 
+class ArraySize(Func):
+    arg_types = {'this': True}
+
+
 class Count(Func):
     arg_types = {'this': False, 'distinct': False}
 

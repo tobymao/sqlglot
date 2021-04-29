@@ -64,7 +64,10 @@ class TestTranspile(unittest.TestCase):
             write='duckdb',
         )
 
-        self.validate("STR_TO_TIME('x', 'y')", "DATE_FORMAT('x', 'yyyy-MM-dd HH:mm:ss')", write='hive')
+        self.validate("STR_TO_TIME(x, 'y')", "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'y'))", write='hive')
+        self.validate("STR_TO_TIME(x, 'yyyy-MM-dd HH:mm:ss')", "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')", write='hive')
+        self.validate("STR_TO_TIME(x, 'yyyy-MM-dd')", "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')", write='hive')
+
         self.validate(
             "STR_TO_UNIX('x', 'y')",
             "UNIX_TIMESTAMP('x', 'y')",

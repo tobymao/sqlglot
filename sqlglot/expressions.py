@@ -402,6 +402,10 @@ class TimeStrToUnix(Func):
     arg_types = {'this': True}
 
 
+class TsOrDsToDateStr(Func):
+    arg_types = {'this': True}
+
+
 class UnixToStr(Func):
     arg_types = {'this': True, 'format': True}
 

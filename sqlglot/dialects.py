@@ -90,6 +90,7 @@ class DuckDB(Dialect):
 class Hive(Dialect):
     identifier = '`'
 
+    DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
     def _time_format(self, expression):
@@ -108,10 +109,17 @@ class Hive(Dialect):
         return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), Hive._time_format(self, expression))})"
 
     def _str_to_time(self, expression):
-        return f"DATE_FORMAT({self.sql(expression, 'this')}, {Hive.TIME_FORMAT})"
+        time_format = self.sql(expression, 'format')
+        if time_format in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
+            return f"DATE_FORMAT({self.sql(expression, 'this')}, {Hive.TIME_FORMAT})"
+        return f"FROM_UNIXTIME({Hive._str_to_unix(self, expression)})"
 
     def _time_to_str(self, expression):
-        return f"DATE_FORMAT({self.sql(expression, 'this')}, {self.sql(expression, 'format')})"
+        this = self.sql(expression, 'this')
+        time_format = self.sql(expression, 'format')
+        if time_format == Hive.DATE_FORMAT:
+            return f"TO_DATE({this})"
+        return f"DATE_FORMAT({this}, {time_format})"
 
     def _time_to_unix(self, expression):
         return f"UNIX_TIMESTAMP({self.sql(expression, 'this')})"
@@ -137,6 +145,7 @@ class Hive(Dialect):
         exp.TimeToStr: _time_to_str,
         exp.TimeToTimeStr: lambda self, e: self.sql(e, 'this'),
         exp.TimeToUnix: _time_to_unix,
+        exp.TsOrDsToDateStr: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), Hive._time_format(self, e))})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: _unix_to_time,
@@ -160,7 +169,7 @@ class Hive(Dialect):
             format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
-        'TO_DATE': lambda args: exp.TimeStrToDate(this=args[0]),
+        'TO_DATE': lambda args: exp.TsOrDsToDateStr(this=args[0]),
         'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
             this=args[0],
             format=list_get(args, 1) or Hive.TIME_FORMAT,
@@ -189,6 +198,8 @@ class Postgres(Dialect):
 class Presto(Dialect):
     escape = "'"
 
+    TIME_FORMAT = "'%Y-%m-%d %H:%i:%s'"
+
     def _approx_distinct_sql(self, expression):
         accuracy = expression.args.get('accuracy')
         accuracy = ', ' + self.sql(accuracy) if accuracy else ''
@@ -202,6 +213,11 @@ class Presto(Dialect):
 
     def _date_parse_sql(self, expression):
         return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
+
+    def _ts_or_ds_to_date_str_sql(self, expression):
+        this = self.sql(expression, 'this')
+        time_str = f"DATE_FORMAT({Presto._date_parse_sql(self, expression)}, '%Y-%m%-d')"
+        return f"IF(LENGTH({this}) > 10, {time_str}, {this})"
 
     transforms = {
         TokenType.INT: 'INTEGER',
@@ -220,13 +236,14 @@ class Presto(Dialect):
         exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
         exp.TimeStrToDate: _date_parse_sql,
         exp.TimeStrToTime: _date_parse_sql,
-        exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s'))",
+        exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",
         exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, '%Y-%m-%d %H:%i:%s')",
+        exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Presto.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
+        exp.TsOrDsToDateStr: _ts_or_ds_to_date_str_sql,
         exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format')})",
         exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')})",
-        exp.UnixToTimeStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), '%Y-%m-%d %H:%i:%s')",
+        exp.UnixToTimeStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {Presto.TIME_FORMAT})",
     }
 
     functions = {

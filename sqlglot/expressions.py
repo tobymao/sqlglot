@@ -345,6 +345,18 @@ class Count(Func):
     arg_types = {'this': False, 'distinct': False}
 
 
+class DateAdd(Func):
+    arg_types = {'this': True, 'value': True}
+
+
+class DateDiff(Func):
+    arg_types = {'this': True, 'value': True}
+
+
+class DateStrToDate(Func):
+    arg_types = {'this': True}
+
+
 class If(Func):
     arg_types = {'condition': True, 'true': True, 'false': False}
 

@@ -82,6 +82,18 @@ class TestDialects(unittest.TestCase):
             read='presto',
             write='hive',
         )
+        self.validate(
+            "DATE_ADD('day', 1, x)",
+            "DATE_ADD(x, 1)",
+            read='presto',
+            write='hive',
+        )
+        self.validate(
+            "DATE_DIFF('day', a, b)",
+            "DATEDIFF(b, a)",
+            read='presto',
+            write='hive',
+        )
 
         self.validate(
             'SELECT APPROX_DISTINCT(a) FROM foo',
@@ -149,6 +161,54 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "SELECT GET_JSON_OBJECT(x, '$.name', '$.name')",
             "SELECT JSON_EXTRACT(x, '$.name')",
+            read='hive',
+            write='presto',
+        )
+
+        self.validate(
+            "DATE_ADD('2020-01-01', 1)",
+            "DATE_ADD(DATE_STR_TO_DATE('2020-01-01'), 1)",
+            read='hive',
+            write=None,
+            identity=False,
+        )
+        self.validate(
+            "DATE_ADD('2020-01-01', 1)",
+            "DATE_ADD('2020-01-01', 1)",
+            read='hive',
+        )
+        self.validate(
+            "DATE_SUB('2020-01-01', 1)",
+            "DATE_ADD('2020-01-01', 1 * -1)",
+            read='hive',
+        )
+        self.validate(
+            "DATE_SUB('2020-01-01', 1)",
+            "DATE_ADD('day', 1 * -1, DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+            read='hive',
+            write='presto',
+        )
+        self.validate(
+            "DATE_ADD('2020-01-01', 1)",
+            "DATE_ADD('day', 1, DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+            read='hive',
+            write='presto',
+        )
+        self.validate(
+            "DATEDIFF('2020-01-02', '2020-01-02')",
+            "DATE_DIFF(DATE_STR_TO_DATE('2020-01-02'), DATE_STR_TO_DATE('2020-01-02'))",
+            read='hive',
+            write=None,
+            identity=False,
+        )
+        self.validate(
+            "DATEDIFF('2020-01-02', '2020-01-01')",
+            "DATEDIFF('2020-01-02', '2020-01-01')",
+            read='hive',
+        )
+        self.validate(
+            "DATEDIFF('2020-01-02', '2020-01-01')",
+            "DATE_DIFF('day', DATE_PARSE('2020-01-01', '%Y-%m-%d'), DATE_PARSE('2020-01-02', '%Y-%m-%d'))",
             read='hive',
             write='presto',
         )

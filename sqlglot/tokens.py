@@ -116,7 +116,15 @@ class TokenType(AutoName):
 
 
 class Token:
-    def __init__(self, token_type, text, line, col):
+    @classmethod
+    def number(cls, number):
+        return cls(TokenType.NUMBER, f"{number}")
+
+    @classmethod
+    def string(cls, string):
+        return cls(TokenType.STRING, f"'{string}'")
+
+    def __init__(self, token_type, text, line=0, col=0):
         self.token_type = token_type
         self.text = text
         self.line = line

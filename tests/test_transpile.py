@@ -82,6 +82,7 @@ class TestTranspile(unittest.TestCase):
         self.validate("UNIX_TO_TIME_STR(x)", "UNIX_TO_TIME_STR(x)", write=None)
         self.validate("TIME_STR_TO_DATE(x)", "TIME_STR_TO_DATE(x)", write=None)
 
+        self.validate("TIME_STR_TO_DATE(x)", "TO_DATE(x)", write='hive')
         self.validate("UNIX_TO_STR(x, 'yyyy-MM-dd HH:mm:ss')", "FROM_UNIXTIME(x)", write='hive')
         self.validate("STR_TO_UNIX(x, 'yyyy-MM-dd HH:mm:ss')", "UNIX_TIMESTAMP(x)", write='hive')
         self.validate("IF(x > 1, x + 1)", "IF(x > 1, x + 1)", write='presto')

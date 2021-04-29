@@ -365,6 +365,10 @@ class ArrayAgg(Func):
     arg_types = {'this': True}
 
 
+class ArrayContains(Func):
+    arg_types = {'this': True, 'value': True}
+
+
 class Count(Func):
     arg_types = {'this': False, 'distinct': False}
 

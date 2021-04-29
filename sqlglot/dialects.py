@@ -225,6 +225,7 @@ class Presto(Dialect):
         TokenType.TEXT: 'VARCHAR',
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+        exp.ArrayContains: lambda self, e: f"CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'value')})",
         exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseLeftShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseNot: lambda self, e: f"BITWISE_NOT({self.sql(e, 'this')})",
@@ -253,6 +254,7 @@ class Presto(Dialect):
 
     functions = {
         'APPROX_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0], accuracy=list_get(args, 1)),
+        'CONTAINS': lambda args: exp.ArrayContains(this=args[0], value=args[1]),
         'DATE_ADD': lambda args: exp.DateAdd(this=args[2], value=args[1]),
         'DATE_DIFF': lambda args: exp.DateDiff(this=args[2], value=args[1]),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),

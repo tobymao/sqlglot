@@ -155,6 +155,13 @@ class TestDialects(unittest.TestCase):
 
         self.validate("COLLECT_LIST(x)", "ARRAY_AGG(x)", read='hive', write='presto')
         self.validate("ARRAY_AGG(x)", "COLLECT_LIST(x)", read='presto', write='hive')
+
+        self.validate(
+            "UNIX_TIMESTAMP(x)",
+            "STR_TO_UNIX(x, 'yyyy-MM-dd HH:mm:ss')",
+            read='hive',
+            identity=False,
+        )
         self.validate(
             'TIME_STR_TO_UNIX(x)',
             "UNIX_TIMESTAMP(x)",

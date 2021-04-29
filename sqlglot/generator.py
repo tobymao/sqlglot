@@ -32,6 +32,8 @@ class Generator:
         TokenType.JSON: 'JSON',
         exp.Array: lambda self, e: f"ARRAY({self.expressions(e, flat=True)})",
         exp.ArrayAgg: lambda self, e: f"ARRAY_AGG({self.sql(e, 'this')})",
+        exp.StrToTime: lambda self, e: f"STR_TO_TIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.StrToUnix: lambda self, e: f"STR_TO_UNIX({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.TimeStrToDate: lambda self, e: f"TIME_STR_TO_DATE({self.sql(e, 'this')})",
         exp.TimeStrToTime: lambda self, e: f"TIME_STR_TO_TIME({self.sql(e, 'this')})",
         exp.TimeStrToUnix: lambda self, e: f"TIME_STR_TO_UNIX({self.sql(e, 'this')})",

@@ -13,8 +13,9 @@ def parse(code, read=None):
     return dialect.parse(code)
 
 
-def transpile(code, read=None, write=None, **opts):
+def transpile(code, read=None, write=None, identity=True, **opts):
+    write = write or read if identity else write
     return [
-        Dialect.get(write or read, Dialect)().generate(expression, **opts)
+        Dialect.get(write, Dialect)().generate(expression, **opts)
         for expression in parse(code, read)
     ]

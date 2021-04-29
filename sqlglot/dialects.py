@@ -90,11 +90,11 @@ class DuckDB(Dialect):
 class Hive(Dialect):
     identifier = '`'
 
-    TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss'
+    TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
     def _time_format(self, expression):
         time_format = self.sql(expression, 'format')
-        if time_format.replace("'", '') == Hive.TIME_FORMAT:
+        if time_format == Hive.TIME_FORMAT:
             return None
         return time_format
 
@@ -108,7 +108,7 @@ class Hive(Dialect):
         return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), Hive._time_format(self, expression))})"
 
     def _str_to_time(self, expression):
-        return f"DATE_FORMAT({self.sql(expression, 'this')}, '{Hive.TIME_FORMAT}')"
+        return f"DATE_FORMAT({self.sql(expression, 'this')}, {Hive.TIME_FORMAT})"
 
     def _time_to_str(self, expression):
         return f"DATE_FORMAT({self.sql(expression, 'this')}, {self.sql(expression, 'format')})"

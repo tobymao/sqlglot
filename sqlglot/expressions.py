@@ -197,6 +197,26 @@ class And(Binary):
     token_type = TokenType.AND
 
 
+class BitwiseAnd(Binary):
+    token_type = TokenType.AMP
+
+
+class BitwiseLeftShift(Binary):
+    token_type = TokenType.LSHIFT
+
+
+class BitwiseOr(Binary):
+    token_type = TokenType.PIPE
+
+
+class BitwiseRightShift(Binary):
+    token_type = TokenType.RSHIFT
+
+
+class BitwiseXor(Binary):
+    token_type = TokenType.CARET
+
+
 class Minus(Binary):
     token_type = TokenType.DASH
 
@@ -273,6 +293,10 @@ class Where(Binary):
 # (NOT a)
 class Unary(Expression):
     arg_types = {'this': True}
+
+
+class BitwiseNot(Unary):
+    token_type = TokenType.TILDA
 
 
 class Not(Unary):

@@ -461,7 +461,7 @@ class Parser:
         return self._parse_tokens(self._parse_range, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Like)
 
     def _parse_range(self):
-        this = self._parse_term()
+        this = self._parse_bitwise()
 
         if self._match(TokenType.IN):
             if not self._match(TokenType.L_PAREN):
@@ -479,6 +479,16 @@ class Parser:
 
         return this
 
+    def _parse_bitwise(self):
+        return self._parse_tokens(
+            self._parse_term,
+            exp.BitwiseLeftShift,
+            exp.BitwiseRightShift,
+            exp.BitwiseAnd,
+            exp.BitwiseXor,
+            exp.BitwiseOr,
+        )
+
     def _parse_term(self):
         return self._parse_tokens(self._parse_factor, exp.Minus, exp.Plus, exp.Mod)
 
@@ -488,6 +498,8 @@ class Parser:
     def _parse_unary(self):
         if self._match(TokenType.NOT):
             return exp.Not(this=self._parse_unary())
+        if self._match(TokenType.TILDA):
+            return exp.BitwiseNot(this=self._parse_unary())
         if self._match(TokenType.DASH):
             return exp.Neg(this=self._parse_unary())
         return self._parse_special()

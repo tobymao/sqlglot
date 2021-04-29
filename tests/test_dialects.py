@@ -48,6 +48,13 @@ class TestDialects(unittest.TestCase):
         self.validate('CAST(a AS STRING)', 'CAST(a AS VARCHAR)', write='presto')
         self.validate('CAST(a AS VARCHAR)', 'CAST(a AS STRING)', read='presto', write='spark')
 
+        self.validate('x & 1', 'BITWISE_AND(x, 1)', read='hive', write='presto')
+        self.validate('~x', 'BITWISE_NOT(x)', read='hive', write='presto')
+        self.validate('x | 1', 'BITWISE_OR(x, 1)', read='hive', write='presto')
+        self.validate('x << 1', 'BITWISE_ARITHMETIC_SHIFT_LEFT(x, 1)', read='hive', write='presto')
+        self.validate('x >> 1', 'BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)', read='hive', write='presto')
+        self.validate('x & 1 > 0', 'BITWISE_AND(x, 1) > 0', read='hive', write='presto')
+
         self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
         self.validate("DATE_PARSE(x, 'y')", "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'y'))", read='presto', write='hive')
         self.validate(

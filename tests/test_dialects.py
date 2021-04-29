@@ -233,8 +233,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATEDIFF(TO_DATE(y), x)",
-            "DATE_DIFF('day', DATE_PARSE(x, '%Y-%m-%d'), "
-            "DATE_PARSE(IF(LENGTH(y) > 10, DATE_FORMAT(DATE_PARSE(y, '%Y-%m-%d %H:%i:%s'), '%Y-%m%-d'), y), '%Y-%m-%d'))",
+            "DATE_DIFF('day', DATE_PARSE(x, '%Y-%m-%d'), DATE_PARSE(DATE_FORMAT(DATE_PARSE(SUBSTR(y, 1, 10), '%Y-%m-%d'), '%Y-%m-%d'), '%Y-%m-%d'))",
             read='hive',
             write='presto',
         )

@@ -216,8 +216,7 @@ class Presto(Dialect):
 
     def _ts_or_ds_to_date_str_sql(self, expression):
         this = self.sql(expression, 'this')
-        time_str = f"DATE_FORMAT({Presto._date_parse_sql(self, expression)}, '%Y-%m%-d')"
-        return f"IF(LENGTH({this}) > 10, {time_str}, {this})"
+        return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
 
     transforms = {
         TokenType.INT: 'INTEGER',

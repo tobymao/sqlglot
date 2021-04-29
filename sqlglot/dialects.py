@@ -79,7 +79,7 @@ class DuckDB(Dialect):
         'EPOCH': lambda args: exp.TimeToUnix(this=args[0]),
         'EPOCH_MS': lambda args: exp.UnixToTime(this=exp.Slash(
             this=args[0],
-            expression=Token(TokenType.NUMBER, '1000', 0, 0)
+            expression=Token.number(1000),
         )),
         'LIST_VALUE': lambda args: exp.Array(expressions=args),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
@@ -124,12 +124,14 @@ class Hive(Dialect):
         TokenType.VARCHAR: 'STRING',
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
+        exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'value')})",
+        exp.DateStrToDate: lambda self, e: self.sql(e, 'this'),
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
-        exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')}",
+        exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.TimeStrToTime: lambda self, e: self.sql(e, 'this'),
         exp.TimeStrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')})",
         exp.TimeToStr: _time_to_str,
@@ -143,11 +145,26 @@ class Hive(Dialect):
     functions = {
         'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
+        'DATE_ADD': lambda args: exp.DateAdd(this=exp.DateStrToDate(this=args[0]), value=args[1]),
+        'DATEDIFF': lambda args: exp.DateDiff(
+            this=exp.DateStrToDate(this=args[0]),
+            value=exp.DateStrToDate(this=args[1]),
+        ),
+        'DATE_SUB': lambda args: exp.DateAdd(
+            this=exp.DateStrToDate(this=args[0]),
+            value=exp.Star(this=args[1], expression=Token.number(-1)),
+        ),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
-        'FROM_UNIXTIME': lambda args: exp.UnixToStr(this=args[0], format=list_get(args, 1) or Hive.TIME_FORMAT),
+        'FROM_UNIXTIME': lambda args: exp.UnixToStr(
+            this=args[0],
+            format=list_get(args, 1) or Hive.TIME_FORMAT,
+        ),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
         'TO_DATE': lambda args: exp.TimeStrToDate(this=args[0]),
-        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(this=args[0], format=list_get(args, 1) or Hive.TIME_FORMAT),
+        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
+            this=args[0],
+            format=list_get(args, 1) or Hive.TIME_FORMAT,
+        ),
     }
 
 
@@ -193,6 +210,9 @@ class Presto(Dialect):
         TokenType.TEXT: 'VARCHAR',
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+        exp.DateAdd: lambda self, e: f"DATE_ADD('day', {self.sql(e, 'value')}, {self.sql(e, 'this')})",
+        exp.DateDiff: lambda self, e: f"DATE_DIFF('day', {self.sql(e, 'value')}, {self.sql(e, 'this')})",
+        exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
@@ -211,6 +231,8 @@ class Presto(Dialect):
 
     functions = {
         'APPROX_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0], accuracy=list_get(args, 1)),
+        'DATE_ADD': lambda args: exp.DateAdd(this=args[2], value=args[1]),
+        'DATE_DIFF': lambda args: exp.DateDiff(this=args[2], value=args[1]),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'DATE_PARSE': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'FROM_UNIXTIME': lambda args: exp.UnixToTime(this=args[0]),

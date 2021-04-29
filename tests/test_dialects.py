@@ -49,7 +49,7 @@ class TestDialects(unittest.TestCase):
         self.validate('CAST(a AS VARCHAR)', 'CAST(a AS STRING)', read='presto', write='spark')
 
         self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
-        self.validate("DATE_PARSE(x, 'y')", "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')", read='presto', write='hive')
+        self.validate("DATE_PARSE(x, 'y')", "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'y'))", read='presto', write='hive')
         self.validate(
             'TIME_STR_TO_UNIX(x)',
             "TO_UNIXTIME(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))",
@@ -166,6 +166,24 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
+            "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd')",
+            "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
+            write='hive',
+            identity=False,
+        )
+        self.validate(
+            "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
+            "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
+            write='hive',
+            identity=False,
+        )
+        self.validate(
+            "STR_TO_TIME(x, 'yyyy')",
+            "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy'))",
+            write='hive',
+            identity=False,
+        )
+        self.validate(
             "DATE_ADD('2020-01-01', 1)",
             "DATE_ADD(DATE_STR_TO_DATE('2020-01-01'), 1)",
             read='hive',
@@ -205,6 +223,13 @@ class TestDialects(unittest.TestCase):
             "DATEDIFF('2020-01-02', '2020-01-01')",
             "DATEDIFF('2020-01-02', '2020-01-01')",
             read='hive',
+        )
+        self.validate(
+            "DATEDIFF(TO_DATE(y), x)",
+            "DATE_DIFF('day', DATE_PARSE(x, '%Y-%m-%d'), "
+            "DATE_PARSE(IF(LENGTH(y) > 10, DATE_FORMAT(DATE_PARSE(y, '%Y-%m-%d %H:%i:%s'), '%Y-%m%-d'), y), '%Y-%m-%d'))",
+            read='hive',
+            write='presto',
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",

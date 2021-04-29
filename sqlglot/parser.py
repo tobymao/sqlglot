@@ -34,6 +34,7 @@ class Parser:
         'TIME_TO_STR': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'TIME_TO_TIME_STR': lambda args: exp.TimeToTimeStr(this=args[0]),
         'TIME_TO_UNIX': lambda args: exp.TimeToUnix(this=args[0]),
+        'TS_OR_DS_TO_DATE_STR': lambda args: exp.TsOrDsToDateStr(this=args[0]),
         'UNIX_TO_STR': lambda args: exp.UnixToStr(this=args[0], format=args[1]),
         'UNIX_TO_TIME': lambda args: exp.UnixToTime(this=args[0]),
         'UNIX_TO_TIME_STR': lambda args: exp.UnixToTimeStr(this=args[0]),

@@ -29,6 +29,12 @@ class TokenType(AutoName):
     NEQ = auto()
     AND = auto()
     OR = auto()
+    AMP = auto()
+    PIPE = auto()
+    CARET = auto()
+    TILDA = auto()
+    LSHIFT = auto()
+    RSHIFT = auto()
 
     SPACE = auto()
     BREAK = auto()
@@ -151,6 +157,8 @@ class Tokenizer:
         ']': TokenType.R_BRACKET,
         '{': TokenType.L_BRACE,
         '}': TokenType.R_BRACE,
+        '&': TokenType.AMP,
+        '^': TokenType.CARET,
         ':': TokenType.COLON,
         ',': TokenType.COMMA,
         '.': TokenType.DOT,
@@ -160,10 +168,12 @@ class Tokenizer:
         '<': TokenType.LT,
         '%': TokenType.MOD,
         '!': TokenType.NOT,
+        '|': TokenType.PIPE,
         '+': TokenType.PLUS,
         ';': TokenType.SEMICOLON,
         '/': TokenType.SLASH,
         '*': TokenType.STAR,
+        '~': TokenType.TILDA,
     }
 
     KEYWORDS = {
@@ -175,6 +185,8 @@ class Tokenizer:
         '<=': TokenType.LTE,
         '<>': TokenType.NEQ,
         '!=': TokenType.NEQ,
+        '<<': TokenType.LSHIFT,
+        '>>': TokenType.RSHIFT,
 
         'ALL': TokenType.ALL,
         'AND': TokenType.AND,

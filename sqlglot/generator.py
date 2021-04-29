@@ -308,6 +308,24 @@ class Generator:
     def and_sql(self, expression):
         return self.binary(expression, 'AND')
 
+    def bitwiseand_sql(self, expression):
+        return self.binary(expression, '&')
+
+    def bitwiseleftshift_sql(self, expression):
+        return self.binary(expression, '<<')
+
+    def bitwisenot_sql(self, expression):
+        return f"~{self.sql(expression, 'this')}"
+
+    def bitwiseor_sql(self, expression):
+        return self.binary(expression, '|')
+
+    def bitwiserightshift_sql(self, expression):
+        return self.binary(expression, '>>')
+
+    def bitwisexor_sql(self, expression):
+        return self.binary(expression, '^')
+
     def cast_sql(self, expression):
         return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 

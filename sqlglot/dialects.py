@@ -89,6 +89,7 @@ class DuckDB(Dialect):
 
 class Hive(Dialect):
     identifier = '`'
+    escape = '\\'
 
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
@@ -198,8 +199,6 @@ class Postgres(Dialect):
 
 
 class Presto(Dialect):
-    escape = "'"
-
     TIME_FORMAT = "'%Y-%m-%d %H:%i:%s'"
 
     def _approx_distinct_sql(self, expression):

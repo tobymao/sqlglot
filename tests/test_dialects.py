@@ -305,6 +305,7 @@ class TestDialects(unittest.TestCase):
         self.validate("ARRAY(0, 1, 2)", "ARRAY[0, 1, 2]", read='spark', write='presto')
         self.validate("ARRAY(0, 1, 2)", "LIST_VALUE(0, 1, 2)", read='spark', write='duckdb')
         self.validate('SELECT /*+ COALESCE(3) */ * FROM x','SELECT /*+ COALESCE(3) */ * FROM x', read='spark')
+        self.validate("x IN ('a', 'a''b')", "x IN ('a', 'a\\'b')", read='presto', write='spark')
 
     def test_sqlite(self):
         self.validate(

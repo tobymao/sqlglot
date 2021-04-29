@@ -57,7 +57,7 @@ class Generator:
         self.identifier = opts.get('identifier') or '"'
         self.identify = opts.get('identify', False)
         self.quote = opts.get('quote') or "'"
-        self.escape = opts.get('escape') or '\\'
+        self.escape = opts.get('escape') or "'"
         self.pad = opts.get('pad', 2)
         self.unsupported_level = opts.get('unsupported_level', ErrorLevel.WARN)
         self.unsupported_messages = []

@@ -139,6 +139,7 @@ class Hive(Dialect):
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
         exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
@@ -171,6 +172,7 @@ class Hive(Dialect):
             format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
+        'LOCATE': lambda args: exp.StrPosition(this=args[1], substr=args[0], position=list_get(args, 2)),
         'SIZE': lambda args: exp.ArraySize(this=args[0]),
         'TO_DATE': lambda args: exp.TsOrDsToDateStr(this=args[0]),
         'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
@@ -215,6 +217,14 @@ class Presto(Dialect):
     def _date_parse_sql(self, expression):
         return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
 
+    def _str_position_sql(self, expression):
+        this = self.sql(expression, 'this')
+        substr = self.sql(expression, 'substr')
+        position = self.sql(expression, 'position')
+        if position:
+            return f"STRPOS(SUBSTR({this}, {position}), {substr}) + {position} - 1"
+        return f"STRPOS({this}, {substr})"
+
     def _ts_or_ds_to_date_str_sql(self, expression):
         this = self.sql(expression, 'this')
         return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
@@ -240,6 +250,7 @@ class Presto(Dialect):
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.StrPosition: _str_position_sql,
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
         exp.TimeStrToDate: _date_parse_sql,
@@ -264,6 +275,7 @@ class Presto(Dialect):
         'DATE_PARSE': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'FROM_UNIXTIME': lambda args: exp.UnixToTime(this=args[0]),
         'JSON_EXTRACT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
+        'STRPOS': lambda args: exp.StrPosition(this=args[0], substr=args[1]),
         'TO_UNIXTIME': lambda args: exp.TimeToUnix(this=args[0]),
     }
 

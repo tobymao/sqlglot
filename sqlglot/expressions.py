@@ -402,6 +402,10 @@ class Map(Func):
     arg_types = {'keys': True, 'values': True}
 
 
+class StrPosition(Func):
+    arg_types = {'this': True, 'substr': True, 'position': False}
+
+
 class StrToTime(Func):
     arg_types = {'this': True, 'format': True}
 

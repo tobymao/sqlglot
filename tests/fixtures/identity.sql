@@ -27,6 +27,8 @@ x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1
 ARRAY_CONTAINS(x, 1)
+STR_POSITION(x, 'a')
+STR_POSITION(x, 'a', 3)
 NOT 1
 NOT NOT 1
 SELECT * FROM test

@@ -28,6 +28,7 @@ class Parser:
         'DATE_DIFF': lambda args: exp.DateDiff(this=args[0], value=args[1]),
         'DATE_STR_TO_DATE': lambda args: exp.DateStrToDate(this=args[0]),
         'IF': lambda args: exp.If(condition=args[0], true=args[1], false=list_get(args, 2)),
+        'STR_POSITION': lambda args: exp.StrPosition(this=args[0], substr=args[1], position=list_get(args, 2)),
         'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'STR_TO_UNIX': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
         'TIME_STR_TO_DATE': lambda args: exp.TimeStrToDate(this=args[0]),

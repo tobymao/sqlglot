@@ -1,3 +1,4 @@
+# pylint: disable=too-many-statements
 import unittest
 
 from sqlglot import transpile
@@ -59,6 +60,11 @@ class TestDialects(unittest.TestCase):
         self.validate('SIZE(x)', 'CARDINALITY(x)', read='hive', write='presto')
         self.validate('CARDINALITY(x)', 'SIZE(x)', read='presto', write='hive')
         self.validate('ARRAY_SIZE(x)', 'CARDINALITY(x)', write='presto', identity=False)
+
+        self.validate("STR_POSITION(x, 'a')", "STRPOS(x, 'a')", write='presto', identity=False)
+        self.validate("STR_POSITION(x, 'a')", "LOCATE('a', x)", read='presto', write='hive')
+        self.validate("LOCATE('a', x)", "STRPOS(x, 'a')", read='hive', write='presto')
+        self.validate("LOCATE('a', x, 3)", "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1", read='hive', write='presto')
 
         self.validate("DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read='presto', write='hive')
         self.validate("DATE_PARSE(x, 'y')", "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'y'))", read='presto', write='hive')

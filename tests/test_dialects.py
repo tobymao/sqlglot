@@ -56,6 +56,9 @@ class TestDialects(unittest.TestCase):
         self.validate('x >> 1', 'BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)', read='hive', write='presto')
         self.validate('x & 1 > 0', 'BITWISE_AND(x, 1) > 0', read='hive', write='presto')
 
+        self.validate("REGEXP_LIKE(a, 'x')", "a RLIKE 'x'", read='presto', write='hive')
+        self.validate("a RLIKE 'x'", "REGEXP_LIKE(a, 'x')", read='hive', write='presto')
+
         self.validate('ARRAY_CONTAINS(x, 1)', 'CONTAINS(x, 1)', read='hive', write='presto')
         self.validate('SIZE(x)', 'CARDINALITY(x)', read='hive', write='presto')
         self.validate('CARDINALITY(x)', 'SIZE(x)', read='presto', write='hive')

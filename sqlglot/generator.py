@@ -376,6 +376,9 @@ class Generator:
     def plus_sql(self, expression):
         return self.binary(expression, '+')
 
+    def regexlike_sql(self, expression):
+        return self.binary(expression, 'RLIKE')
+
     def slash_sql(self, expression):
         return self.binary(expression, '/')
 

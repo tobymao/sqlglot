@@ -112,6 +112,7 @@ class TokenType(AutoName):
     SELECT = auto()
     STORED = auto()
     RIGHT = auto()
+    RLIKE = auto()
     THEN = auto()
     UNION = auto()
     UNNEST = auto()
@@ -228,6 +229,7 @@ class Tokenizer:
         'OVER': TokenType.OVER,
         'PARTITION BY': TokenType.PARTITION,
         'RIGHT': TokenType.RIGHT,
+        'RLIKE': TokenType.RLIKE,
         'SELECT': TokenType.SELECT,
         'STORED': TokenType.STORED,
         'TABLE': TokenType.TABLE,

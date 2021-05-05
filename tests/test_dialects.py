@@ -58,6 +58,12 @@ class TestDialects(unittest.TestCase):
 
         self.validate("REGEXP_LIKE(a, 'x')", "a RLIKE 'x'", read='presto', write='hive')
         self.validate("a RLIKE 'x'", "REGEXP_LIKE(a, 'x')", read='hive', write='presto')
+        self.validate("CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write='presto')
+        self.validate("CASE WHEN x > 1 THEN 1 END", "IF(x > 1, 1)", write='presto')
+        self.validate(
+            "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
+            "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
+            write='presto')
 
         self.validate('ARRAY_CONTAINS(x, 1)', 'CONTAINS(x, 1)', read='hive', write='presto')
         self.validate('SIZE(x)', 'CARDINALITY(x)', read='hive', write='presto')
@@ -260,6 +266,9 @@ class TestDialects(unittest.TestCase):
 
         self.validate("COLLECT_LIST(x)", "ARRAY_AGG(x)", read='hive', write='presto')
         self.validate("ARRAY_AGG(x)", "COLLECT_LIST(x)", read='presto', write='hive')
+
+        self.validate("CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write='hive')
+        self.validate("CASE WHEN x > 1 THEN 1 END", "IF(x > 1, 1)", write='hive')
 
         self.validate(
             "UNIX_TIMESTAMP(x)",

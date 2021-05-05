@@ -470,6 +470,8 @@ class Parser:
 
         if self._match(TokenType.LIKE):
             this = exp.Like(this=this, expression=self._parse_term())
+        elif self._match(TokenType.RLIKE):
+            this = exp.RegexLike(this=this, expression=self._parse_term())
         elif self._match(TokenType.IN):
             if not self._match(TokenType.L_PAREN):
                 self.raise_error('Expected ( after IN', self._prev)

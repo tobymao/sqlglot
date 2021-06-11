@@ -660,6 +660,9 @@ class Parser:
 
         order = self._parse_order(None)
 
+        if self._match(TokenType.ROWS, TokenType.RANGE):
+            print('coming here')
+
         if not self._match(TokenType.R_PAREN):
             self.raise_error('Expecting )')
 

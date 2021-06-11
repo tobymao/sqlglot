@@ -3,5 +3,8 @@ import sys
 import sqlglot
 
 
-for sql in sqlglot.transpile(sys.argv[1], pretty=True):
+sql = """
+SELECT AVG(X) OVER (PARTITION BY x RANGE BETWEEN INTERVAL 7 DAYS PRECEDING AND CURRENT ROW)
+"""
+for sql in sqlglot.transpile(sql, pretty=True):
     print(sql)

@@ -78,12 +78,14 @@ class TokenType(AutoName):
     COMMENT_START = auto()
     CREATE = auto()
     CROSS = auto()
+    CURRENT = auto()
     DESC = auto()
     DISTINCT = auto()
     DROP = auto()
     ELSE = auto()
     END = auto()
     EXISTS = auto()
+    FOLLOWING = auto()
     FORMAT = auto()
     FULL = auto()
     FUNC = auto()
@@ -94,6 +96,7 @@ class TokenType(AutoName):
     IF = auto()
     IN = auto()
     INNER = auto()
+    INTERVAL = auto()
     IS = auto()
     JOIN = auto()
     LATERAL = auto()
@@ -109,11 +112,16 @@ class TokenType(AutoName):
     OUTER = auto()
     OVER = auto()
     PARTITION = auto()
+    PRECEDING = auto()
     SELECT = auto()
     STORED = auto()
+    RANGE = auto()
     RIGHT = auto()
     RLIKE = auto()
+    ROW = auto()
+    ROWS = auto()
     THEN = auto()
+    UNBOUNDED = auto()
     UNION = auto()
     UNNEST = auto()
     VIEW = auto()
@@ -200,6 +208,7 @@ class Tokenizer:
         'COUNT': TokenType.COUNT,
         'CREATE': TokenType.CREATE,
         'CROSS': TokenType.CROSS,
+        'CURRENT': TokenType.CURRENT,
         'DESC': TokenType.DESC,
         'DISTINCT': TokenType.DISTINCT,
         'DROP': TokenType.DROP,
@@ -208,12 +217,14 @@ class Tokenizer:
         'EXISTS': TokenType.EXISTS,
         'FORMAT': TokenType.FORMAT,
         'FULL': TokenType.FULL,
+        'FOLLOWING': TokenType.FOLLOWING,
         'FROM': TokenType.FROM,
         'GROUP BY': TokenType.GROUP,
         'HAVING': TokenType.HAVING,
         'IF': TokenType.IF,
         'IN': TokenType.IN,
         'INNER': TokenType.INNER,
+        'INTERVAL': TokenType.INTERVAL,
         'IS': TokenType.IS,
         'JOIN': TokenType.JOIN,
         'LATERAL': TokenType.LATERAL,
@@ -228,12 +239,17 @@ class Tokenizer:
         'OUTER': TokenType.OUTER,
         'OVER': TokenType.OVER,
         'PARTITION BY': TokenType.PARTITION,
+        'PRECEDING': TokenType.PRECEDING,
+        'RANGE': TokenType.RANGE,
         'RIGHT': TokenType.RIGHT,
         'RLIKE': TokenType.RLIKE,
+        'ROW': TokenType.ROW,
+        'ROWS': TokenType.ROWS,
         'SELECT': TokenType.SELECT,
         'STORED': TokenType.STORED,
         'TABLE': TokenType.TABLE,
         'THEN': TokenType.THEN,
+        'UNBOUNDED': TokenType.UNBOUNDED,
         'UNION': TokenType.UNION,
         'UNNEST': TokenType.UNNEST,
         'VIEW': TokenType.VIEW,

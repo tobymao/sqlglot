@@ -184,7 +184,13 @@ class Select(Expression):
 
 class Window(Expression):
     token_type = TokenType.OVER
-    arg_types = {'this': True, 'partition': False, 'order': False}
+    arg_types = {'this': True, 'partition': False, 'order': False, 'spec': False}
+
+
+class WindowSpec(Expression):
+    token_type = TokenType.SPEC
+    arg_types = {'kind': False, 'start': False, 'start_side': False, 'end': False, 'end_side': False}
+
 
 # Binary Expressions
 # (PLUS a b)

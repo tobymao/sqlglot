@@ -146,6 +146,14 @@ class TestDialects(unittest.TestCase):
         sql = transpile("SELECT JSON_EXTRACT(x, '$.name')", read='presto', write='spark')[0]
         self.assertEqual(sql, "SELECT GET_JSON_OBJECT(x, '$.name')")
 
+        # pylint: disable=anomalous-backslash-in-string
+        self.validate(
+            "INITCAP('new york')",
+            "REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+            read='hive',
+            write='presto',
+        )
+
         self.validate("''''", "''''", read='presto', write='presto')
         self.validate("''''", "'\\''", read='presto', write='hive')
         self.validate("'x'", "'x'", read='presto', write='presto')

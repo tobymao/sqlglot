@@ -231,6 +231,10 @@ class Presto(Dialect):
     def _date_parse_sql(self, expression):
         return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
 
+    def _initcap_sql(self, expression):
+        regex = '(\w)(\w*)'  # pylint: disable=anomalous-backslash-in-string
+        return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
+
     def _str_position_sql(self, expression):
         this = self.sql(expression, 'this')
         substr = self.sql(expression, 'substr')
@@ -264,6 +268,7 @@ class Presto(Dialect):
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
+        exp.Initcap: _initcap_sql,
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.RegexLike: lambda self, e: f"REGEXP_LIKE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrPosition: _str_position_sql,

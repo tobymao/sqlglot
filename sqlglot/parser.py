@@ -660,13 +660,41 @@ class Parser:
 
         order = self._parse_order(None)
 
+        spec = None
+
         if self._match(TokenType.ROWS, TokenType.RANGE):
-            print('coming here')
+            kind = self._prev
+            self._match(TokenType.BETWEEN)
+            start = self._parse_window_spec()
+            self._match(TokenType.AND)
+            end = self._parse_window_spec()
+
+            spec = exp.WindowSpec(
+                kind=kind,
+                start=start['value'],
+                start_side=start['side'],
+                end=end['value'],
+                end_side=end['side'],
+            )
 
         if not self._match(TokenType.R_PAREN):
             self.raise_error('Expecting )')
 
-        return exp.Window(this=this, partition=partition, order=order)
+        return exp.Window(this=this, partition=partition, order=order, spec=spec)
+
+    def _parse_window_spec(self):
+        self._match(TokenType.BETWEEN)
+
+        spec = {'value': None, 'side': None}
+
+        if self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW):
+            spec['value'] = self._prev
+        else:
+            spec['value'] = self._parse_primary()
+
+        if self._match(TokenType.PRECEDING, TokenType.FOLLOWING):
+            spec['side'] = self._prev
+        return spec
 
     def _parse_alias(self, this):
         self._match(TokenType.ALIAS)

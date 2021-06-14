@@ -28,5 +28,5 @@ def list_get(arr, index):
     return arr[index] if index < len(arr) else None
 
 
-def csv(*args):
-    return ', '.join(arg for arg in args if arg)
+def csv(*args, sep=', '):
+    return sep.join(arg for arg in args if arg)

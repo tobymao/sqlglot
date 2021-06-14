@@ -294,6 +294,9 @@ class Generator:
     def in_sql(self, expression):
         return f"{self.sql(expression, 'this')} IN ({self.expressions(expression, flat=True)})"
 
+    def interval_sql(self, expression):
+        return f"INTERVAL {self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
+
     def func_sql(self, expression):
         return f"{self.sql(expression, 'this').upper()}({self.expressions(expression, flat=True)})"
 

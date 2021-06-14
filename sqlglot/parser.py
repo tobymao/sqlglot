@@ -327,14 +327,8 @@ class Parser:
         )
 
     def _parse_join(self, this):
-        side = None
-        kind = None
-
-        if self._match(TokenType.LEFT, TokenType.RIGHT, TokenType.FULL):
-            side = self._prev
-
-        if self._match(TokenType.INNER, TokenType.OUTER, TokenType.CROSS):
-            kind = self._prev
+        side = self._match(TokenType.LEFT, TokenType.RIGHT, TokenType.FULL)
+        kind = self._match(TokenType.INNER, TokenType.OUTER, TokenType.CROSS)
 
         if self._match(TokenType.JOIN):
             on = None
@@ -361,10 +355,7 @@ class Parser:
             expression = nested
         else:
             db = None
-            table = None
-
-            if self._match(TokenType.VAR, TokenType.IDENTIFIER):
-                table = self._prev
+            table = self._match(TokenType.VAR, TokenType.IDENTIFIER)
 
             if self._match(TokenType.DOT):
                 db = table
@@ -592,6 +583,11 @@ class Parser:
         if self._match(*self.PRIMARY_TOKENS):
             return self._prev
 
+        interval = self._parse_interval()
+
+        if interval:
+            return interval
+
         if self._match(TokenType.L_PAREN):
             paren = self._prev
             this = self._parse_expression()
@@ -661,9 +657,9 @@ class Parser:
         order = self._parse_order(None)
 
         spec = None
+        kind = self._match(TokenType.ROWS, TokenType.RANGE)
 
-        if self._match(TokenType.ROWS, TokenType.RANGE):
-            kind = self._prev
+        if kind:
             self._match(TokenType.BETWEEN)
             start = self._parse_window_spec()
             self._match(TokenType.AND)
@@ -685,16 +681,10 @@ class Parser:
     def _parse_window_spec(self):
         self._match(TokenType.BETWEEN)
 
-        spec = {'value': None, 'side': None}
-
-        if self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW):
-            spec['value'] = self._prev
-        else:
-            spec['value'] = self._parse_primary()
-
-        if self._match(TokenType.PRECEDING, TokenType.FOLLOWING):
-            spec['side'] = self._prev
-        return spec
+        return {
+            'value': self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW) or self._parse_primary(),
+            'side': self._match(TokenType.PRECEDING, TokenType.FOLLOWING),
+        }
 
     def _parse_alias(self, this):
         self._match(TokenType.ALIAS)
@@ -706,8 +696,13 @@ class Parser:
         return this
 
     def _parse_id_var(self):
-        if self._match(TokenType.IDENTIFIER, TokenType.VAR):
-            return self._prev
+        return self._match(TokenType.IDENTIFIER, TokenType.VAR)
+
+    def _parse_interval(self):
+        if self._match(TokenType.INTERVAL):
+            this = self._match(TokenType.STRING, TokenType.NUMBER)
+            unit = self._match(TokenType.VAR)
+            return exp.Interval(this=this, unit=unit)
         return None
 
     def _parse_csv(self, parse):
@@ -730,11 +725,11 @@ class Parser:
 
     def _match(self, *types):
         if not self._curr:
-            return False
+            return None
 
         for token_type in types:
             if self._curr.token_type == token_type:
                 self._advance()
-                return True
+                return self._prev
 
-        return False
+        return None

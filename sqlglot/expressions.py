@@ -352,6 +352,11 @@ class In(Expression):
     arg_types = {'this': True, 'expressions': True}
 
 
+class Interval(Expression):
+    token_type = TokenType.IN
+    arg_types = {'this': True, 'unit': True}
+
+
 # Functions
 class Func(Expression):
     token_type = TokenType.FUNC

@@ -246,7 +246,15 @@ class Generator:
         order = expression.args.get('order')
         order_sql = self.order_sql(order, flat=True) if order else ''
         partition_sql = partition + ' ' if partition and order else partition
-        return f"{this_sql} OVER({partition_sql}{order_sql})"
+        spec = expression.args.get('spec')
+        spec_sql = ' ' + self.window_spec_sql(spec) if spec else ''
+        return f"{this_sql} OVER({partition_sql}{order_sql}{spec_sql})"
+
+    def window_spec_sql(self, expression):
+        kind = self.sql(expression, 'kind')
+        start = csv(self.sql(expression, 'start'), self.sql(expression, 'start_side'), sep=' ')
+        end = csv(self.sql(expression, 'end'), self.sql(expression, 'end_side'), sep=' ')
+        return f"{kind} BETWEEN {start} AND {end}"
 
     def between_sql(self, expression):
         this = self.sql(expression, 'this')

@@ -78,7 +78,7 @@ class TokenType(AutoName):
     COMMENT_START = auto()
     CREATE = auto()
     CROSS = auto()
-    CURRENT = auto()
+    CURRENT_ROW = auto()
     DESC = auto()
     DISTINCT = auto()
     DROP = auto()
@@ -118,8 +118,8 @@ class TokenType(AutoName):
     RANGE = auto()
     RIGHT = auto()
     RLIKE = auto()
-    ROW = auto()
     ROWS = auto()
+    SPEC = auto()
     THEN = auto()
     UNBOUNDED = auto()
     UNION = auto()
@@ -208,7 +208,7 @@ class Tokenizer:
         'COUNT': TokenType.COUNT,
         'CREATE': TokenType.CREATE,
         'CROSS': TokenType.CROSS,
-        'CURRENT': TokenType.CURRENT,
+        'CURRENT ROW': TokenType.CURRENT_ROW,
         'DESC': TokenType.DESC,
         'DISTINCT': TokenType.DISTINCT,
         'DROP': TokenType.DROP,
@@ -243,7 +243,6 @@ class Tokenizer:
         'RANGE': TokenType.RANGE,
         'RIGHT': TokenType.RIGHT,
         'RLIKE': TokenType.RLIKE,
-        'ROW': TokenType.ROW,
         'ROWS': TokenType.ROWS,
         'SELECT': TokenType.SELECT,
         'STORED': TokenType.STORED,

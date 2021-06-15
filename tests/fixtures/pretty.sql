@@ -3,9 +3,9 @@ SELECT
   *
 FROM test;
 WITH cte1 AS (
-    SELECT a
+    SELECT a, z and e AS b
     FROM cte
-    WHERE x IN (1, 2, 3)
+    WHERE x IN (1, 2, 3) AND z < -1 OR z > 1 AND w = 'AND'
 ), cte2 AS (
     SELECT RANK() OVER(PARTITION BY a, b ORDER BY x DESC) a, b
     FROM cte
@@ -22,14 +22,18 @@ SELECT a, b c FROM (
 ) x
 LEFT JOIN (
     SELECT a, b
-    FROM (SELECT * FROM bar GROUP BY a HAVING a > 1 LIMIT 10) z
-) y ON x.a = y.b;
+    FROM (SELECT * FROM bar WHERE (c > 1 AND d > 1) OR e > 1 GROUP BY a HAVING a > 1 LIMIT 10) z
+) y ON x.a = y.b AND x.a > 1 OR (x.c = y.d OR x.c = y.e);
 WITH cte1 AS (
     SELECT
-      a
+      a,
+      z AND e AS b
     FROM cte
     WHERE
       x IN (1, 2, 3)
+      AND z < -1
+      OR z > 1
+      AND w = 'AND'
 ), cte2 AS (
     SELECT
       RANK() OVER(PARTITION BY a, b ORDER BY x DESC) AS a,
@@ -63,11 +67,16 @@ LEFT JOIN (
         SELECT
           *
         FROM bar
+        WHERE
+          (c > 1 AND d > 1)
+          OR e > 1
         GROUP BY
           a
         HAVING
           a > 1
         LIMIT 10
     ) AS z
-) AS y ON
-  x.a = y.b;
+) AS y
+  ON x.a = y.b
+  AND x.a > 1
+  OR (x.c = y.d OR x.c = y.e);

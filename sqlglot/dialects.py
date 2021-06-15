@@ -56,7 +56,7 @@ def _case_if_sql(self, expression):
     args = expression.args
 
     return _if_sql(self, exp.If(
-        condition=args['ifs'][0].args['condition'],
+        this=args['ifs'][0].args['this'],
         true=args['ifs'][0].args['true'],
         false=args.get('default')
     ))
@@ -64,7 +64,7 @@ def _case_if_sql(self, expression):
 
 def _if_sql(self, expression):
     expressions = csv(
-        self.sql(expression, 'condition'),
+        self.sql(expression, 'this'),
         self.sql(expression, 'true'),
         self.sql(expression, 'false')
     )
@@ -148,7 +148,7 @@ class Hive(Dialect):
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
         exp.Case: _case_if_sql,
-        exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'value')})",
+        exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, 'this'),
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
@@ -171,14 +171,14 @@ class Hive(Dialect):
     functions = {
         'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
-        'DATE_ADD': lambda args: exp.DateAdd(this=exp.DateStrToDate(this=args[0]), value=args[1]),
+        'DATE_ADD': lambda args: exp.DateAdd(this=exp.DateStrToDate(this=args[0]), expression=args[1]),
         'DATEDIFF': lambda args: exp.DateDiff(
             this=exp.DateStrToDate(this=args[0]),
-            value=exp.DateStrToDate(this=args[1]),
+            expression=exp.DateStrToDate(this=args[1]),
         ),
         'DATE_SUB': lambda args: exp.DateAdd(
             this=exp.DateStrToDate(this=args[0]),
-            value=exp.Star(this=args[1], expression=Token.number(-1)),
+            expression=exp.Star(this=args[1], expression=Token.number(-1)),
         ),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'FROM_UNIXTIME': lambda args: exp.UnixToStr(
@@ -254,7 +254,7 @@ class Presto(Dialect):
         TokenType.TEXT: 'VARCHAR',
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
-        exp.ArrayContains: lambda self, e: f"CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'value')})",
+        exp.ArrayContains: lambda self, e: f"CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.ArraySize: lambda self, e: f"CARDINALITY({self.sql(e, 'this')})",
         exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseLeftShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -263,8 +263,8 @@ class Presto(Dialect):
         exp.BitwiseRightShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_RIGHT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Case: _case_if_sql,
-        exp.DateAdd: lambda self, e: f"DATE_ADD('day', {self.sql(e, 'value')}, {self.sql(e, 'this')})",
-        exp.DateDiff: lambda self, e: f"DATE_DIFF('day', {self.sql(e, 'value')}, {self.sql(e, 'this')})",
+        exp.DateAdd: lambda self, e: f"DATE_ADD('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+        exp.DateDiff: lambda self, e: f"DATE_DIFF('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
@@ -289,9 +289,9 @@ class Presto(Dialect):
     functions = {
         'APPROX_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0], accuracy=list_get(args, 1)),
         'CARDINALITY': lambda args: exp.ArraySize(this=args[0]),
-        'CONTAINS': lambda args: exp.ArrayContains(this=args[0], value=args[1]),
-        'DATE_ADD': lambda args: exp.DateAdd(this=args[2], value=args[1]),
-        'DATE_DIFF': lambda args: exp.DateDiff(this=args[2], value=args[1]),
+        'CONTAINS': lambda args: exp.ArrayContains(this=args[0], expression=args[1]),
+        'DATE_ADD': lambda args: exp.DateAdd(this=args[2], expression=args[1]),
+        'DATE_DIFF': lambda args: exp.DateDiff(this=args[2], expression=args[1]),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'DATE_PARSE': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'FROM_UNIXTIME': lambda args: exp.UnixToTime(this=args[0]),

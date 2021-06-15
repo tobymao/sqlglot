@@ -103,6 +103,22 @@ class Generator:
         self._level -= 1
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
+    def no_format(self, func):
+        pretty = self.pretty
+        self.pretty = None
+        result = func()
+        self.pretty = pretty
+        return result
+
+    def indent_newlines(self, sql, skip_first=False):
+        if not self.pretty:
+            return sql
+
+        return '\n'.join(
+            line if skip_first and i == 0 else self.indent(line, pad=self.pad)
+            for i, line in enumerate(sql.split('\n'))
+        )
+
     def sql(self, expression, key=None, identify=False):
         if not expression:
             return ''
@@ -183,8 +199,8 @@ class Generator:
         return self.op_expressions('GROUP BY', expression)
 
     def having_sql(self, expression):
-        expression = self.indent(self.sql(expression, 'this'), pad=self.pad)
-        return f"{self.seg('HAVING')}{self.sep()}{expression}"
+        this = self.indent_newlines(self.sql(expression, 'this'))
+        return f"{self.seg('HAVING')}{self.sep()}{this}"
 
     def join_sql(self, expression):
         side = self.sql(expression, 'side')
@@ -193,8 +209,8 @@ class Generator:
         on_sql = self.sql(expression, 'on')
 
         if on_sql:
-            on_sql = self.seg(on_sql, pad=self.pad)
-            on_sql = f" ON{on_sql}"
+            on_sql = self.indent_newlines(on_sql, skip_first=True)
+            on_sql = f"{self.seg('ON', pad=self.pad)} {on_sql}"
 
         expression_sql = self.sql(expression, 'expression')
         this_sql = self.sql(expression, 'this')
@@ -219,8 +235,9 @@ class Generator:
     def select_sql(self, expression):
         hint = self.sql(expression, 'hint')
         distinct = ' DISTINCT' if expression.args.get('distinct') else ''
+        expressions = self.expressions(expression)
         return csv(
-            f"SELECT{hint}{distinct}{self.sep()}{self.expressions(expression)}",
+            f"SELECT{hint}{distinct}{self.sep()}{expressions}",
             self.sql(expression, 'from'),
             self.sql(expression, 'lateral'),
             *[self.sql(join) for join in expression.args.get('joins', [])],
@@ -247,8 +264,8 @@ class Generator:
         return f"UNNEST({args}){alias}"
 
     def where_sql(self, expression):
-        expression = self.indent(self.sql(expression, 'this'), pad=self.pad)
-        return f"{self.seg('WHERE')}{self.sep()}{expression}"
+        this = self.indent_newlines(self.sql(expression, 'this'))
+        return f"{self.seg('WHERE')}{self.sep()}{this}"
 
     def window_sql(self, expression):
         this_sql = self.sql(expression, 'this')
@@ -312,7 +329,7 @@ class Generator:
         return f"{self.sql(expression, 'this').upper()}({self.expressions(expression, flat=True)})"
 
     def paren_sql(self, expression):
-        return f"({self.sql(expression, 'this')})"
+        return self.no_format(lambda: f"({self.sql(expression, 'this')})")
 
     def neg_sql(self, expression):
         return f"-{self.sql(expression, 'this')}"
@@ -332,7 +349,7 @@ class Generator:
         return f"{this_sql}{to_sql}"
 
     def and_sql(self, expression):
-        return self.binary(expression, 'AND')
+        return self.binary(expression, 'AND', newline=self.pretty)
 
     def bitwiseand_sql(self, expression):
         return self.binary(expression, '&')
@@ -393,7 +410,7 @@ class Generator:
         return self.binary(expression, '<>')
 
     def or_sql(self, expression):
-        return self.binary(expression, 'OR')
+        return self.binary(expression, 'OR', newline=self.pretty)
 
     def plus_sql(self, expression):
         return self.binary(expression, '+')
@@ -407,15 +424,20 @@ class Generator:
     def star_sql(self, expression):
         return self.binary(expression, '*')
 
-    def binary(self, expression, op):
-        return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
+    def binary(self, expression, op, newline=False):
+        sep = '\n' if newline else ' '
+        return f"{self.sql(expression, 'this')}{sep}{op} {self.sql(expression, 'expression')}"
 
     def expressions(self, expression, flat=False, pad=0):
+        # pylint: disable=cell-var-from-loop
         if flat:
             return ', '.join(self.sql(e) for e in expression.args['expressions'])
 
         return self.sep(', ').join(
-            self.indent(f"{'  ' if self.pretty else ''}{self.sql(e)}", pad=pad)
+            self.indent(
+                f"{'  ' if self.pretty else ''}{self.no_format(lambda: self.sql(e))}",
+                pad=pad,
+            )
             for e in expression.args['expressions']
         )
 

@@ -210,7 +210,7 @@ class WindowSpec(Expression):
 
 
 class Where(Expression):
-    pass
+    token_type = TokenType.WHERE
 
 
 # Binary Expressions
@@ -372,7 +372,6 @@ class Func(Expression):
 
 
 class Anonymous(Func):
-    token_type = TokenType.FUNC
     arg_types = {'this': True, 'expressions': True}
 
 

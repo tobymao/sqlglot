@@ -5,7 +5,7 @@ from sqlglot.tokens import TokenType
 
 class Expression:
     token_type = None
-    arg_types = {'expression': True}
+    arg_types = {'this': True}
 
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
@@ -129,42 +129,47 @@ class Drop(Expression):
 
 class FileFormat(Expression):
     token_type = TokenType.FORMAT
-    arg_types = {'this': True}
+
+
+class From(Expression):
+    token_type = TokenType.FROM
+
+
+class Having(Expression):
+    token_type = TokenType.HAVING
 
 
 class Hint(Expression):
     token_type = TokenType.HINT
-    arg_types = {'this': True}
+
+
+class Group(Expression):
+    token_type = TokenType.GROUP
+    arg_types = {'expressions': True}
+
+
+class Limit(Expression):
+    token_type = TokenType.LIMIT
+
+
+class Join(Expression):
+    token_type = TokenType.JOIN
+    arg_types = {'this': True, 'on': True, 'side': False, 'kind': False}
+
+
+class Lateral(Expression):
+    token_type = TokenType.LATERAL
+    arg_types = {'this': True, 'outer': False, 'table': False, 'columns': False}
+
+
+class Order(Expression):
+    token_type = TokenType.ORDER
+    arg_types = {'expressions': True, 'desc': False}
 
 
 class Table(Expression):
     token_type = TokenType.TABLE
     arg_types = {'this': True, 'db': False}
-
-
-class Group(Expression):
-    token_type = TokenType.GROUP
-    arg_types = {'this': True, 'expressions': True}
-
-
-class Limit(Expression):
-    token_type = TokenType.GROUP
-    arg_types = {'this': True, 'limit': True}
-
-
-class Join(Expression):
-    token_type = TokenType.JOIN
-    arg_types = {'this': True, 'expression': True, 'on': True, 'side': False, 'kind': False}
-
-
-class Lateral(Expression):
-    token_type = TokenType.LATERAL
-    arg_types = {'this': True, 'outer': False, 'function': True, 'table': False, 'columns': False}
-
-
-class Order(Expression):
-    token_type = TokenType.ORDER
-    arg_types = {'this': True, 'expressions': True, 'desc': False}
 
 
 class Union(Expression):
@@ -179,7 +184,19 @@ class Unnest(Expression):
 
 class Select(Expression):
     token_type = TokenType.SELECT
-    arg_types = {'expressions': True, 'hint': False, 'distinct': False}
+    arg_types = {
+        'expressions': True,
+        'hint': False,
+        'distinct': False,
+        'from': False,
+        'lateral': False,
+        'joins': False,
+        'where': False,
+        'group': False,
+        'having': False,
+        'order': False,
+        'limit': False,
+    }
 
 
 class Window(Expression):
@@ -190,6 +207,10 @@ class Window(Expression):
 class WindowSpec(Expression):
     token_type = TokenType.SPEC
     arg_types = {'kind': False, 'start': False, 'start_side': False, 'end': False, 'end_side': False}
+
+
+class Where(Expression):
+    pass
 
 
 # Binary Expressions
@@ -235,20 +256,12 @@ class EQ(Binary):
     token_type = TokenType.EQ
 
 
-class From(Binary):
-    token_type = TokenType.FROM
-
-
 class GT(Binary):
     token_type = TokenType.GT
 
 
 class GTE(Binary):
     token_type = TokenType.GTE
-
-
-class Having(Binary):
-    token_type = TokenType.HAVING
 
 
 class Is(Binary):
@@ -291,14 +304,10 @@ class Slash(Binary):
     token_type = TokenType.SLASH
 
 
-class Where(Binary):
-    token_type = TokenType.WHERE
-
-
 # Unary Expressions
 # (NOT a)
 class Unary(Expression):
-    arg_types = {'this': True}
+    pass
 
 
 class BitwiseNot(Unary):
@@ -360,6 +369,10 @@ class Interval(Expression):
 # Functions
 class Func(Expression):
     token_type = TokenType.FUNC
+
+
+class Anonymous(Func):
+    token_type = TokenType.FUNC
     arg_types = {'this': True, 'expressions': True}
 
 
@@ -373,15 +386,15 @@ class Array(Func):
 
 
 class ArrayAgg(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class ArrayContains(Func):
-    arg_types = {'this': True, 'value': True}
+    arg_types = {'this': True, 'expression': True}
 
 
 class ArraySize(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class Count(Func):
@@ -389,23 +402,23 @@ class Count(Func):
 
 
 class DateAdd(Func):
-    arg_types = {'this': True, 'value': True}
+    arg_types = {'this': True, 'expression': True}
 
 
 class DateDiff(Func):
-    arg_types = {'this': True, 'value': True}
+    arg_types = {'this': True, 'expression': True}
 
 
 class DateStrToDate(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class If(Func):
-    arg_types = {'condition': True, 'true': True, 'false': False}
+    arg_types = {'this': True, 'true': True, 'false': False}
 
 
 class Initcap(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class JSONPath(Func):
@@ -439,27 +452,27 @@ class TimeToStr(Func):
 
 
 class TimeToTimeStr(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class TimeToUnix(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class TimeStrToDate(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class TimeStrToTime(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class TimeStrToUnix(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class TsOrDsToDateStr(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class UnixToStr(Func):
@@ -467,8 +480,8 @@ class UnixToStr(Func):
 
 
 class UnixToTime(Func):
-    arg_types = {'this': True}
+    pass
 
 
 class UnixToTimeStr(Func):
-    arg_types = {'this': True}
+    pass

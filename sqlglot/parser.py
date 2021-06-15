@@ -22,12 +22,12 @@ class Parser:
         'ARRAY': lambda args: exp.Array(expressions=args),
         'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
         'ARRAY_AGG': lambda args: exp.ArrayAgg(this=args[0]),
-        'ARRAY_CONTAINS': lambda args: exp.ArrayContains(this=args[0], value=args[1]),
+        'ARRAY_CONTAINS': lambda args: exp.ArrayContains(this=args[0], expression=args[1]),
         'ARRAY_SIZE': lambda args: exp.ArraySize(this=args[0]),
-        'DATE_ADD': lambda args: exp.DateAdd(this=args[0], value=args[1]),
-        'DATE_DIFF': lambda args: exp.DateDiff(this=args[0], value=args[1]),
+        'DATE_ADD': lambda args: exp.DateAdd(this=args[0], expression=args[1]),
+        'DATE_DIFF': lambda args: exp.DateDiff(this=args[0], expression=args[1]),
         'DATE_STR_TO_DATE': lambda args: exp.DateStrToDate(this=args[0]),
-        'IF': lambda args: exp.If(condition=args[0], true=args[1], false=list_get(args, 2)),
+        'IF': lambda args: exp.If(this=args[0], true=args[1], false=list_get(args, 2)),
         'INITCAP': lambda args: exp.Initcap(this=args[0]),
         'STR_POSITION': lambda args: exp.StrPosition(this=args[0], substr=args[1], position=list_get(args, 2)),
         'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
@@ -273,23 +273,23 @@ class Parser:
         if not self._match(TokenType.SELECT):
             return None
 
-        hint = self._parse_hint()
-        distinct = self._match(TokenType.DISTINCT)
         this = exp.Select(
+            hint=self._parse_hint(),
+            distinct=self._match(TokenType.DISTINCT),
             expressions=self._parse_csv(self._parse_expression),
-            hint=hint,
-            distinct=distinct,
+            **{
+                'from': self._parse_from(),
+                'lateral': self._parse_lateral(),
+                'joins': self._parse_joins(),
+                'where': self._parse_where(),
+                'group': self._parse_group(),
+                'having': self._parse_having(),
+                'order': self._parse_order(),
+                'limit': self._parse_limit(),
+            },
         )
-        this = self._parse_from(this)
-        this = self._parse_lateral(this)
-        this = self._parse_join(this)
-        this = self._parse_where(this)
-        this = self._parse_group(this)
-        this = self._parse_having(this)
-        this = self._parse_order(this)
-        this = self._parse_limit(this)
-        this = self._parse_union(this)
-        return this
+
+        return self._parse_union(this)
 
     def _parse_hint(self):
         if self._match(TokenType.HINT):
@@ -299,21 +299,21 @@ class Parser:
             return exp.Hint(this=hint)
         return None
 
-    def _parse_from(self, this):
+    def _parse_from(self):
         if not self._match(TokenType.FROM):
-            return this
+            return None
 
-        return exp.From(this=self._parse_table(), expression=this)
+        return exp.From(this=self._parse_table())
 
-    def _parse_lateral(self, this):
+    def _parse_lateral(self):
         if not self._match(TokenType.LATERAL):
-            return this
+            return None
 
         if not self._match(TokenType.VIEW):
             self.raise_error('Expected VIEW afteral LATERAL')
 
         outer = self._match(TokenType.OUTER)
-        function = self._parse_primary()
+        this = self._parse_primary()
         table = self._parse_id_var()
 
         if self._match(TokenType.ALIAS):
@@ -322,25 +322,26 @@ class Parser:
         return exp.Lateral(
             this=this,
             outer=outer,
-            function=function,
             table=table,
             columns=columns,
         )
 
-    def _parse_join(self, this):
-        side = self._match(TokenType.LEFT, TokenType.RIGHT, TokenType.FULL)
-        kind = self._match(TokenType.INNER, TokenType.OUTER, TokenType.CROSS)
+    def _parse_joins(self):
+        joins = []
 
-        if self._match(TokenType.JOIN):
-            on = None
-            expression = self._parse_table()
+        while True:
+            side = self._match(TokenType.LEFT, TokenType.RIGHT, TokenType.FULL)
+            kind = self._match(TokenType.INNER, TokenType.OUTER, TokenType.CROSS)
 
-            if self._match(TokenType.ON):
-                on = self._parse_expression()
+            if not self._match(TokenType.JOIN):
+                return joins
 
-            return self._parse_join(exp.Join(this=expression, expression=this, side=side, kind=kind, on=on))
-
-        return this
+            joins.append(exp.Join(
+                this=self._parse_table(),
+                side=side,
+                kind=kind,
+                on=self._parse_expression() if self._match(TokenType.ON) else None,
+            ))
 
     def _parse_table(self, alias=None):
         unnest = self._parse_unnest()
@@ -404,36 +405,33 @@ class Parser:
 
         return unnest
 
-    def _parse_where(self, this):
+    def _parse_where(self):
         if not self._match(TokenType.WHERE):
-            return this
-        return exp.Where(this=this, expression=self._parse_conjunction())
+            return None
+        return exp.Where(this=self._parse_conjunction())
 
-    def _parse_group(self, this):
+    def _parse_group(self):
         if not self._match(TokenType.GROUP):
-            return this
+            return None
 
-        return exp.Group(this=this, expressions=self._parse_csv(self._parse_primary))
+        return exp.Group(expressions=self._parse_csv(self._parse_primary))
 
-    def _parse_having(self, this):
+    def _parse_having(self):
         if not self._match(TokenType.HAVING):
-            return this
-        return exp.Having(this=this, expression=self._parse_conjunction())
+            return None
+        return exp.Having(this=self._parse_conjunction())
 
-    def _parse_order(self, this):
+    def _parse_order(self):
         if not self._match(TokenType.ORDER):
-            return this
+            return None
 
-        return exp.Order(this=this, expressions=self._parse_csv(self._parse_primary), desc=self._match(TokenType.DESC))
+        return exp.Order(expressions=self._parse_csv(self._parse_primary), desc=self._match(TokenType.DESC))
 
-    def _parse_limit(self, this):
+    def _parse_limit(self):
         if not self._match(TokenType.LIMIT):
-            return this
+            return None
 
-        if not self._match(TokenType.NUMBER):
-            self.raise_error('Expected NUMBER after LIMIT')
-
-        return exp.Limit(this=this, limit=self._prev)
+        return exp.Limit(this=self._match(TokenType.NUMBER))
 
     def _parse_union(self, this):
         if not self._match(TokenType.UNION):
@@ -521,10 +519,10 @@ class Parser:
         default = None
 
         while self._match(TokenType.WHEN):
-            condition = self._parse_expression()
+            this = self._parse_expression()
             self._match(TokenType.THEN)
             then = self._parse_expression()
-            ifs.append(exp.If(condition=condition, true=then))
+            ifs.append(exp.If(this=this, true=then))
 
         if self._match(TokenType.ELSE):
             default = self._parse_expression()
@@ -576,7 +574,7 @@ class Parser:
             self.raise_error('Expected )')
 
         if not callable(function):
-            return exp.Func(this=this, expressions=args)
+            return exp.Anonymous(this=this, expressions=args)
 
         return function(args)
 
@@ -655,7 +653,7 @@ class Parser:
         if self._match(TokenType.PARTITION):
             partition = self._parse_csv(self._parse_primary)
 
-        order = self._parse_order(None)
+        order = self._parse_order()
 
         spec = None
         kind = self._match(TokenType.ROWS, TokenType.RANGE)

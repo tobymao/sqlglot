@@ -37,7 +37,7 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(
             [table.args['this'].text for table in expression.find_all(exp.Table)],
-            ['b', 'c', 'd'],
+            ['d', 'c', 'b'],
         )
 
     def test_validate(self):

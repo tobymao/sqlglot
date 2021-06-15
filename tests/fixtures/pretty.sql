@@ -80,3 +80,17 @@ LEFT JOIN (
   ON x.a = y.b
   AND x.a > 1
   OR (x.c = y.d OR x.c = y.e);
+SELECT myCol1, myCol2 FROM baseTable LATERAL VIEW OUTER explode(col1) myTable1 AS myCol1 LATERAL VIEW explode(col2) myTable2 AS myCol2
+where a > 1 and b > 2 or c > 3;
+SELECT
+  myCol1,
+  myCol2
+FROM baseTable
+LATERAL VIEW OUTER
+EXPLODE(col1) myTable1 AS myCol1
+LATERAL VIEW
+EXPLODE(col2) myTable2 AS myCol2
+WHERE
+  a > 1
+  AND b > 2
+  OR c > 3;

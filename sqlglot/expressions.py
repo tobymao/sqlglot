@@ -189,7 +189,7 @@ class Select(Expression):
         'hint': False,
         'distinct': False,
         'from': False,
-        'lateral': False,
+        'laterals': False,
         'joins': False,
         'where': False,
         'group': False,

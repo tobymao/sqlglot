@@ -79,7 +79,6 @@ class Parser:
         TokenType.OVER,
         TokenType.PRECEDING,
         TokenType.RANGE,
-        TokenType.RLIKE,
         TokenType.ROWS,
         TokenType.UNBOUNDED,
         *TYPE_TOKENS,

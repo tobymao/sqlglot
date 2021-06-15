@@ -239,8 +239,8 @@ class Generator:
         return csv(
             f"SELECT{hint}{distinct}{self.sep()}{expressions}",
             self.sql(expression, 'from'),
-            self.sql(expression, 'lateral'),
-            *[self.sql(join) for join in expression.args.get('joins', [])],
+            *[self.sql(sql) for sql in expression.args.get('laterals', [])],
+            *[self.sql(sql) for sql in expression.args.get('joins', [])],
             self.sql(expression, 'where'),
             self.sql(expression, 'group'),
             self.sql(expression, 'having'),

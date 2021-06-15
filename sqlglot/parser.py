@@ -299,7 +299,7 @@ class Parser:
             expressions=self._parse_csv(self._parse_expression),
             **{
                 'from': self._parse_from(),
-                'lateral': self._parse_lateral(),
+                'laterals': self._parse_laterals(),
                 'joins': self._parse_joins(),
                 'where': self._parse_where(),
                 'group': self._parse_group(),
@@ -325,26 +325,29 @@ class Parser:
 
         return exp.From(this=self._parse_table())
 
-    def _parse_lateral(self):
-        if not self._match(TokenType.LATERAL):
-            return None
+    def _parse_laterals(self):
+        laterals = []
 
-        if not self._match(TokenType.VIEW):
-            self.raise_error('Expected VIEW afteral LATERAL')
+        while True:
+            if not self._match(TokenType.LATERAL):
+                return laterals
 
-        outer = self._match(TokenType.OUTER)
-        this = self._parse_primary()
-        table = self._parse_id_var()
+            if not self._match(TokenType.VIEW):
+                self.raise_error('Expected VIEW afteral LATERAL')
 
-        if self._match(TokenType.ALIAS):
-            columns = self._parse_csv(self._parse_id_var)
+            outer = self._match(TokenType.OUTER)
+            this = self._parse_primary()
+            table = self._parse_id_var()
 
-        return exp.Lateral(
-            this=this,
-            outer=outer,
-            table=table,
-            columns=columns,
-        )
+            if self._match(TokenType.ALIAS):
+                columns = self._parse_csv(self._parse_id_var)
+
+            laterals.append(exp.Lateral(
+                this=this,
+                outer=outer,
+                table=table,
+                columns=columns,
+            ))
 
     def _parse_joins(self):
         joins = []

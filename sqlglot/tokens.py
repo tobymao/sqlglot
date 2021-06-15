@@ -113,13 +113,13 @@ class TokenType(AutoName):
     OVER = auto()
     PARTITION = auto()
     PRECEDING = auto()
-    SELECT = auto()
-    STORED = auto()
     RANGE = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROWS = auto()
+    SELECT = auto()
     SPEC = auto()
+    STORED = auto()
     THEN = auto()
     UNBOUNDED = auto()
     UNION = auto()
@@ -236,6 +236,7 @@ class Tokenizer:
         'ON': TokenType.ON,
         'OR': TokenType.OR,
         'ORDER BY': TokenType.ORDER,
+        'ORDINALITY': TokenType.ORDINALITY,
         'OUTER': TokenType.OUTER,
         'OVER': TokenType.OVER,
         'PARTITION BY': TokenType.PARTITION,

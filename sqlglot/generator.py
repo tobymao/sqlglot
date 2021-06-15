@@ -258,10 +258,11 @@ class Generator:
     def unnest_sql(self, expression):
         args = self.expressions(expression, flat=True)
         table = self.sql(expression, 'table')
+        ordinality = ' WITH ORDINALITY' if expression.args.get('ordinality') else ''
         columns = ', '.join(self.sql(e) for e in expression.args.get('columns', []))
         alias = f" AS {table}" if table else ''
         alias = f"{alias} ({columns})" if columns else alias
-        return f"UNNEST({args}){alias}"
+        return f"UNNEST({args}){ordinality}{alias}"
 
     def where_sql(self, expression):
         this = self.indent_newlines(self.sql(expression, 'this'))

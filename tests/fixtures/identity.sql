@@ -40,6 +40,8 @@ SELECT *, 1 FROM test
 SELECT 1
 SELECT 1 FROM test
 SELECT a FROM test
+SELECT 1 AS range FROM test
+SELECT 1 AS count FROM test
 SELECT DISTINCT x FROM test
 SELECT DISTINCT x, y FROM test
 SELECT test.* FROM test
@@ -163,6 +165,7 @@ SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) t AS score, name
 SELECT student, score FROM tests LATERAL VIEW OUTER EXPLODE(scores) t AS score, name
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (score)
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (a, b)
+SELECT student, score FROM tests CROSS JOIN UNNEST(scores) WITH ORDINALITY AS t (a, b)
 CREATE TABLE a.b AS SELECT 1
 CREATE TABLE a.b AS SELECT a FROM a.c
 CREATE TABLE IF NOT EXISTS x AS SELECT a FROM d

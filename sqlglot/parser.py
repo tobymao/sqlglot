@@ -64,6 +64,27 @@ class Parser:
         TokenType.MAP,
     }
 
+    ID_VAR_TOKENS = {
+        TokenType.IDENTIFIER,
+        TokenType.VAR,
+        TokenType.ALL,
+        TokenType.ASC,
+        TokenType.COUNT,
+        TokenType.DESC,
+        TokenType.FOLLOWING,
+        TokenType.FORMAT,
+        TokenType.IF,
+        TokenType.INTERVAL,
+        TokenType.ORDINALITY,
+        TokenType.OVER,
+        TokenType.PRECEDING,
+        TokenType.RANGE,
+        TokenType.RLIKE,
+        TokenType.ROWS,
+        TokenType.UNBOUNDED,
+        *TYPE_TOKENS,
+    }
+
     PRIMARY_TOKENS = {
         TokenType.STRING,
         TokenType.NUMBER,
@@ -695,7 +716,7 @@ class Parser:
         return this
 
     def _parse_id_var(self):
-        return self._match(TokenType.IDENTIFIER, TokenType.VAR)
+        return self._match(*self.ID_VAR_TOKENS)
 
     def _parse_interval(self):
         if self._match(TokenType.INTERVAL):

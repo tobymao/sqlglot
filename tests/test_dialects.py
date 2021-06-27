@@ -23,6 +23,79 @@ class TestDialects(unittest.TestCase):
         self.validate("LIST_VALUE(0, 1, 2)", "ARRAY[0, 1, 2]", read='duckdb', write='presto')
         self.validate('Array(1, 2)', 'LIST_VALUE(1, 2)', write='duckdb')
 
+        self.validate(
+            "DATEDIFF(a, b)",
+            "EPOCH(CAST(a AS DATE) - CAST(b AS DATE)) / 86400",
+            read='hive',
+            write='duckdb',
+        )
+        self.validate(
+            "STR_TO_UNIX('2020-01-01', '%Y-%M-%d')",
+            "EPOCH(STRPTIME('2020-01-01', '%Y-%M-%d'))",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "TIME_STR_TO_DATE('2020-01-01')",
+            "CAST('2020-01-01' AS DATE)",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "TIME_STR_TO_TIME('2020-01-01')",
+            "CAST('2020-01-01' AS TIMESTAMP)",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "TIME_STR_TO_UNIX('2020-01-01')",
+            "EPOCH(CAST('2020-01-01' AS TIMESTAMP)",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "TIME_TO_STR(x, '%Y-%M-%d')",
+            "STRFTIME(x, '%Y-%M-%d')",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "TIME_TO_TIME_STR(x, '%Y-%M-%d')",
+            "STRFTIME(x, '%Y-%M-%d %H:%M:%S')",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "TIME_TO_UNIX(x)",
+            "EPOCH(x)",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "TS_OR_DS_TO_DATE_STR(x)",
+            "STRFTIME(CAST(x AS DATE), '%Y-%M-%d')",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "UNIX_TO_STR(x, y)",
+            "STRFTIME(EPOCH_MS(CAST((x AS BIGINT) * 1000)), y)",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "UNIX_TO_TIME(x, y)",
+            "EPOCH_MS(CAST((x AS BIGINT) * 1000))",
+            identity=False,
+            write='duckdb',
+        )
+        self.validate(
+            "UNIX_TO_TIME_STR(x)",
+            "STRFTIME(EPOCH_MS(CAST((x AS BIGINT) * 1000)), '%Y-%M-%d %H:%M:%S')",
+            identity=False,
+            write='duckdb',
+        )
+
     def test_mysql(self):
         self.validate(
             'SELECT CAST(`a`.`b` AS INT) FROM foo', 'SELECT CAST(`a`.`b` AS INT) FROM foo',

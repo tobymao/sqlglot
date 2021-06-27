@@ -72,19 +72,29 @@ def _if_sql(self, expression):
 
 
 class DuckDB(Dialect):
-    def _unix_to_str_sql(self, expression):
-        unix_to_time = f"EPOCH_MS(CAST(({self.sql(expression, 'this')} AS BIGINT) * 1000))"
-        return f"STRFTIME({unix_to_time}, {self.sql(expression, 'format')})"
+    DATE_FORMAT = "'%Y-%M-%d'"
+    TIME_FORMAT = "'%Y-%M-%d %H:%M:%S'"
+
+    def _unix_to_time(self, expression):
+        return f"EPOCH_MS(CAST(({self.sql(expression, 'this')} AS BIGINT) * 1000))"
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
+        exp.DateDiff: lambda self, e: f"EPOCH({self.sql(e, 'this')} - {self.sql(e, 'expression')}) / 86400",
+        exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
+        exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+        exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+        exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP)",
         exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.TimeToTimeStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
-        exp.UnixToStr: _unix_to_str_sql,
-        exp.UnixToTime: lambda self, e: f"EPOCH_MS(CAST(({self.sql(e, 'this')} AS BIGINT) * 1000))",
+        exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.DATE_FORMAT})",
+        exp.UnixToStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {self.sql(e, 'format')})",
+        exp.UnixToTime: _unix_to_time,
+        exp.UnixToTimeStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {DuckDB.TIME_FORMAT})",
     }
 
     functions = {

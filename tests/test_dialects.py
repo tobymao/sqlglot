@@ -49,7 +49,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TIME_STR_TO_UNIX('2020-01-01')",
-            "EPOCH(CAST('2020-01-01' AS TIMESTAMP)",
+            "EPOCH(CAST('2020-01-01' AS TIMESTAMP))",
             identity=False,
             write='duckdb',
         )

@@ -25,7 +25,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "DATEDIFF(a, b)",
-            "EPOCH(CAST(a AS DATE) - CAST(b AS DATE)) / 86400",
+            "CAST(a AS DATE) - CAST(b AS DATE)",
             read='hive',
             write='duckdb',
         )

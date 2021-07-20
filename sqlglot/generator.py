@@ -16,6 +16,7 @@ class Generator:
         TokenType.HAVING,
         TokenType.ORDER,
         TokenType.UNION,
+        TokenType.WITH,
     }
 
     TRANSFORMS = {
@@ -168,7 +169,7 @@ class Generator:
             for e in expression.args['expressions']
         )
 
-        return f"WITH {sql}{self.sep()}{self.sql(expression, 'this')}"
+        return f"WITH {sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
 
     def drop_sql(self, expression):
         this = self.sql(expression, 'this')
@@ -340,15 +341,14 @@ class Generator:
         return f"NOT {self.sql(expression, 'this')}"
 
     def alias_sql(self, expression):
-        this_sql = self.sql(expression, 'this')
         to_sql = self.sql(expression, 'alias')
         to_sql = f" AS {to_sql}" if to_sql else ''
 
         if expression.args['this'].token_type in self.BODY_TOKENS:
             if self.pretty:
                 return f"{self.wrap(expression)}{to_sql}"
-            return f"({this_sql}){to_sql}"
-        return f"{this_sql}{to_sql}"
+            return f"({self.sql(expression, 'this')}){to_sql}"
+        return f"{self.sql(expression, 'this')}{to_sql}"
 
     def and_sql(self, expression):
         return self.binary(expression, 'AND', newline=self.pretty)

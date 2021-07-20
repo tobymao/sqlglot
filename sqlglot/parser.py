@@ -194,20 +194,19 @@ class Parser:
             return None
 
     def _parse_statement(self):
+        if self._curr is None:
+            return None
+
         if self._match(TokenType.CREATE):
             return self._parse_create()
 
         if self._match(TokenType.DROP):
             return self._parse_drop()
 
-        if self._match(TokenType.WITH):
-            expressions = self._parse_csv(self._parse_cte)
-            return exp.CTE(this=self._parse_select(), expressions=expressions)
+        cte = self._parse_cte()
 
-        select = self._parse_select()
-
-        if select:
-            return select
+        if cte:
+            return cte
 
         return self._parse_expression()
 
@@ -280,15 +279,26 @@ class Parser:
         return None
 
     def _parse_cte(self):
-        if not self._match(TokenType.IDENTIFIER, TokenType.VAR):
-            self.raise_error('Expected alias after WITH')
+        if not self._match(TokenType.WITH):
+            return self._parse_select()
 
-        alias = self._prev
+        expressions = []
 
-        if not self._match(TokenType.ALIAS):
-            self.raise_error('Expected AS after WITH')
+        while True:
+            if not self._match(TokenType.IDENTIFIER, TokenType.VAR):
+                self.raise_error('Expected alias after WITH')
 
-        return self._parse_table(alias=alias)
+            alias = self._prev
+
+            if not self._match(TokenType.ALIAS):
+                self.raise_error('Expected AS after WITH')
+
+            expressions.append(self._parse_table(alias=alias))
+
+            if not self._match(TokenType.COMMA):
+                break
+
+        return exp.CTE(this=self._parse_select(), expressions=expressions)
 
     def _parse_select(self):
         if not self._match(TokenType.SELECT):
@@ -374,11 +384,10 @@ class Parser:
             return unnest
 
         if self._match(TokenType.L_PAREN):
-            nested = self._parse_select()
+            expression = self._parse_cte()
 
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expecting )')
-            expression = nested
         else:
             db = None
             table = self._match(TokenType.VAR, TokenType.IDENTIFIER)

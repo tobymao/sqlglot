@@ -65,6 +65,7 @@ SELECT 1 <= 2 FROM test
 SELECT 1 > 2 FROM test
 SELECT 1 >= 2 FROM test
 SELECT 1 <> 2 FROM test
+SELECT JSON_PATH(x, '$.hello')
 SELECT x LIKE '%x%' FROM test
 SELECT * FROM test LIMIT 100
 SELECT (1 > 2) AS x FROM test

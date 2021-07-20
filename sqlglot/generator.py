@@ -39,6 +39,7 @@ class Generator:
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: f"DATE_STR_TO_DATE({self.sql(e, 'this')})",
         exp.Initcap: lambda self, e: f"INITCAP({self.sql(e, 'this')})",
+        exp.JSONPath: lambda self, e: f"JSON_PATH({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.StrPosition: lambda self, e: f"STR_POSITION({csv(self.sql(e, 'this'), self.sql(e, 'substr'), self.sql(e, 'position'))})",
         exp.StrToTime: lambda self, e: f"STR_TO_TIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"STR_TO_UNIX({self.sql(e, 'this')}, {self.sql(e, 'format')})",

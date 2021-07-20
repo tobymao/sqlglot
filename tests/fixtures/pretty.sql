@@ -94,3 +94,15 @@ WHERE
   a > 1
   AND b > 2
   OR c > 3;
+SELECT * FROM (WITH y AS ( SELECT 1 AS z) SELECT z from y) x;
+SELECT
+  *
+FROM (
+    WITH y AS (
+        SELECT
+          1 AS z
+    )
+    SELECT
+      z
+    FROM y
+) AS x;

@@ -8,14 +8,14 @@ from sqlglot.parser import Parser
 __version__ = '0.23.0'
 
 
-def parse(code, read=None):
+def parse(code, read=None, **opts):
     dialect = Dialect.get(read, Dialect)()
-    return dialect.parse(code)
+    return dialect.parse(code, **opts)
 
 
-def transpile(code, read=None, write=None, identity=True, **opts):
+def transpile(code, read=None, write=None, identity=True, error_level=None, **opts):
     write = write or read if identity else write
     return [
         Dialect.get(write, Dialect)().generate(expression, **opts)
-        for expression in parse(code, read)
+        for expression in parse(code, read, error_level=error_level)
     ]

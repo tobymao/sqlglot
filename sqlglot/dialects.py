@@ -13,8 +13,8 @@ class Dialect(metaclass=RegisteringMeta):
     functions = {}
     transforms = {}
 
-    def parse(self, code):
-        return self.parser().parse(self.tokenizer().tokenize(code), code)
+    def parse(self, code, **opts):
+        return self.parser(**opts).parse(self.tokenizer().tokenize(code), code)
 
     def generate(self, expression, **opts):
         return self.generator(**opts).generate(expression)

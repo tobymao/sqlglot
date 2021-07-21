@@ -71,7 +71,7 @@ class Generator:
 
     def generate(self, expression):
         self.unsupported_messages = []
-        sql = self.sql(expression)
+        sql = self.sql(expression).strip()
 
         if self.unsupported_level == ErrorLevel.IGNORE:
             return sql

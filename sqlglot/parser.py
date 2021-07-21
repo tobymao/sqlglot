@@ -100,8 +100,8 @@ class Parser:
 
     def __init__(self, **opts):
         self.functions = {**self.FUNCTIONS, **(opts.get('functions') or {})}
-        self.error_level = opts.get('error_level', ErrorLevel.RAISE)
-        self.error_message_context = opts.get('error_message_context', 50)
+        self.error_level = opts.get('error_level') or ErrorLevel.RAISE
+        self.error_message_context = opts.get('error_message_context') or 50
         self.reset()
 
     def reset(self):
@@ -126,16 +126,10 @@ class Parser:
             self._index = -1
             self._advance()
             self._tokens = tokens
+            expressions.append(self._parse_statement())
 
-            try:
-                expressions.append(self._parse_statement())
-                if self._index < len(self._tokens):
-                    self.raise_error('Invalid expression / Unexpected token')
-            except ParseError as e:
-                if self.error_level == ErrorLevel.WARN:
-                    logging.error(e)
-                elif self.error_level == ErrorLevel.RAISE:
-                    raise e
+            if self._index < len(self._tokens):
+                self.raise_error('Invalid expression / Unexpected token')
 
         for expression in expressions:
             if not isinstance(expression, exp.Expression):
@@ -155,7 +149,10 @@ class Parser:
         highlight = self.code[start:end]
         end_context = self.code[end:end + self.error_message_context]
         self.error = ParseError(f"{message}\n  {start_context}\033[4m{highlight}\033[0m{end_context}")
-        raise self.error
+        if self.error_level == ErrorLevel.RAISE:
+            raise self.error
+        if self.error_level == ErrorLevel.WARN:
+            logging.error(self.error)
 
     def _find_token(self, token, code):
         line = 0
@@ -627,6 +624,9 @@ class Parser:
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expecting )', paren)
             return exp.Paren(this=this)
+
+        if self._curr is None:
+            return self.raise_error('Expecting expression')
 
         return self._parse_column()
 

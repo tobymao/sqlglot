@@ -343,7 +343,7 @@ class Bracket(Expression):
 
 class Case(Expression):
     token_type = TokenType.CASE
-    arg_types = {'ifs': True, 'default': False}
+    arg_types = {'this': False, 'ifs': True, 'default': False}
 
 
 class Cast(Expression):

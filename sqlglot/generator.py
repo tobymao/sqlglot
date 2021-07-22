@@ -299,6 +299,9 @@ class Generator:
     def case_sql(self, expression):
         pad = self.pad + 2
 
+        this = self.sql(expression, 'this')
+        this = f" {this}" if this else ''
+
         ifs = [
             self.seg(f"WHEN {self.sql(e, 'this')} THEN {self.sql(e, 'true')}", pad=pad)
             for e in expression.args['ifs']
@@ -307,7 +310,7 @@ class Generator:
         if expression.args.get('default') is not None:
             ifs.append(self.seg(f"ELSE {self.sql(expression, 'default')}", pad=pad))
 
-        return f"CASE{''.join(ifs)}{self.seg('END', pad=self.pad)}"
+        return f"CASE{this}{''.join(ifs)}{self.seg('END', pad=self.pad)}"
 
     def decimal_sql(self, expression):
         if isinstance(expression, Token):

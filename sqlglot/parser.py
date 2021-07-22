@@ -548,6 +548,8 @@ class Parser:
         ifs = []
         default = None
 
+        expression = self._parse_expression()
+
         while self._match(TokenType.WHEN):
             this = self._parse_expression()
             self._match(TokenType.THEN)
@@ -560,7 +562,7 @@ class Parser:
         if not self._match(TokenType.END):
             self.raise_error('Expected END after CASE', self._prev)
 
-        return exp.Case(ifs=ifs, default=default)
+        return exp.Case(this=expression, ifs=ifs, default=default)
 
     def _parse_count(self):
         if not self._match(TokenType.L_PAREN):
@@ -634,7 +636,7 @@ class Parser:
         db = None
         table = None
 
-        if self._curr.token_type in (TokenType.OVER, TokenType.R_PAREN, TokenType.R_BRACKET):
+        if self._curr.token_type in (TokenType.OVER, TokenType.R_PAREN, TokenType.R_BRACKET, TokenType.WHEN):
             return None
 
         self._advance()

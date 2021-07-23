@@ -279,6 +279,7 @@ class TestDialects(unittest.TestCase):
         self.validate('ds = "1\'\'2"', "ds = '1''''2'", read='hive', write='presto')
         self.validate('x == 1', "x == 1", read='hive')
         self.validate('x == 1', "x = 1", read='hive', write='presto')
+        self.validate('x div y', 'CAST(x / y AS INTEGER)', read='hive', write='presto')
 
         self.validate(
             "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd')",

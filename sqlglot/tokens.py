@@ -82,6 +82,7 @@ class TokenType(AutoName):
     CREATE = auto()
     CROSS = auto()
     CURRENT_ROW = auto()
+    DIV = auto()
     DESC = auto()
     DISTINCT = auto()
     DROP = auto()
@@ -215,6 +216,7 @@ class Tokenizer:
         'CREATE': TokenType.CREATE,
         'CROSS': TokenType.CROSS,
         'CURRENT ROW': TokenType.CURRENT_ROW,
+        'DIV': TokenType.DIV,
         'DESC': TokenType.DESC,
         'DISTINCT': TokenType.DISTINCT,
         'DROP': TokenType.DROP,

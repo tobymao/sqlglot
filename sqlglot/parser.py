@@ -135,6 +135,7 @@ class Parser:
     )
 
     FACTOR = expressions_to_map(
+        exp.Div,
         exp.Slash,
         exp.Star,
     )

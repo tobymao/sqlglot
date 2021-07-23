@@ -13,6 +13,11 @@ WITH cte1 AS (
         SELECT 1
         UNION ALL
         SELECT 2
+        UNION ALL
+        SELECT CASE x AND 1 + 1 = 2
+        WHEN true THEN 1
+        WHEN x and y THEN 2
+        ELSE 3 END
     ) x
 )
 SELECT a, b c FROM (
@@ -45,6 +50,13 @@ WITH cte1 AS (
         UNION ALL
         SELECT
           2
+        UNION ALL
+        SELECT
+          CASE x AND 1 + 1 = 2
+            WHEN true THEN 1
+            WHEN x AND y THEN 2
+            ELSE 3
+          END
     ) AS x
 )
 SELECT

@@ -1,6 +1,7 @@
 from enum import auto
 
-from sqlglot.helper import AutoName
+from sqlglot.helper import AutoName, list_get
+from sqlglot.trie import in_trie, new_trie
 
 
 class TokenType(AutoName):
@@ -318,31 +319,42 @@ class Tokenizer:
         self._line = 0
         self._col = 0
 
+        self._char = None
+        self._end = None
+        self._peek = None
+        self._text = None
+
     def tokenize(self, code): # pylint: disable=too-many-branches
         self.reset()
         self.code = code
         self.size = len(code)
 
-        ambiguous = {
-            key: self.keywords[key]
-            for key in sorted(self.keywords, key=lambda k: -len(k))
+        ambiguous_trie = new_trie(*{
+            key
+            for key in self.keywords
             if self.keywords[key] not in (TokenType.COMMENT, TokenType.COMMENT_START)
             and (' ' in key or any(single in key for single in self.single_tokens))
-        }
+        })
 
-        comments = {
-            token: key
-            for key, token in self.keywords.items()
-            if token in (TokenType.COMMENT, TokenType.COMMENT_START, TokenType.COMMENT_END)
-        }
+        comments = []
+        comment_start = None
+        comment_end = None
+
+        for key, token in self.keywords.items():
+            if token == TokenType.COMMENT:
+                comments.append(key)
+            elif token == TokenType.COMMENT_START:
+                comment_start = key
+            elif token == TokenType.COMMENT_END:
+                comment_end = key
 
         while not self._end:
             self._start = self._current
             self._advance()
 
-            if self._scan_ambiguous(ambiguous):
+            if self._scan_ambiguous(ambiguous_trie):
                 pass
-            elif self._scan_comments(comments):
+            elif self._scan_comments(comments, comment_start, comment_end):
                 pass
             elif self._char in self.single_tokens:
                 self._add(self.single_tokens[self._char])
@@ -362,66 +374,58 @@ class Tokenizer:
 
         return self.tokens
 
-    @property
-    def _char(self):
-        if self._current - 1 < self.size:
-            return self.code[self._current - 1]
-        return ''
-
     def _chars(self, size):
         start = self._current - 1
         end = start + size
-        if end < self.size:
+        if end <= self.size:
             return self.code[start:end].upper()
         return ''
-
-    @property
-    def _text(self):
-        return self.code[self._start:self._current]
-
-    @property
-    def _peek(self):
-        if not self._end:
-            return self.code[self._current]
-        return ''
-
-    @property
-    def _end(self):
-        return self._current >= self.size
 
     def _advance(self, i=1):
         self._col += i
         self._current += i
+        self._char = list_get(self.code, self._current - 1)
+        self._peek = list_get(self.code, self._current) or ''
+        self._text = self.code[self._start:self._current]
+        self._end = self._current >= self.size
 
     def _add(self, token_type, text=None):
         text = self._text if text is None else text
         self.tokens.append(Token(token_type, text, self._line, self._col))
 
-    def _scan_ambiguous(self, ambiguous):
-        for key, token in ambiguous.items():
-            size = len(key)
-            if self._chars(size) == key:
-                self._advance(size - 1)
-                self._add(token)
-                return True
+    def _scan_ambiguous(self, ambiguous_trie):
+        size = 1
+        word = None
+        chars = self._chars(size)
+
+        while chars:
+            result = in_trie(ambiguous_trie, chars)
+
+            if result == 0:
+                break
+            if result == 2:
+                word = chars
+            size += 1
+            chars = self._chars(size)
+
+        if word:
+            self._advance(len(word) - 1)
+            self._add(self.keywords[word])
+            return True
         return False
 
-    def _scan_comments(self, comments):
-        comment = comments[TokenType.COMMENT]
-
-        if self._chars(len(comment)) == comment:
-            while not self._end and self.WHITE_SPACE.get(self._char) != TokenType.BREAK:
-                self._advance()
-            return True
-
-        comment_start = comments[TokenType.COMMENT_START]
-        comment_end = comments[TokenType.COMMENT_END]
+    def _scan_comments(self, comments, comment_start, comment_end):
+        for comment in comments:
+            if self._chars(len(comment)) == comment:
+                while not self._end and self.WHITE_SPACE.get(self._char) != TokenType.BREAK:
+                    self._advance()
+                return True
 
         if self._chars(len(comment_start)) == comment_start:
-            size = len(comment_end)
-            while not self._end and self._chars(size) != comment_end:
+            comment_end_size = len(comment_end)
+            while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
-            self._advance(size - 1)
+            self._advance(comment_end_size - 1)
             return True
         return False
 

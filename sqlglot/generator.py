@@ -140,10 +140,10 @@ class Generator:
 
         if isinstance(expression, Token):
             text = expression.text.replace(Tokenizer.ESCAPE_CODE, self.escape)
-            if expression.token_type == TokenType.IDENTIFIER:
-                text = f"{self.identifier}{text[1:-1]}{self.identifier}"
-            elif self.identify and identify:
+            if expression.token_type == TokenType.IDENTIFIER or (self.identify and identify):
                 text = f"{self.identifier}{text}{self.identifier}"
+            elif expression.token_type == TokenType.STRING:
+                return f"{self.quote}{text}{self.quote}"
             return text
 
         return getattr(self, f"{expression.key}_sql")(expression)

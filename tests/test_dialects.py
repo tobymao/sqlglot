@@ -273,6 +273,11 @@ class TestDialects(unittest.TestCase):
             write='presto',
         )
 
+        self.validate('"\'"', "''''", read='hive', write='presto')
+        self.validate('ds = "2020-01-01"', "ds = '2020-01-01'", read='hive')
+        self.validate('ds = "1\'\'2"', "ds = '1\\'\\'2'", read='hive')
+        self.validate('ds = "1\'\'2"', "ds = '1''''2'", read='hive', write='presto')
+
         self.validate(
             "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd')",
             "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",

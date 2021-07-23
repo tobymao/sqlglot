@@ -8,7 +8,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 
 class Dialect(metaclass=RegisteringMeta):
     identifier = None
-    quote = None
+    quotes = None
     escape = None
     functions = {}
     transforms = {}
@@ -25,7 +25,6 @@ class Dialect(metaclass=RegisteringMeta):
     def generator(self, **opts):
         return Generator(**{
             'identifier': self.identifier,
-            'quote': self.quote,
             'escape': self.escape,
             'transforms': {**self.transforms, **opts.pop('transforms', {})},
             **opts,
@@ -37,7 +36,7 @@ class Dialect(metaclass=RegisteringMeta):
     def tokenizer(self, **opts):
         return Tokenizer(
             identifier=self.identifier,
-            quote=self.quote,
+            quotes=self.quotes,
             escape=self.escape,
             **opts,
         )
@@ -112,6 +111,7 @@ class DuckDB(Dialect):
 
 class Hive(Dialect):
     identifier = '`'
+    quotes = {"'", '"'}
     escape = '\\'
 
     DATE_FORMAT = "'yyyy-MM-dd'"

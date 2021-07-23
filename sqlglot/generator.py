@@ -68,6 +68,7 @@ class Generator:
         self.unsupported_messages = []
         self._indent = opts.get('indent', 4)
         self._level = 0
+        self.opts = opts
 
     def generate(self, expression):
         self.unsupported_messages = []
@@ -106,10 +107,9 @@ class Generator:
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
     def no_format(self, func):
-        pretty = self.pretty
-        self.pretty = None
+        self.pretty = False
         result = func()
-        self.pretty = pretty
+        self.pretty = self.opts.get('pretty')
         return result
 
     def indent_newlines(self, sql, skip_first=False):
@@ -303,14 +303,18 @@ class Generator:
         this = f" {this}" if this else ''
 
         ifs = [
-            self.seg(f"WHEN {self.sql(e, 'this')} THEN {self.sql(e, 'true')}", pad=pad)
+            f"WHEN {self.sql(e, 'this')} THEN {self.sql(e, 'true')}"
             for e in expression.args['ifs']
         ]
 
         if expression.args.get('default') is not None:
-            ifs.append(self.seg(f"ELSE {self.sql(expression, 'default')}", pad=pad))
+            ifs.append(f"ELSE {self.sql(expression, 'default')}")
 
-        return f"CASE{this}{''.join(ifs)}{self.seg('END', pad=self.pad)}"
+        self.pretty = self.opts.get('pretty')
+        ifs = ''.join(self.seg(e, pad=pad) for e in ifs)
+        case = f"CASE{this}{ifs}{self.seg('END', pad=self.pad)}"
+        self.pretty = False
+        return case
 
     def decimal_sql(self, expression):
         if isinstance(expression, Token):

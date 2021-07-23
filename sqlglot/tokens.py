@@ -27,6 +27,7 @@ class TokenType(AutoName):
     GTE = auto()
     NOT = auto()
     EQ = auto()
+    DEQ = auto()
     NEQ = auto()
     AND = auto()
     OR = auto()
@@ -192,6 +193,7 @@ class Tokenizer:
         '--': TokenType.COMMENT,
         '/*': TokenType.COMMENT_START,
         '*/': TokenType.COMMENT_END,
+        '==': TokenType.DEQ,
         '||': TokenType.D_PIPE,
         '>=': TokenType.GTE,
         '<=': TokenType.LTE,

@@ -107,6 +107,7 @@ class Parser:
 
     EQUALITY = expressions_to_map(
         exp.EQ,
+        exp.DEQ,
         exp.NEQ,
         exp.Is,
     )

@@ -391,6 +391,9 @@ class Generator:
     def dot_sql(self, expression):
         return self.binary(expression, '.')
 
+    def deq_sql(self, expression):
+        return self.binary(expression, '=')
+
     def eq_sql(self, expression):
         return self.binary(expression, '=')
 

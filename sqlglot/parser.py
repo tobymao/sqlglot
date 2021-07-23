@@ -468,7 +468,7 @@ class Parser:
         if not self._match(TokenType.GROUP):
             return None
 
-        return exp.Group(expressions=self._parse_csv(self._parse_primary))
+        return exp.Group(expressions=self._parse_csv(self._parse_conjunction))
 
     def _parse_having(self):
         if not self._match(TokenType.HAVING):

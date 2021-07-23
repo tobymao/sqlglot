@@ -403,7 +403,7 @@ class Parser:
             this = self._parse_alias(expression)
 
         # some dialects allow not having an alias after a nested sql
-        if this.token_type != TokenType.ALIAS:
+        if this.token_type != TokenType.ALIAS and this.token_type != TokenType.TABLE :
             this = exp.Alias(this=this, alias=None)
 
         return this

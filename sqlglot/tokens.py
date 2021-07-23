@@ -301,7 +301,7 @@ class Tokenizer:
     ESCAPE_CODE = '__sqlglot_escape__'
 
     def __init__(self, **opts):
-        self.quote = opts.get('quote') or "'"
+        self.quotes = set(opts.get('quotes') or "'")
         self.identifier = opts.get('identifier') or '"'
         self.escape = opts.get('escape') or "'"
         self.single_tokens = {**self.SINGLE_TOKENS, **opts.get('single_tokens', {})}
@@ -353,7 +353,7 @@ class Tokenizer:
                     self._line += 1
             elif self._char.isdigit():
                 self._scan_number()
-            elif self._char == self.quote:
+            elif self._char in self.quotes:
                 self._scan_string()
             elif self._char == self.identifier:
                 self._scan_identifier()
@@ -394,7 +394,8 @@ class Tokenizer:
         self._current += i
 
     def _add(self, token_type, text=None):
-        self.tokens.append(Token(token_type, text or self._text, self._line, self._col))
+        text = self._text if text is None else text
+        self.tokens.append(Token(token_type, text, self._line, self._col))
 
     def _scan_ambiguous(self, ambiguous):
         for key, token in ambiguous.items():
@@ -431,21 +432,25 @@ class Tokenizer:
 
     def _scan_string(self):
         text = []
+        quote = self._char
+        others = self.quotes.difference(quote)
 
         while True:
             if self._end:
-                raise RuntimeError(f"Missing {self.quote} from {self._line}:{self._start}")
+                raise RuntimeError(f"Missing {quote} from {self._line}:{self._start}")
             text.append(self._char)
             self._advance()
 
-            if self.escape and self._char == self.escape and self._peek == self.quote:
+            if self._char == self.escape and self._peek == quote:
                 text.append(self.ESCAPE_CODE)
                 self._advance()
-            elif self._char == self.quote:
+            elif self._char in others:
+                text.append(self.ESCAPE_CODE)
+            elif self._char == quote:
                 break
 
         text.append(self._char)
-        self._add(TokenType.STRING, ''.join(text))
+        self._add(TokenType.STRING, ''.join(text[1:-1]))
 
     def _scan_identifier(self):
         while self._peek != self.identifier:
@@ -453,7 +458,7 @@ class Tokenizer:
                 raise RuntimeError(f"Missing {self.identifier} from {self._line}:{self._start}")
             self._advance()
         self._advance()
-        self._add(TokenType.IDENTIFIER)
+        self._add(TokenType.IDENTIFIER, self._text[1:-1])
 
     def _scan_var(self):
         while True:

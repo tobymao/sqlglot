@@ -253,6 +253,10 @@ class Minus(Binary):
     token_type = TokenType.DASH
 
 
+class Div(Binary):
+    token_type = TokenType.DIV
+
+
 class Dot(Binary):
     token_type = TokenType.DOT
 

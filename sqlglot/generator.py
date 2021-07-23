@@ -385,6 +385,9 @@ class Generator:
         distinct = 'DISTINCT ' if expression.args['distinct'] else ''
         return f"COUNT({distinct}{self.sql(expression, 'this')})"
 
+    def dpipe_sql(self, expression):
+        return self.binary(expression, '||')
+
     def dot_sql(self, expression):
         return self.binary(expression, '.')
 

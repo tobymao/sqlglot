@@ -455,7 +455,11 @@ class Parser:
         if not self._match(TokenType.ORDER):
             return None
 
-        return exp.Order(expressions=self._parse_csv(self._parse_primary), desc=self._match(TokenType.DESC))
+
+        return exp.Order(
+            expressions=self._parse_csv(self._parse_primary),
+            desc=not self._match(TokenType.ASC) and self._match(TokenType.DESC),
+        )
 
     def _parse_limit(self):
         if not self._match(TokenType.LIMIT):
@@ -518,6 +522,7 @@ class Parser:
             exp.BitwiseAnd,
             exp.BitwiseXor,
             exp.BitwiseOr,
+            exp.DPipe,
         )
 
     def _parse_term(self):
@@ -562,7 +567,7 @@ class Parser:
         if not self._match(TokenType.END):
             self.raise_error('Expected END after CASE', self._prev)
 
-        return exp.Case(this=expression, ifs=ifs, default=default)
+        return self._parse_brackets(exp.Case(this=expression, ifs=ifs, default=default))
 
     def _parse_count(self):
         if not self._match(TokenType.L_PAREN):

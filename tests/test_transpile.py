@@ -13,6 +13,9 @@ class TestTranspile(unittest.TestCase):
     def validate(self, sql, target, write=None):
         self.assertEqual(transpile(sql, write=write)[0], target)
 
+    def test_asc(self):
+        self.validate('SELECT x FROM y ORDER BY x ASC', 'SELECT x FROM y ORDER BY x')
+
     def test_custom_transform(self):
         self.assertEqual(
             transpile('SELECT CAST(a AS INT) FROM x', transforms={TokenType.INT: 'SPECIAL INT'})[0],

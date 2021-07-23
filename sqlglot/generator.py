@@ -229,10 +229,12 @@ class Generator:
         return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
 
     def order_sql(self, expression, flat=False):
-        sql = self.op_expressions('ORDER BY', expression, flat=flat)
-        if expression.args['desc']:
-            sql = f"{sql} DESC"
-        return sql
+        return self.op_expressions('ORDER BY', expression, flat=flat)
+
+    def ordered_sql(self, expression):
+        desc = self.sql(expression, 'desc')
+        desc = f" {desc}" if desc else ''
+        return f"{self.sql(expression, 'this')}{desc}"
 
     def select_sql(self, expression):
         hint = self.sql(expression, 'hint')

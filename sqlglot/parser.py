@@ -8,6 +8,8 @@ import sqlglot.expressions as exp
 
 os.system('')
 
+def expressions_to_map(*expressions):
+    return {expression.token_type: expression for expression in expressions}
 
 class Parser:
     def _parse_decimal(args):
@@ -98,6 +100,44 @@ class Parser:
         TokenType.STAR,
     }
 
+    CONJUNCTION = expressions_to_map(
+        exp.And,
+        exp.Or,
+    )
+
+    EQUALITY = expressions_to_map(
+        exp.EQ,
+        exp.NEQ,
+        exp.Is,
+    )
+
+    COMPARISON = expressions_to_map(
+        exp.GT,
+        exp.GTE,
+        exp.LT,
+        exp.LTE,
+    )
+
+    BITWISE = expressions_to_map(
+        exp.BitwiseLeftShift,
+        exp.BitwiseRightShift,
+        exp.BitwiseAnd,
+        exp.BitwiseXor,
+        exp.BitwiseOr,
+        exp.DPipe,
+    )
+
+    TERM = expressions_to_map(
+        exp.Minus,
+        exp.Plus,
+        exp.Mod,
+    )
+
+    FACTOR = expressions_to_map(
+        exp.Slash,
+        exp.Star,
+    )
+
     def __init__(self, **opts):
         self.functions = {**self.FUNCTIONS, **(opts.get('functions') or {})}
         self.error_level = opts.get('error_level') or ErrorLevel.RAISE
@@ -124,8 +164,8 @@ class Parser:
 
         for tokens in self._chunks:
             self._index = -1
-            self._advance()
             self._tokens = tokens
+            self._advance()
             expressions.append(self._parse_statement())
 
             if self._index < len(self._tokens):
@@ -171,24 +211,8 @@ class Parser:
 
     def _advance(self):
         self._index += 1
-
-    @property
-    def _prev(self):
-        return self._safe_get(self._index - 1)
-
-    @property
-    def _curr(self):
-        return self._safe_get(self._index)
-
-    @property
-    def _next(self):
-        return self._safe_get(self._index + 1)
-
-    def _safe_get(self, index):
-        try:
-            return self._tokens[index]
-        except IndexError:
-            return None
+        self._curr = list_get(self._tokens, self._index)
+        self._prev = list_get(self._tokens, self._index - 1) if self._index > 0 else None
 
     def _parse_statement(self):
         if self._curr is None:
@@ -479,13 +503,13 @@ class Parser:
         return self._parse_alias(self._parse_window(self._parse_conjunction()))
 
     def _parse_conjunction(self):
-        return self._parse_tokens(self._parse_equality, exp.And, exp.Or)
+        return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
 
     def _parse_equality(self):
-        return self._parse_tokens(self._parse_comparison, exp.EQ, exp.NEQ, exp.Is)
+        return self._parse_tokens(self._parse_comparison, self.EQUALITY)
 
     def _parse_comparison(self):
-        return self._parse_tokens(self._parse_range, exp.GT, exp.GTE, exp.LT, exp.LTE)
+        return self._parse_tokens(self._parse_range, self.COMPARISON)
 
     def _parse_range(self):
         this = self._parse_bitwise()
@@ -515,21 +539,13 @@ class Parser:
         return this
 
     def _parse_bitwise(self):
-        return self._parse_tokens(
-            self._parse_term,
-            exp.BitwiseLeftShift,
-            exp.BitwiseRightShift,
-            exp.BitwiseAnd,
-            exp.BitwiseXor,
-            exp.BitwiseOr,
-            exp.DPipe,
-        )
+        return self._parse_tokens(self._parse_term, self.BITWISE)
 
     def _parse_term(self):
-        return self._parse_tokens(self._parse_factor, exp.Minus, exp.Plus, exp.Mod)
+        return self._parse_tokens(self._parse_factor, self.TERM)
 
     def _parse_factor(self):
-        return self._parse_tokens(self._parse_unary, exp.Slash, exp.Star)
+        return self._parse_tokens(self._parse_unary, self.FACTOR)
 
     def _parse_unary(self):
         if self._match(TokenType.NOT):
@@ -752,10 +768,8 @@ class Parser:
 
         return items
 
-    def _parse_tokens(self, parse, *expressions):
+    def _parse_tokens(self, parse, expressions):
         this = parse()
-
-        expressions = {expression.token_type: expression for expression in expressions}
 
         while self._match(*expressions):
             this = expressions[self._prev.token_type](this=this, expression=parse())

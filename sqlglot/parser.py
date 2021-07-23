@@ -480,9 +480,11 @@ class Parser:
         if not self._match(TokenType.ORDER):
             return None
 
+        return exp.Order(expressions=self._parse_csv(self._parse_ordered))
 
-        return exp.Order(
-            expressions=self._parse_csv(self._parse_primary),
+    def _parse_ordered(self):
+        return exp.Ordered(
+            this=self._parse_primary(),
             desc=not self._match(TokenType.ASC) and self._match(TokenType.DESC),
         )
 

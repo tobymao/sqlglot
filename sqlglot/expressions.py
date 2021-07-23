@@ -164,7 +164,12 @@ class Lateral(Expression):
 
 class Order(Expression):
     token_type = TokenType.ORDER
-    arg_types = {'expressions': True, 'desc': False}
+    arg_types = {'expressions': True}
+
+
+class Ordered(Expression):
+    token_type = TokenType.ORDERED
+    arg_types = {'this': True, 'desc': False}
 
 
 class Table(Expression):

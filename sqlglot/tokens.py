@@ -111,6 +111,7 @@ class TokenType(AutoName):
     NULL = auto()
     ON = auto()
     ORDER = auto()
+    ORDERED = auto()
     ORDINALITY = auto()
     OUTER = auto()
     OVER = auto()

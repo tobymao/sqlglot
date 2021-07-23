@@ -37,6 +37,7 @@ x RLIKE '%[0-9]+$'
 INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months
+x[y - 1]
 NOT 1
 NOT NOT 1
 SELECT * FROM test

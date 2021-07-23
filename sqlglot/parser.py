@@ -397,7 +397,7 @@ class Parser:
                 this=self._parse_table(),
                 side=side,
                 kind=kind,
-                on=self._parse_expression() if self._match(TokenType.ON) else None,
+                on=self._parse_conjunction() if self._match(TokenType.ON) else None,
             ))
 
     def _parse_table(self, alias=None):
@@ -573,16 +573,16 @@ class Parser:
         ifs = []
         default = None
 
-        expression = self._parse_expression()
+        expression = self._parse_conjunction()
 
         while self._match(TokenType.WHEN):
-            this = self._parse_expression()
+            this = self._parse_conjunction()
             self._match(TokenType.THEN)
-            then = self._parse_expression()
+            then = self._parse_conjunction()
             ifs.append(exp.If(this=this, true=then))
 
         if self._match(TokenType.ELSE):
-            default = self._parse_expression()
+            default = self._parse_conjunction()
 
         if not self._match(TokenType.END):
             self.raise_error('Expected END after CASE', self._prev)
@@ -624,7 +624,7 @@ class Parser:
         if not self._match(TokenType.L_PAREN):
             return this
 
-        args = self._parse_csv(self._parse_expression)
+        args = self._parse_csv(self._parse_conjunction)
         function = self.functions.get(this.text.upper())
 
         if not self._match(TokenType.R_PAREN):
@@ -646,7 +646,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
-            this = self._parse_expression()
+            this = self._parse_conjunction()
 
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expecting )', paren)
@@ -689,7 +689,7 @@ class Parser:
         if not self._match(TokenType.L_BRACKET):
             return this
 
-        expressions = self._parse_csv(self._parse_primary)
+        expressions = self._parse_csv(self._parse_conjunction)
 
         if isinstance(this, Token) and this.token_type == TokenType.ARRAY:
             bracket = exp.Array(expressions=expressions)

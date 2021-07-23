@@ -30,6 +30,7 @@ class TokenType(AutoName):
     AND = auto()
     OR = auto()
     AMP = auto()
+    D_PIPE = auto()
     PIPE = auto()
     CARET = auto()
     TILDA = auto()
@@ -190,6 +191,7 @@ class Tokenizer:
         '--': TokenType.COMMENT,
         '/*': TokenType.COMMENT_START,
         '*/': TokenType.COMMENT_END,
+        '||': TokenType.D_PIPE,
         '>=': TokenType.GTE,
         '<=': TokenType.LTE,
         '<>': TokenType.NEQ,

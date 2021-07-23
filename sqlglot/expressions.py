@@ -252,6 +252,10 @@ class Dot(Binary):
     token_type = TokenType.DOT
 
 
+class DPipe(Binary):
+    token_type = TokenType.D_PIPE
+
+
 class EQ(Binary):
     token_type = TokenType.EQ
 

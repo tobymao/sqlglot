@@ -401,7 +401,7 @@ class Generator:
         return self.binary(expression, '||')
 
     def dot_sql(self, expression):
-        return self.binary(expression, '.')
+        return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
 
     def eq_sql(self, expression):
         return self.binary(expression, '=')

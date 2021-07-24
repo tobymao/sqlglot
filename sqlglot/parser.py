@@ -646,7 +646,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
-            this = self._parse_conjunction()
+            this = self._parse_expression()
 
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expecting )', paren)

@@ -38,6 +38,7 @@ INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months
 x[y - 1]
+(ROW() OVER())
 NOT 1
 NOT NOT 1
 SELECT * FROM test

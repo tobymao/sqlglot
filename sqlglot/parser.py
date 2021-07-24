@@ -675,6 +675,11 @@ class Parser:
         if self._match(*self.PRIMARY_TOKENS):
             return self._prev
 
+        time_type = self._match(TokenType.TIMESTAMP, TokenType.DATE)
+
+        if time_type:
+            return exp.Cast(this=self._parse_primary(), to=time_type)
+
         interval = self._parse_interval()
 
         if interval:

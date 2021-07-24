@@ -95,8 +95,7 @@ class Parser:
     }
 
     COLUMN_TOKENS = {
-        TokenType.VAR,
-        TokenType.IDENTIFIER,
+        *ID_VAR_TOKENS,
         TokenType.STAR,
     }
 

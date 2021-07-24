@@ -357,6 +357,8 @@ class Tokenizer:
             self._start = self._current
             self._advance()
 
+            if not self._char:
+                break
             if self._scan_ambiguous(ambiguous_trie):
                 pass
             elif self._scan_comments(comments, comment_start, comment_end):

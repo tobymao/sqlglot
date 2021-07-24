@@ -50,6 +50,7 @@ SELECT * FROM a, b, (SELECT 1) AS c
 SELECT a FROM test
 SELECT 1 AS range FROM test
 SELECT 1 AS count FROM test
+SELECT t.count
 SELECT DISTINCT x FROM test
 SELECT DISTINCT x, y FROM test
 SELECT test.* FROM test

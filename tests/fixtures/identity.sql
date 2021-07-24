@@ -45,6 +45,7 @@ SELECT * FROM test
 SELECT *, 1 FROM test
 SELECT 1
 SELECT 1 FROM test
+SELECT * FROM a, b, (SELECT 1) AS c
 SELECT a FROM test
 SELECT 1 AS range FROM test
 SELECT 1 AS count FROM test

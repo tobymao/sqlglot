@@ -357,7 +357,7 @@ class Parser:
         if not self._match(TokenType.FROM):
             return None
 
-        return exp.From(this=self._parse_table())
+        return exp.From(expressions=self._parse_csv(self._parse_table))
 
     def _parse_laterals(self):
         laterals = []

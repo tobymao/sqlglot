@@ -133,6 +133,7 @@ class FileFormat(Expression):
 
 class From(Expression):
     token_type = TokenType.FROM
+    arg_types = {'expressions': True}
 
 
 class Having(Expression):

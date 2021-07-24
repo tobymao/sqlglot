@@ -131,6 +131,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate("REGEXP_LIKE(a, 'x')", "a RLIKE 'x'", read='presto', write='hive')
         self.validate("a RLIKE 'x'", "REGEXP_LIKE(a, 'x')", read='hive', write='presto')
+        self.validate("a REGEXP 'x'", "REGEXP_LIKE(a, 'x')", read='hive', write='presto')
         self.validate("CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write='presto')
         self.validate("CASE WHEN x > 1 THEN 1 END", "IF(x > 1, 1)", write='presto')
         self.validate(
@@ -277,7 +278,7 @@ class TestDialects(unittest.TestCase):
         self.validate('ds = "2020-01-01"', "ds = '2020-01-01'", read='hive')
         self.validate('ds = "1\'\'2"', "ds = '1\\'\\'2'", read='hive')
         self.validate('ds = "1\'\'2"', "ds = '1''''2'", read='hive', write='presto')
-        self.validate('x == 1', "x == 1", read='hive')
+        self.validate('x == 1', "x = 1", read='hive')
         self.validate('x == 1', "x = 1", read='hive', write='presto')
         self.validate('x div y', 'CAST(x / y AS INTEGER)', read='hive', write='presto')
 

@@ -27,7 +27,6 @@ class TokenType(AutoName):
     GTE = auto()
     NOT = auto()
     EQ = auto()
-    DEQ = auto()
     NEQ = auto()
     AND = auto()
     OR = auto()
@@ -195,7 +194,7 @@ class Tokenizer:
         '--': TokenType.COMMENT,
         '/*': TokenType.COMMENT_START,
         '*/': TokenType.COMMENT_END,
-        '==': TokenType.DEQ,
+        '==': TokenType.EQ,
         '||': TokenType.D_PIPE,
         '>=': TokenType.GTE,
         '<=': TokenType.LTE,
@@ -250,6 +249,7 @@ class Tokenizer:
         'PARTITION BY': TokenType.PARTITION,
         'PRECEDING': TokenType.PRECEDING,
         'RANGE': TokenType.RANGE,
+        'REGEXP': TokenType.RLIKE,
         'RIGHT': TokenType.RIGHT,
         'RLIKE': TokenType.RLIKE,
         'ROWS': TokenType.ROWS,

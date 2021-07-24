@@ -160,7 +160,6 @@ class Hive(Dialect):
         exp.Case: _case_if_sql,
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, 'this'),
-        exp.DEQ: lambda self, e: self.binary(e, '=='),
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",

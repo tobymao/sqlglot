@@ -266,10 +266,6 @@ class DPipe(Binary):
     token_type = TokenType.D_PIPE
 
 
-class DEQ(Binary):
-    token_type = TokenType.DEQ
-
-
 class EQ(Binary):
     token_type = TokenType.EQ
 

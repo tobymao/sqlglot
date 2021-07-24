@@ -735,7 +735,12 @@ class Parser:
         if not self._match(TokenType.R_BRACKET):
             self.raise_error('Expected ]')
 
-        return self._parse_brackets(bracket)
+        return self._parse_brackets(self._parse_dot(bracket))
+
+    def _parse_dot(self, this):
+        while self._match(TokenType.DOT):
+            this = exp.Dot(this=this, expression=self._parse_id_var())
+        return this
 
     def _parse_window_spec(self):
         self._match(TokenType.BETWEEN)

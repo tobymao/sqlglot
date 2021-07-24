@@ -503,7 +503,7 @@ class Parser:
         return exp.Union(this=this, expression=self._parse_select(), distinct=distinct)
 
     def _parse_expression(self):
-        return self._parse_alias(self._parse_window(self._parse_conjunction()))
+        return self._parse_alias(self._parse_conjunction())
 
     def _parse_conjunction(self):
         return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
@@ -598,7 +598,7 @@ class Parser:
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expected ) after COUNT")
 
-        return exp.Count(this=this, distinct=distinct)
+        return self._parse_window(exp.Count(this=this, distinct=distinct))
 
     def _parse_cast(self):
         if not self._match(TokenType.L_PAREN):
@@ -630,9 +630,47 @@ class Parser:
             self.raise_error('Expected )')
 
         if not callable(function):
-            return exp.Anonymous(this=this, expressions=args)
+            this = exp.Anonymous(this=this, expressions=args)
+        else:
+            this = function(args)
 
-        return function(args)
+        return self._parse_window(this)
+
+    def _parse_window(self, this):
+        if not self._match(TokenType.OVER):
+            return this
+
+        if not self._match(TokenType.L_PAREN):
+            self.raise_error('Expecting ( after OVER')
+
+        partition = None
+
+        if self._match(TokenType.PARTITION):
+            partition = self._parse_csv(self._parse_primary)
+
+        order = self._parse_order()
+
+        spec = None
+        kind = self._match(TokenType.ROWS, TokenType.RANGE)
+
+        if kind:
+            self._match(TokenType.BETWEEN)
+            start = self._parse_window_spec()
+            self._match(TokenType.AND)
+            end = self._parse_window_spec()
+
+            spec = exp.WindowSpec(
+                kind=kind,
+                start=start['value'],
+                start_side=start['side'],
+                end=end['value'],
+                end_side=end['side'],
+            )
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error('Expecting )')
+
+        return exp.Window(this=this, partition=partition, order=order, spec=spec)
 
     def _parse_primary(self):
         if self._match(*self.PRIMARY_TOKENS):
@@ -645,7 +683,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
-            this = self._parse_expression()
+            this = self._parse_conjunction()
 
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expecting )', paren)
@@ -699,42 +737,6 @@ class Parser:
             self.raise_error('Expected ]')
 
         return self._parse_brackets(bracket)
-
-    def _parse_window(self, this):
-        if not self._match(TokenType.OVER):
-            return this
-
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error('Expecting ( after OVER')
-
-        partition = None
-
-        if self._match(TokenType.PARTITION):
-            partition = self._parse_csv(self._parse_primary)
-
-        order = self._parse_order()
-
-        spec = None
-        kind = self._match(TokenType.ROWS, TokenType.RANGE)
-
-        if kind:
-            self._match(TokenType.BETWEEN)
-            start = self._parse_window_spec()
-            self._match(TokenType.AND)
-            end = self._parse_window_spec()
-
-            spec = exp.WindowSpec(
-                kind=kind,
-                start=start['value'],
-                start_side=start['side'],
-                end=end['value'],
-                end_side=end['side'],
-            )
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error('Expecting )')
-
-        return exp.Window(this=this, partition=partition, order=order, spec=spec)
 
     def _parse_window_spec(self):
         self._match(TokenType.BETWEEN)

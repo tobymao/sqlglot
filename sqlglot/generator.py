@@ -195,7 +195,8 @@ class Generator:
         ] if part)
 
     def from_sql(self, expression):
-        return f"{self.seg('FROM')} {self.sql(expression, 'this')}"
+        expressions = ', '.join(self.sql(e) for e in expression.args['expressions'])
+        return f"{self.seg('FROM')} {expressions}"
 
     def group_sql(self, expression):
         return self.op_expressions('GROUP BY', expression)
@@ -468,10 +469,7 @@ class Generator:
         )
 
     def op_expressions(self, op, expression, flat=False):
-        this_sql = self.sql(expression, 'this')
-        op_sql = self.seg(op)
         expressions_sql = self.expressions(expression, flat=flat)
         if flat:
-            this_sql = f"{this_sql} " if this_sql else ''
-            return f"{this_sql}{op} {expressions_sql}"
-        return f"{this_sql}{op_sql}{self.sep()}{expressions_sql}"
+            return f"{op} {expressions_sql}"
+        return f"{self.seg(op)}{self.sep()}{expressions_sql}"

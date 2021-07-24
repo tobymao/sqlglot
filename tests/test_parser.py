@@ -15,5 +15,6 @@ class TestParser(unittest.TestCase):
         assert expression.args['expressions'][2].args['alias'].text == 'c'
         assert expression.args['expressions'][3].args['alias'].text == 'D'
         assert expression.args['expressions'][4].args['alias'].text == "y|z'"
-        assert expression.args['from'].args['this'].args['this'].text == 'z'
-        assert expression.args['from'].args['this'].args['db'].text == 'y'
+        table = expression.args['from'].args['expressions'][0]
+        assert table.args['this'].text == 'z'
+        assert table.args['db'].text == 'y'

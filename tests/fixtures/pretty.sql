@@ -18,6 +18,9 @@ WITH cte1 AS (
         WHEN true THEN 1
         WHEN x and y THEN 2
         ELSE 3 END
+        UNION ALL
+        SELECT 1
+        FROM (SELECT 1) AS x, y, (SELECT 2) z
     ) x
 )
 SELECT a, b c FROM (
@@ -57,6 +60,16 @@ WITH cte1 AS (
             WHEN x AND y THEN 2
             ELSE 3
           END
+        UNION ALL
+        SELECT
+          1
+        FROM (
+            SELECT
+              1
+        ) AS x, y, (
+            SELECT
+              2
+        ) AS z
     ) AS x
 )
 SELECT

@@ -3,7 +3,8 @@ import sqlglot
 import sqlparse
 
 n = 100
-sql = """
+
+long = """
 SELECT
   "e"."employee_id" AS "Employee #",
   "e"."first_name" || ' ' || "e"."last_name" AS "Name",
@@ -16,7 +17,8 @@ SELECT
   TO_CHAR("j"."min_salary", 'L99G999D99', 'NLS_NUMERIC_CHARACTERS = ''.,'' NLS_CURRENCY = ''$''') || ' - ' || TO_CHAR("j"."max_salary", 'L99G999D99', 'NLS_NUMERIC_CHARACTERS = ''.,'' NLS_CURRENCY = ''$''') AS "Current Salary",
   "l"."street_address" || ', ' || "l"."postal_code" || ', ' || "l"."city" || ', ' || "l"."state_province" || ', ' || "c"."country_name" || ' (' || "r"."region_name" || ')' AS "Location",
   "jh"."job_id" AS "History Job ID",
-  'worked from ' || TO_CHAR("jh"."start_date", 'MM/DD/YYYY') || ' to ' || TO_CHAR("jh"."end_date", 'MM/DD/YYYY') || ' as ' || "jj"."job_title" || ' in ' || "dd"."department_name" || ' department' AS "History Job Title"
+  'worked from ' || TO_CHAR("jh"."start_date", 'MM/DD/YYYY') || ' to ' || TO_CHAR("jh"."end_date", 'MM/DD/YYYY') || ' as ' || "jj"."job_title" || ' in ' || "dd"."department_name" || ' department' AS "History Job Title",
+  case when 1 then 1 when 2 then 2 when 3 then 3 when 4 then 4 when 5 then 5 else a(b(c + 1 * 3 % 4)) end
 FROM "employees" AS e
 JOIN "jobs" AS j
   ON "e"."job_id" = "j"."job_id"
@@ -42,12 +44,16 @@ ORDER BY
   "e"."employee_id"
 """
 
-def test_sqlglot():
+short = "select 1 as a, case when 1 then 1 when 2 then 2 else 3 end as b, c from x"
+
+def test_sqlglot(sql):
     sqlglot.parse(sql)
 
 
-def test_sqlparse():
+def test_sqlparse(sql):
     sqlparse.parse(sql)
 
-print('sqlglot', timeit.repeat(lambda: test_sqlglot(), number=n))
-print('sqlparse', timeit.repeat(lambda: test_sqlparse(), number=n))
+print('sqlglot long', timeit.repeat(lambda: test_sqlglot(long), number=n))
+print('sqlparse long', timeit.repeat(lambda: test_sqlparse(long), number=n))
+print('sqlglot short', timeit.repeat(lambda: test_sqlglot(short), number=n))
+print('sqlparse short', timeit.repeat(lambda: test_sqlparse(short), number=n))

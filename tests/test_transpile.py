@@ -59,6 +59,8 @@ class TestTranspile(unittest.TestCase):
         self.validate('SELECT IF(a > 1, 1) FROM foo', 'SELECT CASE WHEN a > 1 THEN 1 END FROM foo')
 
     def test_time(self):
+        self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
+        self.validate("DATE '2020-01-01'", "CAST('2020-01-01' AS DATE)")
         self.validate("STR_TO_TIME('x', 'y')", "STRPTIME('x', 'y')", write='duckdb')
         self.validate("STR_TO_UNIX('x', 'y')", "EPOCH(STRPTIME('x', 'y'))", write='duckdb')
         self.validate("TIME_TO_STR(x, 'y')", "STRFTIME(x, 'y')", write='duckdb')

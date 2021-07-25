@@ -153,10 +153,12 @@ class Parser:
     def parse(self, raw_tokens, code=None):
         self.code = code or ''
         self.reset()
+        total = len(raw_tokens)
 
-        for token in raw_tokens:
+        for i, token in enumerate(raw_tokens):
             if token.token_type == TokenType.SEMICOLON:
-                self._chunks.append([])
+                if i < total - 1:
+                    self._chunks.append([])
             else:
                 self._chunks[-1].append(token)
 

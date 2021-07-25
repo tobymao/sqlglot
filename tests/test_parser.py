@@ -18,3 +18,12 @@ class TestParser(unittest.TestCase):
         table = expression.args['from'].args['expressions'][0]
         assert table.args['this'].text == 'z'
         assert table.args['db'].text == 'y'
+
+    def test_multi(self):
+        expressions = parse("""
+            SELECT * FROM a; SELECT * FROM b;
+        """)
+
+        assert len(expressions) == 2
+        assert expressions[0].args['from'].args['expressions'][0].args['this'].text == 'a'
+        assert expressions[1].args['from'].args['expressions'][0].args['this'].text == 'b'

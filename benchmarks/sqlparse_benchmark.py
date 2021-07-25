@@ -1,4 +1,5 @@
 import timeit
+import moz_sql_parser
 import sqlglot
 import sqlparse
 
@@ -53,7 +54,13 @@ def test_sqlglot(sql):
 def test_sqlparse(sql):
     sqlparse.parse(sql)
 
+
+def test_moz_sql(sql):
+    moz_sql_parser.parse(sql)
+
 print('sqlglot long', timeit.repeat(lambda: test_sqlglot(long), number=n))
 print('sqlparse long', timeit.repeat(lambda: test_sqlparse(long), number=n))
+print('moz_sql long', timeit.repeat(lambda: test_moz_sql(long), number=n))
 print('sqlglot short', timeit.repeat(lambda: test_sqlglot(short), number=n))
 print('sqlparse short', timeit.repeat(lambda: test_sqlparse(short), number=n))
+print('moz_sql short', timeit.repeat(lambda: test_moz_sql(short), number=n))

@@ -313,6 +313,17 @@ class Presto(Dialect):
 
 
 class Spark(Hive):
+
+    def _create_sql(self, e):
+        kind = e.args.get('kind')
+        temporary = e.args.get('temporary')
+
+        if kind == 'table' and temporary is True:
+            return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
+        else:
+            return Hive().generate(e)
+
+
     transforms = {
         **Hive.transforms,
         TokenType.TINYINT: 'BYTE',
@@ -322,6 +333,7 @@ class Spark(Hive):
         TokenType.BINARY: 'ARRAY[BYTE]',
         exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.Create: _create_sql
     }
 
     functions = {

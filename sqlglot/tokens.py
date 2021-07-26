@@ -124,6 +124,7 @@ class TokenType(AutoName):
     SELECT = auto()
     SPEC = auto()
     STORED = auto()
+    TEMPORARY = auto()
     THEN = auto()
     UNBOUNDED = auto()
     UNION = auto()
@@ -256,6 +257,7 @@ class Tokenizer:
         'SELECT': TokenType.SELECT,
         'STORED': TokenType.STORED,
         'TABLE': TokenType.TABLE,
+        'TEMPORARY': TokenType.TEMPORARY,
         'THEN': TokenType.THEN,
         'UNBOUNDED': TokenType.UNBOUNDED,
         'UNION': TokenType.UNION,

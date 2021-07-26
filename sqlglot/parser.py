@@ -1,15 +1,14 @@
 import logging
-import os
 
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import list_get
 from sqlglot.tokens import Token, TokenType
 import sqlglot.expressions as exp
 
-os.system('')
 
 def expressions_to_map(*expressions):
     return {expression.token_type: expression for expression in expressions}
+
 
 class Parser:
     def _parse_decimal(args):

@@ -260,6 +260,8 @@ class Parser:
         )
 
     def _parse_create(self):
+        temporary = bool(self._match(TokenType.TEMPORARY))
+
         if not self._match(TokenType.TABLE, TokenType.VIEW):
             self.raise_error('Expected TABLE or View')
 
@@ -289,6 +291,7 @@ class Parser:
                 expression=self._parse_select(),
                 exists=exists,
                 file_format=file_format,
+                temporary=temporary
             )
 
         if create_token.token_type == TokenType.VIEW:
@@ -299,6 +302,7 @@ class Parser:
                 kind='view',
                 expression=self._parse_select(),
                 exists=exists,
+                temporary=temporary
             )
         return None
 

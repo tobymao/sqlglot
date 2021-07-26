@@ -104,7 +104,7 @@ class Expression:
 
 class Create(Expression):
     token_type = TokenType.CREATE
-    arg_types = {'this': True, 'kind': True, 'expression': False, 'exists': False, 'file_format': False}
+    arg_types = {'this': True, 'kind': True, 'expression': False, 'exists': False, 'file_format': False, 'temporary': False}
 
 
 class CTE(Expression):

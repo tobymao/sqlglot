@@ -142,6 +142,7 @@ class TestTranspile(unittest.TestCase):
             "FROM_UNIXTIME(123)",
             write='spark',
         )
+        self.validate("CREATE TEMPORARY TABLE test AS SELECT 1", "CREATE TEMPORARY VIEW test AS SELECT 1", write='spark')
 
     def test_identity(self):
         with open(os.path.join(self.fixtures_dir, 'identity.sql')) as f:

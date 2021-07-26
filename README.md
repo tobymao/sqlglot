@@ -185,9 +185,9 @@ CREATE TABLE x AS SELECT * FROM y
 
 | Query            | sqlglot          | [sqlparse](https://github.com/andialbrecht/sqlparse)         | [moz\_sql\_parser](https://github.com/klahnakoski/mo-sql-parsing) | [sqloxide](https://github.com/wseaton/sqloxide/) |
 | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- |
-| short            | 0.00052          | 0.00113          | 0.00169          | 2.701e-05
-| long             | 0.00513          | 0.01503          | 0.02137          | 0.0002045
-| crazy            | 0.01422          | 3.32793          | 0.35419          | 0.0010257
+| short            | 0.00042          | 0.00079          | 0.00129          | 2.701e-05
+| long             | 0.00425          | 0.01149          | 0.01577          | 0.0002045
+| crazy            | 0.01231          | 2.12605          | 0.26796          | 0.0010257
 
 
 ## Run Tests and Lint

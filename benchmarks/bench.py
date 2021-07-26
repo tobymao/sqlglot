@@ -3,6 +3,7 @@ import numpy as np
 import moz_sql_parser
 import sqlglot
 import sqlparse
+import sqloxide
 
 long = """
 SELECT
@@ -64,7 +65,10 @@ def sqlparse_parse(sql):
 def moz_sql_parser_parse(sql):
     moz_sql_parser.parse(sql)
 
+def sqloxide_parse(sql):
+    sqloxide.parse_sql(sql, dialect='ansi')
 
-for lib in ['sqlglot_parse', 'sqlparse_parse', 'moz_sql_parser_parse']:
+
+for lib in ['sqlglot_parse', 'sqlparse_parse', 'moz_sql_parser_parse', 'sqloxide_parse']:
     for name, sql in {'short': short, 'long': long, 'crazy': crazy}.items():
         print(f"{lib} {name}", np.mean(timeit.repeat(lambda: globals()[lib](sql), number=1)))

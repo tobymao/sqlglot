@@ -175,8 +175,8 @@ class Generator:
     def drop_sql(self, expression):
         this = self.sql(expression, 'this')
         kind = expression.args['kind'].upper()
-        exists_sql = ' IF EXISTS' if expression.args.get('exists') else ''
-        return f"DROP {kind} {this}{exists_sql}"
+        exists_sql = ' IF EXISTS ' if expression.args.get('exists') else ' '
+        return f"DROP {kind}{exists_sql}{this}"
 
     def fileformat_sql(self, expression):
         if self.sql(expression, 'this'):
@@ -188,12 +188,26 @@ class Generator:
             self.unsupported('Hints are not supported')
         return ''
 
+    def insert_sql(self, expression):
+        overwrite = self.sql(expression, 'overwrite')
+        kind = 'OVERWRITE' if overwrite else 'INTO'
+        this = self.sql(expression, 'this')
+        exists = ' IF EXISTS ' if expression.args.get('exists') else ' '
+        expression_sql = self.sql(expression, 'expression')
+        return f"INSERT {kind} TABLE {this}{exists}{expression_sql}"
+
     def table_sql(self, expression):
         return '.'.join(part for part in [
             self.sql(expression, 'db', identify=True),
             self.sql(expression, 'table', identify=True),
             self.sql(expression, 'this', identify=True),
         ] if part)
+
+    def tuple_sql(self, expression):
+        return f"({self.expressions(expression, flat=True)})"
+
+    def values_sql(self, expression):
+        return f"VALUES{self.seg('')}{self.expressions(expression)}"
 
     def from_sql(self, expression):
         expressions = ', '.join(self.sql(e) for e in expression.args['expressions'])

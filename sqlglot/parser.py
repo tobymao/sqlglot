@@ -228,6 +228,9 @@ class Parser:
         if self._match(TokenType.DROP):
             return self._parse_drop()
 
+        if self._match(TokenType.INSERT):
+            return self._parse_insert()
+
         cte = self._parse_cte()
 
         if cte:
@@ -243,15 +246,18 @@ class Parser:
         else:
             self.raise_error('Expected TABLE or View')
 
-        this = self._parse_table()
+        return exp.Drop(
+            exists=self._parse_exists(),
+            this=self._parse_table(None),
+            kind=kind,
+        )
 
-        if self._match(TokenType.IF):
-            self._match(TokenType.EXISTS)
-            exists = True
-        else:
-            exists = False
-
-        return exp.Drop(this=this, exists=exists, kind=kind)
+    def _parse_exists(self, not_=False):
+        return (
+            self._match(TokenType.IF)
+            and (not not_ or self._match(TokenType.NOT))
+            and self._match(TokenType.EXISTS)
+        )
 
     def _parse_create(self):
         temporary = bool(self._match(TokenType.TEMPORARY))
@@ -260,15 +266,8 @@ class Parser:
             self.raise_error('Expected TABLE or View')
 
         create_token = self._prev
-
-        if self._match(TokenType.IF):
-            self._match(TokenType.NOT)
-            self._match(TokenType.EXISTS)
-            exists = True
-        else:
-            exists = False
-
-        this = self._parse_table()
+        exists = self._parse_exists(not_=True)
+        this = self._parse_table(None)
 
         if create_token.token_type == TokenType.TABLE:
             if self._match(TokenType.STORED):
@@ -306,6 +305,32 @@ class Parser:
                 temporary=temporary
             )
         return None
+
+    def _parse_insert(self):
+        overwrite = self._match(TokenType.OVERWRITE)
+        self._match(TokenType.INTO)
+        self._match(TokenType.TABLE)
+
+        return exp.Insert(
+            this=self._parse_table(None),
+            exists=self._parse_exists(),
+            expression=self._parse_values() or self._parse_select(),
+            overwrite=overwrite,
+        )
+
+    def _parse_values(self):
+        if not self._match(TokenType.VALUES):
+            return None
+
+        return exp.Values(expressions=self._parse_csv(self._parse_value))
+
+    def _parse_value(self):
+        if not self._match(TokenType.L_PAREN):
+            self.raise_error('Expected ( for values')
+        expressions = self._parse_csv(self._parse_primary)
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error('Expected ) for values')
+        return exp.Tuple(expressions=expressions)
 
     def _parse_cte(self):
         if not self._match(TokenType.WITH):
@@ -406,7 +431,7 @@ class Parser:
                 on=self._parse_conjunction() if self._match(TokenType.ON) else None,
             ))
 
-    def _parse_table(self, alias=None):
+    def _parse_table(self, alias=False):
         unnest = self._parse_unnest()
 
         if unnest:
@@ -429,7 +454,9 @@ class Parser:
 
             expression = exp.Table(this=table, db=db)
 
-        if alias:
+        if alias is None:
+            this = expression
+        elif alias:
             this = exp.Alias(this=expression, alias=alias)
         else:
             this = self._parse_alias(expression)

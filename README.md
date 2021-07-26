@@ -183,7 +183,7 @@ CREATE TABLE x AS SELECT * FROM y
 
 [Benchmarks](benchmarks) run on Python 3.9.6 in seconds.
 
-| Query            | sqlglot          | sqlparse         | moz\_sql\_parser |
+| Query            | sqlglot          | [sqlparse](https://github.com/andialbrecht/sqlparse)         | [moz\_sql\_parser](https://github.com/klahnakoski/mo-sql-parsing) |
 | ---------------- | ---------------- | ---------------- | ---------------- |
 | short            | 0.00052          | 0.00113          | 0.00169          |
 | long             | 0.00513          | 0.01503          | 0.02137          |

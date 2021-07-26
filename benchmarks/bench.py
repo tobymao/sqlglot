@@ -1,9 +1,8 @@
 import timeit
+import numpy as np
 import moz_sql_parser
 import sqlglot
 import sqlparse
-
-n = 1
 
 long = """
 SELECT
@@ -53,24 +52,19 @@ crazy += ' AS a, 2*'
 crazy += '*'.join(str(i) for i in range(500))
 crazy += ' AS b FROM x'
 
-def test_sqlglot(sql):
+
+def sqlglot_parse(sql):
     sqlglot.parse(sql)
 
 
-def test_sqlparse(sql):
+def sqlparse_parse(sql):
     sqlparse.parse(sql)
 
 
-def test_moz_sql(sql):
+def moz_sql_parser_parse(sql):
     moz_sql_parser.parse(sql)
 
 
-print('sqlglot long', timeit.repeat(lambda: test_sqlglot(long), number=n))
-print('sqlparse long', timeit.repeat(lambda: test_sqlparse(long), number=n))
-print('moz_sql long', timeit.repeat(lambda: test_moz_sql(long), number=n))
-print('sqlglot short', timeit.repeat(lambda: test_sqlglot(short), number=n))
-print('sqlparse short', timeit.repeat(lambda: test_sqlparse(short), number=n))
-print('moz_sql short', timeit.repeat(lambda: test_moz_sql(short), number=n))
-print('sqlglot crazy', timeit.repeat(lambda: test_sqlglot(crazy), number=n))
-print('sqlparse crazy', timeit.repeat(lambda: test_sqlparse(crazy), number=n))
-print('moz_sql crazy', timeit.repeat(lambda: test_moz_sql(crazy), number=n))
+for lib in ['sqlglot_parse', 'sqlparse_parse', 'moz_sql_parser_parse']:
+    for name, sql in {'short': short, 'long': long, 'crazy': crazy}.items():
+        print(f"{lib} {name}", np.mean(timeit.repeat(lambda: globals()[lib](sql), number=1)))

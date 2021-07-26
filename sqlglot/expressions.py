@@ -144,6 +144,11 @@ class Hint(Expression):
     token_type = TokenType.HINT
 
 
+class Insert(Expression):
+    token_type = TokenType.INSERT
+    arg_types = {'this': True, 'expression': True, 'overwrite': False, 'exists': False}
+
+
 class Group(Expression):
     token_type = TokenType.GROUP
     arg_types = {'expressions': True}
@@ -178,6 +183,11 @@ class Table(Expression):
     arg_types = {'this': True, 'db': False}
 
 
+class Tuple(Expression):
+    token_type = TokenType.TUPLE
+    arg_types = {'expressions': True}
+
+
 class Union(Expression):
     token_type = TokenType.UNION
     arg_types = {'this': True, 'expression': True, 'distinct': True}
@@ -186,6 +196,11 @@ class Union(Expression):
 class Unnest(Expression):
     token_type = TokenType.UNNEST
     arg_types = {'expressions': True, 'ordinality': False, 'table': False, 'columns': False}
+
+
+class Values(Expression):
+    token_type = TokenType.VALUES
+    arg_types = {'expressions': True}
 
 
 class Select(Expression):

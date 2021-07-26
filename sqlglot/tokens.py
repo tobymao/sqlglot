@@ -99,7 +99,9 @@ class TokenType(AutoName):
     IF = auto()
     IN = auto()
     INNER = auto()
+    INSERT = auto()
     INTERVAL = auto()
+    INTO = auto()
     IS = auto()
     JOIN = auto()
     LATERAL = auto()
@@ -115,6 +117,7 @@ class TokenType(AutoName):
     ORDINALITY = auto()
     OUTER = auto()
     OVER = auto()
+    OVERWRITE = auto()
     PARTITION = auto()
     PRECEDING = auto()
     RANGE = auto()
@@ -124,10 +127,12 @@ class TokenType(AutoName):
     SELECT = auto()
     SPEC = auto()
     STORED = auto()
+    TUPLE = auto()
     THEN = auto()
     UNBOUNDED = auto()
     UNION = auto()
     UNNEST = auto()
+    VALUES = auto()
     VIEW = auto()
     WHEN = auto()
     WHERE = auto()
@@ -231,7 +236,9 @@ class Tokenizer:
         'IF': TokenType.IF,
         'IN': TokenType.IN,
         'INNER': TokenType.INNER,
+        'INSERT': TokenType.INSERT,
         'INTERVAL': TokenType.INTERVAL,
+        'INTO': TokenType.INTO,
         'IS': TokenType.IS,
         'JOIN': TokenType.JOIN,
         'LATERAL': TokenType.LATERAL,
@@ -246,6 +253,7 @@ class Tokenizer:
         'ORDINALITY': TokenType.ORDINALITY,
         'OUTER': TokenType.OUTER,
         'OVER': TokenType.OVER,
+        'OVERWRITE': TokenType.OVERWRITE,
         'PARTITION BY': TokenType.PARTITION,
         'PRECEDING': TokenType.PRECEDING,
         'RANGE': TokenType.RANGE,
@@ -260,6 +268,7 @@ class Tokenizer:
         'UNBOUNDED': TokenType.UNBOUNDED,
         'UNION': TokenType.UNION,
         'UNNEST': TokenType.UNNEST,
+        'VALUES': TokenType.VALUES,
         'VIEW': TokenType.VIEW,
         'WHEN': TokenType.WHEN,
         'WHERE': TokenType.WHERE,

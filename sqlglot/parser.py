@@ -254,10 +254,7 @@ class Parser:
         return exp.Drop(this=this, exists=exists, kind=kind)
 
     def _parse_create(self):
-        if self._match(TokenType.TEMPORARY):
-            temporary = True
-        else:
-            temporary = False
+        temporary = bool(self._match(TokenType.TEMPORARY))
 
         if not self._match(TokenType.TABLE, TokenType.VIEW):
             self.raise_error('Expected TABLE or View')
@@ -306,6 +303,7 @@ class Parser:
                 kind='view',
                 expression=self._parse_select(),
                 exists=exists,
+                temporary=temporary
             )
         return None
 

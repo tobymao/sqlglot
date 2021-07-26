@@ -2,7 +2,7 @@
 
 SQLGlot is a no dependency Python SQL parser and transpiler. It can be used to format SQL or translate between different dialects like Presto, Spark, and Hive. It aims to read a wide variety of SQL inputs and output syntatically correct SQL in the targeted dialects.
 
-It is currently the [fastest](benchmarks) Python SQL parser.
+It is currently the [fastest](#benchmarks) Python SQL parser.
 
 You can easily customize the parser to support UDF's across dialects as well through the transform API.
 
@@ -179,7 +179,10 @@ Generator().generate(Rewriter(expression).ctas('x').expression)
 CREATE TABLE x AS SELECT * FROM y
 ```
 
-### [Benchmarks (seconds)](benchmarks)
+### [Benchmarks]
+
+[Benchmarks](benchmarks) run on Python 3.9.6 in seconds.
+
 | Query            | sqlglot          | sqlparse         | moz\_sql\_parser |
 | ---------------- | ---------------- | ---------------- | ---------------- |
 | short            | 0.00052          | 0.00113          | 0.00169          |

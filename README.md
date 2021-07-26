@@ -179,7 +179,7 @@ Generator().generate(Rewriter(expression).ctas('x').expression)
 CREATE TABLE x AS SELECT * FROM y
 ```
 
-### [Benchmarks]
+### Benchmarks
 
 [Benchmarks](benchmarks) run on Python 3.9.6 in seconds.
 

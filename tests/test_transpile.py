@@ -1,3 +1,4 @@
+# pylint: disable=too-many-statements
 import os
 import unittest
 
@@ -54,13 +55,31 @@ class TestTranspile(unittest.TestCase):
         self.validate('a NOT BETWEEN b AND c', 'NOT a BETWEEN b AND c')
         self.validate('a NOT IN (1, 2)', 'NOT a IN (1, 2)')
 
+    def test_extract(self):
+        self.validate("EXTRACT(day FROM '2020-01-01'::TIMESTAMP)", "EXTRACT(day FROM CAST('2020-01-01' AS TIMESTAMP))")
+        self.validate("EXTRACT(timezone FROM '2020-01-01'::TIMESTAMP)", "EXTRACT(timezone FROM CAST('2020-01-01' AS TIMESTAMP))")
+        self.validate(
+            "EXTRACT(year FROM '2020-01-01'::TIMESTAMP WITH TIME ZONE)",
+            "EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMPTZ))",
+        )
+        self.validate(
+            "extract(month from '2021-01-31'::timestamp without time zone)",
+            "EXTRACT(month FROM CAST('2021-01-31' AS TIMESTAMP))",
+        )
+
     def test_if(self):
         self.validate('SELECT IF(a > 1, 1, 0) FROM foo', 'SELECT CASE WHEN a > 1 THEN 1 ELSE 0 END FROM foo')
         self.validate('SELECT IF(a > 1, 1) FROM foo', 'SELECT CASE WHEN a > 1 THEN 1 END FROM foo')
 
     def test_time(self):
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
+        self.validate("TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)")
+        self.validate("TIMESTAMP WITHOUT TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
+        self.validate("'2020-01-01'::TIMESTAMP", "CAST('2020-01-01' AS TIMESTAMP)")
+        self.validate("'2020-01-01'::TIMESTAMP WITHOUT TIME ZONE", "CAST('2020-01-01' AS TIMESTAMP)")
+        self.validate("'2020-01-01'::TIMESTAMP WITH TIME ZONE", "CAST('2020-01-01' AS TIMESTAMPTZ)")
         self.validate("DATE '2020-01-01'", "CAST('2020-01-01' AS DATE)")
+        self.validate("'2020-01-01'::DATE", "CAST('2020-01-01' AS DATE)")
         self.validate("STR_TO_TIME('x', 'y')", "STRPTIME('x', 'y')", write='duckdb')
         self.validate("STR_TO_UNIX('x', 'y')", "EPOCH(STRPTIME('x', 'y'))", write='duckdb')
         self.validate("TIME_TO_STR(x, 'y')", "STRFTIME(x, 'y')", write='duckdb')

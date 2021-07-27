@@ -60,6 +60,7 @@ class Parser:
         TokenType.BINARY,
         TokenType.JSON,
         TokenType.TIMESTAMP,
+        TokenType.TIMESTAMPTZ,
         TokenType.DATE,
         TokenType.ARRAY,
         TokenType.DECIMAL,
@@ -327,7 +328,7 @@ class Parser:
     def _parse_value(self):
         if not self._match(TokenType.L_PAREN):
             self.raise_error('Expected ( for values')
-        expressions = self._parse_csv(self._parse_primary)
+        expressions = self._parse_csv(self._parse_time)
         if not self._match(TokenType.R_PAREN):
             self.raise_error('Expected ) for values')
         return exp.Tuple(expressions=expressions)
@@ -518,7 +519,7 @@ class Parser:
 
     def _parse_ordered(self):
         return exp.Ordered(
-            this=self._parse_primary(),
+            this=self._parse_time(),
             desc=not self._match(TokenType.ASC) and self._match(TokenType.DESC),
         )
 
@@ -591,134 +592,37 @@ class Parser:
             return exp.BitwiseNot(this=self._parse_unary())
         if self._match(TokenType.DASH):
             return exp.Neg(this=self._parse_unary())
-        return self._parse_special()
+        return self._parse_time()
 
-    def _parse_special(self):
-        if self._match(TokenType.CAST):
-            return self._parse_cast()
-        if self._match(TokenType.CASE):
-            return self._parse_case()
-        if self._match(TokenType.COUNT):
-            return self._parse_count()
-        return self._parse_primary()
+    def _parse_time(self):
+        if self._match(TokenType.INTERVAL):
+            return exp.Interval(this=self._match(TokenType.STRING, TokenType.NUMBER), unit=self._match(TokenType.VAR))
 
-    def _parse_case(self):
-        ifs = []
-        default = None
+        time_type = self._parse_time_type()
+        this = self._parse_primary()
 
-        expression = self._parse_conjunction()
+        if time_type:
+            return exp.Cast(this=this, to=time_type)
 
-        while self._match(TokenType.WHEN):
-            this = self._parse_conjunction()
-            self._match(TokenType.THEN)
-            then = self._parse_conjunction()
-            ifs.append(exp.If(this=this, true=then))
+        if self._match(TokenType.DCOLON):
+            return exp.Cast(this=this, to=self._parse_time_type())
 
-        if self._match(TokenType.ELSE):
-            default = self._parse_conjunction()
+        return this
 
-        if not self._match(TokenType.END):
-            self.raise_error('Expected END after CASE', self._prev)
-
-        return self._parse_brackets(exp.Case(this=expression, ifs=ifs, default=default))
-
-    def _parse_count(self):
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error("Expected ( after COUNT", self._prev)
-
-        distinct = self._match(TokenType.DISTINCT)
-        this = self._parse_conjunction()
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expected ) after COUNT")
-
-        return self._parse_window(exp.Count(this=this, distinct=distinct))
-
-    def _parse_cast(self):
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error("Expected ( after CAST", self._prev)
-
-        this = self._parse_conjunction()
-
-        if not self._match(TokenType.ALIAS):
-            self.raise_error("Expected AS after CAST")
-
-        if not self._match(*self.TYPE_TOKENS):
-            self.raise_error("Expected type after CAST")
-
-        to = self._parse_function(self._parse_brackets(self._prev))
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expected ) after CAST")
-
-        return exp.Cast(this=this, to=to)
-
-    def _parse_function(self, this):
-        if not self._match(TokenType.L_PAREN):
-            return this
-
-        args = self._parse_csv(self._parse_conjunction)
-        function = self.functions.get(this.text.upper())
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error('Expected )')
-
-        if not callable(function):
-            this = exp.Anonymous(this=this, expressions=args)
-        else:
-            this = function(args)
-
-        return self._parse_window(this)
-
-    def _parse_window(self, this):
-        if not self._match(TokenType.OVER):
-            return this
-
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error('Expecting ( after OVER')
-
-        partition = None
-
-        if self._match(TokenType.PARTITION):
-            partition = self._parse_csv(self._parse_primary)
-
-        order = self._parse_order()
-
-        spec = None
-        kind = self._match(TokenType.ROWS, TokenType.RANGE)
-
-        if kind:
-            self._match(TokenType.BETWEEN)
-            start = self._parse_window_spec()
-            self._match(TokenType.AND)
-            end = self._parse_window_spec()
-
-            spec = exp.WindowSpec(
-                kind=kind,
-                start=start['value'],
-                start_side=start['side'],
-                end=end['value'],
-                end_side=end['side'],
-            )
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error('Expecting )')
-
-        return exp.Window(this=this, partition=partition, order=order, spec=spec)
+    def _parse_time_type(self):
+        if self._match(TokenType.DATE):
+            return self._prev
+        if self._match(TokenType.TIMESTAMP, TokenType.TIMESTAMPTZ):
+            tz = self._match(TokenType.WITH)
+            self._match(TokenType.WITHOUT)
+            self._match(TokenType.TIME)
+            self._match(TokenType.ZONE)
+            return exp.Timestamp(tz=tz)
+        return None
 
     def _parse_primary(self):
         if self._match(*self.PRIMARY_TOKENS):
             return self._prev
-
-        time_type = self._match(TokenType.TIMESTAMP, TokenType.DATE)
-
-        if time_type:
-            return exp.Cast(this=self._parse_primary(), to=time_type)
-
-        interval = self._parse_interval()
-
-        if interval:
-            return interval
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
@@ -761,6 +665,127 @@ class Parser:
 
         return self._parse_brackets(this)
 
+    def _parse_function(self, this):
+        if this.token_type == TokenType.CASE:
+            return self._parse_case()
+
+        if not self._match(TokenType.L_PAREN):
+            return this
+
+        if this.token_type == TokenType.CAST:
+            this = self._parse_cast()
+        elif this.token_type == TokenType.COUNT:
+            this = self._parse_count()
+        elif this.token_type == TokenType.EXTRACT:
+            this = self._parse_extract()
+        else:
+            args = self._parse_csv(self._parse_conjunction)
+            function = self.functions.get(this.text.upper())
+
+            if not callable(function):
+                this = exp.Anonymous(this=this, expressions=args)
+            else:
+                this = function(args)
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error('Expected )')
+
+        return self._parse_window(this)
+
+    def _parse_case(self):
+        ifs = []
+        default = None
+
+        expression = self._parse_conjunction()
+
+        while self._match(TokenType.WHEN):
+            this = self._parse_conjunction()
+            self._match(TokenType.THEN)
+            then = self._parse_conjunction()
+            ifs.append(exp.If(this=this, true=then))
+
+        if self._match(TokenType.ELSE):
+            default = self._parse_conjunction()
+
+        if not self._match(TokenType.END):
+            self.raise_error('Expected END after CASE', self._prev)
+
+        return self._parse_brackets(exp.Case(this=expression, ifs=ifs, default=default))
+
+    def _parse_count(self):
+        return exp.Count(
+            distinct=self._match(TokenType.DISTINCT),
+            this=self._parse_conjunction(),
+        )
+
+    def _parse_extract(self):
+        this = self._match(TokenType.VAR)
+
+        if not self._match(TokenType.FROM):
+            self.raise_error('Expected FROM after EXTRACT', self._prev)
+
+        expression = self._parse_time()
+
+        return exp.Extract(this=this, expression=expression)
+
+    def _parse_cast(self):
+        this = self._parse_conjunction()
+
+        if not self._match(TokenType.ALIAS):
+            self.raise_error('Expected AS after CAST')
+
+        if not self._match(*self.TYPE_TOKENS):
+            self.raise_error('Expected TYPE after CAST')
+
+        return exp.Cast(
+            this=this,
+            to=self._parse_function(self._parse_brackets(self._prev)),
+        )
+
+    def _parse_window(self, this):
+        if not self._match(TokenType.OVER):
+            return this
+
+        if not self._match(TokenType.L_PAREN):
+            self.raise_error('Expecting ( after OVER')
+
+        partition = None
+
+        if self._match(TokenType.PARTITION):
+            partition = self._parse_csv(self._parse_time)
+
+        order = self._parse_order()
+
+        spec = None
+        kind = self._match(TokenType.ROWS, TokenType.RANGE)
+
+        if kind:
+            self._match(TokenType.BETWEEN)
+            start = self._parse_window_spec()
+            self._match(TokenType.AND)
+            end = self._parse_window_spec()
+
+            spec = exp.WindowSpec(
+                kind=kind,
+                start=start['value'],
+                start_side=start['side'],
+                end=end['value'],
+                end_side=end['side'],
+            )
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error('Expecting )')
+
+        return exp.Window(this=this, partition=partition, order=order, spec=spec)
+
+    def _parse_window_spec(self):
+        self._match(TokenType.BETWEEN)
+
+        return {
+            'value': self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW) or self._parse_time(),
+            'side': self._match(TokenType.PRECEDING, TokenType.FOLLOWING),
+        }
+
     def _parse_brackets(self, this):
         if not self._match(TokenType.L_BRACKET):
             return this
@@ -782,14 +807,6 @@ class Parser:
             this = exp.Dot(this=this, expression=self._parse_id_var())
         return this
 
-    def _parse_window_spec(self):
-        self._match(TokenType.BETWEEN)
-
-        return {
-            'value': self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW) or self._parse_primary(),
-            'side': self._match(TokenType.PRECEDING, TokenType.FOLLOWING),
-        }
-
     def _parse_alias(self, this):
         self._match(TokenType.ALIAS)
 
@@ -801,13 +818,6 @@ class Parser:
 
     def _parse_id_var(self):
         return self._match(*self.ID_VAR_TOKENS)
-
-    def _parse_interval(self):
-        if self._match(TokenType.INTERVAL):
-            this = self._match(TokenType.STRING, TokenType.NUMBER)
-            unit = self._match(TokenType.VAR)
-            return exp.Interval(this=this, unit=unit)
-        return None
 
     def _parse_csv(self, parse):
         items = [parse()]

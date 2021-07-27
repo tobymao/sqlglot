@@ -344,6 +344,11 @@ class Generator:
         )
         return f"DECIMAL({args})"
 
+    def extract_sql(self, expression):
+        this = self.sql(expression, 'this')
+        expression_sql = self.sql(expression, 'expression')
+        return f"EXTRACT({this} FROM {expression_sql})"
+
     def if_sql(self, expression):
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args['false']))
 
@@ -364,6 +369,10 @@ class Generator:
 
     def not_sql(self, expression):
         return f"NOT {self.sql(expression, 'this')}"
+
+    def timestamp_sql(self, expression):
+        tz = 'TZ' if expression.args.get('tz') else ''
+        return f"TIMESTAMP{tz}"
 
     def alias_sql(self, expression):
         to_sql = self.sql(expression, 'alias')

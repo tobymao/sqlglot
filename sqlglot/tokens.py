@@ -18,6 +18,7 @@ class TokenType(AutoName):
     DASH = auto()
     PLUS = auto()
     COLON = auto()
+    DCOLON = auto()
     SEMICOLON = auto()
     STAR = auto()
     SLASH = auto()
@@ -31,7 +32,7 @@ class TokenType(AutoName):
     AND = auto()
     OR = auto()
     AMP = auto()
-    D_PIPE = auto()
+    DPIPE = auto()
     PIPE = auto()
     CARET = auto()
     TILDA = auto()
@@ -63,6 +64,7 @@ class TokenType(AutoName):
     BINARY = auto()
     JSON = auto()
     TIMESTAMP = auto()
+    TIMESTAMPTZ = auto()
     DATE = auto()
 
     # keywords
@@ -88,6 +90,7 @@ class TokenType(AutoName):
     ELSE = auto()
     END = auto()
     EXISTS = auto()
+    EXTRACT = auto()
     FOLLOWING = auto()
     FORMAT = auto()
     FULL = auto()
@@ -128,6 +131,7 @@ class TokenType(AutoName):
     SPEC = auto()
     STORED = auto()
     TEMPORARY = auto()
+    TIME = auto()
     TUPLE = auto()
     THEN = auto()
     UNBOUNDED = auto()
@@ -138,6 +142,8 @@ class TokenType(AutoName):
     WHEN = auto()
     WHERE = auto()
     WITH = auto()
+    WITHOUT = auto()
+    ZONE = auto()
 
 
 class Token:
@@ -201,7 +207,8 @@ class Tokenizer:
         '/*': TokenType.COMMENT_START,
         '*/': TokenType.COMMENT_END,
         '==': TokenType.EQ,
-        '||': TokenType.D_PIPE,
+        '::': TokenType.DCOLON,
+        '||': TokenType.DPIPE,
         '>=': TokenType.GTE,
         '<=': TokenType.LTE,
         '<>': TokenType.NEQ,
@@ -228,6 +235,7 @@ class Tokenizer:
         'ELSE': TokenType.ELSE,
         'END': TokenType.END,
         'EXISTS': TokenType.EXISTS,
+        'EXTRACT': TokenType.EXTRACT,
         'FORMAT': TokenType.FORMAT,
         'FULL': TokenType.FULL,
         'FOLLOWING': TokenType.FOLLOWING,
@@ -267,6 +275,7 @@ class Tokenizer:
         'TABLE': TokenType.TABLE,
         'TEMPORARY': TokenType.TEMPORARY,
         'THEN': TokenType.THEN,
+        'TIME': TokenType.TIME,
         'UNBOUNDED': TokenType.UNBOUNDED,
         'UNION': TokenType.UNION,
         'UNNEST': TokenType.UNNEST,
@@ -275,6 +284,8 @@ class Tokenizer:
         'WHEN': TokenType.WHEN,
         'WHERE': TokenType.WHERE,
         'WITH': TokenType.WITH,
+        'WITHOUT': TokenType.WITHOUT,
+        'ZONE': TokenType.ZONE,
 
         'ARRAY': TokenType.ARRAY,
         'BOOL': TokenType.BOOLEAN,
@@ -304,6 +315,7 @@ class Tokenizer:
         'TEXT': TokenType.TEXT,
         'BINARY': TokenType.BINARY,
         'TIMESTAMP': TokenType.TIMESTAMP,
+        'TIMESTAMPTZ': TokenType.TIMESTAMPTZ,
         'DATE': TokenType.DATE,
     }
 

@@ -278,7 +278,7 @@ class Dot(Binary):
 
 
 class DPipe(Binary):
-    token_type = TokenType.D_PIPE
+    token_type = TokenType.DPIPE
 
 
 class EQ(Binary):
@@ -385,6 +385,11 @@ class Decimal(Expression):
     arg_types = {'precision': False, 'scale': False}
 
 
+class Extract(Expression):
+    token_type = TokenType.EXTRACT
+    arg_types = {'this': True, 'expression': True}
+
+
 class In(Expression):
     token_type = TokenType.IN
     arg_types = {'this': True, 'expressions': True}
@@ -393,6 +398,11 @@ class In(Expression):
 class Interval(Expression):
     token_type = TokenType.IN
     arg_types = {'this': True, 'unit': True}
+
+
+class Timestamp(Expression):
+    token_type = TokenType.TIMESTAMP
+    arg_types = {'tz': False}
 
 
 # Functions

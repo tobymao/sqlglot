@@ -172,7 +172,7 @@ from sqlglot import Generator, parse
 from sqlglot.rewriter import Rewriter
 
 expression = parse("SELECT * FROM y")[0]
-Generator().generate(Rewriter(expression).ctas('x').expression)
+Rewriter(expression).ctas('x').expression.sql()
 ```
 
 ```sql

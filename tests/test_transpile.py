@@ -3,7 +3,7 @@ import os
 import unittest
 
 from sqlglot import TokenType, transpile
-from sqlglot.errors import ErrorLevel
+from sqlglot.errors import ErrorLevel, ParseError
 
 
 class TestTranspile(unittest.TestCase):
@@ -49,6 +49,18 @@ class TestTranspile(unittest.TestCase):
             """,
             'SELECT 1 FROM foo'
         )
+
+    def test_types(self):
+        self.validate('INT x', 'CAST(x AS INT)')
+        self.validate('VARCHAR x y', 'CAST(x AS VARCHAR) AS y')
+        self.validate('STRING x y', 'CAST(x AS TEXT) AS y')
+        self.validate('x::INT', 'CAST(x AS INT)')
+        self.validate('x::INTEGER', 'CAST(x AS INT)')
+        self.validate('x::INT y', 'CAST(x AS INT) AS y')
+        self.validate('x::INT AS y', 'CAST(x AS INT) AS y')
+
+        with self.assertRaises(ParseError):
+            transpile('x::z')
 
     def test_not_range(self):
         self.validate('a NOT LIKE b', 'NOT a LIKE b')

@@ -370,10 +370,6 @@ class Generator:
     def not_sql(self, expression):
         return f"NOT {self.sql(expression, 'this')}"
 
-    def timestamp_sql(self, expression):
-        tz = 'TZ' if expression.args.get('tz') else ''
-        return f"TIMESTAMP{tz}"
-
     def alias_sql(self, expression):
         to_sql = self.sql(expression, 'alias')
         to_sql = f" AS {to_sql}" if to_sql else ''

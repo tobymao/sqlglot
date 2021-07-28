@@ -67,6 +67,12 @@ class Parser:
         TokenType.MAP,
     }
 
+    NESTED_TYPE_TOKENS = {
+        TokenType.ARRAY,
+        TokenType.DECIMAL,
+        TokenType.MAP,
+    }
+
     ID_VAR_TOKENS = {
         TokenType.IDENTIFIER,
         TokenType.VAR,
@@ -217,6 +223,7 @@ class Parser:
     def _advance(self):
         self._index += 1
         self._curr = list_get(self._tokens, self._index)
+        self._next = list_get(self._tokens, self._index + 1)
         self._prev = list_get(self._tokens, self._index - 1) if self._index > 0 else None
 
     def _parse_statement(self):
@@ -328,7 +335,7 @@ class Parser:
     def _parse_value(self):
         if not self._match(TokenType.L_PAREN):
             self.raise_error('Expected ( for values')
-        expressions = self._parse_csv(self._parse_time)
+        expressions = self._parse_csv(self._parse_conjunction)
         if not self._match(TokenType.R_PAREN):
             self.raise_error('Expected ) for values')
         return exp.Tuple(expressions=expressions)
@@ -519,7 +526,7 @@ class Parser:
 
     def _parse_ordered(self):
         return exp.Ordered(
-            this=self._parse_time(),
+            this=self._parse_bitwise(),
             desc=not self._match(TokenType.ASC) and self._match(TokenType.DESC),
         )
 
@@ -592,33 +599,42 @@ class Parser:
             return exp.BitwiseNot(this=self._parse_unary())
         if self._match(TokenType.DASH):
             return exp.Neg(this=self._parse_unary())
-        return self._parse_time()
+        return self._parse_type()
 
-    def _parse_time(self):
+    def _parse_type(self):
         if self._match(TokenType.INTERVAL):
             return exp.Interval(this=self._match(TokenType.STRING, TokenType.NUMBER), unit=self._match(TokenType.VAR))
 
-        time_type = self._parse_time_type()
+        type_token = self._parse_types() if self._next and not (
+            self._curr.token_type in self.NESTED_TYPE_TOKENS or
+            self._next.token_type == TokenType.COMMA
+        ) else None
+
         this = self._parse_primary()
 
-        if time_type:
-            return exp.Cast(this=this, to=time_type)
+        if type_token:
+            if this:
+                return exp.Cast(this=this, to=type_token)
+            return type_token
 
         if self._match(TokenType.DCOLON):
-            return exp.Cast(this=this, to=self._parse_time_type())
+            type_token = self._parse_types()
+            if not type_token:
+                self.raise_error('Expected type')
+            return exp.Cast(this=this, to=type_token)
 
         return this
 
-    def _parse_time_type(self):
-        if self._match(TokenType.DATE):
-            return self._prev
+    def _parse_types(self):
         if self._match(TokenType.TIMESTAMP, TokenType.TIMESTAMPTZ):
             tz = self._match(TokenType.WITH)
             self._match(TokenType.WITHOUT)
             self._match(TokenType.TIME)
             self._match(TokenType.ZONE)
-            return exp.Timestamp(tz=tz)
-        return None
+            if tz:
+                return Token(TokenType.TIMESTAMPTZ, 'TIMESTAMPTZ')
+            return Token(TokenType.TIMESTAMP, 'TIMESTAMP')
+        return self._match(*self.TYPE_TOKENS)
 
     def _parse_primary(self):
         if self._match(*self.PRIMARY_TOKENS):
@@ -660,7 +676,7 @@ class Parser:
                     self.raise_error('Expected column name')
                 this = self._prev
 
-        if not isinstance(this, exp.Func) and this.token_type not in (TokenType.ARRAY, TokenType.MAP):
+        if not isinstance(this, exp.Func) and this.token_type not in self.NESTED_TYPE_TOKENS:
             this = exp.Column(this=this, db=db, table=table)
 
         return self._parse_brackets(this)
@@ -724,9 +740,7 @@ class Parser:
         if not self._match(TokenType.FROM):
             self.raise_error('Expected FROM after EXTRACT', self._prev)
 
-        expression = self._parse_time()
-
-        return exp.Extract(this=this, expression=expression)
+        return exp.Extract(this=this, expression=self._parse_type())
 
     def _parse_cast(self):
         this = self._parse_conjunction()
@@ -752,7 +766,7 @@ class Parser:
         partition = None
 
         if self._match(TokenType.PARTITION):
-            partition = self._parse_csv(self._parse_time)
+            partition = self._parse_csv(self._parse_type)
 
         order = self._parse_order()
 
@@ -782,7 +796,7 @@ class Parser:
         self._match(TokenType.BETWEEN)
 
         return {
-            'value': self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW) or self._parse_time(),
+            'value': self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW) or self._parse_bitwise(),
             'side': self._match(TokenType.PRECEDING, TokenType.FOLLOWING),
         }
 

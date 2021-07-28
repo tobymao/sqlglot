@@ -320,7 +320,7 @@ class Spark(Hive):
 
         if kind == 'table' and temporary is True:
             return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
-        return Hive().generate(e)
+        return self.create_sql(e)
 
 
     transforms = {

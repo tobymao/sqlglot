@@ -1,39 +1,38 @@
 import unittest
 
 from sqlglot import parse
-from sqlglot.dialects import Hive
 from sqlglot.rewriter import Rewriter
 
 class TestRewriter(unittest.TestCase):
     def test_ctas(self):
         expression = parse("SELECT * FROM y")[0]
-        generator = Hive().generator()
 
         self.assertEqual(
-            generator.generate(Rewriter(expression).ctas('x').expression),
+            Rewriter(expression).ctas('x').expression.sql(),
             'CREATE TABLE x AS SELECT * FROM y'
         )
 
         self.assertEqual(
-            generator.generate(
-                Rewriter(expression).ctas('x', db='foo', file_format='parquet').expression
-            ),
+            Rewriter(expression)
+            .ctas('x', db='foo', file_format='parquet')
+            .expression
+            .sql('hive'),
             'CREATE TABLE foo.x STORED AS parquet AS SELECT * FROM y'
         )
 
-        self.assertEqual(generator.generate(expression), 'SELECT * FROM y')
+        self.assertEqual(expression.sql(), 'SELECT * FROM y')
 
         rewriter = Rewriter(expression).ctas('x')
-        self.assertEqual(generator.generate(rewriter.expression), 'CREATE TABLE x AS SELECT * FROM y')
+        self.assertEqual(rewriter.expression.sql(), 'CREATE TABLE x AS SELECT * FROM y')
         self.assertEqual(
-            generator.generate(rewriter.ctas('y').expression),
-            'CREATE TABLE y AS SELECT * FROM y'
+            rewriter.ctas('y').expression.sql(),
+            'CREATE TABLE y AS SELECT * FROM y',
         )
 
         expression = parse("CREATE TABLE x AS SELECT * FROM y")[0]
         rewriter = Rewriter(expression, copy=False).ctas('x', file_format='ORC')
         self.assertEqual(
-            generator.generate(expression),
+            expression.sql('hive'),
             'CREATE TABLE x STORED AS ORC AS SELECT * FROM y'
         )
 
@@ -41,9 +40,9 @@ class TestRewriter(unittest.TestCase):
         expression = parse("SELECT * FROM (SELECT * FROM x) y")[0]
 
         self.assertEqual(
-            Hive().generate(Rewriter(expression).add_selects(
+            Rewriter(expression).add_selects(
                 'a',
                 'sum(b) as c',
-            ).expression),
+            ).expression.sql('hive'),
             'SELECT *, a, SUM(b) AS c FROM (SELECT * FROM x) AS y'
         )

@@ -82,6 +82,10 @@ class Expression:
     def __repr__(self):
         return self.to_s()
 
+    def sql(self, dialect=None, **opts):
+        from sqlglot.dialects import Dialect
+        return Dialect.get(dialect, Dialect)().generate(self, **opts)
+
     def to_s(self, level=0):
         indent = '' if not level else "\n"
         indent += ''.join(['  '] * level)

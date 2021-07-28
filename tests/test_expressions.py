@@ -40,6 +40,10 @@ class TestExpressions(unittest.TestCase):
             ['d', 'c', 'b'],
         )
 
+    def test_sql(self):
+        assert parse('x + y * 2')[0].sql() == 'x + y * 2'
+        assert parse('select "x"')[0].sql(dialect='hive', pretty=True) == 'SELECT\n  `x`'
+
     def test_validate(self):
         exp.Hint(this='')
 

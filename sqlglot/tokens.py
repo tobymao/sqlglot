@@ -171,6 +171,10 @@ class Token:
         ])
         return f"<Token {attributes}>"
 
+    def sql(self, dialect=None, **opts):
+        from sqlglot.dialects import Dialect
+        return Dialect.get(dialect, Dialect)().generate(self, **opts)
+
     def to_s(self, _level=0):
         return self.text
 

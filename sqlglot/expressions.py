@@ -404,11 +404,6 @@ class Interval(Expression):
     arg_types = {'this': True, 'unit': True}
 
 
-class Timestamp(Expression):
-    token_type = TokenType.TIMESTAMP
-    arg_types = {'tz': False}
-
-
 # Functions
 class Func(Expression):
     token_type = TokenType.FUNC

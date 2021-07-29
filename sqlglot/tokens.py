@@ -464,9 +464,23 @@ class Tokenizer:
         return False
 
     def _scan_number(self):
-        while self._peek.isdigit() or self._peek == '.':
-            self._advance()
-        self._add(TokenType.NUMBER)
+        decimal = False
+        scientific = 0
+
+        while True:
+            if self._peek.isdigit():
+                self._advance()
+            elif self._peek == '.' and not decimal:
+                decimal = True
+                self._advance()
+            elif self._peek.upper() == 'E' and not scientific:
+                scientific += 1
+                self._advance()
+            elif self._peek == '-' and scientific == 1:
+                scientific += 1
+                self._advance()
+            else:
+                return self._add(TokenType.NUMBER)
 
     def _scan_string(self):
         text = []

@@ -676,7 +676,7 @@ class Parser:
                     self.raise_error('Expected column name')
                 this = self._prev
 
-        if not isinstance(this, exp.Func) and this.token_type not in self.NESTED_TYPE_TOKENS:
+        if isinstance(this, Token) and this.token_type not in self.NESTED_TYPE_TOKENS:
             this = exp.Column(this=this, db=db, table=table)
 
         return self._parse_brackets(this)

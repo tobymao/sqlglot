@@ -1,9 +1,14 @@
 import unittest
 
+import sqlglot.expressions as exp
 from sqlglot import parse
 
 
 class TestParser(unittest.TestCase):
+    def test_column(self):
+        columns = parse("select a, ARRAY[1] b, case when 1 then 1 end")[0].find_all(exp.Column)
+        assert len(list(columns)) == 1
+
     def test_identify(self):
         expression = parse("""
             SELECT a, "b", c AS c, d AS "D", e AS "y|z'"

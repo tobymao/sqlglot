@@ -452,7 +452,7 @@ class Parser:
                 self.raise_error('Expecting )')
         else:
             db = None
-            table = self._match(TokenType.VAR, TokenType.IDENTIFIER)
+            table = self._parse_function(self._match(TokenType.VAR, TokenType.IDENTIFIER))
 
             if self._match(TokenType.DOT):
                 db = table
@@ -682,9 +682,10 @@ class Parser:
         return self._parse_brackets(this)
 
     def _parse_function(self, this):
+        if not this:
+            return this
         if this.token_type == TokenType.CASE:
             return self._parse_case()
-
         if not self._match(TokenType.L_PAREN):
             return this
 

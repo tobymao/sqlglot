@@ -170,8 +170,9 @@ class Generator:
             f"{self.sql(e, 'alias')} AS {self.wrap(e)}"
             for e in expression.args['expressions']
         )
+        recursive = 'RECURSIVE ' if expression.args.get('recursive') else ''
 
-        return f"WITH {sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
+        return f"WITH {recursive}{sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
 
     def drop_sql(self, expression):
         this = self.sql(expression, 'this')

@@ -124,6 +124,7 @@ class TokenType(AutoName):
     PARTITION = auto()
     PRECEDING = auto()
     RANGE = auto()
+    RECURSIVE = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROWS = auto()
@@ -270,6 +271,7 @@ class Tokenizer:
         'PARTITION BY': TokenType.PARTITION,
         'PRECEDING': TokenType.PRECEDING,
         'RANGE': TokenType.RANGE,
+        'RECURSIVE': TokenType.RECURSIVE,
         'REGEXP': TokenType.RLIKE,
         'RIGHT': TokenType.RIGHT,
         'RLIKE': TokenType.RLIKE,

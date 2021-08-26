@@ -322,7 +322,7 @@ class Parser:
         return exp.Insert(
             this=self._parse_table(None),
             exists=self._parse_exists(),
-            expression=self._parse_values() or self._parse_select(),
+            expression=self._parse_select(),
             overwrite=overwrite,
         )
 
@@ -347,10 +347,11 @@ class Parser:
         expressions = []
 
         while True:
-            if not self._match(TokenType.IDENTIFIER, TokenType.VAR):
-                self.raise_error('Expected alias after WITH')
+            recursive = self._match(TokenType.RECURSIVE)
+            alias = self._parse_function(self._match(TokenType.IDENTIFIER, TokenType.VAR))
 
-            alias = self._prev
+            if not alias:
+                self.raise_error('Expected alias after WITH')
 
             if not self._match(TokenType.ALIAS):
                 self.raise_error('Expected AS after WITH')
@@ -360,27 +361,31 @@ class Parser:
             if not self._match(TokenType.COMMA):
                 break
 
-        return exp.CTE(this=self._parse_select(), expressions=expressions)
+        return exp.CTE(
+            this=self._parse_select(),
+            expressions=expressions,
+            recursive=recursive,
+        )
 
     def _parse_select(self):
-        if not self._match(TokenType.SELECT):
-            return None
-
-        this = exp.Select(
-            hint=self._parse_hint(),
-            distinct=self._match(TokenType.DISTINCT),
-            expressions=self._parse_csv(self._parse_expression),
-            **{
-                'from': self._parse_from(),
-                'laterals': self._parse_laterals(),
-                'joins': self._parse_joins(),
-                'where': self._parse_where(),
-                'group': self._parse_group(),
-                'having': self._parse_having(),
-                'order': self._parse_order(),
-                'limit': self._parse_limit(),
-            },
-        )
+        if self._match(TokenType.SELECT):
+            this = exp.Select(
+                hint=self._parse_hint(),
+                distinct=self._match(TokenType.DISTINCT),
+                expressions=self._parse_csv(self._parse_expression),
+                **{
+                    'from': self._parse_from(),
+                    'laterals': self._parse_laterals(),
+                    'joins': self._parse_joins(),
+                    'where': self._parse_where(),
+                    'group': self._parse_group(),
+                    'having': self._parse_having(),
+                    'order': self._parse_order(),
+                    'limit': self._parse_limit(),
+                },
+            )
+        else:
+            this = self._parse_values()
 
         return self._parse_union(this)
 

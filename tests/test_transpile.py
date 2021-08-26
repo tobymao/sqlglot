@@ -176,17 +176,17 @@ class TestTranspile(unittest.TestCase):
         self.validate("CREATE TEMPORARY TABLE test AS SELECT 1", "CREATE TEMPORARY VIEW test AS SELECT 1", write='spark')
 
     def test_identity(self):
-        with open(os.path.join(self.fixtures_dir, 'identity.sql')) as f:
+        with open(os.path.join(self.fixtures_dir, 'identity.sql'), encoding='utf-8') as f:
             for sql in f:
                 self.assertEqual(transpile(sql)[0], sql.strip())
 
     def test_partial(self):
-        with open(os.path.join(self.fixtures_dir, 'partial.sql')) as f:
+        with open(os.path.join(self.fixtures_dir, 'partial.sql'), encoding='utf-8') as f:
             for sql in f:
                 self.assertEqual(transpile(sql, error_level=ErrorLevel.IGNORE)[0], sql.strip())
 
     def test_pretty(self):
-        with open(os.path.join(self.fixtures_dir, 'pretty.sql')) as f:
+        with open(os.path.join(self.fixtures_dir, 'pretty.sql'), encoding='utf-8') as f:
             lines = f.read().split(';')
             size = len(lines)
 

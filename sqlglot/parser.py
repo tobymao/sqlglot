@@ -569,8 +569,10 @@ class Parser:
             if not self._match(TokenType.L_PAREN):
                 self.raise_error('Expected ( after IN', self._prev)
 
-            if self._curr.token_type == TokenType.SELECT:
-                this = exp.In(this=this, query=self._parse_select())
+            query = self._parse_select()
+
+            if query:
+                this = exp.In(this=this, query=query)
             else:
                 this = exp.In(this=this, expressions=self._parse_csv(self._parse_term))
 
@@ -646,7 +648,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
-            this = self._parse_conjunction()
+            this = self._parse_select() or self._parse_conjunction()
 
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expecting )', paren)

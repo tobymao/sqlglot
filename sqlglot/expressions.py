@@ -113,7 +113,7 @@ class Create(Expression):
 
 class CTE(Expression):
     token_type = TokenType.WITH
-    arg_types = {'this': True, 'expressions': True}
+    arg_types = {'this': True, 'expressions': True, 'recursive': False}
 
 
 class Column(Expression):

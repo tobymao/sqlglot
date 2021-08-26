@@ -107,9 +107,10 @@ class Generator:
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
     def no_format(self, func):
+        original = self.pretty
         self.pretty = False
         result = func()
-        self.pretty = self.opts.get('pretty')
+        self.pretty = original
         return result
 
     def indent_newlines(self, sql, skip_first=False):
@@ -328,10 +329,11 @@ class Generator:
         if expression.args.get('default') is not None:
             ifs.append(f"ELSE {self.sql(expression, 'default')}")
 
+        original = self.pretty
         self.pretty = self.opts.get('pretty')
         ifs = ''.join(self.seg(e, pad=pad) for e in ifs)
         case = f"CASE{this}{ifs}{self.seg('END', pad=self.pad)}"
-        self.pretty = False
+        self.pretty = original
         return case
 
     def decimal_sql(self, expression):
@@ -353,7 +355,11 @@ class Generator:
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args['false']))
 
     def in_sql(self, expression):
-        return f"{self.sql(expression, 'this')} IN ({self.expressions(expression, flat=True)})"
+        in_sql = (
+            self.no_format(lambda: self.sql(expression, 'query')) or
+            self.expressions(expression, flat=True)
+        )
+        return f"{self.sql(expression, 'this')} IN ({in_sql})"
 
     def interval_sql(self, expression):
         return f"INTERVAL {self.sql(expression, 'this')} {self.sql(expression, 'unit')}"

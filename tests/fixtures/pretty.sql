@@ -26,6 +26,7 @@ WITH cte1 AS (
 SELECT a, b c FROM (
     SELECT a w, 1 + 1 AS c
     FROM foo
+    WHERE w IN (SELECT z FROM q)
     GROUP BY a, b
 ) x
 LEFT JOIN (
@@ -80,6 +81,8 @@ FROM (
       a AS w,
       1 + 1 AS c
     FROM foo
+    WHERE
+      w IN (SELECT z FROM q)
     GROUP BY
       a,
       b

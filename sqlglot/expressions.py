@@ -396,7 +396,7 @@ class Extract(Expression):
 
 class In(Expression):
     token_type = TokenType.IN
-    arg_types = {'this': True, 'expressions': True}
+    arg_types = {'this': True, 'expressions': False, 'query': False}
 
 
 class Interval(Expression):

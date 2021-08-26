@@ -568,10 +568,14 @@ class Parser:
         elif self._match(TokenType.IN):
             if not self._match(TokenType.L_PAREN):
                 self.raise_error('Expected ( after IN', self._prev)
-            expressions = self._parse_csv(self._parse_term)
+
+            if self._curr.token_type == TokenType.SELECT:
+                this = exp.In(this=this, query=self._parse_select())
+            else:
+                this = exp.In(this=this, expressions=self._parse_csv(self._parse_term))
+
             if not self._match(TokenType.R_PAREN):
                 self.raise_error('Expected ) after IN')
-            this = exp.In(this=this, expressions=expressions)
         elif self._match(TokenType.BETWEEN):
             low = self._parse_term()
             self._match(TokenType.AND)

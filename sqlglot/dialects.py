@@ -82,6 +82,7 @@ class DuckDB(Dialect):
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+        exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
         exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
@@ -104,6 +105,7 @@ class DuckDB(Dialect):
             expression=Token.number(1000),
         )),
         'LIST_VALUE': lambda args: exp.Array(expressions=args),
+        'REGEXP_MATCHES': lambda args: exp.RegexLike(this=args[0], expression=args[1]),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
     }

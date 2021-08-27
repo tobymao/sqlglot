@@ -23,6 +23,12 @@ class TestDialects(unittest.TestCase):
         self.validate("LIST_VALUE(0, 1, 2)", "ARRAY[0, 1, 2]", read='duckdb', write='presto')
         self.validate('Array(1, 2)', 'LIST_VALUE(1, 2)', write='duckdb')
 
+        self.validate("REGEXP_MATCHES(x, y)", "REGEXP_MATCHES(x, y)", read="duckdb")
+        self.validate("REGEXP_MATCHES(x, y)", "x RLIKE y", read="duckdb", write="hive")
+        self.validate("REGEXP_MATCHES('abc', 'abc')", "REGEXP_LIKE('abc', 'abc')", read="duckdb", write="presto")
+        self.validate("REGEXP_MATCHES('abc', '(b|c).*')", "REGEXP_LIKE('abc', '(b|c).*')", read="duckdb", write="presto")
+        self.validate("REGEXP_MATCHES(x, 'abc')", "REGEXP_LIKE(x, 'abc')", read="duckdb", write="presto")
+
         self.validate(
             "DATEDIFF(a, b)",
             "CAST(a AS DATE) - CAST(b AS DATE)",

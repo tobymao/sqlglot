@@ -70,6 +70,13 @@ def _if_sql(self, expression):
     return f"IF({expressions})"
 
 
+def _no_recursive_cte_sql(self, expression):
+    if expression.args.get('recursive'):
+        self.unsupported('Recursive CTEs are unsupported')
+        expression.args['recursive'] = False
+    return self.cte_sql(expression)
+
+
 class DuckDB(Dialect):
     DATE_FORMAT = "'%Y-%M-%d'"
     TIME_FORMAT = "'%Y-%M-%d %H:%M:%S'"
@@ -160,6 +167,7 @@ class Hive(Dialect):
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
         exp.Case: _case_if_sql,
+        exp.CTE: _no_recursive_cte_sql,
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, 'this'),
         exp.FileFormat: _fileformat_sql,

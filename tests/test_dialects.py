@@ -421,6 +421,14 @@ class TestDialects(unittest.TestCase):
         self.validate('SELECT /*+ COALESCE(3) */ * FROM x','SELECT /*+ COALESCE(3) */ * FROM x', read='spark')
         self.validate("x IN ('a', 'a''b')", "x IN ('a', 'a\\'b')", read='presto', write='spark')
 
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                'WITH RECURSIVE T(N) AS (VALUES (1))',
+                read='presto',
+                write='spark',
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
     def test_sqlite(self):
         self.validate(
             'SELECT CAST(`a`.`b` AS SMALLINT) FROM foo',

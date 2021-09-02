@@ -450,10 +450,6 @@ class DateStrToDate(Func):
     pass
 
 
-class StructExtract(Func):
-    arg_types = {'this': True, 'expression': True}
-
-
 class If(Func):
     arg_types = {'this': True, 'true': True, 'false': False}
 
@@ -486,6 +482,10 @@ class StrToTime(Func):
 
 class StrToUnix(Func):
     arg_types = {'this': True, 'format': True}
+
+
+class StructExtract(Func):
+    arg_types = {'this': True, 'expression': True}
 
 
 class TimeToStr(Func):

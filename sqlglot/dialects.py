@@ -160,6 +160,11 @@ class Hive(Dialect):
     def _unix_to_time(self, expression):
         return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
 
+    def __struct_extract_sql(self, expression):
+        this = self.sql(expression, 'this')
+        struct_key = self.sql(expression, 'expression').replace(self.quote, '')
+        return f"{this}.{struct_key}"
+
     transforms = {
         TokenType.TEXT: 'STRING',
         TokenType.VARCHAR: 'STRING',
@@ -176,6 +181,7 @@ class Hive(Dialect):
         exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
+        exp.StructExtract: __struct_extract_sql,
         exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.TimeStrToTime: lambda self, e: self.sql(e, 'this'),
         exp.TimeStrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')})",

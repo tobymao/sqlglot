@@ -246,6 +246,7 @@ class TestDialects(unittest.TestCase):
         self.validate("'x'''", "'x\\''", read='presto', write='hive')
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.abc", read='duckdb', write='presto')
+        self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.y.abc", read='duckdb', write='presto')
 
         with self.assertRaises(UnsupportedError):
             transpile(
@@ -398,6 +399,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.abc", read='duckdb', write='hive')
+        self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.y.abc", read='duckdb', write='hive')
 
     def test_spark(self):
         self.validate(
@@ -428,6 +430,7 @@ class TestDialects(unittest.TestCase):
         self.validate("x IN ('a', 'a''b')", "x IN ('a', 'a\\'b')", read='presto', write='spark')
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.abc", read='duckdb', write='spark')
+        self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.y.abc", read='duckdb', write='spark')
 
         with self.assertRaises(UnsupportedError):
             transpile(

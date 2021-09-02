@@ -450,7 +450,7 @@ class DateStrToDate(Func):
     pass
 
 
-class ExtractStruct(Func):
+class StructExtract(Func):
     arg_types = {'this': True, 'expression': True}
 
 

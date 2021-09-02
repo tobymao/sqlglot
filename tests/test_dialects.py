@@ -29,6 +29,8 @@ class TestDialects(unittest.TestCase):
         self.validate("REGEXP_MATCHES('abc', '(b|c).*')", "REGEXP_LIKE('abc', '(b|c).*')", read="duckdb", write="presto")
         self.validate("REGEXP_MATCHES(x, 'abc')", "REGEXP_LIKE(x, 'abc')", read="duckdb", write="presto")
 
+        self.validate("STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb")
+
         self.validate(
             "DATEDIFF(a, b)",
             "CAST(a AS DATE) - CAST(b AS DATE)",
@@ -243,6 +245,9 @@ class TestDialects(unittest.TestCase):
         self.validate("'''x'", "'\\'x'", read='presto', write='hive')
         self.validate("'x'''", "'x\\''", read='presto', write='hive')
 
+        self.validate("STRUCT_EXTRACT(x, 'abc')", 'x."abc"', read='duckdb', write='presto')
+        self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", 'x."y"."abc"', read='duckdb', write='presto')
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
@@ -393,6 +398,9 @@ class TestDialects(unittest.TestCase):
             write='hive',
         )
 
+        self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='hive')
+        self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='hive')
+
     def test_spark(self):
         self.validate(
             'SELECT "a"."b" FROM "foo"',
@@ -420,6 +428,9 @@ class TestDialects(unittest.TestCase):
         self.validate("ARRAY(0, 1, 2)", "LIST_VALUE(0, 1, 2)", read='spark', write='duckdb')
         self.validate('SELECT /*+ COALESCE(3) */ * FROM x','SELECT /*+ COALESCE(3) */ * FROM x', read='spark')
         self.validate("x IN ('a', 'a''b')", "x IN ('a', 'a\\'b')", read='presto', write='spark')
+
+        self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='spark')
+        self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='spark')
 
         with self.assertRaises(UnsupportedError):
             transpile(

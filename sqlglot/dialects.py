@@ -77,6 +77,12 @@ def _no_recursive_cte_sql(self, expression):
     return self.cte_sql(expression)
 
 
+def _struct_extract_sql(self, expression):
+    this = self.sql(expression, 'this')
+    struct_key = self.sql(expression, 'expression').replace(self.quote, self.identifier)
+    return f"{this}.{struct_key}"
+
+
 class DuckDB(Dialect):
     DATE_FORMAT = "'%Y-%M-%d'"
     TIME_FORMAT = "'%Y-%M-%d %H:%M:%S'"
@@ -176,6 +182,7 @@ class Hive(Dialect):
         exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
+        exp.StructExtract: _struct_extract_sql,
         exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.TimeStrToTime: lambda self, e: self.sql(e, 'this'),
         exp.TimeStrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')})",
@@ -294,6 +301,7 @@ class Presto(Dialect):
         exp.StrPosition: _str_position_sql,
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
+        exp.StructExtract: _struct_extract_sql,
         exp.TimeStrToDate: _date_parse_sql,
         exp.TimeStrToTime: _date_parse_sql,
         exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",

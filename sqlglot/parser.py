@@ -34,6 +34,7 @@ class Parser:
         'STR_POSITION': lambda args: exp.StrPosition(this=args[0], substr=args[1], position=list_get(args, 2)),
         'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'STR_TO_UNIX': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
+        'STRUCT_EXTRACT': lambda args: exp.StructExtract(this=args[0], expression=args[1]),
         'TIME_STR_TO_DATE': lambda args: exp.TimeStrToDate(this=args[0]),
         'TIME_STR_TO_TIME': lambda args: exp.TimeStrToTime(this=args[0]),
         'TIME_STR_TO_UNIX': lambda args: exp.TimeStrToUnix(this=args[0]),

@@ -29,7 +29,7 @@ class TestDialects(unittest.TestCase):
         self.validate("REGEXP_MATCHES('abc', '(b|c).*')", "REGEXP_LIKE('abc', '(b|c).*')", read="duckdb", write="presto")
         self.validate("REGEXP_MATCHES(x, 'abc')", "REGEXP_LIKE(x, 'abc')", read="duckdb", write="presto")
 
-        self.validate("STRUCT_EXTRACT(x, 'abc')", "x.abc", read="duckdb", write="presto")
+        self.validate("STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb")
 
         self.validate(
             "DATEDIFF(a, b)",

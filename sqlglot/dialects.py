@@ -77,6 +77,12 @@ def _no_recursive_cte_sql(self, expression):
     return self.cte_sql(expression)
 
 
+def __struct_extract_sql(self, expression):
+    this = self.sql(expression, 'this')
+    struct_key = self.sql(expression, 'expression').replace(self.quote, self.identifier)
+    return f"{this}.{struct_key}"
+
+
 class DuckDB(Dialect):
     DATE_FORMAT = "'%Y-%M-%d'"
     TIME_FORMAT = "'%Y-%M-%d %H:%M:%S'"
@@ -159,11 +165,6 @@ class Hive(Dialect):
 
     def _unix_to_time(self, expression):
         return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
-
-    def __struct_extract_sql(self, expression):
-        this = self.sql(expression, 'this')
-        struct_key = self.sql(expression, 'expression').replace(self.quote, self.identifier)
-        return f"{this}.{struct_key}"
 
     transforms = {
         TokenType.TEXT: 'STRING',
@@ -272,11 +273,6 @@ class Presto(Dialect):
     def _ts_or_ds_to_date_str_sql(self, expression):
         this = self.sql(expression, 'this')
         return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
-
-    def __struct_extract_sql(self, expression):
-        this = self.sql(expression, 'this')
-        struct_key = self.sql(expression, 'expression').replace(self.quote, self.identifier)
-        return f"{this}.{struct_key}"
 
     transforms = {
         TokenType.INT: 'INTEGER',

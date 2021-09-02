@@ -162,7 +162,7 @@ class Hive(Dialect):
 
     def __struct_extract_sql(self, expression):
         this = self.sql(expression, 'this')
-        struct_key = self.sql(expression, 'expression').replace(self.quote, '')
+        struct_key = self.sql(expression, 'expression').replace(self.quote, self.identifier)
         return f"{this}.{struct_key}"
 
     transforms = {
@@ -275,7 +275,7 @@ class Presto(Dialect):
 
     def __struct_extract_sql(self, expression):
         this = self.sql(expression, 'this')
-        struct_key = self.sql(expression, 'expression').replace(self.quote, '')
+        struct_key = self.sql(expression, 'expression').replace(self.quote, self.identifier)
         return f"{this}.{struct_key}"
 
     transforms = {

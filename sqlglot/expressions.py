@@ -450,6 +450,10 @@ class DateStrToDate(Func):
     pass
 
 
+class ExtractStruct(Func):
+    arg_types = {'this': True, 'expression': True}
+
+
 class If(Func):
     arg_types = {'this': True, 'true': True, 'false': False}
 

@@ -29,6 +29,13 @@ class TestDialects(unittest.TestCase):
         self.validate("REGEXP_MATCHES('abc', '(b|c).*')", "REGEXP_LIKE('abc', '(b|c).*')", read="duckdb", write="presto")
         self.validate("REGEXP_MATCHES(x, 'abc')", "REGEXP_LIKE(x, 'abc')", read="duckdb", write="presto")
 
+        self.validate("EXTRACT_STRUCT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", write="duckdb")
+        self.validate("EXTRACT_STRUCT(x, y)", "STRUCT_EXTRACT(x, y)", write="duckdb")
+        self.validate("STRUCT_EXTRACT(x, 'abc')", "x.abc", read="duckdb", write="presto")
+
+        self.validate("EXTRACT_STRUCT(x, 'abc')", "x.abc", write="presto")
+        self.validate("STRUCT_EXTRACT(x, 'abc')", "EXTRACT_STRUCT(x, 'abc')", read="duckdb", identity=False)
+
         self.validate(
             "DATEDIFF(a, b)",
             "CAST(a AS DATE) - CAST(b AS DATE)",
@@ -242,6 +249,10 @@ class TestDialects(unittest.TestCase):
         self.validate("'''x'''", "'\\'x\\''", read='presto', write='hive')
         self.validate("'''x'", "'\\'x'", read='presto', write='hive')
         self.validate("'x'''", "'x\\''", read='presto', write='hive')
+
+        self.validate("EXTRACT_STRUCT(x, 'abc')", "x.abc", identity=False, write="presto")
+        # It returns `SELECT "x"."abc` FROM a' for now
+        # self.validate('SELECT "a"."x"."abc" FROM a', 'SELECT EXTRACT_STRUCT("x", 'abc') FROM a', identity=False, read="presto")
 
         with self.assertRaises(UnsupportedError):
             transpile(

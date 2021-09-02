@@ -89,6 +89,7 @@ class DuckDB(Dialect):
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+        exp.ExtractStruct: lambda self, e: f"STRUCT_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
@@ -115,6 +116,7 @@ class DuckDB(Dialect):
         'REGEXP_MATCHES': lambda args: exp.RegexLike(this=args[0], expression=args[1]),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
+        'STRUCT_EXTRACT': lambda args: exp.ExtractStruct(this=args[0], expression=args[1]),
     }
 
 
@@ -267,6 +269,11 @@ class Presto(Dialect):
         this = self.sql(expression, 'this')
         return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
 
+    def _extract_struct_sql(self, expression):
+        this = self.sql(expression, 'this')
+        struct_key = self.sql(expression, 'expression').replace(self.quote, '')
+        return f"{this}.{struct_key}"
+
     transforms = {
         TokenType.INT: 'INTEGER',
         TokenType.FLOAT: 'REAL',
@@ -286,6 +293,7 @@ class Presto(Dialect):
         exp.DateAdd: lambda self, e: f"DATE_ADD('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
+        exp.ExtractStruct: _extract_struct_sql,
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.Initcap: _initcap_sql,

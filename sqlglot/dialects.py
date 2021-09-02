@@ -92,7 +92,6 @@ class DuckDB(Dialect):
         exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
-        exp.StructExtract: lambda self, e: f"STRUCT_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
         exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
@@ -116,7 +115,6 @@ class DuckDB(Dialect):
         'REGEXP_MATCHES': lambda args: exp.RegexLike(this=args[0], expression=args[1]),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
-        'STRUCT_EXTRACT': lambda args: exp.StructExtract(this=args[0], expression=args[1]),
     }
 
 

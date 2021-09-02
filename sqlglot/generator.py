@@ -44,6 +44,7 @@ class Generator:
         exp.StrPosition: lambda self, e: f"STR_POSITION({csv(self.sql(e, 'this'), self.sql(e, 'substr'), self.sql(e, 'position'))})",
         exp.StrToTime: lambda self, e: f"STR_TO_TIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"STR_TO_UNIX({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.StructExtract: lambda self, e: f"STRUCT_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.TimeStrToDate: lambda self, e: f"TIME_STR_TO_DATE({self.sql(e, 'this')})",
         exp.TimeStrToTime: lambda self, e: f"TIME_STR_TO_TIME({self.sql(e, 'this')})",
         exp.TimeStrToUnix: lambda self, e: f"TIME_STR_TO_UNIX({self.sql(e, 'this')})",

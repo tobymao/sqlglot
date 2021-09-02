@@ -484,6 +484,10 @@ class StrToUnix(Func):
     arg_types = {'this': True, 'format': True}
 
 
+class StructExtract(Func):
+    arg_types = {'this': True, 'expression': True}
+
+
 class TimeToStr(Func):
     arg_types = {'this': True, 'format': True}
 

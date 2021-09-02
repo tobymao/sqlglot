@@ -28,6 +28,7 @@ class Parser:
         'DATE_ADD': lambda args: exp.DateAdd(this=args[0], expression=args[1]),
         'DATE_DIFF': lambda args: exp.DateDiff(this=args[0], expression=args[1]),
         'DATE_STR_TO_DATE': lambda args: exp.DateStrToDate(this=args[0]),
+        'EXTRACT_STRUCT': lambda args: exp.ExtractStruct(this=args[0], expression=args[1]),
         'IF': lambda args: exp.If(this=args[0], true=args[1], false=list_get(args, 2)),
         'INITCAP': lambda args: exp.Initcap(this=args[0]),
         'JSON_PATH': lambda args: exp.JSONPath(this=args[0], path=args[1]),

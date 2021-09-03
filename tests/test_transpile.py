@@ -98,12 +98,12 @@ class TestTranspile(unittest.TestCase):
         self.validate("TIME_TO_UNIX(x)", "EPOCH(x)", write='duckdb')
         self.validate(
             "UNIX_TO_STR(123, 'y')",
-            "STRFTIME(EPOCH_MS(CAST((123 AS BIGINT) * 1000)), 'y')",
+            "STRFTIME(TO_TIMESTAMP(CAST(123 AS BIGINT)), 'y')",
             write='duckdb'
         )
         self.validate(
             "UNIX_TO_TIME(123)",
-            "EPOCH_MS(CAST((123 AS BIGINT) * 1000))",
+            "TO_TIMESTAMP(CAST(123 AS BIGINT))",
             write='duckdb',
         )
 

@@ -84,11 +84,11 @@ def _struct_extract_sql(self, expression):
 
 
 class DuckDB(Dialect):
-    DATE_FORMAT = "'%Y-%M-%d'"
-    TIME_FORMAT = "'%Y-%M-%d %H:%M:%S'"
+    DATE_FORMAT = "'%Y-%m-%d'"
+    TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
     def _unix_to_time(self, expression):
-        return f"EPOCH_MS(CAST(({self.sql(expression, 'this')} AS BIGINT) * 1000))"
+        return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
@@ -121,6 +121,7 @@ class DuckDB(Dialect):
         'REGEXP_MATCHES': lambda args: exp.RegexLike(this=args[0], expression=args[1]),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
+        'TO_TIMESTAMP': lambda args: exp.TimeStrToTime(this=args[0]),
     }
 
 

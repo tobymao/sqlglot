@@ -62,14 +62,14 @@ class TestDialects(unittest.TestCase):
             write='duckdb',
         )
         self.validate(
-            "TIME_TO_STR(x, '%Y-%M-%d')",
-            "STRFTIME(x, '%Y-%M-%d')",
+            "TIME_TO_STR(x, '%Y-%m-%d')",
+            "STRFTIME(x, '%Y-%m-%d')",
             identity=False,
             write='duckdb',
         )
         self.validate(
-            "TIME_TO_TIME_STR(x, '%Y-%M-%d')",
-            "STRFTIME(x, '%Y-%M-%d %H:%M:%S')",
+            "TIME_TO_TIME_STR(x)",
+            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
             identity=False,
             write='duckdb',
         )
@@ -81,27 +81,33 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE_STR(x)",
-            "STRFTIME(CAST(x AS DATE), '%Y-%M-%d')",
+            "STRFTIME(CAST(x AS DATE), '%Y-%m-%d')",
             identity=False,
             write='duckdb',
         )
         self.validate(
             "UNIX_TO_STR(x, y)",
-            "STRFTIME(EPOCH_MS(CAST((x AS BIGINT) * 1000)), y)",
+            "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), y)",
             identity=False,
             write='duckdb',
         )
         self.validate(
             "UNIX_TO_TIME(x, y)",
-            "EPOCH_MS(CAST((x AS BIGINT) * 1000))",
+            "TO_TIMESTAMP(CAST(x AS BIGINT))",
             identity=False,
             write='duckdb',
         )
         self.validate(
             "UNIX_TO_TIME_STR(x)",
-            "STRFTIME(EPOCH_MS(CAST((x AS BIGINT) * 1000)), '%Y-%M-%d %H:%M:%S')",
+            "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), '%Y-%m-%d %H:%M:%S')",
             identity=False,
             write='duckdb',
+        )
+        self.validate(
+            "TO_TIMESTAMP(x)",
+            "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
+            read='duckdb',
+            write='presto',
         )
 
     def test_mysql(self):

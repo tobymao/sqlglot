@@ -286,7 +286,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "SELECT GET_JSON_OBJECT(x, '$.name', '$.name')",
-            "SELECT JSON_EXTRACT(x, '$.name')",
+            "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
             read='hive',
             write='presto',
         )

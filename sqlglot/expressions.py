@@ -450,6 +450,10 @@ class DateStrToDate(Func):
     pass
 
 
+class Day(Func):
+    pass
+
+
 class If(Func):
     arg_types = {'this': True, 'true': True, 'false': False}
 
@@ -465,6 +469,10 @@ class JSONPath(Func):
 class Map(Func):
     token_type = TokenType.MAP
     arg_types = {'keys': True, 'values': True}
+
+
+class Month(Func):
+    pass
 
 
 class RegexLike(Func):
@@ -513,6 +521,10 @@ class TimeStrToUnix(Func):
 
 
 class TsOrDsToDateStr(Func):
+    pass
+
+
+class TsOrDsToDate(Func):
     pass
 
 

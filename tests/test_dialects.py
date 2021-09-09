@@ -31,6 +31,9 @@ class TestDialects(unittest.TestCase):
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb")
 
+        self.validate("MONTH(x)", "MONTH(x)", write='duckdb', identity=False)
+        self.validate("DAY(x)", "DAY(x)", write='duckdb', identity=False)
+
         self.validate(
             "DATEDIFF(a, b)",
             "CAST(a AS DATE) - CAST(b AS DATE)",
@@ -108,6 +111,18 @@ class TestDialects(unittest.TestCase):
             "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
             read='duckdb',
             write='presto',
+        )
+        self.validate(
+            "TS_OR_DS_TO_DATE(x)",
+            "CAST(x AS DATE)",
+            write='duckdb',
+            identity=False,
+        )
+        self.validate(
+            "CAST(x AS DATE)",
+            "CAST(x AS DATE)",
+            read='duckdb',
+            identity=False,
         )
 
     def test_mysql(self):
@@ -209,6 +224,18 @@ class TestDialects(unittest.TestCase):
             read='presto',
             write='hive',
         )
+        self.validate(
+            "TS_OR_DS_TO_DATE(x)",
+            "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            write='presto',
+            identity=False,
+        )
+        self.validate(
+            "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            "STR_TO_TIME(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            read='presto',
+            identity=False,
+        )
 
         self.validate(
             'SELECT APPROX_DISTINCT(a) FROM foo',
@@ -253,6 +280,13 @@ class TestDialects(unittest.TestCase):
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", 'x."abc"', read='duckdb', write='presto')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", 'x."y"."abc"', read='duckdb', write='presto')
+
+        self.validate("MONTH(x)", "MONTH(x)", read='presto', write='spark')
+        self.validate("MONTH(x)", "MONTH(x)", read='presto', write='hive')
+        self.validate("MONTH(x)", "MONTH(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))", read='hive', write='presto')
+
+        self.validate("DAY(x)", "DAY(x)", read='presto', write='hive')
+        self.validate("DAY(x)", "DAY(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))", read='hive', write='presto')
 
         with self.assertRaises(UnsupportedError):
             transpile(
@@ -403,9 +437,28 @@ class TestDialects(unittest.TestCase):
             "FROM_UNIXTIME(x)",
             write='hive',
         )
+        self.validate(
+            "TS_OR_DS_TO_DATE(x)",
+            "TO_DATE(x)",
+            write='hive',
+            identity=False,
+        )
+        self.validate(
+            "TO_DATE(x)",
+            "TS_OR_DS_TO_DATE_STR(x)",
+            read='hive',
+            identity=False,
+        )
+
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='hive')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='hive')
+
+        self.validate("MONTH('2021-03-01')", "MONTH(CAST('2021-03-01' AS DATE))", read='hive', write='duckdb')
+        self.validate("MONTH(x)", "MONTH(x)", read='duckdb', write='hive')
+
+        self.validate("DAY('2021-03-01')", "DAY(CAST('2021-03-01' AS DATE))", read='hive', write='duckdb')
+        self.validate("DAY(x)", "DAY(x)", read='duckdb', write='hive')
 
     def test_spark(self):
         self.validate(
@@ -437,6 +490,9 @@ class TestDialects(unittest.TestCase):
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='spark')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='spark')
+
+        self.validate("MONTH('2021-03-01')", "MONTH(CAST('2021-03-01' AS DATE))", read='spark', write='duckdb')
+        self.validate("MONTH(x)", "MONTH(x)", read='duckdb', write='spark')
 
         with self.assertRaises(UnsupportedError):
             transpile(

@@ -167,7 +167,7 @@ class Hive(Dialect):
 
     def _unix_to_time(self, expression):
         return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
-    
+
     def ts_or_ds_to_date(self, expression):
         this = self.sql(expression, 'this')
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"

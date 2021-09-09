@@ -287,7 +287,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate("DAY(x)", "DAY(x)", read='presto', write='hive')
         self.validate("DAY(x)", "DAY(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))", read='hive', write='presto')
-        
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
@@ -449,11 +449,11 @@ class TestDialects(unittest.TestCase):
             read='hive',
             identity=False,
         )
-        
+
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='hive')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='hive')
-        
+
         self.validate("MONTH('2021-03-01')", "MONTH(CAST('2021-03-01' AS DATE))", read='hive', write='duckdb')
         self.validate("MONTH(x)", "MONTH(x)", read='duckdb', write='hive')
 

@@ -112,6 +112,18 @@ class TestDialects(unittest.TestCase):
             read='duckdb',
             write='presto',
         )
+        self.validate(
+            "TS_OR_DS_TO_DATE(x)",
+            "CAST(x AS DATE)",
+            write='duckdb',
+            identity=False,
+        )
+        self.validate(
+            "CAST(x AS DATE)",
+            "CAST(x AS DATE)",
+            read='duckdb',
+            identity=False,
+        )
 
     def test_mysql(self):
         self.validate(
@@ -211,6 +223,18 @@ class TestDialects(unittest.TestCase):
             "DATEDIFF(b, a)",
             read='presto',
             write='hive',
+        )
+        self.validate(
+            "TS_OR_DS_TO_DATE(x)",
+            "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            write='presto',
+            identity=False,
+        )
+        self.validate(
+            "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            "STR_TO_TIME(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            read='presto',
+            identity=False,
         )
 
         self.validate(

@@ -276,10 +276,6 @@ class Presto(Dialect):
         this = self.sql(expression, 'this')
         return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
 
-    def str_to_date(self, expression):
-        this = self.sql(expression, 'this')
-        return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
-
     transforms = {
         TokenType.INT: 'INTEGER',
         TokenType.FLOAT: 'REAL',

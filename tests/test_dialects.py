@@ -259,10 +259,10 @@ class TestDialects(unittest.TestCase):
 
         self.validate("MONTH(x)", "MONTH(x)", read='presto', write='spark')
         self.validate("MONTH(x)", "MONTH(x)", read='presto', write='hive')
-        self.validate("MONTH(x)", "MONTH(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))", read='hive', write='presto')
+        self.validate("MONTH(x)", "MONTH(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))", read='hive', write='presto')
 
         self.validate("DAY(x)", "DAY(x)", read='presto', write='hive')
-        self.validate("DAY(x)", "DAY(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))", read='hive', write='presto')
+        self.validate("DAY(x)", "DAY(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))", read='hive', write='presto')
         
         with self.assertRaises(UnsupportedError):
             transpile(

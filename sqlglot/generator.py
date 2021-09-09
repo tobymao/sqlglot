@@ -54,6 +54,7 @@ class Generator:
         exp.TimeToTimeStr: lambda self, e: f"TIME_TO_TIME_STR({self.sql(e, 'this')})",
         exp.TimeToUnix: lambda self, e: f"TIME_TO_UNIX({self.sql(e, 'this')})",
         exp.TsOrDsToDateStr: lambda self, e: f"TS_OR_DS_TO_DATE_STR({self.sql(e, 'this')})",
+        exp.TsOrDsToDate: lambda self, e: f"TS_OR_DS_TO_DATE({self.sql(e, 'this')})",
         exp.UnixToStr: lambda self, e: f"UNIX_TO_STR({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.UnixToTime: lambda self, e: f"UNIX_TO_TIME({self.sql(e, 'this')})",
         exp.UnixToTimeStr: lambda self, e: f"UNIX_TO_TIME_STR({self.sql(e, 'this')})",

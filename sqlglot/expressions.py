@@ -524,6 +524,10 @@ class TsOrDsToDateStr(Func):
     pass
 
 
+class TsOrDsToDate(Func):
+    pass
+
+
 class UnixToStr(Func):
     arg_types = {'this': True, 'format': True}
 

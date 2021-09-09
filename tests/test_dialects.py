@@ -31,6 +31,8 @@ class TestDialects(unittest.TestCase):
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb")
 
+        self.validate("MONTH(x)", "MONTH(x)", write='duckdb', identity=False)
+
         self.validate(
             "DATEDIFF(a, b)",
             "CAST(a AS DATE) - CAST(b AS DATE)",
@@ -254,6 +256,10 @@ class TestDialects(unittest.TestCase):
         self.validate("STRUCT_EXTRACT(x, 'abc')", 'x."abc"', read='duckdb', write='presto')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", 'x."y"."abc"', read='duckdb', write='presto')
 
+        self.validate("MONTH(x)", "MONTH(x)", read='presto', write='spark')
+        self.validate("MONTH(x)", "MONTH(x)", read='presto', write='hive')
+        self.validate("MONTH(x)", "MONTH(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))", read='hive', write='presto')
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
@@ -406,6 +412,9 @@ class TestDialects(unittest.TestCase):
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='hive')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='hive')
+        
+        self.validate("MONTH('2021-03-01')", "MONTH(CAST('2021-03-01' AS DATE))", read='hive', write='duckdb')
+        self.validate("MONTH(x)", "MONTH(x)", read='duckdb', write='hive')
 
     def test_spark(self):
         self.validate(
@@ -437,6 +446,9 @@ class TestDialects(unittest.TestCase):
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='spark')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='spark')
+
+        self.validate("MONTH('2021-03-01')", "MONTH(CAST('2021-03-01' AS DATE))", read='spark', write='duckdb')
+        self.validate("MONTH(x)", "MONTH(x)", read='duckdb', write='spark')
 
         with self.assertRaises(UnsupportedError):
             transpile(

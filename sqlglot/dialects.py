@@ -209,6 +209,7 @@ class Hive(Dialect):
             expression=exp.Star(this=args[1], expression=Token.number(-1)),
         ),
         'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
+        'DAY': lambda args: exp.Day(this=exp.TimeStrToDate(this=args[0])),
         'FROM_UNIXTIME': lambda args: exp.UnixToStr(
             this=args[0],
             format=list_get(args, 1) or Hive.TIME_FORMAT,

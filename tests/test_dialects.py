@@ -32,6 +32,7 @@ class TestDialects(unittest.TestCase):
         self.validate("STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb")
 
         self.validate("MONTH(x)", "MONTH(x)", write='duckdb', identity=False)
+        self.validate("DAY(x)", "DAY(x)", write='duckdb', identity=False)
 
         self.validate(
             "DATEDIFF(a, b)",
@@ -260,6 +261,9 @@ class TestDialects(unittest.TestCase):
         self.validate("MONTH(x)", "MONTH(x)", read='presto', write='hive')
         self.validate("MONTH(x)", "MONTH(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))", read='hive', write='presto')
 
+        self.validate("DAY(x)", "DAY(x)", read='presto', write='hive')
+        self.validate("DAY(x)", "DAY(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))", read='hive', write='presto')
+        
         with self.assertRaises(UnsupportedError):
             transpile(
                 'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
@@ -415,6 +419,9 @@ class TestDialects(unittest.TestCase):
         
         self.validate("MONTH('2021-03-01')", "MONTH(CAST('2021-03-01' AS DATE))", read='hive', write='duckdb')
         self.validate("MONTH(x)", "MONTH(x)", read='duckdb', write='hive')
+
+        self.validate("DAY('2021-03-01')", "DAY(CAST('2021-03-01' AS DATE))", read='hive', write='duckdb')
+        self.validate("DAY(x)", "DAY(x)", read='duckdb', write='hive')
 
     def test_spark(self):
         self.validate(

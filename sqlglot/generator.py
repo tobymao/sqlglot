@@ -39,6 +39,7 @@ class Generator:
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: f"DATE_STR_TO_DATE({self.sql(e, 'this')})",
+        exp.Day: lambda self, e: f"DAY({self.sql(e, 'this')})",
         exp.Initcap: lambda self, e: f"INITCAP({self.sql(e, 'this')})",
         exp.JSONPath: lambda self, e: f"JSON_PATH({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Month: lambda self, e: f"MONTH({self.sql(e, 'this')})",

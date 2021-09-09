@@ -450,6 +450,10 @@ class DateStrToDate(Func):
     pass
 
 
+class Day(Func):
+    pass
+
+
 class If(Func):
     arg_types = {'this': True, 'true': True, 'false': False}
 

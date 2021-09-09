@@ -437,6 +437,19 @@ class TestDialects(unittest.TestCase):
             "FROM_UNIXTIME(x)",
             write='hive',
         )
+        self.validate(
+            "TS_OR_DS_TO_DATE(x)",
+            "TO_DATE(x)",
+            write='hive',
+            identity=False,
+        )
+        self.validate(
+            "TO_DATE(x)",
+            "TS_OR_DS_TO_DATE_STR(x)",
+            read='hive',
+            identity=False,
+        )
+        
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read='duckdb', write='hive')
         self.validate("STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')", "x.`y`.`abc`", read='duckdb', write='hive')

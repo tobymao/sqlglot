@@ -467,6 +467,10 @@ class Map(Func):
     arg_types = {'keys': True, 'values': True}
 
 
+class Month(Func):
+    pass
+
+
 class RegexLike(Func):
     token_type = TokenType.RLIKE
     arg_types = {'this': True, 'expression': True}

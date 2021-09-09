@@ -215,6 +215,7 @@ class Hive(Dialect):
         ),
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
         'LOCATE': lambda args: exp.StrPosition(this=args[1], substr=args[0], position=list_get(args, 2)),
+        'MONTH': lambda args: exp.Month(this=exp.TimeStrToDate(this=args[0])),
         'SIZE': lambda args: exp.ArraySize(this=args[0]),
         'TO_DATE': lambda args: exp.TsOrDsToDateStr(this=args[0]),
         'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
@@ -274,6 +275,10 @@ class Presto(Dialect):
     def _ts_or_ds_to_date_str_sql(self, expression):
         this = self.sql(expression, 'this')
         return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
+
+    def str_to_date(self, expression):
+        this = self.sql(expression, 'this')
+        return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
     transforms = {
         TokenType.INT: 'INTEGER',

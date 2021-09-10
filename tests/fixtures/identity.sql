@@ -222,3 +222,7 @@ INSERT INTO TABLE x VALUES (1, 'a', 2.0), (1, 'a', 3.0), (X(), y[1], z.x)
 INSERT OVERWRITE TABLE x IF EXISTS SELECT * FROM y
 INSERT OVERWRITE TABLE a.b IF EXISTS SELECT * FROM y
 SELECT 1 FROM PARQUET_SCAN('/x/y/*') AS y
+UPDATE tbl_name SET foo = 123
+UPDATE tbl_name SET foo = 123, bar = 345
+UPDATE db.tbl_name SET foo = 123 WHERE tbl_name.bar = 234
+UPDATE db.tbl_name SET foo = 123, foo_1 = 234 WHERE tbl_name.bar = 234

@@ -202,6 +202,11 @@ class Unnest(Expression):
     arg_types = {'expressions': True, 'ordinality': False, 'table': False, 'columns': False}
 
 
+class Update(Expression):
+    token_type = TokenType.UPDATE
+    arg_types = {'this': True, 'expressions': True, 'where': False}
+
+
 class Values(Expression):
     token_type = TokenType.VALUES
     arg_types = {'expressions': True}

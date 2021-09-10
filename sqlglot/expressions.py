@@ -204,7 +204,7 @@ class Unnest(Expression):
 
 class Update(Expression):
     token_type = TokenType.UPDATE
-    arg_types = {'this': True, 'set': True, 'where': False}
+    arg_types = {'this': True, 'expressions': True, 'where': False}
 
 
 class Values(Expression):
@@ -227,6 +227,11 @@ class Select(Expression):
         'order': False,
         'limit': False,
     }
+
+
+class Set(Expression):
+    token_type = TokenType.SET
+    arg_types = {'this': True, 'expressions': True, 'where': False}
 
 
 class Window(Expression):

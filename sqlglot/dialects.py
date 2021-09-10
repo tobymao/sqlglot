@@ -95,6 +95,7 @@ class DuckDB(Dialect):
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+        exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'quantile')}, {self.sql(e, 'this')})",
         exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
@@ -119,6 +120,7 @@ class DuckDB(Dialect):
             expression=Token.number(1000),
         )),
         'LIST_VALUE': lambda args: exp.Array(expressions=args),
+        'QUANTILE': lambda args: exp.Quantile(this=args[1], quantile=args[0]),
         'REGEXP_MATCHES': lambda args: exp.RegexLike(this=args[0], expression=args[1]),
         'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
         'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
@@ -185,6 +187,7 @@ class Hive(Dialect):
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
@@ -223,6 +226,7 @@ class Hive(Dialect):
         'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
         'LOCATE': lambda args: exp.StrPosition(this=args[1], substr=args[0], position=list_get(args, 2)),
         'MONTH': lambda args: exp.Month(this=exp.TsOrDsToDate(this=args[0])),
+        'PERCENTILE': lambda args: exp.Quantile(this=args[0], quantile=args[1]),
         'SIZE': lambda args: exp.ArraySize(this=args[0]),
         'TO_DATE': lambda args: exp.TsOrDsToDateStr(this=args[0]),
         'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
@@ -271,6 +275,10 @@ class Presto(Dialect):
         regex = '(\w)(\w*)'  # pylint: disable=anomalous-backslash-in-string
         return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
+    def _quantile_sql(self, expression):
+        self.unsupported('Presto does not support exact quantiles')
+        return f"APPROX_PERCENTILE({self.sql(expression, 'this')}, {self.sql(expression, 'quantile')})"
+
     def _str_position_sql(self, expression):
         this = self.sql(expression, 'this')
         substr = self.sql(expression, 'substr')
@@ -311,6 +319,7 @@ class Presto(Dialect):
         exp.If: _if_sql,
         exp.Initcap: _initcap_sql,
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT_SCALAR({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.Quantile: _quantile_sql,
         exp.RegexLike: lambda self, e: f"REGEXP_LIKE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrPosition: _str_position_sql,
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",

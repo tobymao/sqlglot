@@ -43,6 +43,7 @@ x RLIKE '%[0-9]+$'
 INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months
+QUANTILE(x, 0.5)
 x[y - 1]
 SUM(ROW() OVER(PARTITION BY x))
 (ROW() OVER())

@@ -33,6 +33,7 @@ class Parser:
         'INITCAP': lambda args: exp.Initcap(this=args[0]),
         'JSON_PATH': lambda args: exp.JSONPath(this=args[0], path=args[1]),
         'MONTH': lambda args: exp.Month(this=args[0]),
+        'QUANTILE': lambda args: exp.Quantile(this=args[0], quantile=args[1]),
         'STR_POSITION': lambda args: exp.StrPosition(this=args[0], substr=args[1], position=list_get(args, 2)),
         'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
         'STR_TO_UNIX': lambda args: exp.StrToUnix(this=args[0], format=args[1]),

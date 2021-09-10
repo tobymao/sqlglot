@@ -480,6 +480,10 @@ class Month(Func):
     pass
 
 
+class Quantile(Func):
+    arg_types = {'this': True, 'quantile': True}
+
+
 class RegexLike(Func):
     token_type = TokenType.RLIKE
     arg_types = {'this': True, 'expression': True}

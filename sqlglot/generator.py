@@ -43,6 +43,7 @@ class Generator:
         exp.Initcap: lambda self, e: f"INITCAP({self.sql(e, 'this')})",
         exp.JSONPath: lambda self, e: f"JSON_PATH({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Month: lambda self, e: f"MONTH({self.sql(e, 'this')})",
+        exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.StrPosition: lambda self, e: f"STR_POSITION({csv(self.sql(e, 'this'), self.sql(e, 'substr'), self.sql(e, 'position'))})",
         exp.StrToTime: lambda self, e: f"STR_TO_TIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"STR_TO_UNIX({self.sql(e, 'this')}, {self.sql(e, 'format')})",
@@ -81,10 +82,9 @@ class Generator:
         if self.unsupported_level == ErrorLevel.IGNORE:
             return sql
 
-        if self.unsupported_level == ErrorLevel.RAISE:
-            raise UnsupportedError
-
         for msg in self.unsupported_messages:
+            if self.unsupported_level == ErrorLevel.RAISE:
+                raise UnsupportedError(msg)
             logging.warning(msg)
 
         return sql

@@ -229,11 +229,6 @@ class Select(Expression):
     }
 
 
-class Set(Expression):
-    token_type = TokenType.SET
-    arg_types = {'this': True, 'expressions': True, 'where': False}
-
-
 class Window(Expression):
     token_type = TokenType.OVER
     arg_types = {'this': True, 'partition': False, 'order': False, 'spec': False}

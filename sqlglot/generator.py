@@ -214,10 +214,8 @@ class Generator:
 
     def update_sql(self, expression):
         this = self.sql(expression, 'this')
-        set_sql = ', '.join([e.sql() for e in expression.args['expressions']])
-        where_exp = expression.args.get('where')
-        where_sql = self.sql(where_exp) if where_exp else ''
-
+        set_sql = self.expressions(expression)
+        where_sql = self.sql(expression.args.get('where'))
         return f"UPDATE {this} SET {set_sql}{where_sql}"
 
     def values_sql(self, expression):

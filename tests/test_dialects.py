@@ -31,6 +31,16 @@ class TestDialects(unittest.TestCase):
 
         self.validate("STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb")
 
+        self.validate(
+            "QUANTILE(0.5, x)",
+            "APPROX_PERCENTILE(x, 0.5)",
+            read="duckdb",
+            write='presto',
+            unsupported_level=ErrorLevel.IGNORE,
+        )
+        self.validate("QUANTILE(0.5, x)", "PERCENTILE(x, 0.5)", read="duckdb", write='spark')
+        self.validate("PERCENTILE(x, 0.5)", "QUANTILE(0.5, x)", read='hive', write='duckdb')
+
         self.validate("MONTH(x)", "MONTH(x)", write='duckdb', identity=False)
         self.validate("DAY(x)", "DAY(x)", write='duckdb', identity=False)
 
@@ -172,6 +182,14 @@ class TestDialects(unittest.TestCase):
         self.validate('SIZE(x)', 'CARDINALITY(x)', read='hive', write='presto')
         self.validate('CARDINALITY(x)', 'SIZE(x)', read='presto', write='hive')
         self.validate('ARRAY_SIZE(x)', 'CARDINALITY(x)', write='presto', identity=False)
+
+        self.validate(
+            "PERCENTILE(x, 0.5)",
+            "APPROX_PERCENTILE(x, 0.5)",
+            read='hive',
+            write='presto',
+            unsupported_level=ErrorLevel.IGNORE,
+        )
 
         self.validate("STR_POSITION(x, 'a')", "STRPOS(x, 'a')", write='presto', identity=False)
         self.validate("STR_POSITION(x, 'a')", "LOCATE('a', x)", read='presto', write='hive')

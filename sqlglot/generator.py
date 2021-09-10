@@ -209,6 +209,19 @@ class Generator:
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"
 
+    def update_sql(self, expression):
+        this = self.sql(expression, 'this')
+        set_exp = expression.args.get('set')
+        set_sql = self.sql(set_exp)
+
+        where_exp = expression.args.get('where')
+        if where_exp:
+            where_sql = self.sql(' WHERE ' + self.sql(where_exp))
+        else:
+            where_sql = ''
+
+        return f"UPDATE {this} SET {set_sql}{where_sql}"
+
     def values_sql(self, expression):
         return f"VALUES{self.seg('')}{self.expressions(expression)}"
 

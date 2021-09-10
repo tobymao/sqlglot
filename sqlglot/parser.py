@@ -339,7 +339,7 @@ class Parser:
 
         where_expression = None
         if self._match(TokenType.WHERE):
-            where_expression = self._parse_expression()
+            where_expression = self._parse_where()
 
         return exp.Update(
             this=this,

@@ -129,6 +129,7 @@ class TokenType(AutoName):
     RLIKE = auto()
     ROWS = auto()
     SELECT = auto()
+    SET = auto()
     SPEC = auto()
     STORED = auto()
     TEMPORARY = auto()
@@ -138,6 +139,7 @@ class TokenType(AutoName):
     UNBOUNDED = auto()
     UNION = auto()
     UNNEST = auto()
+    UPDATE = auto()
     VALUES = auto()
     VIEW = auto()
     WHEN = auto()
@@ -277,6 +279,7 @@ class Tokenizer:
         'RLIKE': TokenType.RLIKE,
         'ROWS': TokenType.ROWS,
         'SELECT': TokenType.SELECT,
+        'SET': TokenType.SET,
         'STORED': TokenType.STORED,
         'TABLE': TokenType.TABLE,
         'TEMPORARY': TokenType.TEMPORARY,
@@ -285,6 +288,7 @@ class Tokenizer:
         'UNBOUNDED': TokenType.UNBOUNDED,
         'UNION': TokenType.UNION,
         'UNNEST': TokenType.UNNEST,
+        'UPDATE': TokenType.UPDATE,
         'VALUES': TokenType.VALUES,
         'VIEW': TokenType.VIEW,
         'WHEN': TokenType.WHEN,

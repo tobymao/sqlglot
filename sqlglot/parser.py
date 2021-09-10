@@ -240,6 +240,9 @@ class Parser:
         if self._match(TokenType.INSERT):
             return self._parse_insert()
 
+        if self._match(TokenType.UPDATE):
+            return self._parse_update()
+
         cte = self._parse_cte()
 
         if cte:
@@ -326,6 +329,24 @@ class Parser:
             expression=self._parse_select(),
             overwrite=overwrite,
         )
+
+    def _parse_update(self):
+        self._match(TokenType.UPDATE)
+        this = self._parse_table(None)
+
+        self._match(TokenType.SET)
+        set_expression = self._parse_expression()
+
+        where_expression = None
+        if self._match(TokenType.WHERE):
+            where_expression = self._parse_expression()
+
+        return exp.Update(
+            this=this,
+            set=set_expression,
+            where=where_expression,
+        )
+
 
     def _parse_values(self):
         if not self._match(TokenType.VALUES):

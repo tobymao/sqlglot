@@ -331,20 +331,11 @@ class Parser:
         )
 
     def _parse_update(self):
-        self._match(TokenType.UPDATE)
-        this = self._parse_table(None)
-
-        self._match(TokenType.SET)
-        set_expression = self._parse_expression()
-
-        where_expression = self._parse_where()
-
         return exp.Update(
-            this=this,
-            set=set_expression,
-            where=where_expression,
+            this=self._parse_table(None),
+            expressions=self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
+            where=self._parse_where(),
         )
-
 
     def _parse_values(self):
         if not self._match(TokenType.VALUES):

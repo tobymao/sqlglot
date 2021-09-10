@@ -243,6 +243,9 @@ class Parser:
         if self._match(TokenType.INSERT):
             return self._parse_insert()
 
+        if self._match(TokenType.UPDATE):
+            return self._parse_update()
+
         cte = self._parse_cte()
 
         if cte:
@@ -328,6 +331,13 @@ class Parser:
             exists=self._parse_exists(),
             expression=self._parse_select(),
             overwrite=overwrite,
+        )
+
+    def _parse_update(self):
+        return exp.Update(
+            this=self._parse_table(None),
+            expressions=self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
+            where=self._parse_where(),
         )
 
     def _parse_values(self):

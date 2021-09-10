@@ -215,10 +215,7 @@ class Generator:
         set_sql = self.sql(set_exp)
 
         where_exp = expression.args.get('where')
-        if where_exp:
-            where_sql = self.sql(' WHERE ' + self.sql(where_exp))
-        else:
-            where_sql = ''
+        where_sql = self.sql(where_exp) if where_exp else ''
 
         return f"UPDATE {this} SET {set_sql}{where_sql}"
 

@@ -28,12 +28,12 @@ class Expression:
     def parent(self, new_parent):
         self._parent = weakref.ref(new_parent)
 
-    def find(self, expression_type):
-        return next(self.find_all(expression_type), None)
+    def find(self, *expression_types):
+        return next(self.find_all(*expression_types), None)
 
-    def find_all(self, expression_type):
+    def find_all(self, *expression_types):
         for expression, _, _ in self.walk():
-            if isinstance(expression, expression_type):
+            if isinstance(expression, expression_types):
                 yield expression
 
     def walk(self, bfs=True):

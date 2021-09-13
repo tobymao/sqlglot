@@ -74,7 +74,6 @@ class Parser:
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
-        TokenType.DECIMAL,
         TokenType.MAP,
     }
 
@@ -108,6 +107,12 @@ class Parser:
     COLUMN_TOKENS = {
         *ID_VAR_TOKENS,
         TokenType.STAR,
+    } - {TokenType.ARRAY}
+
+    NON_COLUMN_TOKENS = {
+        TokenType.COMMA,
+        TokenType.R_PAREN,
+        TokenType.WHEN,
     }
 
     CONJUNCTION = expressions_to_map(
@@ -283,7 +288,7 @@ class Parser:
 
         create_token = self._prev
         exists = self._parse_exists(not_=True)
-        this = self._parse_table(None)
+        this = self._parse_table(None, schema=True)
 
         if create_token.token_type == TokenType.TABLE:
             if self._match(TokenType.STORED):
@@ -459,7 +464,7 @@ class Parser:
                 on=self._parse_conjunction() if self._match(TokenType.ON) else None,
             ))
 
-    def _parse_table(self, alias=False):
+    def _parse_table(self, alias=False, schema=False):
         unnest = self._parse_unnest()
 
         if unnest:
@@ -472,7 +477,7 @@ class Parser:
                 self.raise_error('Expecting )')
         else:
             db = None
-            table = self._parse_function(self._match(TokenType.VAR, TokenType.IDENTIFIER))
+            table = self._parse_function(self._match(TokenType.VAR, TokenType.IDENTIFIER), schema=schema)
 
             if self._match(TokenType.DOT):
                 db = table
@@ -489,7 +494,6 @@ class Parser:
         else:
             this = self._parse_alias(expression)
 
-        # some dialects allow not having an alias after a nested sql
         if this.token_type != TokenType.ALIAS and this.token_type != TokenType.TABLE :
             this = exp.Alias(this=this, alias=None)
 
@@ -631,11 +635,7 @@ class Parser:
         if self._match(TokenType.INTERVAL):
             return exp.Interval(this=self._match(TokenType.STRING, TokenType.NUMBER), unit=self._match(TokenType.VAR))
 
-        type_token = self._parse_types() if self._next and not (
-            self._curr.token_type in self.NESTED_TYPE_TOKENS or
-            self._next.token_type == TokenType.COMMA
-        ) else None
-
+        type_token = self._parse_types()
         this = self._parse_primary()
 
         if type_token:
@@ -649,9 +649,15 @@ class Parser:
                 self.raise_error('Expected type')
             return exp.Cast(this=this, to=type_token)
 
-        return this
+        return self._parse_column_def(this)
 
     def _parse_types(self):
+        if self._curr and self._curr.token_type in self.NESTED_TYPE_TOKENS:
+            return None
+
+        if self._match(TokenType.VARCHAR, TokenType.DECIMAL):
+            return self._parse_function(self._prev)
+
         if self._match(TokenType.TIMESTAMP, TokenType.TIMESTAMPTZ):
             tz = self._match(TokenType.WITH)
             self._match(TokenType.WITHOUT)
@@ -660,7 +666,20 @@ class Parser:
             if tz:
                 return Token(TokenType.TIMESTAMPTZ, 'TIMESTAMPTZ')
             return Token(TokenType.TIMESTAMP, 'TIMESTAMP')
+
         return self._match(*self.TYPE_TOKENS)
+
+    def _parse_column_def(self, this):
+        kind = self._parse_types()
+
+        if not kind:
+            return this
+
+        return exp.ColumnDef(
+            this=this,
+            kind=kind,
+            comment=self._match(TokenType.STRING) if self._match(TokenType.COLUMN_COMMENT) else None,
+        )
 
     def _parse_primary(self):
         if self._match(*self.PRIMARY_TOKENS):
@@ -683,7 +702,7 @@ class Parser:
         db = None
         table = None
 
-        if self._curr.token_type in (TokenType.OVER, TokenType.R_PAREN, TokenType.R_BRACKET, TokenType.WHEN):
+        if self._curr.token_type in self.NON_COLUMN_TOKENS:
             return None
 
         self._advance()
@@ -691,23 +710,25 @@ class Parser:
 
         if self._match(TokenType.DOT):
             table = this
-            if not self._match(*self.COLUMN_TOKENS):
+            this = self._match(*self.COLUMN_TOKENS)
+
+            if not this:
                 self.raise_error('Expected column name')
-            this = self._prev
 
             if self._match(TokenType.DOT):
                 db = table
                 table = this
-                if not self._match(*self.COLUMN_TOKENS):
-                    self.raise_error('Expected column name')
-                this = self._prev
+                this = self._match(*self.COLUMN_TOKENS)
 
-        if isinstance(this, Token) and this.token_type not in self.NESTED_TYPE_TOKENS:
+                if not this:
+                    self.raise_error('Expected column name')
+
+        if this.token_type in self.COLUMN_TOKENS:
             this = exp.Column(this=this, db=db, table=table)
 
         return self._parse_brackets(this)
 
-    def _parse_function(self, this):
+    def _parse_function(self, this, schema=False):
         if not this:
             return this
         if this.token_type == TokenType.CASE:
@@ -725,7 +746,9 @@ class Parser:
             args = self._parse_csv(self._parse_conjunction)
             function = self.functions.get(this.text.upper())
 
-            if not callable(function):
+            if schema:
+                this = exp.Schema(this=this, expressions=args)
+            elif not callable(function):
                 this = exp.Anonymous(this=this, expressions=args)
             else:
                 this = function(args)

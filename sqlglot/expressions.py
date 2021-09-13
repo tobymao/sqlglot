@@ -108,7 +108,14 @@ class Expression:
 
 class Create(Expression):
     token_type = TokenType.CREATE
-    arg_types = {'this': True, 'kind': True, 'expression': False, 'exists': False, 'file_format': False, 'temporary': False}
+    arg_types = {
+        'this': True,
+        'kind': True,
+        'expression': False,
+        'exists': False,
+        'file_format': False,
+        'temporary': False,
+    }
 
 
 class CTE(Expression):
@@ -119,6 +126,11 @@ class CTE(Expression):
 class Column(Expression):
     token_type = TokenType.COLUMN
     arg_types = {'this': True, 'db': False, 'table': False}
+
+
+class ColumnDef(Expression):
+    token_type = TokenType.COLUMN_DEF
+    arg_types = {'this': True, 'kind': True, 'comment': False}
 
 
 class Comment(Expression):
@@ -210,6 +222,11 @@ class Update(Expression):
 class Values(Expression):
     token_type = TokenType.VALUES
     arg_types = {'expressions': True}
+
+
+class Schema(Expression):
+    token_type = TokenType.SCHEMA
+    arg_types = {'this': True, 'expressions': True}
 
 
 class Select(Expression):

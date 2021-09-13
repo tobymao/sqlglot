@@ -329,7 +329,6 @@ class Tokenizer:
         'DECIMAL': TokenType.DECIMAL,
         'MAP': TokenType.MAP,
         'NUMERIC': TokenType.DECIMAL,
-        'DEC': TokenType.DECIMAL,
         'FIXED': TokenType.DECIMAL,
         'REAL': TokenType.FLOAT,
         'FLOAT': TokenType.FLOAT,

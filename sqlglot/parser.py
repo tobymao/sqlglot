@@ -82,8 +82,11 @@ class Parser:
         TokenType.VAR,
         TokenType.ALL,
         TokenType.ASC,
+        TokenType.COLLATE,
         TokenType.COUNT,
+        TokenType.DEFAULT,
         TokenType.DESC,
+        TokenType.ENGINE,
         TokenType.FOLLOWING,
         TokenType.FORMAT,
         TokenType.IF,
@@ -93,6 +96,7 @@ class Parser:
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.ROWS,
+        TokenType.SCHEMA_COMMENT,
         TokenType.UNBOUNDED,
         *TYPE_TOKENS,
     }
@@ -284,12 +288,15 @@ class Parser:
         temporary = bool(self._match(TokenType.TEMPORARY))
         replace = bool(self._match(TokenType.OR) and self._match(TokenType.REPLACE))
 
-        if not self._match(TokenType.TABLE, TokenType.VIEW):
+        create_token = self._match(TokenType.TABLE, TokenType.VIEW)
+
+        if not create_token:
             self.raise_error('Expected TABLE or View')
 
-        create_token = self._prev
         exists = self._parse_exists(not_=True)
         this = self._parse_table(None, schema=True)
+        expression = None
+        file_format = None
 
         if create_token.token_type == TokenType.TABLE:
             if self._match(TokenType.STORED):
@@ -302,32 +309,53 @@ class Parser:
                 file_format = exp.FileFormat(this=self._parse_primary())
                 if not self._match(TokenType.R_PAREN):
                     self.raise_error('Expected ) after format')
-            else:
-                file_format = None
 
-            self._match(TokenType.ALIAS)
+        if self._match(TokenType.ALIAS):
+            expression = self._parse_select()
 
-            return exp.Create(
-                this=this,
-                kind='table',
-                expression=self._parse_select(),
-                exists=exists,
-                file_format=file_format,
-                temporary=temporary
-            )
+        options = {
+            'engine': None,
+            'auto_increment': None,
+            'character_set': None,
+            'collate': None,
+            'comment': None,
+            'parsed': True
+        }
 
-        if create_token.token_type == TokenType.VIEW:
-            self._match(TokenType.ALIAS)
+        def parse_option(option, token, option_lambda):
+            if not options[option] and self._match(token):
+                self._match(TokenType.EQ)
+                options[option] = option_lambda()
+                options['parsed'] = True
 
-            return exp.Create(
-                this=this,
-                kind='view',
-                expression=self._parse_select(),
-                exists=exists,
-                temporary=temporary,
-                replace=replace,
-            )
-        return None
+        while options['parsed']:
+            options['parsed'] = False
+
+            parse_option('engine', TokenType.ENGINE, lambda: self._match(TokenType.VAR))
+            parse_option('auto_increment', TokenType.AUTO_INCREMENT, lambda: self._match(TokenType.NUMBER))
+            parse_option('collate', TokenType.COLLATE, lambda: self._match(TokenType.VAR))
+            parse_option('comment', TokenType.SCHEMA_COMMENT, lambda: self._match(TokenType.STRING))
+
+            if not options['character_set']:
+                default = bool(self._match(TokenType.DEFAULT))
+                parse_option(
+                    'character_set',
+                    TokenType.CHARACTER_SET,
+                    lambda: exp.CharacterSet(this=self._match(TokenType.VAR), default=default),
+                )
+
+        options.pop('parsed')
+
+        return exp.Create(
+            this=this,
+            kind=create_token,
+            expression=expression,
+            exists=exists,
+            file_format=file_format,
+            temporary=temporary,
+            replace=replace,
+            **options,
+        )
 
     def _parse_insert(self):
         overwrite = self._match(TokenType.OVERWRITE)
@@ -657,9 +685,6 @@ class Parser:
         if self._curr and self._curr.token_type in self.NESTED_TYPE_TOKENS:
             return None
 
-        if self._match(TokenType.VARCHAR, TokenType.DECIMAL):
-            return self._parse_function(self._prev)
-
         if self._match(TokenType.TIMESTAMP, TokenType.TIMESTAMPTZ):
             tz = self._match(TokenType.WITH)
             self._match(TokenType.WITHOUT)
@@ -669,7 +694,7 @@ class Parser:
                 return Token(TokenType.TIMESTAMPTZ, 'TIMESTAMPTZ')
             return Token(TokenType.TIMESTAMP, 'TIMESTAMP')
 
-        return self._match(*self.TYPE_TOKENS)
+        return self._parse_function(self._match(*self.TYPE_TOKENS))
 
     def _parse_column_def(self, this):
         kind = self._parse_types()
@@ -677,11 +702,32 @@ class Parser:
         if not kind:
             return this
 
-        return exp.ColumnDef(
-            this=this,
-            kind=kind,
-            comment=self._match(TokenType.STRING) if self._match(TokenType.COLUMN_COMMENT) else None,
-        )
+        options = {
+            'not_null': None,
+            'auto_increment': None,
+            'collate': None,
+            'comment': None,
+            'default': None,
+            'parsed': True
+        }
+
+        def parse_option(option, option_lambda):
+            if not options[option]:
+                options[option] = option_lambda()
+
+                if options[option]:
+                    options['parsed'] = True
+
+        while options['parsed']:
+            options['parsed'] = False
+            parse_option('auto_increment', lambda: bool(self._match(TokenType.AUTO_INCREMENT)))
+            parse_option('collate', lambda: self._match(TokenType.COLLATE) and self._match(TokenType.VAR))
+            parse_option('default', lambda: self._match(TokenType.DEFAULT) and self._match(*self.PRIMARY_TOKENS))
+            parse_option('not_null', lambda: bool(self._match(TokenType.NOT) and self._match(TokenType.NULL)))
+            parse_option('comment', lambda: self._match(TokenType.SCHEMA_COMMENT) and self._match(TokenType.STRING))
+
+        options.pop('parsed')
+        return exp.ColumnDef(this=this, kind=kind, **options)
 
     def _parse_primary(self):
         if self._match(*self.PRIMARY_TOKENS):

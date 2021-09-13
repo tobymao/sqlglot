@@ -32,6 +32,12 @@ x >> 1
 x >> 1 | 1 & 1 ^ 1
 x || y
 1 - -1
+dec.x + y
+a.b.c
+a.b.c.d
+a.b.c.d.e
+a.b.c.d.e[0]
+a.b.c.d.e[0].f
 a[0][0].b.c[1].d.e.f[1][1]
 x IN (-1, 1)
 x IN ('a', 'a''a')
@@ -44,6 +50,7 @@ INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months
 QUANTILE(x, 0.5)
+DATE(x) = DATE(y)
 x[y - 1]
 SUM(ROW() OVER(PARTITION BY x))
 (ROW() OVER())

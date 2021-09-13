@@ -136,7 +136,7 @@ class CTE(Expression):
 
 class Column(Expression):
     token_type = TokenType.COLUMN
-    arg_types = {'this': True, 'db': False, 'table': False}
+    arg_types = {'this': True, 'db': False, 'table': False, 'fields': False}
 
 
 class ColumnDef(Expression):

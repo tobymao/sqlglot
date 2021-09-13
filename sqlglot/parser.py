@@ -72,8 +72,10 @@ class Parser:
         TokenType.MAP,
     }
 
-    NESTED_TYPE_TOKENS = {
+    # Tokens that can also be functions
+    AMBIGUOUS_TOKEN_TYPES = {
         TokenType.ARRAY,
+        TokenType.DATE,
         TokenType.MAP,
     }
 
@@ -682,7 +684,12 @@ class Parser:
         return self._parse_column_def(this)
 
     def _parse_types(self):
-        if self._curr and self._curr.token_type in self.NESTED_TYPE_TOKENS:
+        if (
+            self._curr
+            and self._curr.token_type in self.AMBIGUOUS_TOKEN_TYPES
+            and self._next
+            and self._next.token_type in (TokenType.L_PAREN, TokenType.L_BRACKET)
+        ):
             return None
 
         if self._match(TokenType.TIMESTAMP, TokenType.TIMESTAMPTZ):
@@ -747,32 +754,28 @@ class Parser:
         return self._parse_column()
 
     def _parse_column(self):
-        db = None
-        table = None
-
         if self._curr.token_type in self.NON_COLUMN_TOKENS:
             return None
 
         self._advance()
-        this = self._parse_function(self._prev)
 
-        if self._match(TokenType.DOT):
+        this = self._parse_function(self._prev)
+        table = None
+        db = None
+        fields = None
+
+        while self._match(TokenType.DOT):
+            if db:
+                fields = fields if fields else [db, table, this]
+                fields.append(self._match(*self.COLUMN_TOKENS))
+                continue
+            if table:
+                db = table
             table = this
             this = self._match(*self.COLUMN_TOKENS)
 
-            if not this:
-                self.raise_error('Expected column name')
-
-            if self._match(TokenType.DOT):
-                db = table
-                table = this
-                this = self._match(*self.COLUMN_TOKENS)
-
-                if not this:
-                    self.raise_error('Expected column name')
-
         if this.token_type in self.COLUMN_TOKENS:
-            this = exp.Column(this=this, db=db, table=table)
+            this = exp.Column(this=this, db=db, table=table, fields=fields)
 
         return self._parse_brackets(this)
 

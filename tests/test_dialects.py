@@ -317,6 +317,7 @@ class TestDialects(unittest.TestCase):
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write='hive')[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
+        self.validate("""'["x"]'""", """'["x"]'""", write='hive', identity=True)
         self.validate(
             'SELECT CAST(`a`.`b` AS SMALLINT) FROM foo',
             'SELECT CAST(`a`.`b` AS SMALLINT) FROM foo',

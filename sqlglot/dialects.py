@@ -361,7 +361,7 @@ class Spark(Hive):
         kind = e.args.get('kind')
         temporary = e.args.get('temporary')
 
-        if kind == 'table' and temporary is True:
+        if kind.token_type == TokenType.TABLE and temporary is True:
             return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
         return self.create_sql(e)
 

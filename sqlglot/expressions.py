@@ -116,7 +116,17 @@ class Create(Expression):
         'file_format': False,
         'temporary': False,
         'replace': False,
+        'engine': False,
+        'auto_increment': False,
+        'character_set': False,
+        'collate': False,
+        'comment': False,
     }
+
+
+class CharacterSet(Expression):
+    token_type = TokenType.CHARACTER_SET
+    arg_types = {'this': True, 'default': False}
 
 
 class CTE(Expression):
@@ -131,12 +141,16 @@ class Column(Expression):
 
 class ColumnDef(Expression):
     token_type = TokenType.COLUMN_DEF
-    arg_types = {'this': True, 'kind': True, 'comment': False}
-
-
-class Comment(Expression):
-    token_type = TokenType.COMMENT
-    arg_types = {'this': True, 'comment': True}
+    arg_types = {
+        'this': True,
+        'kind': True,
+        'auto_increment': False,
+        'comment': False,
+        'collate': False,
+        'default': False,
+        'not_null': False,
+        'primary': False,
+    }
 
 
 class Drop(Expression):

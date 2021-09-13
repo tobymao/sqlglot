@@ -74,12 +74,14 @@ class TokenType(AutoName):
     ALL = auto()
     ARRAY = auto()
     ASC = auto()
+    AUTO_INCREMENT = auto()
     BETWEEN = auto()
     BY = auto()
     CASE = auto()
     CAST = auto()
+    CHARACTER_SET = auto()
     COUNT = auto()
-    COLUMN_COMMENT = auto()
+    COLLATE = auto()
     COMMENT = auto()
     COMMENT_END = auto()
     COMMENT_START = auto()
@@ -87,11 +89,13 @@ class TokenType(AutoName):
     CROSS = auto()
     CURRENT_ROW = auto()
     DIV = auto()
+    DEFAULT = auto()
     DESC = auto()
     DISTINCT = auto()
     DROP = auto()
     ELSE = auto()
     END = auto()
+    ENGINE = auto()
     EXISTS = auto()
     EXTRACT = auto()
     FOLLOWING = auto()
@@ -126,12 +130,14 @@ class TokenType(AutoName):
     OVERWRITE = auto()
     PARTITION = auto()
     PRECEDING = auto()
+    PRIMARY_KEY = auto()
     RANGE = auto()
     RECURSIVE = auto()
     REPLACE = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROWS = auto()
+    SCHEMA_COMMENT = auto()
     SELECT = auto()
     SET = auto()
     SPEC = auto()
@@ -231,21 +237,26 @@ class Tokenizer:
         'AND': TokenType.AND,
         'ASC': TokenType.ASC,
         'AS': TokenType.ALIAS,
+        'AUTO_INCREMENT': TokenType.AUTO_INCREMENT,
         'BETWEEN': TokenType.BETWEEN,
         'BY': TokenType.BY,
         'CASE': TokenType.CASE,
         'CAST': TokenType.CAST,
-        'COMMENT': TokenType.COLUMN_COMMENT,
+        'CHARACTER SET': TokenType.CHARACTER_SET,
+        'COLLATE': TokenType.COLLATE,
+        'COMMENT': TokenType.SCHEMA_COMMENT,
         'COUNT': TokenType.COUNT,
         'CREATE': TokenType.CREATE,
         'CROSS': TokenType.CROSS,
         'CURRENT ROW': TokenType.CURRENT_ROW,
         'DIV': TokenType.DIV,
+        'DEFAULT': TokenType.DEFAULT,
         'DESC': TokenType.DESC,
         'DISTINCT': TokenType.DISTINCT,
         'DROP': TokenType.DROP,
         'ELSE': TokenType.ELSE,
         'END': TokenType.END,
+        'ENGINE': TokenType.ENGINE,
         'EXISTS': TokenType.EXISTS,
         'EXTRACT': TokenType.EXTRACT,
         'FORMAT': TokenType.FORMAT,
@@ -277,6 +288,7 @@ class Tokenizer:
         'OVERWRITE': TokenType.OVERWRITE,
         'PARTITION BY': TokenType.PARTITION,
         'PRECEDING': TokenType.PRECEDING,
+        'PRIMARY KEY': TokenType.PRIMARY_KEY,
         'RANGE': TokenType.RANGE,
         'RECURSIVE': TokenType.RECURSIVE,
         'REGEXP': TokenType.RLIKE,

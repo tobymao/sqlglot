@@ -153,6 +153,10 @@ class Generator:
 
         return getattr(self, f"{expression.key}_sql")(expression)
 
+    def characterset_sql(self, expression):
+        default = 'DEFAULT ' if expression.args.get('default') else ''
+        return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
+
     def column_sql(self, expression):
         return '.'.join(part for part in [
             self.sql(expression, 'table', identify=True),
@@ -162,13 +166,19 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, 'this')
         kind = self.sql(expression, 'kind')
+        not_null = ' NOT NULL' if expression.args.get('not_null') else ''
+        default = self.sql(expression, 'default')
+        default = f" DEFAULT {default}" if default else ''
+        auto_increment = ' AUTO_INCREMENT' if expression.args.get('auto_increment') else ''
+        collate = self.sql(expression, 'collate')
+        collate = f" COLLATE {collate}" if collate else ''
         comment = self.sql(expression, 'comment')
         comment = f" COMMENT {comment}" if comment else ''
-        return f"{column} {kind}{comment}"
+        return f"{column} {kind}{not_null}{default}{collate}{auto_increment}{comment}"
 
     def create_sql(self, expression):
         this = self.sql(expression, 'this')
-        kind = expression.args['kind'].upper()
+        kind = self.sql(expression, 'kind').upper()
         expression_sql = self.sql(expression, 'expression')
         expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ''
         temporary = ' TEMPORARY' if expression.args.get('temporary') else ''
@@ -176,7 +186,27 @@ class Generator:
         exists_sql = ' IF NOT EXISTS' if expression.args.get('exists') else ''
         file_format = self.sql(expression, 'file_format')
         file_format = f" {file_format} " if file_format else ' '
-        return f"CREATE{temporary}{replace} {kind}{exists_sql} {this}{file_format}{expression_sql}"
+        engine = self.sql(expression, 'engine')
+        engine = f"ENGINE={engine}" if engine else ''
+        auto_increment = self.sql(expression, 'auto_increment')
+        auto_increment = f"AUTO_INCREMENT={auto_increment}" if auto_increment else ''
+        character_set = self.sql(expression, 'character_set')
+        collate = self.sql(expression, 'collate')
+        collate = f"COLLATE={collate}" if collate else ''
+        comment = self.sql(expression, 'comment')
+        comment = f"COMMENT={comment}" if comment else ''
+
+        options = ' '.join(
+            option for option in (
+                engine,
+                auto_increment,
+                character_set,
+                collate,
+                comment,
+            ) if option
+        )
+
+        return f"CREATE{temporary}{replace} {kind}{exists_sql} {this}{file_format}{expression_sql}{options}"
 
     def cte_sql(self, expression):
         sql = ', '.join(

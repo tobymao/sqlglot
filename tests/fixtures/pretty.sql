@@ -179,3 +179,10 @@ WHERE
 GROUP BY
   region,
   product;
+CREATE TABLE `t_customer_account` ( `id` int, `customer_id` int, `bank` varchar(100), `account_no` varchar(100));
+CREATE TABLE `t_customer_account` (
+  `id` INT,
+  `customer_id` INT,
+  `bank` VARCHAR(100),
+  `account_no` VARCHAR(100)
+);

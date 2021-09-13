@@ -46,6 +46,8 @@ class TokenType(AutoName):
     NUMBER = auto()
     IDENTIFIER = auto()
     COLUMN = auto()
+    COLUMN_DEF = auto()
+    SCHEMA = auto()
     TABLE = auto()
     VAR = auto()
 
@@ -77,6 +79,7 @@ class TokenType(AutoName):
     CASE = auto()
     CAST = auto()
     COUNT = auto()
+    COLUMN_COMMENT = auto()
     COMMENT = auto()
     COMMENT_END = auto()
     COMMENT_START = auto()
@@ -231,6 +234,7 @@ class Tokenizer:
         'BY': TokenType.BY,
         'CASE': TokenType.CASE,
         'CAST': TokenType.CAST,
+        'COMMENT': TokenType.COLUMN_COMMENT,
         'COUNT': TokenType.COUNT,
         'CREATE': TokenType.CREATE,
         'CROSS': TokenType.CROSS,

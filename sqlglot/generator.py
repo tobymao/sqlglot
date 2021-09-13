@@ -159,15 +159,23 @@ class Generator:
             self.sql(expression, 'this', identify=True),
         ] if part)
 
+    def columndef_sql(self, expression):
+        column = self.sql(expression, 'this')
+        kind = self.sql(expression, 'kind')
+        comment = self.sql(expression, 'comment')
+        comment = f" COMMENT {comment}" if comment else ''
+        return f"{column} {kind}{comment}"
+
     def create_sql(self, expression):
         this = self.sql(expression, 'this')
         kind = expression.args['kind'].upper()
         expression_sql = self.sql(expression, 'expression')
+        expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ''
         temporary_sql = ' TEMPORARY ' if expression.args.get('temporary') else ' '
         exists_sql = ' IF NOT EXISTS ' if expression.args.get('exists') else ' '
         file_format = self.sql(expression, 'file_format')
         file_format = f" {file_format} " if file_format else ' '
-        return f"CREATE{temporary_sql}{kind}{exists_sql}{this}{file_format}AS{self.sep()}{expression_sql}"
+        return f"CREATE{temporary_sql}{kind}{exists_sql}{this}{file_format}{expression_sql}"
 
     def cte_sql(self, expression):
         sql = ', '.join(
@@ -280,6 +288,10 @@ class Generator:
             self.sql(expression, 'limit'),
             sep='',
         )
+
+    def schema_sql(self, expression):
+        sql = f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
+        return f"{self.sql(expression, 'this')} {sql}"
 
     def union_sql(self, expression):
         this = self.sql(expression, 'this')

@@ -171,11 +171,12 @@ class Generator:
         kind = expression.args['kind'].upper()
         expression_sql = self.sql(expression, 'expression')
         expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ''
-        temporary_sql = ' TEMPORARY ' if expression.args.get('temporary') else ' '
-        exists_sql = ' IF NOT EXISTS ' if expression.args.get('exists') else ' '
+        temporary = ' TEMPORARY' if expression.args.get('temporary') else ''
+        replace = ' OR REPLACE' if expression.args.get('replace') else ''
+        exists_sql = ' IF NOT EXISTS' if expression.args.get('exists') else ''
         file_format = self.sql(expression, 'file_format')
         file_format = f" {file_format} " if file_format else ' '
-        return f"CREATE{temporary_sql}{kind}{exists_sql}{this}{file_format}{expression_sql}"
+        return f"CREATE{temporary}{replace} {kind}{exists_sql} {this}{file_format}{expression_sql}"
 
     def cte_sql(self, expression):
         sql = ', '.join(

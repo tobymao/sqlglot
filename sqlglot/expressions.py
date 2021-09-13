@@ -115,6 +115,7 @@ class Create(Expression):
         'exists': False,
         'file_format': False,
         'temporary': False,
+        'replace': False,
     }
 
 

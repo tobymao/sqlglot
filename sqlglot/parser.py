@@ -282,6 +282,7 @@ class Parser:
 
     def _parse_create(self):
         temporary = bool(self._match(TokenType.TEMPORARY))
+        replace = bool(self._match(TokenType.OR) and self._match(TokenType.REPLACE))
 
         if not self._match(TokenType.TABLE, TokenType.VIEW):
             self.raise_error('Expected TABLE or View')
@@ -323,7 +324,8 @@ class Parser:
                 kind='view',
                 expression=self._parse_select(),
                 exists=exists,
-                temporary=temporary
+                temporary=temporary,
+                replace=replace,
             )
         return None
 

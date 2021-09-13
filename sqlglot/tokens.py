@@ -128,6 +128,7 @@ class TokenType(AutoName):
     PRECEDING = auto()
     RANGE = auto()
     RECURSIVE = auto()
+    REPLACE = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROWS = auto()
@@ -279,6 +280,7 @@ class Tokenizer:
         'RANGE': TokenType.RANGE,
         'RECURSIVE': TokenType.RECURSIVE,
         'REGEXP': TokenType.RLIKE,
+        'REPLACE': TokenType.REPLACE,
         'RIGHT': TokenType.RIGHT,
         'RLIKE': TokenType.RLIKE,
         'ROWS': TokenType.ROWS,

@@ -121,6 +121,9 @@ class Expression:
         """
         node = deepcopy(self) if copy else self
         new_node = fun(node)
+
+        if new_node is None:
+            raise ValueError('A transformed node cannot be None')
         if not isinstance(new_node, Expression) or new_node is not node:
             return new_node
 

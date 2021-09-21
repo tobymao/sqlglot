@@ -52,3 +52,38 @@ class TestExpressions(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             exp.Hint()
+
+    def test_transform_simple(self):
+        expression = parse('IF(a > 0, a, b)')[0]
+
+        def fun(node):
+            if isinstance(node, exp.Column) and node.args['this'].text == 'a':
+                return parse('c - 2')[0]
+            return node
+
+        actual_expression_1 = expression.transform(fun)
+        self.assertEqual(
+            actual_expression_1.sql(dialect='presto'),
+            'IF(c - 2 > 0, c - 2, b)'
+        )
+        self.assertIsNot(actual_expression_1, expression)
+
+        actual_expression_2 = expression.transform(fun, copy=False)
+        self.assertEqual(
+            actual_expression_2.sql(dialect='presto'),
+            'IF(c - 2 > 0, c - 2, b)'
+        )
+        self.assertIs(actual_expression_2, expression)
+
+    def test_transform_no_infinite_recursion(self):
+        expression = parse('a')[0]
+
+        def fun(node):
+            if isinstance(node, exp.Column) and node.args['this'].text == 'a':
+                return parse('FUN(a)')[0]
+            return node
+
+        self.assertEqual(
+            expression.transform(fun).sql(dialect='sql'),
+            'FUN(a)'
+        )

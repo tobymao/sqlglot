@@ -1,17 +1,17 @@
 import unittest
 
 import sqlglot.expressions as exp
-from sqlglot import parse
+from sqlglot import parse_one
 
 class TestExpressions(unittest.TestCase):
     def test_find(self):
-        expression = parse("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")[0]
+        expression = parse_one("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")
         self.assertTrue(expression.find(exp.Create))
         self.assertFalse(expression.find(exp.Group))
         self.assertEqual([table.args['this'].text for table in expression.find_all(exp.Table)], ['y', 'x'])
 
     def test_find_all(self):
-        expression = parse(
+        expression = parse_one(
             """
             SELECT *
             FROM (
@@ -33,7 +33,7 @@ class TestExpressions(unittest.TestCase):
             ) z
               ON x.c = y.foo
             """
-        )[0]
+        )
 
         self.assertEqual(
             [table.args['this'].text for table in expression.find_all(exp.Table)],
@@ -41,8 +41,8 @@ class TestExpressions(unittest.TestCase):
         )
 
     def test_sql(self):
-        assert parse('x + y * 2')[0].sql() == 'x + y * 2'
-        assert parse('select "x"')[0].sql(dialect='hive', pretty=True) == 'SELECT\n  `x`'
+        assert parse_one('x + y * 2').sql() == 'x + y * 2'
+        assert parse_one('select "x"').sql(dialect='hive', pretty=True) == 'SELECT\n  `x`'
 
     def test_validate(self):
         exp.Hint(this='')
@@ -54,11 +54,11 @@ class TestExpressions(unittest.TestCase):
             exp.Hint()
 
     def test_transform_simple(self):
-        expression = parse('IF(a > 0, a, b)')[0]
+        expression = parse_one('IF(a > 0, a, b)')
 
         def fun(node):
             if isinstance(node, exp.Column) and node.args['this'].text == 'a':
-                return parse('c - 2')[0]
+                return parse_one('c - 2')
             return node
 
         actual_expression_1 = expression.transform(fun)
@@ -76,14 +76,14 @@ class TestExpressions(unittest.TestCase):
         self.assertIs(actual_expression_2, expression)
 
         with self.assertRaises(ValueError):
-            parse('a')[0].transform(lambda n: None)
+            parse_one('a').transform(lambda n: None)
 
     def test_transform_no_infinite_recursion(self):
-        expression = parse('a')[0]
+        expression = parse_one('a')
 
         def fun(node):
             if isinstance(node, exp.Column) and node.args['this'].text == 'a':
-                return parse('FUN(a)')[0]
+                return parse_one('FUN(a)')
             return node
 
         self.assertEqual(

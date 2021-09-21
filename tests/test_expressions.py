@@ -75,6 +75,9 @@ class TestExpressions(unittest.TestCase):
         )
         self.assertIs(actual_expression_2, expression)
 
+        with self.assertRaises(ValueError):
+            parse('a')[0].transform(lambda n: None)
+
     def test_transform_no_infinite_recursion(self):
         expression = parse('a')[0]
 

@@ -138,6 +138,27 @@ Generator(transforms={
 SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
 ```
 
+### Transform Trees
+There is also a way to transform the parsed tree directly by applying a mapping function to each tree node recursively.
+```python
+import sqlglot
+import sqlglot.expressions as exp
+
+expression_tree = sqlglot.parse_one("SELECT a FROM x")
+
+def transformer(node):
+    if isinstance(node, exp.Column) and node.args["this"].text == "a":
+        return sqlglot.parse_one("FUN(a)")
+    return node
+
+transformed_tree = expression_tree.transform(transformer)
+transformed_tree.sql()
+```
+The snippet above produces the following transformed expression:
+```sql
+SELECT FUN(a) FROM x
+```
+
 ### Parse Errors
 A syntax error will result in an parse error.
 ```python
@@ -168,10 +189,10 @@ SELECT APPROX_COUNT_DISTINCT(a) FROM foo
 Modify sql expressions like adding a CTAS
 
 ```python
-from sqlglot import Generator, parse
+from sqlglot import Generator, parse_one
 from sqlglot.rewriter import Rewriter
 
-expression = parse("SELECT * FROM y")[0]
+expression = parse_one("SELECT * FROM y")
 Rewriter(expression).ctas('x').expression.sql()
 ```
 

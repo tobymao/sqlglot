@@ -13,6 +13,10 @@ def parse(code, read=None, **opts):
     return dialect.parse(code, **opts)
 
 
+def parse_one(code, read=None, **opts):
+    return parse(code, read=read, **opts)[0]
+
+
 def transpile(code, read=None, write=None, identity=True, error_level=None, **opts):
     write = write or read if identity else write
     return [

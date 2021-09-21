@@ -1,11 +1,11 @@
 import unittest
 
-from sqlglot import parse
+from sqlglot import parse_one
 from sqlglot.rewriter import Rewriter
 
 class TestRewriter(unittest.TestCase):
     def test_ctas(self):
-        expression = parse("SELECT * FROM y")[0]
+        expression = parse_one("SELECT * FROM y")
 
         self.assertEqual(
             Rewriter(expression).ctas('x').expression.sql(),
@@ -29,7 +29,7 @@ class TestRewriter(unittest.TestCase):
             'CREATE TABLE y AS SELECT * FROM y',
         )
 
-        expression = parse("CREATE TABLE x AS SELECT * FROM y")[0]
+        expression = parse_one("CREATE TABLE x AS SELECT * FROM y")
         rewriter = Rewriter(expression, copy=False).ctas('x', file_format='ORC')
         self.assertEqual(
             expression.sql('hive'),
@@ -37,7 +37,7 @@ class TestRewriter(unittest.TestCase):
         )
 
     def test_add_selects(self):
-        expression = parse("SELECT * FROM (SELECT * FROM x) y")[0]
+        expression = parse_one("SELECT * FROM (SELECT * FROM x) y")
 
         self.assertEqual(
             Rewriter(expression).add_selects(

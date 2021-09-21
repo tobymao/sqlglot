@@ -1,19 +1,19 @@
 import unittest
 
 import sqlglot.expressions as exp
-from sqlglot import parse
+from sqlglot import parse, parse_one
 
 
 class TestParser(unittest.TestCase):
     def test_column(self):
-        columns = parse("select a, ARRAY[1] b, case when 1 then 1 end")[0].find_all(exp.Column)
+        columns = parse_one("select a, ARRAY[1] b, case when 1 then 1 end").find_all(exp.Column)
         assert len(list(columns)) == 1
 
     def test_identify(self):
-        expression = parse("""
+        expression = parse_one("""
             SELECT a, "b", c AS c, d AS "D", e AS "y|z'"
             FROM y."z"
-        """)[0]
+        """)
 
         assert expression.args['expressions'][0].args['this'].text == 'a'
         assert expression.args['expressions'][1].args['this'].text == 'b'

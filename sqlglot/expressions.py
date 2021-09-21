@@ -13,6 +13,7 @@ class Expression:
         self.args = args
         self.validate()
         self._parent = None
+        self.arg_key = None
 
     @property
     def parent(self):

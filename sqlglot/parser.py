@@ -526,7 +526,7 @@ class Parser:
         else:
             this = self._parse_alias(expression)
 
-        if this.token_type != TokenType.ALIAS and this.token_type != TokenType.TABLE :
+        if this.token_type not in (TokenType.ALIAS, TokenType.TABLE):
             this = exp.Alias(this=this, alias=None)
 
         return this

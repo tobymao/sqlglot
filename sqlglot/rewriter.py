@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 import sqlglot.expressions as exp
-from sqlglot import parse
+from sqlglot import parse_one
 
 
 class chainable:
@@ -43,5 +43,5 @@ class Rewriter:
     def add_selects(self, *selects, read=None):
         select = self.expression.find(exp.Select)
         for sql in selects:
-            select.args['expressions'].append(parse(sql, read=read)[0])
+            select.args['expressions'].append(parse_one(sql, read=read))
         return self.expression

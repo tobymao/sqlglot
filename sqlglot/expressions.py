@@ -1,3 +1,4 @@
+from copy import deepcopy
 import weakref
 
 from sqlglot.tokens import TokenType
@@ -104,6 +105,45 @@ class Expression:
         right += ')'
 
         return indent + left + right
+
+    def transform(self, fun, copy=True):
+        """
+        Recursively visits all tree nodes (excluding already transformed ones)
+        and applies the given transformation function to each node.
+
+        Args:
+            fun (function): a function which takes a node as an argument and returns a
+                new transformed node or the same node without modifications.
+            copy (bool): if set to True a new tree instance is constructed, otherwise the tree is
+                modified in place.
+
+        Returns:
+            the transformed tree.
+        """
+        node = deepcopy(self) if copy else self
+        new_node = fun(node)
+
+        if new_node is None:
+            raise ValueError('A transformed node cannot be None')
+        if not isinstance(new_node, Expression) or new_node is not node:
+            return new_node
+
+        for k, v in new_node.args.items():
+            is_list_arg = isinstance(v, list)
+
+            child_nodes = v if is_list_arg else [v]
+            new_child_nodes = []
+
+            for cn in child_nodes:
+                if isinstance(cn, Expression):
+                    new_child_node = cn.transform(fun, copy=False)
+                    new_child_node.parent = new_node
+                else:
+                    new_child_node = cn
+                new_child_nodes.append(new_child_node)
+
+            new_node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
+        return new_node
 
 
 class Create(Expression):

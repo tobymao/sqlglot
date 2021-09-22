@@ -501,7 +501,9 @@ class Func(Expression):
         args_dict = {}
         arg_idx = 0
         for arg_key, _ in arg_types:
-            args_dict[arg_key] = args[arg_idx] if arg_idx < args_num else None
+            if arg_idx >= args_num:
+                break
+            args_dict[arg_key] = args[arg_idx]
             arg_idx += 1
 
         if arg_idx < args_num:

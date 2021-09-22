@@ -170,7 +170,7 @@ class CharacterSet(Expression):
 
 class CTE(Expression):
     token_type = TokenType.WITH
-    arg_types = {'this': False, 'expressions': True, 'recursive': False}
+    arg_types = {'this': True, 'expressions': True, 'recursive': False}
 
 
 class Column(Expression):
@@ -489,7 +489,7 @@ class Func(Expression):
     def from_arg_list(cls, args):
         args_num = len(args)
 
-        all_arg_keys = list(cls.arg_types.keys())
+        all_arg_keys = list(cls.arg_types)
         # If this function supports variable length argument treat the last argument as such.
         non_var_len_arg_keys = all_arg_keys[:-1] if cls.is_var_len_args else all_arg_keys
 

@@ -166,7 +166,7 @@ class Token:
 
     @classmethod
     def string(cls, string):
-        return cls(TokenType.STRING, f"{string}")
+        return cls(TokenType.STRING, string)
 
     def __init__(self, token_type, text, line=0, col=0):
         self.token_type = token_type

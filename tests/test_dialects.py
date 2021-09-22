@@ -515,7 +515,7 @@ class TestDialects(unittest.TestCase):
 
         with self.assertRaises(UnsupportedError):
             transpile(
-                'WITH RECURSIVE T(N) AS (VALUES (1))',
+                'WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT sum(n) FROM t',
                 read='presto',
                 write='spark',
                 unsupported_level=ErrorLevel.RAISE,

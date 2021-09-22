@@ -190,7 +190,12 @@ class Parser:
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(self._parse_statement())
+            try:
+                expressions.append(self._parse_statement())
+            except ParseError:
+                raise
+            except ValueError as e:
+                self.raise_error(str(e))
 
             if self._index < len(self._tokens):
                 self.raise_error('Invalid expression / Unexpected token')
@@ -938,12 +943,15 @@ class Parser:
         return self._match(*self.ID_VAR_TOKENS)
 
     def _parse_csv(self, parse):
-        items = [parse()]
+        parse_result = parse()
+        items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            items.append(parse())
+            parse_result = parse()
+            if parse_result is not None:
+                items.append(parse_result)
 
-        return items
+        return items if items else None
 
     def _parse_tokens(self, parse, expressions):
         this = parse()

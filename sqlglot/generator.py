@@ -540,8 +540,11 @@ class Generator:
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop
+        expressions = expression.args['expressions']
+        if expressions is None:
+            expressions = []
         if flat:
-            return ', '.join(self.sql(e) for e in expression.args['expressions'])
+            return ', '.join(self.sql(e) for e in expressions)
 
         return self.sep(', ').join(
             self.indent(

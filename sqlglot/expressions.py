@@ -70,14 +70,13 @@ class Expression:
                     for node in nodes:
                         queue.append((node, item, k))
 
-
     def validate(self):
         for k, v in self.args.items():
             if k not in self.arg_types:
                 raise ValueError(f"Unexpected keyword: {k} for {self.token_type}")
 
         for k, v in self.arg_types.items():
-            if v and k not in self.args:
+            if v and self.args.get(k) is None:
                 raise ValueError(f"Required keyword: {k} missing for {self.token_type}")
 
     def __repr__(self):
@@ -171,7 +170,7 @@ class CharacterSet(Expression):
 
 class CTE(Expression):
     token_type = TokenType.WITH
-    arg_types = {'this': True, 'expressions': True, 'recursive': False}
+    arg_types = {'this': False, 'expressions': True, 'recursive': False}
 
 
 class Column(Expression):
@@ -231,7 +230,7 @@ class Limit(Expression):
 
 class Join(Expression):
     token_type = TokenType.JOIN
-    arg_types = {'this': True, 'on': True, 'side': False, 'kind': False}
+    arg_types = {'this': True, 'on': False, 'side': False, 'kind': False}
 
 
 class Lateral(Expression):
@@ -438,7 +437,7 @@ class Neg(Unary):
 # Special Functions
 class Alias(Expression):
     token_type = TokenType.ALIAS
-    arg_types = {'this': True, 'alias': True}
+    arg_types = {'this': True, 'alias': False}
 
 
 class Between(Expression):
@@ -516,7 +515,7 @@ class Func(Expression):
 
 
 class Anonymous(Func):
-    arg_types = {'this': True, 'expressions': True}
+    arg_types = {'this': True, 'expressions': False}
     is_var_len_args = True
 
 

@@ -183,7 +183,7 @@ class TestTranspile(unittest.TestCase):
     def test_partial(self):
         with open(os.path.join(self.fixtures_dir, 'partial.sql'), encoding='utf-8') as f:
             for sql in f:
-                self.assertEqual(transpile(sql, error_level=ErrorLevel.IGNORE)[0], sql.strip())
+                self.assertEqual(len(transpile(sql, error_level=ErrorLevel.IGNORE)), 0)
 
     def test_pretty(self):
         with open(os.path.join(self.fixtures_dir, 'pretty.sql'), encoding='utf-8') as f:

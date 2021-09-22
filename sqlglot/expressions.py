@@ -70,15 +70,14 @@ class Expression:
                     for node in nodes:
                         queue.append((node, item, k))
 
-
     def validate(self):
         for k, v in self.args.items():
             if k not in self.arg_types:
-                raise ValueError(f"Unexpected keyword: {k} for {self.token_type}")
+                raise ValueError(f"Unexpected keyword: '{k}' for {self.token_type}")
 
         for k, v in self.arg_types.items():
-            if v and k not in self.args:
-                raise ValueError(f"Required keyword: {k} missing for {self.token_type}")
+            if v and self.args.get(k) is None:
+                raise ValueError(f"Required keyword: '{k}' missing for {self.token_type}")
 
     def __repr__(self):
         return self.to_s()
@@ -231,7 +230,7 @@ class Limit(Expression):
 
 class Join(Expression):
     token_type = TokenType.JOIN
-    arg_types = {'this': True, 'on': True, 'side': False, 'kind': False}
+    arg_types = {'this': True, 'on': False, 'side': False, 'kind': False}
 
 
 class Lateral(Expression):
@@ -438,7 +437,7 @@ class Neg(Unary):
 # Special Functions
 class Alias(Expression):
     token_type = TokenType.ALIAS
-    arg_types = {'this': True, 'alias': True}
+    arg_types = {'this': True, 'alias': False}
 
 
 class Between(Expression):
@@ -484,10 +483,33 @@ class Interval(Expression):
 # Functions
 class Func(Expression):
     token_type = TokenType.FUNC
+    is_var_len_args = False
+
+    @classmethod
+    def from_arg_list(cls, args):
+        args_num = len(args)
+
+        all_arg_keys = list(cls.arg_types)
+        # If this function supports variable length argument treat the last argument as such.
+        non_var_len_arg_keys = all_arg_keys[:-1] if cls.is_var_len_args else all_arg_keys
+
+        args_dict = {}
+        arg_idx = 0
+        for arg_key in non_var_len_arg_keys:
+            if arg_idx >= args_num:
+                break
+            if args[arg_idx] is not None:
+                args_dict[arg_key] = args[arg_idx]
+            arg_idx += 1
+
+        if arg_idx < args_num and cls.is_var_len_args:
+            args_dict[all_arg_keys[-1]] = args[arg_idx:]
+        return cls(**args_dict)
 
 
 class Anonymous(Func):
-    arg_types = {'this': True, 'expressions': True}
+    arg_types = {'this': True, 'expressions': False}
+    is_var_len_args = True
 
 
 class ApproxDistinct(Func):
@@ -497,6 +519,7 @@ class ApproxDistinct(Func):
 class Array(Func):
     token_type = TokenType.ARRAY
     arg_types = {'expressions': True}
+    is_var_len_args = True
 
 
 class ArrayAgg(Func):
@@ -516,11 +539,11 @@ class Count(Func):
 
 
 class DateAdd(Func):
-    arg_types = {'this': True, 'expression': True}
+    arg_types = {'this': True, 'expression': True, 'unit': False}
 
 
 class DateDiff(Func):
-    arg_types = {'this': True, 'expression': True}
+    arg_types = {'this': True, 'expression': True, 'unit': False}
 
 
 class DateStrToDate(Func):

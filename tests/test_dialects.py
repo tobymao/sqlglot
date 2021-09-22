@@ -105,7 +105,7 @@ class TestDialects(unittest.TestCase):
             write='duckdb',
         )
         self.validate(
-            "UNIX_TO_TIME(x, y)",
+            "UNIX_TO_TIME(x)",
             "TO_TIMESTAMP(CAST(x AS BIGINT))",
             identity=False,
             write='duckdb',
@@ -338,7 +338,7 @@ class TestDialects(unittest.TestCase):
             write='presto',
         )
         self.validate(
-            "SELECT GET_JSON_OBJECT(x, '$.name', '$.name')",
+            "SELECT GET_JSON_OBJECT(x, '$.name')",
             "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
             read='hive',
             write='presto',
@@ -515,7 +515,7 @@ class TestDialects(unittest.TestCase):
 
         with self.assertRaises(UnsupportedError):
             transpile(
-                'WITH RECURSIVE T(N) AS (VALUES (1))',
+                'WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT sum(n) FROM t',
                 read='presto',
                 write='spark',
                 unsupported_level=ErrorLevel.RAISE,

@@ -113,18 +113,18 @@ class DuckDB(Dialect):
     }
 
     functions = {
-        'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
-        'EPOCH': lambda args: exp.TimeToUnix(this=args[0]),
+        'APPROX_COUNT_DISTINCT': exp.ApproxDistinct.from_arg_list,
+        'EPOCH': exp.TimeToUnix.from_arg_list,
         'EPOCH_MS': lambda args: exp.UnixToTime(this=exp.Slash(
-            this=args[0],
+            this=list_get(args, 0),
             expression=Token.number(1000),
         )),
-        'LIST_VALUE': lambda args: exp.Array(expressions=args),
-        'QUANTILE': lambda args: exp.Quantile(this=args[0], quantile=args[1]),
-        'REGEXP_MATCHES': lambda args: exp.RegexLike(this=args[0], expression=args[1]),
-        'STRFTIME': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
-        'STRPTIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
-        'TO_TIMESTAMP': lambda args: exp.TimeStrToTime(this=args[0]),
+        'LIST_VALUE': exp.Array.from_arg_list,
+        'QUANTILE': exp.Quantile.from_arg_list,
+        'REGEXP_MATCHES': exp.RegexLike.from_arg_list,
+        'STRFTIME': exp.TimeToStr.from_arg_list,
+        'STRPTIME': exp.StrToTime.from_arg_list,
+        'TO_TIMESTAMP': exp.TimeStrToTime.from_arg_list
     }
 
 
@@ -206,31 +206,41 @@ class Hive(Dialect):
     }
 
     functions = {
-        'APPROX_COUNT_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0]),
-        'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
-        'DATE_ADD': lambda args: exp.DateAdd(this=exp.DateStrToDate(this=args[0]), expression=args[1]),
+        'APPROX_COUNT_DISTINCT': exp.ApproxDistinct.from_arg_list,
+        'COLLECT_LIST': exp.ArrayAgg.from_arg_list,
+        'DATE_ADD': lambda args: exp.DateAdd(
+            this=exp.DateStrToDate(this=list_get(args, 0)),
+            expression=list_get(args, 1),
+            unit=Token.string('day'),
+        ),
         'DATEDIFF': lambda args: exp.DateDiff(
-            this=exp.DateStrToDate(this=args[0]),
-            expression=exp.DateStrToDate(this=args[1]),
+            this=exp.DateStrToDate(this=list_get(args, 0)),
+            expression=exp.DateStrToDate(this=list_get(args, 1)),
+            unit=Token.string('day')
         ),
         'DATE_SUB': lambda args: exp.DateAdd(
-            this=exp.DateStrToDate(this=args[0]),
-            expression=exp.Star(this=args[1], expression=Token.number(-1)),
+            this=exp.DateStrToDate(this=list_get(args, 0)),
+            expression=exp.Star(this=list_get(args, 1), expression=Token.number(-1)),
+            unit=Token.string('day'),
         ),
-        'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
-        'DAY': lambda args: exp.Day(this=exp.TsOrDsToDate(this=args[0])),
+        'DATE_FORMAT': exp.TimeToStr.from_arg_list,
+        'DAY': lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
         'FROM_UNIXTIME': lambda args: exp.UnixToStr(
-            this=args[0],
+            this=list_get(args, 0),
             format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
-        'GET_JSON_OBJECT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
-        'LOCATE': lambda args: exp.StrPosition(this=args[1], substr=args[0], position=list_get(args, 2)),
-        'MONTH': lambda args: exp.Month(this=exp.TsOrDsToDate(this=args[0])),
-        'PERCENTILE': lambda args: exp.Quantile(this=args[0], quantile=args[1]),
-        'SIZE': lambda args: exp.ArraySize(this=args[0]),
-        'TO_DATE': lambda args: exp.TsOrDsToDateStr(this=args[0]),
+        'GET_JSON_OBJECT': exp.JSONPath.from_arg_list,
+        'LOCATE': lambda args: exp.StrPosition(
+            this=list_get(args, 1),
+            substr=list_get(args, 0),
+            position=list_get(args, 2)
+        ),
+        'MONTH': lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
+        'PERCENTILE': exp.Quantile.from_arg_list,
+        'SIZE': exp.ArraySize.from_arg_list,
+        'TO_DATE': exp.TsOrDsToDateStr.from_arg_list,
         'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
-            this=args[0],
+            this=list_get(args, 0),
             format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
     }
@@ -250,7 +260,7 @@ class Postgres(Dialect):
     }
 
     functions = {
-        'TO_TIMESTAMP': lambda args: exp.StrToTime(this=args[0], format=args[1]),
+        'TO_TIMESTAMP': exp.StrToTime.from_arg_list
     }
 
 
@@ -312,8 +322,8 @@ class Presto(Dialect):
         exp.BitwiseRightShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_RIGHT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Case: _case_if_sql,
-        exp.DateAdd: lambda self, e: f"DATE_ADD('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
-        exp.DateDiff: lambda self, e: f"DATE_DIFF('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'unit')}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+        exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'unit')}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
@@ -339,19 +349,27 @@ class Presto(Dialect):
     }
 
     functions = {
-        'APPROX_DISTINCT': lambda args: exp.ApproxDistinct(this=args[0], accuracy=list_get(args, 1)),
-        'CARDINALITY': lambda args: exp.ArraySize(this=args[0]),
-        'CONTAINS': lambda args: exp.ArrayContains(this=args[0], expression=args[1]),
-        'DATE_ADD': lambda args: exp.DateAdd(this=args[2], expression=args[1]),
-        'DATE_DIFF': lambda args: exp.DateDiff(this=args[2], expression=args[1]),
-        'DATE_FORMAT': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
-        'DATE_PARSE': lambda args: exp.StrToTime(this=args[0], format=args[1]),
-        'FROM_UNIXTIME': lambda args: exp.UnixToTime(this=args[0]),
-        'JSON_EXTRACT': lambda args: exp.JSONPath(this=args[0], path=args[1]),
-        'JSON_EXTRACT_SCALAR': lambda args: exp.JSONPath(this=args[0], path=args[1]),
-        'REGEXP_LIKE': lambda args: exp.RegexLike(this=args[0], expression=args[1]),
-        'STRPOS': lambda args: exp.StrPosition(this=args[0], substr=args[1]),
-        'TO_UNIXTIME': lambda args: exp.TimeToUnix(this=args[0]),
+        'APPROX_DISTINCT': exp.ApproxDistinct.from_arg_list,
+        'CARDINALITY': exp.ArraySize.from_arg_list,
+        'CONTAINS': exp.ArrayContains.from_arg_list,
+        'DATE_ADD': lambda args: exp.DateAdd(
+            this=list_get(args, 2),
+            expression=list_get(args, 1),
+            unit=list_get(args, 0),
+        ),
+        'DATE_DIFF': lambda args: exp.DateDiff(
+            this=list_get(args, 2),
+            expression=list_get(args, 1),
+            unit=list_get(args, 0),
+        ),
+        'DATE_FORMAT': exp.TimeToStr.from_arg_list,
+        'DATE_PARSE': exp.StrToTime.from_arg_list,
+        'FROM_UNIXTIME': exp.UnixToTime.from_arg_list,
+        'JSON_EXTRACT': exp.JSONPath.from_arg_list,
+        'JSON_EXTRACT_SCALAR': exp.JSONPath.from_arg_list,
+        'REGEXP_LIKE': exp.RegexLike.from_arg_list,
+        'STRPOS': exp.StrPosition.from_arg_list,
+        'TO_UNIXTIME': exp.TimeToUnix.from_arg_list
     }
 
 
@@ -380,7 +398,7 @@ class Spark(Hive):
 
     functions = {
         **Hive.functions,
-        'TO_UNIX_TIMESTAMP': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
+        'TO_UNIX_TIMESTAMP': exp.StrToUnix.from_arg_list
     }
 
 

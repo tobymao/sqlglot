@@ -88,7 +88,7 @@ from sqlglot import *
 from sqlglot.expressions import Func
 
 class SpecialUDF(Func):
-    arg_types = {'a': True, 'b': True}
+    ordered_arg_types = [('a', True), ('b', True)]
 
 tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b) FROM x")
 ```
@@ -110,7 +110,7 @@ Here is the output of the tokenizer.
 ```
 ```python
 expression = Parser(functions={
-    'SPECIAL_UDF': lambda args: SpecialUDF(a=args[0], b=args[1]),
+    'SPECIAL_UDF': SpecialUDF.from_arg_list,
 }).parse(tokens)[0]
 ```
 

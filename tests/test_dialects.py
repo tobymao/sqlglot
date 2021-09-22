@@ -105,7 +105,7 @@ class TestDialects(unittest.TestCase):
             write='duckdb',
         )
         self.validate(
-            "UNIX_TO_TIME(x, y)",
+            "UNIX_TO_TIME(x)",
             "TO_TIMESTAMP(CAST(x AS BIGINT))",
             identity=False,
             write='duckdb',

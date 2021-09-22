@@ -73,11 +73,11 @@ class Expression:
     def validate(self):
         for k, v in self.args.items():
             if k not in self.arg_types:
-                raise ValueError(f"Unexpected keyword: {k} for {self.token_type}")
+                raise ValueError(f"Unexpected keyword: '{k}' for {self.token_type}")
 
         for k, v in self.arg_types.items():
             if v and self.args.get(k) is None:
-                raise ValueError(f"Required keyword: {k} missing for {self.token_type}")
+                raise ValueError(f"Required keyword: '{k}' missing for {self.token_type}")
 
     def __repr__(self):
         return self.to_s()
@@ -502,15 +502,8 @@ class Func(Expression):
                 args_dict[arg_key] = args[arg_idx]
             arg_idx += 1
 
-        if arg_idx < args_num:
-            if cls.is_var_len_args:
-                args_dict[all_arg_keys[-1]] = args[arg_idx:]
-            else:
-                max_expected_num = len(cls.arg_types)
-                raise ValueError(
-                    f'The number of provided arguments ({args_num}) is greater than '
-                    f'the maximum number of supported arguments ({max_expected_num})'
-                )
+        if arg_idx < args_num and cls.is_var_len_args:
+            args_dict[all_arg_keys[-1]] = args[arg_idx:]
         return cls(**args_dict)
 
 
@@ -546,11 +539,11 @@ class Count(Func):
 
 
 class DateAdd(Func):
-    arg_types = {'this': True, 'expression': True}
+    arg_types = {'this': True, 'expression': True, 'unit': False}
 
 
 class DateDiff(Func):
-    arg_types = {'this': True, 'expression': True}
+    arg_types = {'this': True, 'expression': True, 'unit': False}
 
 
 class DateStrToDate(Func):

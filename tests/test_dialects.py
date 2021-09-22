@@ -338,7 +338,7 @@ class TestDialects(unittest.TestCase):
             write='presto',
         )
         self.validate(
-            "SELECT GET_JSON_OBJECT(x, '$.name', '$.name')",
+            "SELECT GET_JSON_OBJECT(x, '$.name')",
             "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
             read='hive',
             write='presto',

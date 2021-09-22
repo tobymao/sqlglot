@@ -2,6 +2,7 @@ import unittest
 
 import sqlglot.expressions as exp
 from sqlglot import parse, parse_one
+from sqlglot.errors import ParseError
 
 
 class TestParser(unittest.TestCase):
@@ -32,3 +33,10 @@ class TestParser(unittest.TestCase):
         assert len(expressions) == 2
         assert expressions[0].args['from'].args['expressions'][0].args['this'].text == 'a'
         assert expressions[1].args['from'].args['expressions'][0].args['this'].text == 'b'
+
+    def test_function_arguments_validation(self):
+        with self.assertRaises(ParseError):
+            parse_one("IF(a > 0, a, b, c)")
+
+        with self.assertRaises(ParseError):
+            parse_one("IF(a > 0)")

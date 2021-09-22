@@ -208,35 +208,41 @@ class Hive(Dialect):
     functions = {
         'APPROX_COUNT_DISTINCT': exp.ApproxDistinct.from_arg_list,
         'COLLECT_LIST': exp.ArrayAgg.from_arg_list,
-        'DATE_ADD': lambda args: exp.DateAdd.from_arg_list([exp.DateStrToDate(this=list_get(args, 0)), *args[1:]]),
-        'DATEDIFF': lambda args: exp.DateDiff.from_arg_list([
-            exp.DateStrToDate(this=list_get(args, 0)),
-            exp.DateStrToDate(this=list_get(args, 1)),
-            *args[2:]
-        ]),
-        'DATE_SUB': lambda args: exp.DateAdd.from_arg_list([
-            exp.DateStrToDate(this=list_get(args, 0)),
-            exp.Star(this=list_get(args, 1), expression=Token.number(-1)),
-            *args[2:]
-        ]),
+        'DATE_ADD': lambda args: exp.DateAdd(
+            this=exp.DateStrToDate(this=list_get(args, 0)),
+            expression=list_get(args, 1),
+            unit=Token.string('day'),
+        ),
+        'DATEDIFF': lambda args: exp.DateDiff(
+            this=exp.DateStrToDate(this=list_get(args, 0)),
+            expression=exp.DateStrToDate(this=list_get(args, 1)),
+            unit=Token.string('day')
+        ),
+        'DATE_SUB': lambda args: exp.DateAdd(
+            this=exp.DateStrToDate(this=list_get(args, 0)),
+            expression=exp.Star(this=list_get(args, 1), expression=Token.number(-1)),
+            unit=Token.string('day'),
+        ),
         'DATE_FORMAT': exp.TimeToStr.from_arg_list,
-        'DAY': lambda args: exp.Day.from_arg_list([exp.TsOrDsToDate(this=list_get(args, 0)), *args[1:]]),
-        'FROM_UNIXTIME': lambda args: exp.UnixToStr.from_arg_list([
-            list_get(args, 0),
-            list_get(args, 1) or Hive.TIME_FORMAT,
-            *args[2:]
-        ]),
-        'GET_JSON_OBJECT': lambda args: exp.JSONPath.from_arg_list([list_get(args, 0), list_get(args, 1), *args[3:]]),  # Ignore the 3rd argument
-        'LOCATE': lambda args: exp.StrPosition.from_arg_list([list_get(args, 1), list_get(args, 0), *args[2:]]),
+        'DAY': lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
+        'FROM_UNIXTIME': lambda args: exp.UnixToStr(
+            this=list_get(args, 0),
+            format=list_get(args, 1) or Hive.TIME_FORMAT,
+        ),
+        'GET_JSON_OBJECT': exp.JSONPath.from_arg_list,
+        'LOCATE': lambda args: exp.StrPosition(
+            this=list_get(args, 1),
+            substr=list_get(args, 0),
+            position=list_get(args, 2)
+        ),
         'MONTH': lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
         'PERCENTILE': exp.Quantile.from_arg_list,
         'SIZE': exp.ArraySize.from_arg_list,
         'TO_DATE': exp.TsOrDsToDateStr.from_arg_list,
-        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix.from_arg_list([
-            list_get(args, 0),
-            list_get(args, 1) or Hive.TIME_FORMAT,
-            *args[2:]
-        ]),
+        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
+            this=list_get(args, 0),
+            format=list_get(args, 1) or Hive.TIME_FORMAT,
+        ),
     }
 
 
@@ -316,8 +322,8 @@ class Presto(Dialect):
         exp.BitwiseRightShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_RIGHT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Case: _case_if_sql,
-        exp.DateAdd: lambda self, e: f"DATE_ADD('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
-        exp.DateDiff: lambda self, e: f"DATE_DIFF('day', {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'unit')}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+        exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'unit')}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
@@ -346,8 +352,16 @@ class Presto(Dialect):
         'APPROX_DISTINCT': exp.ApproxDistinct.from_arg_list,
         'CARDINALITY': exp.ArraySize.from_arg_list,
         'CONTAINS': exp.ArrayContains.from_arg_list,
-        'DATE_ADD': lambda args: exp.DateAdd.from_arg_list([list_get(args, 2), list_get(args, 1), *args[3:]]),
-        'DATE_DIFF': lambda args: exp.DateDiff.from_arg_list([list_get(args, 2), list_get(args, 1), *args[3:]]),
+        'DATE_ADD': lambda args: exp.DateAdd(
+            this=list_get(args, 2),
+            expression=list_get(args, 1),
+            unit=list_get(args, 0),
+        ),
+        'DATE_DIFF': lambda args: exp.DateDiff(
+            this=list_get(args, 2),
+            expression=list_get(args, 1),
+            unit=list_get(args, 0),
+        ),
         'DATE_FORMAT': exp.TimeToStr.from_arg_list,
         'DATE_PARSE': exp.StrToTime.from_arg_list,
         'FROM_UNIXTIME': exp.UnixToTime.from_arg_list,

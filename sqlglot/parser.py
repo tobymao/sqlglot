@@ -807,10 +807,12 @@ class Parser:
             elif not callable(function):
                 this = exp.Anonymous(this=this, expressions=args)
             else:
-                try:
-                    this = function(args)
-                except ValueError as e:
-                    self.raise_error(str(e))
+                this = function(args)
+                if len(args) > len(this.arg_types) and not this.is_var_len_args:
+                    self.raise_error(
+                        f'The number of provided arguments ({len(args)}) is greater than '
+                        f'the maximum number of supported arguments ({len(this.arg_types)})'
+                    )
 
         if not self._match(TokenType.R_PAREN):
             self.raise_error('Expected )')

@@ -218,7 +218,7 @@ class Parser:
         highlight = self.code[start:end]
         end_context = self.code[end:end + self.error_message_context]
         self.error = ParseError(
-            f"{message}. Line {token.line}, Col: {token.col}.\n"
+            f"{message}. Line {token.line + 1}, Col: {token.col + 1}.\n"
             f"{start_context}\033[4m{highlight}\033[0m{end_context}"
         )
         if self.error_level == ErrorLevel.RAISE:

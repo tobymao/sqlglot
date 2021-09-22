@@ -506,8 +506,6 @@ class Func(Expression):
 
         if arg_idx < args_num:
             if cls.is_var_len_args:
-                print(cls.ordered_arg_types[-1][0])
-                print(args[arg_idx:])
                 args_dict[cls.ordered_arg_types[-1][0]] = args[arg_idx:]
             else:
                 max_expected_num = len(cls.ordered_arg_types)

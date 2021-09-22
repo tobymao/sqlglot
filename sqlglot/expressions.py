@@ -484,19 +484,53 @@ class Interval(Expression):
 # Functions
 class Func(Expression):
     token_type = TokenType.FUNC
+    ordered_arg_types = [('this', True)]
+    is_var_len_args = False
+
+    def __init__(self, **args):
+        self.arg_types = dict(self.ordered_arg_types)
+        super().__init__(**args)
+
+    @classmethod
+    def from_arg_list(cls, args):
+        args_num = len(args)
+
+        # If this function supporst variable length argument treat the last argument as such.
+        arg_types = cls.ordered_arg_types[:-1] if cls.is_var_len_args else cls.ordered_arg_types
+
+        args_dict = {}
+        arg_idx = 0
+        for arg_key, _ in arg_types:
+            args_dict[arg_key] = args[arg_idx] if arg_idx < args_num else None
+            arg_idx += 1
+
+        if arg_idx < args_num:
+            if cls.is_var_len_args:
+                print(cls.ordered_arg_types[-1][0])
+                print(args[arg_idx:])
+                args_dict[cls.ordered_arg_types[-1][0]] = args[arg_idx:]
+            else:
+                max_expected_num = len(cls.ordered_arg_types)
+                raise ValueError(
+                    f'The number of provided arguments ({args_num}) is greater than '
+                    f'the maximum number of supported arguments ({max_expected_num})'
+                )
+        return cls(**args_dict)
 
 
 class Anonymous(Func):
-    arg_types = {'this': True, 'expressions': True}
+    ordered_arg_types = [('this', True), ('expressions', True)]
+    is_var_len_args = True
 
 
 class ApproxDistinct(Func):
-    arg_types = {'this': True, 'accuracy': False}
+    ordered_arg_types = [('this', True), ('accuracy', False)]
 
 
 class Array(Func):
     token_type = TokenType.ARRAY
-    arg_types = {'expressions': True}
+    ordered_arg_types = [('expressions', True)]
+    is_var_len_args = True
 
 
 class ArrayAgg(Func):
@@ -504,7 +538,7 @@ class ArrayAgg(Func):
 
 
 class ArrayContains(Func):
-    arg_types = {'this': True, 'expression': True}
+    ordered_arg_types = [('this', True), ('expression', True)]
 
 
 class ArraySize(Func):
@@ -512,15 +546,15 @@ class ArraySize(Func):
 
 
 class Count(Func):
-    arg_types = {'this': False, 'distinct': False}
+    ordered_arg_types = [('this', False), ('distinct', False)]
 
 
 class DateAdd(Func):
-    arg_types = {'this': True, 'expression': True}
+    ordered_arg_types = [('this', True), ('expression', True)]
 
 
 class DateDiff(Func):
-    arg_types = {'this': True, 'expression': True}
+    ordered_arg_types = [('this', True), ('expression', True)]
 
 
 class DateStrToDate(Func):
@@ -532,7 +566,7 @@ class Day(Func):
 
 
 class If(Func):
-    arg_types = {'this': True, 'true': True, 'false': False}
+    ordered_arg_types = [('this', True), ('true', True), ('false', False)]
 
 
 class Initcap(Func):
@@ -540,12 +574,12 @@ class Initcap(Func):
 
 
 class JSONPath(Func):
-    arg_types = {'this': True, 'path': True}
+    ordered_arg_types = [('this', True), ('path', True)]
 
 
 class Map(Func):
     token_type = TokenType.MAP
-    arg_types = {'keys': True, 'values': True}
+    ordered_arg_types = [('keys', True), ('values', True)]
 
 
 class Month(Func):
@@ -553,32 +587,32 @@ class Month(Func):
 
 
 class Quantile(Func):
-    arg_types = {'this': True, 'quantile': True}
+    ordered_arg_types = [('this', True), ('quantile', True)]
 
 
 class RegexLike(Func):
     token_type = TokenType.RLIKE
-    arg_types = {'this': True, 'expression': True}
+    ordered_arg_types = [('this', True), ('expression', True)]
 
 
 class StrPosition(Func):
-    arg_types = {'this': True, 'substr': True, 'position': False}
+    ordered_arg_types = [('this', True), ('substr', True), ('position', False)]
 
 
 class StrToTime(Func):
-    arg_types = {'this': True, 'format': True}
+    ordered_arg_types = [('this', True), ('format', True)]
 
 
 class StrToUnix(Func):
-    arg_types = {'this': True, 'format': True}
+    ordered_arg_types = [('this', True), ('format', True)]
 
 
 class StructExtract(Func):
-    arg_types = {'this': True, 'expression': True}
+    ordered_arg_types = [('this', True), ('expression', True)]
 
 
 class TimeToStr(Func):
-    arg_types = {'this': True, 'format': True}
+    ordered_arg_types = [('this', True), ('format', True)]
 
 
 class TimeToTimeStr(Func):
@@ -610,7 +644,7 @@ class TsOrDsToDate(Func):
 
 
 class UnixToStr(Func):
-    arg_types = {'this': True, 'format': True}
+    ordered_arg_types = [('this', True), ('format', True)]
 
 
 class UnixToTime(Func):

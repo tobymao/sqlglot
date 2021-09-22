@@ -110,7 +110,7 @@ Here is the output of the tokenizer.
 ```
 ```python
 expression = Parser(functions={
-    'SPECIAL_UDF': lambda args: SpecialUDF(a=args[0], b=args[1]),
+    'SPECIAL_UDF': SpecialUDF.from_arg_list,
 }).parse(tokens)[0]
 ```
 

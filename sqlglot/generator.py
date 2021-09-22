@@ -412,7 +412,7 @@ class Generator:
         return f"EXTRACT({this} FROM {expression_sql})"
 
     def if_sql(self, expression):
-        return self.case_sql(exp.Case(ifs=[expression], default=expression.args['false']))
+        return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get('false')))
 
     def in_sql(self, expression):
         in_sql = (
@@ -540,8 +540,9 @@ class Generator:
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop
+        expressions = expression.args['expressions'] or []
         if flat:
-            return ', '.join(self.sql(e) for e in expression.args['expressions'])
+            return ', '.join(self.sql(e) for e in expressions)
 
         return self.sep(', ').join(
             self.indent(

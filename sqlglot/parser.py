@@ -20,35 +20,35 @@ class Parser:
     FUNCTIONS = {
         'DECIMAL': _parse_decimal,
         'NUMERIC': _parse_decimal,
-        'ARRAY': lambda args: exp.Array(expressions=args),
-        'COLLECT_LIST': lambda args: exp.ArrayAgg(this=args[0]),
-        'ARRAY_AGG': lambda args: exp.ArrayAgg(this=args[0]),
-        'ARRAY_CONTAINS': lambda args: exp.ArrayContains(this=args[0], expression=args[1]),
-        'ARRAY_SIZE': lambda args: exp.ArraySize(this=args[0]),
-        'DATE_ADD': lambda args: exp.DateAdd(this=args[0], expression=args[1]),
-        'DATE_DIFF': lambda args: exp.DateDiff(this=args[0], expression=args[1]),
-        'DATE_STR_TO_DATE': lambda args: exp.DateStrToDate(this=args[0]),
-        'DAY': lambda args: exp.Day(this=args[0]),
-        'IF': lambda args: exp.If(this=args[0], true=args[1], false=list_get(args, 2)),
-        'INITCAP': lambda args: exp.Initcap(this=args[0]),
-        'JSON_PATH': lambda args: exp.JSONPath(this=args[0], path=args[1]),
-        'MONTH': lambda args: exp.Month(this=args[0]),
-        'QUANTILE': lambda args: exp.Quantile(this=args[0], quantile=args[1]),
-        'STR_POSITION': lambda args: exp.StrPosition(this=args[0], substr=args[1], position=list_get(args, 2)),
-        'STR_TO_TIME': lambda args: exp.StrToTime(this=args[0], format=args[1]),
-        'STR_TO_UNIX': lambda args: exp.StrToUnix(this=args[0], format=args[1]),
-        'STRUCT_EXTRACT': lambda args: exp.StructExtract(this=args[0], expression=args[1]),
-        'TIME_STR_TO_DATE': lambda args: exp.TimeStrToDate(this=args[0]),
-        'TIME_STR_TO_TIME': lambda args: exp.TimeStrToTime(this=args[0]),
-        'TIME_STR_TO_UNIX': lambda args: exp.TimeStrToUnix(this=args[0]),
-        'TIME_TO_STR': lambda args: exp.TimeToStr(this=args[0], format=args[1]),
-        'TIME_TO_TIME_STR': lambda args: exp.TimeToTimeStr(this=args[0]),
-        'TIME_TO_UNIX': lambda args: exp.TimeToUnix(this=args[0]),
-        'TS_OR_DS_TO_DATE_STR': lambda args: exp.TsOrDsToDateStr(this=args[0]),
-        'TS_OR_DS_TO_DATE': lambda args: exp.TsOrDsToDate(this=args[0]),
-        'UNIX_TO_STR': lambda args: exp.UnixToStr(this=args[0], format=args[1]),
-        'UNIX_TO_TIME': lambda args: exp.UnixToTime(this=args[0]),
-        'UNIX_TO_TIME_STR': lambda args: exp.UnixToTimeStr(this=args[0]),
+        'ARRAY': exp.Array.from_arg_list,
+        'COLLECT_LIST': exp.ArrayAgg.from_arg_list,
+        'ARRAY_AGG': exp.ArrayAgg.from_arg_list,
+        'ARRAY_CONTAINS': exp.ArrayContains.from_arg_list,
+        'ARRAY_SIZE': exp.ArraySize.from_arg_list,
+        'DATE_ADD': exp.DateAdd.from_arg_list,
+        'DATE_DIFF': exp.DateDiff.from_arg_list,
+        'DATE_STR_TO_DATE': exp.DateStrToDate.from_arg_list,
+        'DAY': exp.Day.from_arg_list,
+        'IF': exp.If.from_arg_list,
+        'INITCAP': exp.Initcap.from_arg_list,
+        'JSON_PATH': exp.JSONPath.from_arg_list,
+        'MONTH': exp.Month.from_arg_list,
+        'QUANTILE': exp.Quantile.from_arg_list,
+        'STR_POSITION': exp.StrPosition.from_arg_list,
+        'STR_TO_TIME': exp.StrToTime.from_arg_list,
+        'STR_TO_UNIX': exp.StrToUnix.from_arg_list,
+        'STRUCT_EXTRACT': exp.StructExtract.from_arg_list,
+        'TIME_STR_TO_DATE': exp.TimeStrToDate.from_arg_list,
+        'TIME_STR_TO_TIME': exp.TimeStrToTime.from_arg_list,
+        'TIME_STR_TO_UNIX': exp.TimeStrToUnix.from_arg_list,
+        'TIME_TO_STR': exp.TimeToStr.from_arg_list,
+        'TIME_TO_TIME_STR': exp.TimeToTimeStr.from_arg_list,
+        'TIME_TO_UNIX': exp.TimeToUnix.from_arg_list,
+        'TS_OR_DS_TO_DATE_STR': exp.TsOrDsToDateStr.from_arg_list,
+        'TS_OR_DS_TO_DATE': exp.TsOrDsToDate.from_arg_list,
+        'UNIX_TO_STR': exp.UnixToStr.from_arg_list,
+        'UNIX_TO_TIME': exp.UnixToTime.from_arg_list,
+        'UNIX_TO_TIME_STR': exp.UnixToTimeStr.from_arg_list
     }
 
     TYPE_TOKENS = {
@@ -190,7 +190,12 @@ class Parser:
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(self._parse_statement())
+            try:
+                expressions.append(self._parse_statement())
+            except ParseError:
+                raise
+            except ValueError as e:
+                self.raise_error(str(e))
 
             if self._index < len(self._tokens):
                 self.raise_error('Invalid expression / Unexpected token')
@@ -803,6 +808,11 @@ class Parser:
                 this = exp.Anonymous(this=this, expressions=args)
             else:
                 this = function(args)
+                if len(args) > len(this.arg_types) and not this.is_var_len_args:
+                    self.raise_error(
+                        f'The number of provided arguments ({len(args)}) is greater than '
+                        f'the maximum number of supported arguments ({len(this.arg_types)})'
+                    )
 
         if not self._match(TokenType.R_PAREN):
             self.raise_error('Expected )')
@@ -935,12 +945,15 @@ class Parser:
         return self._match(*self.ID_VAR_TOKENS)
 
     def _parse_csv(self, parse):
-        items = [parse()]
+        parse_result = parse()
+        items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            items.append(parse())
+            parse_result = parse()
+            if parse_result is not None:
+                items.append(parse_result)
 
-        return items
+        return items if items else None
 
     def _parse_tokens(self, parse, expressions):
         this = parse()

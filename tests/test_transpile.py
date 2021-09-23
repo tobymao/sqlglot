@@ -2,8 +2,7 @@
 import os
 import unittest
 
-from sqlglot import TokenType, transpile
-from sqlglot.errors import ErrorLevel, ParseError
+from sqlglot import ErrorLevel, ParseError, TokenType, transpile
 
 
 class TestTranspile(unittest.TestCase):
@@ -180,7 +179,6 @@ class TestTranspile(unittest.TestCase):
             for sql in f:
                 self.assertEqual(transpile(sql)[0], sql.strip())
 
-    @unittest.skip('Partial expressions are temporary not supported')
     def test_partial(self):
         with open(os.path.join(self.fixtures_dir, 'partial.sql'), encoding='utf-8') as f:
             for sql in f:

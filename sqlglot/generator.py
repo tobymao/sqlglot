@@ -2,7 +2,7 @@ import logging
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
-from sqlglot.helper import csv
+from sqlglot.helper import ensure_list, csv
 from sqlglot.tokens import Token, TokenType, Tokenizer
 
 
@@ -547,10 +547,8 @@ class Generator:
 
     def function_fallback_sql(self, expression):
         args = []
-        for arg_key in expression.arg_types.keys():
-            arg_value = expression.args.get(arg_key) or []
-            if not isinstance(arg_value, list):
-                arg_value = [arg_value]
+        for arg_key in expression.arg_types:
+            arg_value = ensure_list(expression.args.get(arg_key) or [])
             for a in arg_value:
                 args.append(self.sql(a))
 

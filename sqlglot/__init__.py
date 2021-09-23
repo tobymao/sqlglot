@@ -1,4 +1,5 @@
 from sqlglot.dialects import Dialect
+from sqlglot.errors import ErrorLevel, UnsupportedError, ParseError, TokenError
 from sqlglot.expressions import Expression
 from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType

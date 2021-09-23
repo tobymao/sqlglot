@@ -1,8 +1,8 @@
 # pylint: disable=too-many-statements
 import unittest
 
-from sqlglot import transpile
-from sqlglot.errors import ErrorLevel, UnsupportedError
+from sqlglot import ErrorLevel, UnsupportedError, transpile
+
 
 class TestDialects(unittest.TestCase):
     def validate(self, sql, target, **kwargs):

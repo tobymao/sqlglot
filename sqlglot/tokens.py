@@ -168,6 +168,10 @@ class Token:
     def string(cls, string):
         return cls(TokenType.STRING, string)
 
+    @classmethod
+    def identifier(cls, identifier):
+        return cls(TokenType.IDENTIFIER, identifier)
+
     def __init__(self, token_type, text, line=1, col=1):
         self.token_type = token_type
         self.text = text

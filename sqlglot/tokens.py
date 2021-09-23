@@ -168,7 +168,7 @@ class Token:
     def string(cls, string):
         return cls(TokenType.STRING, string)
 
-    def __init__(self, token_type, text, line=0, col=0):
+    def __init__(self, token_type, text, line=1, col=1):
         self.token_type = token_type
         self.text = text
         self.line = line
@@ -371,8 +371,8 @@ class Tokenizer:
         self.tokens = []
         self._start = 0
         self._current = 0
-        self._line = 0
-        self._col = 0
+        self._line = 1
+        self._col = 1
 
         self._char = None
         self._end = None
@@ -418,7 +418,7 @@ class Tokenizer:
             elif self._char in self.WHITE_SPACE:
                 white_space = self.WHITE_SPACE[self._char]
                 if white_space == TokenType.BREAK:
-                    self._col = 0
+                    self._col = 1
                     self._line += 1
             elif self._char.isdigit():
                 self._scan_number()

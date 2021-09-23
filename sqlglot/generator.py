@@ -2,7 +2,7 @@ import logging
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
-from sqlglot.helper import csv
+from sqlglot.helper import camel_to_snake_case, csv
 from sqlglot.tokens import Token, TokenType, Tokenizer
 
 
@@ -151,7 +151,14 @@ class Generator:
                 return f"{self.quote}{text}{self.quote}"
             return text
 
-        return getattr(self, f"{expression.key}_sql")(expression)
+        exp_handler_name = f"{expression.key}_sql"
+        if hasattr(self, exp_handler_name):
+            return getattr(self, exp_handler_name)(expression)
+
+        if isinstance(expression, exp.Func):
+            return self.function_fallback_sql(expression)
+
+        raise ValueError(f'Unsupported expression type {expression.__class__.__name__}')
 
     def characterset_sql(self, expression):
         default = 'DEFAULT ' if expression.args.get('default') else ''
@@ -537,6 +544,20 @@ class Generator:
     def binary(self, expression, op, newline=False):
         sep = '\n' if newline else ' '
         return f"{self.sql(expression, 'this')}{sep}{op} {self.sql(expression, 'expression')}"
+
+    def function_fallback_sql(self, expression):
+        func_name = camel_to_snake_case(expression.__class__.__name__)
+
+        args = []
+        for arg_key in expression.arg_types.keys():
+            arg_value = expression.args.get(arg_key) or []
+            if not isinstance(arg_value, list):
+                arg_value = [arg_value]
+            for a in arg_value:
+                args.append(self.sql(a))
+
+        args_str = ', '.join(args)
+        return f'{func_name}({args_str})'
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop

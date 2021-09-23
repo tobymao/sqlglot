@@ -1,6 +1,7 @@
 from copy import deepcopy
 import weakref
 
+from sqlglot.helper import camel_to_snake_case
 from sqlglot.tokens import TokenType
 
 
@@ -495,6 +496,11 @@ class Func(Expression):
         if arg_idx < args_num and cls.is_var_len_args:
             args_dict[all_arg_keys[-1]] = args[arg_idx:]
         return cls(**args_dict)
+
+    @classmethod
+    def default_parser_mappings(cls):
+        func_name = camel_to_snake_case(cls.__name__)
+        return {func_name: cls.from_arg_list}
 
 
 class Anonymous(Func):

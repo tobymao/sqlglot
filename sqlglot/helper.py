@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 
 
@@ -30,3 +31,8 @@ def list_get(arr, index):
 
 def csv(*args, sep=', '):
     return sep.join(arg for arg in args if arg)
+
+
+def camel_to_snake_case(name):
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).upper()

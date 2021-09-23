@@ -243,6 +243,12 @@ class TestDialects(unittest.TestCase):
             write='hive',
         )
         self.validate(
+            "DATE_DIFF(a, b)",
+            "DATE_DIFF('day', b, a)",
+            write='presto',
+            identity=False,
+        )
+        self.validate(
             "TS_OR_DS_TO_DATE(x)",
             "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
             write='presto',

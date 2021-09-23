@@ -227,14 +227,14 @@ class Parser:
             logging.error(self.error)
 
     def _find_token(self, token, code):
-        line = 0
-        col = 0
+        line = 1
+        col = 1
         index = 0
 
         while line < token.line or col < token.col:
             if code[index] == '\n':
                 line += 1
-                col = 0
+                col = 1
             else:
                 col += 1
             index += 1

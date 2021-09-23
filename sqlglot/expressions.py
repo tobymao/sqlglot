@@ -85,7 +85,7 @@ class Expression:
         args = {
             k: ', '.join(
                 v.to_s(level + 1) if hasattr(v, 'to_s') else str(v)
-                for v in (ensure_list(vs))
+                for v in ensure_list(vs)
                 if v
             )
             for k, vs in self.args.items()

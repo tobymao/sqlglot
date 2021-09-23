@@ -227,18 +227,19 @@ class Parser:
 
     def expression(self, exp_class, **kwargs):
         instance = exp_class(**kwargs)
-        self.validate(instance)
+        self.validate_expression(instance)
         return instance
 
-    def validate(self, expression):
+    def validate_expression(self, expression):
         if self.error_level == ErrorLevel.IGNORE:
             return
 
         for k in expression.args:
             if k not in expression.arg_types:
                 self.raise_error(f"Unexpected keyword: '{k}' for {expression.token_type}")
-        for k, v in expression.arg_types.items():
-            if v and expression.args.get(k) is None:
+        for k, mandatory in expression.arg_types.items():
+            v = expression.args.get(k)
+            if mandatory and (v is None or v == []):
                 self.raise_error(f"Required keyword: '{k}' missing for {expression.token_type}")
 
     def _find_token(self, token, code):
@@ -832,7 +833,7 @@ class Parser:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
             else:
                 this = function(args)
-                self.validate(this)
+                self.validate_expression(this)
                 if len(args) > len(this.arg_types) and not this.is_var_len_args:
                     self.raise_error(
                         f'The number of provided arguments ({len(args)}) is greater than '
@@ -987,7 +988,7 @@ class Parser:
         this = parse()
 
         while self._match(*expressions):
-            this = expressions[self._prev.token_type](this=this, expression=parse())
+            this = self.expression(expressions[self._prev.token_type], this=this, expression=parse())
 
         return this
 

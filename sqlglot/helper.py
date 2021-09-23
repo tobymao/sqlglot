@@ -33,6 +33,8 @@ def csv(*args, sep=', '):
     return sep.join(arg for arg in args if arg)
 
 
+CAMEL_CASE_PATTERN = re.compile('(?<!^)(?=[A-Z])')
+
+
 def camel_to_snake_case(name):
-    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).upper()
+    return CAMEL_CASE_PATTERN.sub('_', name).upper()

@@ -44,15 +44,6 @@ class TestExpressions(unittest.TestCase):
         assert parse_one('x + y * 2').sql() == 'x + y * 2'
         assert parse_one('select "x"').sql(dialect='hive', pretty=True) == 'SELECT\n  `x`'
 
-    def test_validate(self):
-        exp.Hint(this='')
-
-        with self.assertRaises(ValueError):
-            exp.Hint(y='')
-
-        with self.assertRaises(ValueError):
-            exp.Hint()
-
     def test_transform_simple(self):
         expression = parse_one('IF(a > 0, a, b)')
 

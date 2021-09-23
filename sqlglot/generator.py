@@ -549,7 +549,7 @@ class Generator:
                 f"{'  ' if self.pretty else ''}{self.no_format(lambda: self.sql(e))}",
                 pad=pad,
             )
-            for e in expression.args['expressions']
+            for e in expression.args['expressions'] or []
         )
 
     def op_expressions(self, op, expression, flat=False):

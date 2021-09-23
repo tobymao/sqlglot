@@ -1,8 +1,8 @@
 import unittest
+from unittest import mock
 
 import sqlglot.expressions as exp
-from sqlglot import parse, parse_one
-from sqlglot.errors import ParseError
+from sqlglot import ErrorLevel, Parser, ParseError, parse, parse_one
 
 
 class TestParser(unittest.TestCase):
@@ -33,6 +33,32 @@ class TestParser(unittest.TestCase):
         assert len(expressions) == 2
         assert expressions[0].args['from'].args['expressions'][0].args['this'].text == 'a'
         assert expressions[1].args['from'].args['expressions'][0].args['this'].text == 'b'
+
+    @mock.patch('sqlglot.parser.logging')
+    def test_expression(self, logging):
+        ignore = Parser(error_level=ErrorLevel.IGNORE)
+        self.assertIsInstance(ignore.expression(exp.Hint, this=''), exp.Hint)
+        self.assertIsInstance(ignore.expression(exp.Hint, y=''), exp.Hint)
+        self.assertIsInstance(ignore.expression(exp.Hint), exp.Hint)
+
+        default = Parser()
+        self.assertIsInstance(default.expression(exp.Hint, this=''), exp.Hint)
+        with self.assertRaises(ParseError):
+            default.expression(exp.Hint, y='')
+        with self.assertRaises(ParseError):
+            default.expression(exp.Hint)
+
+        warn = Parser(error_level=ErrorLevel.WARN)
+        warn.expression(exp.Hint, y='')
+        assert(
+            "Unexpected keyword: 'y' for TokenType.HINT. Line 1, Col: 1."
+            in str(logging.error.call_args_list[0][0][0])
+        )
+        warn.expression(exp.Hint)
+        assert(
+            "Required keyword: 'this' missing for TokenType.HINT. Line 1, Col: 1."
+            in str(logging.error.call_args_list[1][0][0])
+        )
 
     def test_function_arguments_validation(self):
         with self.assertRaises(ParseError):

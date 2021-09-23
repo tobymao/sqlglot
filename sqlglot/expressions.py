@@ -11,7 +11,6 @@ class Expression:
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
         self.args = args
-        self.validate()
         self._parent = None
         self.arg_key = None
 
@@ -69,15 +68,6 @@ class Expression:
 
                     for node in nodes:
                         queue.append((node, item, k))
-
-    def validate(self):
-        for k, v in self.args.items():
-            if k not in self.arg_types:
-                raise ValueError(f"Unexpected keyword: '{k}' for {self.token_type}")
-
-        for k, v in self.arg_types.items():
-            if v and self.args.get(k) is None:
-                raise ValueError(f"Required keyword: '{k}' missing for {self.token_type}")
 
     def __repr__(self):
         return self.to_s()

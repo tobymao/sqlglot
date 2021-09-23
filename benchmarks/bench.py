@@ -55,7 +55,7 @@ crazy += ' AS b FROM x'
 
 
 def sqlglot_parse(sql):
-    sqlglot.parse(sql)
+    sqlglot.parse(sql, error_level=sqlglot.ErrorLevel.IGNORE)
 
 
 def sqlparse_parse(sql):

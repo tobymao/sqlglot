@@ -211,17 +211,14 @@ class Hive(Dialect):
         'DATE_ADD': lambda args: exp.DateAdd(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=list_get(args, 1),
-            unit=Token.string('day'),
         ),
         'DATEDIFF': lambda args: exp.DateDiff(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=exp.DateStrToDate(this=list_get(args, 1)),
-            unit=Token.string('day')
         ),
         'DATE_SUB': lambda args: exp.DateAdd(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=exp.Star(this=list_get(args, 1), expression=Token.number(-1)),
-            unit=Token.string('day'),
         ),
         'DATE_FORMAT': exp.TimeToStr.from_arg_list,
         'DAY': lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
@@ -322,8 +319,8 @@ class Presto(Dialect):
         exp.BitwiseRightShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_RIGHT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Case: _case_if_sql,
-        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'unit')}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
-        exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'unit')}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})",
+        exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
+        exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,

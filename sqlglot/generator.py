@@ -2,7 +2,7 @@ import logging
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
-from sqlglot.helper import camel_to_snake_case, csv
+from sqlglot.helper import csv
 from sqlglot.tokens import Token, TokenType, Tokenizer
 
 
@@ -546,8 +546,6 @@ class Generator:
         return f"{self.sql(expression, 'this')}{sep}{op} {self.sql(expression, 'expression')}"
 
     def function_fallback_sql(self, expression):
-        func_name = camel_to_snake_case(expression.__class__.__name__)
-
         args = []
         for arg_key in expression.arg_types.keys():
             arg_value = expression.args.get(arg_key) or []
@@ -557,7 +555,7 @@ class Generator:
                 args.append(self.sql(a))
 
         args_str = ', '.join(args)
-        return f'{func_name}({args_str})'
+        return f'{expression.sql_name()}({args_str})'
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop

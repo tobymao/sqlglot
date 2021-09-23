@@ -498,9 +498,14 @@ class Func(Expression):
         return cls(**args_dict)
 
     @classmethod
+    def sql_name(cls):
+        if not hasattr(cls, '_sql_name'):
+            cls._sql_name = camel_to_snake_case(cls.__name__)
+        return cls._sql_name
+
+    @classmethod
     def default_parser_mappings(cls):
-        func_name = camel_to_snake_case(cls.__name__)
-        return {func_name: cls.from_arg_list}
+        return {cls.sql_name: cls.from_arg_list}
 
 
 class Anonymous(Func):

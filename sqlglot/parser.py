@@ -982,7 +982,7 @@ class Parser:
             if parse_result is not None:
                 items.append(parse_result)
 
-        return items if items else None
+        return items
 
     def _parse_tokens(self, parse, expressions):
         this = parse()

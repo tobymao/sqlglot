@@ -42,6 +42,8 @@ a[0][0].b.c[1].d.e.f[1][1]
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1
+ARRAY()
+ARRAY(1, 2)
 ARRAY_CONTAINS(x, 1)
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)

@@ -8,7 +8,7 @@ from sqlglot import ErrorLevel, ParseError, TokenType, transpile
 class TestTranspile(unittest.TestCase):
     file_dir = os.path.dirname(__file__)
     fixtures_dir = os.path.join(file_dir, 'fixtures')
-    maxDiff=None
+    maxDiff = None
 
     def validate(self, sql, target, write=None):
         self.assertEqual(transpile(sql, write=write)[0], target)

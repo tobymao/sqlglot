@@ -2,7 +2,7 @@ import logging
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
-from sqlglot.helper import csv
+from sqlglot.helper import ensure_list, csv
 from sqlglot.tokens import Token, TokenType, Tokenizer
 
 
@@ -32,33 +32,8 @@ class Generator:
         TokenType.TEXT: 'TEXT',
         TokenType.BINARY: 'BINARY',
         TokenType.JSON: 'JSON',
-        exp.Array: lambda self, e: f"ARRAY({self.expressions(e, flat=True)})",
-        exp.ArrayAgg: lambda self, e: f"ARRAY_AGG({self.sql(e, 'this')})",
-        exp.ArrayContains: lambda self, e: f"ARRAY_CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.ArraySize: lambda self, e: f"ARRAY_SIZE({self.sql(e, 'this')})",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.DateStrToDate: lambda self, e: f"DATE_STR_TO_DATE({self.sql(e, 'this')})",
-        exp.Day: lambda self, e: f"DAY({self.sql(e, 'this')})",
-        exp.Initcap: lambda self, e: f"INITCAP({self.sql(e, 'this')})",
-        exp.JSONPath: lambda self, e: f"JSON_PATH({self.sql(e, 'this')}, {self.sql(e, 'path')})",
-        exp.Month: lambda self, e: f"MONTH({self.sql(e, 'this')})",
-        exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
-        exp.StrPosition: lambda self, e: f"STR_POSITION({csv(self.sql(e, 'this'), self.sql(e, 'substr'), self.sql(e, 'position'))})",
-        exp.StrToTime: lambda self, e: f"STR_TO_TIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.StrToUnix: lambda self, e: f"STR_TO_UNIX({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.StructExtract: lambda self, e: f"STRUCT_EXTRACT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.TimeStrToDate: lambda self, e: f"TIME_STR_TO_DATE({self.sql(e, 'this')})",
-        exp.TimeStrToTime: lambda self, e: f"TIME_STR_TO_TIME({self.sql(e, 'this')})",
-        exp.TimeStrToUnix: lambda self, e: f"TIME_STR_TO_UNIX({self.sql(e, 'this')})",
-        exp.TimeToStr: lambda self, e: f"TIME_TO_STR({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.TimeToTimeStr: lambda self, e: f"TIME_TO_TIME_STR({self.sql(e, 'this')})",
-        exp.TimeToUnix: lambda self, e: f"TIME_TO_UNIX({self.sql(e, 'this')})",
-        exp.TsOrDsToDateStr: lambda self, e: f"TS_OR_DS_TO_DATE_STR({self.sql(e, 'this')})",
-        exp.TsOrDsToDate: lambda self, e: f"TS_OR_DS_TO_DATE({self.sql(e, 'this')})",
-        exp.UnixToStr: lambda self, e: f"UNIX_TO_STR({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.UnixToTime: lambda self, e: f"UNIX_TO_TIME({self.sql(e, 'this')})",
-        exp.UnixToTimeStr: lambda self, e: f"UNIX_TO_TIME_STR({self.sql(e, 'this')})",
     }
 
     def __init__(self, **opts):
@@ -151,7 +126,14 @@ class Generator:
                 return f"{self.quote}{text}{self.quote}"
             return text
 
-        return getattr(self, f"{expression.key}_sql")(expression)
+        exp_handler_name = f"{expression.key}_sql"
+        if hasattr(self, exp_handler_name):
+            return getattr(self, exp_handler_name)(expression)
+
+        if isinstance(expression, exp.Func):
+            return self.function_fallback_sql(expression)
+
+        raise ValueError(f'Unsupported expression type {expression.__class__.__name__}')
 
     def characterset_sql(self, expression):
         default = 'DEFAULT ' if expression.args.get('default') else ''
@@ -537,6 +519,16 @@ class Generator:
     def binary(self, expression, op, newline=False):
         sep = '\n' if newline else ' '
         return f"{self.sql(expression, 'this')}{sep}{op} {self.sql(expression, 'expression')}"
+
+    def function_fallback_sql(self, expression):
+        args = []
+        for arg_key in expression.arg_types:
+            arg_value = ensure_list(expression.args.get(arg_key) or [])
+            for a in arg_value:
+                args.append(self.sql(a))
+
+        args_str = ', '.join(args)
+        return f'{expression.sql_name()}({args_str})'
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop

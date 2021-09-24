@@ -1,6 +1,7 @@
 from copy import deepcopy
 import weakref
 
+from sqlglot.helper import camel_to_snake_case, ensure_list
 from sqlglot.tokens import TokenType
 
 
@@ -46,7 +47,7 @@ class Expression:
         yield self, parent, key
 
         for k, v in self.args.items():
-            nodes = v if isinstance(v, list) else [v]
+            nodes = ensure_list(v)
 
             for node in nodes:
                 if isinstance(node, Expression):
@@ -64,7 +65,7 @@ class Expression:
 
             if isinstance(item, Expression):
                 for k, v in item.args.items():
-                    nodes = v if isinstance(v, list) else [v]
+                    nodes = ensure_list(v)
 
                     for node in nodes:
                         queue.append((node, item, k))
@@ -84,7 +85,7 @@ class Expression:
         args = {
             k: ', '.join(
                 v.to_s(level + 1) if hasattr(v, 'to_s') else str(v)
-                for v in (vs if isinstance(vs, list) else [vs])
+                for v in ensure_list(vs)
                 if v
             )
             for k, vs in self.args.items()
@@ -496,6 +497,16 @@ class Func(Expression):
             args_dict[all_arg_keys[-1]] = args[arg_idx:]
         return cls(**args_dict)
 
+    @classmethod
+    def sql_name(cls):
+        if not hasattr(cls, '_sql_name'):
+            cls._sql_name = camel_to_snake_case(cls.__name__)
+        return cls._sql_name
+
+    @classmethod
+    def default_parser_mappings(cls):
+        return {cls.sql_name: cls.from_arg_list}
+
 
 class Anonymous(Func):
     arg_types = {'this': True, 'expressions': False}
@@ -554,6 +565,7 @@ class Initcap(Func):
 
 class JSONPath(Func):
     arg_types = {'this': True, 'path': True}
+    _sql_name = "JSON_PATH"
 
 
 class Map(Func):

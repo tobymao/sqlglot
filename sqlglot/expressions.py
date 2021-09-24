@@ -519,7 +519,7 @@ class ApproxDistinct(Func):
 
 class Array(Func):
     token_type = TokenType.ARRAY
-    arg_types = {'expressions': True}
+    arg_types = {'expressions': False}
     is_var_len_args = True
 
 

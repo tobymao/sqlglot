@@ -20,10 +20,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pylint
+        python -m pip install -r requirements.txt
     - name: Lint with pylint
       run: |
         pylint sqlglot/ tests/
+        flake8 sqlglot/ tests/
+        black --check sqlglot/ tests/
     - name: Test with unittest
       run: |
         python -m unittest

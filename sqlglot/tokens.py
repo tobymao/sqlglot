@@ -181,196 +181,194 @@ class Token:
         self.arg_key = None
 
     def __repr__(self):
-        attributes = ", ".join([
-            f"{k}: {v}"
-            for k, v in self.__dict__.items()
-            if k != 'parent'
-        ])
+        attributes = ", ".join(
+            [f"{k}: {v}" for k, v in self.__dict__.items() if k != "parent"]
+        )
         return f"<Token {attributes}>"
 
     def sql(self, dialect=None, **opts):
         from sqlglot.dialects import Dialect
+
         return Dialect.get(dialect, Dialect)().generate(self, **opts)
 
     def to_s(self, _level=0):
         return self.text
 
+
 class Tokenizer:
     SINGLE_TOKENS = {
-        '(': TokenType.L_PAREN,
-        ')': TokenType.R_PAREN,
-        '[': TokenType.L_BRACKET,
-        ']': TokenType.R_BRACKET,
-        '{': TokenType.L_BRACE,
-        '}': TokenType.R_BRACE,
-        '&': TokenType.AMP,
-        '^': TokenType.CARET,
-        ':': TokenType.COLON,
-        ',': TokenType.COMMA,
-        '.': TokenType.DOT,
-        '-': TokenType.DASH,
-        '=': TokenType.EQ,
-        '>': TokenType.GT,
-        '<': TokenType.LT,
-        '%': TokenType.MOD,
-        '!': TokenType.NOT,
-        '|': TokenType.PIPE,
-        '+': TokenType.PLUS,
-        ';': TokenType.SEMICOLON,
-        '/': TokenType.SLASH,
-        '*': TokenType.STAR,
-        '~': TokenType.TILDA,
+        "(": TokenType.L_PAREN,
+        ")": TokenType.R_PAREN,
+        "[": TokenType.L_BRACKET,
+        "]": TokenType.R_BRACKET,
+        "{": TokenType.L_BRACE,
+        "}": TokenType.R_BRACE,
+        "&": TokenType.AMP,
+        "^": TokenType.CARET,
+        ":": TokenType.COLON,
+        ",": TokenType.COMMA,
+        ".": TokenType.DOT,
+        "-": TokenType.DASH,
+        "=": TokenType.EQ,
+        ">": TokenType.GT,
+        "<": TokenType.LT,
+        "%": TokenType.MOD,
+        "!": TokenType.NOT,
+        "|": TokenType.PIPE,
+        "+": TokenType.PLUS,
+        ";": TokenType.SEMICOLON,
+        "/": TokenType.SLASH,
+        "*": TokenType.STAR,
+        "~": TokenType.TILDA,
     }
 
     KEYWORDS = {
-        '/*+': TokenType.HINT,
-        '--': TokenType.COMMENT,
-        '/*': TokenType.COMMENT_START,
-        '*/': TokenType.COMMENT_END,
-        '==': TokenType.EQ,
-        '::': TokenType.DCOLON,
-        '||': TokenType.DPIPE,
-        '>=': TokenType.GTE,
-        '<=': TokenType.LTE,
-        '<>': TokenType.NEQ,
-        '!=': TokenType.NEQ,
-        '<<': TokenType.LSHIFT,
-        '>>': TokenType.RSHIFT,
-
-        'ALL': TokenType.ALL,
-        'AND': TokenType.AND,
-        'ASC': TokenType.ASC,
-        'AS': TokenType.ALIAS,
-        'AUTO_INCREMENT': TokenType.AUTO_INCREMENT,
-        'BETWEEN': TokenType.BETWEEN,
-        'BY': TokenType.BY,
-        'CASE': TokenType.CASE,
-        'CAST': TokenType.CAST,
-        'CHARACTER SET': TokenType.CHARACTER_SET,
-        'COLLATE': TokenType.COLLATE,
-        'COMMENT': TokenType.SCHEMA_COMMENT,
-        'COUNT': TokenType.COUNT,
-        'CREATE': TokenType.CREATE,
-        'CROSS': TokenType.CROSS,
-        'CURRENT ROW': TokenType.CURRENT_ROW,
-        'DIV': TokenType.DIV,
-        'DEFAULT': TokenType.DEFAULT,
-        'DESC': TokenType.DESC,
-        'DISTINCT': TokenType.DISTINCT,
-        'DROP': TokenType.DROP,
-        'ELSE': TokenType.ELSE,
-        'END': TokenType.END,
-        'ENGINE': TokenType.ENGINE,
-        'EXISTS': TokenType.EXISTS,
-        'EXTRACT': TokenType.EXTRACT,
-        'FORMAT': TokenType.FORMAT,
-        'FULL': TokenType.FULL,
-        'FOLLOWING': TokenType.FOLLOWING,
-        'FROM': TokenType.FROM,
-        'GROUP BY': TokenType.GROUP,
-        'HAVING': TokenType.HAVING,
-        'IF': TokenType.IF,
-        'IN': TokenType.IN,
-        'INNER': TokenType.INNER,
-        'INSERT': TokenType.INSERT,
-        'INTERVAL': TokenType.INTERVAL,
-        'INTO': TokenType.INTO,
-        'IS': TokenType.IS,
-        'JOIN': TokenType.JOIN,
-        'LATERAL': TokenType.LATERAL,
-        'LEFT': TokenType.LEFT,
-        'LIKE': TokenType.LIKE,
-        'LIMIT': TokenType.LIMIT,
-        'NOT': TokenType.NOT,
-        'NULL': TokenType.NULL,
-        'ON': TokenType.ON,
-        'OR': TokenType.OR,
-        'ORDER BY': TokenType.ORDER,
-        'ORDINALITY': TokenType.ORDINALITY,
-        'OUTER': TokenType.OUTER,
-        'OVER': TokenType.OVER,
-        'OVERWRITE': TokenType.OVERWRITE,
-        'PARTITION BY': TokenType.PARTITION,
-        'PRECEDING': TokenType.PRECEDING,
-        'PRIMARY KEY': TokenType.PRIMARY_KEY,
-        'RANGE': TokenType.RANGE,
-        'RECURSIVE': TokenType.RECURSIVE,
-        'REGEXP': TokenType.RLIKE,
-        'REPLACE': TokenType.REPLACE,
-        'RIGHT': TokenType.RIGHT,
-        'RLIKE': TokenType.RLIKE,
-        'ROWS': TokenType.ROWS,
-        'SELECT': TokenType.SELECT,
-        'SET': TokenType.SET,
-        'STORED': TokenType.STORED,
-        'TABLE': TokenType.TABLE,
-        'TEMPORARY': TokenType.TEMPORARY,
-        'THEN': TokenType.THEN,
-        'TIME': TokenType.TIME,
-        'UNBOUNDED': TokenType.UNBOUNDED,
-        'UNION': TokenType.UNION,
-        'UNNEST': TokenType.UNNEST,
-        'UPDATE': TokenType.UPDATE,
-        'VALUES': TokenType.VALUES,
-        'VIEW': TokenType.VIEW,
-        'WHEN': TokenType.WHEN,
-        'WHERE': TokenType.WHERE,
-        'WITH': TokenType.WITH,
-        'WITHOUT': TokenType.WITHOUT,
-        'ZONE': TokenType.ZONE,
-
-        'ARRAY': TokenType.ARRAY,
-        'BOOL': TokenType.BOOLEAN,
-        'BOOLEAN': TokenType.BOOLEAN,
-        'TINYINT': TokenType.TINYINT,
-        'SMALLINT': TokenType.SMALLINT,
-        'INT2': TokenType.SMALLINT,
-        'INTEGER': TokenType.INT,
-        'INT': TokenType.INT,
-        'INT4': TokenType.INT,
-        'BIGINT': TokenType.BIGINT,
-        'INT8': TokenType.BIGINT,
-        'DECIMAL': TokenType.DECIMAL,
-        'MAP': TokenType.MAP,
-        'NUMERIC': TokenType.DECIMAL,
-        'FIXED': TokenType.DECIMAL,
-        'REAL': TokenType.FLOAT,
-        'FLOAT': TokenType.FLOAT,
-        'FLOAT4': TokenType.FLOAT,
-        'FLOAT8': TokenType.DOUBLE,
-        'DOUBLE': TokenType.DOUBLE,
-        'JSON': TokenType.JSON,
-        'CHAR': TokenType.CHAR,
-        'VARCHAR': TokenType.VARCHAR,
-        'STRING': TokenType.TEXT,
-        'TEXT': TokenType.TEXT,
-        'BINARY': TokenType.BINARY,
-        'TIMESTAMP': TokenType.TIMESTAMP,
-        'TIMESTAMPTZ': TokenType.TIMESTAMPTZ,
-        'DATE': TokenType.DATE,
+        "/*+": TokenType.HINT,
+        "--": TokenType.COMMENT,
+        "/*": TokenType.COMMENT_START,
+        "*/": TokenType.COMMENT_END,
+        "==": TokenType.EQ,
+        "::": TokenType.DCOLON,
+        "||": TokenType.DPIPE,
+        ">=": TokenType.GTE,
+        "<=": TokenType.LTE,
+        "<>": TokenType.NEQ,
+        "!=": TokenType.NEQ,
+        "<<": TokenType.LSHIFT,
+        ">>": TokenType.RSHIFT,
+        "ALL": TokenType.ALL,
+        "AND": TokenType.AND,
+        "ASC": TokenType.ASC,
+        "AS": TokenType.ALIAS,
+        "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
+        "BETWEEN": TokenType.BETWEEN,
+        "BY": TokenType.BY,
+        "CASE": TokenType.CASE,
+        "CAST": TokenType.CAST,
+        "CHARACTER SET": TokenType.CHARACTER_SET,
+        "COLLATE": TokenType.COLLATE,
+        "COMMENT": TokenType.SCHEMA_COMMENT,
+        "COUNT": TokenType.COUNT,
+        "CREATE": TokenType.CREATE,
+        "CROSS": TokenType.CROSS,
+        "CURRENT ROW": TokenType.CURRENT_ROW,
+        "DIV": TokenType.DIV,
+        "DEFAULT": TokenType.DEFAULT,
+        "DESC": TokenType.DESC,
+        "DISTINCT": TokenType.DISTINCT,
+        "DROP": TokenType.DROP,
+        "ELSE": TokenType.ELSE,
+        "END": TokenType.END,
+        "ENGINE": TokenType.ENGINE,
+        "EXISTS": TokenType.EXISTS,
+        "EXTRACT": TokenType.EXTRACT,
+        "FORMAT": TokenType.FORMAT,
+        "FULL": TokenType.FULL,
+        "FOLLOWING": TokenType.FOLLOWING,
+        "FROM": TokenType.FROM,
+        "GROUP BY": TokenType.GROUP,
+        "HAVING": TokenType.HAVING,
+        "IF": TokenType.IF,
+        "IN": TokenType.IN,
+        "INNER": TokenType.INNER,
+        "INSERT": TokenType.INSERT,
+        "INTERVAL": TokenType.INTERVAL,
+        "INTO": TokenType.INTO,
+        "IS": TokenType.IS,
+        "JOIN": TokenType.JOIN,
+        "LATERAL": TokenType.LATERAL,
+        "LEFT": TokenType.LEFT,
+        "LIKE": TokenType.LIKE,
+        "LIMIT": TokenType.LIMIT,
+        "NOT": TokenType.NOT,
+        "NULL": TokenType.NULL,
+        "ON": TokenType.ON,
+        "OR": TokenType.OR,
+        "ORDER BY": TokenType.ORDER,
+        "ORDINALITY": TokenType.ORDINALITY,
+        "OUTER": TokenType.OUTER,
+        "OVER": TokenType.OVER,
+        "OVERWRITE": TokenType.OVERWRITE,
+        "PARTITION BY": TokenType.PARTITION,
+        "PRECEDING": TokenType.PRECEDING,
+        "PRIMARY KEY": TokenType.PRIMARY_KEY,
+        "RANGE": TokenType.RANGE,
+        "RECURSIVE": TokenType.RECURSIVE,
+        "REGEXP": TokenType.RLIKE,
+        "REPLACE": TokenType.REPLACE,
+        "RIGHT": TokenType.RIGHT,
+        "RLIKE": TokenType.RLIKE,
+        "ROWS": TokenType.ROWS,
+        "SELECT": TokenType.SELECT,
+        "SET": TokenType.SET,
+        "STORED": TokenType.STORED,
+        "TABLE": TokenType.TABLE,
+        "TEMPORARY": TokenType.TEMPORARY,
+        "THEN": TokenType.THEN,
+        "TIME": TokenType.TIME,
+        "UNBOUNDED": TokenType.UNBOUNDED,
+        "UNION": TokenType.UNION,
+        "UNNEST": TokenType.UNNEST,
+        "UPDATE": TokenType.UPDATE,
+        "VALUES": TokenType.VALUES,
+        "VIEW": TokenType.VIEW,
+        "WHEN": TokenType.WHEN,
+        "WHERE": TokenType.WHERE,
+        "WITH": TokenType.WITH,
+        "WITHOUT": TokenType.WITHOUT,
+        "ZONE": TokenType.ZONE,
+        "ARRAY": TokenType.ARRAY,
+        "BOOL": TokenType.BOOLEAN,
+        "BOOLEAN": TokenType.BOOLEAN,
+        "TINYINT": TokenType.TINYINT,
+        "SMALLINT": TokenType.SMALLINT,
+        "INT2": TokenType.SMALLINT,
+        "INTEGER": TokenType.INT,
+        "INT": TokenType.INT,
+        "INT4": TokenType.INT,
+        "BIGINT": TokenType.BIGINT,
+        "INT8": TokenType.BIGINT,
+        "DECIMAL": TokenType.DECIMAL,
+        "MAP": TokenType.MAP,
+        "NUMERIC": TokenType.DECIMAL,
+        "FIXED": TokenType.DECIMAL,
+        "REAL": TokenType.FLOAT,
+        "FLOAT": TokenType.FLOAT,
+        "FLOAT4": TokenType.FLOAT,
+        "FLOAT8": TokenType.DOUBLE,
+        "DOUBLE": TokenType.DOUBLE,
+        "JSON": TokenType.JSON,
+        "CHAR": TokenType.CHAR,
+        "VARCHAR": TokenType.VARCHAR,
+        "STRING": TokenType.TEXT,
+        "TEXT": TokenType.TEXT,
+        "BINARY": TokenType.BINARY,
+        "TIMESTAMP": TokenType.TIMESTAMP,
+        "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
+        "DATE": TokenType.DATE,
     }
 
     WHITE_SPACE = {
-        ' ': TokenType.SPACE,
+        " ": TokenType.SPACE,
         "\t": TokenType.SPACE,
         "\n": TokenType.BREAK,
         "\r": TokenType.BREAK,
         "\rn": TokenType.BREAK,
     }
 
-    ESCAPE_CODE = '__sqlglot_escape__'
+    ESCAPE_CODE = "__sqlglot_escape__"
 
     def __init__(self, **opts):
-        self.quotes = set(opts.get('quotes') or "'")
-        self.identifier = opts.get('identifier') or '"'
-        self.escape = opts.get('escape') or "'"
-        self.single_tokens = {**self.SINGLE_TOKENS, **opts.get('single_tokens', {})}
-        self.keywords = {**self.KEYWORDS, **opts.get('keywords', {})}
-        self.white_space = {**self.WHITE_SPACE, **opts.get('white_space', {})}
+        self.quotes = set(opts.get("quotes") or "'")
+        self.identifier = opts.get("identifier") or '"'
+        self.escape = opts.get("escape") or "'"
+        self.single_tokens = {**self.SINGLE_TOKENS, **opts.get("single_tokens", {})}
+        self.keywords = {**self.KEYWORDS, **opts.get("keywords", {})}
+        self.white_space = {**self.WHITE_SPACE, **opts.get("white_space", {})}
         self.reset()
 
     def reset(self):
-        self.code = ''
+        self.code = ""
         self.size = 0
         self.tokens = []
         self._start = 0
@@ -383,17 +381,20 @@ class Tokenizer:
         self._peek = None
         self._text = None
 
-    def tokenize(self, code): # pylint: disable=too-many-branches
+    def tokenize(self, code):  # noqa: C901 pylint: disable=too-many-branches
         self.reset()
         self.code = code
         self.size = len(code)
 
-        ambiguous_trie = new_trie(*{
-            key
-            for key in self.keywords
-            if self.keywords[key] not in (TokenType.COMMENT, TokenType.COMMENT_START)
-            and (' ' in key or any(single in key for single in self.single_tokens))
-        })
+        ambiguous_trie = new_trie(
+            *{
+                key
+                for key in self.keywords
+                if self.keywords[key]
+                not in (TokenType.COMMENT, TokenType.COMMENT_START)
+                and (" " in key or any(single in key for single in self.single_tokens))
+            }
+        )
 
         comments = []
         comment_start = None
@@ -440,14 +441,14 @@ class Tokenizer:
         end = start + size
         if end <= self.size:
             return self.code[start:end].upper()
-        return ''
+        return ""
 
     def _advance(self, i=1):
         self._col += i
         self._current += i
         self._char = list_get(self.code, self._current - 1)
-        self._peek = list_get(self.code, self._current) or ''
-        self._text = self.code[self._start:self._current]
+        self._peek = list_get(self.code, self._current) or ""
+        self._text = self.code[self._start : self._current]
         self._end = self._current >= self.size
 
     def _add(self, token_type, text=None):
@@ -478,7 +479,10 @@ class Tokenizer:
     def _scan_comments(self, comments, comment_start, comment_end):
         for comment in comments:
             if self._chars(len(comment)) == comment:
-                while not self._end and self.WHITE_SPACE.get(self._char) != TokenType.BREAK:
+                while (
+                    not self._end
+                    and self.WHITE_SPACE.get(self._char) != TokenType.BREAK
+                ):
                     self._advance()
                 return True
 
@@ -497,13 +501,13 @@ class Tokenizer:
         while True:
             if self._peek.isdigit():
                 self._advance()
-            elif self._peek == '.' and not decimal:
+            elif self._peek == "." and not decimal:
                 decimal = True
                 self._advance()
-            elif self._peek.upper() == 'E' and not scientific:
+            elif self._peek.upper() == "E" and not scientific:
                 scientific += 1
                 self._advance()
-            elif self._peek == '-' and scientific == 1:
+            elif self._peek == "-" and scientific == 1:
                 scientific += 1
                 self._advance()
             else:
@@ -529,12 +533,14 @@ class Tokenizer:
                 break
 
         text.append(self._char)
-        self._add(TokenType.STRING, ''.join(text[1:-1]))
+        self._add(TokenType.STRING, "".join(text[1:-1]))
 
     def _scan_identifier(self):
         while self._peek != self.identifier:
             if self._end:
-                raise RuntimeError(f"Missing {self.identifier} from {self._line}:{self._start}")
+                raise RuntimeError(
+                    f"Missing {self.identifier} from {self._line}:{self._start}"
+                )
             self._advance()
         self._advance()
         self._add(TokenType.IDENTIFIER, self._text[1:-1])

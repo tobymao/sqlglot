@@ -20,33 +20,33 @@ class Generator:
     }
 
     TRANSFORMS = {
-        TokenType.BOOLEAN: 'BOOLEAN',
-        TokenType.TINYINT: 'TINYINT',
-        TokenType.SMALLINT: 'SMALLINT',
-        TokenType.INT: 'INT',
-        TokenType.BIGINT: 'BIGINT',
-        TokenType.FLOAT: 'FLOAT',
-        TokenType.DOUBLE: 'DOUBLE',
-        TokenType.CHAR: 'CHAR',
-        TokenType.VARCHAR: 'VARCHAR',
-        TokenType.TEXT: 'TEXT',
-        TokenType.BINARY: 'BINARY',
-        TokenType.JSON: 'JSON',
+        TokenType.BOOLEAN: "BOOLEAN",
+        TokenType.TINYINT: "TINYINT",
+        TokenType.SMALLINT: "SMALLINT",
+        TokenType.INT: "INT",
+        TokenType.BIGINT: "BIGINT",
+        TokenType.FLOAT: "FLOAT",
+        TokenType.DOUBLE: "DOUBLE",
+        TokenType.CHAR: "CHAR",
+        TokenType.VARCHAR: "VARCHAR",
+        TokenType.TEXT: "TEXT",
+        TokenType.BINARY: "BINARY",
+        TokenType.JSON: "JSON",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
     }
 
     def __init__(self, **opts):
-        self.transforms = {**self.TRANSFORMS, **(opts.get('transforms') or {})}
-        self.pretty = opts.get('pretty')
-        self.identifier = opts.get('identifier') or '"'
-        self.identify = opts.get('identify', False)
-        self.quote = opts.get('quote') or "'"
-        self.escape = opts.get('escape') or "'"
-        self.pad = opts.get('pad', 2)
-        self.unsupported_level = opts.get('unsupported_level', ErrorLevel.WARN)
+        self.transforms = {**self.TRANSFORMS, **(opts.get("transforms") or {})}
+        self.pretty = opts.get("pretty")
+        self.identifier = opts.get("identifier") or '"'
+        self.identify = opts.get("identify", False)
+        self.quote = opts.get("quote") or "'"
+        self.escape = opts.get("escape") or "'"
+        self.pad = opts.get("pad", 2)
+        self.unsupported_level = opts.get("unsupported_level", ErrorLevel.WARN)
         self.unsupported_messages = []
-        self._indent = opts.get('indent', 4)
+        self._indent = opts.get("indent", 4)
         self._level = 0
         self.opts = opts
 
@@ -73,15 +73,15 @@ class Generator:
             sql = f"{' ' * (level * self._indent + pad)}{sql}"
         return sql
 
-    def sep(self, sep=' '):
+    def sep(self, sep=" "):
         return f"{sep.strip()}\n" if self.pretty else sep
 
-    def seg(self, sql, sep=' ', level=None, pad=0):
+    def seg(self, sql, sep=" ", level=None, pad=0):
         return f"{self.sep(sep)}{self.indent(sql, level=level, pad=pad)}"
 
     def wrap(self, expression):
         self._level += 1
-        this_sql = self.indent(self.sql(expression, 'this'))
+        this_sql = self.indent(self.sql(expression, "this"))
         self._level -= 1
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
@@ -96,14 +96,14 @@ class Generator:
         if not self.pretty:
             return sql
 
-        return '\n'.join(
+        return "\n".join(
             line if skip_first and i == 0 else self.indent(line, pad=self.pad)
-            for i, line in enumerate(sql.split('\n'))
+            for i, line in enumerate(sql.split("\n"))
         )
 
-    def sql(self, expression, key=None, identify=False):
+    def sql(self, expression, key=None, identify=False):  # noqa: C901
         if not expression:
-            return ''
+            return ""
 
         if isinstance(expression, str):
             return expression
@@ -111,7 +111,9 @@ class Generator:
         if key:
             return self.sql(expression.args.get(key), identify=identify)
 
-        transform = self.transforms.get(expression.__class__) or self.transforms.get(expression.token_type)
+        transform = self.transforms.get(expression.__class__) or self.transforms.get(
+            expression.token_type
+        )
 
         if callable(transform):
             return transform(self, expression)
@@ -120,7 +122,9 @@ class Generator:
 
         if isinstance(expression, Token):
             text = expression.text.replace(Tokenizer.ESCAPE_CODE, self.escape)
-            if expression.token_type == TokenType.IDENTIFIER or (self.identify and identify):
+            if expression.token_type == TokenType.IDENTIFIER or (
+                self.identify and identify
+            ):
                 text = f"{self.identifier}{text}{self.identifier}"
             elif expression.token_type == TokenType.STRING:
                 return f"{self.quote}{text}{self.quote}"
@@ -133,179 +137,193 @@ class Generator:
         if isinstance(expression, exp.Func):
             return self.function_fallback_sql(expression)
 
-        raise ValueError(f'Unsupported expression type {expression.__class__.__name__}')
+        raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
     def characterset_sql(self, expression):
-        default = 'DEFAULT ' if expression.args.get('default') else ''
+        default = "DEFAULT " if expression.args.get("default") else ""
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
     def column_sql(self, expression):
-        fields = expression.args.get('fields')
+        fields = expression.args.get("fields")
 
         if fields:
-            return '.'.join(self.sql(field) for field in fields)
+            return ".".join(self.sql(field) for field in fields)
 
-        return '.'.join(part for part in [
-            self.sql(expression, 'db', identify=True),
-            self.sql(expression, 'table', identify=True),
-            self.sql(expression, 'this', identify=True),
-        ] if part)
+        return ".".join(
+            part
+            for part in [
+                self.sql(expression, "db", identify=True),
+                self.sql(expression, "table", identify=True),
+                self.sql(expression, "this", identify=True),
+            ]
+            if part
+        )
 
     def columndef_sql(self, expression):
-        column = self.sql(expression, 'this')
-        kind = self.sql(expression, 'kind')
-        not_null = ' NOT NULL' if expression.args.get('not_null') else ''
-        default = self.sql(expression, 'default')
-        default = f" DEFAULT {default}" if default else ''
-        auto_increment = ' AUTO_INCREMENT' if expression.args.get('auto_increment') else ''
-        collate = self.sql(expression, 'collate')
-        collate = f" COLLATE {collate}" if collate else ''
-        comment = self.sql(expression, 'comment')
-        comment = f" COMMENT {comment}" if comment else ''
+        column = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        not_null = " NOT NULL" if expression.args.get("not_null") else ""
+        default = self.sql(expression, "default")
+        default = f" DEFAULT {default}" if default else ""
+        auto_increment = (
+            " AUTO_INCREMENT" if expression.args.get("auto_increment") else ""
+        )
+        collate = self.sql(expression, "collate")
+        collate = f" COLLATE {collate}" if collate else ""
+        comment = self.sql(expression, "comment")
+        comment = f" COMMENT {comment}" if comment else ""
         return f"{column} {kind}{not_null}{default}{collate}{auto_increment}{comment}"
 
     def create_sql(self, expression):
-        this = self.sql(expression, 'this')
-        kind = self.sql(expression, 'kind').upper()
-        expression_sql = self.sql(expression, 'expression')
-        expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ''
-        temporary = ' TEMPORARY' if expression.args.get('temporary') else ''
-        replace = ' OR REPLACE' if expression.args.get('replace') else ''
-        exists_sql = ' IF NOT EXISTS' if expression.args.get('exists') else ''
-        file_format = self.sql(expression, 'file_format')
-        file_format = f" {file_format} " if file_format else ' '
-        engine = self.sql(expression, 'engine')
-        engine = f"ENGINE={engine}" if engine else ''
-        auto_increment = self.sql(expression, 'auto_increment')
-        auto_increment = f"AUTO_INCREMENT={auto_increment}" if auto_increment else ''
-        character_set = self.sql(expression, 'character_set')
-        collate = self.sql(expression, 'collate')
-        collate = f"COLLATE={collate}" if collate else ''
-        comment = self.sql(expression, 'comment')
-        comment = f"COMMENT={comment}" if comment else ''
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind").upper()
+        expression_sql = self.sql(expression, "expression")
+        expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ""
+        temporary = " TEMPORARY" if expression.args.get("temporary") else ""
+        replace = " OR REPLACE" if expression.args.get("replace") else ""
+        exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
+        file_format = self.sql(expression, "file_format")
+        file_format = f" {file_format} " if file_format else " "
+        engine = self.sql(expression, "engine")
+        engine = f"ENGINE={engine}" if engine else ""
+        auto_increment = self.sql(expression, "auto_increment")
+        auto_increment = f"AUTO_INCREMENT={auto_increment}" if auto_increment else ""
+        character_set = self.sql(expression, "character_set")
+        collate = self.sql(expression, "collate")
+        collate = f"COLLATE={collate}" if collate else ""
+        comment = self.sql(expression, "comment")
+        comment = f"COMMENT={comment}" if comment else ""
 
-        options = ' '.join(
-            option for option in (
+        options = " ".join(
+            option
+            for option in (
                 engine,
                 auto_increment,
                 character_set,
                 collate,
                 comment,
-            ) if option
+            )
+            if option
         )
 
         return f"CREATE{temporary}{replace} {kind}{exists_sql} {this}{file_format}{expression_sql}{options}"
 
     def cte_sql(self, expression):
-        sql = ', '.join(
+        sql = ", ".join(
             f"{self.sql(e, 'alias')} AS {self.wrap(e)}"
-            for e in expression.args['expressions']
+            for e in expression.args["expressions"]
         )
-        recursive = 'RECURSIVE ' if expression.args.get('recursive') else ''
+        recursive = "RECURSIVE " if expression.args.get("recursive") else ""
 
         return f"WITH {recursive}{sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
 
     def drop_sql(self, expression):
-        this = self.sql(expression, 'this')
-        kind = expression.args['kind'].upper()
-        exists_sql = ' IF EXISTS ' if expression.args.get('exists') else ' '
+        this = self.sql(expression, "this")
+        kind = expression.args["kind"].upper()
+        exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         return f"DROP {kind}{exists_sql}{this}"
 
     def fileformat_sql(self, expression):
-        if self.sql(expression, 'this'):
-            self.unsupported('File formats are not supported')
-        return ''
+        if self.sql(expression, "this"):
+            self.unsupported("File formats are not supported")
+        return ""
 
     def hint_sql(self, expression):
-        if self.sql(expression, 'this'):
-            self.unsupported('Hints are not supported')
-        return ''
+        if self.sql(expression, "this"):
+            self.unsupported("Hints are not supported")
+        return ""
 
     def insert_sql(self, expression):
-        overwrite = self.sql(expression, 'overwrite')
-        kind = 'OVERWRITE' if overwrite else 'INTO'
-        this = self.sql(expression, 'this')
-        exists = ' IF EXISTS ' if expression.args.get('exists') else ' '
-        expression_sql = self.sql(expression, 'expression')
+        overwrite = self.sql(expression, "overwrite")
+        kind = "OVERWRITE" if overwrite else "INTO"
+        this = self.sql(expression, "this")
+        exists = " IF EXISTS " if expression.args.get("exists") else " "
+        expression_sql = self.sql(expression, "expression")
         return f"INSERT {kind} TABLE {this}{exists}{expression_sql}"
 
     def table_sql(self, expression):
-        return '.'.join(part for part in [
-            self.sql(expression, 'db', identify=True),
-            self.sql(expression, 'table', identify=True),
-            self.sql(expression, 'this', identify=True),
-        ] if part)
+        return ".".join(
+            part
+            for part in [
+                self.sql(expression, "db", identify=True),
+                self.sql(expression, "table", identify=True),
+                self.sql(expression, "this", identify=True),
+            ]
+            if part
+        )
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"
 
     def update_sql(self, expression):
-        this = self.sql(expression, 'this')
+        this = self.sql(expression, "this")
         set_sql = self.expressions(expression)
-        where_sql = self.sql(expression.args.get('where'))
+        where_sql = self.sql(expression.args.get("where"))
         return f"UPDATE {this} SET {set_sql}{where_sql}"
 
     def values_sql(self, expression):
         return f"VALUES{self.seg('')}{self.expressions(expression)}"
 
     def from_sql(self, expression):
-        expressions = ', '.join(self.sql(e) for e in expression.args['expressions'])
+        expressions = ", ".join(self.sql(e) for e in expression.args["expressions"])
         return f"{self.seg('FROM')} {expressions}"
 
     def group_sql(self, expression):
-        return self.op_expressions('GROUP BY', expression)
+        return self.op_expressions("GROUP BY", expression)
 
     def having_sql(self, expression):
-        this = self.indent_newlines(self.sql(expression, 'this'))
+        this = self.indent_newlines(self.sql(expression, "this"))
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
     def join_sql(self, expression):
-        side = self.sql(expression, 'side')
-        kind = self.sql(expression, 'kind')
-        op_sql = self.seg(' '.join(op for op in [side, kind, 'JOIN'] if op))
-        on_sql = self.sql(expression, 'on')
+        side = self.sql(expression, "side")
+        kind = self.sql(expression, "kind")
+        op_sql = self.seg(" ".join(op for op in [side, kind, "JOIN"] if op))
+        on_sql = self.sql(expression, "on")
 
         if on_sql:
             on_sql = self.indent_newlines(on_sql, skip_first=True)
             on_sql = f"{self.seg('ON', pad=self.pad)} {on_sql}"
 
-        expression_sql = self.sql(expression, 'expression')
-        this_sql = self.sql(expression, 'this')
+        expression_sql = self.sql(expression, "expression")
+        this_sql = self.sql(expression, "this")
         return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
 
     def lateral_sql(self, expression):
-        this = self.sql(expression, 'this')
-        op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
-        alias = self.sql(expression, 'table')
-        columns = ', '.join(self.sql(e) for e in expression.args.get('columns', []))
+        this = self.sql(expression, "this")
+        op_sql = self.seg(
+            f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}"
+        )
+        alias = self.sql(expression, "table")
+        columns = ", ".join(self.sql(e) for e in expression.args.get("columns", []))
         return f"{op_sql}{self.sep()}{this} {alias} AS {columns}"
 
     def limit_sql(self, expression):
         return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
 
     def order_sql(self, expression, flat=False):
-        return self.op_expressions('ORDER BY', expression, flat=flat)
+        return self.op_expressions("ORDER BY", expression, flat=flat)
 
     def ordered_sql(self, expression):
-        desc = self.sql(expression, 'desc')
-        desc = f" {desc}" if desc else ''
+        desc = self.sql(expression, "desc")
+        desc = f" {desc}" if desc else ""
         return f"{self.sql(expression, 'this')}{desc}"
 
     def select_sql(self, expression):
-        hint = self.sql(expression, 'hint')
-        distinct = ' DISTINCT' if expression.args.get('distinct') else ''
+        hint = self.sql(expression, "hint")
+        distinct = " DISTINCT" if expression.args.get("distinct") else ""
         expressions = self.expressions(expression)
         return csv(
             f"SELECT{hint}{distinct}{self.sep()}{expressions}",
-            self.sql(expression, 'from'),
-            *[self.sql(sql) for sql in expression.args.get('laterals', [])],
-            *[self.sql(sql) for sql in expression.args.get('joins', [])],
-            self.sql(expression, 'where'),
-            self.sql(expression, 'group'),
-            self.sql(expression, 'having'),
-            self.sql(expression, 'order'),
-            self.sql(expression, 'limit'),
-            sep='',
+            self.sql(expression, "from"),
+            *[self.sql(sql) for sql in expression.args.get("laterals", [])],
+            *[self.sql(sql) for sql in expression.args.get("joins", [])],
+            self.sql(expression, "where"),
+            self.sql(expression, "group"),
+            self.sql(expression, "having"),
+            self.sql(expression, "order"),
+            self.sql(expression, "limit"),
+            sep="",
         )
 
     def schema_sql(self, expression):
@@ -313,94 +331,105 @@ class Generator:
         return f"{self.sql(expression, 'this')} {sql}"
 
     def union_sql(self, expression):
-        this = self.sql(expression, 'this')
+        this = self.sql(expression, "this")
         op = self.seg(f"UNION{'' if expression.args['distinct'] else ' ALL'}")
-        expression = self.indent(self.sql(expression, 'expression'), pad=0)
+        expression = self.indent(self.sql(expression, "expression"), pad=0)
         return f"{this}{op}{self.sep()}{expression}"
 
     def unnest_sql(self, expression):
         args = self.expressions(expression, flat=True)
-        table = self.sql(expression, 'table')
-        ordinality = ' WITH ORDINALITY' if expression.args.get('ordinality') else ''
-        columns = ', '.join(self.sql(e) for e in expression.args.get('columns', []))
-        alias = f" AS {table}" if table else ''
+        table = self.sql(expression, "table")
+        ordinality = " WITH ORDINALITY" if expression.args.get("ordinality") else ""
+        columns = ", ".join(self.sql(e) for e in expression.args.get("columns", []))
+        alias = f" AS {table}" if table else ""
         alias = f"{alias} ({columns})" if columns else alias
         return f"UNNEST({args}){ordinality}{alias}"
 
     def where_sql(self, expression):
-        this = self.indent_newlines(self.sql(expression, 'this'))
+        this = self.indent_newlines(self.sql(expression, "this"))
         return f"{self.seg('WHERE')}{self.sep()}{this}"
 
     def window_sql(self, expression):
-        this_sql = self.sql(expression, 'this')
-        partition = expression.args.get('partition')
-        partition = 'PARTITION BY ' +  ', '.join(self.sql(by) for by in partition) if partition else ''
-        order = expression.args.get('order')
-        order_sql = self.order_sql(order, flat=True) if order else ''
-        partition_sql = partition + ' ' if partition and order else partition
-        spec = expression.args.get('spec')
-        spec_sql = ' ' + self.window_spec_sql(spec) if spec else ''
+        this_sql = self.sql(expression, "this")
+        partition = expression.args.get("partition")
+        partition = (
+            "PARTITION BY " + ", ".join(self.sql(by) for by in partition)
+            if partition
+            else ""
+        )
+        order = expression.args.get("order")
+        order_sql = self.order_sql(order, flat=True) if order else ""
+        partition_sql = partition + " " if partition and order else partition
+        spec = expression.args.get("spec")
+        spec_sql = " " + self.window_spec_sql(spec) if spec else ""
         return f"{this_sql} OVER({partition_sql}{order_sql}{spec_sql})"
 
     def window_spec_sql(self, expression):
-        kind = self.sql(expression, 'kind')
-        start = csv(self.sql(expression, 'start'), self.sql(expression, 'start_side'), sep=' ')
-        end = csv(self.sql(expression, 'end'), self.sql(expression, 'end_side'), sep=' ')
+        kind = self.sql(expression, "kind")
+        start = csv(
+            self.sql(expression, "start"), self.sql(expression, "start_side"), sep=" "
+        )
+        end = csv(
+            self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" "
+        )
         return f"{kind} BETWEEN {start} AND {end}"
 
     def between_sql(self, expression):
-        this = self.sql(expression, 'this')
-        low = self.sql(expression, 'low')
-        high = self.sql(expression, 'high')
+        this = self.sql(expression, "this")
+        low = self.sql(expression, "low")
+        high = self.sql(expression, "high")
         return f"{this} BETWEEN {low} AND {high}"
 
     def bracket_sql(self, expression):
-        return f"{self.sql(expression, 'this')}[{self.expressions(expression, flat=True)}]"
+        return (
+            f"{self.sql(expression, 'this')}[{self.expressions(expression, flat=True)}]"
+        )
 
     def case_sql(self, expression):
         pad = self.pad + 2
 
-        this = self.sql(expression, 'this')
-        this = f" {this}" if this else ''
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
 
         ifs = [
             f"WHEN {self.sql(e, 'this')} THEN {self.sql(e, 'true')}"
-            for e in expression.args['ifs']
+            for e in expression.args["ifs"]
         ]
 
-        if expression.args.get('default') is not None:
+        if expression.args.get("default") is not None:
             ifs.append(f"ELSE {self.sql(expression, 'default')}")
 
         original = self.pretty
-        self.pretty = self.opts.get('pretty')
-        ifs = ''.join(self.seg(e, pad=pad) for e in ifs)
+        self.pretty = self.opts.get("pretty")
+        ifs = "".join(self.seg(e, pad=pad) for e in ifs)
         case = f"CASE{this}{ifs}{self.seg('END', pad=self.pad)}"
         self.pretty = original
         return case
 
     def decimal_sql(self, expression):
         if isinstance(expression, Token):
-            return 'DECIMAL'
-        args = ', '.join(
+            return "DECIMAL"
+        args = ", ".join(
             arg.text
-            for arg in [expression.args.get('precision'), expression.args.get('scale')]
+            for arg in [expression.args.get("precision"), expression.args.get("scale")]
             if arg
         )
         return f"DECIMAL({args})"
 
     def extract_sql(self, expression):
-        this = self.sql(expression, 'this')
-        expression_sql = self.sql(expression, 'expression')
+        this = self.sql(expression, "this")
+        expression_sql = self.sql(expression, "expression")
         return f"EXTRACT({this} FROM {expression_sql})"
 
     def if_sql(self, expression):
-        return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get('false')))
+        return self.case_sql(
+            exp.Case(ifs=[expression], default=expression.args.get("false"))
+        )
 
     def in_sql(self, expression):
-        in_sql = (
-            self.no_format(lambda: self.sql(expression, 'query')) or
-            self.expressions(expression, flat=True)
-        )
+        in_sql = self.no_format(
+            lambda: self.sql(expression, "query")
+        ) or self.expressions(expression, flat=True)
         return f"{self.sql(expression, 'this')} IN ({in_sql})"
 
     def interval_sql(self, expression):
@@ -419,105 +448,107 @@ class Generator:
         return f"NOT {self.sql(expression, 'this')}"
 
     def alias_sql(self, expression):
-        to_sql = self.sql(expression, 'alias')
-        to_sql = f" AS {to_sql}" if to_sql else ''
+        to_sql = self.sql(expression, "alias")
+        to_sql = f" AS {to_sql}" if to_sql else ""
 
-        if expression.args['this'].token_type in self.BODY_TOKENS:
+        if expression.args["this"].token_type in self.BODY_TOKENS:
             if self.pretty:
                 return f"{self.wrap(expression)}{to_sql}"
             return f"({self.sql(expression, 'this')}){to_sql}"
         return f"{self.sql(expression, 'this')}{to_sql}"
 
     def and_sql(self, expression):
-        return self.binary(expression, 'AND', newline=self.pretty)
+        return self.binary(expression, "AND", newline=self.pretty)
 
     def bitwiseand_sql(self, expression):
-        return self.binary(expression, '&')
+        return self.binary(expression, "&")
 
     def bitwiseleftshift_sql(self, expression):
-        return self.binary(expression, '<<')
+        return self.binary(expression, "<<")
 
     def bitwisenot_sql(self, expression):
         return f"~{self.sql(expression, 'this')}"
 
     def bitwiseor_sql(self, expression):
-        return self.binary(expression, '|')
+        return self.binary(expression, "|")
 
     def bitwiserightshift_sql(self, expression):
-        return self.binary(expression, '>>')
+        return self.binary(expression, ">>")
 
     def bitwisexor_sql(self, expression):
-        return self.binary(expression, '^')
+        return self.binary(expression, "^")
 
     def cast_sql(self, expression):
         return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
     def count_sql(self, expression):
-        distinct = 'DISTINCT ' if expression.args['distinct'] else ''
+        distinct = "DISTINCT " if expression.args["distinct"] else ""
         return f"COUNT({distinct}{self.sql(expression, 'this')})"
 
     def div_sql(self, expression):
-        return self.sql(exp.Cast(
-            this=exp.Slash(
-                this=expression.args['this'],
-                expression=expression.args['expression']
-            ),
-            to=Token(TokenType.INT, 'INT'),
-        ))
+        return self.sql(
+            exp.Cast(
+                this=exp.Slash(
+                    this=expression.args["this"],
+                    expression=expression.args["expression"],
+                ),
+                to=Token(TokenType.INT, "INT"),
+            )
+        )
 
     def dpipe_sql(self, expression):
-        return self.binary(expression, '||')
+        return self.binary(expression, "||")
 
     def dot_sql(self, expression):
         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
 
     def eq_sql(self, expression):
-        return self.binary(expression, '=')
+        return self.binary(expression, "=")
 
     def gt_sql(self, expression):
-        return self.binary(expression, '>')
+        return self.binary(expression, ">")
 
     def gte_sql(self, expression):
-        return self.binary(expression, '>=')
+        return self.binary(expression, ">=")
 
     def is_sql(self, expression):
-        return self.binary(expression, 'IS')
+        return self.binary(expression, "IS")
 
     def like_sql(self, expression):
-        return self.binary(expression, 'LIKE')
+        return self.binary(expression, "LIKE")
 
     def lt_sql(self, expression):
-        return self.binary(expression, '<')
+        return self.binary(expression, "<")
 
     def lte_sql(self, expression):
-        return self.binary(expression, '<=')
+        return self.binary(expression, "<=")
 
     def minus_sql(self, expression):
-        return self.binary(expression, '-')
+        return self.binary(expression, "-")
 
     def mod_sql(self, expression):
-        return self.binary(expression, '%')
+        return self.binary(expression, "%")
 
     def neq_sql(self, expression):
-        return self.binary(expression, '<>')
+        return self.binary(expression, "<>")
 
     def or_sql(self, expression):
-        return self.binary(expression, 'OR', newline=self.pretty)
+        return self.binary(expression, "OR", newline=self.pretty)
 
     def plus_sql(self, expression):
-        return self.binary(expression, '+')
+        return self.binary(expression, "+")
 
     def regexlike_sql(self, expression):
-        return self.binary(expression, 'RLIKE')
+        return self.binary(expression, "RLIKE")
 
     def slash_sql(self, expression):
-        return self.binary(expression, '/')
+        return self.binary(expression, "/")
 
     def star_sql(self, expression):
-        return self.binary(expression, '*')
+        return self.binary(expression, "*")
 
     def binary(self, expression, op, newline=False):
-        sep = '\n' if newline else ' '
+        sep = "\n" if newline else " "
         return f"{self.sql(expression, 'this')}{sep}{op} {self.sql(expression, 'expression')}"
 
     def function_fallback_sql(self, expression):
@@ -527,21 +558,21 @@ class Generator:
             for a in arg_value:
                 args.append(self.sql(a))
 
-        args_str = ', '.join(args)
-        return f'{expression.sql_name()}({args_str})'
+        args_str = ", ".join(args)
+        return f"{expression.sql_name()}({args_str})"
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop
-        expressions = expression.args['expressions'] or []
+        expressions = expression.args["expressions"] or []
         if flat:
-            return ', '.join(self.sql(e) for e in expressions)
+            return ", ".join(self.sql(e) for e in expressions)
 
-        return self.sep(', ').join(
+        return self.sep(", ").join(
             self.indent(
                 f"{'  ' if self.pretty else ''}{self.no_format(lambda: self.sql(e))}",
                 pad=pad,
             )
-            for e in expression.args['expressions'] or []
+            for e in expression.args["expressions"] or []
         )
 
     def op_expressions(self, op, expression, flat=False):

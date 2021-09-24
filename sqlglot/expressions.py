@@ -565,6 +565,7 @@ class Initcap(Func):
 
 class JSONPath(Func):
     arg_types = {'this': True, 'path': True}
+    _sql_name = "JSON_PATH"
 
 
 class Map(Func):

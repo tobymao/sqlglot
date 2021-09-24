@@ -26,16 +26,18 @@ class Rewriter:
         create = self.expression.find(exp.Create)
 
         if create:
-            create.args['db'] = db
-            create.args['this'] = table
+            create.args["db"] = db
+            create.args["this"] = table
             if file_format is not None:
-                create.args['file_format'] = exp.FileFormat(this=file_format)
+                create.args["file_format"] = exp.FileFormat(this=file_format)
         else:
             create = exp.Create(
                 this=exp.Table(this=table, db=db),
-                kind='table',
+                kind="table",
                 expression=self.expression,
-                file_format=exp.FileFormat(this=file_format) if file_format is not None else None,
+                file_format=exp.FileFormat(this=file_format)
+                if file_format is not None
+                else None,
             )
 
         return create
@@ -44,5 +46,5 @@ class Rewriter:
     def add_selects(self, *selects, read=None):
         select = self.expression.find(exp.Select)
         for sql in selects:
-            select.args['expressions'].append(parse_one(sql, read=read))
+            select.args["expressions"].append(parse_one(sql, read=read))
         return self.expression

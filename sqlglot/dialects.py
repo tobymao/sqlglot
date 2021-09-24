@@ -23,12 +23,14 @@ class Dialect(metaclass=RegisteringMeta):
         return self.generate(self.parse(code), **opts)
 
     def generator(self, **opts):
-        return Generator(**{
-            'identifier': self.identifier,
-            'escape': self.escape,
-            'transforms': {**self.transforms, **opts.pop('transforms', {})},
-            **opts,
-        })
+        return Generator(
+            **{
+                "identifier": self.identifier,
+                "escape": self.escape,
+                "transforms": {**self.transforms, **opts.pop("transforms", {})},
+                **opts,
+            }
+        )
 
     def parser(self, **opts):
         return Parser(functions=self.functions, **opts)
@@ -43,43 +45,46 @@ class Dialect(metaclass=RegisteringMeta):
 
 
 def _approx_count_distinct_sql(self, expression):
-    if expression.args.get('accuracy'):
-        self.unsupported('APPROX_COUNT_DISTINCT does not support accuracy')
+    if expression.args.get("accuracy"):
+        self.unsupported("APPROX_COUNT_DISTINCT does not support accuracy")
     return f"APPROX_COUNT_DISTINCT({self.sql(expression, 'this')})"
 
 
 def _case_if_sql(self, expression):
-    if len(expression.args['ifs']) > 1:
+    if len(expression.args["ifs"]) > 1:
         return self.case_sql(expression)
 
     args = expression.args
 
-    return _if_sql(self, exp.If(
-        this=args['ifs'][0].args['this'],
-        true=args['ifs'][0].args['true'],
-        false=args.get('default')
-    ))
+    return _if_sql(
+        self,
+        exp.If(
+            this=args["ifs"][0].args["this"],
+            true=args["ifs"][0].args["true"],
+            false=args.get("default"),
+        ),
+    )
 
 
 def _if_sql(self, expression):
     expressions = csv(
-        self.sql(expression, 'this'),
-        self.sql(expression, 'true'),
-        self.sql(expression, 'false')
+        self.sql(expression, "this"),
+        self.sql(expression, "true"),
+        self.sql(expression, "false"),
     )
     return f"IF({expressions})"
 
 
 def _no_recursive_cte_sql(self, expression):
-    if expression.args.get('recursive'):
-        self.unsupported('Recursive CTEs are unsupported')
-        expression.args['recursive'] = False
+    if expression.args.get("recursive"):
+        self.unsupported("Recursive CTEs are unsupported")
+        expression.args["recursive"] = False
     return self.cte_sql(expression)
 
 
 def _struct_extract_sql(self, expression):
-    this = self.sql(expression, 'this')
-    struct_key = self.sql(expression, 'expression').replace(self.quote, self.identifier)
+    this = self.sql(expression, "this")
+    struct_key = self.sql(expression, "expression").replace(self.quote, self.identifier)
     return f"{this}.{struct_key}"
 
 
@@ -113,53 +118,55 @@ class DuckDB(Dialect):
     }
 
     functions = {
-        'APPROX_COUNT_DISTINCT': exp.ApproxDistinct.from_arg_list,
-        'EPOCH': exp.TimeToUnix.from_arg_list,
-        'EPOCH_MS': lambda args: exp.UnixToTime(this=exp.Slash(
-            this=list_get(args, 0),
-            expression=Token.number(1000),
-        )),
-        'LIST_VALUE': exp.Array.from_arg_list,
-        'QUANTILE': exp.Quantile.from_arg_list,
-        'REGEXP_MATCHES': exp.RegexLike.from_arg_list,
-        'STRFTIME': exp.TimeToStr.from_arg_list,
-        'STRPTIME': exp.StrToTime.from_arg_list,
-        'TO_TIMESTAMP': exp.TimeStrToTime.from_arg_list
+        "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
+        "EPOCH": exp.TimeToUnix.from_arg_list,
+        "EPOCH_MS": lambda args: exp.UnixToTime(
+            this=exp.Slash(
+                this=list_get(args, 0),
+                expression=Token.number(1000),
+            )
+        ),
+        "LIST_VALUE": exp.Array.from_arg_list,
+        "QUANTILE": exp.Quantile.from_arg_list,
+        "REGEXP_MATCHES": exp.RegexLike.from_arg_list,
+        "STRFTIME": exp.TimeToStr.from_arg_list,
+        "STRPTIME": exp.StrToTime.from_arg_list,
+        "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
     }
 
 
 class Hive(Dialect):
-    identifier = '`'
+    identifier = "`"
     quotes = {"'", '"'}
-    escape = '\\'
+    escape = "\\"
 
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
     def _time_format(self, expression):
-        time_format = self.sql(expression, 'format')
+        time_format = self.sql(expression, "format")
         if time_format == Hive.TIME_FORMAT:
             return None
         return time_format
 
     def _fileformat_sql(self, expression):
-        file_format = self.sql(expression, 'this').replace(self.quote, '')
+        file_format = self.sql(expression, "this").replace(self.quote, "")
         if file_format:
-            return F"STORED AS {file_format}"
-        return ''
+            return f"STORED AS {file_format}"
+        return ""
 
     def _str_to_unix(self, expression):
         return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), Hive._time_format(self, expression))})"
 
     def _str_to_time(self, expression):
-        time_format = self.sql(expression, 'format')
+        time_format = self.sql(expression, "format")
         if time_format in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
             return f"DATE_FORMAT({self.sql(expression, 'this')}, {Hive.TIME_FORMAT})"
         return f"FROM_UNIXTIME({Hive._str_to_unix(self, expression)})"
 
     def _time_to_str(self, expression):
-        this = self.sql(expression, 'this')
-        time_format = self.sql(expression, 'format')
+        this = self.sql(expression, "this")
+        time_format = self.sql(expression, "format")
         if time_format == Hive.DATE_FORMAT:
             return f"TO_DATE({this})"
         return f"DATE_FORMAT({this}, {time_format})"
@@ -171,19 +178,19 @@ class Hive(Dialect):
         return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
 
     def ts_or_ds_to_date(self, expression):
-        this = self.sql(expression, 'this')
+        this = self.sql(expression, "this")
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
     transforms = {
-        TokenType.TEXT: 'STRING',
-        TokenType.VARCHAR: 'STRING',
+        TokenType.TEXT: "STRING",
+        TokenType.VARCHAR: "STRING",
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
         exp.Case: _case_if_sql,
         exp.CTE: _no_recursive_cte_sql,
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.DateStrToDate: lambda self, e: self.sql(e, 'this'),
+        exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
@@ -193,10 +200,10 @@ class Hive(Dialect):
         exp.StrToUnix: _str_to_unix,
         exp.StructExtract: _struct_extract_sql,
         exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
-        exp.TimeStrToTime: lambda self, e: self.sql(e, 'this'),
+        exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
         exp.TimeStrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')})",
         exp.TimeToStr: _time_to_str,
-        exp.TimeToTimeStr: lambda self, e: self.sql(e, 'this'),
+        exp.TimeToTimeStr: lambda self, e: self.sql(e, "this"),
         exp.TimeToUnix: _time_to_unix,
         exp.TsOrDsToDateStr: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.TsOrDsToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
@@ -206,37 +213,35 @@ class Hive(Dialect):
     }
 
     functions = {
-        'APPROX_COUNT_DISTINCT': exp.ApproxDistinct.from_arg_list,
-        'COLLECT_LIST': exp.ArrayAgg.from_arg_list,
-        'DATE_ADD': lambda args: exp.DateAdd(
+        "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
+        "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
+        "DATE_ADD": lambda args: exp.DateAdd(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=list_get(args, 1),
         ),
-        'DATEDIFF': lambda args: exp.DateDiff(
+        "DATEDIFF": lambda args: exp.DateDiff(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=exp.DateStrToDate(this=list_get(args, 1)),
         ),
-        'DATE_SUB': lambda args: exp.DateAdd(
+        "DATE_SUB": lambda args: exp.DateAdd(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=exp.Star(this=list_get(args, 1), expression=Token.number(-1)),
         ),
-        'DATE_FORMAT': exp.TimeToStr.from_arg_list,
-        'DAY': lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
-        'FROM_UNIXTIME': lambda args: exp.UnixToStr(
+        "DATE_FORMAT": exp.TimeToStr.from_arg_list,
+        "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
+        "FROM_UNIXTIME": lambda args: exp.UnixToStr(
             this=list_get(args, 0),
             format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
-        'GET_JSON_OBJECT': exp.JSONPath.from_arg_list,
-        'LOCATE': lambda args: exp.StrPosition(
-            this=list_get(args, 1),
-            substr=list_get(args, 0),
-            position=list_get(args, 2)
+        "GET_JSON_OBJECT": exp.JSONPath.from_arg_list,
+        "LOCATE": lambda args: exp.StrPosition(
+            this=list_get(args, 1), substr=list_get(args, 0), position=list_get(args, 2)
         ),
-        'MONTH': lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
-        'PERCENTILE': exp.Quantile.from_arg_list,
-        'SIZE': exp.ArraySize.from_arg_list,
-        'TO_DATE': exp.TsOrDsToDateStr.from_arg_list,
-        'UNIX_TIMESTAMP': lambda args: exp.StrToUnix(
+        "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
+        "PERCENTILE": exp.Quantile.from_arg_list,
+        "SIZE": exp.ArraySize.from_arg_list,
+        "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
+        "UNIX_TIMESTAMP": lambda args: exp.StrToUnix(
             this=list_get(args, 0),
             format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
@@ -244,70 +249,67 @@ class Hive(Dialect):
 
 
 class MySQL(Dialect):
-    identifier = '`'
+    identifier = "`"
 
 
 class Postgres(Dialect):
     transforms = {
-        TokenType.TINYINT: 'SMALLINT',
-        TokenType.FLOAT: 'REAL',
-        TokenType.DOUBLE: 'DOUBLE PRECISION',
-        TokenType.BINARY: 'BYTEA',
+        TokenType.TINYINT: "SMALLINT",
+        TokenType.FLOAT: "REAL",
+        TokenType.DOUBLE: "DOUBLE PRECISION",
+        TokenType.BINARY: "BYTEA",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
     }
 
-    functions = {
-        'TO_TIMESTAMP': exp.StrToTime.from_arg_list
-    }
+    functions = {"TO_TIMESTAMP": exp.StrToTime.from_arg_list}
 
 
 class Presto(Dialect):
     TIME_FORMAT = "'%Y-%m-%d %H:%i:%s'"
 
     def _approx_distinct_sql(self, expression):
-        accuracy = expression.args.get('accuracy')
-        accuracy = ', ' + self.sql(accuracy) if accuracy else ''
+        accuracy = expression.args.get("accuracy")
+        accuracy = ", " + self.sql(accuracy) if accuracy else ""
         return f"APPROX_DISTINCT({self.sql(expression, 'this')}{accuracy})"
 
     def _fileformat_sql(self, expression):
-        file_format = self.sql(expression, 'this').replace(self.quote, '')
+        file_format = self.sql(expression, "this").replace(self.quote, "")
         if file_format:
-            return F"WITH (FORMAT = '{file_format}')"
-        return ''
+            return f"WITH (FORMAT = '{file_format}')"
+        return ""
 
     def _date_parse_sql(self, expression):
         return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
 
     def _initcap_sql(self, expression):
-        regex = '(\w)(\w*)'  # pylint: disable=anomalous-backslash-in-string
+        regex = "(\w)(\w*)"  # noqa pylint: disable=anomalous-backslash-in-string
         return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
     def _quantile_sql(self, expression):
-        self.unsupported('Presto does not support exact quantiles')
+        self.unsupported("Presto does not support exact quantiles")
         return f"APPROX_PERCENTILE({self.sql(expression, 'this')}, {self.sql(expression, 'quantile')})"
 
     def _str_position_sql(self, expression):
-        this = self.sql(expression, 'this')
-        substr = self.sql(expression, 'substr')
-        position = self.sql(expression, 'position')
+        this = self.sql(expression, "this")
+        substr = self.sql(expression, "substr")
+        position = self.sql(expression, "position")
         if position:
             return f"STRPOS(SUBSTR({this}, {position}), {substr}) + {position} - 1"
         return f"STRPOS({this}, {substr})"
 
     def _ts_or_ds_to_date_str_sql(self, expression):
-        this = self.sql(expression, 'this')
+        this = self.sql(expression, "this")
         return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
 
     def _ts_or_ds_to_date_sql(self, expression):
-        this = self.sql(expression, 'this')
+        this = self.sql(expression, "this")
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
-
     transforms = {
-        TokenType.INT: 'INTEGER',
-        TokenType.FLOAT: 'REAL',
-        TokenType.BINARY: 'VARBINARY',
-        TokenType.TEXT: 'VARCHAR',
+        TokenType.INT: "INTEGER",
+        TokenType.FLOAT: "REAL",
+        TokenType.BINARY: "VARBINARY",
+        TokenType.TEXT: "VARCHAR",
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
         exp.ArrayContains: lambda self, e: f"CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -346,70 +348,65 @@ class Presto(Dialect):
     }
 
     functions = {
-        'APPROX_DISTINCT': exp.ApproxDistinct.from_arg_list,
-        'CARDINALITY': exp.ArraySize.from_arg_list,
-        'CONTAINS': exp.ArrayContains.from_arg_list,
-        'DATE_ADD': lambda args: exp.DateAdd(
+        "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
+        "CARDINALITY": exp.ArraySize.from_arg_list,
+        "CONTAINS": exp.ArrayContains.from_arg_list,
+        "DATE_ADD": lambda args: exp.DateAdd(
             this=list_get(args, 2),
             expression=list_get(args, 1),
             unit=list_get(args, 0),
         ),
-        'DATE_DIFF': lambda args: exp.DateDiff(
+        "DATE_DIFF": lambda args: exp.DateDiff(
             this=list_get(args, 2),
             expression=list_get(args, 1),
             unit=list_get(args, 0),
         ),
-        'DATE_FORMAT': exp.TimeToStr.from_arg_list,
-        'DATE_PARSE': exp.StrToTime.from_arg_list,
-        'FROM_UNIXTIME': exp.UnixToTime.from_arg_list,
-        'JSON_EXTRACT': exp.JSONPath.from_arg_list,
-        'JSON_EXTRACT_SCALAR': exp.JSONPath.from_arg_list,
-        'REGEXP_LIKE': exp.RegexLike.from_arg_list,
-        'STRPOS': exp.StrPosition.from_arg_list,
-        'TO_UNIXTIME': exp.TimeToUnix.from_arg_list
+        "DATE_FORMAT": exp.TimeToStr.from_arg_list,
+        "DATE_PARSE": exp.StrToTime.from_arg_list,
+        "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
+        "JSON_EXTRACT": exp.JSONPath.from_arg_list,
+        "JSON_EXTRACT_SCALAR": exp.JSONPath.from_arg_list,
+        "REGEXP_LIKE": exp.RegexLike.from_arg_list,
+        "STRPOS": exp.StrPosition.from_arg_list,
+        "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
     }
 
 
 class Spark(Hive):
-
     def _create_sql(self, e):
-        kind = e.args.get('kind')
-        temporary = e.args.get('temporary')
+        kind = e.args.get("kind")
+        temporary = e.args.get("temporary")
 
         if kind.token_type == TokenType.TABLE and temporary is True:
             return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
         return self.create_sql(e)
 
-
     transforms = {
         **Hive.transforms,
-        TokenType.TINYINT: 'BYTE',
-        TokenType.SMALLINT: 'SHORT',
-        TokenType.BIGINT: 'BIGINT',
-        TokenType.CHAR: 'CHAR',
-        TokenType.BINARY: 'ARRAY[BYTE]',
+        TokenType.TINYINT: "BYTE",
+        TokenType.SMALLINT: "SHORT",
+        TokenType.BIGINT: "BIGINT",
+        TokenType.CHAR: "CHAR",
+        TokenType.BINARY: "ARRAY[BYTE]",
         exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.Create: _create_sql
+        exp.Create: _create_sql,
     }
 
-    functions = {
-        **Hive.functions,
-        'TO_UNIX_TIMESTAMP': exp.StrToUnix.from_arg_list
-    }
+    functions = {**Hive.functions, "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list}
 
 
 class SQLite(Dialect):
     transforms = {
-        TokenType.BOOLEAN: 'INTEGER',
-        TokenType.TINYINT: 'INTEGER',
-        TokenType.SMALLINT: 'INTEGER',
-        TokenType.INT: 'INTEGER',
-        TokenType.BIGINT: 'INTEGER',
-        TokenType.FLOAT: 'REAL',
-        TokenType.DOUBLE: 'REAL',
-        TokenType.DECIMAL: 'REAL',
-        TokenType.CHAR: 'TEXT',
-        TokenType.VARCHAR: 'TEXT',
-        TokenType.BINARY: 'BLOB',
+        TokenType.BOOLEAN: "INTEGER",
+        TokenType.TINYINT: "INTEGER",
+        TokenType.SMALLINT: "INTEGER",
+        TokenType.INT: "INTEGER",
+        TokenType.BIGINT: "INTEGER",
+        TokenType.FLOAT: "REAL",
+        TokenType.DOUBLE: "REAL",
+        TokenType.DECIMAL: "REAL",
+        TokenType.CHAR: "TEXT",
+        TokenType.VARCHAR: "TEXT",
+        TokenType.BINARY: "BLOB",
     }

@@ -1,0 +1,5 @@
+pylint
+flake8
+nose
+black
+jedi

@@ -24,7 +24,11 @@ jobs:
     - name: Lint with pylint
       run: |
         pylint sqlglot/ tests/
+    - name: Lint with flake8
+      run: |
         flake8 sqlglot/ tests/
+    - name: Check code style
+      run: |
         black --check sqlglot/ tests/
     - name: Test with unittest
       run: |

@@ -381,7 +381,7 @@ class Tokenizer:
         self._peek = None
         self._text = None
 
-    def tokenize(self, code):  # noqa: C901 pylint: disable=too-many-branches
+    def tokenize(self, code):  # pylint: disable=too-many-branches
         self.reset()
         self.code = code
         self.size = len(code)

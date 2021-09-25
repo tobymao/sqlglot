@@ -33,12 +33,12 @@ def ensure_list(value):
     return value if isinstance(value, list) else [value]
 
 
-def csv(*args, sep=', '):
+def csv(*args, sep=", "):
     return sep.join(arg for arg in args if arg)
 
 
-CAMEL_CASE_PATTERN = re.compile('(?<!^)(?=[A-Z])')
+CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 
 
 def camel_to_snake_case(name):
-    return CAMEL_CASE_PATTERN.sub('_', name).upper()
+    return CAMEL_CASE_PATTERN.sub("_", name).upper()

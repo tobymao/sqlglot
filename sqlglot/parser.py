@@ -314,7 +314,7 @@ class Parser:
             and self._match(TokenType.EXISTS)
         )
 
-    def _parse_create(self):  # noqa: C901
+    def _parse_create(self):
         temporary = bool(self._match(TokenType.TEMPORARY))
         replace = bool(self._match(TokenType.OR) and self._match(TokenType.REPLACE))
 
@@ -884,7 +884,7 @@ class Parser:
 
         return self._parse_brackets(this)
 
-    def _parse_function(self, this, schema=False):  # noqa: C901
+    def _parse_function(self, this, schema=False):
         if not this:
             return this
         if this.token_type == TokenType.CASE:

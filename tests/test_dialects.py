@@ -379,7 +379,7 @@ class TestDialects(unittest.TestCase):
         # pylint: disable=anomalous-backslash-in-string
         self.validate(
             "INITCAP('new york')",
-            "REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",  # noqa: W605
+            "REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
             read="hive",
             write="presto",
         )

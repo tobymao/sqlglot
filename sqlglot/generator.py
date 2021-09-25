@@ -101,7 +101,7 @@ class Generator:
             for i, line in enumerate(sql.split("\n"))
         )
 
-    def sql(self, expression, key=None, identify=False):  # noqa: C901
+    def sql(self, expression, key=None, identify=False):
         if not expression:
             return ""
 

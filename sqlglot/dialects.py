@@ -282,7 +282,7 @@ class Presto(Dialect):
         return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
 
     def _initcap_sql(self, expression):
-        regex = "(\w)(\w*)"  # noqa pylint: disable=anomalous-backslash-in-string
+        regex = "(\w)(\w*)"  # pylint: disable=anomalous-backslash-in-string
         return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
     def _quantile_sql(self, expression):

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-black sqlglot/ tests/
+python -m black sqlglot/ tests/

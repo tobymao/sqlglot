@@ -2,9 +2,37 @@ import unittest
 
 import sqlglot.expressions as exp
 from sqlglot import parse_one
+from sqlglot.tokens import Token
 
 
 class TestExpressions(unittest.TestCase):
+    def test_eq(self):
+        self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"'))
+        self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"  '))
+        self.assertEqual(parse_one("`a`.b", read="hive"), parse_one('"a"."b"'))
+        self.assertEqual(parse_one("select a, b+1"), parse_one("SELECT a, b + 1"))
+        self.assertEqual(parse_one("`a`.`b`.`c`", read="hive"), parse_one("a.b.c"))
+        self.assertNotEqual(
+            parse_one("`a`.`b`.`c`.`d`", read="hive"), parse_one("a.b.c")
+        )
+        self.assertEqual(
+            parse_one("`a`.`b`.`c`.`d`", read="hive"), parse_one("a.b.c.d")
+        )
+        self.assertEqual(parse_one("a + b * c - 1.0"), parse_one("a+b*c-1.0"))
+        self.assertNotEqual(parse_one("a + b * c - 1.0"), parse_one("a + b * c + 1.0"))
+        self.assertEqual(parse_one("a as b"), parse_one("a AS b"))
+        self.assertNotEqual(parse_one("a as b"), parse_one("a"))
+        self.assertEqual(
+            parse_one("ROW() OVER(Partition by y)"),
+            parse_one("ROW() OVER (partition BY y)"),
+        )
+        self.assertEqual(
+            parse_one("IF(x > 0, 1, 2)"), parse_one("CASE WHEN x > 0 THEN 1 ELSE 2 END")
+        )
+        self.assertEqual(
+            parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date_str(x)")
+        )
+
     def test_find(self):
         expression = parse_one("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")
         self.assertTrue(expression.find(exp.Create))
@@ -82,6 +110,7 @@ class TestExpressions(unittest.TestCase):
             return node
 
         self.assertEqual(expression.transform(fun).sql(dialect="sql"), "FUN(a)")
+<<<<<<< HEAD
 
     def test_functions(self):
         # pylint: disable=too-many-statements
@@ -140,3 +169,23 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("VARIANCE(a)"), exp.Variance)
         self.assertIsInstance(parse_one("VARIANCE_POP(a)"), exp.VariancePop)
         self.assertIsInstance(parse_one("VARIANCE_SAMP(a)"), exp.VarianceSamp)
+
+    def test_column(self):
+        column = parse_one("a.b.c")
+        self.assertEqual(column.name, "c")
+        self.assertEqual(column.table, "b")
+        self.assertEqual(column.db, "a")
+
+        column = parse_one("a")
+        self.assertEqual(column.name, "a")
+        self.assertEqual(column.table, "")
+        self.assertEqual(column.db, "")
+
+        column = parse_one("a.b.c.d")
+        self.assertEqual(column.name, "")
+        self.assertEqual(column.table, "")
+        self.assertEqual(column.db, "")
+        self.assertEqual(
+            column.args["fields"],
+            [Token.var("a"), Token.var("b"), Token.var("c"), Token.var("d")],
+        )

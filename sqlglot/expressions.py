@@ -16,6 +16,14 @@ class Expression:
         self._parent = None
         self.arg_key = None
 
+    def __eq__(self, other):
+        return isinstance(other, Expression) and self.sql(identify=True) == other.sql(
+            identify=True
+        )
+
+    def __hash__(self):
+        return hash(self.sql(identify=True))
+
     @property
     def parent(self):
         return self._parent() if self._parent else None
@@ -164,7 +172,23 @@ class CTE(Expression):
 
 
 class Column(Expression):
-    arg_types = {"this": True, "db": False, "table": False, "fields": False}
+    arg_types = {"this": False, "db": False, "table": False, "fields": False}
+
+    def text(self, kind):
+        arg = self.args.get(kind)
+        return arg.text if arg else ""
+
+    @property
+    def name(self):
+        return self.text("this")
+
+    @property
+    def db(self):
+        return self.text("db")
+
+    @property
+    def table(self):
+        return self.text("table")
 
 
 class ColumnDef(Expression):

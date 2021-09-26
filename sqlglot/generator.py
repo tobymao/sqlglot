@@ -147,7 +147,7 @@ class Generator:
         fields = expression.args.get("fields")
 
         if fields:
-            return ".".join(self.sql(field) for field in fields)
+            return ".".join(self.sql(field, identify=True) for field in fields)
 
         return ".".join(
             part

@@ -147,6 +147,7 @@ class TokenType(AutoName):
     UPDATE = auto()
     VALUES = auto()
     VIEW = auto()
+    WINDOW = auto()
     WHEN = auto()
     WHERE = auto()
     WITH = auto()
@@ -157,7 +158,7 @@ class TokenType(AutoName):
 class Token:
     @classmethod
     def number(cls, number):
-        return cls(TokenType.NUMBER, f"{number}")
+        return cls(TokenType.NUMBER, str(number))
 
     @classmethod
     def string(cls, string):
@@ -167,6 +168,10 @@ class Token:
     def identifier(cls, identifier):
         return cls(TokenType.IDENTIFIER, identifier)
 
+    @classmethod
+    def var(cls, var):
+        return cls(TokenType.VAR, var)
+
     def __init__(self, token_type, text, line=1, col=1):
         self.token_type = token_type
         self.text = text
@@ -174,6 +179,14 @@ class Token:
         self.col = col - len(text)
         self.parent = None
         self.arg_key = None
+
+    def __eq__(self, other):
+        return isinstance(other, Token) and self.sql(identify=True) == other.sql(
+            identify=True
+        )
+
+    def __hash__(self):
+        return hash(self.sql(identify=True))
 
     def __repr__(self):
         attributes = ", ".join(

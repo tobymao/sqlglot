@@ -2,7 +2,7 @@
 import os
 import unittest
 
-from sqlglot import ErrorLevel, ParseError, TokenType, transpile
+from sqlglot import ErrorLevel, ParseError, TokenType, parse_one, transpile
 
 
 class TestTranspile(unittest.TestCase):
@@ -250,3 +250,4 @@ class TestTranspile(unittest.TestCase):
                     pretty = lines[i + 1].strip()
                     generated = transpile(sql, pretty=True)[0]
                     self.assertEqual(generated, pretty)
+                    self.assertEqual(parse_one(sql), parse_one(pretty))

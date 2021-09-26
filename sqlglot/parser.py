@@ -846,6 +846,8 @@ class Parser:
             this = self._match(*self.COLUMN_TOKENS)
 
         if this.token_type in self.COLUMN_TOKENS:
+            if fields:
+                this, table, db = None, None, None
             this = self.expression(
                 exp.Column, this=this, db=db, table=table, fields=fields
             )

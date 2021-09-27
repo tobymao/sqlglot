@@ -18,37 +18,9 @@ class Parser:
         return exp.Decimal(precision=precision, scale=scale)
 
     FUNCTIONS = {
+        **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
         "DECIMAL": _parse_decimal,
         "NUMERIC": _parse_decimal,
-        "ARRAY": exp.Array.from_arg_list,
-        "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
-        "ARRAY_AGG": exp.ArrayAgg.from_arg_list,
-        "ARRAY_CONTAINS": exp.ArrayContains.from_arg_list,
-        "ARRAY_SIZE": exp.ArraySize.from_arg_list,
-        "DATE_ADD": exp.DateAdd.from_arg_list,
-        "DATE_DIFF": exp.DateDiff.from_arg_list,
-        "DATE_STR_TO_DATE": exp.DateStrToDate.from_arg_list,
-        "DAY": exp.Day.from_arg_list,
-        "IF": exp.If.from_arg_list,
-        "INITCAP": exp.Initcap.from_arg_list,
-        "JSON_PATH": exp.JSONPath.from_arg_list,
-        "MONTH": exp.Month.from_arg_list,
-        "QUANTILE": exp.Quantile.from_arg_list,
-        "STR_POSITION": exp.StrPosition.from_arg_list,
-        "STR_TO_TIME": exp.StrToTime.from_arg_list,
-        "STR_TO_UNIX": exp.StrToUnix.from_arg_list,
-        "STRUCT_EXTRACT": exp.StructExtract.from_arg_list,
-        "TIME_STR_TO_DATE": exp.TimeStrToDate.from_arg_list,
-        "TIME_STR_TO_TIME": exp.TimeStrToTime.from_arg_list,
-        "TIME_STR_TO_UNIX": exp.TimeStrToUnix.from_arg_list,
-        "TIME_TO_STR": exp.TimeToStr.from_arg_list,
-        "TIME_TO_TIME_STR": exp.TimeToTimeStr.from_arg_list,
-        "TIME_TO_UNIX": exp.TimeToUnix.from_arg_list,
-        "TS_OR_DS_TO_DATE_STR": exp.TsOrDsToDateStr.from_arg_list,
-        "TS_OR_DS_TO_DATE": exp.TsOrDsToDate.from_arg_list,
-        "UNIX_TO_STR": exp.UnixToStr.from_arg_list,
-        "UNIX_TO_TIME": exp.UnixToTime.from_arg_list,
-        "UNIX_TO_TIME_STR": exp.UnixToTimeStr.from_arg_list,
     }
 
     TYPE_TOKENS = {

@@ -699,6 +699,18 @@ class Sqrt(Func):
     pass
 
 
+class Stddev(AggFunc):
+    pass
+
+
+class StddevPop(AggFunc):
+    pass
+
+
+class StddevSamp(AggFunc):
+    pass
+
+
 class TimeToStr(Func):
     arg_types = {"this": True, "format": True}
 
@@ -740,6 +752,18 @@ class UnixToTime(Func):
 
 
 class UnixToTimeStr(Func):
+    pass
+
+
+class Variance(AggFunc):
+    pass
+
+
+class VariancePop(AggFunc):
+    pass
+
+
+class VarianceSamp(AggFunc):
     pass
 
 

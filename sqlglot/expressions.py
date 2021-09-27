@@ -1,5 +1,7 @@
 from copy import deepcopy
+import inspect
 import weakref
+import sys
 
 from sqlglot.helper import camel_to_snake_case, ensure_list
 from sqlglot.tokens import TokenType
@@ -513,14 +515,30 @@ class Func(Expression):
         return cls(**args_dict)
 
     @classmethod
+    def sql_names(cls):
+        if cls is Func:
+            raise NotImplementedError(
+                "SQL name is only supported by concrete function implementations"
+            )
+        if not hasattr(cls, "_sql_names"):
+            cls._sql_names = [camel_to_snake_case(cls.__name__)]
+        return cls._sql_names
+
+    @classmethod
     def sql_name(cls):
-        if not hasattr(cls, "_sql_name"):
-            cls._sql_name = camel_to_snake_case(cls.__name__)
-        return cls._sql_name
+        return cls.sql_names()[0]
 
     @classmethod
     def default_parser_mappings(cls):
-        return {cls.sql_name: cls.from_arg_list}
+        return {name: cls.from_arg_list for name in cls.sql_names()}
+
+
+class AggFunc(Func):
+    pass
+
+
+class Abs(Func):
+    pass
 
 
 class Anonymous(Func):
@@ -528,7 +546,7 @@ class Anonymous(Func):
     is_var_len_args = True
 
 
-class ApproxDistinct(Func):
+class ApproxDistinct(AggFunc):
     arg_types = {"this": True, "accuracy": False}
 
 
@@ -538,7 +556,7 @@ class Array(Func):
     is_var_len_args = True
 
 
-class ArrayAgg(Func):
+class ArrayAgg(AggFunc):
     pass
 
 
@@ -550,7 +568,20 @@ class ArraySize(Func):
     pass
 
 
-class Count(Func):
+class Avg(AggFunc):
+    pass
+
+
+class Ceil(Func):
+    _sql_names = ["CEIL", "CEILING"]
+
+
+class Coalesce(Func):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
+class Count(AggFunc):
     arg_types = {"this": False, "distinct": False}
 
 
@@ -570,6 +601,19 @@ class Day(Func):
     pass
 
 
+class Exp(Func):
+    pass
+
+
+class Floor(Func):
+    pass
+
+
+class Greatest(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+
+
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
@@ -580,7 +624,20 @@ class Initcap(Func):
 
 class JSONPath(Func):
     arg_types = {"this": True, "path": True}
-    _sql_name = "JSON_PATH"
+    _sql_names = ["JSON_PATH"]
+
+
+class Least(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+
+
+class Ln(Func):
+    pass
+
+
+class Log10(Func):
+    pass
 
 
 class Map(Func):
@@ -588,17 +645,34 @@ class Map(Func):
     arg_types = {"keys": True, "values": True}
 
 
+class Max(AggFunc):
+    pass
+
+
+class Min(AggFunc):
+    pass
+
+
 class Month(Func):
     pass
 
 
-class Quantile(Func):
+class Pow(Func):
+    arg_types = {"this": True, "power": True}
+    _sql_names = ["POW", "POWER"]
+
+
+class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
 class RegexLike(Func):
     token_type = TokenType.RLIKE
     arg_types = {"this": True, "expression": True}
+
+
+class Round(Func):
+    arg_types = {"this": True, "decimals": False}
 
 
 class StrPosition(Func):
@@ -615,6 +689,14 @@ class StrToUnix(Func):
 
 class StructExtract(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Sum(AggFunc):
+    pass
+
+
+class Sqrt(Func):
+    pass
 
 
 class TimeToStr(Func):
@@ -659,3 +741,15 @@ class UnixToTime(Func):
 
 class UnixToTimeStr(Func):
     pass
+
+
+def _all_functions():
+    predicate = (
+        lambda obj: inspect.isclass(obj)
+        and issubclass(obj, Func)
+        and obj not in (AggFunc, Anonymous, Func)
+    )
+    return [obj for _, obj in inspect.getmembers(sys.modules[__name__], predicate)]
+
+
+ALL_FUNCTIONS = _all_functions()

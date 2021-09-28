@@ -6,10 +6,6 @@ from sqlglot.tokens import Token, TokenType
 import sqlglot.expressions as exp
 
 
-def expressions_to_map(*expressions):
-    return {expression.token_type: expression for expression in expressions}
-
-
 class Parser:
     def _parse_decimal(args):
         size = len(args)
@@ -93,44 +89,44 @@ class Parser:
         TokenType.WHEN,
     }
 
-    CONJUNCTION = expressions_to_map(
-        exp.And,
-        exp.Or,
-    )
+    CONJUNCTION = {
+        TokenType.AND: exp.And,
+        TokenType.OR: exp.Or,
+    }
 
-    EQUALITY = expressions_to_map(
-        exp.EQ,
-        exp.NEQ,
-        exp.Is,
-    )
+    EQUALITY = {
+        TokenType.EQ: exp.EQ,
+        TokenType.NEQ: exp.NEQ,
+        TokenType.IS: exp.Is,
+    }
 
-    COMPARISON = expressions_to_map(
-        exp.GT,
-        exp.GTE,
-        exp.LT,
-        exp.LTE,
-    )
+    COMPARISON = {
+        TokenType.GT: exp.GT,
+        TokenType.GTE: exp.GTE,
+        TokenType.LT: exp.LT,
+        TokenType.LTE: exp.LTE,
+    }
 
-    BITWISE = expressions_to_map(
-        exp.BitwiseLeftShift,
-        exp.BitwiseRightShift,
-        exp.BitwiseAnd,
-        exp.BitwiseXor,
-        exp.BitwiseOr,
-        exp.DPipe,
-    )
+    BITWISE = {
+        TokenType.LSHIFT: exp.BitwiseLeftShift,
+        TokenType.RSHIFT: exp.BitwiseRightShift,
+        TokenType.AMP: exp.BitwiseAnd,
+        TokenType.CARET: exp.BitwiseXor,
+        TokenType.PIPE: exp.BitwiseOr,
+        TokenType.DPIPE: exp.DPipe,
+    }
 
-    TERM = expressions_to_map(
-        exp.Minus,
-        exp.Plus,
-        exp.Mod,
-    )
+    TERM = {
+        TokenType.DASH: exp.Minus,
+        TokenType.PLUS: exp.Plus,
+        TokenType.MOD: exp.Mod,
+    }
 
-    FACTOR = expressions_to_map(
-        exp.Div,
-        exp.Slash,
-        exp.Star,
-    )
+    FACTOR = {
+        TokenType.DIV: exp.Div,
+        TokenType.SLASH: exp.Slash,
+        TokenType.STAR: exp.Star,
+    }
 
     def __init__(self, **opts):
         self.functions = {**self.FUNCTIONS, **(opts.get("functions") or {})}
@@ -209,13 +205,13 @@ class Parser:
         for k in expression.args:
             if k not in expression.arg_types:
                 self.raise_error(
-                    f"Unexpected keyword: '{k}' for {expression.token_type}"
+                    f"Unexpected keyword: '{k}' for {expression.__class__}"
                 )
         for k, mandatory in expression.arg_types.items():
             v = expression.args.get(k)
             if mandatory and (v is None or v == []):
                 self.raise_error(
-                    f"Required keyword: '{k}' missing for {expression.token_type}"
+                    f"Required keyword: '{k}' missing for {expression.__class__}"
                 )
 
     def _find_token(self, token, code):
@@ -560,7 +556,7 @@ class Parser:
         else:
             this = self._parse_alias(expression)
 
-        if this.token_type not in (TokenType.ALIAS, TokenType.TABLE):
+        if not isinstance(this, (exp.Alias, exp.Table)):
             this = self.expression(exp.Alias, this=this, alias=None)
 
         return this
@@ -998,7 +994,7 @@ class Parser:
 
         expressions = self._parse_csv(self._parse_conjunction)
 
-        if isinstance(this, Token) and this.token_type == TokenType.ARRAY:
+        if this.token_type == TokenType.ARRAY:
             bracket = self.expression(exp.Array, expressions=expressions)
         else:
             bracket = self.expression(exp.Bracket, this=this, expressions=expressions)

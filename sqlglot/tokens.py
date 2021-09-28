@@ -5,10 +5,8 @@ from sqlglot.trie import in_trie, new_trie
 
 
 class TokenType(AutoName):
-    PAREN = auto()
     L_PAREN = auto()
     R_PAREN = auto()
-    BRACKET = auto()
     L_BRACKET = auto()
     R_BRACKET = auto()
     L_BRACE = auto()
@@ -101,7 +99,6 @@ class TokenType(AutoName):
     FOLLOWING = auto()
     FORMAT = auto()
     FULL = auto()
-    FUNC = auto()
     FROM = auto()
     GROUP = auto()
     HAVING = auto()
@@ -140,11 +137,9 @@ class TokenType(AutoName):
     SCHEMA_COMMENT = auto()
     SELECT = auto()
     SET = auto()
-    SPEC = auto()
     STORED = auto()
     TEMPORARY = auto()
     TIME = auto()
-    TUPLE = auto()
     THEN = auto()
     UNBOUNDED = auto()
     UNION = auto()

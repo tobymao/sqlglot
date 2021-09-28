@@ -4,6 +4,7 @@ import weakref
 import sys
 
 from sqlglot.helper import camel_to_snake_case, ensure_list
+from sqlglot.tokens import Token
 
 
 class Expression:
@@ -17,7 +18,7 @@ class Expression:
         self.arg_key = None
 
     def __eq__(self, other):
-        return type(self) is type(other) and self.args == other.args
+        return type(self) is type(other) and _norm_args(self) == _norm_args(other)
 
     def __hash__(self):
         return hash(
@@ -25,7 +26,7 @@ class Expression:
                 self.key,
                 tuple(
                     (k, tuple(v) if isinstance(v, list) else v)
-                    for k, v in self.args.items()
+                    for k, v in _norm_args(self).items()
                 ),
             )
         )
@@ -179,26 +180,6 @@ class CTE(Expression):
 
 class Column(Expression):
     arg_types = {"this": False, "table": False, "db": False, "fields": False}
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, Column)
-            and (self.name or "").upper() == (other.name or "").upper()
-            and (self.table or "").upper() == (other.table or "").upper()
-            and (self.db or "").upper() == (other.db or "").upper()
-            and [f.upper() for f in self.fields] == [f.upper() for f in other.fields]
-        )
-
-    def __hash__(self):
-        return hash(
-            (
-                self.key,
-                (self.name or "").upper(),
-                (self.table or "").upper(),
-                (self.db or "").upper(),
-                tuple(f.upper() for f in self.fields),
-            )
-        )
 
     @property
     def name(self):
@@ -815,8 +796,21 @@ class VarianceSamp(AggFunc):
     pass
 
 
-def _token_arg_text(expression, kind):
-    arg = expression.args.get(kind)
+def _norm_args(expression):
+    return {
+        k: _norm_arg(arg) if not isinstance(arg, list) else [_norm_arg(a) for a in arg]
+        for k, arg in expression.args.items()
+    }
+
+
+def _norm_arg(arg):
+    arg = arg or ""
+    arg = arg.text if isinstance(arg, Token) else arg
+    return arg.upper() if isinstance(arg, str) else arg
+
+
+def _token_arg_text(expression, arg_key):
+    arg = expression.args.get(arg_key)
     return arg.text if arg else None
 
 

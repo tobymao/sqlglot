@@ -377,14 +377,14 @@ class Parser:
         )
 
     def _parse_insert(self):
-        overwrite = self._match(TokenType.OVERWRITE)
+        overwrite = bool(self._match(TokenType.OVERWRITE))
         self._match(TokenType.INTO)
         self._match(TokenType.TABLE)
 
         return self.expression(
             exp.Insert,
             this=self._parse_table(None),
-            exists=self._parse_exists(),
+            exists=bool(self._parse_exists()),
             expression=self._parse_select(),
             overwrite=overwrite,
         )
@@ -449,7 +449,7 @@ class Parser:
             this = self.expression(
                 exp.Select,
                 hint=self._parse_hint(),
-                distinct=self._match(TokenType.DISTINCT),
+                distinct=bool(self._match(TokenType.DISTINCT)),
                 expressions=self._parse_csv(self._parse_expression),
                 **{
                     "from": self._parse_from(),
@@ -491,19 +491,19 @@ class Parser:
             if not self._match(TokenType.VIEW):
                 self.raise_error("Expected VIEW afteral LATERAL")
 
-            outer = self._match(TokenType.OUTER)
+            outer = bool(self._match(TokenType.OUTER))
             this = self._parse_primary()
             table = self._parse_id_var()
 
             if self._match(TokenType.ALIAS):
-                columns = self._parse_csv(self._parse_id_var)
+                columns = self._parse_csv(self._parse_column)
 
             laterals.append(
                 self.expression(
                     exp.Lateral,
                     this=this,
                     outer=outer,
-                    table=table,
+                    table=self.expression(exp.Table, this=table),
                     columns=columns,
                 )
             )
@@ -522,8 +522,8 @@ class Parser:
                 self.expression(
                     exp.Join,
                     this=self._parse_table(),
-                    side=side,
-                    kind=kind,
+                    side=side.text if side else None,
+                    kind=kind.text if kind else None,
                     on=self._parse_conjunction() if self._match(TokenType.ON) else None,
                 )
             )
@@ -627,17 +627,22 @@ class Parser:
         )
 
     def _parse_ordered(self):
+        this = self._parse_bitwise()
+        desc = self._match(TokenType.ASC) or self._match(TokenType.DESC)
         return self.expression(
             exp.Ordered,
-            this=self._parse_bitwise(),
-            desc=not self._match(TokenType.ASC) and self._match(TokenType.DESC),
+            this=this,
+            desc=desc.token_type is TokenType.DESC if desc else False,
         )
 
     def _parse_limit(self):
         if not self._match(TokenType.LIMIT):
             return None
 
-        return self.expression(exp.Limit, this=self._match(TokenType.NUMBER))
+        limit_number = self._match(TokenType.NUMBER)
+        return self.expression(
+            exp.Limit, this=limit_number.text if limit_number else None
+        )
 
     def _parse_union(self, this):
         if not self._match(TokenType.UNION):
@@ -885,7 +890,7 @@ class Parser:
             if schema:
                 this = self.expression(exp.Schema, this=this, expressions=args)
             elif not callable(function):
-                this = self.expression(exp.Anonymous, this=this, expressions=args)
+                this = self.expression(exp.Anonymous, this=this.text, expressions=args)
             else:
                 this = function(args)
                 self.validate_expression(this)

@@ -175,7 +175,7 @@ class Token:
         self.token_type = token_type
         self.text = text
         self.line = line
-        self.col = col - len(text)
+        self.col = max(col - len(text), 1)
         self.parent = None
         self.arg_key = None
 
@@ -189,9 +189,8 @@ class Token:
         return self.text.upper() == other.text.upper()
 
     def __hash__(self):
-        if self.token_type == TokenType.STRING:
-            return hash((self.token_type, self.text))
-        return hash((self.token_type, self.text.upper()))
+        text = self.text if self.token_type == TokenType.STRING else self.text.upper()
+        return hash((self.token_type, text))
 
     def __repr__(self):
         attributes = ", ".join(

@@ -8,16 +8,16 @@ class TestTokens(unittest.TestCase):
     maxDiff = None
 
     def test_eq(self):
-        self.assertEqual(Token.number(1), parse_one("1"))
-        self.assertEqual(Token.string("1"), parse_one("'1'"))
-        self.assertEqual(Token.number(1.0), parse_one("1.0"))
+        self.assertEqual(Token.number(1), parse_one("1").token)
+        self.assertEqual(Token.string("1"), parse_one("'1'").token)
+        self.assertEqual(Token.number(1.0), parse_one("1.0").token)
         self.assertEqual(Token.identifier("x"), parse_one('"x"').args["this"])
         self.assertEqual(
             parse_one("`x`", read="spark").args["this"], parse_one('a."x"').args["this"]
         )
         self.assertNotEqual(Token.var("a"), parse_one("A"))
-        self.assertNotEqual(Token.string("1"), parse_one("1"))
-        self.assertNotEqual(Token.string("a"), parse_one("'A'"))
+        self.assertNotEqual(Token.string("1"), parse_one("1").token)
+        self.assertNotEqual(Token.string("a"), parse_one("'A'").token)
 
     def test_hash(self):
         self.assertEqual(
@@ -28,8 +28,8 @@ class TestTokens(unittest.TestCase):
                 Token.var("x"): "d",
             },
             {
-                parse_one("1"): "a",
-                parse_one("'x'"): "b",
+                parse_one("1").token: "a",
+                parse_one("'x'").token: "b",
                 parse_one('"x"').args["this"]: "c",
                 parse_one("x").args["this"]: "d",
             },

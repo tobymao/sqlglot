@@ -264,7 +264,6 @@ class Limit(Expression):
 
 
 class Literal(Expression):
-
     def __eq__(self, other):
         return (
             isinstance(other, Literal)

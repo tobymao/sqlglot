@@ -4,12 +4,11 @@ import weakref
 import sys
 
 from sqlglot.helper import camel_to_snake_case, ensure_list
-from sqlglot.tokens import TokenType
 
 
 class Expression:
-    token_type = None
     arg_types = {"this": True}
+    token_type = None
 
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
@@ -140,7 +139,6 @@ class Expression:
 
 
 class Create(Expression):
-    token_type = TokenType.CREATE
     arg_types = {
         "this": True,
         "kind": True,
@@ -158,22 +156,18 @@ class Create(Expression):
 
 
 class CharacterSet(Expression):
-    token_type = TokenType.CHARACTER_SET
     arg_types = {"this": True, "default": False}
 
 
 class CTE(Expression):
-    token_type = TokenType.WITH
     arg_types = {"this": True, "expressions": True, "recursive": False}
 
 
 class Column(Expression):
-    token_type = TokenType.COLUMN
     arg_types = {"this": True, "db": False, "table": False, "fields": False}
 
 
 class ColumnDef(Expression):
-    token_type = TokenType.COLUMN_DEF
     arg_types = {
         "this": True,
         "kind": True,
@@ -187,78 +181,66 @@ class ColumnDef(Expression):
 
 
 class Drop(Expression):
-    token_type = TokenType.DROP
     arg_types = {"this": False, "kind": False, "exists": False}
 
 
 class FileFormat(Expression):
-    token_type = TokenType.FORMAT
+    pass
 
 
 class From(Expression):
-    token_type = TokenType.FROM
     arg_types = {"expressions": True}
 
 
 class Having(Expression):
-    token_type = TokenType.HAVING
+    pass
 
 
 class Hint(Expression):
-    token_type = TokenType.HINT
+    pass
 
 
 class Insert(Expression):
-    token_type = TokenType.INSERT
     arg_types = {"this": True, "expression": True, "overwrite": False, "exists": False}
 
 
 class Group(Expression):
-    token_type = TokenType.GROUP
     arg_types = {"expressions": True}
 
 
 class Limit(Expression):
-    token_type = TokenType.LIMIT
+    pass
 
 
 class Join(Expression):
-    token_type = TokenType.JOIN
     arg_types = {"this": True, "on": False, "side": False, "kind": False}
 
 
 class Lateral(Expression):
-    token_type = TokenType.LATERAL
     arg_types = {"this": True, "outer": False, "table": False, "columns": False}
 
 
 class Order(Expression):
-    token_type = TokenType.ORDER
     arg_types = {"expressions": True}
 
 
 class Ordered(Expression):
-    token_type = TokenType.ORDERED
     arg_types = {"this": True, "desc": False}
 
 
 class Table(Expression):
-    token_type = TokenType.TABLE
     arg_types = {"this": True, "db": False}
 
 
 class Tuple(Expression):
-    token_type = TokenType.TUPLE
     arg_types = {"expressions": True}
 
 
 class Union(Expression):
-    token_type = TokenType.UNION
     arg_types = {"this": True, "expression": True, "distinct": True}
 
 
 class Unnest(Expression):
-    token_type = TokenType.UNNEST
     arg_types = {
         "expressions": True,
         "ordinality": False,
@@ -268,22 +250,18 @@ class Unnest(Expression):
 
 
 class Update(Expression):
-    token_type = TokenType.UPDATE
     arg_types = {"this": True, "expressions": True, "where": False}
 
 
 class Values(Expression):
-    token_type = TokenType.VALUES
     arg_types = {"expressions": True}
 
 
 class Schema(Expression):
-    token_type = TokenType.SCHEMA
     arg_types = {"this": True, "expressions": True}
 
 
 class Select(Expression):
-    token_type = TokenType.SELECT
     arg_types = {
         "expressions": True,
         "hint": False,
@@ -300,12 +278,10 @@ class Select(Expression):
 
 
 class Window(Expression):
-    token_type = TokenType.OVER
     arg_types = {"this": True, "partition": False, "order": False, "spec": False}
 
 
 class WindowSpec(Expression):
-    token_type = TokenType.SPEC
     arg_types = {
         "kind": False,
         "start": False,
@@ -316,7 +292,7 @@ class WindowSpec(Expression):
 
 
 class Where(Expression):
-    token_type = TokenType.WHERE
+    pass
 
 
 # Binary Expressions
@@ -327,95 +303,95 @@ class Binary(Expression):
 
 
 class And(Binary):
-    token_type = TokenType.AND
+    pass
 
 
 class BitwiseAnd(Binary):
-    token_type = TokenType.AMP
+    pass
 
 
 class BitwiseLeftShift(Binary):
-    token_type = TokenType.LSHIFT
+    pass
 
 
 class BitwiseOr(Binary):
-    token_type = TokenType.PIPE
+    pass
 
 
 class BitwiseRightShift(Binary):
-    token_type = TokenType.RSHIFT
+    pass
 
 
 class BitwiseXor(Binary):
-    token_type = TokenType.CARET
+    pass
 
 
 class Minus(Binary):
-    token_type = TokenType.DASH
+    pass
 
 
 class Div(Binary):
-    token_type = TokenType.DIV
+    pass
 
 
 class Dot(Binary):
-    token_type = TokenType.DOT
+    pass
 
 
 class DPipe(Binary):
-    token_type = TokenType.DPIPE
+    pass
 
 
 class EQ(Binary):
-    token_type = TokenType.EQ
+    pass
 
 
 class GT(Binary):
-    token_type = TokenType.GT
+    pass
 
 
 class GTE(Binary):
-    token_type = TokenType.GTE
+    pass
 
 
 class Is(Binary):
-    token_type = TokenType.IS
+    pass
 
 
 class Like(Binary):
-    token_type = TokenType.LIKE
+    pass
 
 
 class LT(Binary):
-    token_type = TokenType.LT
+    pass
 
 
 class LTE(Binary):
-    token_type = TokenType.LTE
+    pass
 
 
 class Mod(Binary):
-    token_type = TokenType.MOD
+    pass
 
 
 class NEQ(Binary):
-    token_type = TokenType.NEQ
+    pass
 
 
 class Or(Binary):
-    token_type = TokenType.OR
+    pass
 
 
 class Plus(Binary):
-    token_type = TokenType.PLUS
+    pass
 
 
 class Star(Binary):
-    token_type = TokenType.STAR
+    pass
 
 
 class Slash(Binary):
-    token_type = TokenType.SLASH
+    pass
 
 
 # Unary Expressions
@@ -425,70 +401,60 @@ class Unary(Expression):
 
 
 class BitwiseNot(Unary):
-    token_type = TokenType.TILDA
+    pass
 
 
 class Not(Unary):
-    token_type = TokenType.NOT
+    pass
 
 
 class Paren(Unary):
-    token_type = TokenType.PAREN
+    pass
 
 
 class Neg(Unary):
-    token_type = TokenType.DASH
+    pass
 
 
 # Special Functions
 class Alias(Expression):
-    token_type = TokenType.ALIAS
     arg_types = {"this": True, "alias": False}
 
 
 class Between(Expression):
-    token_type = TokenType.BETWEEN
     arg_types = {"this": True, "low": True, "high": True}
 
 
 class Bracket(Expression):
-    token_type = TokenType.BRACKET
     arg_types = {"this": True, "expressions": True}
 
 
 class Case(Expression):
-    token_type = TokenType.CASE
     arg_types = {"this": False, "ifs": True, "default": False}
 
 
 class Cast(Expression):
-    token_type = TokenType.CAST
     arg_types = {"this": True, "to": True}
 
 
 class Decimal(Expression):
-    token_type = TokenType.DECIMAL
     arg_types = {"precision": False, "scale": False}
 
 
 class Extract(Expression):
-    token_type = TokenType.EXTRACT
     arg_types = {"this": True, "expression": True}
 
 
 class In(Expression):
-    token_type = TokenType.IN
     arg_types = {"this": True, "expressions": False, "query": False}
 
 
 class Interval(Expression):
-    token_type = TokenType.IN
     arg_types = {"this": True, "unit": True}
 
 
 # Functions
 class Func(Expression):
-    token_type = TokenType.FUNC
     is_var_len_args = False
 
     @classmethod
@@ -551,7 +517,6 @@ class ApproxDistinct(AggFunc):
 
 
 class Array(Func):
-    token_type = TokenType.ARRAY
     arg_types = {"expressions": False}
     is_var_len_args = True
 
@@ -641,7 +606,6 @@ class Log10(Func):
 
 
 class Map(Func):
-    token_type = TokenType.MAP
     arg_types = {"keys": True, "values": True}
 
 
@@ -667,7 +631,6 @@ class Quantile(AggFunc):
 
 
 class RegexLike(Func):
-    token_type = TokenType.RLIKE
     arg_types = {"this": True, "expression": True}
 
 

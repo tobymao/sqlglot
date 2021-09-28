@@ -60,12 +60,14 @@ class TestParser(unittest.TestCase):
 
         warn = Parser(error_level=ErrorLevel.WARN)
         warn.expression(exp.Hint, y="")
-        assert "Unexpected keyword: 'y' for TokenType.HINT. Line 1, Col: 1." in str(
-            logging.error.call_args_list[0][0][0]
+
+        assert (
+            "Unexpected keyword: 'y' for <class 'sqlglot.expressions.Hint'>. Line 1, Col: 1."
+            in str(logging.error.call_args_list[0][0][0])
         )
         warn.expression(exp.Hint)
         assert (
-            "Required keyword: 'this' missing for TokenType.HINT. Line 1, Col: 1."
+            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Hint'>. Line 1, Col: 1."
             in str(logging.error.call_args_list[1][0][0])
         )
 

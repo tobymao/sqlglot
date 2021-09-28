@@ -7,17 +7,17 @@ from sqlglot.tokens import Token, TokenType, Tokenizer
 
 
 class Generator:
-    BODY_TOKENS = {
-        TokenType.SELECT,
-        TokenType.FROM,
-        TokenType.JOIN,
-        TokenType.WHERE,
-        TokenType.GROUP,
-        TokenType.HAVING,
-        TokenType.ORDER,
-        TokenType.UNION,
-        TokenType.WITH,
-    }
+    BODY_EXP = (
+        exp.Select,
+        exp.From,
+        exp.Join,
+        exp.Where,
+        exp.Group,
+        exp.Having,
+        exp.Order,
+        exp.Union,
+        exp.CTE,
+    )
 
     TRANSFORMS = {
         TokenType.BOOLEAN: "BOOLEAN",
@@ -120,7 +120,7 @@ class Generator:
         if transform:
             return transform
 
-        if isinstance(expression, Token):
+        if expression.token_type:
             text = expression.text.replace(Tokenizer.ESCAPE_CODE, self.escape)
             if expression.token_type == TokenType.IDENTIFIER or (
                 self.identify and identify
@@ -407,7 +407,7 @@ class Generator:
         return case
 
     def decimal_sql(self, expression):
-        if isinstance(expression, Token):
+        if expression.token_type:
             return "DECIMAL"
         args = ", ".join(
             arg.text
@@ -451,7 +451,7 @@ class Generator:
         to_sql = self.sql(expression, "alias")
         to_sql = f" AS {to_sql}" if to_sql else ""
 
-        if expression.args["this"].token_type in self.BODY_TOKENS:
+        if isinstance(expression.args["this"], self.BODY_EXP):
             if self.pretty:
                 return f"{self.wrap(expression)}{to_sql}"
             return f"({self.sql(expression, 'this')}){to_sql}"

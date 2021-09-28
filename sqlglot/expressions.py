@@ -183,38 +183,39 @@ class Column(Expression):
     def __eq__(self, other):
         return (
             isinstance(other, Column)
-            and self.name.upper() == other.name.upper()
-            and self.table.upper() == other.table.upper()
-            and self.db.upper() == other.db.upper()
-            and self.args.get("fields") == other.args.get("fields")
+            and (self.name or "").upper() == (other.name or "").upper()
+            and (self.table or "").upper() == (other.table or "").upper()
+            and (self.db or "").upper() == (other.db or "").upper()
+            and [f.upper() for f in self.fields] == [f.upper() for f in other.fields]
         )
 
     def __hash__(self):
         return hash(
             (
                 self.key,
-                self.name.upper(),
-                self.table.upper(),
-                self.db.upper(),
-                tuple(self.args.get("fields") or []),
+                (self.name or "").upper(),
+                (self.table or "").upper(),
+                (self.db or "").upper(),
+                tuple(f.upper() for f in self.fields),
             )
         )
 
-    def text(self, kind):
-        arg = self.args.get(kind)
-        return arg.text if arg else ""
-
     @property
     def name(self):
-        return self.text("this")
+        return _token_arg_text(self, "this")
 
     @property
     def table(self):
-        return self.text("table")
+        return _token_arg_text(self, "table")
 
     @property
     def db(self):
-        return self.text("db")
+        return _token_arg_text(self, "db")
+
+    @property
+    def fields(self):
+        fields = self.args.get("fields")
+        return [t.text for t in fields] if fields else []
 
 
 class ColumnDef(Expression):
@@ -260,6 +261,32 @@ class Group(Expression):
 
 class Limit(Expression):
     pass
+
+
+class Literal(Expression):
+    def __eq__(self, other):
+        return (
+            isinstance(other, Literal)
+            and self.text == other.text
+            and self.token.token_type == other.token.token_type
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.key,
+                self.text,
+                self.token_type,
+            )
+        )
+
+    @property
+    def token(self):
+        return self.args.get("this")
+
+    @property
+    def text(self):
+        return _token_arg_text(self, "this")
 
 
 class Join(Expression):
@@ -345,6 +372,14 @@ class Where(Expression):
     pass
 
 
+class Star(Expression):
+    arg_types = {}
+
+
+class Null(Expression):
+    arg_types = {}
+
+
 # Binary Expressions
 # (PLUS a b)
 # (FROM table selects)
@@ -380,7 +415,7 @@ class Minus(Binary):
     pass
 
 
-class Div(Binary):
+class IntDiv(Binary):
     pass
 
 
@@ -436,11 +471,11 @@ class Plus(Binary):
     pass
 
 
-class Star(Binary):
+class Mul(Binary):
     pass
 
 
-class Slash(Binary):
+class Div(Binary):
     pass
 
 
@@ -778,6 +813,11 @@ class VariancePop(AggFunc):
 
 class VarianceSamp(AggFunc):
     pass
+
+
+def _token_arg_text(expression, kind):
+    arg = expression.args.get(kind)
+    return arg.text if arg else None
 
 
 def _all_functions():

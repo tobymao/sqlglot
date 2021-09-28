@@ -301,6 +301,13 @@ class Generator:
     def limit_sql(self, expression):
         return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
 
+    def literal_sql(self, expression):
+        return self.sql(expression, key="this")
+
+    def null_sql(self, expression):
+        # pylint: disable=unused-argument
+        return "NULL"
+
     def order_sql(self, expression, flat=False):
         return self.op_expressions("ORDER BY", expression, flat=flat)
 
@@ -329,6 +336,10 @@ class Generator:
     def schema_sql(self, expression):
         sql = f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
         return f"{self.sql(expression, 'this')} {sql}"
+
+    def star_sql(self, expression):
+        # pylint: disable=unused-argument
+        return "*"
 
     def union_sql(self, expression):
         this = self.sql(expression, "this")
@@ -485,10 +496,10 @@ class Generator:
         distinct = "DISTINCT " if expression.args["distinct"] else ""
         return f"COUNT({distinct}{self.sql(expression, 'this')})"
 
-    def div_sql(self, expression):
+    def intdiv_sql(self, expression):
         return self.sql(
             exp.Cast(
-                this=exp.Slash(
+                this=exp.Div(
                     this=expression.args["this"],
                     expression=expression.args["expression"],
                 ),
@@ -541,10 +552,10 @@ class Generator:
     def regexlike_sql(self, expression):
         return self.binary(expression, "RLIKE")
 
-    def slash_sql(self, expression):
+    def div_sql(self, expression):
         return self.binary(expression, "/")
 
-    def star_sql(self, expression):
+    def mul_sql(self, expression):
         return self.binary(expression, "*")
 
     def binary(self, expression, op, newline=False):

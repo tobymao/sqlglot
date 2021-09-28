@@ -17,12 +17,18 @@ class Expression:
         self.arg_key = None
 
     def __eq__(self, other):
-        return isinstance(other, Expression) and self.sql(identify=True) == other.sql(
-            identify=True
-        )
+        return type(self) is type(other) and self.args == other.args
 
     def __hash__(self):
-        return hash(self.sql(identify=True))
+        return hash(
+            (
+                self.key,
+                tuple(
+                    (k, tuple(v) if isinstance(v, list) else v)
+                    for k, v in self.args.items()
+                ),
+            )
+        )
 
     @property
     def parent(self):
@@ -172,7 +178,27 @@ class CTE(Expression):
 
 
 class Column(Expression):
-    arg_types = {"this": False, "db": False, "table": False, "fields": False}
+    arg_types = {"this": False, "table": False, "db": False, "fields": False}
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Column)
+            and self.name.upper() == other.name.upper()
+            and self.table.upper() == other.table.upper()
+            and self.db.upper() == other.db.upper()
+            and self.args.get("fields") == other.args.get("fields")
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.key,
+                self.name.upper(),
+                self.table.upper(),
+                self.db.upper(),
+                tuple(self.args.get("fields") or []),
+            )
+        )
 
     def text(self, kind):
         arg = self.args.get(kind)
@@ -183,12 +209,12 @@ class Column(Expression):
         return self.text("this")
 
     @property
-    def db(self):
-        return self.text("db")
-
-    @property
     def table(self):
         return self.text("table")
+
+    @property
+    def db(self):
+        return self.text("db")
 
 
 class ColumnDef(Expression):

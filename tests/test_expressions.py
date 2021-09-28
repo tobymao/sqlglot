@@ -12,12 +12,8 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("`a`.b", read="hive"), parse_one('"a"."b"'))
         self.assertEqual(parse_one("select a, b+1"), parse_one("SELECT a, b + 1"))
         self.assertEqual(parse_one("`a`.`b`.`c`", read="hive"), parse_one("a.b.c"))
-        self.assertNotEqual(
-            parse_one("`a`.`b`.`c`.`d`", read="hive"), parse_one("a.b.c")
-        )
-        self.assertEqual(
-            parse_one("`a`.`b`.`c`.`d`", read="hive"), parse_one("a.b.c.d")
-        )
+        self.assertNotEqual(parse_one("a.b.c.d", read="hive"), parse_one("a.b.c"))
+        self.assertEqual(parse_one("a.b.c.d", read="hive"), parse_one("a.b.c.d"))
         self.assertEqual(parse_one("a + b * c - 1.0"), parse_one("a+b*c-1.0"))
         self.assertNotEqual(parse_one("a + b * c - 1.0"), parse_one("a + b * c + 1.0"))
         self.assertEqual(parse_one("a as b"), parse_one("a AS b"))
@@ -25,9 +21,6 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(
             parse_one("ROW() OVER(Partition by y)"),
             parse_one("ROW() OVER (partition BY y)"),
-        )
-        self.assertEqual(
-            parse_one("IF(x > 0, 1, 2)"), parse_one("CASE WHEN x > 0 THEN 1 ELSE 2 END")
         )
         self.assertEqual(
             parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date_str(x)")
@@ -72,6 +65,22 @@ class TestExpressions(unittest.TestCase):
             ["d", "c", "b"],
         )
 
+    def test_hash(self):
+        self.assertEqual(
+            {
+                parse_one("select a.b"),
+                parse_one("1+2"),
+                parse_one('"a".b'),
+                parse_one("a.b.c.d"),
+            },
+            {
+                parse_one("select a.b"),
+                parse_one("1+2"),
+                parse_one('"a"."b"'),
+                parse_one("a.b.c.d"),
+            },
+        )
+
     def test_sql(self):
         assert parse_one("x + y * 2").sql() == "x + y * 2"
         assert (
@@ -110,7 +119,6 @@ class TestExpressions(unittest.TestCase):
             return node
 
         self.assertEqual(expression.transform(fun).sql(dialect="sql"), "FUN(a)")
-<<<<<<< HEAD
 
     def test_functions(self):
         # pylint: disable=too-many-statements

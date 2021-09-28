@@ -181,12 +181,18 @@ class Token:
         self.arg_key = None
 
     def __eq__(self, other):
-        return isinstance(other, Token) and self.sql(identify=True) == other.sql(
-            identify=True
-        )
+        if not isinstance(other, Token) or self.token_type != other.token_type:
+            return False
+
+        if self.token_type == TokenType.STRING:
+            return self.text == other.text
+
+        return self.text.upper() == other.text.upper()
 
     def __hash__(self):
-        return hash(self.sql(identify=True))
+        if self.token_type == TokenType.STRING:
+            return hash((self.token_type, self.text))
+        return hash((self.token_type, self.text.upper()))
 
     def __repr__(self):
         attributes = ", ".join(

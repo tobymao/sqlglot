@@ -71,9 +71,13 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    PRIMARY_TOKENS = {
+    LITERAL_TOKENS = {
         TokenType.STRING,
         TokenType.NUMBER,
+    }
+
+    PRIMARY_TOKENS = {
+        *LITERAL_TOKENS,
         TokenType.STAR,
         TokenType.NULL,
     }
@@ -123,9 +127,9 @@ class Parser:
     }
 
     FACTOR = {
-        TokenType.DIV: exp.Div,
-        TokenType.SLASH: exp.Slash,
-        TokenType.STAR: exp.Star,
+        TokenType.DIV: exp.IntDiv,
+        TokenType.SLASH: exp.Div,
+        TokenType.STAR: exp.Mul,
     }
 
     def __init__(self, **opts):
@@ -808,8 +812,14 @@ class Parser:
         return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
 
     def _parse_primary(self):
-        if self._match(*self.PRIMARY_TOKENS):
-            return self._prev
+        if self._match(TokenType.STAR):
+            return self.expression(exp.Star)
+
+        if self._match(TokenType.NULL):
+            return self.expression(exp.Null)
+
+        if self._match(*self.LITERAL_TOKENS):
+            return self.expression(exp.Literal, this=self._prev)
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev

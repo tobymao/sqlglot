@@ -2,7 +2,6 @@ import unittest
 
 import sqlglot.expressions as exp
 from sqlglot import parse_one
-from sqlglot.tokens import Token
 
 
 class TestExpressions(unittest.TestCase):
@@ -186,14 +185,14 @@ class TestExpressions(unittest.TestCase):
 
         column = parse_one("a")
         self.assertEqual(column.name, "a")
-        self.assertEqual(column.table, "")
-        self.assertEqual(column.db, "")
+        self.assertIsNone(column.table)
+        self.assertIsNone(column.db)
 
         column = parse_one("a.b.c.d")
-        self.assertEqual(column.name, "")
-        self.assertEqual(column.table, "")
-        self.assertEqual(column.db, "")
+        self.assertIsNone(column.name)
+        self.assertIsNone(column.table)
+        self.assertIsNone(column.db)
         self.assertEqual(
-            column.args["fields"],
-            [Token.var("a"), Token.var("b"), Token.var("c"), Token.var("d")],
+            column.fields,
+            ["a", "b", "c", "d"],
         )

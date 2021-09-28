@@ -121,7 +121,7 @@ class DuckDB(Dialect):
         "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
         "EPOCH": exp.TimeToUnix.from_arg_list,
         "EPOCH_MS": lambda args: exp.UnixToTime(
-            this=exp.Slash(
+            this=exp.Div(
                 this=list_get(args, 0),
                 expression=Token.number(1000),
             )
@@ -225,7 +225,7 @@ class Hive(Dialect):
         ),
         "DATE_SUB": lambda args: exp.DateAdd(
             this=exp.DateStrToDate(this=list_get(args, 0)),
-            expression=exp.Star(this=list_get(args, 1), expression=Token.number(-1)),
+            expression=exp.Mul(this=list_get(args, 1), expression=Token.number(-1)),
         ),
         "DATE_FORMAT": exp.TimeToStr.from_arg_list,
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),

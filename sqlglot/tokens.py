@@ -157,7 +157,7 @@ class TokenType(AutoName):
 class Token:
     @classmethod
     def number(cls, number):
-        return cls(TokenType.NUMBER, f"{number}")
+        return cls(TokenType.NUMBER, str(number))
 
     @classmethod
     def string(cls, string):
@@ -167,6 +167,10 @@ class Token:
     def identifier(cls, identifier):
         return cls(TokenType.IDENTIFIER, identifier)
 
+    @classmethod
+    def var(cls, var):
+        return cls(TokenType.VAR, var)
+
     def __init__(self, token_type, text, line=1, col=1):
         self.token_type = token_type
         self.text = text
@@ -174,6 +178,20 @@ class Token:
         self.col = col - len(text)
         self.parent = None
         self.arg_key = None
+
+    def __eq__(self, other):
+        if not isinstance(other, Token) or self.token_type != other.token_type:
+            return False
+
+        if self.token_type == TokenType.STRING:
+            return self.text == other.text
+
+        return self.text.upper() == other.text.upper()
+
+    def __hash__(self):
+        if self.token_type == TokenType.STRING:
+            return hash((self.token_type, self.text))
+        return hash((self.token_type, self.text.upper()))
 
     def __repr__(self):
         attributes = ", ".join(

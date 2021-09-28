@@ -234,8 +234,7 @@ class Generator:
         return ""
 
     def insert_sql(self, expression):
-        overwrite = self.sql(expression, "overwrite")
-        kind = "OVERWRITE" if overwrite else "INTO"
+        kind = "OVERWRITE" if expression.args.get("overwrite") else "INTO"
         this = self.sql(expression, "this")
         exists = " IF EXISTS " if expression.args.get("exists") else " "
         expression_sql = self.sql(expression, "expression")
@@ -312,8 +311,8 @@ class Generator:
         return self.op_expressions("ORDER BY", expression, flat=flat)
 
     def ordered_sql(self, expression):
-        desc = self.sql(expression, "desc")
-        desc = f" {desc}" if desc else ""
+        desc = expression.args.get("desc")
+        desc = " DESC" if desc else ""
         return f"{self.sql(expression, 'this')}{desc}"
 
     def select_sql(self, expression):

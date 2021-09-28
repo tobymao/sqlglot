@@ -147,7 +147,6 @@ class TokenType(AutoName):
     UPDATE = auto()
     VALUES = auto()
     VIEW = auto()
-    WINDOW = auto()
     WHEN = auto()
     WHERE = auto()
     WITH = auto()

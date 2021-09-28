@@ -496,7 +496,7 @@ class Parser:
             table = self._parse_id_var()
 
             if self._match(TokenType.ALIAS):
-                columns = self._parse_csv(self._parse_column)
+                columns = self._parse_csv(self._parse_id_var)
 
             laterals.append(
                 self.expression(

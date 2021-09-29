@@ -3,7 +3,7 @@ import logging
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import ensure_list, csv
-from sqlglot.tokens import Token, TokenType, Tokenizer
+from sqlglot.tokens import TokenType, Tokenizer
 
 
 class Generator:
@@ -20,24 +20,13 @@ class Generator:
     )
 
     TRANSFORMS = {
-        TokenType.BOOLEAN: "BOOLEAN",
-        TokenType.TINYINT: "TINYINT",
-        TokenType.SMALLINT: "SMALLINT",
-        TokenType.INT: "INT",
-        TokenType.BIGINT: "BIGINT",
-        TokenType.FLOAT: "FLOAT",
-        TokenType.DOUBLE: "DOUBLE",
-        TokenType.CHAR: "CHAR",
-        TokenType.VARCHAR: "VARCHAR",
-        TokenType.TEXT: "TEXT",
-        TokenType.BINARY: "BINARY",
-        TokenType.JSON: "JSON",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
     }
 
     def __init__(self, **opts):
         self.transforms = {**self.TRANSFORMS, **(opts.get("transforms") or {})}
+        self.type_mappings = opts.get("type_mappings") or {}
         self.pretty = opts.get("pretty")
         self.identifier = opts.get("identifier") or '"'
         self.identify = opts.get("identify", False)
@@ -101,7 +90,7 @@ class Generator:
             for i, line in enumerate(sql.split("\n"))
         )
 
-    def sql(self, expression, key=None, identify=False):
+    def sql(self, expression, key=None):
         if not expression:
             return ""
 
@@ -109,26 +98,14 @@ class Generator:
             return expression
 
         if key:
-            return self.sql(expression.args.get(key), identify=identify)
+            return self.sql(expression.args.get(key))
 
-        transform = self.transforms.get(expression.__class__) or self.transforms.get(
-            expression.token_type
-        )
+        transform = self.transforms.get(expression.__class__)
 
         if callable(transform):
             return transform(self, expression)
         if transform:
             return transform
-
-        if expression.token_type:
-            text = expression.text.replace(Tokenizer.ESCAPE_CODE, self.escape)
-            if expression.token_type == TokenType.IDENTIFIER or (
-                self.identify and identify
-            ):
-                text = f"{self.identifier}{text}{self.identifier}"
-            elif expression.token_type == TokenType.STRING:
-                return f"{self.quote}{text}{self.quote}"
-            return text
 
         exp_handler_name = f"{expression.key}_sql"
         if hasattr(self, exp_handler_name):
@@ -147,14 +124,14 @@ class Generator:
         fields = expression.args.get("fields")
 
         if fields:
-            return ".".join(self.sql(field, identify=True) for field in fields)
+            return ".".join(self.sql(field) for field in fields)
 
         return ".".join(
             part
             for part in [
-                self.sql(expression, "db", identify=True),
-                self.sql(expression, "table", identify=True),
-                self.sql(expression, "this", identify=True),
+                self.sql(expression, "db"),
+                self.sql(expression, "table"),
+                self.sql(expression, "this"),
             ]
             if part
         )
@@ -217,6 +194,12 @@ class Generator:
 
         return f"WITH {recursive}{sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
 
+    def datatype_sql(self, expression):
+        type_value = expression.args.get("this")
+        return self.type_mappings.get(
+            type_value, type_value.value if type_value else None
+        )
+
     def drop_sql(self, expression):
         this = self.sql(expression, "this")
         kind = expression.args["kind"].upper()
@@ -233,9 +216,14 @@ class Generator:
             self.unsupported("Hints are not supported")
         return ""
 
+    def identifier_sql(self, expression):
+        value = expression.args.get("this") or ""
+        if expression.args.get("quoted") or self.identify:
+            return f"{self.identifier}{value}{self.identifier}"
+        return value
+
     def insert_sql(self, expression):
-        overwrite = self.sql(expression, "overwrite")
-        kind = "OVERWRITE" if overwrite else "INTO"
+        kind = "OVERWRITE" if expression.args.get("overwrite") else "INTO"
         this = self.sql(expression, "this")
         exists = " IF EXISTS " if expression.args.get("exists") else " "
         expression_sql = self.sql(expression, "expression")
@@ -245,9 +233,9 @@ class Generator:
         return ".".join(
             part
             for part in [
-                self.sql(expression, "db", identify=True),
-                self.sql(expression, "table", identify=True),
-                self.sql(expression, "this", identify=True),
+                self.sql(expression, "db"),
+                self.sql(expression, "table"),
+                self.sql(expression, "this"),
             ]
             if part
         )
@@ -302,7 +290,12 @@ class Generator:
         return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
 
     def literal_sql(self, expression):
-        return self.sql(expression, key="this")
+        text = expression.args.get("this") or ""
+        token_type = expression.args.get("token_type")
+        if token_type == TokenType.STRING:
+            text = text.replace(Tokenizer.ESCAPE_CODE, self.escape)
+            return f"{self.quote}{text}{self.quote}"
+        return text
 
     def null_sql(self, expression):
         # pylint: disable=unused-argument
@@ -312,8 +305,8 @@ class Generator:
         return self.op_expressions("ORDER BY", expression, flat=flat)
 
     def ordered_sql(self, expression):
-        desc = self.sql(expression, "desc")
-        desc = f" {desc}" if desc else ""
+        desc = expression.args.get("desc")
+        desc = " DESC" if desc else ""
         return f"{self.sql(expression, 'this')}{desc}"
 
     def select_sql(self, expression):
@@ -418,10 +411,8 @@ class Generator:
         return case
 
     def decimal_sql(self, expression):
-        if expression.token_type:
-            return "DECIMAL"
         args = ", ".join(
-            arg.text
+            arg.args.get("this")
             for arg in [expression.args.get("precision"), expression.args.get("scale")]
             if arg
         )
@@ -503,7 +494,7 @@ class Generator:
                     this=expression.args["this"],
                     expression=expression.args["expression"],
                 ),
-                to=Token(TokenType.INT, "INT"),
+                to=exp.DataType(this=exp.DataType.Type.INT),
             )
         )
 

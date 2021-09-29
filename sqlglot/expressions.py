@@ -791,11 +791,6 @@ def _norm_arg(arg):
     return arg.upper() if isinstance(arg, str) else arg
 
 
-def _token_arg_text(expression, arg_key):
-    arg = expression.args.get(arg_key)
-    return arg.text if arg else None
-
-
 def _all_functions():
     predicate = (
         lambda obj: inspect.isclass(obj)

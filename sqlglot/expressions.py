@@ -4,6 +4,7 @@ import weakref
 import sys
 
 from sqlglot.helper import camel_to_snake_case, ensure_list
+from sqlglot.tokens import TokenType
 
 
 class Expression:
@@ -243,6 +244,14 @@ class Literal(Expression):
                 self.args.get("token_type"),
             )
         )
+
+    @classmethod
+    def number(cls, number):
+        return cls(this=str(number), token_type=TokenType.NUMBER)
+
+    @classmethod
+    def string(cls, string):
+        return cls(this=string, token_type=TokenType.STRING)
 
 
 class Join(Expression):

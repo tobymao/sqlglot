@@ -128,7 +128,7 @@ class DuckDB(Dialect):
         "EPOCH_MS": lambda args: exp.UnixToTime(
             this=exp.Div(
                 this=list_get(args, 0),
-                expression=exp.Literal(this="1000", token_type=TokenType.NUMBER),
+                expression=exp.Literal.number(1000),
             )
         ),
         "LIST_VALUE": exp.Array.from_arg_list,
@@ -235,7 +235,7 @@ class Hive(Dialect):
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=exp.Mul(
                 this=list_get(args, 1),
-                expression=exp.Literal(this="-1", token_type=TokenType.NUMBER),
+                expression=exp.Literal.number(-1),
             ),
         ),
         "DATE_FORMAT": exp.TimeToStr.from_arg_list,

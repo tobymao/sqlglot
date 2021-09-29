@@ -67,12 +67,12 @@ LEFT JOIN `baz` ON
 ```
 
 ### Custom Transforms
-A simple transform on types can be accomplished by providing a dict of Expression/TokenType => lambda/string
+A simple transform on types can be accomplished by providing a corresponding mapping:
 ```python
 
 from sqlglot import *
 
-transpile("SELECT CAST(a AS INT) FROM x", transforms={TokenType.INT: 'SPECIAL INT'})[0]
+transpile("SELECT CAST(a AS INT) FROM x", type_mappings={"INT": "SPECIAL INT"})[0]
 ```
 
 ```sql

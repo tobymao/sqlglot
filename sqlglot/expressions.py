@@ -1,9 +1,10 @@
+from enum import auto
 from copy import deepcopy
 import inspect
 import weakref
 import sys
 
-from sqlglot.helper import camel_to_snake_case, ensure_list
+from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
 from sqlglot.tokens import TokenType
 
 
@@ -346,7 +347,25 @@ class Null(Expression):
 
 
 class DataType(Expression):
-    pass
+    class Type(AutoName):
+        CHAR = auto()
+        TEXT = auto()
+        VARCHAR = auto()
+        BINARY = auto()
+        INT = auto()
+        TINYINT = auto()
+        SMALLINT = auto()
+        BIGINT = auto()
+        FLOAT = auto()
+        DOUBLE = auto()
+        DECIMAL = auto()
+        BOOLEAN = auto()
+        JSON = auto()
+        TIMESTAMP = auto()
+        TIMESTAMPTZ = auto()
+        DATE = auto()
+        ARRAY = auto()
+        MAP = auto()
 
 
 # Binary Expressions

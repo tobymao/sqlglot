@@ -71,8 +71,9 @@ A simple transform on types can be accomplished by providing a corresponding map
 ```python
 
 from sqlglot import *
+from sqlglot import expressions as exp
 
-transpile("SELECT CAST(a AS INT) FROM x", type_mappings={"INT": "SPECIAL INT"})[0]
+transpile("SELECT CAST(a AS INT) FROM x", type_mappings={exp.DataType.Type.INT: "SPECIAL INT"})[0]
 ```
 
 ```sql

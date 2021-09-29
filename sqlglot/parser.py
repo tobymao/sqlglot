@@ -135,7 +135,10 @@ class Parser:
         TokenType.NUMBER: lambda t: exp.Literal(this=t.text, token_type=t.token_type),
         TokenType.IDENTIFIER: lambda t: exp.Identifier(this=t.text, quoted=True),
         TokenType.VAR: lambda t: exp.Identifier(this=t.text, quoted=False),
-        **{t: lambda t: exp.DataType(this=t.token_type.value) for t in TYPE_TOKENS},
+        **{
+            t: lambda t: exp.DataType(this=exp.DataType.Type[t.token_type.value])
+            for t in TYPE_TOKENS
+        },
     }
 
     def __init__(self, **opts):

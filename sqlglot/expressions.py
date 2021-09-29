@@ -4,12 +4,10 @@ import weakref
 import sys
 
 from sqlglot.helper import camel_to_snake_case, ensure_list
-from sqlglot.tokens import Token
 
 
 class Expression:
     arg_types = {"this": True}
-    token_type = None
 
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
@@ -181,23 +179,6 @@ class CTE(Expression):
 class Column(Expression):
     arg_types = {"this": False, "table": False, "db": False, "fields": False}
 
-    @property
-    def name(self):
-        return _token_arg_text(self, "this")
-
-    @property
-    def table(self):
-        return _token_arg_text(self, "table")
-
-    @property
-    def db(self):
-        return _token_arg_text(self, "db")
-
-    @property
-    def fields(self):
-        fields = self.args.get("fields")
-        return [t.text for t in fields] if fields else []
-
 
 class ColumnDef(Expression):
     arg_types = {
@@ -245,29 +226,23 @@ class Limit(Expression):
 
 
 class Literal(Expression):
+    arg_types = {"this": True, "token_type": True}
+
     def __eq__(self, other):
         return (
             isinstance(other, Literal)
-            and self.text == other.text
-            and self.token.token_type == other.token.token_type
+            and self.args.get("this") == other.args.get("this")
+            and self.args.get("token_type") == other.args.get("token_type")
         )
 
     def __hash__(self):
         return hash(
             (
                 self.key,
-                self.text,
-                self.token_type,
+                self.args.get("this"),
+                self.args.get("token_type"),
             )
         )
-
-    @property
-    def token(self):
-        return self.args.get("this")
-
-    @property
-    def text(self):
-        return _token_arg_text(self, "this")
 
 
 class Join(Expression):
@@ -359,6 +334,10 @@ class Star(Expression):
 
 class Null(Expression):
     arg_types = {}
+
+
+class DataType(Expression):
+    pass
 
 
 # Binary Expressions
@@ -645,6 +624,10 @@ class Greatest(Func):
     is_var_len_args = True
 
 
+class Identifier(Func):
+    arg_types = {"this": True, "quoted": False}
+
+
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
@@ -805,7 +788,6 @@ def _norm_args(expression):
 
 def _norm_arg(arg):
     arg = arg or ""
-    arg = arg.text if isinstance(arg, Token) else arg
     return arg.upper() if isinstance(arg, str) else arg
 
 

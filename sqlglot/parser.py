@@ -71,13 +71,9 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    LITERAL_TOKENS = {
+    PRIMARY_TOKENS = {
         TokenType.STRING,
         TokenType.NUMBER,
-    }
-
-    PRIMARY_TOKENS = {
-        *LITERAL_TOKENS,
         TokenType.STAR,
         TokenType.NULL,
     }
@@ -132,6 +128,16 @@ class Parser:
         TokenType.STAR: exp.Mul,
     }
 
+    TOKEN_TO_EXPRESSION = {
+        TokenType.STAR: lambda t: exp.Star(),
+        TokenType.NULL: lambda t: exp.Null(),
+        TokenType.STRING: lambda t: exp.Literal(this=t.text, token_type=t.token_type),
+        TokenType.NUMBER: lambda t: exp.Literal(this=t.text, token_type=t.token_type),
+        TokenType.IDENTIFIER: lambda t: exp.Identifier(this=t.text, quoted=True),
+        TokenType.VAR: lambda t: exp.Identifier(this=t.text, quoted=False),
+        **{t: lambda t: exp.DataType(this=t.token_type.value) for t in TYPE_TOKENS},
+    }
+
     def __init__(self, **opts):
         self.functions = {**self.FUNCTIONS, **(opts.get("functions") or {})}
         self.error_level = opts.get("error_level") or ErrorLevel.RAISE
@@ -166,7 +172,7 @@ class Parser:
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(self._parse_statement())
+            expressions.append(self._ensure_non_token(self._parse_statement()))
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")
@@ -198,6 +204,12 @@ class Parser:
             logging.error(self.error)
 
     def expression(self, exp_class, **kwargs):
+        kwargs = {
+            k: self._ensure_non_token(arg)
+            if not isinstance(arg, list)
+            else [self._ensure_non_token(v) for v in arg]
+            for k, arg in kwargs.items()
+        }
         instance = exp_class(**kwargs)
         self.validate_expression(instance)
         return instance
@@ -441,7 +453,7 @@ class Parser:
             exp.CTE,
             this=self._parse_select(),
             expressions=expressions,
-            recursive=recursive,
+            recursive=bool(recursive),
         )
 
     def _parse_select(self):
@@ -590,7 +602,7 @@ class Parser:
         unnest = self.expression(
             exp.Unnest,
             expressions=expressions,
-            ordinality=ordinality,
+            ordinality=bool(ordinality),
             table=table,
             columns=columns,
         )
@@ -817,14 +829,8 @@ class Parser:
         return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
 
     def _parse_primary(self):
-        if self._match(TokenType.STAR):
-            return self.expression(exp.Star)
-
-        if self._match(TokenType.NULL):
-            return self.expression(exp.Null)
-
-        if self._match(*self.LITERAL_TOKENS):
-            return self.expression(exp.Literal, this=self._prev)
+        if self._match(*self.PRIMARY_TOKENS):
+            return self._prev
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
@@ -860,7 +866,7 @@ class Parser:
             table = this
             this = self._match(*self.COLUMN_TOKENS)
 
-        if this.token_type in self.COLUMN_TOKENS:
+        if isinstance(this, Token) and this.token_type in self.COLUMN_TOKENS:
             if fields:
                 this, table, db = None, None, None
             this = self.expression(
@@ -892,6 +898,7 @@ class Parser:
             elif not callable(function):
                 this = self.expression(exp.Anonymous, this=this.text, expressions=args)
             else:
+                args = [self._ensure_non_token(a) for a in args]
                 this = function(args)
                 self.validate_expression(this)
                 if len(args) > len(this.arg_types) and not this.is_var_len_args:
@@ -1011,7 +1018,7 @@ class Parser:
 
         expressions = self._parse_csv(self._parse_conjunction)
 
-        if this.token_type == TokenType.ARRAY:
+        if isinstance(this, Token) and this.token_type == TokenType.ARRAY:
             bracket = self.expression(exp.Array, expressions=expressions)
         else:
             bracket = self.expression(exp.Bracket, this=this, expressions=expressions)
@@ -1058,6 +1065,15 @@ class Parser:
             )
 
         return this
+
+    def _ensure_non_token(self, value):
+        if value is None or not isinstance(value, Token):
+            return value
+
+        transformer = self.TOKEN_TO_EXPRESSION.get(value.token_type)
+        if transformer:
+            return transformer(value)
+        return value.text
 
     def _match(self, *types):
         if not self._curr:

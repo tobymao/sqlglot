@@ -2,7 +2,7 @@
 import os
 import unittest
 
-from sqlglot import ErrorLevel, ParseError, TokenType, parse_one, transpile
+from sqlglot import ErrorLevel, ParseError, parse_one, transpile
 
 
 class TestTranspile(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestTranspile(unittest.TestCase):
         self.assertEqual(
             transpile(
                 "SELECT CAST(a AS INT) FROM x",
-                transforms={TokenType.INT: "SPECIAL INT"},
+                type_mappings={"INT": "SPECIAL INT"},
             )[0],
             "SELECT CAST(a AS SPECIAL INT) FROM x",
         )

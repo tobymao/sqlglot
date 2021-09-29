@@ -20,14 +20,14 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        assert expression.args["expressions"][0].args["this"].text == "a"
-        assert expression.args["expressions"][1].args["this"].text == "b"
-        assert expression.args["expressions"][2].args["alias"].text == "c"
-        assert expression.args["expressions"][3].args["alias"].text == "D"
-        assert expression.args["expressions"][4].args["alias"].text == "y|z'"
+        assert expression.args["expressions"][0].args["this"].args["this"] == "a"
+        assert expression.args["expressions"][1].args["this"].args["this"] == "b"
+        assert expression.args["expressions"][2].args["alias"].args["this"] == "c"
+        assert expression.args["expressions"][3].args["alias"].args["this"] == "D"
+        assert expression.args["expressions"][4].args["alias"].args["this"] == "y|z'"
         table = expression.args["from"].args["expressions"][0]
-        assert table.args["this"].text == "z"
-        assert table.args["db"].text == "y"
+        assert table.args["this"].args["this"] == "z"
+        assert table.args["db"].args["this"] == "y"
 
     def test_multi(self):
         expressions = parse(
@@ -38,10 +38,12 @@ class TestParser(unittest.TestCase):
 
         assert len(expressions) == 2
         assert (
-            expressions[0].args["from"].args["expressions"][0].args["this"].text == "a"
+            expressions[0].args["from"].args["expressions"][0].args["this"].args["this"]
+            == "a"
         )
         assert (
-            expressions[1].args["from"].args["expressions"][0].args["this"].text == "b"
+            expressions[1].args["from"].args["expressions"][0].args["this"].args["this"]
+            == "b"
         )
 
     @mock.patch("sqlglot.parser.logging")

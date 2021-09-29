@@ -3,7 +3,7 @@ import sqlglot.expressions as exp
 from sqlglot.generator import Generator
 from sqlglot.helper import RegisteringMeta, csv, list_get
 from sqlglot.parser import Parser
-from sqlglot.tokens import Token, Tokenizer, TokenType
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 class Dialect(metaclass=RegisteringMeta):
@@ -12,6 +12,7 @@ class Dialect(metaclass=RegisteringMeta):
     escape = None
     functions = {}
     transforms = {}
+    type_mappings = {}
 
     def parse(self, code, **opts):
         return self.parser(**opts).parse(self.tokenizer().tokenize(code), code)
@@ -28,6 +29,10 @@ class Dialect(metaclass=RegisteringMeta):
                 "identifier": self.identifier,
                 "escape": self.escape,
                 "transforms": {**self.transforms, **opts.pop("transforms", {})},
+                "type_mappings": {
+                    **self.type_mappings,
+                    **opts.pop("type_mappings", {}),
+                },
                 **opts,
             }
         )
@@ -123,7 +128,7 @@ class DuckDB(Dialect):
         "EPOCH_MS": lambda args: exp.UnixToTime(
             this=exp.Div(
                 this=list_get(args, 0),
-                expression=Token.number(1000),
+                expression=exp.Literal(this="1000", token_type=TokenType.NUMBER),
             )
         ),
         "LIST_VALUE": exp.Array.from_arg_list,
@@ -181,9 +186,12 @@ class Hive(Dialect):
         this = self.sql(expression, "this")
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
+    type_mappings = {
+        TokenType.TEXT.value: "STRING",
+        TokenType.VARCHAR.value: "STRING",
+    }
+
     transforms = {
-        TokenType.TEXT: "STRING",
-        TokenType.VARCHAR: "STRING",
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
@@ -225,7 +233,10 @@ class Hive(Dialect):
         ),
         "DATE_SUB": lambda args: exp.DateAdd(
             this=exp.DateStrToDate(this=list_get(args, 0)),
-            expression=exp.Mul(this=list_get(args, 1), expression=Token.number(-1)),
+            expression=exp.Mul(
+                this=list_get(args, 1),
+                expression=exp.Literal(this="-1", token_type=TokenType.NUMBER),
+            ),
         ),
         "DATE_FORMAT": exp.TimeToStr.from_arg_list,
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
@@ -253,11 +264,14 @@ class MySQL(Dialect):
 
 
 class Postgres(Dialect):
+    type_mappings = {
+        TokenType.TINYINT.value: "SMALLINT",
+        TokenType.FLOAT.value: "REAL",
+        TokenType.DOUBLE.value: "DOUBLE PRECISION",
+        TokenType.BINARY.value: "BYTEA",
+    }
+
     transforms = {
-        TokenType.TINYINT: "SMALLINT",
-        TokenType.FLOAT: "REAL",
-        TokenType.DOUBLE: "DOUBLE PRECISION",
-        TokenType.BINARY: "BYTEA",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
     }
 
@@ -305,11 +319,14 @@ class Presto(Dialect):
         this = self.sql(expression, "this")
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
+    type_mappings = {
+        TokenType.INT.value: "INTEGER",
+        TokenType.FLOAT.value: "REAL",
+        TokenType.BINARY.value: "VARBINARY",
+        TokenType.TEXT.value: "VARCHAR",
+    }
+
     transforms = {
-        TokenType.INT: "INTEGER",
-        TokenType.FLOAT: "REAL",
-        TokenType.BINARY: "VARBINARY",
-        TokenType.TEXT: "VARCHAR",
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
         exp.ArrayContains: lambda self, e: f"CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -377,17 +394,21 @@ class Spark(Hive):
         kind = e.args.get("kind")
         temporary = e.args.get("temporary")
 
-        if kind.token_type == TokenType.TABLE and temporary is True:
+        if kind.upper() == "TABLE" and temporary is True:
             return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
         return self.create_sql(e)
 
+    type_mappings = {
+        **Hive.type_mappings,
+        TokenType.TINYINT.value: "BYTE",
+        TokenType.SMALLINT.value: "SHORT",
+        TokenType.BIGINT.value: "BIGINT",
+        TokenType.CHAR.value: "CHAR",
+        TokenType.BINARY.value: "ARRAY[BYTE]",
+    }
+
     transforms = {
         **Hive.transforms,
-        TokenType.TINYINT: "BYTE",
-        TokenType.SMALLINT: "SHORT",
-        TokenType.BIGINT: "BIGINT",
-        TokenType.CHAR: "CHAR",
-        TokenType.BINARY: "ARRAY[BYTE]",
         exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.Create: _create_sql,
@@ -397,16 +418,16 @@ class Spark(Hive):
 
 
 class SQLite(Dialect):
-    transforms = {
-        TokenType.BOOLEAN: "INTEGER",
-        TokenType.TINYINT: "INTEGER",
-        TokenType.SMALLINT: "INTEGER",
-        TokenType.INT: "INTEGER",
-        TokenType.BIGINT: "INTEGER",
-        TokenType.FLOAT: "REAL",
-        TokenType.DOUBLE: "REAL",
-        TokenType.DECIMAL: "REAL",
-        TokenType.CHAR: "TEXT",
-        TokenType.VARCHAR: "TEXT",
-        TokenType.BINARY: "BLOB",
+    type_mappings = {
+        TokenType.BOOLEAN.value: "INTEGER",
+        TokenType.TINYINT.value: "INTEGER",
+        TokenType.SMALLINT.value: "INTEGER",
+        TokenType.INT.value: "INTEGER",
+        TokenType.BIGINT.value: "INTEGER",
+        TokenType.FLOAT.value: "REAL",
+        TokenType.DOUBLE.value: "REAL",
+        TokenType.DECIMAL.value: "REAL",
+        TokenType.CHAR.value: "TEXT",
+        TokenType.VARCHAR.value: "TEXT",
+        TokenType.BINARY.value: "BLOB",
     }

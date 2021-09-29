@@ -8,9 +8,11 @@ class TestExpressions(unittest.TestCase):
     def test_eq(self):
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"'))
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"  '))
-        self.assertEqual(parse_one("`a`.b", read="hive"), parse_one('"a"."b"'))
+        self.assertEqual(parse_one("`a`.`b`", read="hive"), parse_one('"a"."b"'))
         self.assertEqual(parse_one("select a, b+1"), parse_one("SELECT a, b + 1"))
-        self.assertEqual(parse_one("`a`.`b`.`c`", read="hive"), parse_one("a.b.c"))
+        self.assertEqual(
+            parse_one("`a`.`b`.`c`", read="hive"), parse_one('"a"."b"."c"')
+        )
         self.assertNotEqual(parse_one("a.b.c.d", read="hive"), parse_one("a.b.c"))
         self.assertEqual(parse_one("a.b.c.d", read="hive"), parse_one("a.b.c.d"))
         self.assertEqual(parse_one("a + b * c - 1.0"), parse_one("a+b*c-1.0"))
@@ -30,7 +32,10 @@ class TestExpressions(unittest.TestCase):
         self.assertTrue(expression.find(exp.Create))
         self.assertFalse(expression.find(exp.Group))
         self.assertEqual(
-            [table.args["this"].text for table in expression.find_all(exp.Table)],
+            [
+                table.args["this"].args["this"]
+                for table in expression.find_all(exp.Table)
+            ],
             ["y", "x"],
         )
 
@@ -60,7 +65,10 @@ class TestExpressions(unittest.TestCase):
         )
 
         self.assertEqual(
-            [table.args["this"].text for table in expression.find_all(exp.Table)],
+            [
+                table.args["this"].args["this"]
+                for table in expression.find_all(exp.Table)
+            ],
             ["d", "c", "b"],
         )
 
@@ -69,7 +77,7 @@ class TestExpressions(unittest.TestCase):
             {
                 parse_one("select a.b"),
                 parse_one("1+2"),
-                parse_one('"a".b'),
+                parse_one('"a"."b"'),
                 parse_one("a.b.c.d"),
             },
             {
@@ -90,7 +98,7 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("IF(a > 0, a, b)")
 
         def fun(node):
-            if isinstance(node, exp.Column) and node.args["this"].text == "a":
+            if isinstance(node, exp.Column) and node.args["this"].args["this"] == "a":
                 return parse_one("c - 2")
             return node
 
@@ -113,7 +121,7 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("a")
 
         def fun(node):
-            if isinstance(node, exp.Column) and node.args["this"].text == "a":
+            if isinstance(node, exp.Column) and node.args["this"].args["this"] == "a":
                 return parse_one("FUN(a)")
             return node
 
@@ -179,20 +187,20 @@ class TestExpressions(unittest.TestCase):
 
     def test_column(self):
         column = parse_one("a.b.c")
-        self.assertEqual(column.name, "c")
-        self.assertEqual(column.table, "b")
-        self.assertEqual(column.db, "a")
+        self.assertEqual(column.args["this"].args["this"], "c")
+        self.assertEqual(column.args["table"].args["this"], "b")
+        self.assertEqual(column.args["db"].args["this"], "a")
 
         column = parse_one("a")
-        self.assertEqual(column.name, "a")
-        self.assertIsNone(column.table)
-        self.assertIsNone(column.db)
+        self.assertEqual(column.args["this"].args["this"], "a")
+        self.assertIsNone(column.args.get("table"))
+        self.assertIsNone(column.args.get("db"))
 
         column = parse_one("a.b.c.d")
-        self.assertIsNone(column.name)
-        self.assertIsNone(column.table)
-        self.assertIsNone(column.db)
+        self.assertIsNone(column.args.get("this"))
+        self.assertIsNone(column.args.get("table"))
+        self.assertIsNone(column.args.get("db"))
         self.assertEqual(
-            column.fields,
+            [f.args["this"] for f in column.args["fields"]],
             ["a", "b", "c", "d"],
         )

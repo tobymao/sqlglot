@@ -655,6 +655,21 @@ class Greatest(Func):
 class Identifier(Func):
     arg_types = {"this": True, "quoted": False}
 
+    def __eq__(self, other):
+        return (
+            isinstance(other, Identifier)
+            and (self.args.get("this") or "").upper()
+            == (other.args.get("this") or "").upper()
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.key,
+                self.args.get("this").upper(),
+            )
+        )
+
 
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}

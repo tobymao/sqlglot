@@ -156,16 +156,16 @@ class TokenType(AutoName):
 
 class Token:
     @classmethod
-    def number(cls, number, line=1, col=1):
-        return cls(TokenType.NUMBER, str(number), line=line, col=col)
+    def number(cls, number):
+        return cls(TokenType.NUMBER, str(number))
 
     @classmethod
-    def string(cls, string, line=1, col=1):
-        return cls(TokenType.STRING, string, line=line, col=col)
+    def string(cls, string):
+        return cls(TokenType.STRING, string)
 
     @classmethod
-    def identifier(cls, identifier, line=1, col=1):
-        return cls(TokenType.IDENTIFIER, identifier, line=line, col=col)
+    def identifier(cls, identifier):
+        return cls(TokenType.IDENTIFIER, identifier)
 
     @classmethod
     def var(cls, var):

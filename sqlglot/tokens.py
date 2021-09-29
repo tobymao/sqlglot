@@ -179,32 +179,11 @@ class Token:
         self.parent = None
         self.arg_key = None
 
-    def __eq__(self, other):
-        if not isinstance(other, Token) or self.token_type != other.token_type:
-            return False
-
-        if self.token_type == TokenType.STRING:
-            return self.text == other.text
-
-        return self.text.upper() == other.text.upper()
-
-    def __hash__(self):
-        text = self.text if self.token_type == TokenType.STRING else self.text.upper()
-        return hash((self.token_type, text))
-
     def __repr__(self):
         attributes = ", ".join(
             [f"{k}: {v}" for k, v in self.__dict__.items() if k != "parent"]
         )
         return f"<Token {attributes}>"
-
-    def sql(self, dialect=None, **opts):
-        from sqlglot.dialects import Dialect
-
-        return Dialect.get(dialect, Dialect)().generate(self, **opts)
-
-    def to_s(self, _level=0):
-        return self.text
 
 
 class Tokenizer:

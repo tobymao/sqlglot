@@ -71,13 +71,9 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    LITERAL_TOKENS = {
+    PRIMARY_TOKENS = {
         TokenType.STRING,
         TokenType.NUMBER,
-    }
-
-    PRIMARY_TOKENS = {
-        *LITERAL_TOKENS,
         TokenType.STAR,
         TokenType.NULL,
     }
@@ -132,6 +128,19 @@ class Parser:
         TokenType.STAR: exp.Mul,
     }
 
+    TOKEN_TO_EXPRESSION = {
+        TokenType.STAR: lambda t: exp.Star(),
+        TokenType.NULL: lambda t: exp.Null(),
+        TokenType.STRING: lambda t: exp.Literal(this=t.text, token_type=t.token_type),
+        TokenType.NUMBER: lambda t: exp.Literal(this=t.text, token_type=t.token_type),
+        TokenType.IDENTIFIER: lambda t: exp.Identifier(this=t.text, quoted=True),
+        TokenType.VAR: lambda t: exp.Identifier(this=t.text, quoted=False),
+        **{
+            t: lambda t: exp.DataType(this=exp.DataType.Type[t.token_type.value])
+            for t in TYPE_TOKENS
+        },
+    }
+
     def __init__(self, **opts):
         self.functions = {**self.FUNCTIONS, **(opts.get("functions") or {})}
         self.error_level = opts.get("error_level") or ErrorLevel.RAISE
@@ -166,7 +175,7 @@ class Parser:
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(self._parse_statement())
+            expressions.append(self._ensure_non_token(self._parse_statement()))
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")
@@ -198,6 +207,12 @@ class Parser:
             logging.error(self.error)
 
     def expression(self, exp_class, **kwargs):
+        kwargs = {
+            k: self._ensure_non_token(arg)
+            if not isinstance(arg, list)
+            else [self._ensure_non_token(v) for v in arg]
+            for k, arg in kwargs.items()
+        }
         instance = exp_class(**kwargs)
         self.validate_expression(instance)
         return instance
@@ -377,14 +392,14 @@ class Parser:
         )
 
     def _parse_insert(self):
-        overwrite = self._match(TokenType.OVERWRITE)
+        overwrite = bool(self._match(TokenType.OVERWRITE))
         self._match(TokenType.INTO)
         self._match(TokenType.TABLE)
 
         return self.expression(
             exp.Insert,
             this=self._parse_table(None),
-            exists=self._parse_exists(),
+            exists=bool(self._parse_exists()),
             expression=self._parse_select(),
             overwrite=overwrite,
         )
@@ -441,7 +456,7 @@ class Parser:
             exp.CTE,
             this=self._parse_select(),
             expressions=expressions,
-            recursive=recursive,
+            recursive=bool(recursive),
         )
 
     def _parse_select(self):
@@ -449,7 +464,7 @@ class Parser:
             this = self.expression(
                 exp.Select,
                 hint=self._parse_hint(),
-                distinct=self._match(TokenType.DISTINCT),
+                distinct=bool(self._match(TokenType.DISTINCT)),
                 expressions=self._parse_csv(self._parse_expression),
                 **{
                     "from": self._parse_from(),
@@ -491,7 +506,7 @@ class Parser:
             if not self._match(TokenType.VIEW):
                 self.raise_error("Expected VIEW afteral LATERAL")
 
-            outer = self._match(TokenType.OUTER)
+            outer = bool(self._match(TokenType.OUTER))
             this = self._parse_primary()
             table = self._parse_id_var()
 
@@ -503,7 +518,7 @@ class Parser:
                     exp.Lateral,
                     this=this,
                     outer=outer,
-                    table=table,
+                    table=self.expression(exp.Table, this=table),
                     columns=columns,
                 )
             )
@@ -522,8 +537,8 @@ class Parser:
                 self.expression(
                     exp.Join,
                     this=self._parse_table(),
-                    side=side,
-                    kind=kind,
+                    side=side.text if side else None,
+                    kind=kind.text if kind else None,
                     on=self._parse_conjunction() if self._match(TokenType.ON) else None,
                 )
             )
@@ -590,7 +605,7 @@ class Parser:
         unnest = self.expression(
             exp.Unnest,
             expressions=expressions,
-            ordinality=ordinality,
+            ordinality=bool(ordinality),
             table=table,
             columns=columns,
         )
@@ -627,17 +642,22 @@ class Parser:
         )
 
     def _parse_ordered(self):
+        this = self._parse_bitwise()
+        desc = self._match(TokenType.ASC) or self._match(TokenType.DESC)
         return self.expression(
             exp.Ordered,
-            this=self._parse_bitwise(),
-            desc=not self._match(TokenType.ASC) and self._match(TokenType.DESC),
+            this=this,
+            desc=desc.token_type is TokenType.DESC if desc else False,
         )
 
     def _parse_limit(self):
         if not self._match(TokenType.LIMIT):
             return None
 
-        return self.expression(exp.Limit, this=self._match(TokenType.NUMBER))
+        limit_number = self._match(TokenType.NUMBER)
+        return self.expression(
+            exp.Limit, this=limit_number.text if limit_number else None
+        )
 
     def _parse_union(self, this):
         if not self._match(TokenType.UNION):
@@ -812,14 +832,8 @@ class Parser:
         return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
 
     def _parse_primary(self):
-        if self._match(TokenType.STAR):
-            return self.expression(exp.Star)
-
-        if self._match(TokenType.NULL):
-            return self.expression(exp.Null)
-
-        if self._match(*self.LITERAL_TOKENS):
-            return self.expression(exp.Literal, this=self._prev)
+        if self._match(*self.PRIMARY_TOKENS):
+            return self._prev
 
         if self._match(TokenType.L_PAREN):
             paren = self._prev
@@ -855,7 +869,7 @@ class Parser:
             table = this
             this = self._match(*self.COLUMN_TOKENS)
 
-        if this.token_type in self.COLUMN_TOKENS:
+        if isinstance(this, Token) and this.token_type in self.COLUMN_TOKENS:
             if fields:
                 this, table, db = None, None, None
             this = self.expression(
@@ -885,8 +899,9 @@ class Parser:
             if schema:
                 this = self.expression(exp.Schema, this=this, expressions=args)
             elif not callable(function):
-                this = self.expression(exp.Anonymous, this=this, expressions=args)
+                this = self.expression(exp.Anonymous, this=this.text, expressions=args)
             else:
+                args = [self._ensure_non_token(a) for a in args]
                 this = function(args)
                 self.validate_expression(this)
                 if len(args) > len(this.arg_types) and not this.is_var_len_args:
@@ -1006,7 +1021,7 @@ class Parser:
 
         expressions = self._parse_csv(self._parse_conjunction)
 
-        if this.token_type == TokenType.ARRAY:
+        if isinstance(this, Token) and this.token_type == TokenType.ARRAY:
             bracket = self.expression(exp.Array, expressions=expressions)
         else:
             bracket = self.expression(exp.Bracket, this=this, expressions=expressions)
@@ -1053,6 +1068,15 @@ class Parser:
             )
 
         return this
+
+    def _ensure_non_token(self, value):
+        if value is None or not isinstance(value, Token):
+            return value
+
+        transformer = self.TOKEN_TO_EXPRESSION.get(value.token_type)
+        if transformer:
+            return transformer(value)
+        return value.text
 
     def _match(self, *types):
         if not self._curr:

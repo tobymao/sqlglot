@@ -1,14 +1,15 @@
+from enum import auto
 from copy import deepcopy
 import inspect
 import weakref
 import sys
 
-from sqlglot.helper import camel_to_snake_case, ensure_list
+from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
+from sqlglot.tokens import TokenType
 
 
 class Expression:
     arg_types = {"this": True}
-    token_type = None
 
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
@@ -17,7 +18,7 @@ class Expression:
         self.arg_key = None
 
     def __eq__(self, other):
-        return type(self) is type(other) and self.args == other.args
+        return type(self) is type(other) and _norm_args(self) == _norm_args(other)
 
     def __hash__(self):
         return hash(
@@ -25,7 +26,7 @@ class Expression:
                 self.key,
                 tuple(
                     (k, tuple(v) if isinstance(v, list) else v)
-                    for k, v in self.args.items()
+                    for k, v in _norm_args(self).items()
                 ),
             )
         )
@@ -180,43 +181,6 @@ class CTE(Expression):
 class Column(Expression):
     arg_types = {"this": False, "table": False, "db": False, "fields": False}
 
-    def __eq__(self, other):
-        return (
-            isinstance(other, Column)
-            and (self.name or "").upper() == (other.name or "").upper()
-            and (self.table or "").upper() == (other.table or "").upper()
-            and (self.db or "").upper() == (other.db or "").upper()
-            and [f.upper() for f in self.fields] == [f.upper() for f in other.fields]
-        )
-
-    def __hash__(self):
-        return hash(
-            (
-                self.key,
-                (self.name or "").upper(),
-                (self.table or "").upper(),
-                (self.db or "").upper(),
-                tuple(f.upper() for f in self.fields),
-            )
-        )
-
-    @property
-    def name(self):
-        return _token_arg_text(self, "this")
-
-    @property
-    def table(self):
-        return _token_arg_text(self, "table")
-
-    @property
-    def db(self):
-        return _token_arg_text(self, "db")
-
-    @property
-    def fields(self):
-        fields = self.args.get("fields")
-        return [t.text for t in fields] if fields else []
-
 
 class ColumnDef(Expression):
     arg_types = {
@@ -264,29 +228,31 @@ class Limit(Expression):
 
 
 class Literal(Expression):
+    arg_types = {"this": True, "token_type": True}
+
     def __eq__(self, other):
         return (
             isinstance(other, Literal)
-            and self.text == other.text
-            and self.token.token_type == other.token.token_type
+            and self.args.get("this") == other.args.get("this")
+            and self.args.get("token_type") == other.args.get("token_type")
         )
 
     def __hash__(self):
         return hash(
             (
                 self.key,
-                self.text,
-                self.token_type,
+                self.args.get("this"),
+                self.args.get("token_type"),
             )
         )
 
-    @property
-    def token(self):
-        return self.args.get("this")
+    @classmethod
+    def number(cls, number):
+        return cls(this=str(number), token_type=TokenType.NUMBER)
 
-    @property
-    def text(self):
-        return _token_arg_text(self, "this")
+    @classmethod
+    def string(cls, string):
+        return cls(this=string, token_type=TokenType.STRING)
 
 
 class Join(Expression):
@@ -378,6 +344,28 @@ class Star(Expression):
 
 class Null(Expression):
     arg_types = {}
+
+
+class DataType(Expression):
+    class Type(AutoName):
+        CHAR = auto()
+        TEXT = auto()
+        VARCHAR = auto()
+        BINARY = auto()
+        INT = auto()
+        TINYINT = auto()
+        SMALLINT = auto()
+        BIGINT = auto()
+        FLOAT = auto()
+        DOUBLE = auto()
+        DECIMAL = auto()
+        BOOLEAN = auto()
+        JSON = auto()
+        TIMESTAMP = auto()
+        TIMESTAMPTZ = auto()
+        DATE = auto()
+        ARRAY = auto()
+        MAP = auto()
 
 
 # Binary Expressions
@@ -664,6 +652,25 @@ class Greatest(Func):
     is_var_len_args = True
 
 
+class Identifier(Func):
+    arg_types = {"this": True, "quoted": False}
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Identifier)
+            and (self.args.get("this") or "").upper()
+            == (other.args.get("this") or "").upper()
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.key,
+                self.args.get("this").upper(),
+            )
+        )
+
+
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
@@ -815,9 +822,16 @@ class VarianceSamp(AggFunc):
     pass
 
 
-def _token_arg_text(expression, kind):
-    arg = expression.args.get(kind)
-    return arg.text if arg else None
+def _norm_args(expression):
+    return {
+        k: _norm_arg(arg) if not isinstance(arg, list) else [_norm_arg(a) for a in arg]
+        for k, arg in expression.args.items()
+    }
+
+
+def _norm_arg(arg):
+    arg = arg or ""
+    return arg.upper() if isinstance(arg, str) else arg
 
 
 def _all_functions():

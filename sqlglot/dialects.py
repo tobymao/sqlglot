@@ -3,7 +3,7 @@ import sqlglot.expressions as exp
 from sqlglot.generator import Generator
 from sqlglot.helper import RegisteringMeta, csv, list_get
 from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.tokens import Tokenizer
 
 
 class Dialect(metaclass=RegisteringMeta):
@@ -187,8 +187,8 @@ class Hive(Dialect):
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
     type_mappings = {
-        TokenType.TEXT.value: "STRING",
-        TokenType.VARCHAR.value: "STRING",
+        exp.DataType.Type.TEXT: "STRING",
+        exp.DataType.Type.VARCHAR: "STRING",
     }
 
     transforms = {
@@ -265,10 +265,10 @@ class MySQL(Dialect):
 
 class Postgres(Dialect):
     type_mappings = {
-        TokenType.TINYINT.value: "SMALLINT",
-        TokenType.FLOAT.value: "REAL",
-        TokenType.DOUBLE.value: "DOUBLE PRECISION",
-        TokenType.BINARY.value: "BYTEA",
+        exp.DataType.Type.TINYINT: "SMALLINT",
+        exp.DataType.Type.FLOAT: "REAL",
+        exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
+        exp.DataType.Type.BINARY: "BYTEA",
     }
 
     transforms = {
@@ -320,10 +320,10 @@ class Presto(Dialect):
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
     type_mappings = {
-        TokenType.INT.value: "INTEGER",
-        TokenType.FLOAT.value: "REAL",
-        TokenType.BINARY.value: "VARBINARY",
-        TokenType.TEXT.value: "VARCHAR",
+        exp.DataType.Type.INT: "INTEGER",
+        exp.DataType.Type.FLOAT: "REAL",
+        exp.DataType.Type.BINARY: "VARBINARY",
+        exp.DataType.Type.TEXT: "VARCHAR",
     }
 
     transforms = {
@@ -400,11 +400,11 @@ class Spark(Hive):
 
     type_mappings = {
         **Hive.type_mappings,
-        TokenType.TINYINT.value: "BYTE",
-        TokenType.SMALLINT.value: "SHORT",
-        TokenType.BIGINT.value: "BIGINT",
-        TokenType.CHAR.value: "CHAR",
-        TokenType.BINARY.value: "ARRAY[BYTE]",
+        exp.DataType.Type.TINYINT: "BYTE",
+        exp.DataType.Type.SMALLINT: "SHORT",
+        exp.DataType.Type.BIGINT: "BIGINT",
+        exp.DataType.Type.CHAR: "CHAR",
+        exp.DataType.Type.BINARY: "ARRAY[BYTE]",
     }
 
     transforms = {
@@ -419,15 +419,15 @@ class Spark(Hive):
 
 class SQLite(Dialect):
     type_mappings = {
-        TokenType.BOOLEAN.value: "INTEGER",
-        TokenType.TINYINT.value: "INTEGER",
-        TokenType.SMALLINT.value: "INTEGER",
-        TokenType.INT.value: "INTEGER",
-        TokenType.BIGINT.value: "INTEGER",
-        TokenType.FLOAT.value: "REAL",
-        TokenType.DOUBLE.value: "REAL",
-        TokenType.DECIMAL.value: "REAL",
-        TokenType.CHAR.value: "TEXT",
-        TokenType.VARCHAR.value: "TEXT",
-        TokenType.BINARY.value: "BLOB",
+        exp.DataType.Type.BOOLEAN: "INTEGER",
+        exp.DataType.Type.TINYINT: "INTEGER",
+        exp.DataType.Type.SMALLINT: "INTEGER",
+        exp.DataType.Type.INT: "INTEGER",
+        exp.DataType.Type.BIGINT: "INTEGER",
+        exp.DataType.Type.FLOAT: "REAL",
+        exp.DataType.Type.DOUBLE: "REAL",
+        exp.DataType.Type.DECIMAL: "REAL",
+        exp.DataType.Type.CHAR: "TEXT",
+        exp.DataType.Type.VARCHAR: "TEXT",
+        exp.DataType.Type.BINARY: "BLOB",
     }

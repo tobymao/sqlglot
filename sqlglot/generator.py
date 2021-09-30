@@ -3,7 +3,7 @@ import logging
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import ensure_list, csv
-from sqlglot.tokens import TokenType, Tokenizer
+from sqlglot.tokens import Tokenizer
 
 
 class Generator:
@@ -291,8 +291,8 @@ class Generator:
 
     def literal_sql(self, expression):
         text = expression.args.get("this") or ""
-        token_type = expression.args.get("token_type")
-        if token_type == TokenType.STRING:
+        is_string = expression.args.get("is_string")
+        if is_string:
             text = text.replace(Tokenizer.ESCAPE_CODE, self.escape)
             return f"{self.quote}{text}{self.quote}"
         return text

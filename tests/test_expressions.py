@@ -123,7 +123,7 @@ class TestExpressions(unittest.TestCase):
                 return parse_one("FUN(a)")
             return node
 
-        self.assertEqual(expression.transform(fun).sql(dialect="sql"), "FUN(a)")
+        self.assertEqual(expression.transform(fun).sql(), "FUN(a)")
 
     def test_functions(self):
         # pylint: disable=too-many-statements

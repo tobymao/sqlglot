@@ -66,7 +66,8 @@ LEFT JOIN `baz` ON
   `f`.`a` = `baz`.`a`
 ```
 
-### Custom Transforms
+### Customization
+#### Custom Types
 A simple transform on types can be accomplished by providing a corresponding mapping:
 ```python
 
@@ -81,19 +82,19 @@ SELECT CAST(a AS SPECIAL INT) FROM x
 ```
 
 More complicated transforms can be accomplished by using the Tokenizer, Parser, and Generator directly.
-
+#### Custom Functions
 In  this example, we want to parse a UDF SPECIAL_UDF and then output another version called SPECIAL_UDF_INVERSE with the arguments switched.
 
 ```python
 from sqlglot import *
 from sqlglot.expressions import Func
 
-class SpecialUDF(Func):
+class SpecialUdf(Func):
     arg_types = {'a': True, 'b': True}
 
 tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b) FROM x")
 ```
-Here is the output of the tokenizer.
+Here is the output of the tokenizer:
 
 ```
 [
@@ -111,27 +112,29 @@ Here is the output of the tokenizer.
 ```
 ```python
 expression = Parser(functions={
-    'SPECIAL_UDF': SpecialUDF.from_arg_list,
+    **SpecialUdf.default_parser_mappings(),
 }).parse(tokens)[0]
 ```
 
-The expression tree produced by the parser.
+The expression tree produced by the parser:
 
 ```
-(FROM this:
- (TABLE this: x, db: ), expression:
- (SELECT expressions:
-  (COLUMN this:
-   (FUNC a:
-    (COLUMN this: a, db: , table: ), b:
-    (COLUMN this: b, db: , table: )), db: , table: )))
+(SELECT hint: , distinct: , expressions:
+  (SPECIALUDF a:
+    (COLUMN this:
+      (IDENTIFIER this: a, quoted: ), db: , table: , fields: ), b:
+    (COLUMN this:
+      (IDENTIFIER this: b, quoted: ), db: , table: , fields: )), from:
+  (FROM expressions:
+    (TABLE this:
+      (IDENTIFIER this: x, quoted: ), db: )), laterals: , joins: , where: , group: , having: , order: , limit: )
 ```
 
-Finally generating the new SQL.
+Finally generating the new SQL:
 
 ```python
 Generator(transforms={
-    SpecialUDF: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
+    SpecialUdf: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
 }).generate(expression)
 ```
 
@@ -139,8 +142,8 @@ Generator(transforms={
 SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
 ```
 
-### Transform Trees
-There is also a way to transform the parsed tree directly by applying a mapping function to each tree node recursively.
+#### Syntax Tree Transformation
+There is also a way to transform the parsed tree directly by applying a mapping function to each tree node recursively:
 ```python
 import sqlglot
 import sqlglot.expressions as exp
@@ -160,8 +163,8 @@ The snippet above produces the following transformed expression:
 SELECT FUN(a) FROM x
 ```
 
-### Parse Errors
-A syntax error will result in an parse error.
+### Parser Errors
+A syntax error will result in a parser error.
 ```python
 transpile("SELECT foo( FROM bar")
 ```

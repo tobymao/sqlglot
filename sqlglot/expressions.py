@@ -31,34 +31,81 @@ class Expression:
         )
 
     @property
-    def parent(self):
-        return self._parent() if self._parent else None
-
-    @property
     def depth(self):
+        """
+        Returns the depth of this tree.
+        """
         if self.parent:
             return self.parent.depth + 1
         return 0
 
+    @property
+    def parent(self):
+        """
+        Returns the parent node of this node or None if there is no parent.
+        """
+        return self._parent() if self._parent else None
+
     @parent.setter
     def parent(self, new_parent):
+        """
+        Sets the parent node for this node.
+        """
         self._parent = weakref.ref(new_parent)
 
     def find(self, *expression_types):
+        """
+        Returns the first node in this tree which matches at least one of
+        the specified types.
+
+        Args:
+            expression_types (type): the expression type to match.
+
+        Returns:
+            the node which matches the criteria or None if no node matching
+            the criteria was found.
+        """
         return next(self.find_all(*expression_types), None)
 
     def find_all(self, *expression_types):
+        """
+        Returns a generator object which visits all nodes in this tree and only
+        yields those that match at least one of the specified expression types.
+
+        Args:
+            expression_types (type): the expression type to match.
+
+        Returns:
+            the generator object.
+        """
         for expression, _, _ in self.walk():
             if isinstance(expression, expression_types):
                 yield expression
 
     def walk(self, bfs=True):
+        """
+        Returns a generator object which visits all nodes in this tree.
+
+        Args:
+            bfs (bool): if set to True the BFS traversal order will be applied,
+                otherwise the DFS traversal will be used instead.
+
+        Returns:
+            the generator object.
+        """
         if bfs:
             yield from self.bfs()
         else:
             yield from self.dfs(self.parent, None)
 
     def dfs(self, parent, key):
+        """
+        Returns a generator object which visits all nodes in this tree in
+        the DFS (Depth-first) order.
+
+        Returns:
+            the generator object.
+        """
         yield self, parent, key
 
         for k, v in self.args.items():
@@ -71,6 +118,13 @@ class Expression:
                     yield node, self, k
 
     def bfs(self):
+        """
+        Returns a generator object which visits all nodes in this tree in
+        the BFS (Breadth-first) order.
+
+        Returns:
+            the generator object.
+        """
         queue = [(self, self.parent, None)]
 
         while queue:
@@ -89,9 +143,20 @@ class Expression:
         return self.to_s()
 
     def sql(self, dialect=None, **opts):
+        """
+        Returns SQL string representation of this tree.
+
+        Args
+            dialect (str): the dialect of the output SQL string
+                (eg. "spark", "hive", "presto", "mysql").
+            opts (dict): other :class:`~sqlglot.generator.Generator` options.
+
+        Returns
+            the SQL string.
+        """
         from sqlglot.dialects import Dialect
 
-        return Dialect.get(dialect, Dialect)().generate(self, **opts)
+        return Dialect.get_or_raise(dialect)().generate(self, **opts)
 
     def to_s(self, level=0):
         indent = "" if not level else "\n"

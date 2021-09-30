@@ -48,6 +48,15 @@ class Dialect(metaclass=RegisteringMeta):
             **opts,
         )
 
+    @classmethod
+    def get_or_raise(cls, dialect):
+        if not dialect:
+            return cls
+        result = cls.get(dialect, None)
+        if not result:
+            raise ValueError(f"Unknown dialect '{dialect}'")
+        return result
+
 
 def _approx_count_distinct_sql(self, expression):
     if expression.args.get("accuracy"):

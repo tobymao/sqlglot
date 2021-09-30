@@ -158,19 +158,22 @@ class Expression:
 
         return Dialect.get_or_raise(dialect)().generate(self, **opts)
 
-    def to_s(self, level=0):
+    def to_s(self, hide_missing=True, level=0):
         indent = "" if not level else "\n"
         indent += "".join(["  "] * level)
         left = f"({self.key.upper()} "
 
         args = {
             k: ", ".join(
-                v.to_s(level + 1) if hasattr(v, "to_s") else str(v)
+                v.to_s(hide_missing=hide_missing, level=level + 1)
+                if hasattr(v, "to_s")
+                else str(v)
                 for v in ensure_list(vs)
-                if v
+                if v is not None
             )
             for k, vs in self.args.items()
         }
+        args = {k: v for k, v in args.items() if v or not hide_missing}
 
         right = ", ".join(f"{k}: {v}" for k, v in args.items())
         right += ")"

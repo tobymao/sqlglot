@@ -131,8 +131,8 @@ class Parser:
     TOKEN_TO_EXPRESSION = {
         TokenType.STAR: lambda t: exp.Star(),
         TokenType.NULL: lambda t: exp.Null(),
-        TokenType.STRING: lambda t: exp.Literal(this=t.text, token_type=t.token_type),
-        TokenType.NUMBER: lambda t: exp.Literal(this=t.text, token_type=t.token_type),
+        TokenType.STRING: lambda t: exp.Literal.string(t.text),
+        TokenType.NUMBER: lambda t: exp.Literal.number(t.text),
         TokenType.IDENTIFIER: lambda t: exp.Identifier(this=t.text, quoted=True),
         TokenType.VAR: lambda t: exp.Identifier(this=t.text, quoted=False),
         **{

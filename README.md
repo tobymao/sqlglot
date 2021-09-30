@@ -119,15 +119,15 @@ expression = Parser(functions={
 The expression tree produced by the parser:
 
 ```
-(SELECT hint: , distinct: , expressions:
+(SELECT distinct: False, expressions:
   (SPECIALUDF a:
     (COLUMN this:
-      (IDENTIFIER this: a, quoted: ), db: , table: , fields: ), b:
+      (IDENTIFIER this: a, quoted: False)), b:
     (COLUMN this:
-      (IDENTIFIER this: b, quoted: ), db: , table: , fields: )), from:
+      (IDENTIFIER this: b, quoted: False))), from:
   (FROM expressions:
     (TABLE this:
-      (IDENTIFIER this: x, quoted: ), db: )), laterals: , joins: , where: , group: , having: , order: , limit: )
+      (IDENTIFIER this: x, quoted: False))))
 ```
 
 Finally generating the new SQL:

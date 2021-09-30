@@ -7,6 +7,20 @@ import sqlglot.expressions as exp
 
 
 class Parser:
+    """
+    Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
+    and produces a parsed syntax tree.
+
+    Args
+        functions (dict): the dictionary of additional functions in which the key
+            represents a function's SQL name and the value is a function which constructs
+            the function instance from a list of arguments.
+        error_level (ErrorLevel): the desired error level. Default: ErrorLevel.RAISE.
+        error_message_context (int): determines the amount of context to capture from
+            a query string when displaying the error message (in number of characters).
+            Default: 50.
+    """
+
     def _parse_decimal(args):
         size = len(args)
         precision = args[0] if size > 0 else None
@@ -141,10 +155,10 @@ class Parser:
         },
     }
 
-    def __init__(self, **opts):
-        self.functions = {**self.FUNCTIONS, **(opts.get("functions") or {})}
-        self.error_level = opts.get("error_level") or ErrorLevel.RAISE
-        self.error_message_context = opts.get("error_message_context") or 50
+    def __init__(self, functions=None, error_level=None, error_message_context=None):
+        self.functions = {**self.FUNCTIONS, **(functions or {})}
+        self.error_level = error_level or ErrorLevel.RAISE
+        self.error_message_context = error_message_context or 50
         self.reset()
 
     def reset(self):
@@ -158,6 +172,17 @@ class Parser:
         self._prev = None
 
     def parse(self, raw_tokens, code=None):
+        """
+        Parses the given list of tokens and returns a list of syntax trees, one tree
+        per parsed SQL statement.
+
+        Args
+            raw_tokens (list): the list of tokens (:class:`~sqlglot.tokens.Token`).
+            code (str): the original SQL string. Used to produce helpful debug messages.
+
+        Returns
+            the list of syntax trees (:class:`~sqlglot.expressions.Expression`).
+        """
         self.reset()
         self.code = code or ""
         total = len(raw_tokens)

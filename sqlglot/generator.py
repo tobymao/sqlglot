@@ -7,6 +7,29 @@ from sqlglot.tokens import Tokenizer
 
 
 class Generator:
+    """
+    Generator interprets the given syntax tree and produces a SQL string as an output.
+
+    Args
+        transforms (dict): the dictionary of custom transformations in which key
+            represents the expression type and the value is a function which defines
+            how the given expression type should be rendered.
+        type_mappings (dict): the dictionary of custom type mappings in which the key
+            represents the data type (:class:`~sqlglot.expressions.DataType.Type`) and
+            the value is its SQL string representation.
+        pretty (bool): if set to True the returned string will be formatted. Default: False.
+        identifier (str): specifies which character to use to delimit identifiers. Default: ".
+        identify (bool): if set to True all identifiers will be delimited by the corresponding
+            character.
+        quote (str): specifies a character which should be treated as a quote (eg. to delimit
+            literals). Default: '.
+        escape (str): specifies an escape character. Default: '.
+        pad (int): determines padding in a formatted string. Default: 2.
+        indent (int): determines the size of indentation in a formatted string. Default: 4.
+        unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
+            unsupported expressions. Default ErrorLevel.WARN.
+    """
+
     BODY_EXP = (
         exp.Select,
         exp.From,
@@ -24,22 +47,44 @@ class Generator:
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
     }
 
-    def __init__(self, **opts):
-        self.transforms = {**self.TRANSFORMS, **(opts.get("transforms") or {})}
-        self.type_mappings = opts.get("type_mappings") or {}
-        self.pretty = opts.get("pretty")
-        self.identifier = opts.get("identifier") or '"'
-        self.identify = opts.get("identify", False)
-        self.quote = opts.get("quote") or "'"
-        self.escape = opts.get("escape") or "'"
-        self.pad = opts.get("pad", 2)
-        self.unsupported_level = opts.get("unsupported_level", ErrorLevel.WARN)
+    def __init__(
+        self,
+        transforms=None,
+        type_mappings=None,
+        pretty=False,
+        identifier=None,
+        identify=False,
+        quote=None,
+        escape=None,
+        pad=2,
+        indent=4,
+        unsupported_level=ErrorLevel.WARN,
+    ):
+        # pylint: disable=too-many-arguments
+        self.transforms = {**self.TRANSFORMS, **(transforms or {})}
+        self.type_mappings = type_mappings or {}
+        self.pretty = pretty
+        self.configured_pretty = pretty
+        self.identifier = identifier or '"'
+        self.identify = identify
+        self.quote = quote or "'"
+        self.escape = escape or "'"
+        self.pad = pad
+        self.unsupported_level = unsupported_level
         self.unsupported_messages = []
-        self._indent = opts.get("indent", 4)
+        self._indent = indent
         self._level = 0
-        self.opts = opts
 
     def generate(self, expression):
+        """
+        Generates a SQL string by interpreting the given syntax tree.
+
+        Args
+            expression (Expression): the syntax tree.
+
+        Returns
+            the SQL string.
+        """
         self.unsupported_messages = []
         sql = self.sql(expression).strip()
 
@@ -404,7 +449,7 @@ class Generator:
             ifs.append(f"ELSE {self.sql(expression, 'default')}")
 
         original = self.pretty
-        self.pretty = self.opts.get("pretty")
+        self.pretty = self.configured_pretty
         ifs = "".join(self.seg(e, pad=pad) for e in ifs)
         case = f"CASE{this}{ifs}{self.seg('END', pad=self.pad)}"
         self.pretty = original

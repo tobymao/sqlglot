@@ -5,7 +5,6 @@ import weakref
 import sys
 
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
-from sqlglot.tokens import TokenType
 
 
 class Expression:
@@ -228,13 +227,13 @@ class Limit(Expression):
 
 
 class Literal(Expression):
-    arg_types = {"this": True, "token_type": True}
+    arg_types = {"this": True, "is_string": True}
 
     def __eq__(self, other):
         return (
             isinstance(other, Literal)
             and self.args.get("this") == other.args.get("this")
-            and self.args.get("token_type") == other.args.get("token_type")
+            and self.args.get("is_string") == other.args.get("is_string")
         )
 
     def __hash__(self):
@@ -242,17 +241,17 @@ class Literal(Expression):
             (
                 self.key,
                 self.args.get("this"),
-                self.args.get("token_type"),
+                self.args.get("is_string"),
             )
         )
 
     @classmethod
     def number(cls, number):
-        return cls(this=str(number), token_type=TokenType.NUMBER)
+        return cls(this=str(number), is_string=False)
 
     @classmethod
     def string(cls, string):
-        return cls(this=string, token_type=TokenType.STRING)
+        return cls(this=string, is_string=True)
 
 
 class Join(Expression):

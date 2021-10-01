@@ -411,7 +411,7 @@ class Spark(Hive):
         **Hive.type_mappings,
         exp.DataType.Type.TINYINT: "BYTE",
         exp.DataType.Type.SMALLINT: "SHORT",
-        exp.DataType.Type.BIGINT: "BIGINT",
+        exp.DataType.Type.BIGINT: "LONG",
         exp.DataType.Type.CHAR: "CHAR",
         exp.DataType.Type.BINARY: "ARRAY[BYTE]",
     }

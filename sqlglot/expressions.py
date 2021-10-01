@@ -857,6 +857,10 @@ class TimeStrToUnix(Func):
     pass
 
 
+class TsOrDsAdd(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
 class TsOrDsToDateStr(Func):
     pass
 

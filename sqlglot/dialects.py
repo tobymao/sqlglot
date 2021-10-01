@@ -109,6 +109,12 @@ class DuckDB(Dialect):
     def _unix_to_time(self, expression):
         return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
 
+    def _ts_or_ds_add(self, expression):
+        this = self.sql(expression, "this")
+        e = self.sql(expression, "expression")
+        unit = self.sql(expression, "unit") or "DAY"
+        return f"STRFTIME(CAST(CAST({this} AS DATE) + INTERVAL {e} {unit} AS DATE), {DuckDB.DATE_FORMAT})"
+
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
@@ -125,7 +131,7 @@ class DuckDB(Dialect):
         exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.TimeToTimeStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
-        exp.TsOrDsAdd: lambda self, e: f"""STRFTIME(CAST(CAST({self.sql(e, 'this')} AS DATE) + INTERVAL {self.sql(e, 'expression')} {self.sql(e, 'unit') or "DAY"} AS DATE), {DuckDB.DATE_FORMAT})""",
+        exp.TsOrDsAdd: _ts_or_ds_add,
         exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.DATE_FORMAT})",
         exp.TsOrDsToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.UnixToStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {self.sql(e, 'format')})",
@@ -331,6 +337,12 @@ class Presto(Dialect):
         this = self.sql(expression, "this")
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
+    def _ts_or_ds_add_sql(self, expression):
+        this = self.sql(expression, "this")
+        e = self.sql(expression, "expression")
+        unit = self.sql(expression, "unit") or "'day'"
+        return f"DATE_FORMAT(DATE_ADD({unit}, {e}, {this}), '%Y-%m-%d')"
+
     type_mappings = {
         exp.DataType.Type.INT: "INTEGER",
         exp.DataType.Type.FLOAT: "REAL",
@@ -369,7 +381,7 @@ class Presto(Dialect):
         exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Presto.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
-        exp.TsOrDsAdd: lambda self, e: f"""DATE_FORMAT(DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')}), '%Y-%m-%d')""",
+        exp.TsOrDsAdd: _ts_or_ds_add_sql,
         exp.TsOrDsToDateStr: _ts_or_ds_to_date_str_sql,
         exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
         exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format')})",

@@ -8,6 +8,17 @@ from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
 
 
 class Expression:
+    """
+    The base class for all expressions in a syntax tree.
+
+    Attributes:
+        arg_types (dict): determines arguments supported by this expression.
+            The key in a dictionary defines a unique key of an argument using
+            which the argument's value can be retrieved. The value is a boolean
+            flag which indiciates whether the argument's value is required (True)
+            or optional (False).
+    """
+
     arg_types = {"this": True}
 
     def __init__(self, **args):
@@ -29,6 +40,10 @@ class Expression:
                 ),
             )
         )
+
+    @property
+    def this(self):
+        return self.args.get("this")
 
     @property
     def depth(self):
@@ -248,6 +263,18 @@ class CTE(Expression):
 class Column(Expression):
     arg_types = {"this": False, "table": False, "db": False, "fields": False}
 
+    @property
+    def table(self):
+        return self.args.get("table")
+
+    @property
+    def db(self):
+        return self.args.get("db")
+
+    @property
+    def fields(self):
+        return self.args.get("fields")
+
 
 class ColumnDef(Expression):
     arg_types = {
@@ -436,10 +463,22 @@ class DataType(Expression):
 
 
 # Binary Expressions
-# (PLUS a b)
+# (ADD a b)
 # (FROM table selects)
 class Binary(Expression):
     arg_types = {"this": True, "expression": True}
+
+    @property
+    def left(self):
+        return self.this
+
+    @property
+    def right(self):
+        return self.args.get("expression")
+
+
+class Add(Binary):
+    pass
 
 
 class And(Binary):
@@ -466,11 +505,7 @@ class BitwiseXor(Binary):
     pass
 
 
-class Minus(Binary):
-    pass
-
-
-class IntDiv(Binary):
+class Div(Binary):
     pass
 
 
@@ -498,6 +533,10 @@ class Is(Binary):
     pass
 
 
+class IntDiv(Binary):
+    pass
+
+
 class Like(Binary):
     pass
 
@@ -514,6 +553,10 @@ class Mod(Binary):
     pass
 
 
+class Mul(Binary):
+    pass
+
+
 class NEQ(Binary):
     pass
 
@@ -522,15 +565,7 @@ class Or(Binary):
     pass
 
 
-class Plus(Binary):
-    pass
-
-
-class Mul(Binary):
-    pass
-
-
-class Div(Binary):
+class Sub(Binary):
     pass
 
 
@@ -595,6 +630,21 @@ class Interval(Expression):
 
 # Functions
 class Func(Expression):
+    """
+    The base class for all function expressions.
+
+    Attributes
+        is_var_len_args (bool): if set to True the last argument defined in
+            arg_types will be treated as a variable length argument and the
+            argument's value will be stored as a list.
+        _sql_names (list): determines the SQL name (1st item in the lsit) and
+            aliases (subsequent items) for this function expression. These
+            values are used to map this node to a name during parsing as well
+            as to provide the function's name during SQL string generation. By
+            default the SQL name is set to the expression's class name transformed
+            to snake case.
+    """
+
     is_var_len_args = False
 
     @classmethod

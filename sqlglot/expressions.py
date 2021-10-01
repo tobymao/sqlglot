@@ -436,10 +436,22 @@ class DataType(Expression):
 
 
 # Binary Expressions
-# (PLUS a b)
+# (ADD a b)
 # (FROM table selects)
 class Binary(Expression):
     arg_types = {"this": True, "expression": True}
+
+    @property
+    def left(self):
+        return self.args.get("this")
+
+    @property
+    def right(self):
+        return self.args.get("expression")
+
+
+class Add(Binary):
+    pass
 
 
 class And(Binary):
@@ -466,11 +478,7 @@ class BitwiseXor(Binary):
     pass
 
 
-class Minus(Binary):
-    pass
-
-
-class IntDiv(Binary):
+class Div(Binary):
     pass
 
 
@@ -498,6 +506,10 @@ class Is(Binary):
     pass
 
 
+class IntDiv(Binary):
+    pass
+
+
 class Like(Binary):
     pass
 
@@ -514,6 +526,10 @@ class Mod(Binary):
     pass
 
 
+class Mul(Binary):
+    pass
+
+
 class NEQ(Binary):
     pass
 
@@ -522,15 +538,7 @@ class Or(Binary):
     pass
 
 
-class Plus(Binary):
-    pass
-
-
-class Mul(Binary):
-    pass
-
-
-class Div(Binary):
+class Sub(Binary):
     pass
 
 

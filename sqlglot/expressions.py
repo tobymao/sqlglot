@@ -637,7 +637,7 @@ class Func(Expression):
         is_var_len_args (bool): if set to True the last argument defined in
             arg_types will be treated as a variable length argument and the
             argument's value will be stored as a list.
-        _sql_names (list): determines the SQL name (1st item in the lsit) and
+        _sql_names (list): determines the SQL name (1st item in the list) and
             aliases (subsequent items) for this function expression. These
             values are used to map this node to a name during parsing as well
             as to provide the function's name during SQL string generation. By

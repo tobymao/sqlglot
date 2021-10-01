@@ -491,7 +491,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD(DATE_STR_TO_DATE('2020-01-01'), 1)",
+            "TS_OR_DS_ADD(DATE_STR_TO_DATE('2020-01-01'), 1)",
             read="hive",
             write=None,
             identity=False,
@@ -508,13 +508,13 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_SUB('2020-01-01', 1)",
-            "DATE_ADD('day', 1 * -1, DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+            "DATE_FORMAT(DATE_ADD('day', 1 * -1, DATE_PARSE('2020-01-01', '%Y-%m-%d')), '%Y-%m-%d')",
             read="hive",
             write="presto",
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD('day', 1, DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+            "DATE_FORMAT(DATE_ADD('day', 1, DATE_PARSE('2020-01-01', '%Y-%m-%d')), '%Y-%m-%d')",
             read="hive",
             write="presto",
         )

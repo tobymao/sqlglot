@@ -504,6 +504,9 @@ class Generator:
             return f"({self.sql(expression, 'this')}){to_sql}"
         return f"{self.sql(expression, 'this')}{to_sql}"
 
+    def add_sql(self, expression):
+        return self.binary(expression, "+")
+
     def and_sql(self, expression):
         return self.binary(expression, "AND", newline=self.pretty)
 
@@ -546,6 +549,9 @@ class Generator:
     def dpipe_sql(self, expression):
         return self.binary(expression, "||")
 
+    def div_sql(self, expression):
+        return self.binary(expression, "/")
+
     def dot_sql(self, expression):
         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
 
@@ -570,11 +576,11 @@ class Generator:
     def lte_sql(self, expression):
         return self.binary(expression, "<=")
 
-    def minus_sql(self, expression):
-        return self.binary(expression, "-")
-
     def mod_sql(self, expression):
         return self.binary(expression, "%")
+
+    def mul_sql(self, expression):
+        return self.binary(expression, "*")
 
     def neq_sql(self, expression):
         return self.binary(expression, "<>")
@@ -582,17 +588,11 @@ class Generator:
     def or_sql(self, expression):
         return self.binary(expression, "OR", newline=self.pretty)
 
-    def plus_sql(self, expression):
-        return self.binary(expression, "+")
-
     def regexlike_sql(self, expression):
         return self.binary(expression, "RLIKE")
 
-    def div_sql(self, expression):
-        return self.binary(expression, "/")
-
-    def mul_sql(self, expression):
-        return self.binary(expression, "*")
+    def sub_sql(self, expression):
+        return self.binary(expression, "-")
 
     def binary(self, expression, op, newline=False):
         sep = "\n" if newline else " "

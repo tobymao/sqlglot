@@ -131,8 +131,8 @@ class Parser:
     }
 
     TERM = {
-        TokenType.DASH: exp.Minus,
-        TokenType.PLUS: exp.Plus,
+        TokenType.DASH: exp.Sub,
+        TokenType.PLUS: exp.Add,
         TokenType.MOD: exp.Mod,
     }
 

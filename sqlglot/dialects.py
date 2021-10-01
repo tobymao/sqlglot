@@ -112,6 +112,7 @@ class DuckDB(Dialect):
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
+        exp.DateAdd: lambda self, e: f"""CAST({self.sql(e, 'this')} AS DATE) + INTERVAL {self.sql(e, 'expression')} {self.sql(e, 'unit') or "DAY"}""",
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
@@ -124,7 +125,7 @@ class DuckDB(Dialect):
         exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.TimeToTimeStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
-        exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.TsOrDsAdd: lambda self, e: f"""STRFTIME(CAST(CAST({self.sql(e, 'this')} AS DATE) + INTERVAL {self.sql(e, 'expression')} {self.sql(e, 'unit') or "DAY"} AS DATE), {DuckDB.DATE_FORMAT})""",
         exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.DATE_FORMAT})",
         exp.TsOrDsToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.UnixToStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {self.sql(e, 'format')})",

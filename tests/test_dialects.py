@@ -519,6 +519,18 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
         self.validate(
+            "DATE_ADD('2020-01-01', 1)",
+            "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
+            write="duckdb",
+            identity=False,
+        )
+        self.validate(
+            "DATE_ADD('2020-01-01', 1)",
+            "STRFTIME(CAST(CAST(CAST('2020-01-01' AS DATE) AS DATE) + INTERVAL 1 DAY AS DATE), '%Y-%m-%d')",
+            read="hive",
+            write="duckdb",
+        )
+        self.validate(
             "DATEDIFF('2020-01-02', '2020-01-02')",
             "DATE_DIFF(DATE_STR_TO_DATE('2020-01-02'), DATE_STR_TO_DATE('2020-01-02'))",
             read="hive",

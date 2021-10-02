@@ -417,7 +417,7 @@ class Spark(Hive):
 
     transforms = {
         **Hive.transforms,
-        exp.Hint: lambda self, e: f" /*+ {self.sql(e, 'this').strip()} */",
+        exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.Create: _create_sql,
     }

@@ -306,7 +306,7 @@ class Having(Expression):
 
 
 class Hint(Expression):
-    pass
+    arg_types = {"expressions": True}
 
 
 class Insert(Expression):

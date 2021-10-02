@@ -228,7 +228,6 @@ class TestTranspile(unittest.TestCase):
             os.path.join(self.fixtures_dir, "identity.sql"), encoding="utf-8"
         ) as f:
             for sql in f:
-                print(sql)
                 self.assertEqual(transpile(sql)[0], sql.strip())
 
     def test_partial(self):

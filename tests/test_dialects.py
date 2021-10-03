@@ -658,6 +658,11 @@ class TestDialects(unittest.TestCase):
             read="spark",
         )
         self.validate(
+            "SELECT /*+ COALESCE(3), REPARTITION(1) */ * FROM x",
+            "SELECT /*+ COALESCE(3), REPARTITION(1) */ * FROM x",
+            read="spark",
+        )
+        self.validate(
             "x IN ('a', 'a''b')", "x IN ('a', 'a\\'b')", read="presto", write="spark"
         )
 

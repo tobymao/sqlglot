@@ -5,6 +5,9 @@ from sqlglot import parse_one
 
 
 class TestExpressions(unittest.TestCase):
+    def test_depth(self):
+        self.assertEqual(parse_one("x(1)").find(exp.Literal).depth, 1)
+
     def test_eq(self):
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"'))
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"  '))

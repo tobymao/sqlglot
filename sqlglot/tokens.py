@@ -176,13 +176,9 @@ class Token:
         self.text = text
         self.line = line
         self.col = max(col - len(text), 1)
-        self.parent = None
-        self.arg_key = None
 
     def __repr__(self):
-        attributes = ", ".join(
-            [f"{k}: {v}" for k, v in self.__dict__.items() if k != "parent"]
-        )
+        attributes = ", ".join(f"{k}: {v}" for k, v in self.__dict__.items())
         return f"<Token {attributes}>"
 
 

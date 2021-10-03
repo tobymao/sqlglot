@@ -26,7 +26,10 @@ class RegisteringMeta(type):
 
 
 def list_get(arr, index):
-    return arr[index] if index < len(arr) else None
+    try:
+        return arr[index]
+    except IndexError:
+        return None
 
 
 def ensure_list(value):

@@ -78,19 +78,6 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    PRIMARY_TOKENS = {
-        TokenType.STRING,
-        TokenType.NUMBER,
-        TokenType.STAR,
-        TokenType.NULL,
-    }
-
-    NON_COLUMN_TOKENS = {
-        TokenType.COMMA,
-        TokenType.R_PAREN,
-        TokenType.WHEN,
-    }
-
     CONJUNCTION = {
         TokenType.AND: exp.And,
         TokenType.OR: exp.Or,
@@ -745,7 +732,7 @@ class Parser:
                 self.raise_error("Expected type")
             return self.expression(exp.Cast, this=this, to=type_token)
 
-        return self._parse_column_def(this)
+        return this
 
     def _parse_types(self):
         if self._match(TokenType.TIMESTAMP, TokenType.TIMESTAMPTZ):
@@ -760,6 +747,101 @@ class Parser:
         return self._match(*self.TYPE_TOKENS) and exp.DataType(
             this=exp.DataType.Type[self._prev.token_type.value.upper()]
         )
+
+    def _parse_column(self):
+        this = self._parse_field()
+        table = None
+        db = None
+        fields = None
+
+        while self._match(TokenType.DOT):
+            if db:
+                fields = fields if fields else [db, table, this]
+                fields.append(self._parse_field())
+                continue
+            if table:
+                db = table
+            table = this
+            this = self._parse_field()
+
+        if fields:
+            return self.expression(exp.Column, fields=fields)
+        if any(
+            isinstance(field, (exp.Identifier, exp.Star)) for field in (this, db, table)
+        ):
+            return self.expression(exp.Column, this=this, table=table, db=db)
+        return this
+
+    def _parse_primary(self):
+        this = (
+            self._parse_string()
+            or self._parse_number()
+            or self._parse_star()
+            or self._parse_null()
+        )
+
+        if this:
+            return this
+
+        if self._match(TokenType.L_PAREN):
+            this = self._parse_select() or self._parse_conjunction()
+
+            if not self._match(TokenType.R_PAREN):
+                self.raise_error("Expecting )")
+            return self.expression(exp.Paren, this=this)
+
+        return None
+
+    def _parse_field(self):
+        return self._parse_bracket(
+            self._parse_primary() or self._parse_function() or self._parse_id_var()
+        )
+
+    def _parse_function(self, schema=False):
+        if self._match(TokenType.CASE):
+            return self._parse_case()
+
+        if not self._next or self._next.token_type != TokenType.L_PAREN:
+            return None
+
+        if self._match(TokenType.CAST):
+            self._advance()
+            this = self._parse_cast()
+        elif self._match(TokenType.COUNT):
+            self._advance()
+            this = self._parse_count()
+        elif self._match(TokenType.EXTRACT):
+            self._advance()
+            this = self._parse_extract()
+        else:
+            this = self._curr.text
+            self._advance()
+            self._advance()
+
+            function = self.functions.get(this.upper())
+
+            if schema:
+                args = self._parse_csv(
+                    lambda: self._parse_column_def(self._parse_field())
+                )
+                this = self.expression(exp.Schema, this=this, expressions=args)
+            else:
+                args = self._parse_csv(self._parse_conjunction)
+
+                if not callable(function):
+                    this = self.expression(exp.Anonymous, this=this, expressions=args)
+                else:
+                    this = function(args)
+                    self.validate_expression(this)
+                    if len(args) > len(this.arg_types) and not this.is_var_len_args:
+                        self.raise_error(
+                            f"The number of provided arguments ({len(args)}) is greater than "
+                            f"the maximum number of supported arguments ({len(this.arg_types)})"
+                        )
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error("Expected )")
+
+        return self._parse_window(this)
 
     def _parse_column_def(self, this):
         kind = self._parse_function() or self._parse_types()
@@ -807,114 +889,6 @@ class Parser:
 
         options.pop("parsed")
         return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
-
-    def _parse_column(self):
-        if not self._curr or self._curr.token_type in self.NON_COLUMN_TOKENS:
-            return None
-
-        this = self._parse_field()
-        table = None
-        db = None
-        fields = None
-
-        while self._match(TokenType.DOT):
-            if db:
-                fields = fields if fields else [db, table, this]
-                fields.append(self._parse_field())
-                continue
-            if table:
-                db = table
-            table = this
-            this = self._parse_field()
-
-        if fields:
-            return self.expression(exp.Column, fields=fields)
-        if any(
-            isinstance(field, (exp.Identifier, exp.Star)) for field in (this, db, table)
-        ):
-            return self.expression(exp.Column, this=this, table=table, db=db)
-        return this
-
-    def _parse_primary(self):
-        this = (
-            self._parse_string()
-            or self._parse_number()
-            or self._parse_star()
-            or self._parse_null()
-        )
-
-        if this:
-            return this
-
-        if self._match(TokenType.L_PAREN):
-            this = self._parse_select() or self._parse_conjunction()
-
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expecting )")
-            return self.expression(exp.Paren, this=this)
-
-        return None
-
-    def _parse_field(self):
-        return self._parse_bracket(
-            self._parse_function() or self._parse_primary() or self._parse_id_var()
-        )
-
-    def _parse_function(self, schema=False):
-        if self._match(TokenType.CASE):
-            return self._parse_case()
-
-        if not self._next or self._next.token_type != TokenType.L_PAREN:
-            return None
-
-        if self._match(TokenType.CAST):
-            self._match(TokenType.L_PAREN)
-            this = self._parse_cast()
-            self._match(TokenType.R_PAREN)
-        elif self._match(TokenType.COUNT):
-            self._match(TokenType.L_PAREN)
-            this = self._parse_count()
-            self._match(TokenType.R_PAREN)
-        elif self._match(TokenType.EXTRACT):
-            self._match(TokenType.L_PAREN)
-            this = self._parse_extract()
-            self._match(TokenType.R_PAREN)
-        else:
-            if not self._curr or (
-                self._curr.token_type != TokenType.VAR
-                and self._curr.token_type not in self.TYPE_TOKENS
-                and self._curr.token_type not in (TokenType.PRIMARY_KEY, TokenType.IF)
-            ):
-                return None
-
-            self._advance()
-            this = self._prev.text
-            self._advance()
-            closure = (
-                TokenType.R_PAREN
-                if self._prev.token_type == TokenType.L_PAREN
-                else TokenType.R_BRACKET
-            )
-
-            args = self._parse_csv(self._parse_conjunction)
-            function = self.functions.get(this.upper())
-
-            if schema:
-                this = self.expression(exp.Schema, this=this, expressions=args)
-            elif not callable(function):
-                this = self.expression(exp.Anonymous, this=this, expressions=args)
-            else:
-                this = function(args)
-                self.validate_expression(this)
-                if len(args) > len(this.arg_types) and not this.is_var_len_args:
-                    self.raise_error(
-                        f"The number of provided arguments ({len(args)}) is greater than "
-                        f"the maximum number of supported arguments ({len(this.arg_types)})"
-                    )
-            if not self._match(closure):
-                self.raise_error(f"Expected {closure.value}")
-
-        return self._parse_window(this)
 
     def _parse_bracket(self, this):
         while self._match(TokenType.L_BRACKET):

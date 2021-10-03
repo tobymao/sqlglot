@@ -112,13 +112,19 @@ class DuckDB(Dialect):
     def _ts_or_ds_add(self, expression):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
-        unit = self.sql(expression, "unit") or "DAY"
-        return f"STRFTIME(CAST(CAST({this} AS DATE) + INTERVAL {e} {unit} AS DATE), {DuckDB.DATE_FORMAT})"
+        unit = self.sql(expression, "unit").strip("'") or "DAY"
+        return f"STRFTIME(CAST({this} AS DATE) + INTERVAL {e} {unit}, {DuckDB.DATE_FORMAT})"
+
+    def _date_add(self, expression):
+        this = self.sql(expression, "this")
+        e = self.sql(expression, "expression")
+        unit = self.sql(expression, "unit").strip("'") or "DAY"
+        return f"{this} + INTERVAL {e} {unit}"
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
-        exp.DateAdd: lambda self, e: f"""CAST({self.sql(e, 'this')} AS DATE) + INTERVAL {self.sql(e, 'expression')} {self.sql(e, 'unit') or "DAY"}""",
+        exp.DateAdd: _date_add,
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
@@ -214,6 +220,7 @@ class Hive(Dialect):
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
         exp.Case: _case_if_sql,
         exp.CTE: _no_recursive_cte_sql,
+        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
         exp.FileFormat: _fileformat_sql,
@@ -242,19 +249,21 @@ class Hive(Dialect):
         "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
         "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
         "DATE_ADD": lambda args: exp.TsOrDsAdd(
-            this=exp.DateStrToDate(this=list_get(args, 0)),
+            this=list_get(args, 0),
             expression=list_get(args, 1),
+            unit="'DAY'",
         ),
         "DATEDIFF": lambda args: exp.DateDiff(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=exp.DateStrToDate(this=list_get(args, 1)),
         ),
         "DATE_SUB": lambda args: exp.TsOrDsAdd(
-            this=exp.DateStrToDate(this=list_get(args, 0)),
+            this=list_get(args, 0),
             expression=exp.Mul(
                 this=list_get(args, 1),
                 expression=exp.Literal.number(-1),
             ),
+            unit="'DAY'",
         ),
         "DATE_FORMAT": exp.TimeToStr.from_arg_list,
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
@@ -341,7 +350,7 @@ class Presto(Dialect):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
         unit = self.sql(expression, "unit") or "'day'"
-        return f"DATE_FORMAT(DATE_ADD({unit}, {e}, {this}), '%Y-%m-%d')"
+        return f"DATE_FORMAT(DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')), '%Y-%m-%d')"
 
     type_mappings = {
         exp.DataType.Type.INT: "INTEGER",

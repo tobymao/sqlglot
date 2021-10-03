@@ -1,7 +1,6 @@
 from enum import auto
 from copy import deepcopy
 import inspect
-import weakref
 import sys
 
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
@@ -24,7 +23,7 @@ class Expression:
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
         self.args = args
-        self._parent = None
+        self.parent = None
         self.arg_key = None
 
     def __eq__(self, other):
@@ -53,20 +52,6 @@ class Expression:
         if self.parent:
             return self.parent.depth + 1
         return 0
-
-    @property
-    def parent(self):
-        """
-        Returns the parent node of this node or None if there is no parent.
-        """
-        return self._parent() if self._parent else None
-
-    @parent.setter
-    def parent(self, new_parent):
-        """
-        Sets the parent node for this node.
-        """
-        self._parent = weakref.ref(new_parent)
 
     def find(self, *expression_types):
         """
@@ -306,7 +291,7 @@ class Having(Expression):
 
 
 class Hint(Expression):
-    pass
+    arg_types = {"expressions": True}
 
 
 class Insert(Expression):

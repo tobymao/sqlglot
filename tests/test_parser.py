@@ -49,12 +49,12 @@ class TestParser(unittest.TestCase):
     @mock.patch("sqlglot.parser.logging")
     def test_expression(self, logging):
         ignore = Parser(error_level=ErrorLevel.IGNORE)
-        self.assertIsInstance(ignore.expression(exp.Hint, this=""), exp.Hint)
+        self.assertIsInstance(ignore.expression(exp.Hint, expressions=[""]), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint, y=""), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint), exp.Hint)
 
         default = Parser()
-        self.assertIsInstance(default.expression(exp.Hint, this=""), exp.Hint)
+        self.assertIsInstance(default.expression(exp.Hint, expressions=[""]), exp.Hint)
         with self.assertRaises(ParseError):
             default.expression(exp.Hint, y="")
         with self.assertRaises(ParseError):
@@ -62,14 +62,13 @@ class TestParser(unittest.TestCase):
 
         warn = Parser(error_level=ErrorLevel.WARN)
         warn.expression(exp.Hint, y="")
-
         assert (
             "Unexpected keyword: 'y' for <class 'sqlglot.expressions.Hint'>. Line 1, Col: 1."
             in str(logging.error.call_args_list[0][0][0])
         )
         warn.expression(exp.Hint)
         assert (
-            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Hint'>. Line 1, Col: 1."
+            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Hint'>. Line 1, Col: 1."
             in str(logging.error.call_args_list[1][0][0])
         )
 

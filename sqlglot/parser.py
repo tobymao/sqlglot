@@ -55,7 +55,6 @@ class Parser:
     }
 
     ID_VAR_TOKENS = {
-        TokenType.IDENTIFIER,
         TokenType.VAR,
         TokenType.ALL,
         TokenType.ASC,
@@ -168,10 +167,10 @@ class Parser:
                 self.raise_error("Invalid expression / Unexpected token")
 
         for expression in expressions:
-            if not isinstance(expression, exp.Expression):
+            if not expression:
                 continue
             for node, parent, key in expression.walk():
-                if hasattr(node, "parent") and parent:
+                if isinstance(node, exp.Expression) and parent:
                     node.parent = parent
                     node.arg_key = key
 
@@ -621,10 +620,7 @@ class Parser:
         if not self._match(TokenType.LIMIT):
             return None
 
-        limit_number = self._match(TokenType.NUMBER) and self._prev
-        return self.expression(
-            exp.Limit, this=limit_number.text if limit_number else None
-        )
+        return self.expression(exp.Limit, this=self._parse_number())
 
     def _parse_union(self, this):
         if not self._match(TokenType.UNION):
@@ -767,7 +763,7 @@ class Parser:
         if fields:
             return self.expression(exp.Column, fields=fields)
         if any(
-            isinstance(field, (exp.Identifier, exp.Star)) for field in (this, db, table)
+            isinstance(field, (exp.Identifier, exp.Star)) for field in (this, table, db)
         ):
             return self.expression(exp.Column, this=this, table=table, db=db)
         return this
@@ -1014,13 +1010,9 @@ class Parser:
         return this
 
     def _parse_id_var(self):
-        return (
-            self._parse_identifier()
-            or self._parse_var()
-            or (
-                self._match(*self.ID_VAR_TOKENS, TokenType.STAR)
-                and exp.Identifier(this=self._prev.text, quoted=False)
-            )
+        return self._parse_identifier() or (
+            self._match(*self.ID_VAR_TOKENS)
+            and exp.Identifier(this=self._prev.text, quoted=False)
         )
 
     def _parse_string(self):
@@ -1078,9 +1070,8 @@ class Parser:
         if not self._curr:
             return None
 
-        for token_type in types:
-            if self._curr.token_type == token_type:
-                self._advance()
-                return True
+        if self._curr.token_type in types:
+            self._advance()
+            return True
 
         return None

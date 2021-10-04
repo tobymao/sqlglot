@@ -251,7 +251,7 @@ class Hive(Dialect):
         "DATE_ADD": lambda args: exp.TsOrDsAdd(
             this=list_get(args, 0),
             expression=list_get(args, 1),
-            unit="'DAY'",
+            unit=exp.Literal.string('DAY'),
         ),
         "DATEDIFF": lambda args: exp.DateDiff(
             this=exp.DateStrToDate(this=list_get(args, 0)),
@@ -263,7 +263,7 @@ class Hive(Dialect):
                 this=list_get(args, 1),
                 expression=exp.Literal.number(-1),
             ),
-            unit="'DAY'",
+            unit=exp.Literal.string('DAY'),
         ),
         "DATE_FORMAT": exp.TimeToStr.from_arg_list,
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),

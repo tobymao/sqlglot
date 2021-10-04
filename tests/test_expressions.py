@@ -206,3 +206,10 @@ class TestExpressions(unittest.TestCase):
             [f.args["this"] for f in column.args["fields"]],
             ["a", "b", "c", "d"],
         )
+
+    def test_text(self):
+        column = parse_one("a.b.c")
+        self.assertEqual(column.text("this"), "c")
+        self.assertEqual(column.text("y"), "")
+        self.assertEqual(parse_one("select * from x.y").find(exp.Table).text("db"), "x")
+        self.assertEqual(parse_one("select *").text("this"), "")

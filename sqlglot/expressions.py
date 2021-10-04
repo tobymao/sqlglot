@@ -44,6 +44,12 @@ class Expression:
     def this(self):
         return self.args.get("this")
 
+    def text(self, key):
+        field = self.args.get(key)
+        if isinstance(field, Identifier):
+            return field.this
+        return ""
+
     @property
     def depth(self):
         """
@@ -312,18 +318,12 @@ class Literal(Expression):
     def __eq__(self, other):
         return (
             isinstance(other, Literal)
-            and self.args.get("this") == other.args.get("this")
+            and self.this == other.this
             and self.args.get("is_string") == other.args.get("is_string")
         )
 
     def __hash__(self):
-        return hash(
-            (
-                self.key,
-                self.args.get("this"),
-                self.args.get("is_string"),
-            )
-        )
+        return hash((self.key, self.this, self.args.get("is_string")))
 
     @classmethod
     def number(cls, number):
@@ -580,6 +580,10 @@ class Neg(Unary):
 class Alias(Expression):
     arg_types = {"this": True, "alias": False}
 
+    @property
+    def alias(self):
+        return self.args.get("alias")
+
 
 class Between(Expression):
     arg_types = {"this": True, "low": True, "high": True}
@@ -760,17 +764,11 @@ class Identifier(Func):
     def __eq__(self, other):
         return (
             isinstance(other, Identifier)
-            and (self.args.get("this") or "").upper()
-            == (other.args.get("this") or "").upper()
+            and (self.this or "").upper() == (other.this or "").upper()
         )
 
     def __hash__(self):
-        return hash(
-            (
-                self.key,
-                self.args.get("this").upper(),
-            )
-        )
+        return hash((self.key, self.this.upper()))
 
 
 class If(Func):

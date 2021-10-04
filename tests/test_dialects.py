@@ -491,7 +491,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD(DATE_STR_TO_DATE('2020-01-01'), 1)",
+            "TS_OR_DS_ADD('2020-01-01', 1, 'DAY')",
             read="hive",
             write=None,
             identity=False,
@@ -508,15 +508,39 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_SUB('2020-01-01', 1)",
-            "DATE_ADD('day', 1 * -1, DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+            "DATE_FORMAT(DATE_ADD('DAY', 1 * -1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
             read="hive",
             write="presto",
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD('day', 1, DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+            "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
             read="hive",
             write="presto",
+        )
+        self.validate(
+            "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
+            "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
+            write="presto",
+            identity=False,
+        )
+        self.validate(
+            "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
+            "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
+            write="duckdb",
+            identity=False,
+        )
+        self.validate(
+            "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
+            "STRFTIME(CAST('2021-02-01' AS DATE) + INTERVAL 1 DAY, '%Y-%m-%d')",
+            write="duckdb",
+            identity=False,
+        )
+        self.validate(
+            "DATE_ADD('2020-01-01', 1)",
+            "STRFTIME(CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY, '%Y-%m-%d')",
+            read="hive",
+            write="duckdb",
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-02')",

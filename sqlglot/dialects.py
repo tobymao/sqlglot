@@ -109,9 +109,22 @@ class DuckDB(Dialect):
     def _unix_to_time(self, expression):
         return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
 
+    def _ts_or_ds_add(self, expression):
+        this = self.sql(expression, "this")
+        e = self.sql(expression, "expression")
+        unit = self.sql(expression, "unit").strip("'") or "DAY"
+        return f"STRFTIME(CAST({this} AS DATE) + INTERVAL {e} {unit}, {DuckDB.DATE_FORMAT})"
+
+    def _date_add(self, expression):
+        this = self.sql(expression, "this")
+        e = self.sql(expression, "expression")
+        unit = self.sql(expression, "unit").strip("'") or "DAY"
+        return f"{this} + INTERVAL {e} {unit}"
+
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
+        exp.DateAdd: _date_add,
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
@@ -124,6 +137,7 @@ class DuckDB(Dialect):
         exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.TimeToTimeStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
+        exp.TsOrDsAdd: _ts_or_ds_add,
         exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.DATE_FORMAT})",
         exp.TsOrDsToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.UnixToStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {self.sql(e, 'format')})",
@@ -206,6 +220,7 @@ class Hive(Dialect):
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
         exp.Case: _case_if_sql,
         exp.CTE: _no_recursive_cte_sql,
+        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
         exp.FileFormat: _fileformat_sql,
@@ -222,6 +237,7 @@ class Hive(Dialect):
         exp.TimeToStr: _time_to_str,
         exp.TimeToTimeStr: lambda self, e: self.sql(e, "this"),
         exp.TimeToUnix: _time_to_unix,
+        exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.TsOrDsToDateStr: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.TsOrDsToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), Hive._time_format(self, e))})",
@@ -232,20 +248,22 @@ class Hive(Dialect):
     functions = {
         "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
         "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
-        "DATE_ADD": lambda args: exp.DateAdd(
-            this=exp.DateStrToDate(this=list_get(args, 0)),
+        "DATE_ADD": lambda args: exp.TsOrDsAdd(
+            this=list_get(args, 0),
             expression=list_get(args, 1),
+            unit=exp.Literal.string("DAY"),
         ),
         "DATEDIFF": lambda args: exp.DateDiff(
             this=exp.DateStrToDate(this=list_get(args, 0)),
             expression=exp.DateStrToDate(this=list_get(args, 1)),
         ),
-        "DATE_SUB": lambda args: exp.DateAdd(
-            this=exp.DateStrToDate(this=list_get(args, 0)),
+        "DATE_SUB": lambda args: exp.TsOrDsAdd(
+            this=list_get(args, 0),
             expression=exp.Mul(
                 this=list_get(args, 1),
                 expression=exp.Literal.number(-1),
             ),
+            unit=exp.Literal.string("DAY"),
         ),
         "DATE_FORMAT": exp.TimeToStr.from_arg_list,
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
@@ -328,6 +346,12 @@ class Presto(Dialect):
         this = self.sql(expression, "this")
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
+    def _ts_or_ds_add_sql(self, expression):
+        this = self.sql(expression, "this")
+        e = self.sql(expression, "expression")
+        unit = self.sql(expression, "unit") or "'day'"
+        return f"DATE_FORMAT(DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')), '%Y-%m-%d')"
+
     type_mappings = {
         exp.DataType.Type.INT: "INTEGER",
         exp.DataType.Type.FLOAT: "REAL",
@@ -366,6 +390,7 @@ class Presto(Dialect):
         exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Presto.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
+        exp.TsOrDsAdd: _ts_or_ds_add_sql,
         exp.TsOrDsToDateStr: _ts_or_ds_to_date_str_sql,
         exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
         exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format')})",

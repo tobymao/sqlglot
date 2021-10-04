@@ -46,7 +46,9 @@ class Expression:
 
     def text(self, key):
         field = self.args.get(key)
-        if isinstance(field, Identifier):
+        if isinstance(field, str):
+            return field
+        if isinstance(field, (Identifier, Literal)):
             return field.this
         return ""
 

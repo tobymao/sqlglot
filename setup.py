@@ -5,8 +5,9 @@ version = (
     .read()
     .split('__version__ = ')[-1]
     .split("\n")[0]
-    .strip()
-    .replace("'", '')
+    .strip("")
+    .strip("'")
+    .strip('"')
 )
 
 setup(

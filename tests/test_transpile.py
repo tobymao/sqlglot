@@ -25,6 +25,12 @@ class TestTranspile(unittest.TestCase):
             "SELECT CAST(a AS SPECIAL INT) FROM x",
         )
 
+    def test_paren(self):
+        self.validate(
+            "SELECT * FROM ((SELECT 1))",
+            "SELECT * FROM (SELECT 1)",
+        )
+
     def test_space(self):
         self.validate("SELECT MIN(3)>MIN(2)", "SELECT MIN(3) > MIN(2)")
         self.validate("SELECT MIN(3)>=MIN(2)", "SELECT MIN(3) >= MIN(2)")

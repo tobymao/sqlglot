@@ -387,7 +387,7 @@ class Schema(Expression):
 
 class Select(Expression):
     arg_types = {
-        "expressions": True,
+        "expressions": False,
         "hint": False,
         "distinct": False,
         "from": False,

@@ -463,6 +463,12 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "MAP(a, b, c, d)",
+            "MAP(ARRAY[a, c], ARRAY[b, d])",
+            read="hive",
+            write="presto",
+        )
         self.validate('"\'"', "''''", read="hive", write="presto")
         self.validate('ds = "2020-01-01"', "ds = '2020-01-01'", read="hive")
         self.validate("ds = \"1''2\"", "ds = '1\\'\\'2'", read="hive")

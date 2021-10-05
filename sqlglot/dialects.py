@@ -171,6 +171,17 @@ class Hive(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
+    def _parse_map(args):
+        keys = []
+        values = []
+        for i in range(0, len(args), 2):
+            keys.append(args[i])
+            values.append(args[i + 1])
+        return exp.Map(
+            keys=exp.Array(expressions=keys),
+            values=exp.Array(expressions=values),
+        )
+
     def _time_format(self, expression):
         time_format = self.sql(expression, "format")
         if time_format == Hive.TIME_FORMAT:
@@ -204,10 +215,6 @@ class Hive(Dialect):
 
     def _unix_to_time(self, expression):
         return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
-
-    def ts_or_ds_to_date(self, expression):
-        this = self.sql(expression, "this")
-        return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
     type_mappings = {
         exp.DataType.Type.TEXT: "STRING",
@@ -275,6 +282,7 @@ class Hive(Dialect):
         "LOCATE": lambda args: exp.StrPosition(
             this=list_get(args, 1), substr=list_get(args, 0), position=list_get(args, 2)
         ),
+        "MAP": _parse_map,
         "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
         "PERCENTILE": exp.Quantile.from_arg_list,
         "SIZE": exp.ArraySize.from_arg_list,

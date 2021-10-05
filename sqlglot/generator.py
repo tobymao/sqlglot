@@ -359,8 +359,10 @@ class Generator:
         hint = self.sql(expression, "hint")
         distinct = " DISTINCT" if expression.args.get("distinct") else ""
         expressions = self.expressions(expression)
+        select = "SELECT" if expressions else ""
+        sep = self.sep() if expressions else ""
         return csv(
-            f"SELECT{hint}{distinct}{self.sep()}{expressions}",
+            f"{select}{hint}{distinct}{sep}{expressions}",
             self.sql(expression, "from"),
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
@@ -611,7 +613,7 @@ class Generator:
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop
-        expressions = expression.args["expressions"] or []
+        expressions = expression.args.get("expressions") or []
         if flat:
             return ", ".join(self.sql(e) for e in expressions)
 
@@ -620,7 +622,7 @@ class Generator:
                 f"{'  ' if self.pretty else ''}{self.no_format(lambda: self.sql(e))}",
                 pad=pad,
             )
-            for e in expression.args["expressions"] or []
+            for e in expressions
         )
 
     def op_expressions(self, op, expression, flat=False):

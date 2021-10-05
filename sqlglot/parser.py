@@ -77,6 +77,13 @@ class Parser:
         *TYPE_TOKENS,
     }
 
+    NON_FUNC_TOKENS = {
+        TokenType.SELECT,
+        TokenType.JOIN,
+        TokenType.VALUES,
+        TokenType.WHEN,
+    }
+
     CONJUNCTION = {
         TokenType.AND: exp.And,
         TokenType.OR: exp.Or,
@@ -252,12 +259,7 @@ class Parser:
         if self._match(TokenType.UPDATE):
             return self._parse_update()
 
-        cte = self._parse_cte()
-
-        if cte:
-            return cte
-
-        return self._parse_expression()
+        return self._parse_expression() or self._parse_cte()
 
     def _parse_drop(self):
         if self._match(TokenType.TABLE):
@@ -426,14 +428,21 @@ class Parser:
         )
 
     def _parse_select(self):
-        if self._match(TokenType.SELECT):
+        this = self._parse_values()
+
+        if self._match(TokenType.L_PAREN):
+            this = self._parse_select()
+            self._match(TokenType.R_PAREN)
+            this = self._parse_alias(this)
+
+        if isinstance(this, exp.Alias) or self._match(TokenType.SELECT):
             this = self.expression(
                 exp.Select,
                 hint=self._parse_hint(),
                 distinct=self._match(TokenType.DISTINCT),
                 expressions=self._parse_csv(self._parse_expression),
                 **{
-                    "from": self._parse_from(),
+                    "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
                     "joins": self._parse_joins(),
                     "where": self._parse_where(),
@@ -443,8 +452,6 @@ class Parser:
                     "limit": self._parse_limit(),
                 },
             )
-        else:
-            this = self._parse_values()
 
         return self._parse_union(this)
 
@@ -780,7 +787,7 @@ class Parser:
             return this
 
         if self._match(TokenType.L_PAREN):
-            this = self._parse_select() or self._parse_conjunction()
+            this = self._parse_conjunction() or self._parse_select()
 
             if not self._match(TokenType.R_PAREN):
                 self.raise_error("Expecting )")
@@ -797,7 +804,12 @@ class Parser:
         if self._match(TokenType.CASE):
             return self._parse_case()
 
-        if not self._next or self._next.token_type != TokenType.L_PAREN:
+        if (
+            not self._curr
+            or self._curr.token_type in self.NON_FUNC_TOKENS
+            or not self._next
+            or self._next.token_type != TokenType.L_PAREN
+        ):
             return None
 
         if self._match(TokenType.CAST):

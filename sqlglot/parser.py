@@ -77,11 +77,14 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    NON_FUNC_TOKENS = {
-        TokenType.SELECT,
-        TokenType.JOIN,
-        TokenType.VALUES,
-        TokenType.WHEN,
+    FUNC_TOKENS = {
+        TokenType.CAST,
+        TokenType.COUNT,
+        TokenType.EXTRACT,
+        TokenType.IF,
+        TokenType.PRIMARY_KEY,
+        TokenType.VAR,
+        *TYPE_TOKENS,
     }
 
     CONJUNCTION = {
@@ -235,8 +238,8 @@ class Parser:
 
         return index
 
-    def _advance(self):
-        self._index += 1
+    def _advance(self, times=1):
+        self._index += times
         self._curr = list_get(self._tokens, self._index)
         self._next = list_get(self._tokens, self._index + 1)
         self._prev = (
@@ -806,7 +809,7 @@ class Parser:
 
         if (
             not self._curr
-            or self._curr.token_type in self.NON_FUNC_TOKENS
+            or self._curr.token_type not in self.FUNC_TOKENS
             or not self._next
             or self._next.token_type != TokenType.L_PAREN
         ):
@@ -823,8 +826,7 @@ class Parser:
             this = self._parse_extract()
         else:
             this = self._curr.text
-            self._advance()
-            self._advance()
+            self._advance(2)
 
             function = self.functions.get(this.upper())
 

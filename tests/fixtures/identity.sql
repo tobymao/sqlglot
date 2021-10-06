@@ -53,6 +53,7 @@ INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months
 QUANTILE(x, 0.5)
+REPLACE(1)
 DATE(x) = DATE(y)
 x[y - 1]
 SUM(ROW() OVER(PARTITION BY x))

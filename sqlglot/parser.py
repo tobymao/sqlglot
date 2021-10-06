@@ -83,6 +83,7 @@ class Parser:
         TokenType.EXTRACT,
         TokenType.IF,
         TokenType.PRIMARY_KEY,
+        TokenType.REPLACE,
         TokenType.VAR,
         *TYPE_TOKENS,
     }

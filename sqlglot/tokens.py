@@ -74,6 +74,7 @@ class TokenType(AutoName):
     ASC = auto()
     AUTO_INCREMENT = auto()
     BETWEEN = auto()
+    BUCKET = auto()
     BY = auto()
     CASE = auto()
     CAST = auto()
@@ -123,9 +124,11 @@ class TokenType(AutoName):
     ORDERED = auto()
     ORDINALITY = auto()
     OUTER = auto()
+    OUT_OF = auto()
     OVER = auto()
     OVERWRITE = auto()
     PARTITION = auto()
+    PERCENT = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
     RANGE = auto()
@@ -138,6 +141,7 @@ class TokenType(AutoName):
     SELECT = auto()
     SET = auto()
     STORED = auto()
+    TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TIME = auto()
     THEN = auto()
@@ -229,6 +233,7 @@ class Tokenizer:
         "AS": TokenType.ALIAS,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BETWEEN": TokenType.BETWEEN,
+        "BUCKET": TokenType.BUCKET,
         "BY": TokenType.BY,
         "CASE": TokenType.CASE,
         "CAST": TokenType.CAST,
@@ -274,9 +279,11 @@ class Tokenizer:
         "ORDER BY": TokenType.ORDER,
         "ORDINALITY": TokenType.ORDINALITY,
         "OUTER": TokenType.OUTER,
+        "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
         "OVERWRITE": TokenType.OVERWRITE,
         "PARTITION BY": TokenType.PARTITION,
+        "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "RANGE": TokenType.RANGE,
@@ -290,6 +297,7 @@ class Tokenizer:
         "SET": TokenType.SET,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
+        "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TIME": TokenType.TIME,

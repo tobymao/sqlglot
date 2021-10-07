@@ -96,6 +96,11 @@ def _no_recursive_cte_sql(self, expression):
     return self.cte_sql(expression)
 
 
+def _no_tablesample_sql(self, expression):
+    self.unsupported("TABLESAMPLE unsupported")
+    return self.sql(expression.this)
+
+
 def _struct_extract_sql(self, expression):
     this = self.sql(expression, "this")
     struct_key = self.sql(expression, "expression").replace(self.quote, self.identifier)
@@ -131,6 +136,7 @@ class DuckDB(Dialect):
         exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
+        exp.TableSample: _no_tablesample_sql,
         exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
         exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
@@ -297,6 +303,10 @@ class Hive(Dialect):
 class MySQL(Dialect):
     identifier = "`"
 
+    transforms = {
+        exp.TableSample: _no_tablesample_sql,
+    }
+
 
 class Postgres(Dialect):
     type_mappings = {
@@ -308,6 +318,7 @@ class Postgres(Dialect):
 
     transforms = {
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.TableSample: _no_tablesample_sql,
     }
 
     functions = {"TO_TIMESTAMP": exp.StrToTime.from_arg_list}
@@ -392,6 +403,7 @@ class Presto(Dialect):
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",
         exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
         exp.StructExtract: _struct_extract_sql,
+        exp.TableSample: _no_tablesample_sql,
         exp.TimeStrToDate: _date_parse_sql,
         exp.TimeStrToTime: _date_parse_sql,
         exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",
@@ -471,4 +483,8 @@ class SQLite(Dialect):
         exp.DataType.Type.CHAR: "TEXT",
         exp.DataType.Type.VARCHAR: "TEXT",
         exp.DataType.Type.BINARY: "BLOB",
+    }
+
+    transforms = {
+        exp.TableSample: _no_tablesample_sql,
     }

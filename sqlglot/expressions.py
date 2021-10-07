@@ -401,6 +401,18 @@ class Select(Expression):
     }
 
 
+class TableSample(Expression):
+    arg_types = {
+        "this": True,
+        "bucket_numerator": False,
+        "bucket_denominator": False,
+        "bucket_field": False,
+        "percent": False,
+        "rows": False,
+        "size": False,
+    }
+
+
 class Window(Expression):
     arg_types = {"this": True, "partition": False, "order": False, "spec": False}
 

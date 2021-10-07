@@ -428,6 +428,22 @@ class TestDialects(unittest.TestCase):
                 unsupported_level=ErrorLevel.RAISE,
             )
 
+        self.validate(
+            "SELECT * FROM x TABLESAMPLE(10)",
+            "SELECT * FROM x",
+            read="hive",
+            write="presto",
+            unsupported_level=ErrorLevel.IGNORE,
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM x TABLESAMPLE(10)",
+                read="hive",
+                write="presto",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")

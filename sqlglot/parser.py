@@ -58,6 +58,7 @@ class Parser:
         TokenType.VAR,
         TokenType.ALL,
         TokenType.ASC,
+        TokenType.BUCKET,
         TokenType.COLLATE,
         TokenType.COUNT,
         TokenType.DEFAULT,
@@ -69,10 +70,12 @@ class Parser:
         TokenType.INTERVAL,
         TokenType.ORDINALITY,
         TokenType.OVER,
+        TokenType.PERCENT,
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
+        TokenType.TABLE_SAMPLE,
         TokenType.UNBOUNDED,
         *TYPE_TOKENS,
     }
@@ -549,6 +552,8 @@ class Parser:
 
             expression = self.expression(exp.Table, this=table, db=db)
 
+        expression = self._parse_table_sample(expression)
+
         if alias is None:
             this = expression
         elif alias:
@@ -595,6 +600,50 @@ class Parser:
             self.raise_error("Expecting )")
 
         return unnest
+
+    def _parse_table_sample(self, this):
+        if not self._match(TokenType.TABLE_SAMPLE):
+            return this
+
+        if not self._match(TokenType.L_PAREN):
+            self.raise_error("Expecting (")
+
+        bucket_numerator = None
+        bucket_denominator = None
+        bucket_field = None
+        percent = None
+        rows = None
+        size = None
+
+        if self._match(TokenType.BUCKET):
+            bucket_numerator = self._parse_number()
+            self._match(TokenType.OUT_OF)
+            bucket_denominator = bucket_denominator = self._parse_number()
+            self._match(TokenType.ON)
+            bucket_field = self._parse_field()
+        else:
+            num = self._parse_number()
+
+            if self._match(TokenType.PERCENT):
+                percent = num
+            elif self._match(TokenType.ROWS):
+                rows = num
+            else:
+                size = num
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error("Expecting )")
+
+        return self.expression(
+            exp.TableSample,
+            this=this,
+            bucket_numerator=bucket_numerator,
+            bucket_denominator=bucket_denominator,
+            bucket_field=bucket_field,
+            percent=percent,
+            rows=rows,
+            size=size,
+        )
 
     def _parse_where(self):
         if not self._match(TokenType.WHERE):

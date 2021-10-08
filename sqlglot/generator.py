@@ -162,6 +162,19 @@ class Generator:
 
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
+    def cache_sql(self, expression):
+        lazy = " LAZY" if expression.args.get("lazy") else ""
+        table = self.sql(expression, "this")
+        options = expression.args.get("options")
+        options = (
+            f" OPTIONS({self.sql(options[0])} = {self.sql(options[1])})"
+            if options
+            else ""
+        )
+        expression = self.sql(expression, "expression")
+        expression = f" AS{self.sep()}{expression}" if expression else ""
+        return f"CACHE{lazy} TABLE {table}{options}{expression}"
+
     def characterset_sql(self, expression):
         default = "DEFAULT " if expression.args.get("default") else ""
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"

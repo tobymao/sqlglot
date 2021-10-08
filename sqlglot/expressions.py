@@ -228,6 +228,15 @@ class Expression:
         return new_node
 
 
+class Cache(Expression):
+    arg_types = {
+        "this": True,
+        "lazy": False,
+        "options": False,
+        "expression": False,
+    }
+
+
 class Create(Expression):
     arg_types = {
         "this": True,

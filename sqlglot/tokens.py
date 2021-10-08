@@ -76,6 +76,7 @@ class TokenType(AutoName):
     BETWEEN = auto()
     BUCKET = auto()
     BY = auto()
+    CACHE = auto()
     CASE = auto()
     CAST = auto()
     CHARACTER_SET = auto()
@@ -113,6 +114,7 @@ class TokenType(AutoName):
     IS = auto()
     JOIN = auto()
     LATERAL = auto()
+    LAZY = auto()
     LEFT = auto()
     LIKE = auto()
     LIMIT = auto()
@@ -120,6 +122,7 @@ class TokenType(AutoName):
     MOD = auto()
     NULL = auto()
     ON = auto()
+    OPTIONS = auto()
     ORDER = auto()
     ORDERED = auto()
     ORDINALITY = auto()
@@ -235,6 +238,7 @@ class Tokenizer:
         "BETWEEN": TokenType.BETWEEN,
         "BUCKET": TokenType.BUCKET,
         "BY": TokenType.BY,
+        "CACHE": TokenType.CACHE,
         "CASE": TokenType.CASE,
         "CAST": TokenType.CAST,
         "CHARACTER SET": TokenType.CHARACTER_SET,
@@ -269,12 +273,14 @@ class Tokenizer:
         "IS": TokenType.IS,
         "JOIN": TokenType.JOIN,
         "LATERAL": TokenType.LATERAL,
+        "LAZY": TokenType.LAZY,
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
         "NOT": TokenType.NOT,
         "NULL": TokenType.NULL,
         "ON": TokenType.ON,
+        "OPTIONS": TokenType.OPTIONS,
         "OR": TokenType.OR,
         "ORDER BY": TokenType.ORDER,
         "ORDINALITY": TokenType.ORDINALITY,

@@ -59,6 +59,7 @@ class Parser:
         TokenType.ALL,
         TokenType.ASC,
         TokenType.BUCKET,
+        TokenType.CACHE,
         TokenType.COLLATE,
         TokenType.COUNT,
         TokenType.DEFAULT,
@@ -68,6 +69,8 @@ class Parser:
         TokenType.FORMAT,
         TokenType.IF,
         TokenType.INTERVAL,
+        TokenType.LAZY,
+        TokenType.OPTIONS,
         TokenType.ORDINALITY,
         TokenType.OVER,
         TokenType.PERCENT,
@@ -266,6 +269,9 @@ class Parser:
         if self._match(TokenType.UPDATE):
             return self._parse_update()
 
+        if self._match(TokenType.CACHE):
+            return self._parse_cache()
+
         return self._parse_expression() or self._parse_cte()
 
     def _parse_drop(self):
@@ -317,7 +323,7 @@ class Parser:
                     self.raise_error("Expected ) after format")
 
         if self._match(TokenType.ALIAS):
-            expression = self._parse_select()
+            expression = self._parse_cte()
 
         options = {
             "engine": None,
@@ -388,6 +394,32 @@ class Parser:
             expressions=self._match(TokenType.SET)
             and self._parse_csv(self._parse_equality),
             where=self._parse_where(),
+        )
+
+    def _parse_cache(self):
+        lazy = self._match(TokenType.LAZY)
+        self._match(TokenType.TABLE)
+        table = self._parse_table(alias=None)
+        options = []
+
+        if self._match(TokenType.OPTIONS):
+            if not self._match(TokenType.L_PAREN):
+                self.raise_error("Expecting (")
+
+            k = self._parse_string()
+            self._match(TokenType.EQ)
+            v = self._parse_var()
+            options = [k, v]
+
+            if not self._match(TokenType.R_PAREN):
+                self.raise_error("Expecting )")
+        self._match(TokenType.ALIAS)
+        return self.expression(
+            exp.Cache,
+            this=table,
+            lazy=lazy,
+            options=options,
+            expression=self._parse_cte(),
         )
 
     def _parse_values(self):

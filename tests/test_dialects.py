@@ -419,6 +419,12 @@ class TestDialects(unittest.TestCase):
             read="hive",
             write="presto",
         )
+        self.validate(
+            "CONCAT_WS('-', 'a', 'b')",
+            "ARRAY_JOIN(ARRAY['a', 'b'], '-')",
+            write="presto",
+        )
+        self.validate("CONCAT_WS('-', x)", "ARRAY_JOIN(x, '-')", write="presto")
 
         with self.assertRaises(UnsupportedError):
             transpile(

@@ -332,6 +332,13 @@ class Presto(Dialect):
         accuracy = ", " + self.sql(accuracy) if accuracy else ""
         return f"APPROX_DISTINCT({self.sql(expression, 'this')}{accuracy})"
 
+    def _concat_ws_sql(self, expression):
+        sep, *args = expression.args["expressions"]
+        sep = self.sql(sep)
+        if len(args) > 1:
+            return f"ARRAY_JOIN(ARRAY[{csv(*(self.sql(e) for e in args))}], {sep})"
+        return f"ARRAY_JOIN({self.sql(args[0])}, {sep})"
+
     def _fileformat_sql(self, expression):
         file_format = self.sql(expression, "this").replace(self.quote, "")
         if file_format:
@@ -390,6 +397,7 @@ class Presto(Dialect):
         exp.BitwiseRightShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_RIGHT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Case: _case_if_sql,
+        exp.ConcatWs: _concat_ws_sql,
         exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",

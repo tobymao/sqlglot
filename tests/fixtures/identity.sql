@@ -46,6 +46,8 @@ x BETWEEN -1 AND 1
 ARRAY()
 ARRAY(1, 2)
 ARRAY_CONTAINS(x, 1)
+CONCAT_WS('-', 'a', 'b')
+CONCAT_WS('-', 'a', 'b', 'c')
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
 x RLIKE '%[0-9]+$'

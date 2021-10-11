@@ -748,6 +748,11 @@ class Coalesce(Func):
     is_var_len_args = True
 
 
+class ConcatWs(Func):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 class Count(AggFunc):
     arg_types = {"this": False, "distinct": False}
 

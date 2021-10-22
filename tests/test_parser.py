@@ -12,6 +12,13 @@ class TestParser(unittest.TestCase):
         )
         assert len(list(columns)) == 1
 
+    def test_command(self):
+        expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1")
+        self.assertEqual(len(expressions), 3)
+        self.assertEqual(expressions[0].sql(), "SET x = 1")
+        self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
+        self.assertEqual(expressions[2].sql(), "SELECT 1")
+
     def test_identify(self):
         expression = parse_one(
             """

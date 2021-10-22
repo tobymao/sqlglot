@@ -550,7 +550,6 @@ class Tokenizer:
     def _scan_string(self):
         text = []
         quote = self._char
-        others = self.quotes.difference(quote)
 
         while True:
             if self._end:
@@ -561,10 +560,10 @@ class Tokenizer:
             if self._char == self.escape and self._peek == quote:
                 text.append(self.ESCAPE_CODE)
                 self._advance()
-            elif self._char in others:
-                text.append(self.ESCAPE_CODE)
             elif self._char == quote:
                 break
+            elif self._char == "'":
+                text.append(self.ESCAPE_CODE)
 
         text.append(self._char)
         self._add(TokenType.STRING, "".join(text[1:-1]))

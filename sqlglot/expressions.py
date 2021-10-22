@@ -237,6 +237,10 @@ class Cache(Expression):
     }
 
 
+class Command(Expression):
+    arg_types = {"this": True, "expression": False}
+
+
 class Create(Expression):
     arg_types = {
         "this": True,

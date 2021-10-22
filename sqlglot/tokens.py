@@ -36,6 +36,7 @@ class TokenType(AutoName):
     TILDA = auto()
     LSHIFT = auto()
     RSHIFT = auto()
+    LAMBDA = auto()
 
     SPACE = auto()
     BREAK = auto()
@@ -231,6 +232,7 @@ class Tokenizer:
         "!=": TokenType.NEQ,
         "<<": TokenType.LSHIFT,
         ">>": TokenType.RSHIFT,
+        "->": TokenType.LAMBDA,
         "ADD ARCHIVE": TokenType.ADD_FILE,
         "ADD ARCHIVES": TokenType.ADD_FILE,
         "ADD FILE": TokenType.ADD_FILE,

@@ -87,6 +87,7 @@ class Parser:
     FUNC_TOKENS = {
         TokenType.CAST,
         TokenType.COUNT,
+        TokenType.EXISTS,
         TokenType.EXTRACT,
         TokenType.IF,
         TokenType.PRIMARY_KEY,
@@ -926,7 +927,7 @@ class Parser:
                 )
                 this = self.expression(exp.Schema, this=this, expressions=args)
             else:
-                args = self._parse_csv(self._parse_conjunction)
+                args = self._parse_csv(self._parse_lambda)
 
                 if not callable(function):
                     this = self.expression(exp.Anonymous, this=this, expressions=args)
@@ -942,6 +943,25 @@ class Parser:
             self.raise_error("Expected )")
 
         return self._parse_window(this)
+
+    def _parse_lambda(self):
+        index = self._index
+
+        if self._match(TokenType.L_PAREN):
+            expressions = self._parse_csv(self._parse_id_var)
+            self._match(TokenType.R_PAREN)
+        else:
+            expressions = [self._parse_id_var()]
+
+        if not self._match(TokenType.LAMBDA):
+            self._advance(index - self._index)
+            return self._parse_conjunction()
+
+        return self.expression(
+            exp.Lambda,
+            this=self._parse_conjunction(),
+            expressions=expressions,
+        )
 
     def _parse_column_def(self, this):
         kind = self._parse_function() or self._parse_types()

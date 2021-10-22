@@ -55,6 +55,7 @@ INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months
 QUANTILE(x, 0.5)
+REGEXP_REPLACE('new york', '(\w)(\w*)', (x) -> UPPER(x[1]) || LOWER(x[2]))
 REPLACE(1)
 DATE(x) = DATE(y)
 x[y - 1]
@@ -85,6 +86,12 @@ SELECT 1 AS comment FROM test
 SELECT t.count
 SELECT DISTINCT x FROM test
 SELECT DISTINCT x, y FROM test
+SELECT GREATEST((3 + 1), LEAST(3, 4))
+SELECT TRANSFORM(a, (b) -> b) AS x
+SELECT AGGREGATE(a, (a, b) -> a + b) AS x
+SELECT X((a, b) -> a + b, (z) -> z) AS x
+SELECT X((a) -> "a" + ("z" - 1))
+SELECT EXISTS(ARRAY(2, 3), (x) -> x % 2 = 0)
 SELECT test.* FROM test
 SELECT a AS b FROM test
 SELECT "a"."b" FROM "a"

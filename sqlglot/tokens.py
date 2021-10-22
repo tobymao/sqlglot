@@ -68,6 +68,7 @@ class TokenType(AutoName):
     DATE = auto()
 
     # keywords
+    ADD_FILE = auto()
     ALIAS = auto()
     ALL = auto()
     ARRAY = auto()
@@ -230,6 +231,12 @@ class Tokenizer:
         "!=": TokenType.NEQ,
         "<<": TokenType.LSHIFT,
         ">>": TokenType.RSHIFT,
+        "ADD ARCHIVE": TokenType.ADD_FILE,
+        "ADD ARCHIVES": TokenType.ADD_FILE,
+        "ADD FILE": TokenType.ADD_FILE,
+        "ADD FILES": TokenType.ADD_FILE,
+        "ADD JAR": TokenType.ADD_FILE,
+        "ADD JARS": TokenType.ADD_FILE,
         "ALL": TokenType.ALL,
         "AND": TokenType.AND,
         "ASC": TokenType.ASC,
@@ -360,6 +367,11 @@ class Tokenizer:
         "\rn": TokenType.BREAK,
     }
 
+    COMMANDS = {
+        TokenType.SET,
+        TokenType.ADD_FILE,
+    }
+
     ESCAPE_CODE = "__sqlglot_escape__"
 
     def __init__(self, **opts):
@@ -369,6 +381,7 @@ class Tokenizer:
         self.single_tokens = {**self.SINGLE_TOKENS, **opts.get("single_tokens", {})}
         self.keywords = {**self.KEYWORDS, **opts.get("keywords", {})}
         self.white_space = {**self.WHITE_SPACE, **opts.get("white_space", {})}
+        self.commands = {*self.COMMANDS, *opts.get("commands", [])}
         self.reset()
 
     def reset(self):
@@ -383,7 +396,7 @@ class Tokenizer:
         self._char = None
         self._end = None
         self._peek = None
-        self._text = None
+        self.__text = None
 
     def tokenize(self, code):  # pylint: disable=too-many-branches
         self.reset()
@@ -452,12 +465,27 @@ class Tokenizer:
         self._current += i
         self._char = list_get(self.code, self._current - 1)
         self._peek = list_get(self.code, self._current) or ""
-        self._text = self.code[self._start : self._current]
         self._end = self._current >= self.size
+        self.__text = None
+
+    @property
+    def _text(self):
+        if self.__text is None:
+            self.__text = self.code[self._start : self._current]
+        return self.__text
 
     def _add(self, token_type, text=None):
         text = self._text if text is None else text
         self.tokens.append(Token(token_type, text, self._line, self._col))
+
+        if token_type in self.commands and (
+            len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON
+        ):
+            self._start = self._current
+            while not self._end and self._peek != ";":
+                self._advance()
+            if self._start < self._current:
+                self._add(TokenType.STRING)
 
     def _scan_ambiguous(self, ambiguous_trie):
         size = 1

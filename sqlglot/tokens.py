@@ -36,6 +36,7 @@ class TokenType(AutoName):
     TILDA = auto()
     LSHIFT = auto()
     RSHIFT = auto()
+    LAMBDA = auto()
 
     SPACE = auto()
     BREAK = auto()
@@ -230,6 +231,7 @@ class Tokenizer:
         "!=": TokenType.NEQ,
         "<<": TokenType.LSHIFT,
         ">>": TokenType.RSHIFT,
+        "->": TokenType.LAMBDA,
         "ALL": TokenType.ALL,
         "AND": TokenType.AND,
         "ASC": TokenType.ASC,

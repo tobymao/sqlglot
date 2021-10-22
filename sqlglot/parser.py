@@ -78,6 +78,7 @@ class Parser:
         TokenType.RANGE,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
+        TokenType.SET,
         TokenType.TABLE_SAMPLE,
         TokenType.UNBOUNDED,
         *TYPE_TOKENS,
@@ -272,6 +273,13 @@ class Parser:
 
         if self._match(TokenType.CACHE):
             return self._parse_cache()
+
+        if self._match(TokenType.SET, TokenType.ADD_FILE):
+            return self.expression(
+                exp.Command,
+                this=self._prev.text,
+                expression=self._parse_string(),
+            )
 
         return self._parse_expression() or self._parse_cte()
 

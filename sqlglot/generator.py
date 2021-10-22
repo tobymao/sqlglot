@@ -573,6 +573,9 @@ class Generator:
     def cast_sql(self, expression):
         return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
+    def command_sql(self, expression):
+        return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
+
     def count_sql(self, expression):
         distinct = "DISTINCT " if expression.args["distinct"] else ""
         return f"COUNT({distinct}{self.sql(expression, 'this')})"

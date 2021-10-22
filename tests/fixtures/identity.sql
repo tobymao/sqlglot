@@ -63,6 +63,14 @@ SUM(ROW() OVER(PARTITION BY x))
 CASE WHEN (x > 1) THEN 1 ELSE 0 END
 CASE (1) WHEN 1 THEN 1 ELSE 0 END
 CASE 1 WHEN 1 THEN 1 ELSE 0 END
+SET x = 1
+SET -v
+ADD JAR s3://bucket
+ADD JARS s3://bucket, c
+ADD FILE s3://file
+ADD FILES s3://file, s3://a
+ADD ARCHIVE s3://file
+ADD ARCHIVES s3://file, s3://a
 NOT 1
 NOT NOT 1
 SELECT * FROM test

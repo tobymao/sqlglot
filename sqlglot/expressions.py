@@ -319,6 +319,10 @@ class Group(Expression):
     arg_types = {"expressions": True}
 
 
+class Lambda(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
 class Limit(Expression):
     pass
 

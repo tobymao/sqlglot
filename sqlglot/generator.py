@@ -127,6 +127,13 @@ class Generator:
         self.pretty = original
         return result
 
+    def no_identify(self, func):
+        original = self.identify
+        self.identify = False
+        result = func()
+        self.identify = original
+        return result
+
     def indent_newlines(self, sql, skip_first=False):
         if not self.pretty:
             return sql
@@ -349,6 +356,11 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         this_sql = self.sql(expression, "this")
         return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
+
+    def lambda_sql(self, expression):
+        return self.no_identify(
+            lambda: f"({self.expressions(expression, flat=True)}) -> {self.sql(expression, 'this')}"
+        )
 
     def lateral_sql(self, expression):
         this = self.sql(expression, "this")

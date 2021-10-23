@@ -48,6 +48,8 @@ ARRAY(1, 2)
 ARRAY_CONTAINS(x, 1)
 CONCAT_WS('-', 'a', 'b')
 CONCAT_WS('-', 'a', 'b', 'c')
+POSEXPLODE("x") AS ("a", "b")
+POSEXPLODE("x") AS ("a", "b", "c")
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
 x RLIKE '%[0-9]+$'
@@ -254,6 +256,8 @@ SELECT MAP[ARRAY('x'), ARRAY(0)]['x'] FROM x
 SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) t AS score
 SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) t AS score, name
 SELECT student, score FROM tests LATERAL VIEW OUTER EXPLODE(scores) t AS score, name
+SELECT tf.* FROM (SELECT 0) AS t LATERAL VIEW STACK(1, 2) tf
+SELECT tf.* FROM (SELECT 0) AS t LATERAL VIEW STACK(1, 2) tf AS col0, col1, col2
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (score)
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (a, b)
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) WITH ORDINALITY AS t (a, b)

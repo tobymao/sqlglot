@@ -616,6 +616,14 @@ class Alias(Expression):
         return self.args.get("alias")
 
 
+class Aliases(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+    @property
+    def aliases(self):
+        return self.args["expressions"]
+
+
 class Between(Expression):
     arg_types = {"this": True, "low": True, "high": True}
 

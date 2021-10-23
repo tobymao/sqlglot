@@ -31,16 +31,25 @@ parser.add_argument(
     action="store_false",
     help="Compress sql",
 )
+parser.add_argument(
+    "--parse",
+    dest="parse",
+    action="store_true",
+    help="Parse and return the expression tree",
+)
 
 args = parser.parse_args()
 
-sqls = sqlglot.transpile(
-    args.sql,
-    read=args.read,
-    write=args.write,
-    identify=args.identify,
-    pretty=args.pretty,
-)
+if args.parse:
+    sqls = sqlglot.parse(args.sql, read=args.read)
+else:
+    sqls = sqlglot.transpile(
+        args.sql,
+        read=args.read,
+        write=args.write,
+        identify=args.identify,
+        pretty=args.pretty,
+    )
 
 for sql in sqls:
     print(sql)

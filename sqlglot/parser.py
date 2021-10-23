@@ -530,9 +530,11 @@ class Parser:
             outer = self._match(TokenType.OUTER)
             this = self._parse_function()
             table = self._parse_id_var()
-
-            if self._match(TokenType.ALIAS):
-                columns = self._parse_csv(self._parse_id_var)
+            columns = (
+                self._parse_csv(self._parse_id_var)
+                if self._match(TokenType.ALIAS)
+                else None
+            )
 
             laterals.append(
                 self.expression(
@@ -1126,6 +1128,16 @@ class Parser:
 
     def _parse_alias(self, this):
         self._match(TokenType.ALIAS)
+
+        if self._match(TokenType.L_PAREN):
+            aliases = self.expression(
+                exp.Aliases,
+                this=this,
+                expressions=self._parse_csv(self._parse_id_var),
+            )
+            if not self._match(TokenType.R_PAREN):
+                self.raise_error("Expecting )")
+            return aliases
 
         alias = self._parse_id_var()
         if alias:

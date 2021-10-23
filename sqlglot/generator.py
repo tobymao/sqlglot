@@ -368,8 +368,9 @@ class Generator:
             f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}"
         )
         alias = self.sql(expression, "table")
-        columns = ", ".join(self.sql(e) for e in expression.args.get("columns", []))
-        return f"{op_sql}{self.sep()}{this} {alias} AS {columns}"
+        columns = ", ".join(self.sql(e) for e in expression.args.get("columns") or [])
+        columns = f" AS {columns}" if columns else ""
+        return f"{op_sql}{self.sep()}{this} {alias}{columns}"
 
     def limit_sql(self, expression):
         return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
@@ -545,6 +546,9 @@ class Generator:
                 return f"{self.wrap(expression)}{to_sql}"
             return f"({self.sql(expression, 'this')}){to_sql}"
         return f"{self.sql(expression, 'this')}{to_sql}"
+
+    def aliases_sql(self, expression):
+        return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"
 
     def add_sql(self, expression):
         return self.binary(expression, "+")

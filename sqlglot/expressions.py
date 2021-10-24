@@ -19,6 +19,7 @@ class Expression:
     """
 
     arg_types = {"this": True}
+    __slots__ = ("key", "args", "parent", "arg_key")
 
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
@@ -235,10 +236,6 @@ class Cache(Expression):
         "options": False,
         "expression": False,
     }
-
-
-class Command(Expression):
-    arg_types = {"this": True, "expression": False}
 
 
 class Create(Expression):
@@ -476,6 +473,13 @@ class DataType(Expression):
         DATE = auto()
         ARRAY = auto()
         MAP = auto()
+
+
+# Commands to interact with the databases or engines
+# These expressions don't truly parse the expression and consume
+# whatever exists as a string until the end or a semicolon
+class Command(Expression):
+    arg_types = {"this": True, "expression": False}
 
 
 # Binary Expressions

@@ -2,7 +2,7 @@ import logging
 
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import list_get
-from sqlglot.tokens import Token, TokenType
+from sqlglot.tokens import Token, Tokenizer, TokenType
 import sqlglot.expressions as exp
 
 
@@ -58,13 +58,16 @@ class Parser:
         TokenType.VAR,
         TokenType.ALL,
         TokenType.ASC,
+        TokenType.ALTER,
         TokenType.BUCKET,
         TokenType.CACHE,
         TokenType.COLLATE,
         TokenType.COUNT,
         TokenType.DEFAULT,
+        TokenType.DELETE,
         TokenType.DESC,
         TokenType.ENGINE,
+        TokenType.EXPLAIN,
         TokenType.FOLLOWING,
         TokenType.FORMAT,
         TokenType.IF,
@@ -79,7 +82,9 @@ class Parser:
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
         TokenType.SET,
+        TokenType.SHOW,
         TokenType.TABLE_SAMPLE,
+        TokenType.TEMPORARY,
         TokenType.UNBOUNDED,
         *TYPE_TOKENS,
     }
@@ -89,6 +94,7 @@ class Parser:
         TokenType.COUNT,
         TokenType.EXISTS,
         TokenType.EXTRACT,
+        TokenType.FORMAT,
         TokenType.IF,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
@@ -134,6 +140,20 @@ class Parser:
         TokenType.SLASH: exp.Div,
         TokenType.STAR: exp.Mul,
     }
+
+    __slots__ = (
+        "functions",
+        "error_level",
+        "error_message_context",
+        "code",
+        "error",
+        "_tokens",
+        "_chunks",
+        "_index",
+        "_curr",
+        "_next",
+        "_prev",
+    )
 
     def __init__(self, functions=None, error_level=None, error_message_context=None):
         self.functions = {**self.FUNCTIONS, **(functions or {})}
@@ -274,7 +294,7 @@ class Parser:
         if self._match(TokenType.CACHE):
             return self._parse_cache()
 
-        if self._match(TokenType.SET, TokenType.ADD_FILE):
+        if self._match_set(Tokenizer.COMMANDS):
             return self.expression(
                 exp.Command,
                 this=self._prev.text,
@@ -843,7 +863,7 @@ class Parser:
                 return exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ)
             return exp.DataType(this=exp.DataType.Type.TIMESTAMP)
 
-        return self._match(*self.TYPE_TOKENS) and exp.DataType(
+        return self._match_set(self.TYPE_TOKENS) and exp.DataType(
             this=exp.DataType.Type[self._prev.token_type.value.upper()]
         )
 
@@ -1147,7 +1167,7 @@ class Parser:
 
     def _parse_id_var(self):
         return self._parse_identifier() or (
-            self._match(*self.ID_VAR_TOKENS)
+            self._match_set(self.ID_VAR_TOKENS)
             and exp.Identifier(this=self._prev.text, quoted=False)
         )
 
@@ -1195,7 +1215,7 @@ class Parser:
     def _parse_tokens(self, parse, expressions):
         this = parse()
 
-        while self._match(*expressions):
+        while self._match_set(expressions):
             this = self.expression(
                 expressions[self._prev.token_type], this=this, expression=parse()
             )
@@ -1203,6 +1223,9 @@ class Parser:
         return this
 
     def _match(self, *types):
+        return self._match_set(types)
+
+    def _match_set(self, types):
         if not self._curr:
             return None
 

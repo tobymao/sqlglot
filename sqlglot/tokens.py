@@ -72,6 +72,7 @@ class TokenType(AutoName):
     ADD_FILE = auto()
     ALIAS = auto()
     ALL = auto()
+    ALTER = auto()
     ARRAY = auto()
     ASC = auto()
     AUTO_INCREMENT = auto()
@@ -92,6 +93,7 @@ class TokenType(AutoName):
     CURRENT_ROW = auto()
     DIV = auto()
     DEFAULT = auto()
+    DELETE = auto()
     DESC = auto()
     DISTINCT = auto()
     DROP = auto()
@@ -99,6 +101,7 @@ class TokenType(AutoName):
     END = auto()
     ENGINE = auto()
     EXISTS = auto()
+    EXPLAIN = auto()
     EXTRACT = auto()
     FOLLOWING = auto()
     FORMAT = auto()
@@ -145,6 +148,7 @@ class TokenType(AutoName):
     SCHEMA_COMMENT = auto()
     SELECT = auto()
     SET = auto()
+    SHOW = auto()
     STORED = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
@@ -164,6 +168,8 @@ class TokenType(AutoName):
 
 
 class Token:
+    __slots__ = ("token_type", "text", "line", "col")
+
     @classmethod
     def number(cls, number):
         return cls(TokenType.NUMBER, str(number))
@@ -240,6 +246,7 @@ class Tokenizer:
         "ADD JAR": TokenType.ADD_FILE,
         "ADD JARS": TokenType.ADD_FILE,
         "ALL": TokenType.ALL,
+        "ALTER": TokenType.ALTER,
         "AND": TokenType.AND,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
@@ -259,6 +266,7 @@ class Tokenizer:
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "DIV": TokenType.DIV,
         "DEFAULT": TokenType.DEFAULT,
+        "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
         "DISTINCT": TokenType.DISTINCT,
         "DROP": TokenType.DROP,
@@ -266,6 +274,7 @@ class Tokenizer:
         "END": TokenType.END,
         "ENGINE": TokenType.ENGINE,
         "EXISTS": TokenType.EXISTS,
+        "EXPLAIN": TokenType.EXPLAIN,
         "EXTRACT": TokenType.EXTRACT,
         "FORMAT": TokenType.FORMAT,
         "FULL": TokenType.FULL,
@@ -310,9 +319,11 @@ class Tokenizer:
         "ROWS": TokenType.ROWS,
         "SELECT": TokenType.SELECT,
         "SET": TokenType.SET,
+        "SHOW": TokenType.SHOW,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
+        "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TIME": TokenType.TIME,
@@ -370,11 +381,36 @@ class Tokenizer:
     }
 
     COMMANDS = {
-        TokenType.SET,
+        TokenType.ALTER,
         TokenType.ADD_FILE,
+        TokenType.DELETE,
+        TokenType.EXPLAIN,
+        TokenType.SET,
+        TokenType.SHOW,
     }
 
     ESCAPE_CODE = "__sqlglot_escape__"
+
+    __slots__ = (
+        "quotes",
+        "identifier",
+        "escape",
+        "single_tokens",
+        "keywords",
+        "white_space",
+        "commands",
+        "code",
+        "size",
+        "tokens",
+        "_start",
+        "_current",
+        "_line",
+        "_col",
+        "_char",
+        "_end",
+        "_peek",
+        "__text",
+    )
 
     def __init__(self, **opts):
         self.quotes = set(opts.get("quotes") or "'")

@@ -48,6 +48,22 @@ class Generator:
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
+    __slots__ = (
+        "transforms",
+        "type_mappings",
+        "pretty",
+        "configured_pretty",
+        "identifier",
+        "identify",
+        "quote",
+        "escape",
+        "pad",
+        "unsupported_level",
+        "unsupported_messages",
+        "_indent",
+        "_level",
+    )
+
     def __init__(
         self,
         transforms=None,

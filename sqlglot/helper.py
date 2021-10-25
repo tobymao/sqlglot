@@ -33,7 +33,9 @@ def list_get(arr, index):
 
 
 def ensure_list(value):
-    return value if isinstance(value, list) else [value]
+    if value is None:
+        return []
+    return value if isinstance(value, (list, set)) else [value]
 
 
 def csv(*args, sep=", "):

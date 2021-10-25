@@ -1,6 +1,6 @@
 from enum import auto
 
-from sqlglot.helper import AutoName, list_get
+from sqlglot.helper import AutoName, ensure_list, list_get
 from sqlglot.trie import in_trie, new_trie
 
 
@@ -193,8 +193,17 @@ class Token:
         self.col = max(col - len(text), 1)
 
     def __repr__(self):
-        attributes = ", ".join(f"{k}: {v}" for k, v in self.__dict__.items())
+        attributes = ", ".join(f"{k}: {getattr(self, k)}" for k in self.__slots__)
         return f"<Token {attributes}>"
+
+
+def new_ambiguous(keywords, single_tokens):
+    return new_trie(
+        key
+        for key, value in keywords.items()
+        if value not in (TokenType.COMMENT, TokenType.COMMENT_START)
+        and (" " in key or any(single in key for single in single_tokens))
+    )
 
 
 class Tokenizer:
@@ -391,14 +400,15 @@ class Tokenizer:
 
     ESCAPE_CODE = "__sqlglot_escape__"
 
+    AMBIGUOUS = new_ambiguous(KEYWORDS, SINGLE_TOKENS)
+    COMMENTS = ["--"]
+    COMMENT_START = "/*"
+    COMMENT_END = "*/"
+
     __slots__ = (
         "quotes",
         "identifier",
         "escape",
-        "single_tokens",
-        "keywords",
-        "white_space",
-        "commands",
         "code",
         "size",
         "tokens",
@@ -412,14 +422,10 @@ class Tokenizer:
         "__text",
     )
 
-    def __init__(self, **opts):
-        self.quotes = set(opts.get("quotes") or "'")
-        self.identifier = opts.get("identifier") or '"'
-        self.escape = opts.get("escape") or "'"
-        self.single_tokens = {**self.SINGLE_TOKENS, **opts.get("single_tokens", {})}
-        self.keywords = {**self.KEYWORDS, **opts.get("keywords", {})}
-        self.white_space = {**self.WHITE_SPACE, **opts.get("white_space", {})}
-        self.commands = {*self.COMMANDS, *opts.get("commands", [])}
+    def __init__(self, quotes=None, identifier=None, escape=None):
+        self.quotes = set(ensure_list(quotes) or ["'"])
+        self.identifier = identifier or '"'
+        self.escape = escape or "'"
         self.reset()
 
     def reset(self):
@@ -441,40 +447,18 @@ class Tokenizer:
         self.code = code
         self.size = len(code)
 
-        ambiguous_trie = new_trie(
-            *{
-                key
-                for key in self.keywords
-                if self.keywords[key]
-                not in (TokenType.COMMENT, TokenType.COMMENT_START)
-                and (" " in key or any(single in key for single in self.single_tokens))
-            }
-        )
-
-        comments = []
-        comment_start = None
-        comment_end = None
-
-        for key, token in self.keywords.items():
-            if token == TokenType.COMMENT:
-                comments.append(key)
-            elif token == TokenType.COMMENT_START:
-                comment_start = key
-            elif token == TokenType.COMMENT_END:
-                comment_end = key
-
         while not self._end:
             self._start = self._current
             self._advance()
 
             if not self._char:
                 break
-            if self._scan_ambiguous(ambiguous_trie):
+            if self._scan_ambiguous():
                 pass
-            elif self._scan_comments(comments, comment_start, comment_end):
+            elif self._scan_comments():
                 pass
-            elif self._char in self.single_tokens:
-                self._add(self.single_tokens[self._char])
+            elif self._char in self.SINGLE_TOKENS:
+                self._add(self.SINGLE_TOKENS[self._char])
             elif self._char in self.WHITE_SPACE:
                 white_space = self.WHITE_SPACE[self._char]
                 if white_space == TokenType.BREAK:
@@ -516,7 +500,7 @@ class Tokenizer:
         text = self._text if text is None else text
         self.tokens.append(Token(token_type, text, self._line, self._col))
 
-        if token_type in self.commands and (
+        if token_type in self.COMMANDS and (
             len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON
         ):
             self._start = self._current
@@ -525,13 +509,13 @@ class Tokenizer:
             if self._start < self._current:
                 self._add(TokenType.STRING)
 
-    def _scan_ambiguous(self, ambiguous_trie):
+    def _scan_ambiguous(self):
         size = 1
         word = None
         chars = self._chars(size)
 
         while chars:
-            result = in_trie(ambiguous_trie, chars)
+            result = in_trie(self.AMBIGUOUS, chars)
 
             if result == 0:
                 break
@@ -542,12 +526,12 @@ class Tokenizer:
 
         if word:
             self._advance(len(word) - 1)
-            self._add(self.keywords[word])
+            self._add(self.KEYWORDS[word])
             return True
         return False
 
-    def _scan_comments(self, comments, comment_start, comment_end):
-        for comment in comments:
+    def _scan_comments(self):
+        for comment in self.COMMENTS:
             if self._chars(len(comment)) == comment:
                 while (
                     not self._end
@@ -556,9 +540,9 @@ class Tokenizer:
                     self._advance()
                 return True
 
-        if self._chars(len(comment_start)) == comment_start:
-            comment_end_size = len(comment_end)
-            while not self._end and self._chars(comment_end_size) != comment_end:
+        if self._chars(len(self.COMMENT_START)) == self.COMMENT_START:
+            comment_end_size = len(self.COMMENT_END)
+            while not self._end and self._chars(comment_end_size) != self.COMMENT_END:
                 self._advance()
             self._advance(comment_end_size - 1)
             return True
@@ -617,8 +601,8 @@ class Tokenizer:
     def _scan_var(self):
         while True:
             char = self._peek.strip()
-            if char and char not in self.single_tokens:
+            if char and char not in self.SINGLE_TOKENS:
                 self._advance()
             else:
                 break
-        self._add(self.keywords.get(self._text.upper(), TokenType.VAR))
+        self._add(self.KEYWORDS.get(self._text.upper(), TokenType.VAR))

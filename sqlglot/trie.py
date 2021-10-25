@@ -1,4 +1,4 @@
-def new_trie(*keywords):
+def new_trie(keywords):
     trie = {}
 
     for key in keywords:

@@ -37,11 +37,19 @@ parser.add_argument(
     action="store_true",
     help="Parse and return the expression tree",
 )
+parser.add_argument(
+    "--error-level",
+    dest="error_level",
+    type=str,
+    default="RAISE",
+    help="IGNORE, WARN, RAISE (default)",
+)
 
 args = parser.parse_args()
+error_level = sqlglot.ErrorLevel[args.error_level.upper()]
 
 if args.parse:
-    sqls = sqlglot.parse(args.sql, read=args.read)
+    sqls = sqlglot.parse(args.sql, read=args.read, error_level=error_level)
 else:
     sqls = sqlglot.transpile(
         args.sql,
@@ -49,6 +57,7 @@ else:
         write=args.write,
         identify=args.identify,
         pretty=args.pretty,
+        error_level=error_level,
     )
 
 for sql in sqls:

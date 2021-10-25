@@ -40,12 +40,11 @@ class Dialect(metaclass=RegisteringMeta):
     def parser(self, **opts):
         return Parser(functions=self.functions, **opts)
 
-    def tokenizer(self, **opts):
+    def tokenizer(self):
         return Tokenizer(
             identifier=self.identifier,
             quotes=self.quotes,
             escape=self.escape,
-            **opts,
         )
 
     @classmethod

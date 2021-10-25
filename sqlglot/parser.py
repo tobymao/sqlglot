@@ -141,6 +141,11 @@ class Parser:
         TokenType.STAR: exp.Mul,
     }
 
+    TIMESTAMPS = {
+        TokenType.TIMESTAMP,
+        TokenType.TIMESTAMPTZ,
+    }
+
     __slots__ = (
         "functions",
         "error_level",
@@ -329,7 +334,7 @@ class Parser:
         temporary = self._match(TokenType.TEMPORARY)
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
 
-        create_token = self._match(TokenType.TABLE, TokenType.VIEW) and self._prev
+        create_token = self._match_set((TokenType.TABLE, TokenType.VIEW)) and self._prev
 
         if not create_token:
             self.raise_error("Expected TABLE or View")
@@ -571,11 +576,11 @@ class Parser:
 
         while True:
             side = (
-                self._match(TokenType.LEFT, TokenType.RIGHT, TokenType.FULL)
+                self._match_set((TokenType.LEFT, TokenType.RIGHT, TokenType.FULL))
                 and self._prev
             )
             kind = (
-                self._match(TokenType.INNER, TokenType.OUTER, TokenType.CROSS)
+                self._match_set((TokenType.INNER, TokenType.OUTER, TokenType.CROSS))
                 and self._prev
             )
 
@@ -854,7 +859,7 @@ class Parser:
         return this
 
     def _parse_types(self):
-        if self._match(TokenType.TIMESTAMP, TokenType.TIMESTAMPTZ):
+        if self._match_set(self.TIMESTAMPS):
             tz = self._match(TokenType.WITH)
             self._match(TokenType.WITHOUT)
             self._match(TokenType.TIME)
@@ -1109,7 +1114,7 @@ class Parser:
         order = self._parse_order()
 
         spec = None
-        kind = self._match(TokenType.ROWS, TokenType.RANGE) and self._prev.text
+        kind = self._match_set((TokenType.ROWS, TokenType.RANGE)) and self._prev.text
 
         if kind:
             self._match(TokenType.BETWEEN)
@@ -1138,11 +1143,11 @@ class Parser:
 
         return {
             "value": (
-                self._match(TokenType.UNBOUNDED, TokenType.CURRENT_ROW)
+                self._match_set((TokenType.UNBOUNDED, TokenType.CURRENT_ROW))
                 and self._prev.text
             )
             or self._parse_bitwise(),
-            "side": self._match(TokenType.PRECEDING, TokenType.FOLLOWING)
+            "side": self._match_set((TokenType.PRECEDING, TokenType.FOLLOWING))
             and self._prev.text,
         }
 
@@ -1222,8 +1227,15 @@ class Parser:
 
         return this
 
-    def _match(self, *types):
-        return self._match_set(types)
+    def _match(self, token_type):
+        if not self._curr:
+            return None
+
+        if self._curr.token_type == token_type:
+            self._advance()
+            return True
+
+        return None
 
     def _match_set(self, types):
         if not self._curr:

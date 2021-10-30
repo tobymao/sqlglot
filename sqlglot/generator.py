@@ -6,6 +6,9 @@ from sqlglot.helper import ensure_list, csv
 from sqlglot.tokens import Tokenizer
 
 
+logger = logging.getLogger("sqlglot")
+
+
 class Generator:
     """
     Generator interprets the given syntax tree and produces a SQL string as an output.
@@ -111,7 +114,7 @@ class Generator:
         for msg in self.unsupported_messages:
             if self.unsupported_level == ErrorLevel.RAISE:
                 raise UnsupportedError(msg)
-            logging.warning(msg)
+            logger.warning(msg)
 
         return sql
 

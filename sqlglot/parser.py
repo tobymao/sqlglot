@@ -6,6 +6,9 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 import sqlglot.expressions as exp
 
 
+logger = logging.getLogger("sqlglot")
+
+
 class Parser:
     """
     Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
@@ -151,7 +154,7 @@ class Parser:
         "error_level",
         "error_message_context",
         "code",
-        "error",
+        "errors",
         "_tokens",
         "_chunks",
         "_index",
@@ -163,12 +166,12 @@ class Parser:
     def __init__(self, functions=None, error_level=None, error_message_context=None):
         self.functions = {**self.FUNCTIONS, **(functions or {})}
         self.error_level = error_level or ErrorLevel.RAISE
-        self.error_message_context = error_message_context or 50
+        self.error_message_context = error_message_context or 100
         self.reset()
 
     def reset(self):
         self.code = ""
-        self.error = None
+        self.errors = []
         self._tokens = []
         self._chunks = [[]]
         self._index = 0
@@ -210,6 +213,19 @@ class Parser:
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")
 
+            self.check_errors()
+            self.set_parents(expressions)
+
+        return expressions
+
+    def check_errors(self):
+        for error in self.errors:
+            if self.error_level == ErrorLevel.RAISE:
+                raise error
+            if self.error_level == ErrorLevel.WARN:
+                logger.error(error)
+
+    def set_parents(self, expressions):
         for expression in expressions:
             if not expression:
                 continue
@@ -218,8 +234,6 @@ class Parser:
                     node.parent = parent
                     node.arg_key = key
 
-        return expressions
-
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
         start = self._find_token(token, self.code)
@@ -227,14 +241,12 @@ class Parser:
         start_context = self.code[max(start - self.error_message_context, 0) : start]
         highlight = self.code[start:end]
         end_context = self.code[end : end + self.error_message_context]
-        self.error = ParseError(
-            f"{message}. Line {token.line}, Col: {token.col}.\n"
-            f"{start_context}\033[4m{highlight}\033[0m{end_context}"
+        self.errors.append(
+            ParseError(
+                f"{message}. Line {token.line}, Col: {token.col}.\n"
+                f"{start_context}\033[4m{highlight}\033[0m{end_context}"
+            )
         )
-        if self.error_level == ErrorLevel.RAISE:
-            raise self.error
-        if self.error_level == ErrorLevel.WARN:
-            logging.error(self.error)
 
     def expression(self, exp_class, **kwargs):
         instance = exp_class(**kwargs)

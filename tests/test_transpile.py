@@ -1,6 +1,7 @@
 # pylint: disable=too-many-statements
 import os
 import unittest
+from unittest import mock
 
 from sqlglot import ErrorLevel, ParseError, parse_one, transpile, expressions as exp
 
@@ -257,3 +258,14 @@ class TestTranspile(unittest.TestCase):
                     generated = transpile(sql, pretty=True)[0]
                     self.assertEqual(generated, pretty)
                     self.assertEqual(parse_one(sql), parse_one(pretty))
+
+    @mock.patch("sqlglot.parser.logger")
+    def test_error_level(self, logger):
+        transpile("x + 1 (", error_level=ErrorLevel.WARN)
+        assert (
+            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 7.\nx + 1 \033[4m(\033[0m"
+            in str(logger.error.call_args_list[0][0][0])
+        )
+
+        with self.assertRaises(ParseError):
+            transpile("x + 1 (")

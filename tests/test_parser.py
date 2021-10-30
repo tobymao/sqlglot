@@ -1,5 +1,4 @@
 import unittest
-from unittest import mock
 
 import sqlglot.expressions as exp
 from sqlglot import ErrorLevel, Parser, ParseError, parse, parse_one
@@ -53,8 +52,7 @@ class TestParser(unittest.TestCase):
             == "b"
         )
 
-    @mock.patch("sqlglot.parser.logging")
-    def test_expression(self, logging):
+    def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)
         self.assertIsInstance(ignore.expression(exp.Hint, expressions=[""]), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint, y=""), exp.Hint)
@@ -62,22 +60,13 @@ class TestParser(unittest.TestCase):
 
         default = Parser()
         self.assertIsInstance(default.expression(exp.Hint, expressions=[""]), exp.Hint)
-        with self.assertRaises(ParseError):
-            default.expression(exp.Hint, y="")
-        with self.assertRaises(ParseError):
-            default.expression(exp.Hint)
+        default.expression(exp.Hint, y="")
+        default.expression(exp.Hint)
+        self.assertEqual(len(default.errors), 3)
 
         warn = Parser(error_level=ErrorLevel.WARN)
         warn.expression(exp.Hint, y="")
-        assert (
-            "Unexpected keyword: 'y' for <class 'sqlglot.expressions.Hint'>. Line 1, Col: 1."
-            in str(logging.error.call_args_list[0][0][0])
-        )
-        warn.expression(exp.Hint)
-        assert (
-            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Hint'>. Line 1, Col: 1."
-            in str(logging.error.call_args_list[1][0][0])
-        )
+        assert isinstance(warn.errors[0], ParseError)
 
     def test_function_arguments_validation(self):
         with self.assertRaises(ParseError):

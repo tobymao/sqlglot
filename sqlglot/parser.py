@@ -244,7 +244,7 @@ class Parser:
         self.errors.append(
             ParseError(
                 f"{message}. Line {token.line}, Col: {token.col}.\n"
-                f"{start_context}\033[4m{highlight}\033[0m{end_context}"
+                f"  {start_context}\033[4m{highlight}\033[0m{end_context}"
             )
         )
 

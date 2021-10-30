@@ -263,7 +263,7 @@ class TestTranspile(unittest.TestCase):
     def test_error_level(self, logger):
         transpile("x + 1 (", error_level=ErrorLevel.WARN)
         assert (
-            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 7.\nx + 1 \033[4m(\033[0m"
+            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 7.\n  x + 1 \033[4m(\033[0m"
             in str(logger.error.call_args_list[0][0][0])
         )
 

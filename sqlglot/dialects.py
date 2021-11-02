@@ -495,3 +495,7 @@ class SQLite(Dialect):
     transforms = {
         exp.TableSample: _no_tablesample_sql,
     }
+
+
+class Trino(Presto):
+    pass

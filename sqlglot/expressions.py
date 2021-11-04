@@ -296,6 +296,10 @@ class Drop(Expression):
     arg_types = {"this": False, "kind": False, "exists": False}
 
 
+class Except(Expression):
+    arg_types = {"this": True, "expression": True, "distinct": False}
+
+
 class FileFormat(Expression):
     pass
 
@@ -314,6 +318,10 @@ class Hint(Expression):
 
 class Insert(Expression):
     arg_types = {"this": True, "expression": True, "overwrite": False, "exists": False}
+
+
+class Intersect(Expression):
+    arg_types = {"this": True, "expression": True, "distinct": False}
 
 
 class Group(Expression):
@@ -375,7 +383,7 @@ class Tuple(Expression):
 
 
 class Union(Expression):
-    arg_types = {"this": True, "expression": True, "distinct": True}
+    arg_types = {"this": True, "expression": True, "distinct": False}
 
 
 class Unnest(Expression):

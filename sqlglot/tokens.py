@@ -100,6 +100,7 @@ class TokenType(AutoName):
     ELSE = auto()
     END = auto()
     ENGINE = auto()
+    EXCEPT = auto()
     EXISTS = auto()
     EXPLAIN = auto()
     EXTRACT = auto()
@@ -114,6 +115,7 @@ class TokenType(AutoName):
     IN = auto()
     INNER = auto()
     INSERT = auto()
+    INTERSECT = auto()
     INTERVAL = auto()
     INTO = auto()
     IS = auto()
@@ -282,6 +284,7 @@ class Tokenizer:
         "ELSE": TokenType.ELSE,
         "END": TokenType.END,
         "ENGINE": TokenType.ENGINE,
+        "EXCEPT": TokenType.EXCEPT,
         "EXISTS": TokenType.EXISTS,
         "EXPLAIN": TokenType.EXPLAIN,
         "EXTRACT": TokenType.EXTRACT,
@@ -296,6 +299,7 @@ class Tokenizer:
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,
         "INTERVAL": TokenType.INTERVAL,
+        "INTERSECT": TokenType.INTERSECT,
         "INTO": TokenType.INTO,
         "IS": TokenType.IS,
         "JOIN": TokenType.JOIN,

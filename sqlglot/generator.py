@@ -291,6 +291,12 @@ class Generator:
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         return f"DROP {kind}{exists_sql}{this}"
 
+    def except_sql(self, expression):
+        return self.set_operation(
+            expression,
+            f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}",
+        )
+
     def fileformat_sql(self, expression):
         if self.sql(expression, "this"):
             self.unsupported("File formats are not supported")
@@ -313,6 +319,12 @@ class Generator:
         exists = " IF EXISTS " if expression.args.get("exists") else " "
         expression_sql = self.sql(expression, "expression")
         return f"INSERT {kind} TABLE {this}{exists}{expression_sql}"
+
+    def intersect_sql(self, expression):
+        return self.set_operation(
+            expression,
+            f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ''}",
+        )
 
     def table_sql(self, expression):
         return ".".join(
@@ -442,10 +454,9 @@ class Generator:
         return "*"
 
     def union_sql(self, expression):
-        this = self.sql(expression, "this")
-        op = self.seg(f"UNION{'' if expression.args['distinct'] else ' ALL'}")
-        expression = self.indent(self.sql(expression, "expression"), pad=0)
-        return f"{this}{op}{self.sep()}{expression}"
+        return self.set_operation(
+            expression, f"UNION{'' if expression.args.get('distinct') else ' ALL'}"
+        )
 
     def unnest_sql(self, expression):
         args = self.expressions(expression, flat=True)
@@ -695,3 +706,9 @@ class Generator:
         if flat:
             return f"{op} {expressions_sql}"
         return f"{self.seg(op)}{self.sep()}{expressions_sql}"
+
+    def set_operation(self, expression, op):
+        this = self.sql(expression, "this")
+        op = self.seg(op)
+        expression = self.indent(self.sql(expression, "expression"), pad=0)
+        return f"{this}{op}{self.sep()}{expression}"

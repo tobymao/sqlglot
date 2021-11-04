@@ -149,6 +149,12 @@ class Parser:
         TokenType.TIMESTAMPTZ,
     }
 
+    SET_OPERATIONS = {
+        TokenType.UNION,
+        TokenType.INTERSECT,
+        TokenType.EXCEPT,
+    }
+
     __slots__ = (
         "functions",
         "error_level",
@@ -538,7 +544,7 @@ class Parser:
                 },
             )
 
-        return self._parse_union(this)
+        return self._parse_set_operations(this)
 
     def _parse_hint(self):
         if self._match(TokenType.HINT):
@@ -762,14 +768,26 @@ class Parser:
 
         return self.expression(exp.Limit, this=self._parse_number())
 
-    def _parse_union(self, this):
-        if not self._match(TokenType.UNION):
+    def _parse_set_operations(self, this):
+        if not self._match_set(self.SET_OPERATIONS):
             return this
 
-        distinct = not self._match(TokenType.ALL)
+        token_type = self._prev.token_type
+
+        if token_type == TokenType.UNION:
+            return self.expression(
+                exp.Union,
+                this=this,
+                distinct=self._match(TokenType.DISTINCT)
+                or not self._match(TokenType.ALL),
+                expression=self._parse_select(),
+            )
 
         return self.expression(
-            exp.Union, this=this, expression=self._parse_select(), distinct=distinct
+            exp.Except if token_type == TokenType.EXCEPT else exp.Intersect,
+            this=this,
+            distinct=self._match(TokenType.DISTINCT),
+            expression=self._parse_select(),
         )
 
     def _parse_expression(self):

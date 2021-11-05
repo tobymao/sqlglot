@@ -131,6 +131,7 @@ class DuckDB(Dialect):
         exp.DateAdd: _date_add,
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+        exp.Explode: lambda self, e: f"UNNEST({self.sql(e, 'this')})",
         exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
@@ -165,6 +166,7 @@ class DuckDB(Dialect):
         "STRFTIME": exp.TimeToStr.from_arg_list,
         "STRPTIME": exp.StrToTime.from_arg_list,
         "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
+        "UNNEST": exp.Explode.from_arg_list,
     }
 
 

@@ -164,6 +164,19 @@ class TestDialects(unittest.TestCase):
             identity=False,
         )
 
+        self.validate(
+            "UNNEST(x)",
+            "EXPLODE(x)",
+            read="duckdb",
+            write="spark",
+        )
+        self.validate(
+            "EXPLODE(x)",
+            "UNNEST(x)",
+            read="spark",
+            write="duckdb",
+        )
+
     def test_mysql(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",

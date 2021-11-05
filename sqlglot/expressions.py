@@ -891,6 +891,10 @@ class Round(Func):
     arg_types = {"this": True, "decimals": False}
 
 
+class SetAgg(AggFunc):
+    pass
+
+
 class StrPosition(Func):
     arg_types = {"this": True, "substr": True, "position": False}
 

@@ -611,6 +611,8 @@ class TestDialects(unittest.TestCase):
 
         self.validate("COLLECT_LIST(x)", "ARRAY_AGG(x)", read="hive", write="presto")
         self.validate("ARRAY_AGG(x)", "COLLECT_LIST(x)", read="presto", write="hive")
+        self.validate("COLLECT_SET(x)", "SET_AGG(x)", read="hive", write="presto")
+        self.validate("SET_AGG(x)", "COLLECT_SET(x)", read="presto", write="hive")
 
         self.validate(
             "CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write="hive"

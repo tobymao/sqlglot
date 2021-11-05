@@ -241,6 +241,7 @@ class Hive(Dialect):
         exp.If: _if_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
+        exp.SetAgg: lambda self, e: f"COLLECT_SET({self.sql(e, 'this')})",
         exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
@@ -292,6 +293,7 @@ class Hive(Dialect):
         "MAP": _parse_map,
         "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
         "PERCENTILE": exp.Quantile.from_arg_list,
+        "COLLECT_SET": exp.SetAgg.from_arg_list,
         "SIZE": exp.ArraySize.from_arg_list,
         "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
         "UNIX_TIMESTAMP": lambda args: exp.StrToUnix(

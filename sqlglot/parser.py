@@ -101,6 +101,7 @@ class Parser:
         TokenType.IF,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
+        TokenType.UNNEST,
         TokenType.VAR,
         *TYPE_TOKENS,
     }

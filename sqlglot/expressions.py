@@ -805,6 +805,10 @@ class Exp(Func):
     pass
 
 
+class Explode(Func):
+    pass
+
+
 class Floor(Func):
     pass
 

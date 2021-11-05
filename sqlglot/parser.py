@@ -349,8 +349,8 @@ class Parser:
         )
 
     def _parse_create(self):
-        temporary = self._match(TokenType.TEMPORARY)
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
+        temporary = self._match(TokenType.TEMPORARY)
 
         create_token = self._match_set((TokenType.TABLE, TokenType.VIEW)) and self._prev
 

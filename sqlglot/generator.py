@@ -268,7 +268,7 @@ class Generator:
             if option
         )
 
-        return f"CREATE{temporary}{replace} {kind}{exists_sql} {this}{file_format}{expression_sql}{options}"
+        return f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{file_format}{expression_sql}{options}"
 
     def cte_sql(self, expression):
         sql = ", ".join(

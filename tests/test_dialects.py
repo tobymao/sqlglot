@@ -116,10 +116,7 @@ class TestDialects(unittest.TestCase):
             write="duckdb",
         )
         self.validate(
-            "TIME_TO_UNIX(x)",
-            "EPOCH(x)",
-            identity=False,
-            write="duckdb",
+            "TIME_TO_UNIX(x)", "EPOCH(x)", identity=False, write="duckdb",
         )
         self.validate(
             "TS_OR_DS_TO_DATE_STR(x)",
@@ -152,29 +149,17 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
         self.validate(
-            "TS_OR_DS_TO_DATE(x)",
-            "CAST(x AS DATE)",
-            write="duckdb",
-            identity=False,
+            "TS_OR_DS_TO_DATE(x)", "CAST(x AS DATE)", write="duckdb", identity=False,
         )
         self.validate(
-            "CAST(x AS DATE)",
-            "CAST(x AS DATE)",
-            read="duckdb",
-            identity=False,
+            "CAST(x AS DATE)", "CAST(x AS DATE)", read="duckdb", identity=False,
         )
 
         self.validate(
-            "UNNEST(x)",
-            "EXPLODE(x)",
-            read="duckdb",
-            write="spark",
+            "UNNEST(x)", "EXPLODE(x)", read="duckdb", write="spark",
         )
         self.validate(
-            "EXPLODE(x)",
-            "UNNEST(x)",
-            read="spark",
-            write="duckdb",
+            "EXPLODE(x)", "UNNEST(x)", read="spark", write="duckdb",
         )
 
     def test_mysql(self):
@@ -306,9 +291,7 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
         self.validate(
-            "TIME_STR_TO_TIME(x)",
-            "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
-            write="presto",
+            "TIME_STR_TO_TIME(x)", "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')", write="presto",
         )
         self.validate(
             "TIME_TO_TIME_STR(x)",
@@ -321,34 +304,19 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
         self.validate(
-            "FROM_UNIXTIME(x)",
-            "FROM_UNIXTIME(x)",
-            read="presto",
-            write="hive",
+            "FROM_UNIXTIME(x)", "FROM_UNIXTIME(x)", read="presto", write="hive",
         )
         self.validate(
-            "TO_UNIXTIME(x)",
-            "UNIX_TIMESTAMP(x)",
-            read="presto",
-            write="hive",
+            "TO_UNIXTIME(x)", "UNIX_TIMESTAMP(x)", read="presto", write="hive",
         )
         self.validate(
-            "DATE_ADD('day', 1, x)",
-            "DATE_ADD(x, 1)",
-            read="presto",
-            write="hive",
+            "DATE_ADD('day', 1, x)", "DATE_ADD(x, 1)", read="presto", write="hive",
         )
         self.validate(
-            "DATE_DIFF('day', a, b)",
-            "DATEDIFF(b, a)",
-            read="presto",
-            write="hive",
+            "DATE_DIFF('day', a, b)", "DATEDIFF(b, a)", read="presto", write="hive",
         )
         self.validate(
-            "DATE_DIFF(a, b)",
-            "DATE_DIFF('day', b, a)",
-            write="presto",
-            identity=False,
+            "DATE_DIFF(a, b)", "DATE_DIFF('day', b, a)", write="presto", identity=False,
         )
         self.validate(
             "TS_OR_DS_TO_DATE(x)",
@@ -463,6 +431,27 @@ class TestDialects(unittest.TestCase):
                 unsupported_level=ErrorLevel.RAISE,
             )
 
+    def test_trino(self):
+        self.validate(
+            "SELECT CAST('2021-01-01 18:00:00' AS TIMESTAMP(3))",
+            "SELECT CAST('2021-01-01 18:00:00' AS TIMESTAMP(3))",
+            write="trino",
+            identity=True,
+        )
+        self.validate(
+            "SELECT CAST('2021-01-01 18:00:00 America/New_York' AS TIMESTAMP(3) WITH TIME ZONE)",
+            "SELECT CAST('2021-01-01 18:00:00 America/New_York' AS TIMESTAMP(3) WITH TIME ZONE)",
+            write="trino",
+            identity=True,
+        )
+        # This one fails because ARRAY(INTEGER) is the correct typing. ARRAY[INTEGER] is incorrect.
+        self.validate(
+            "SELECT CAST(ARRAY[1, 2, 3] AS ARRAY(INTEGER))",
+            "SELECT CAST(ARRAY[1, 2, 3] AS ARRAY(INTEGER))",
+            write="trino",
+            identity=True
+        )
+
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
@@ -539,14 +528,10 @@ class TestDialects(unittest.TestCase):
             identity=False,
         )
         self.validate(
-            "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD('2020-01-01', 1)",
-            read="hive",
+            "DATE_ADD('2020-01-01', 1)", "DATE_ADD('2020-01-01', 1)", read="hive",
         )
         self.validate(
-            "DATE_SUB('2020-01-01', 1)",
-            "DATE_ADD('2020-01-01', 1 * -1)",
-            read="hive",
+            "DATE_SUB('2020-01-01', 1)", "DATE_ADD('2020-01-01', 1 * -1)", read="hive",
         )
         self.validate(
             "DATE_SUB('2020-01-01', 1)",
@@ -626,36 +611,22 @@ class TestDialects(unittest.TestCase):
             identity=False,
         )
         self.validate(
-            "TIME_STR_TO_UNIX(x)",
-            "UNIX_TIMESTAMP(x)",
-            write="hive",
+            "TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)", write="hive",
         )
         self.validate(
-            "TIME_STR_TO_TIME(x)",
-            "x",
-            write="hive",
+            "TIME_STR_TO_TIME(x)", "x", write="hive",
         )
         self.validate(
-            "TIME_TO_TIME_STR(x)",
-            "x",
-            write="hive",
+            "TIME_TO_TIME_STR(x)", "x", write="hive",
         )
         self.validate(
-            "UNIX_TO_TIME_STR(x)",
-            "FROM_UNIXTIME(x)",
-            write="hive",
+            "UNIX_TO_TIME_STR(x)", "FROM_UNIXTIME(x)", write="hive",
         )
         self.validate(
-            "TS_OR_DS_TO_DATE(x)",
-            "TO_DATE(x)",
-            write="hive",
-            identity=False,
+            "TS_OR_DS_TO_DATE(x)", "TO_DATE(x)", write="hive", identity=False,
         )
         self.validate(
-            "TO_DATE(x)",
-            "TS_OR_DS_TO_DATE_STR(x)",
-            read="hive",
-            identity=False,
+            "TO_DATE(x)", "TS_OR_DS_TO_DATE_STR(x)", read="hive", identity=False,
         )
 
         self.validate(
@@ -686,9 +657,7 @@ class TestDialects(unittest.TestCase):
 
     def test_spark(self):
         self.validate(
-            'SELECT "a"."b" FROM "foo"',
-            "SELECT `a`.`b` FROM `foo`",
-            write="spark",
+            'SELECT "a"."b" FROM "foo"', "SELECT `a`.`b` FROM `foo`", write="spark",
         )
 
         self.validate("CAST(a AS TEXT)", "CAST(a AS STRING)", write="spark")

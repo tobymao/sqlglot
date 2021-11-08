@@ -32,6 +32,7 @@ class Parser:
 
     FUNCTIONS = {
         **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
+        # Seems like DECIMAL and NUMERIC are considered functions here? They should be types no?
         "DECIMAL": _parse_decimal,
         "NUMERIC": _parse_decimal,
     }
@@ -320,9 +321,7 @@ class Parser:
 
         if self._match_set(Tokenizer.COMMANDS):
             return self.expression(
-                exp.Command,
-                this=self._prev.text,
-                expression=self._parse_string(),
+                exp.Command, this=self._prev.text, expression=self._parse_string(),
             )
 
         return self._parse_expression() or self._parse_cte()
@@ -407,9 +406,7 @@ class Parser:
                     "character_set",
                     TokenType.CHARACTER_SET,
                     lambda: self.expression(
-                        exp.CharacterSet,
-                        this=self._parse_var(),
-                        default=default,
+                        exp.CharacterSet, this=self._parse_var(), default=default,
                     ),
                 )
 
@@ -866,13 +863,12 @@ class Parser:
                 unit=self._parse_var(),
             )
 
-        if not self._next or self._next.token_type not in (
-            TokenType.L_PAREN,
-            TokenType.L_BRACKET,
-        ):
+        type_token = None
+        if self._next.token_type not in (
+                TokenType.L_PAREN,
+                TokenType.L_BRACKET,
+            ):
             type_token = self._parse_types()
-        else:
-            type_token = None
 
         this = self._parse_column()
 
@@ -891,15 +887,22 @@ class Parser:
 
     def _parse_types(self):
         if self._match_set(self.TIMESTAMPS):
+            if self._match(TokenType.L_PAREN):
+                precision = self._parse_csv(self._parse_lambda)
+            assert self._match(TokenType.R_PAREN), "Expecting )"
             tz = self._match(TokenType.WITH)
             self._match(TokenType.WITHOUT)
             self._match(TokenType.TIME)
             self._match(TokenType.ZONE)
-            if tz:
-                return exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ)
-            return exp.DataType(this=exp.DataType.Type.TIMESTAMP)
+            args = {"this" : exp.DataType.Type.TIMESTAMPTZ if tz else exp.DataType.Type.TIMESTAMP}
+            if precision:
+                args["parameters"] = precision
+            return exp.DataType(**args)
 
-        return self._match_set(self.TYPE_TOKENS) and exp.DataType(
+        if not self._match_set(self.TYPE_TOKENS):
+            return None
+
+        return exp.DataType(
             this=exp.DataType.Type[self._prev.token_type.value.upper()]
         )
 
@@ -977,6 +980,8 @@ class Parser:
             this = self._curr.text
             self._advance(2)
 
+            # NOTE: This is being called before ARRAY gets to be evaluated as a type. We need to move this rule
+            # below parse_type
             function = self.functions.get(this.upper())
 
             if schema:
@@ -1016,9 +1021,7 @@ class Parser:
             return self._parse_conjunction()
 
         return self.expression(
-            exp.Lambda,
-            this=self._parse_conjunction(),
-            expressions=expressions,
+            exp.Lambda, this=self._parse_conjunction(), expressions=expressions,
         )
 
     def _parse_column_def(self, this):
@@ -1049,8 +1052,7 @@ class Parser:
                 "auto_increment", lambda: self._match(TokenType.AUTO_INCREMENT)
             )
             parse_option(
-                "collate",
-                lambda: self._match(TokenType.COLLATE) and self._parse_var(),
+                "collate", lambda: self._match(TokenType.COLLATE) and self._parse_var(),
             )
             parse_option(
                 "default",
@@ -1187,9 +1189,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             aliases = self.expression(
-                exp.Aliases,
-                this=this,
-                expressions=self._parse_csv(self._parse_id_var),
+                exp.Aliases, this=this, expressions=self._parse_csv(self._parse_id_var),
             )
             if not self._match(TokenType.R_PAREN):
                 self.raise_error("Expecting )")

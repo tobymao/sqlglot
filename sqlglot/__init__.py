@@ -65,7 +65,12 @@ def transpile(code, read=None, write=None, identity=True, error_level=None, **op
         the list of transpiled SQL statements / expressions.
     """
     write = write or read if identity else write
-    return [
-        Dialect.get_or_raise(write)().generate(expression, **opts)
-        for expression in parse(code, read, error_level=error_level)
-    ]
+    dialect = Dialect.get_or_raise(write)()
+    expressions = []
+    for expression in parse(code, read, error_level=error_level):
+        expressions.append(expression)
+
+    outputs = []
+    for expr in expressions:
+        outputs.append(dialect.generate(expression, **opts))
+    return outputs

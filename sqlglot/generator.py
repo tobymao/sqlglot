@@ -258,13 +258,7 @@ class Generator:
 
         options = " ".join(
             option
-            for option in (
-                engine,
-                auto_increment,
-                character_set,
-                collate,
-                comment,
-            )
+            for option in (engine, auto_increment, character_set, collate, comment,)
             if option
         )
 
@@ -279,11 +273,27 @@ class Generator:
 
         return f"WITH {recursive}{sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
 
+    def timestamp_sql(self, expression):
+        raise NotImplementedError()
+
     def datatype_sql(self, expression):
         type_value = expression.args.get("this")
-        return self.type_mappings.get(
+        parameters = expression.args.get("parameters")
+        type_string = self.type_mappings.get(
             type_value, type_value.value if type_value else None
         )
+        if not parameters:
+            return type_string
+
+        parameters_string = ", ".join(self.sql(expr) for expr in parameters)
+
+        # The parameter comes before the zoned qualifier
+        if type_value == exp.DataType.Type.TIMESTAMPTZ:
+            timestamp, *zone = type_string.split(" ")
+            zone_string = " " +  " ".join(zone) if zone else ""
+            return f"{timestamp}({parameters_string}){zone_string}"
+
+        return f"{type_string}({parameters_string})"
 
     def drop_sql(self, expression):
         this = self.sql(expression, "this")

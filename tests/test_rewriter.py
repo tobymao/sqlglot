@@ -25,8 +25,7 @@ class TestRewriter(unittest.TestCase):
         rewriter = Rewriter(expression).ctas("x")
         self.assertEqual(rewriter.expression.sql(), "CREATE TABLE x AS SELECT * FROM y")
         self.assertEqual(
-            rewriter.ctas("y").expression.sql(),
-            "CREATE TABLE y AS SELECT * FROM y",
+            rewriter.ctas("y").expression.sql(), "CREATE TABLE y AS SELECT * FROM y",
         )
 
         expression = parse_one("CREATE TABLE x AS SELECT * FROM y")
@@ -40,10 +39,7 @@ class TestRewriter(unittest.TestCase):
 
         self.assertEqual(
             Rewriter(expression)
-            .add_selects(
-                "a",
-                "sum(b) as c",
-            )
+            .add_selects("a", "sum(b) as c",)
             .expression.sql("hive"),
             "SELECT *, a, SUM(b) AS c FROM (SELECT * FROM x) AS y",
         )

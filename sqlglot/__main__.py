@@ -26,10 +26,7 @@ parser.add_argument(
     help="Don't auto identify fields",
 )
 parser.add_argument(
-    "--no-pretty",
-    dest="pretty",
-    action="store_false",
-    help="Compress sql",
+    "--no-pretty", dest="pretty", action="store_false", help="Compress sql",
 )
 parser.add_argument(
     "--parse",

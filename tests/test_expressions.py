@@ -203,8 +203,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsNone(column.args.get("table"))
         self.assertIsNone(column.args.get("db"))
         self.assertEqual(
-            [f.args["this"] for f in column.args["fields"]],
-            ["a", "b", "c", "d"],
+            [f.args["this"] for f in column.args["fields"]], ["a", "b", "c", "d"],
         )
 
     def test_text(self):

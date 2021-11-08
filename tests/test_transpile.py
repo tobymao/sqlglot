@@ -28,8 +28,7 @@ class TestTranspile(unittest.TestCase):
 
     def test_paren(self):
         self.validate(
-            "SELECT * FROM ((SELECT 1))",
-            "SELECT * FROM (SELECT 1)",
+            "SELECT * FROM ((SELECT 1))", "SELECT * FROM (SELECT 1)",
         )
 
     def test_space(self):
@@ -135,9 +134,7 @@ class TestTranspile(unittest.TestCase):
             write="duckdb",
         )
         self.validate(
-            "UNIX_TO_TIME(123)",
-            "TO_TIMESTAMP(CAST(123 AS BIGINT))",
-            write="duckdb",
+            "UNIX_TO_TIME(123)", "TO_TIMESTAMP(CAST(123 AS BIGINT))", write="duckdb",
         )
 
         self.validate(
@@ -155,9 +152,7 @@ class TestTranspile(unittest.TestCase):
         )
 
         self.validate(
-            "STR_TO_UNIX('x', 'y')",
-            "UNIX_TIMESTAMP('x', 'y')",
-            write="hive",
+            "STR_TO_UNIX('x', 'y')", "UNIX_TIMESTAMP('x', 'y')", write="hive",
         )
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="hive")
 
@@ -183,15 +178,11 @@ class TestTranspile(unittest.TestCase):
         self.validate("IF(x > 1, 1, 0)", "IF(x > 1, 1, 0)", write="hive")
 
         self.validate(
-            "TIME_TO_UNIX(x)",
-            "UNIX_TIMESTAMP(x)",
-            write="hive",
+            "TIME_TO_UNIX(x)", "UNIX_TIMESTAMP(x)", write="hive",
         )
         self.validate("UNIX_TO_STR(123, 'y')", "FROM_UNIXTIME(123, 'y')", write="hive")
         self.validate(
-            "UNIX_TO_TIME(123)",
-            "FROM_UNIXTIME(123)",
-            write="hive",
+            "UNIX_TO_TIME(123)", "FROM_UNIXTIME(123)", write="hive",
         )
 
         self.validate("STR_TO_TIME('x', 'y')", "DATE_PARSE('x', 'y')", write="presto")
@@ -214,15 +205,11 @@ class TestTranspile(unittest.TestCase):
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="spark")
 
         self.validate(
-            "TIME_TO_UNIX(x)",
-            "UNIX_TIMESTAMP(x)",
-            write="spark",
+            "TIME_TO_UNIX(x)", "UNIX_TIMESTAMP(x)", write="spark",
         )
         self.validate("UNIX_TO_STR(123, 'y')", "FROM_UNIXTIME(123, 'y')", write="spark")
         self.validate(
-            "UNIX_TO_TIME(123)",
-            "FROM_UNIXTIME(123)",
-            write="spark",
+            "UNIX_TO_TIME(123)", "FROM_UNIXTIME(123)", write="spark",
         )
         self.validate(
             "CREATE TEMPORARY TABLE test AS SELECT 1",

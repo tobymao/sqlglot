@@ -14,7 +14,7 @@ class Expression:
         arg_types (dict): determines arguments supported by this expression.
             The key in a dictionary defines a unique key of an argument using
             which the argument's value can be retrieved. The value is a boolean
-            flag which indiciates whether the argument's value is required (True)
+            flag which indicates whether the argument's value is required (True)
             or optional (False).
     """
 

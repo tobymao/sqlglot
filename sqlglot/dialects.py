@@ -42,9 +42,7 @@ class Dialect(metaclass=RegisteringMeta):
 
     def tokenizer(self):
         return Tokenizer(
-            identifier=self.identifier,
-            quotes=self.quotes,
-            escape=self.escape,
+            identifier=self.identifier, quotes=self.quotes, escape=self.escape,
         )
 
     @classmethod
@@ -155,10 +153,7 @@ class DuckDB(Dialect):
         "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
         "EPOCH": exp.TimeToUnix.from_arg_list,
         "EPOCH_MS": lambda args: exp.UnixToTime(
-            this=exp.Div(
-                this=list_get(args, 0),
-                expression=exp.Literal.number(1000),
-            )
+            this=exp.Div(this=list_get(args, 0), expression=exp.Literal.number(1000),)
         ),
         "LIST_VALUE": exp.Array.from_arg_list,
         "QUANTILE": exp.Quantile.from_arg_list,
@@ -185,8 +180,7 @@ class Hive(Dialect):
             keys.append(args[i])
             values.append(args[i + 1])
         return exp.Map(
-            keys=exp.Array(expressions=keys),
-            values=exp.Array(expressions=values),
+            keys=exp.Array(expressions=keys), values=exp.Array(expressions=values),
         )
 
     def _time_format(self, expression):
@@ -275,16 +269,14 @@ class Hive(Dialect):
         "DATE_SUB": lambda args: exp.TsOrDsAdd(
             this=list_get(args, 0),
             expression=exp.Mul(
-                this=list_get(args, 1),
-                expression=exp.Literal.number(-1),
+                this=list_get(args, 1), expression=exp.Literal.number(-1),
             ),
             unit=exp.Literal.string("DAY"),
         ),
         "DATE_FORMAT": exp.TimeToStr.from_arg_list,
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
         "FROM_UNIXTIME": lambda args: exp.UnixToStr(
-            this=list_get(args, 0),
-            format=list_get(args, 1) or Hive.TIME_FORMAT,
+            this=list_get(args, 0), format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
         "GET_JSON_OBJECT": exp.JSONPath.from_arg_list,
         "LOCATE": lambda args: exp.StrPosition(
@@ -297,8 +289,7 @@ class Hive(Dialect):
         "SIZE": exp.ArraySize.from_arg_list,
         "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
         "UNIX_TIMESTAMP": lambda args: exp.StrToUnix(
-            this=list_get(args, 0),
-            format=list_get(args, 1) or Hive.TIME_FORMAT,
+            this=list_get(args, 0), format=list_get(args, 1) or Hive.TIME_FORMAT,
         ),
     }
 
@@ -386,6 +377,7 @@ class Presto(Dialect):
         exp.DataType.Type.FLOAT: "REAL",
         exp.DataType.Type.BINARY: "VARBINARY",
         exp.DataType.Type.TEXT: "VARCHAR",
+        exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH TIME ZONE",
     }
 
     transforms = {
@@ -502,4 +494,7 @@ class SQLite(Dialect):
 
 
 class Trino(Presto):
-    pass
+    ...
+    # transforms = {
+    #     exp.Array: foo#lambda self, e: f"ARRAY({self.expressions(e, flat=True)})",
+    # }

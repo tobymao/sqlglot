@@ -334,7 +334,7 @@ class Parser:
                 expression=self._parse_string(),
             )
 
-        return self._parse_expression() or self._parse_cte()
+        return self._parse_set_operations(self._parse_expression()) or self._parse_cte()
 
     def _parse_drop(self):
         if self._match(TokenType.TABLE):
@@ -790,14 +790,14 @@ class Parser:
                 this=this,
                 distinct=self._match(TokenType.DISTINCT)
                 or not self._match(TokenType.ALL),
-                expression=self._parse_select(),
+                expression=self._parse_expression() or self._parse_select(),
             )
 
         return self.expression(
             exp.Except if token_type == TokenType.EXCEPT else exp.Intersect,
             this=this,
             distinct=self._match(TokenType.DISTINCT),
-            expression=self._parse_select(),
+            expression=self._parse_expression() or self._parse_select(),
         )
 
     def _parse_expression(self):

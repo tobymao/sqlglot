@@ -223,7 +223,31 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "CAST(a AS ARRAY(INT))",
-            "CAST(a AS ARRAY[INTEGER])",
+            "CAST(a AS ARRAY(INTEGER))",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
+            "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(ARRAY(INT(9))))",
+            "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(ARRAY(INTEGER(9))))",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "CAST(ARRAY[1, 2] AS ARRAY<BIGINT>)",
+            "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
+            "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
             read="presto",
             write="presto",
         )

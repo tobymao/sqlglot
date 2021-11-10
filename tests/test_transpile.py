@@ -109,6 +109,10 @@ class TestTranspile(unittest.TestCase):
             "TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)"
         )
         self.validate(
+            "TIMESTAMP(9) WITH TIME ZONE '2020-01-01'",
+            "CAST('2020-01-01' AS TIMESTAMPTZ(9))",
+        )
+        self.validate(
             "TIMESTAMP WITHOUT TIME ZONE '2020-01-01'",
             "CAST('2020-01-01' AS TIMESTAMP)",
         )

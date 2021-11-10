@@ -280,10 +280,11 @@ class Generator:
         return f"WITH {recursive}{sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
 
     def datatype_sql(self, expression):
-        type_value = expression.args.get("this")
-        return self.type_mappings.get(
-            type_value, type_value.value if type_value else None
-        )
+        type_value = expression.this
+        type_sql = self.type_mappings.get(type_value, type_value.value)
+        args = self.expressions(expression, flat=True)
+        args = f"({args})" if args else ""
+        return f"{type_sql}{args}"
 
     def drop_sql(self, expression):
         this = self.sql(expression, "this")

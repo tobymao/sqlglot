@@ -462,6 +462,8 @@ class Null(Expression):
 
 
 class DataType(Expression):
+    arg_types = {"this": True, "expressions": False}
+
     class Type(AutoName):
         CHAR = auto()
         TEXT = auto()

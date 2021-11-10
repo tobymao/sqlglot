@@ -57,6 +57,12 @@ class Parser:
         TokenType.MAP,
     }
 
+    NESTED_TYPE_TOKENS = {
+        TokenType.ARRAY,
+        TokenType.DATE,
+        TokenType.MAP,
+    }
+
     ID_VAR_TOKENS = {
         TokenType.VAR,
         TokenType.ALL,
@@ -103,7 +109,7 @@ class Parser:
         TokenType.REPLACE,
         TokenType.UNNEST,
         TokenType.VAR,
-        *TYPE_TOKENS,
+        *NESTED_TYPE_TOKENS,
     }
 
     CONJUNCTION = {
@@ -298,6 +304,9 @@ class Parser:
         self._prev = (
             list_get(self._tokens, self._index - 1) if self._index > 0 else None
         )
+
+    def _retreat(self, index):
+        self._advance(index - self._index)
 
     def _parse_statement(self):
         if self._curr is None:
@@ -866,14 +875,7 @@ class Parser:
                 unit=self._parse_var(),
             )
 
-        if not self._next or self._next.token_type not in (
-            TokenType.L_PAREN,
-            TokenType.L_BRACKET,
-        ):
-            type_token = self._parse_types()
-        else:
-            type_token = None
-
+        type_token = self._parse_types()
         this = self._parse_column()
 
         if type_token:
@@ -890,17 +892,53 @@ class Parser:
         return this
 
     def _parse_types(self):
-        if self._match_set(self.TIMESTAMPS):
+        index = self._index
+
+        if not self._match_set(self.TYPE_TOKENS):
+            return None
+
+        type_token = self._prev.token_type
+        nested = type_token in self.NESTED_TYPE_TOKENS
+        expressions = None
+
+        if self._match(TokenType.L_BRACKET):
+            self._retreat(index)
+            return None
+
+        if self._match(TokenType.L_PAREN):
+            expressions = self._parse_csv(
+                self._parse_types if nested else self._parse_number
+            )
+
+            if nested and not expressions:
+                self._retreat(index)
+                return None
+
+            if not self._match(TokenType.R_PAREN):
+                self.raise_error("Expecting )")
+
+        if nested and self._match(TokenType.LT):
+            expressions = self._parse_csv(self._parse_types)
+
+            if not self._match(TokenType.GT):
+                self.raise_error("Expecting >")
+
+        if type_token in self.TIMESTAMPS:
             tz = self._match(TokenType.WITH)
             self._match(TokenType.WITHOUT)
             self._match(TokenType.TIME)
             self._match(TokenType.ZONE)
             if tz:
-                return exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ)
-            return exp.DataType(this=exp.DataType.Type.TIMESTAMP)
+                return exp.DataType(
+                    this=exp.DataType.Type.TIMESTAMPTZ, expressions=expressions
+                )
+            return exp.DataType(
+                this=exp.DataType.Type.TIMESTAMP, expressions=expressions
+            )
 
-        return self._match_set(self.TYPE_TOKENS) and exp.DataType(
-            this=exp.DataType.Type[self._prev.token_type.value.upper()]
+        return exp.DataType(
+            this=exp.DataType.Type[type_token.value.upper()],
+            expressions=expressions,
         )
 
     def _parse_column(self):
@@ -1012,7 +1050,7 @@ class Parser:
             expressions = [self._parse_id_var()]
 
         if not self._match(TokenType.LAMBDA):
-            self._advance(index - self._index)
+            self._retreat(index)
             return self._parse_conjunction()
 
         return self.expression(
@@ -1123,7 +1161,7 @@ class Parser:
         if not self._match(TokenType.ALIAS):
             self.raise_error("Expected AS after CAST")
 
-        to = self._parse_type()
+        to = self._parse_types()
 
         if not to:
             self.raise_error("Expected TYPE after CAST")

@@ -342,6 +342,12 @@ class Presto(Dialect):
             return f"ARRAY_JOIN(ARRAY[{csv(*(self.sql(e) for e in args))}], {sep})"
         return f"ARRAY_JOIN({self.sql(args[0])}, {sep})"
 
+    def _datatype_sql(self, expression):
+        sql = self.datatype_sql(expression)
+        if expression.this == exp.DataType.Type.TIMESTAMPTZ:
+            sql = f"{sql} WITH TIME ZONE"
+        return sql
+
     def _fileformat_sql(self, expression):
         file_format = self.sql(expression, "this").replace(self.quote, "")
         if file_format:
@@ -386,6 +392,7 @@ class Presto(Dialect):
         exp.DataType.Type.FLOAT: "REAL",
         exp.DataType.Type.BINARY: "VARBINARY",
         exp.DataType.Type.TEXT: "VARCHAR",
+        exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
     }
 
     transforms = {
@@ -401,6 +408,7 @@ class Presto(Dialect):
         exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Case: _case_if_sql,
         exp.ConcatWs: _concat_ws_sql,
+        exp.DataType: _datatype_sql,
         exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",

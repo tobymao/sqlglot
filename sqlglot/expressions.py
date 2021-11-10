@@ -855,6 +855,14 @@ class Ln(Func):
     pass
 
 
+class Log(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class Log2(Func):
+    pass
+
+
 class Log10(Func):
     pass
 

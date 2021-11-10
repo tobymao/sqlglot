@@ -290,6 +290,11 @@ class Hive(Dialect):
         "LOCATE": lambda args: exp.StrPosition(
             this=list_get(args, 1), substr=list_get(args, 0), position=list_get(args, 2)
         ),
+        "LOG": (
+            lambda args: exp.Log.from_arg_list(args)
+            if len(args) > 1
+            else exp.Ln.from_arg_list(args)
+        ),
         "MAP": _parse_map,
         "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
         "PERCENTILE": exp.Quantile.from_arg_list,

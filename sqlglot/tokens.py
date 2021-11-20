@@ -602,10 +602,9 @@ class Tokenizer:
 
         text.append(self._char)
         text = "".join(text[1:-1])
-        self._add(
-            TokenType.STRING,
-            text.encode(self.encode).decode(self.encode) if self.encode else text,
-        )
+        text = text.encode(self.encode).decode(self.encode) if self.encode else text
+        text = text.replace("\\\\", "\\") if self.escape == "\\" else text
+        self._add(TokenType.STRING, text)
 
     def _scan_identifier(self):
         while self._peek != self.identifier:

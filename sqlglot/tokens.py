@@ -413,6 +413,7 @@ class Tokenizer:
         "quotes",
         "identifier",
         "escape",
+        "encode",
         "code",
         "size",
         "tokens",
@@ -426,10 +427,20 @@ class Tokenizer:
         "__text",
     )
 
-    def __init__(self, quotes=None, identifier=None, escape=None):
+    def __init__(self, quotes=None, identifier=None, escape=None, encode=None):
+        """
+        Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
+
+        Args
+            quotes (str | list): character to identify string literals
+            identifier (str): the identifier character
+            escape (str): the escape code character
+            encode (str): if passed in, encode string literals and then decode
+        """
         self.quotes = set(ensure_list(quotes) or ["'"])
         self.identifier = identifier or '"'
         self.escape = escape or "'"
+        self.encode = encode
         self.reset()
 
     def reset(self):
@@ -590,7 +601,11 @@ class Tokenizer:
                 text.append(self.ESCAPE_CODE)
 
         text.append(self._char)
-        self._add(TokenType.STRING, "".join(text[1:-1]))
+        text = "".join(text[1:-1])
+        self._add(
+            TokenType.STRING,
+            text.encode(self.encode).decode(self.encode) if self.encode else text,
+        )
 
     def _scan_identifier(self):
         while self._peek != self.identifier:

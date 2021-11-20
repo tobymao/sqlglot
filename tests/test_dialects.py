@@ -479,6 +479,8 @@ class TestDialects(unittest.TestCase):
             unsupported_level=ErrorLevel.IGNORE,
         )
 
+        self.validate("'\u6bdb'", "'\u6bdb'", read="presto")
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT * FROM x TABLESAMPLE(10)",
@@ -777,6 +779,8 @@ class TestDialects(unittest.TestCase):
             write="duckdb",
         )
         self.validate("MONTH(x)", "MONTH(x)", read="duckdb", write="spark")
+
+        self.validate("'\u6bdb'", "'毛'", read="spark")
 
         with self.assertRaises(UnsupportedError):
             transpile(

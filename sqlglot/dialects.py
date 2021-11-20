@@ -10,6 +10,7 @@ class Dialect(metaclass=RegisteringMeta):
     identifier = None
     quotes = None
     escape = None
+    encode = None
     functions = {}
     transforms = {}
     type_mappings = {}
@@ -45,6 +46,7 @@ class Dialect(metaclass=RegisteringMeta):
             identifier=self.identifier,
             quotes=self.quotes,
             escape=self.escape,
+            encode=self.encode,
         )
 
     @classmethod
@@ -174,6 +176,7 @@ class Hive(Dialect):
     identifier = "`"
     quotes = {"'", '"'}
     escape = "\\"
+    encode = "utf-8"
 
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"

@@ -712,6 +712,10 @@ class TestDialects(unittest.TestCase):
         )
         self.validate("DAY(x)", "DAY(x)", read="duckdb", write="hive")
 
+        self.validate("'\\\\a'", "'\\\\a'", read="hive")
+        self.validate("'\\\\a'", "'\\a'", read="hive", write="presto")
+        self.validate("'\\a'", "'\\\\a'", read="presto", write="hive")
+
     def test_spark(self):
         self.validate(
             'SELECT "a"."b" FROM "foo"',

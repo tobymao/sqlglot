@@ -411,6 +411,7 @@ class Generator:
         text = expression.args.get("this") or ""
         is_string = expression.args.get("is_string")
         if is_string:
+            text = text.replace("\\", "\\\\") if self.escape == "\\" else text
             text = text.replace(Tokenizer.ESCAPE_CODE, self.escape)
             return f"{self.quote}{text}{self.quote}"
         return text

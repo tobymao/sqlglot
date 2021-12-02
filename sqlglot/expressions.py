@@ -316,6 +316,19 @@ class Hint(Expression):
     arg_types = {"expressions": True}
 
 
+class Identifier(Expression):
+    arg_types = {"this": True, "quoted": False}
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Identifier)
+            and (self.this or "").upper() == (other.this or "").upper()
+        )
+
+    def __hash__(self):
+        return hash((self.key, self.this.upper()))
+
+
 class Insert(Expression):
     arg_types = {"this": True, "expression": True, "overwrite": False, "exists": False}
 
@@ -818,19 +831,6 @@ class Floor(Func):
 class Greatest(Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
-
-
-class Identifier(Func):
-    arg_types = {"this": True, "quoted": False}
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, Identifier)
-            and (self.this or "").upper() == (other.this or "").upper()
-        )
-
-    def __hash__(self):
-        return hash((self.key, self.this.upper()))
 
 
 class If(Func):

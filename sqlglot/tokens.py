@@ -138,6 +138,7 @@ class TokenType(AutoName):
     OVER = auto()
     OVERWRITE = auto()
     PARTITION = auto()
+    PARTITION_BY = auto()
     PERCENT = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
@@ -319,7 +320,8 @@ class Tokenizer:
         "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
         "OVERWRITE": TokenType.OVERWRITE,
-        "PARTITION BY": TokenType.PARTITION,
+        "PARTITION": TokenType.PARTITION,
+        "PARTITION BY": TokenType.PARTITION_BY,
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,

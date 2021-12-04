@@ -327,6 +327,9 @@ class Parser:
         if self._match(TokenType.CACHE):
             return self._parse_cache()
 
+        if self._match(TokenType.UNCACHE):
+            return self._parse_uncache()
+
         if self._match_set(Tokenizer.COMMANDS):
             return self.expression(
                 exp.Command,
@@ -459,6 +462,13 @@ class Parser:
             where=self._parse_where(),
         )
 
+    def _parse_uncache(self):
+        if not self._match(TokenType.TABLE):
+            self.raise_error("Expecting TABLE after UNCACHE")
+        return self.expression(
+            exp.Uncache, exists=self._parse_exists(), this=self._parse_table()
+        )
+
     def _parse_cache(self):
         lazy = self._match(TokenType.LAZY)
         self._match(TokenType.TABLE)
@@ -486,25 +496,28 @@ class Parser:
         )
 
     def _parse_partition(self):
-        def parse_partition_fields():
-            k = self._parse_var()
-            if self._match(TokenType.EQ):
-                v = self._parse_string()
-                return (k, v)
-            return k
-
         if not self._match(TokenType.PARTITION):
             return None
 
         if not self._match(TokenType.L_PAREN):
             self.raise_error("Expecting ( after PARTITION")
 
-        expressions = self._parse_csv(parse_partition_fields)
+        def parse_values():
+            k = self._parse_var()
+            if self._match(TokenType.EQ):
+                v = self._parse_string()
+                return (k, v)
+            return (k, None)
+
+        values = self._parse_csv(parse_values)
 
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting ) after PARTITION")
 
-        return expressions
+        return self.expression(
+            exp.Partition,
+            this=values,
+        )
 
     def _parse_values(self):
         if not self._match(TokenType.VALUES):

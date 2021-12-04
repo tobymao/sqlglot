@@ -80,6 +80,7 @@ class TokenType(AutoName):
     BUCKET = auto()
     BY = auto()
     CACHE = auto()
+    UNCACHE = auto()
     CASE = auto()
     CAST = auto()
     CHARACTER_SET = auto()
@@ -267,6 +268,7 @@ class Tokenizer:
         "BUCKET": TokenType.BUCKET,
         "BY": TokenType.BY,
         "CACHE": TokenType.CACHE,
+        "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
         "CAST": TokenType.CAST,
         "CHARACTER SET": TokenType.CHARACTER_SET,

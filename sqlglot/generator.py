@@ -188,6 +188,11 @@ class Generator:
 
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
+    def uncache_sql(self, expression):
+        table = self.sql(expression, "this")
+        exists_sql = " IF EXISTS" if expression.args.get("exists") else ""
+        return f"UNCACHE TABLE{exists_sql} {table}"
+
     def cache_sql(self, expression):
         lazy = " LAZY" if expression.args.get("lazy") else ""
         table = self.sql(expression, "this")
@@ -314,25 +319,27 @@ class Generator:
             return f"{self.identifier}{value}{self.identifier}"
         return value
 
+    def partition_sql(self, expression):
+        keys = csv(
+            *[
+                f"{k.args['this']}='{v.args['this']}'" if v else k.args["this"]
+                for k, v in expression.args.get("this")
+            ]
+        )
+        return f"PARTITION({keys}) "
+
     def insert_sql(self, expression):
         kind = "OVERWRITE" if expression.args.get("overwrite") else "INTO"
         this = self.sql(expression, "this")
         exists = " IF EXISTS " if expression.args.get("exists") else " "
-        partitions = expression.args.get("partition")
-        if partitions:
-            if isinstance(partitions[0], tuple):
-                partition_fields = ", ".join(
-                    [f"{self.sql(k)}={self.sql(v)}" for k, v in partitions]
-                )
-            else:
-                partition_fields = ", ".join(
-                    [self.sql(partition) for partition in partitions]
-                )
-            partition_sql = f"PARTITION({partition_fields}) "
-        else:
-            partition_sql = ""
+        partition_sql = (
+            self.sql(expression, "partition")
+            if expression.args.get("partition")
+            else ""
+        )
         expression_sql = self.sql(expression, "expression")
-        return f"INSERT {kind} TABLE {this}{exists}{partition_sql}{expression_sql}"
+        sep = self.sep(sep="") if partition_sql else ""
+        return f"INSERT {kind} TABLE {this}{exists}{partition_sql}{sep}{expression_sql}"
 
     def intersect_sql(self, expression):
         return self.set_operation(

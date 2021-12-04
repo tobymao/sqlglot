@@ -330,7 +330,13 @@ class Identifier(Expression):
 
 
 class Insert(Expression):
-    arg_types = {"this": True, "expression": True, "overwrite": False, "exists": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "overwrite": False,
+        "exists": False,
+        "partition": False,
+    }
 
 
 class Intersect(Expression):
@@ -449,7 +455,7 @@ class TableSample(Expression):
 
 
 class Window(Expression):
-    arg_types = {"this": True, "partition": False, "order": False, "spec": False}
+    arg_types = {"this": True, "partition_by": False, "order": False, "spec": False}
 
 
 class WindowSpec(Expression):

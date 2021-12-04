@@ -318,8 +318,21 @@ class Generator:
         kind = "OVERWRITE" if expression.args.get("overwrite") else "INTO"
         this = self.sql(expression, "this")
         exists = " IF EXISTS " if expression.args.get("exists") else " "
+        partitions = expression.args.get("partition")
+        if partitions:
+            if isinstance(partitions[0], tuple):
+                partition_fields = ", ".join(
+                    [f"{self.sql(k)}={self.sql(v)}" for k, v in partitions]
+                )
+            else:
+                partition_fields = ", ".join(
+                    [self.sql(partition) for partition in partitions]
+                )
+            partition_sql = f"PARTITION({partition_fields}) "
+        else:
+            partition_sql = ""
         expression_sql = self.sql(expression, "expression")
-        return f"INSERT {kind} TABLE {this}{exists}{expression_sql}"
+        return f"INSERT {kind} TABLE {this}{exists}{partition_sql}{expression_sql}"
 
     def intersect_sql(self, expression):
         return self.set_operation(
@@ -475,7 +488,7 @@ class Generator:
 
     def window_sql(self, expression):
         this_sql = self.sql(expression, "this")
-        partition = expression.args.get("partition")
+        partition = expression.args.get("partition_by")
         partition = (
             "PARTITION BY " + ", ".join(self.sql(by) for by in partition)
             if partition

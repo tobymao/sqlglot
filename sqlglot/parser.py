@@ -445,6 +445,7 @@ class Parser:
             exp.Insert,
             this=self._parse_table(None),
             exists=self._parse_exists(),
+            partition=self._parse_partition(),
             expression=self._parse_select(),
             overwrite=overwrite,
         )
@@ -470,7 +471,7 @@ class Parser:
 
             k = self._parse_string()
             self._match(TokenType.EQ)
-            v = self._parse_var()
+            v = self._parse_string()
             options = [k, v]
 
             if not self._match(TokenType.R_PAREN):
@@ -483,6 +484,27 @@ class Parser:
             options=options,
             expression=self._parse_cte(),
         )
+
+    def _parse_partition(self):
+        def parse_partition_fields():
+            k = self._parse_var()
+            if self._match(TokenType.EQ):
+                v = self._parse_string()
+                return (k, v)
+            return k
+
+        if not self._match(TokenType.PARTITION):
+            return None
+
+        if not self._match(TokenType.L_PAREN):
+            self.raise_error("Expecting ( after PARTITION")
+
+        expressions = self._parse_csv(parse_partition_fields)
+
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error("Expecting ) after PARTITION")
+
+        return expressions
 
     def _parse_values(self):
         if not self._match(TokenType.VALUES):
@@ -1177,7 +1199,7 @@ class Parser:
 
         partition = None
 
-        if self._match(TokenType.PARTITION):
+        if self._match(TokenType.PARTITION_BY):
             partition = self._parse_csv(self._parse_type)
 
         order = self._parse_order()
@@ -1204,7 +1226,7 @@ class Parser:
             self.raise_error("Expecting )")
 
         return self.expression(
-            exp.Window, this=this, partition=partition, order=order, spec=spec
+            exp.Window, this=this, partition_by=partition, order=order, spec=spec
         )
 
     def _parse_window_spec(self):

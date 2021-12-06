@@ -238,6 +238,10 @@ class Cache(Expression):
     }
 
 
+class Uncache(Expression):
+    arg_types = {"this": True, "exists": False}
+
+
 class Create(Expression):
     arg_types = {
         "this": True,
@@ -330,7 +334,17 @@ class Identifier(Expression):
 
 
 class Insert(Expression):
-    arg_types = {"this": True, "expression": True, "overwrite": False, "exists": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "overwrite": False,
+        "exists": False,
+        "partition": False,
+    }
+
+
+class Partition(Expression):
+    pass
 
 
 class Intersect(Expression):
@@ -449,7 +463,7 @@ class TableSample(Expression):
 
 
 class Window(Expression):
-    arg_types = {"this": True, "partition": False, "order": False, "spec": False}
+    arg_types = {"this": True, "partition_by": False, "order": False, "spec": False}
 
 
 class WindowSpec(Expression):

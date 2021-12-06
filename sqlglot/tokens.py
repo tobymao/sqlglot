@@ -80,6 +80,7 @@ class TokenType(AutoName):
     BUCKET = auto()
     BY = auto()
     CACHE = auto()
+    UNCACHE = auto()
     CASE = auto()
     CAST = auto()
     CHARACTER_SET = auto()
@@ -138,6 +139,7 @@ class TokenType(AutoName):
     OVER = auto()
     OVERWRITE = auto()
     PARTITION = auto()
+    PARTITION_BY = auto()
     PERCENT = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
@@ -266,6 +268,7 @@ class Tokenizer:
         "BUCKET": TokenType.BUCKET,
         "BY": TokenType.BY,
         "CACHE": TokenType.CACHE,
+        "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
         "CAST": TokenType.CAST,
         "CHARACTER SET": TokenType.CHARACTER_SET,
@@ -319,7 +322,8 @@ class Tokenizer:
         "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
         "OVERWRITE": TokenType.OVERWRITE,
-        "PARTITION BY": TokenType.PARTITION,
+        "PARTITION": TokenType.PARTITION,
+        "PARTITION BY": TokenType.PARTITION_BY,
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,

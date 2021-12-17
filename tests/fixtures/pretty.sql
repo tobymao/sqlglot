@@ -134,8 +134,8 @@ FROM (
       z
     FROM y
 ) AS x;
-INSERT OVERWRITE x VALUES (1, 2.0, '3.0'), (4, 5.0, '6.0');
-INSERT OVERWRITE x VALUES
+INSERT OVERWRITE TABLE x VALUES (1, 2.0, '3.0'), (4, 5.0, '6.0');
+INSERT OVERWRITE TABLE x VALUES
   (1, 2.0, '3.0'),
   (4, 5.0, '6.0');
 WITH regional_sales AS (

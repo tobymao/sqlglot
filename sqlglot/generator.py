@@ -329,7 +329,7 @@ class Generator:
         return f"PARTITION({keys}) "
 
     def insert_sql(self, expression):
-        kind = "OVERWRITE" if expression.args.get("overwrite") else "INTO"
+        kind = "OVERWRITE TABLE" if expression.args.get("overwrite") else "INTO"
         this = self.sql(expression, "this")
         exists = " IF EXISTS " if expression.args.get("exists") else " "
         partition_sql = (

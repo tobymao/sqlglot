@@ -339,7 +339,7 @@ class Generator:
         )
         expression_sql = self.sql(expression, "expression")
         sep = self.sep(sep="") if partition_sql else ""
-        return f"INSERT {kind} TABLE {this}{exists}{partition_sql}{sep}{expression_sql}"
+        return f"INSERT {kind} {this}{exists}{partition_sql}{sep}{expression_sql}"
 
     def intersect_sql(self, expression):
         return self.set_operation(

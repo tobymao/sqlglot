@@ -191,6 +191,21 @@ class TestDialects(unittest.TestCase):
             write="mysql",
         )
 
+    def test_starrocks(self):
+        self.validate(
+            "SELECT CAST(`a`.`b` AS INT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT) FROM foo",
+            read="starrocks",
+            write="starrocks",
+        )
+
+        self.validate(
+            "SELECT CAST(`a` AS TEXT), CAST(`b` AS TIMESTAMP), CAST(`c` AS TIMESTAMPTZ) FROM foo",
+            "SELECT CAST(`a` AS STRING), CAST(`b` AS DATETIME), CAST(`c` AS DATETIME) FROM foo",
+            read="hive",
+            write="starrocks",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",

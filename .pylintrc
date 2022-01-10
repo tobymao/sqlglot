@@ -11,6 +11,7 @@ disable=
     no-self-argument,
     no-self-use,
     too-few-public-methods,
+    too-many-arguments,
     too-many-lines,
     too-many-public-methods,
     too-many-instance-attributes,

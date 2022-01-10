@@ -179,6 +179,9 @@ class TestDialects(unittest.TestCase):
 
         self.validate("1d", "1 AS d", read="duckdb")
         self.validate("1d", "CAST(1 AS DOUBLE)", read="spark", write="duckdb")
+        self.validate(
+            "POW(2S, 3)", "POW(CAST(2 AS SMALLINT), 3)", read="spark", write="duckdb"
+        )
 
     def test_mysql(self):
         self.validate(

@@ -418,6 +418,7 @@ class Tokenizer:
         "identifier",
         "escape",
         "encode",
+        "numeric_literals",
         "code",
         "size",
         "tokens",
@@ -431,7 +432,14 @@ class Tokenizer:
         "__text",
     )
 
-    def __init__(self, quotes=None, identifier=None, escape=None, encode=None):
+    def __init__(
+        self,
+        quotes=None,
+        identifier=None,
+        escape=None,
+        encode=None,
+        numeric_literals=None,
+    ):
         """
         Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
 
@@ -440,11 +448,13 @@ class Tokenizer:
             identifier (str): the identifier character
             escape (str): the escape code character
             encode (str): if passed in, encode string literals and then decode
+            numeric_literals (dict): if passed in, handle numeric literals like in hive (3L = BIGINT)
         """
         self.quotes = set(ensure_list(quotes) or ["'"])
         self.identifier = identifier or '"'
         self.escape = escape or "'"
         self.encode = encode
+        self.numeric_literals = numeric_literals or {}
         self.reset()
 
     def reset(self):
@@ -577,12 +587,24 @@ class Tokenizer:
             elif self._peek == "." and not decimal:
                 decimal = True
                 self._advance()
-            elif self._peek.upper() == "E" and not scientific:
-                scientific += 1
-                self._advance()
             elif self._peek == "-" and scientific == 1:
                 scientific += 1
                 self._advance()
+            elif self._peek.upper() == "E" and not scientific:
+                scientific += 1
+                self._advance()
+            elif self._peek.isalpha():
+                self._add(TokenType.NUMBER)
+                literal = []
+                while self._peek:
+                    literal.append(self._peek.upper())
+                    self._advance()
+                literal = "".join(literal)
+                token_type = self.KEYWORDS.get(self.numeric_literals.get(literal))
+                if token_type:
+                    self._add(TokenType.DCOLON, "::")
+                    return self._add(token_type, literal)
+                return self._advance(-len(literal))
             else:
                 return self._add(TokenType.NUMBER)
 

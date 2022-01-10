@@ -177,6 +177,9 @@ class TestDialects(unittest.TestCase):
             write="duckdb",
         )
 
+        self.validate("1d", "1 AS d", read="duckdb")
+        self.validate("1d", "CAST(1 AS DOUBLE)", read="spark", write="duckdb")
+
     def test_mysql(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",
@@ -715,6 +718,12 @@ class TestDialects(unittest.TestCase):
         self.validate("'\\\\a'", "'\\\\a'", read="hive")
         self.validate("'\\\\a'", "'\\a'", read="hive", write="presto")
         self.validate("'\\a'", "'\\\\a'", read="presto", write="hive")
+
+        self.validate("1s", "CAST(1 AS SMALLINT)", read="hive")
+        self.validate("1S", "CAST(1 AS SMALLINT)", read="hive")
+        self.validate("1Y", "CAST(1 AS TINYINT)", read="hive")
+        self.validate("1L", "CAST(1 AS BIGINT)", read="hive")
+        self.validate("1.0bd", "CAST(1.0 AS DECIMAL)", read="hive")
 
     def test_spark(self):
         self.validate(

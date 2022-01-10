@@ -596,7 +596,7 @@ class Tokenizer:
             elif self._peek.isalpha():
                 self._add(TokenType.NUMBER)
                 literal = []
-                while self._peek:
+                while self._peek.isalpha():
                     literal.append(self._peek.upper())
                     self._advance()
                 literal = "".join(literal)

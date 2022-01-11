@@ -329,6 +329,14 @@ class MySQL(Dialect):
     }
 
 
+class StarRocks(MySQL):
+    type_mappings = {
+        exp.DataType.Type.TEXT: "STRING",
+        exp.DataType.Type.TIMESTAMP: "DATETIME",
+        exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
+    }
+
+
 class Postgres(Dialect):
     type_mappings = {
         exp.DataType.Type.TINYINT: "SMALLINT",

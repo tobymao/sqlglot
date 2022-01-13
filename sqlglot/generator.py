@@ -3,6 +3,7 @@ import logging
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import ensure_list, csv
+from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
 
 
@@ -17,9 +18,12 @@ class Generator:
         transforms (dict): the dictionary of custom transformations in which key
             represents the expression type and the value is a function which defines
             how the given expression type should be rendered.
-        type_mappings (dict): the dictionary of custom type mappings in which the key
+        type_mapping (dict): the dictionary of custom type mappings in which the key
             represents the data type (:class:`~sqlglot.expressions.DataType.Type`) and
             the value is its SQL string representation.
+        time_mapping (dict): the dictionary of custom time mappings in which the key
+            represents a python time format and the output the target time format
+        time_trie (trie): a trie of the time_mapping keys
         pretty (bool): if set to True the returned string will be formatted. Default: False.
         identifier (str): specifies which character to use to delimit identifiers. Default: ".
         identify (bool): if set to True all identifiers will be delimited by the corresponding
@@ -53,7 +57,9 @@ class Generator:
 
     __slots__ = (
         "transforms",
-        "type_mappings",
+        "type_mapping",
+        "time_mapping",
+        "time_trie",
         "pretty",
         "configured_pretty",
         "identifier",
@@ -70,7 +76,9 @@ class Generator:
     def __init__(
         self,
         transforms=None,
-        type_mappings=None,
+        type_mapping=None,
+        time_mapping=None,
+        time_trie=None,
         pretty=False,
         identifier=None,
         identify=False,
@@ -82,7 +90,9 @@ class Generator:
     ):
         # pylint: disable=too-many-arguments
         self.transforms = {**self.TRANSFORMS, **(transforms or {})}
-        self.type_mappings = type_mappings or {}
+        self.type_mapping = type_mapping or {}
+        self.time_mapping = time_mapping or {}
+        self.time_trie = time_trie
         self.pretty = pretty
         self.configured_pretty = pretty
         self.identifier = identifier or '"'
@@ -286,7 +296,7 @@ class Generator:
 
     def datatype_sql(self, expression):
         type_value = expression.this
-        type_sql = self.type_mappings.get(type_value, type_value.value)
+        type_sql = self.type_mapping.get(type_value, type_value.value)
         args = self.expressions(expression, flat=True)
         args = f"({args})" if args else ""
         return f"{type_sql}{args}"
@@ -708,6 +718,11 @@ class Generator:
 
         args_str = ", ".join(args)
         return f"{expression.sql_name()}({args_str})"
+
+    def format_time(self, expression):
+        return format_time(
+            self.sql(expression, "format"), self.time_mapping, self.time_trie
+        )
 
     def expressions(self, expression, flat=False, pad=0):
         # pylint: disable=cell-var-from-loop

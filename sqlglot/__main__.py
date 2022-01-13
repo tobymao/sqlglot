@@ -45,6 +45,7 @@ parser.add_argument(
     help="IGNORE, WARN, RAISE (default)",
 )
 
+
 args = parser.parse_args()
 error_level = sqlglot.ErrorLevel[args.error_level.upper()]
 

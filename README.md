@@ -33,6 +33,16 @@ sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read='duckdb', write='hive')
 SELECT TO_UTC_TIMESTAMP(FROM_UNIXTIME(1618088028295 / 1000, 'yyyy-MM-dd HH:mm:ss'), 'UTC')
 ```
 
+SQLGlot can even translate custom time formats.
+```python
+import sqlglot
+sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read='duckdb', write='hive')
+```
+
+```sql
+SELECT DATE_FORMAT(x, 'yy-M-ss')"
+```
+
 ### Formatting and Transpiling
 Read in a SQL statement with a CTE and CASTING to a REAL and then transpiling to Spark.
 
@@ -74,7 +84,7 @@ A simple transform on types can be accomplished by providing a corresponding map
 from sqlglot import *
 from sqlglot import expressions as exp
 
-transpile("SELECT CAST(a AS INT) FROM x", type_mappings={exp.DataType.Type.INT: "SPECIAL INT"})[0]
+transpile("SELECT CAST(a AS INT) FROM x", type_mapping={exp.DataType.Type.INT: "SPECIAL INT"})[0]
 ```
 
 ```sql

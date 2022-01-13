@@ -21,10 +21,16 @@ class TestDialects(unittest.TestCase):
             "EPOCH_MS(x)", "FROM_UNIXTIME(x / 1000)", read="duckdb", write="presto"
         )
         self.validate(
-            "STRFTIME(x, 'y')", "DATE_FORMAT(x, 'y')", read="duckdb", write="presto"
+            "STRFTIME(x, '%y-%-m-%S')",
+            "DATE_FORMAT(x, '%y-%c-%S')",
+            read="duckdb",
+            write="presto",
         )
         self.validate(
-            "STRPTIME(x, 'y')", "DATE_PARSE(x, 'y')", read="duckdb", write="presto"
+            "STRPTIME(x, '%y-%-m')",
+            "DATE_PARSE(x, '%y-%c')",
+            read="duckdb",
+            write="presto",
         )
         self.validate(
             "LIST_VALUE(0, 1, 2)", "ARRAY[0, 1, 2]", read="duckdb", write="presto"
@@ -144,6 +150,18 @@ class TestDialects(unittest.TestCase):
             "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), '%Y-%m-%d %H:%M:%S')",
             identity=False,
             write="duckdb",
+        )
+        self.validate(
+            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
+            "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
+            read="duckdb",
+            write="hive",
+        )
+        self.validate(
+            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
+            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
+            read="duckdb",
+            write="presto",
         )
         self.validate(
             "TO_TIMESTAMP(x)",
@@ -337,17 +355,26 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "DATE_FORMAT(x, 'y')", "DATE_FORMAT(x, 'y')", read="presto", write="hive"
+            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%s')",
+            "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
+            read="presto",
+            write="hive",
         )
         self.validate(
-            "DATE_PARSE(x, 'y')",
-            "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'y'))",
+            "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
+            "FROM_UNIXTIME(UNIX_TIMESTAMP(x))",
+            read="presto",
+            write="hive",
+        )
+        self.validate(
+            "DATE_PARSE(x, '%Y-%m-%d')",
+            "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-dd'))",
             read="presto",
             write="hive",
         )
         self.validate(
             "TIME_STR_TO_UNIX(x)",
-            "TO_UNIXTIME(DATE_PARSE(x, '%Y-%m-%d %H:%i:%s'))",
+            "TO_UNIXTIME(DATE_PARSE(x, '%Y-%m-%d %H:%i:%S'))",
             write="presto",
         )
         self.validate(
@@ -357,12 +384,12 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TIME_TO_TIME_STR(x)",
-            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%s')",
+            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
             write="presto",
         )
         self.validate(
             "UNIX_TO_TIME_STR(x)",
-            "DATE_FORMAT(FROM_UNIXTIME(x), '%Y-%m-%d %H:%i:%s')",
+            "DATE_FORMAT(FROM_UNIXTIME(x), '%Y-%m-%d %H:%i:%S')",
             write="presto",
         )
         self.validate(

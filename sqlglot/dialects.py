@@ -1,9 +1,11 @@
-# pylint: disable=no-member
+# pylint: disable=no-member, protected-access
 import sqlglot.expressions as exp
 from sqlglot.generator import Generator
 from sqlglot.helper import RegisteringMeta, csv, list_get
 from sqlglot.parser import Parser
+from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
+from sqlglot.trie import new_trie
 
 
 class Dialect(metaclass=RegisteringMeta):
@@ -14,7 +16,34 @@ class Dialect(metaclass=RegisteringMeta):
     numeric_literals = None
     functions = {}
     transforms = {}
-    type_mappings = {}
+    type_mapping = {}
+
+    time_mapping = {}
+    # automatically created
+    time_trie = None
+    inverse_time_mapping = None
+    inverse_time_trie = None
+
+    @classmethod
+    def get_or_raise(cls, dialect):
+        if not dialect:
+            return cls
+        result = cls.get(dialect, None)
+        if not result:
+            raise ValueError(f"Unknown dialect '{dialect}'")
+        return result
+
+    @classmethod
+    def format_time(cls, expression):
+        if isinstance(expression, exp.Literal) and expression.args["is_string"]:
+            return exp.Literal.string(
+                format_time(
+                    expression.this,
+                    cls.time_mapping,
+                    cls.time_trie,
+                )
+            )
+        return expression
 
     def parse(self, code, **opts):
         return self.parser(**opts).parse(self.tokenizer().tokenize(code), code)
@@ -31,10 +60,12 @@ class Dialect(metaclass=RegisteringMeta):
                 "identifier": self.identifier,
                 "escape": self.escape,
                 "transforms": {**self.transforms, **opts.pop("transforms", {})},
-                "type_mappings": {
-                    **self.type_mappings,
-                    **opts.pop("type_mappings", {}),
+                "type_mapping": {
+                    **self.type_mapping,
+                    **opts.pop("type_mapping", {}),
                 },
+                "time_mapping": self.inverse_time_mapping,
+                "time_trie": self.inverse_time_trie,
                 **opts,
             }
         )
@@ -50,15 +81,6 @@ class Dialect(metaclass=RegisteringMeta):
             encode=self.encode,
             numeric_literals=self.numeric_literals,
         )
-
-    @classmethod
-    def get_or_raise(cls, dialect):
-        if not dialect:
-            return cls
-        result = cls.get(dialect, None)
-        if not result:
-            raise ValueError(f"Unknown dialect '{dialect}'")
-        return result
 
 
 def _approx_count_distinct_sql(self, expression):
@@ -110,7 +132,27 @@ def _struct_extract_sql(self, expression):
     return f"{this}.{struct_key}"
 
 
+def _format_time(exp_class, dialect, default=None):
+    return lambda args: exp_class(
+        this=list_get(args, 0),
+        format=dialect.format_time(list_get(args, 1)) or default,
+    )
+
+
+# https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
+MYSQL_TIME_MAPPING = {
+    "%M": "%B",
+    "%c": "%-m",
+    "%e": "%-d",
+    "%h": "%I",
+    "%i": "%M",
+    "%s": "%S",
+    "%S": "%S",
+}
+
+
 class DuckDB(Dialect):
+    # https://duckdb.org/docs/sql/functions/dateformat
     DATE_FORMAT = "'%Y-%m-%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
@@ -138,40 +180,41 @@ class DuckDB(Dialect):
         exp.Explode: lambda self, e: f"UNNEST({self.sql(e, 'this')})",
         exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
+        exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.format_time(e)})",
+        exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
         exp.TableSample: _no_tablesample_sql,
         exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
         exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
-        exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TimeToTimeStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
         exp.TsOrDsAdd: _ts_or_ds_add,
         exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.DATE_FORMAT})",
         exp.TsOrDsToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
-        exp.UnixToStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {self.sql(e, 'format')})",
+        exp.UnixToStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {self.format_time(e)})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {DuckDB.TIME_FORMAT})",
     }
 
-    functions = {
-        "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
-        "EPOCH": exp.TimeToUnix.from_arg_list,
-        "EPOCH_MS": lambda args: exp.UnixToTime(
-            this=exp.Div(
-                this=list_get(args, 0),
-                expression=exp.Literal.number(1000),
-            )
-        ),
-        "LIST_VALUE": exp.Array.from_arg_list,
-        "QUANTILE": exp.Quantile.from_arg_list,
-        "REGEXP_MATCHES": exp.RegexLike.from_arg_list,
-        "STRFTIME": exp.TimeToStr.from_arg_list,
-        "STRPTIME": exp.StrToTime.from_arg_list,
-        "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
-        "UNNEST": exp.Explode.from_arg_list,
-    }
+
+DuckDB.functions = {
+    "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
+    "EPOCH": exp.TimeToUnix.from_arg_list,
+    "EPOCH_MS": lambda args: exp.UnixToTime(
+        this=exp.Div(
+            this=list_get(args, 0),
+            expression=exp.Literal.number(1000),
+        )
+    ),
+    "LIST_VALUE": exp.Array.from_arg_list,
+    "QUANTILE": exp.Quantile.from_arg_list,
+    "REGEXP_MATCHES": exp.RegexLike.from_arg_list,
+    "STRFTIME": _format_time(exp.TimeToStr, DuckDB),
+    "STRPTIME": _format_time(exp.StrToTime, DuckDB),
+    "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
+    "UNNEST": exp.Explode.from_arg_list,
+}
 
 
 class Hive(Dialect):
@@ -186,6 +229,30 @@ class Hive(Dialect):
         "D": "DOUBLE",
         "F": "FLOAT",
         "BD": "DECIMAL",
+    }
+
+    time_mapping = {
+        "y": "%Y",
+        "Y": "%Y",
+        "YYYY": "%Y",
+        "yyyy": "%Y",
+        "YY": "%y",
+        "yy": "%y",
+        "MMMM": "%B",
+        "MMM": "%b",
+        "MM": "%m",
+        "M": "%-m",
+        "dd": "%d",
+        "d": "%-d",
+        "HH": "%H",
+        "H": "%-H",
+        "hh": "%I",
+        "h": "%-I",
+        "mm": "%M",
+        "m": "%-M",
+        "ss": "%S",
+        "s": "%-S",
+        "S": "%f",
     }
 
     DATE_FORMAT = "'yyyy-MM-dd'"
@@ -203,7 +270,7 @@ class Hive(Dialect):
         )
 
     def _time_format(self, expression):
-        time_format = self.sql(expression, "format")
+        time_format = self.format_time(expression)
         if time_format == Hive.TIME_FORMAT:
             return None
         return time_format
@@ -225,7 +292,7 @@ class Hive(Dialect):
 
     def _time_to_str(self, expression):
         this = self.sql(expression, "this")
-        time_format = self.sql(expression, "format")
+        time_format = self.format_time(expression)
         if time_format == Hive.DATE_FORMAT:
             return f"TO_DATE({this})"
         return f"DATE_FORMAT({this}, {time_format})"
@@ -236,7 +303,7 @@ class Hive(Dialect):
     def _unix_to_time(self, expression):
         return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
 
-    type_mappings = {
+    type_mapping = {
         exp.DataType.Type.TEXT: "STRING",
         exp.DataType.Type.VARCHAR: "STRING",
     }
@@ -273,56 +340,53 @@ class Hive(Dialect):
         exp.UnixToTimeStr: _unix_to_time,
     }
 
-    functions = {
-        "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
-        "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
-        "DATE_ADD": lambda args: exp.TsOrDsAdd(
-            this=list_get(args, 0),
-            expression=list_get(args, 1),
-            unit=exp.Literal.string("DAY"),
+
+Hive.functions = {
+    "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
+    "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
+    "DATE_ADD": lambda args: exp.TsOrDsAdd(
+        this=list_get(args, 0),
+        expression=list_get(args, 1),
+        unit=exp.Literal.string("DAY"),
+    ),
+    "DATEDIFF": lambda args: exp.DateDiff(
+        this=exp.DateStrToDate(this=list_get(args, 0)),
+        expression=exp.DateStrToDate(this=list_get(args, 1)),
+    ),
+    "DATE_SUB": lambda args: exp.TsOrDsAdd(
+        this=list_get(args, 0),
+        expression=exp.Mul(
+            this=list_get(args, 1),
+            expression=exp.Literal.number(-1),
         ),
-        "DATEDIFF": lambda args: exp.DateDiff(
-            this=exp.DateStrToDate(this=list_get(args, 0)),
-            expression=exp.DateStrToDate(this=list_get(args, 1)),
-        ),
-        "DATE_SUB": lambda args: exp.TsOrDsAdd(
-            this=list_get(args, 0),
-            expression=exp.Mul(
-                this=list_get(args, 1),
-                expression=exp.Literal.number(-1),
-            ),
-            unit=exp.Literal.string("DAY"),
-        ),
-        "DATE_FORMAT": exp.TimeToStr.from_arg_list,
-        "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
-        "FROM_UNIXTIME": lambda args: exp.UnixToStr(
-            this=list_get(args, 0),
-            format=list_get(args, 1) or Hive.TIME_FORMAT,
-        ),
-        "GET_JSON_OBJECT": exp.JSONPath.from_arg_list,
-        "LOCATE": lambda args: exp.StrPosition(
-            this=list_get(args, 1), substr=list_get(args, 0), position=list_get(args, 2)
-        ),
-        "LOG": (
-            lambda args: exp.Log.from_arg_list(args)
-            if len(args) > 1
-            else exp.Ln.from_arg_list(args)
-        ),
-        "MAP": _parse_map,
-        "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
-        "PERCENTILE": exp.Quantile.from_arg_list,
-        "COLLECT_SET": exp.SetAgg.from_arg_list,
-        "SIZE": exp.ArraySize.from_arg_list,
-        "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
-        "UNIX_TIMESTAMP": lambda args: exp.StrToUnix(
-            this=list_get(args, 0),
-            format=list_get(args, 1) or Hive.TIME_FORMAT,
-        ),
-    }
+        unit=exp.Literal.string("DAY"),
+    ),
+    "DATE_FORMAT": _format_time(exp.TimeToStr, Hive),
+    "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
+    "FROM_UNIXTIME": _format_time(exp.UnixToStr, Hive, Hive.TIME_FORMAT),
+    "GET_JSON_OBJECT": exp.JSONPath.from_arg_list,
+    "LOCATE": lambda args: exp.StrPosition(
+        this=list_get(args, 1), substr=list_get(args, 0), position=list_get(args, 2)
+    ),
+    "LOG": (
+        lambda args: exp.Log.from_arg_list(args)
+        if len(args) > 1
+        else exp.Ln.from_arg_list(args)
+    ),
+    "MAP": Hive._parse_map,
+    "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
+    "PERCENTILE": exp.Quantile.from_arg_list,
+    "COLLECT_SET": exp.SetAgg.from_arg_list,
+    "SIZE": exp.ArraySize.from_arg_list,
+    "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
+    "UNIX_TIMESTAMP": _format_time(exp.StrToUnix, Hive, Hive.TIME_FORMAT),
+}
 
 
 class MySQL(Dialect):
     identifier = "`"
+
+    time_mapping = MYSQL_TIME_MAPPING
 
     transforms = {
         exp.TableSample: _no_tablesample_sql,
@@ -330,7 +394,7 @@ class MySQL(Dialect):
 
 
 class StarRocks(MySQL):
-    type_mappings = {
+    type_mapping = {
         exp.DataType.Type.TEXT: "STRING",
         exp.DataType.Type.TIMESTAMP: "DATETIME",
         exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
@@ -338,7 +402,7 @@ class StarRocks(MySQL):
 
 
 class Postgres(Dialect):
-    type_mappings = {
+    type_mapping = {
         exp.DataType.Type.TINYINT: "SMALLINT",
         exp.DataType.Type.FLOAT: "REAL",
         exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
@@ -346,7 +410,7 @@ class Postgres(Dialect):
     }
 
     transforms = {
-        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TableSample: _no_tablesample_sql,
     }
 
@@ -354,7 +418,7 @@ class Postgres(Dialect):
 
 
 class Presto(Dialect):
-    TIME_FORMAT = "'%Y-%m-%d %H:%i:%s'"
+    TIME_FORMAT = "'%Y-%m-%d %H:%i:%S'"
 
     def _approx_distinct_sql(self, expression):
         accuracy = expression.args.get("accuracy")
@@ -413,7 +477,9 @@ class Presto(Dialect):
         unit = self.sql(expression, "unit") or "'day'"
         return f"DATE_FORMAT(DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')), '%Y-%m-%d')"
 
-    type_mappings = {
+    time_mapping = MYSQL_TIME_MAPPING
+
+    type_mapping = {
         exp.DataType.Type.INT: "INTEGER",
         exp.DataType.Type.FLOAT: "REAL",
         exp.DataType.Type.BINARY: "VARBINARY",
@@ -445,47 +511,48 @@ class Presto(Dialect):
         exp.Quantile: _quantile_sql,
         exp.RegexLike: lambda self, e: f"REGEXP_LIKE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrPosition: _str_position_sql,
-        exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')})",
-        exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.sql(e, 'format')}))",
+        exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)})",
+        exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
         exp.StructExtract: _struct_extract_sql,
         exp.TableSample: _no_tablesample_sql,
         exp.TimeStrToDate: _date_parse_sql,
         exp.TimeStrToTime: _date_parse_sql,
         exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",
-        exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Presto.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
         exp.TsOrDsAdd: _ts_or_ds_add_sql,
         exp.TsOrDsToDateStr: _ts_or_ds_to_date_str_sql,
         exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
-        exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.sql(e, 'format')})",
+        exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
         exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')})",
         exp.UnixToTimeStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {Presto.TIME_FORMAT})",
     }
 
-    functions = {
-        "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
-        "CARDINALITY": exp.ArraySize.from_arg_list,
-        "CONTAINS": exp.ArrayContains.from_arg_list,
-        "DATE_ADD": lambda args: exp.DateAdd(
-            this=list_get(args, 2),
-            expression=list_get(args, 1),
-            unit=list_get(args, 0),
-        ),
-        "DATE_DIFF": lambda args: exp.DateDiff(
-            this=list_get(args, 2),
-            expression=list_get(args, 1),
-            unit=list_get(args, 0),
-        ),
-        "DATE_FORMAT": exp.TimeToStr.from_arg_list,
-        "DATE_PARSE": exp.StrToTime.from_arg_list,
-        "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
-        "JSON_EXTRACT": exp.JSONPath.from_arg_list,
-        "JSON_EXTRACT_SCALAR": exp.JSONPath.from_arg_list,
-        "REGEXP_LIKE": exp.RegexLike.from_arg_list,
-        "STRPOS": exp.StrPosition.from_arg_list,
-        "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
-    }
+
+Presto.functions = {
+    "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
+    "CARDINALITY": exp.ArraySize.from_arg_list,
+    "CONTAINS": exp.ArrayContains.from_arg_list,
+    "DATE_ADD": lambda args: exp.DateAdd(
+        this=list_get(args, 2),
+        expression=list_get(args, 1),
+        unit=list_get(args, 0),
+    ),
+    "DATE_DIFF": lambda args: exp.DateDiff(
+        this=list_get(args, 2),
+        expression=list_get(args, 1),
+        unit=list_get(args, 0),
+    ),
+    "DATE_FORMAT": _format_time(exp.TimeToStr, Presto),
+    "DATE_PARSE": _format_time(exp.StrToTime, Presto),
+    "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
+    "JSON_EXTRACT": exp.JSONPath.from_arg_list,
+    "JSON_EXTRACT_SCALAR": exp.JSONPath.from_arg_list,
+    "REGEXP_LIKE": exp.RegexLike.from_arg_list,
+    "STRPOS": exp.StrPosition.from_arg_list,
+    "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
+}
 
 
 class Spark(Hive):
@@ -497,8 +564,8 @@ class Spark(Hive):
             return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
         return self.create_sql(e)
 
-    type_mappings = {
-        **Hive.type_mappings,
+    type_mapping = {
+        **Hive.type_mapping,
         exp.DataType.Type.TINYINT: "BYTE",
         exp.DataType.Type.SMALLINT: "SHORT",
         exp.DataType.Type.BIGINT: "LONG",
@@ -508,7 +575,7 @@ class Spark(Hive):
     transforms = {
         **Hive.transforms,
         exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
-        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'format')})",
+        exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.Create: _create_sql,
     }
 
@@ -516,7 +583,7 @@ class Spark(Hive):
 
 
 class SQLite(Dialect):
-    type_mappings = {
+    type_mapping = {
         exp.DataType.Type.BOOLEAN: "INTEGER",
         exp.DataType.Type.TINYINT: "INTEGER",
         exp.DataType.Type.SMALLINT: "INTEGER",
@@ -537,3 +604,9 @@ class SQLite(Dialect):
 
 class Trino(Presto):
     pass
+
+
+for d in Dialect.classes.values():
+    d.time_trie = new_trie(d.time_mapping)
+    d.inverse_time_mapping = {v: k for k, v in d.time_mapping.items()}
+    d.inverse_time_trie = new_trie(d.inverse_time_mapping)

@@ -21,7 +21,7 @@ class TestTranspile(unittest.TestCase):
         self.assertEqual(
             transpile(
                 "SELECT CAST(a AS INT) FROM x",
-                type_mappings={exp.DataType.Type.INT: "SPECIAL INT"},
+                type_mapping={exp.DataType.Type.INT: "SPECIAL INT"},
             )[0],
             "SELECT CAST(a AS SPECIAL INT) FROM x",
         )

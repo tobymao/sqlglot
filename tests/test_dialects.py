@@ -697,7 +697,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "UNIX_TIMESTAMP(x)",
-            "STR_TO_UNIX(x, 'yyyy-MM-dd HH:mm:ss')",
+            "STR_TO_UNIX(x, '%Y-%m-%d %H:%M:%S')",
             read="hive",
             identity=False,
         )
@@ -720,6 +720,12 @@ class TestDialects(unittest.TestCase):
             "UNIX_TO_TIME_STR(x)",
             "FROM_UNIXTIME(x)",
             write="hive",
+        )
+        self.validate(
+            "FROM_UNIXTIME(x)",
+            "DATE_FORMAT(FROM_UNIXTIME(x), '%Y-%m-%d %H:%i:%S')",
+            read="hive",
+            write="presto",
         )
         self.validate(
             "TS_OR_DS_TO_DATE(x)",

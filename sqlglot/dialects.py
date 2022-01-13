@@ -35,6 +35,14 @@ class Dialect(metaclass=RegisteringMeta):
 
     @classmethod
     def format_time(cls, expression):
+        if isinstance(expression, str):
+            return exp.Literal.string(
+                format_time(
+                    expression[1:-1],  # the time formats are quoted
+                    cls.time_mapping,
+                    cls.time_trie,
+                )
+            )
         if isinstance(expression, exp.Literal) and expression.args["is_string"]:
             return exp.Literal.string(
                 format_time(
@@ -135,7 +143,7 @@ def _struct_extract_sql(self, expression):
 def _format_time(exp_class, dialect, default=None):
     return lambda args: exp_class(
         this=list_get(args, 0),
-        format=dialect.format_time(list_get(args, 1)) or default,
+        format=dialect.format_time(list_get(args, 1) or default),
     )
 
 

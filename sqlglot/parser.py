@@ -82,6 +82,7 @@ class Parser:
         TokenType.IF,
         TokenType.INTERVAL,
         TokenType.LAZY,
+        TokenType.OPTIMIZE,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
         TokenType.OVER,
@@ -94,6 +95,7 @@ class Parser:
         TokenType.SHOW,
         TokenType.TABLE_SAMPLE,
         TokenType.TEMPORARY,
+        TokenType.TRUNCATE,
         TokenType.UNBOUNDED,
         *TYPE_TOKENS,
     }

@@ -130,6 +130,7 @@ class TokenType(AutoName):
     MOD = auto()
     NULL = auto()
     ON = auto()
+    OPTIMIZE = auto()
     OPTIONS = auto()
     ORDER = auto()
     ORDERED = auto()
@@ -158,6 +159,7 @@ class TokenType(AutoName):
     TEMPORARY = auto()
     TIME = auto()
     THEN = auto()
+    TRUNCATE = auto()
     UNBOUNDED = auto()
     UNION = auto()
     UNNEST = auto()
@@ -314,6 +316,7 @@ class Tokenizer:
         "NOT": TokenType.NOT,
         "NULL": TokenType.NULL,
         "ON": TokenType.ON,
+        "OPTIMIZE": TokenType.OPTIMIZE,
         "OPTIONS": TokenType.OPTIONS,
         "OR": TokenType.OR,
         "ORDER BY": TokenType.ORDER,
@@ -344,6 +347,7 @@ class Tokenizer:
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TIME": TokenType.TIME,
+        "TRUNCATE": TokenType.TRUNCATE,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
         "UNNEST": TokenType.UNNEST,
@@ -402,8 +406,10 @@ class Tokenizer:
         TokenType.ADD_FILE,
         TokenType.DELETE,
         TokenType.EXPLAIN,
+        TokenType.OPTIMIZE,
         TokenType.SET,
         TokenType.SHOW,
+        TokenType.TRUNCATE,
     }
 
     ESCAPE_CODE = "__sqlglot_escape__"

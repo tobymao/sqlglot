@@ -587,7 +587,26 @@ class Spark(Hive):
         exp.Create: _create_sql,
     }
 
-    functions = {**Hive.functions, "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list}
+
+Spark.functions = {
+    **Hive.functions,
+    "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
+    "LEFT": lambda args: exp.Substring(
+        this=list_get(args, 0),
+        starting_position=exp.Literal.number(1),
+        length=list_get(args, 1),
+    ),
+    "RIGHT": lambda args: exp.Substring(
+        this=list_get(args, 0),
+        starting_position=exp.Sub(
+            this=exp.Length(this=list_get(args, 0)),
+            expression=exp.Add(
+                this=list_get(args, 1), expression=exp.Literal.number(1)
+            ),
+        ),
+        length=list_get(args, 1),
+    ),
+}
 
 
 class SQLite(Dialect):

@@ -111,6 +111,8 @@ class Parser:
         TokenType.REPLACE,
         TokenType.UNNEST,
         TokenType.VAR,
+        TokenType.LEFT,
+        TokenType.RIGHT,
         *NESTED_TYPE_TOKENS,
     }
 

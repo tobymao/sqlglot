@@ -846,6 +846,13 @@ class TestDialects(unittest.TestCase):
 
         self.validate("'\u6bdb'", "'毛'", read="spark")
 
+        self.validate(
+            "SELECT LEFT(x, 2), RIGHT(x, 2)",
+            "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - 2 + 1, 2)",
+            read="spark",
+            write="presto",
+        )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT sum(n) FROM t",

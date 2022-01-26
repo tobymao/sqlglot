@@ -655,9 +655,4 @@ class Tokenizer:
                 self._advance()
             else:
                 break
-
-        if self._text.upper() in ("LEFT", "RIGHT"):
-            if char == "(":
-                self._add(TokenType.VAR)
-        else:
-            self._add(self.KEYWORDS.get(self._text.upper(), TokenType.VAR))
+        self._add(self.KEYWORDS.get(self._text.upper(), TokenType.VAR))

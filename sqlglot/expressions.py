@@ -924,7 +924,7 @@ class SetAgg(AggFunc):
 
 
 class Substring(Func):
-    arg_types = {"this": True, "starting_position": True, "length": False}
+    arg_types = {"this": True, "start": True, "length": False}
 
 
 class StrPosition(Func):

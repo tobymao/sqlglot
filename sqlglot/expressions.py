@@ -865,6 +865,10 @@ class Least(Func):
     is_var_len_args = True
 
 
+class Length(Func):
+    pass
+
+
 class Ln(Func):
     pass
 
@@ -917,6 +921,10 @@ class Round(Func):
 
 class SetAgg(AggFunc):
     pass
+
+
+class Substring(Func):
+    arg_types = {"this": True, "start": True, "length": False}
 
 
 class StrPosition(Func):

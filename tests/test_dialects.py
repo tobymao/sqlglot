@@ -241,13 +241,6 @@ class TestDialects(unittest.TestCase):
             identify=True,
         )
         self.validate(
-            'SELECT "a"."b" FROM foo',
-            'SELECT "a"."b" FROM foo',
-            read="presto",
-            write="presto",
-            identify=False,
-        )
-        self.validate(
             "SELECT a.b FROM foo", "SELECT a.b FROM foo", read="presto", write="spark"
         )
         self.validate(

@@ -488,12 +488,8 @@ class Null(Expression):
     arg_types = {}
 
 
-class _True(Expression):
-    arg_types = {}
-
-
-class _False(Expression):
-    arg_types = {}
+class Boolean(Expression):
+    pass
 
 
 class DataType(Expression):

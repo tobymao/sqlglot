@@ -538,34 +538,33 @@ class TestDialects(unittest.TestCase):
             )
 
         self.validate(
-            'SELECT NULL as foo FROM baz',
+            "SELECT NULL as foo FROM baz",
             'SELECT NULL AS "foo" FROM "baz"',
             read="presto",
             write="presto",
             identify=True,
         )
         self.validate(
-            'SELECT true as foo FROM baz',
+            "SELECT true as foo FROM baz",
             'SELECT TRUE AS "foo" FROM "baz"',
             read="presto",
             write="presto",
             identify=True,
         )
         self.validate(
-            'SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) as foo FROM baz',
-            'SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) AS foo FROM baz',
+            "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) as foo FROM baz",
+            "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) AS foo FROM baz",
             read="presto",
             write="presto",
             identify=False,
         )
         self.validate(
-            'SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) as foo FROM baz',
+            "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) as foo FROM baz",
             'SELECT IF(COALESCE("bar", 0) = 1, TRUE, FALSE) AS "foo" FROM "baz"',
             read="hive",
             write="presto",
             identify=True,
         )
-
 
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]

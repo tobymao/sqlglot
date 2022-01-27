@@ -453,8 +453,7 @@ class Generator:
     def boolean_sql(self, expression):
         if expression.args["value"] is True:
             return "TRUE"
-        else:
-            return "FALSE"
+        return "FALSE"
 
     def order_sql(self, expression, flat=False):
         return self.op_expressions("ORDER BY", expression, flat=flat)

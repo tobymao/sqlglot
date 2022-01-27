@@ -105,6 +105,7 @@ class TokenType(AutoName):
     EXISTS = auto()
     EXPLAIN = auto()
     EXTRACT = auto()
+    FALSE = auto()
     FOLLOWING = auto()
     FORMAT = auto()
     FULL = auto()
@@ -159,6 +160,7 @@ class TokenType(AutoName):
     TEMPORARY = auto()
     TIME = auto()
     THEN = auto()
+    TRUE = auto()
     TRUNCATE = auto()
     UNBOUNDED = auto()
     UNION = auto()
@@ -293,6 +295,7 @@ class Tokenizer:
         "EXISTS": TokenType.EXISTS,
         "EXPLAIN": TokenType.EXPLAIN,
         "EXTRACT": TokenType.EXTRACT,
+        "FALSE": TokenType.FALSE,
         "FORMAT": TokenType.FORMAT,
         "FULL": TokenType.FULL,
         "FOLLOWING": TokenType.FOLLOWING,
@@ -347,6 +350,7 @@ class Tokenizer:
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TIME": TokenType.TIME,
+        "TRUE": TokenType.TRUE,
         "TRUNCATE": TokenType.TRUNCATE,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,

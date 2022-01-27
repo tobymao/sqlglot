@@ -1314,9 +1314,9 @@ class Parser:
 
     def _parse_boolean(self):
         if self._match(TokenType.TRUE):
-            return exp.Boolean(value=True)
+            return exp.Boolean(this=True)
         if self._match(TokenType.FALSE):
-            return exp.Boolean(value=False)
+            return exp.Boolean(this=False)
         return None
 
     def _parse_star(self):

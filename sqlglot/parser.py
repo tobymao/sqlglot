@@ -77,6 +77,7 @@ class Parser:
         TokenType.DESC,
         TokenType.ENGINE,
         TokenType.EXPLAIN,
+        TokenType.FALSE,
         TokenType.FOLLOWING,
         TokenType.FORMAT,
         TokenType.IF,
@@ -96,6 +97,7 @@ class Parser:
         TokenType.TABLE_SAMPLE,
         TokenType.TEMPORARY,
         TokenType.TRUNCATE,
+        TokenType.TRUE,
         TokenType.UNBOUNDED,
         *TYPE_TOKENS,
     }
@@ -1010,6 +1012,8 @@ class Parser:
             or self._parse_number()
             or self._parse_star()
             or self._parse_null()
+            or self._parse_true()
+            or self._parse_false()
         )
 
         if this:
@@ -1307,6 +1311,16 @@ class Parser:
     def _parse_null(self):
         if self._match(TokenType.NULL):
             return exp.Null()
+        return None
+
+    def _parse_true(self):
+        if self._match(TokenType.TRUE):
+            return exp._True()
+        return None
+
+    def _parse_false(self):
+        if self._match(TokenType.FALSE):
+            return exp._False()
         return None
 
     def _parse_star(self):

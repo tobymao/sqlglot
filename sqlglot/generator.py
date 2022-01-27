@@ -450,6 +450,14 @@ class Generator:
         # pylint: disable=unused-argument
         return "NULL"
 
+    def _true_sql(self, expression):
+        # pylint: disable=unused-argument
+        return "TRUE"
+
+    def _false_sql(self, expression):
+        # pylint: disable=unused-argument
+        return "FALSE"
+
     def order_sql(self, expression, flat=False):
         return self.op_expressions("ORDER BY", expression, flat=flat)
 

@@ -488,6 +488,14 @@ class Null(Expression):
     arg_types = {}
 
 
+class _True(Expression):
+    arg_types = {}
+
+
+class _False(Expression):
+    arg_types = {}
+
+
 class DataType(Expression):
     arg_types = {"this": True, "expressions": False}
 

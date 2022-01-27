@@ -488,6 +488,10 @@ class Null(Expression):
     arg_types = {}
 
 
+class Boolean(Expression):
+    pass
+
+
 class DataType(Expression):
     arg_types = {"this": True, "expressions": False}
 

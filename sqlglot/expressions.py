@@ -906,6 +906,10 @@ class Month(Func):
     pass
 
 
+class Posexplode(Func):
+    pass
+
+
 class Pow(Func):
     arg_types = {"this": True, "power": True}
     _sql_names = ["POW", "POWER"]

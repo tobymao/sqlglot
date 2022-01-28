@@ -406,8 +406,8 @@ class Generator:
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
     def join_sql(self, expression):
-        side = self.sql(expression, "side")
-        kind = self.sql(expression, "kind")
+        side = self.sql(expression, "side").upper()
+        kind = self.sql(expression, "kind").upper()
         op_sql = self.seg(" ".join(op for op in [side, kind, "JOIN"] if op))
         on_sql = self.sql(expression, "on")
 

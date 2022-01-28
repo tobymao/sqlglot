@@ -134,6 +134,41 @@ def _no_tablesample_sql(self, expression):
     return self.sql(expression.this)
 
 
+def _explode_to_unnest_sql(self, expression):
+    if isinstance(expression.this, (exp.Explode, exp.Posexplode)):
+        return self.sql(
+            exp.Join(
+                this=exp.Unnest(
+                    expressions=[expression.this.this],
+                    table=expression.args.get("table"),
+                    columns=expression.args.get("columns"),
+                    ordinality=isinstance(expression.this, exp.Posexplode),
+                ),
+                kind="cross",
+            )
+        )
+    return self.lateral_sql(expression)
+
+
+def _unnest_to_explode_sql(self, expression):
+    if isinstance(expression.this, exp.Unnest):
+        unnest = expression.this
+        udtf = exp.Posexplode if unnest.args.get("ordinality") else exp.Explode
+        return "".join(
+            self.sql(
+                exp.Lateral(
+                    this=udtf(this=expression),
+                    table=unnest.args.get("table"),
+                    columns=[column],
+                )
+            )
+            for expression, column in zip(
+                unnest.args["expressions"], unnest.args.get("columns", [])
+            )
+        )
+    return self.join_sql(expression)
+
+
 def _struct_extract_sql(self, expression):
     this = self.sql(expression, "this")
     struct_key = self.sql(expression, "expression").replace(self.quote, self.identifier)
@@ -327,6 +362,7 @@ class Hive(Dialect):
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
+        exp.Join: _unnest_to_explode_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.SetAgg: lambda self, e: f"COLLECT_SET({self.sql(e, 'this')})",
@@ -516,6 +552,7 @@ class Presto(Dialect):
         exp.If: _if_sql,
         exp.Initcap: _initcap_sql,
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT_SCALAR({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.Lateral: _explode_to_unnest_sql,
         exp.Quantile: _quantile_sql,
         exp.RegexLike: lambda self, e: f"REGEXP_LIKE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrPosition: _str_position_sql,

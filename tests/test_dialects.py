@@ -316,10 +316,6 @@ class TestDialects(unittest.TestCase):
             "a REGEXP 'x'", "REGEXP_LIKE(a, 'x')", read="hive", write="presto"
         )
         self.validate(
-            "CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write="presto"
-        )
-        self.validate("CASE WHEN x > 1 THEN 1 END", "IF(x > 1, 1)", write="presto")
-        self.validate(
             "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
             "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
             write="presto",
@@ -510,6 +506,12 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
         self.validate("CONCAT_WS('-', x)", "ARRAY_JOIN(x, '-')", write="presto")
+        self.validate("IF(x > 1, 1, 0)", "IF(x > 1, 1, 0)", write="presto")
+        self.validate(
+            "CASE WHEN 1 THEN x ELSE 0 END",
+            "CASE WHEN 1 THEN x ELSE 0 END",
+            write="presto",
+        )
 
         with self.assertRaises(UnsupportedError):
             transpile(
@@ -733,11 +735,12 @@ class TestDialects(unittest.TestCase):
         self.validate("ARRAY_AGG(x)", "COLLECT_LIST(x)", read="presto", write="hive")
         self.validate("COLLECT_SET(x)", "SET_AGG(x)", read="hive", write="presto")
         self.validate("SET_AGG(x)", "COLLECT_SET(x)", read="presto", write="hive")
-
+        self.validate("IF(x > 1, 1, 0)", "IF(x > 1, 1, 0)", write="hive")
         self.validate(
-            "CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write="hive"
+            "CASE WHEN 1 THEN x ELSE 0 END",
+            "CASE WHEN 1 THEN x ELSE 0 END",
+            write="hive",
         )
-        self.validate("CASE WHEN x > 1 THEN 1 END", "IF(x > 1, 1)", write="hive")
 
         self.validate(
             "UNIX_TIMESTAMP(x)",

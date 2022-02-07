@@ -316,10 +316,6 @@ class TestDialects(unittest.TestCase):
             "a REGEXP 'x'", "REGEXP_LIKE(a, 'x')", read="hive", write="presto"
         )
         self.validate(
-            "CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write="presto"
-        )
-        self.validate("CASE WHEN x > 1 THEN 1 END", "IF(x > 1, 1)", write="presto")
-        self.validate(
             "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
             "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
             write="presto",
@@ -580,6 +576,26 @@ class TestDialects(unittest.TestCase):
             "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
             write="presto",
         )
+        self.validate(
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            write="presto",
+        )
+        self.validate(
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            write="presto",
+        )
+        self.validate(
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a WHEN val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a WHEN val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            write="presto",
+        )
+        self.validate(
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a WHEN col_a = val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a WHEN col_a = val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            write="presto",
+        )
 
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
@@ -735,11 +751,6 @@ class TestDialects(unittest.TestCase):
         self.validate("SET_AGG(x)", "COLLECT_SET(x)", read="presto", write="hive")
 
         self.validate(
-            "CASE WHEN x > 1 THEN 1 ELSE 0 END", "IF(x > 1, 1, 0)", write="hive"
-        )
-        self.validate("CASE WHEN x > 1 THEN 1 END", "IF(x > 1, 1)", write="hive")
-
-        self.validate(
             "UNIX_TIMESTAMP(x)",
             "STR_TO_UNIX(x, '%Y-%m-%d %H:%M:%S')",
             read="hive",
@@ -834,6 +845,26 @@ class TestDialects(unittest.TestCase):
             "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
             "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
             write="spark",
+        )
+        self.validate(
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            write="hive",
+        )
+        self.validate(
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a ELSE mapped_val_general END FROM foo",
+            write="hive",
+        )
+        self.validate(
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a WHEN val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            "SELECT CASE col_a WHEN val_a THEN mapped_val_a WHEN val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            write="hive",
+        )
+        self.validate(
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a WHEN col_a = val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            "SELECT CASE WHEN col_a = val_a THEN mapped_val_a WHEN col_a = val_b THEN mapped_val_b ELSE mapped_val_general END FROM foo",
+            write="hive",
         )
 
     def test_spark(self):

@@ -512,6 +512,8 @@ class TestDialects(unittest.TestCase):
             "CASE WHEN 1 THEN x ELSE 0 END",
             write="presto",
         )
+        self.validate("x[y]", "x[y]", read="presto", identity=False)
+        self.validate("x[y]", "x[y]", write="presto", identity=False)
 
         with self.assertRaises(UnsupportedError):
             transpile(

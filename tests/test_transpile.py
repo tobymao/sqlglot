@@ -11,8 +11,8 @@ class TestTranspile(unittest.TestCase):
     fixtures_dir = os.path.join(file_dir, "fixtures")
     maxDiff = None
 
-    def validate(self, sql, target, write=None):
-        self.assertEqual(transpile(sql, write=write)[0], target)
+    def validate(self, sql, target, **kwargs):
+        self.assertEqual(transpile(sql, **kwargs)[0], target)
 
     def test_asc(self):
         self.validate("SELECT x FROM y ORDER BY x ASC", "SELECT x FROM y ORDER BY x")
@@ -233,6 +233,13 @@ class TestTranspile(unittest.TestCase):
             "CREATE TEMPORARY VIEW test AS SELECT 1",
             write="spark",
         )
+
+    @mock.patch("sqlglot.helper.logger")
+    def test_index_offset(self, mock_logger):
+        self.validate("x[0]", "x[1]", write="presto", identity=False)
+        self.validate("x[1]", "x[0]", read="presto", identity=False)
+        mock_logger.warning.assert_any_call("Applying array index offset (%s)", 1)
+        mock_logger.warning.assert_any_call("Applying array index offset (%s)", -1)
 
     def test_identity(self):
         with open(

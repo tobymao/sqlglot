@@ -2,7 +2,7 @@ import logging
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
-from sqlglot.helper import ensure_list, csv
+from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
 
@@ -67,6 +67,7 @@ class Generator:
         "quote",
         "escape",
         "pad",
+        "index_offset",
         "unsupported_level",
         "unsupported_messages",
         "_indent",
@@ -86,6 +87,7 @@ class Generator:
         escape=None,
         pad=2,
         indent=4,
+        index_offset=0,
         unsupported_level=ErrorLevel.WARN,
     ):
         # pylint: disable=too-many-arguments
@@ -100,6 +102,7 @@ class Generator:
         self.quote = quote or "'"
         self.escape = escape or "'"
         self.pad = pad
+        self.index_offset = index_offset
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
         self._indent = indent
@@ -438,9 +441,8 @@ class Generator:
         return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
 
     def literal_sql(self, expression):
-        text = expression.args.get("this") or ""
-        is_string = expression.args.get("is_string")
-        if is_string:
+        text = expression.this or ""
+        if expression.is_string:
             text = text.replace("\\", "\\\\") if self.escape == "\\" else text
             text = text.replace(Tokenizer.ESCAPE_CODE, self.escape)
             return f"{self.quote}{text}{self.quote}"
@@ -538,9 +540,12 @@ class Generator:
         return f"{this} BETWEEN {low} AND {high}"
 
     def bracket_sql(self, expression):
-        return (
-            f"{self.sql(expression, 'this')}[{self.expressions(expression, flat=True)}]"
+        expressions = apply_index_offset(
+            expression.args["expressions"], self.index_offset
         )
+        expressions = ", ".join(self.sql(e) for e in expressions)
+
+        return f"{self.sql(expression, 'this')}[{expressions}]"
 
     def case_sql(self, expression):
         pad = self.pad + 2

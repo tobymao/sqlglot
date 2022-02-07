@@ -97,22 +97,6 @@ def _approx_count_distinct_sql(self, expression):
     return f"APPROX_COUNT_DISTINCT({self.sql(expression, 'this')})"
 
 
-def _case_if_sql(self, expression):
-    if len(expression.args["ifs"]) > 1:
-        return self.case_sql(expression)
-
-    args = expression.args
-
-    return _if_sql(
-        self,
-        exp.If(
-            this=args["ifs"][0].args["this"],
-            true=args["ifs"][0].args["true"],
-            false=args.get("default"),
-        ),
-    )
-
-
 def _if_sql(self, expression):
     expressions = csv(
         self.sql(expression, "this"),
@@ -355,7 +339,6 @@ class Hive(Dialect):
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
-        exp.Case: _case_if_sql,
         exp.CTE: _no_recursive_cte_sql,
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -542,7 +525,6 @@ class Presto(Dialect):
         exp.BitwiseOr: lambda self, e: f"BITWISE_OR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseRightShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_RIGHT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.Case: _case_if_sql,
         exp.ConcatWs: _concat_ws_sql,
         exp.DataType: _datatype_sql,
         exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",

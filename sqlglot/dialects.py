@@ -17,6 +17,7 @@ class Dialect(metaclass=RegisteringMeta):
     functions = {}
     transforms = {}
     type_mapping = {}
+    index_offset = 0
 
     time_mapping = {}
     # automatically created
@@ -43,7 +44,7 @@ class Dialect(metaclass=RegisteringMeta):
                     cls.time_trie,
                 )
             )
-        if isinstance(expression, exp.Literal) and expression.args["is_string"]:
+        if isinstance(expression, exp.Literal) and expression.is_string:
             return exp.Literal.string(
                 format_time(
                     expression.this,
@@ -67,6 +68,7 @@ class Dialect(metaclass=RegisteringMeta):
             **{
                 "identifier": self.identifier,
                 "escape": self.escape,
+                "index_offset": self.index_offset,
                 "transforms": {**self.transforms, **opts.pop("transforms", {})},
                 "type_mapping": {
                     **self.type_mapping,
@@ -79,7 +81,9 @@ class Dialect(metaclass=RegisteringMeta):
         )
 
     def parser(self, **opts):
-        return Parser(functions=self.functions, **opts)
+        return Parser(
+            functions=self.functions, **{"index_offset": self.index_offset, **opts}
+        )
 
     def tokenizer(self):
         return Tokenizer(
@@ -445,6 +449,7 @@ class Postgres(Dialect):
 
 
 class Presto(Dialect):
+    index_offset = 1
     TIME_FORMAT = "'%Y-%m-%d %H:%i:%S'"
 
     def _approx_distinct_sql(self, expression):

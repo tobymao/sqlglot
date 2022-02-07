@@ -1,5 +1,9 @@
+import logging
 import re
 from enum import Enum
+
+
+logger = logging.getLogger("sqlglot")
 
 
 class AutoName(Enum):
@@ -40,6 +44,22 @@ def ensure_list(value):
 
 def csv(*args, sep=", "):
     return sep.join(arg for arg in args if arg)
+
+
+def apply_index_offset(expressions, offset):
+    import sqlglot.expressions as exp
+
+    if not offset or len(expressions) != 1:
+        return expressions
+
+    expression = expressions[0]
+
+    if isinstance(expression, exp.Literal) and expression.is_int:
+        expression = expression.copy()
+        logger.warning("Applying array index offset (%s)", offset)
+        expression.args["this"] = str(int(expression.args["this"]) + offset)
+        return [expression]
+    return expressions
 
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")

@@ -1,5 +1,4 @@
 from enum import auto
-from copy import deepcopy
 import inspect
 import sys
 
@@ -52,6 +51,11 @@ class Expression:
         if isinstance(field, (Identifier, Literal)):
             return field.this
         return ""
+
+    def copy(self):
+        from copy import deepcopy
+
+        return deepcopy(self)
 
     @property
     def depth(self):
@@ -203,7 +207,7 @@ class Expression:
         Returns:
             the transformed tree.
         """
-        node = deepcopy(self) if copy else self
+        node = self.copy() if copy else self
         new_node = fun(node)
 
         if new_node is None:
@@ -383,6 +387,14 @@ class Literal(Expression):
     @classmethod
     def string(cls, string):
         return cls(this=string, is_string=True)
+
+    @property
+    def is_string(self):
+        return self.args["is_string"]
+
+    @property
+    def is_int(self):
+        return not self.is_string and self.this.isdigit()
 
 
 class Join(Expression):

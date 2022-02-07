@@ -1,7 +1,7 @@
 import logging
 
 from sqlglot.errors import ErrorLevel, ParseError
-from sqlglot.helper import list_get
+from sqlglot.helper import apply_index_offset, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 import sqlglot.expressions as exp
 
@@ -174,6 +174,7 @@ class Parser:
         "error_message_context",
         "code",
         "errors",
+        "index_offset",
         "_tokens",
         "_chunks",
         "_index",
@@ -182,10 +183,17 @@ class Parser:
         "_prev",
     )
 
-    def __init__(self, functions=None, error_level=None, error_message_context=None):
+    def __init__(
+        self,
+        functions=None,
+        error_level=None,
+        error_message_context=100,
+        index_offset=0,
+    ):
         self.functions = {**self.FUNCTIONS, **(functions or {})}
         self.error_level = error_level or ErrorLevel.RAISE
-        self.error_message_context = error_message_context or 100
+        self.error_message_context = error_message_context
+        self.index_offset = index_offset
         self.reset()
 
     def reset(self):
@@ -1155,6 +1163,7 @@ class Parser:
             if isinstance(this, exp.Identifier) and this.this.upper() == "ARRAY":
                 this = self.expression(exp.Array, expressions=expressions)
             else:
+                expressions = apply_index_offset(expressions, -self.index_offset)
                 this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
             if not self._match(TokenType.R_BRACKET):

@@ -209,6 +209,13 @@ class TestDialects(unittest.TestCase):
             write="mysql",
         )
 
+        self.validate(
+            "x ILIKE '%y'",
+            "LOWER(x) LIKE '%y'",
+            read="postgres",
+            write="mysql",
+        )
+
     def test_starrocks(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",

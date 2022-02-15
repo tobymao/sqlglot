@@ -683,6 +683,9 @@ class Generator:
     def gte_sql(self, expression):
         return self.binary(expression, ">=")
 
+    def ilike_sql(self, expression):
+        return self.binary(expression, "ILIKE")
+
     def is_sql(self, expression):
         return self.binary(expression, "IS")
 

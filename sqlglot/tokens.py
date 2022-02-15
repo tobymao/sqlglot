@@ -114,6 +114,7 @@ class TokenType(AutoName):
     HAVING = auto()
     HINT = auto()
     IF = auto()
+    ILIKE = auto()
     IN = auto()
     INNER = auto()
     INSERT = auto()
@@ -303,6 +304,7 @@ class Tokenizer:
         "GROUP BY": TokenType.GROUP,
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
+        "ILIKE": TokenType.ILIKE,
         "IN": TokenType.IN,
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,

@@ -110,6 +110,15 @@ def _if_sql(self, expression):
     return f"IF({expressions})"
 
 
+def _no_ilike_sql(self, expression):
+    return self.like_sql(
+        exp.Like(
+            this=exp.Lower(this=expression.this),
+            expression=expression.args["expression"],
+        )
+    )
+
+
 def _no_recursive_cte_sql(self, expression):
     if expression.args.get("recursive"):
         self.unsupported("Recursive CTEs are unsupported")
@@ -349,6 +358,7 @@ class Hive(Dialect):
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
+        exp.ILike: _no_ilike_sql,
         exp.Join: _unnest_to_explode_sql,
         exp.JSONPath: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
@@ -420,6 +430,7 @@ class MySQL(Dialect):
     time_mapping = MYSQL_TIME_MAPPING
 
     transforms = {
+        exp.ILike: _no_ilike_sql,
         exp.TableSample: _no_tablesample_sql,
     }
 
@@ -537,6 +548,7 @@ class Presto(Dialect):
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
         exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
+        exp.ILike: _no_ilike_sql,
         exp.Initcap: _initcap_sql,
         exp.JSONPath: lambda self, e: f"JSON_EXTRACT_SCALAR({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Lateral: _explode_to_unnest_sql,

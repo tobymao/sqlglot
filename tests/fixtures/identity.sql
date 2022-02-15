@@ -53,6 +53,8 @@ POSEXPLODE("x") AS ("a", "b", "c")
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
 x RLIKE '%[0-9]+$'
+x LIKE '%y%'
+x ILIKE '%y%'
 INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months

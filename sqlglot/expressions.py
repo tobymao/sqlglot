@@ -602,11 +602,15 @@ class GTE(Binary):
     pass
 
 
-class Is(Binary):
+class ILike(Binary):
     pass
 
 
 class IntDiv(Binary):
+    pass
+
+
+class Is(Binary):
     pass
 
 
@@ -901,6 +905,10 @@ class Log10(Func):
     pass
 
 
+class Lower(Func):
+    pass
+
+
 class Map(Func):
     arg_types = {"keys": True, "values": True}
     is_var_len_args = True
@@ -1028,6 +1036,10 @@ class UnixToTime(Func):
 
 
 class UnixToTimeStr(Func):
+    pass
+
+
+class Upper(Func):
     pass
 
 

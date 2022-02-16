@@ -288,5 +288,5 @@ class TestTranspile(unittest.TestCase):
         )
         self.validate(
             "SELECT ARRAY_SORT(a, (x, y) -> CASE WHEN x < y THEN -1 WHEN x > y THEN 1 ELSE 0 END)",
-            "SELECT ARRAY_SORT(a, (x, y) -> CASE WHEN x < y THEN -1 WHEN x > y THEN 1 ELSE 0 END)"
+            "SELECT ARRAY_SORT(a, (x, y) -> CASE WHEN x < y THEN -1 WHEN x > y THEN 1 ELSE 0 END)",
         )

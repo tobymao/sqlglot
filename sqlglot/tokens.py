@@ -163,6 +163,7 @@ class TokenType(AutoName):
     THEN = auto()
     TRUE = auto()
     TRUNCATE = auto()
+    TRY_CAST = auto()
     UNBOUNDED = auto()
     UNION = auto()
     UNNEST = auto()
@@ -354,6 +355,7 @@ class Tokenizer:
         "TIME": TokenType.TIME,
         "TRUE": TokenType.TRUE,
         "TRUNCATE": TokenType.TRUNCATE,
+        "TRY_CAST": TokenType.TRY_CAST,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
         "UNNEST": TokenType.UNNEST,

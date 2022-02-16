@@ -716,6 +716,11 @@ class Generator:
     def sub_sql(self, expression):
         return self.binary(expression, "-")
 
+    def trycast_sql(self, expression):
+        return (
+            f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
+        )
+
     def binary(self, expression, op, newline=False):
         sep = "\n" if newline else " "
         return f"{self.sql(expression, 'this')}{sep}{op} {self.sql(expression, 'expression')}"

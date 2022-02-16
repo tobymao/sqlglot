@@ -717,6 +717,10 @@ class Interval(Expression):
     arg_types = {"this": True, "unit": True}
 
 
+class TryCast(Cast):
+    pass
+
+
 # Functions
 class Func(Expression):
     """

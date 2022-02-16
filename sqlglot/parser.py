@@ -22,6 +22,10 @@ class Parser:
         error_message_context (int): determines the amount of context to capture from
             a query string when displaying the error message (in number of characters).
             Default: 50.
+        index_offset (int): Index offset for arrays eg ARRAY[0] vs ARRAY[1] as the head of a list
+            Default: 0
+        strict_cast (boolean): if true, cast is expected to raise an error on failure
+            Default: True
     """
 
     def _parse_decimal(args):
@@ -102,8 +106,12 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    FUNC_TOKENS = {
+    CASTS = {
         TokenType.CAST,
+        TokenType.TRY_CAST,
+    }
+
+    FUNC_TOKENS = {
         TokenType.COUNT,
         TokenType.EXISTS,
         TokenType.EXTRACT,
@@ -115,6 +123,7 @@ class Parser:
         TokenType.VAR,
         TokenType.LEFT,
         TokenType.RIGHT,
+        *CASTS,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -175,6 +184,7 @@ class Parser:
         "code",
         "errors",
         "index_offset",
+        "strict_cast",
         "_tokens",
         "_chunks",
         "_index",
@@ -189,11 +199,13 @@ class Parser:
         error_level=None,
         error_message_context=100,
         index_offset=0,
+        strict_cast=True,
     ):
         self.functions = {**self.FUNCTIONS, **(functions or {})}
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
+        self.strict_cast = strict_cast
         self.reset()
 
     def reset(self):
@@ -1054,9 +1066,10 @@ class Parser:
         ):
             return None
 
-        if self._match(TokenType.CAST):
+        if self._match_set(self.CASTS):
+            strict = self.strict_cast and self._prev.token_type == TokenType.CAST
             self._advance()
-            this = self._parse_cast()
+            this = self._parse_cast(strict)
         elif self._match(TokenType.COUNT):
             self._advance()
             this = self._parse_count()
@@ -1208,7 +1221,7 @@ class Parser:
 
         return self.expression(exp.Extract, this=this, expression=self._parse_type())
 
-    def _parse_cast(self):
+    def _parse_cast(self, strict):
         this = self._parse_conjunction()
 
         if not self._match(TokenType.ALIAS):
@@ -1219,7 +1232,7 @@ class Parser:
         if not to:
             self.raise_error("Expected TYPE after CAST")
 
-        return self.expression(exp.Cast, this=this, to=to)
+        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
     def _parse_window(self, this):
         if not self._match(TokenType.OVER):

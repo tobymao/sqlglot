@@ -832,20 +832,12 @@ class TestDialects(unittest.TestCase):
         self.validate("1L", "CAST(1 AS BIGINT)", read="hive")
         self.validate("1.0bd", "CAST(1.0 AS DECIMAL)", read="hive")
 
+        self.validate("TRY_CAST(1 AS INT)", "CAST(1 AS INT)", write="hive")
         self.validate(
-            "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
-            "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
-            write="spark",
+            "CAST(1 AS INT)", "TRY_CAST(1 AS INTEGER)", read="hive", write="presto"
         )
         self.validate(
-            "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t (a, b)",
-            "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) t AS b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
-            "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
-            write="spark",
+            "CAST(1 AS INT)", "CAST(1 AS INT)", read="hive", write="starrocks"
         )
 
     def test_spark(self):
@@ -932,6 +924,22 @@ class TestDialects(unittest.TestCase):
                 write="spark",
                 unsupported_level=ErrorLevel.RAISE,
             )
+
+        self.validate(
+            "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
+            "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
+            write="spark",
+        )
+        self.validate(
+            "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t (a, b)",
+            "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) t AS b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
+            "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
+            write="spark",
+        )
 
     def test_sqlite(self):
         self.validate(

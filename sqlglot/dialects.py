@@ -18,6 +18,7 @@ class Dialect(metaclass=RegisteringMeta):
     transforms = {}
     type_mapping = {}
     index_offset = 0
+    strict_cast = True
 
     time_mapping = {}
     # automatically created
@@ -82,7 +83,12 @@ class Dialect(metaclass=RegisteringMeta):
 
     def parser(self, **opts):
         return Parser(
-            functions=self.functions, **{"index_offset": self.index_offset, **opts}
+            functions=self.functions,
+            **{
+                "index_offset": self.index_offset,
+                "strict_cast": self.strict_cast,
+                **opts,
+            },
         )
 
     def tokenizer(self):
@@ -129,6 +135,10 @@ def _no_recursive_cte_sql(self, expression):
 def _no_tablesample_sql(self, expression):
     self.unsupported("TABLESAMPLE unsupported")
     return self.sql(expression.this)
+
+
+def _no_trycast_sql(self, expression):
+    return self.cast_sql(expression)
 
 
 def _explode_to_unnest_sql(self, expression):
@@ -262,6 +272,7 @@ class Hive(Dialect):
     quotes = {"'", '"'}
     escape = "\\"
     encode = "utf-8"
+    strict_cast = False
     numeric_literals = {
         "L": "BIGINT",
         "S": "SMALLINT",
@@ -376,6 +387,7 @@ class Hive(Dialect):
         exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.TsOrDsToDateStr: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
         exp.TsOrDsToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
+        exp.TryCast: _no_trycast_sql,
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), Hive._time_format(self, e))})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: _unix_to_time,
@@ -426,12 +438,14 @@ Hive.functions = {
 
 class MySQL(Dialect):
     identifier = "`"
+    strict_cast = False
 
     time_mapping = MYSQL_TIME_MAPPING
 
     transforms = {
         exp.ILike: _no_ilike_sql,
         exp.TableSample: _no_tablesample_sql,
+        exp.TryCast: _no_trycast_sql,
     }
 
 
@@ -444,6 +458,8 @@ class StarRocks(MySQL):
 
 
 class Postgres(Dialect):
+    strict_cast = False
+
     type_mapping = {
         exp.DataType.Type.TINYINT: "SMALLINT",
         exp.DataType.Type.FLOAT: "REAL",
@@ -454,6 +470,7 @@ class Postgres(Dialect):
     transforms = {
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TableSample: _no_tablesample_sql,
+        exp.TryCast: _no_trycast_sql,
     }
 
     functions = {"TO_TIMESTAMP": exp.StrToTime.from_arg_list}

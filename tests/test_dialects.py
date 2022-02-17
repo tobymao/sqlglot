@@ -592,6 +592,19 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "SELECT a FROM x CROSS JOIN UNNEST(ARRAY(y))AS t (a)",
+            "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
+            read="presto",
+            write="hive",
+        )
+        self.validate(
+            "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
+            "SELECT a FROM x CROSS JOIN UNNEST(ARRAY[y]) AS t (a)",
+            read="hive",
+            write="presto",
+        )
+
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")

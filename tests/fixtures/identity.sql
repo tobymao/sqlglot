@@ -273,6 +273,8 @@ SELECT tf.* FROM (SELECT 0) AS t LATERAL VIEW STACK(1, 2) tf AS col0, col1, col2
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (score)
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (a, b)
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) WITH ORDINALITY AS t (a, b)
+SELECT student, score FROM tests CROSS JOIN UNNEST(x.scores) AS t (score)
+SELECT student, score FROM tests CROSS JOIN UNNEST(ARRAY(x.scores)) AS t (score)
 CREATE TABLE a.b AS SELECT 1
 CREATE TABLE a.b AS SELECT a FROM a.c
 CREATE TABLE IF NOT EXISTS x AS SELECT a FROM d

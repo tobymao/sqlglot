@@ -730,7 +730,7 @@ class Parser:
         if not self._match(TokenType.L_PAREN):
             self.raise_error("Expecting ( after unnest")
 
-        expressions = self._parse_csv(self._parse_id_var)
+        expressions = self._parse_csv(self._parse_table)
 
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")

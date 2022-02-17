@@ -280,13 +280,3 @@ class TestTranspile(unittest.TestCase):
 
         with self.assertRaises(ParseError):
             transpile("x + 1 (")
-
-    def test_lambda(self):
-        self.validate(
-            "SELECT TRANSFORM(a, x -> UPPER(x)) FROM foo",
-            "SELECT TRANSFORM(a, x -> UPPER(x)) FROM foo",
-        )
-        self.validate(
-            "SELECT ARRAY_SORT(a, (x, y) -> CASE WHEN x < y THEN -1 WHEN x > y THEN 1 ELSE 0 END)",
-            "SELECT ARRAY_SORT(a, (x, y) -> CASE WHEN x < y THEN -1 WHEN x > y THEN 1 ELSE 0 END)",
-        )

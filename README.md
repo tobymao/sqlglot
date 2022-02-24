@@ -161,7 +161,7 @@ import sqlglot.expressions as exp
 expression_tree = sqlglot.parse_one("SELECT a FROM x")
 
 def transformer(node):
-    if isinstance(node, exp.Column) and node.args["this"].text == "a":
+    if isinstance(node, exp.Column) and node.text("this") == "a":
         return sqlglot.parse_one("FUN(a)")
     return node
 

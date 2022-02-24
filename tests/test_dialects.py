@@ -77,6 +77,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate("MONTH(x)", "MONTH(x)", write="duckdb", identity=False)
+        self.validate("YEAR(x)", "YEAR(x)", write="duckdb", identity=False)
         self.validate("DAY(x)", "DAY(x)", write="duckdb", identity=False)
 
         self.validate(
@@ -507,6 +508,16 @@ class TestDialects(unittest.TestCase):
             read="hive",
             write="presto",
         )
+
+        self.validate("YEAR(x)", "YEAR(x)", read="presto", write="spark")
+        self.validate("YEAR(x)", "YEAR(x)", read="presto", write="hive")
+        self.validate(
+            "YEAR(x)",
+            "YEAR(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))",
+            read="hive",
+            write="presto",
+        )
+
         self.validate(
             "CONCAT_WS('-', 'a', 'b')",
             "ARRAY_JOIN(ARRAY['a', 'b'], '-')",
@@ -916,6 +927,12 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "MONTH('2021-03-01')",
             "MONTH(CAST('2021-03-01' AS DATE))",
+            read="spark",
+            write="duckdb",
+        )
+        self.validate(
+            "YEAR('2021-03-01')",
+            "YEAR(CAST('2021-03-01' AS DATE))",
             read="spark",
             write="duckdb",
         )

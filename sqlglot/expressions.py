@@ -1063,6 +1063,10 @@ class VarianceSamp(AggFunc):
     pass
 
 
+class Year(Func):
+    pass
+
+
 def _norm_args(expression):
     return {
         k: _norm_arg(arg) if not isinstance(arg, list) else [_norm_arg(a) for a in arg]

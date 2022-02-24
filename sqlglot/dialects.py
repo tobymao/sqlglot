@@ -433,6 +433,7 @@ Hive.functions = {
     "SIZE": exp.ArraySize.from_arg_list,
     "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
     "UNIX_TIMESTAMP": _format_time(exp.StrToUnix, Hive, Hive.TIME_FORMAT),
+    "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
 }
 
 

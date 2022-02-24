@@ -408,7 +408,6 @@ class Tokenizer:
     COMMANDS = {
         TokenType.ALTER,
         TokenType.ADD_FILE,
-        TokenType.DELETE,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,
         TokenType.SET,

@@ -304,6 +304,11 @@ class Generator:
         args = f"({args})" if args else ""
         return f"{type_sql}{args}"
 
+    def delete_sql(self, expression):
+        this = self.sql(expression, "this")
+        where_sql = self.sql(expression, "where")
+        return f"DELETE FROM {this}{where_sql}"
+
     def drop_sql(self, expression):
         this = self.sql(expression, "this")
         kind = expression.args["kind"].upper()
@@ -391,7 +396,7 @@ class Generator:
     def update_sql(self, expression):
         this = self.sql(expression, "this")
         set_sql = self.expressions(expression)
-        where_sql = self.sql(expression.args.get("where"))
+        where_sql = self.sql(expression, "where")
         return f"UPDATE {this} SET {set_sql}{where_sql}"
 
     def values_sql(self, expression):

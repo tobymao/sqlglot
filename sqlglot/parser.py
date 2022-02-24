@@ -338,6 +338,9 @@ class Parser:
         if self._match(TokenType.UPDATE):
             return self._parse_update()
 
+        if self._match(TokenType.DELETE):
+            return self._parse_delete()
+
         if self._match(TokenType.CACHE):
             return self._parse_cache()
 
@@ -460,17 +463,26 @@ class Parser:
 
         return self.expression(
             exp.Insert,
-            this=self._parse_table(None),
+            this=self._parse_table(alias=None),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_select(),
             overwrite=overwrite,
         )
 
+    def _parse_delete(self):
+        self._match(TokenType.FROM)
+
+        return self.expression(
+            exp.Delete,
+            this=self._parse_table(alias=None),
+            where=self._parse_where(),
+        )
+
     def _parse_update(self):
         return self.expression(
             exp.Update,
-            this=self._parse_table(None),
+            this=self._parse_table(alias=None),
             expressions=self._match(TokenType.SET)
             and self._parse_csv(self._parse_equality),
             where=self._parse_where(),

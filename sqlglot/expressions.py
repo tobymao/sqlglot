@@ -300,6 +300,10 @@ class ColumnDef(Expression):
     }
 
 
+class Delete(Expression):
+    arg_types = {"this": True, "where": False}
+
+
 class Drop(Expression):
     arg_types = {"this": False, "kind": False, "exists": False}
 

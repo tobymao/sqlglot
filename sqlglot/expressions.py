@@ -439,7 +439,7 @@ class Unnest(Expression):
 
 
 class Update(Expression):
-    arg_types = {"this": True, "expressions": True, "where": False}
+    arg_types = {"this": True, "expressions": True, "from": False, "where": False}
 
 
 class Values(Expression):

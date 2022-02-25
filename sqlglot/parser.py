@@ -494,10 +494,13 @@ class Parser:
     def _parse_update(self):
         return self.expression(
             exp.Update,
-            this=self._parse_table(alias=None),
-            expressions=self._match(TokenType.SET)
-            and self._parse_csv(self._parse_equality),
-            where=self._parse_where(),
+            **{
+                "this": self._parse_table(alias=None),
+                "expressions": self._match(TokenType.SET)
+                and self._parse_csv(self._parse_equality),
+                "from": self._parse_from(),
+                "where": self._parse_where(),
+            },
         )
 
     def _parse_uncache(self):
@@ -596,7 +599,7 @@ class Parser:
 
         return self.expression(
             exp.CTE,
-            this=self._parse_select(),
+            this=self._parse_statement(),
             expressions=expressions,
             recursive=recursive,
         )

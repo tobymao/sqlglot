@@ -461,7 +461,7 @@ class Parser:
         properties = []
 
         if self._match(TokenType.WITH):
-            self._match(TokenType.L_PAREN)
+            self._match_l_paren()
             properties.extend(
                 self._parse_csv(
                     lambda: self.expression(
@@ -471,8 +471,7 @@ class Parser:
                     )
                 )
             )
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expecting )")
+            self._match_r_paren()
         else:
             if self._match(TokenType.STORED):
                 self._match(TokenType.ALIAS)
@@ -485,7 +484,7 @@ class Parser:
                 )
 
             if self._match(TokenType.PROPERTIES):
-                self._match(TokenType.L_PAREN)
+                self._match_l_paren()
                 properties.extend(
                     self._parse_csv(
                         lambda: self.expression(
@@ -495,8 +494,7 @@ class Parser:
                         )
                     )
                 )
-                if not self._match(TokenType.R_PAREN):
-                    self.raise_error("Expecting )")
+                self._match_r_paren()
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None
@@ -550,16 +548,13 @@ class Parser:
         options = []
 
         if self._match(TokenType.OPTIONS):
-            if not self._match(TokenType.L_PAREN):
-                self.raise_error("Expecting (")
-
+            self._match_l_paren()
             k = self._parse_string()
             self._match(TokenType.EQ)
             v = self._parse_string()
             options = [k, v]
+            self._match_r_paren()
 
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expecting )")
         self._match(TokenType.ALIAS)
         return self.expression(
             exp.Cache,
@@ -573,9 +568,6 @@ class Parser:
         if not self._match(TokenType.PARTITION):
             return None
 
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error("Expecting ( after PARTITION")
-
         def parse_values():
             k = self._parse_var()
             if self._match(TokenType.EQ):
@@ -583,10 +575,9 @@ class Parser:
                 return (k, v)
             return (k, None)
 
+        self._match_l_paren()
         values = self._parse_csv(parse_values)
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expecting ) after PARTITION")
+        self._match_r_paren()
 
         return self.expression(
             exp.Partition,
@@ -602,11 +593,9 @@ class Parser:
         )
 
     def _parse_value(self):
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error("Expected ( for values")
+        self._match_l_paren()
         expressions = self._parse_csv(self._parse_conjunction)
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expected ) for values")
+        self._match_r_paren()
         return self.expression(exp.Tuple, expressions=expressions)
 
     def _parse_cte(self):
@@ -642,7 +631,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             this = self._parse_select()
-            self._match(TokenType.R_PAREN)
+            self._match_r_paren()
             this = self._parse_alias(this)
 
         if isinstance(this, exp.Alias) or self._match(TokenType.SELECT):
@@ -742,9 +731,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             expression = self._parse_cte()
-
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expecting )")
+            self._match_r_paren()
         else:
             db = None
             table = self._parse_function(schema=schema) or self._parse_id_var()
@@ -775,13 +762,9 @@ class Parser:
         if not self._match(TokenType.UNNEST):
             return None
 
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error("Expecting ( after unnest")
-
+        self._match_l_paren()
         expressions = self._parse_csv(self._parse_table)
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expecting )")
+        self._match_r_paren()
 
         ordinality = self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY)
         self._match(TokenType.ALIAS)
@@ -800,9 +783,7 @@ class Parser:
             table=table,
             columns=columns,
         )
-
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expecting )")
+        self._match_r_paren()
 
         return unnest
 
@@ -810,15 +791,14 @@ class Parser:
         if not self._match(TokenType.TABLE_SAMPLE):
             return this
 
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error("Expecting (")
-
         bucket_numerator = None
         bucket_denominator = None
         bucket_field = None
         percent = None
         rows = None
         size = None
+
+        self._match_l_paren()
 
         if self._match(TokenType.BUCKET):
             bucket_numerator = self._parse_number()
@@ -836,8 +816,7 @@ class Parser:
             else:
                 size = num
 
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expecting )")
+        self._match_r_paren()
 
         return self.expression(
             exp.TableSample,
@@ -935,9 +914,7 @@ class Parser:
                 exp.RegexLike, this=this, expression=self._parse_term()
             )
         elif self._match(TokenType.IN):
-            if not self._match(TokenType.L_PAREN):
-                self.raise_error("Expected ( after IN", self._prev)
-
+            self._match_l_paren()
             query = self._parse_select()
 
             if query:
@@ -947,8 +924,7 @@ class Parser:
                     exp.In, this=this, expressions=self._parse_csv(self._parse_term)
                 )
 
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expected ) after IN")
+            self._match_r_paren()
         elif self._match(TokenType.BETWEEN):
             low = self._parse_term()
             self._match(TokenType.AND)
@@ -1025,8 +1001,7 @@ class Parser:
                 self._retreat(index)
                 return None
 
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expecting )")
+            self._match_r_paren()
 
         if nested and self._match(TokenType.LT):
             expressions = self._parse_csv(self._parse_types)
@@ -1090,9 +1065,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             this = self._parse_conjunction() or self._parse_select()
-
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expecting )")
+            self._match_r_paren()
             return self.expression(exp.Paren, this=this)
 
         return None
@@ -1148,9 +1121,7 @@ class Parser:
                             f"The number of provided arguments ({len(args)}) is greater than "
                             f"the maximum number of supported arguments ({len(this.arg_types)})"
                         )
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expected )")
-
+        self._match_r_paren()
         return self._parse_window(this)
 
     def _parse_lambda(self):
@@ -1286,9 +1257,7 @@ class Parser:
         if not self._match(TokenType.OVER):
             return this
 
-        if not self._match(TokenType.L_PAREN):
-            self.raise_error("Expecting ( after OVER")
-
+        self._match_l_paren()
         partition = None
 
         if self._match(TokenType.PARTITION_BY):
@@ -1314,8 +1283,7 @@ class Parser:
                 end_side=end["side"],
             )
 
-        if not self._match(TokenType.R_PAREN):
-            self.raise_error("Expecting )")
+        self._match_r_paren()
 
         return self.expression(
             exp.Window, this=this, partition_by=partition, order=order, spec=spec
@@ -1343,8 +1311,7 @@ class Parser:
                 this=this,
                 expressions=self._parse_csv(self._parse_id_var),
             )
-            if not self._match(TokenType.R_PAREN):
-                self.raise_error("Expecting )")
+            self._match_r_paren()
             return aliases
 
         alias = self._parse_id_var()
@@ -1436,3 +1403,11 @@ class Parser:
             return True
 
         return None
+
+    def _match_l_paren(self):
+        if not self._match(TokenType.L_PAREN):
+            self.raise_error("Expecting (")
+
+    def _match_r_paren(self):
+        if not self._match(TokenType.R_PAREN):
+            self.raise_error("Expecting )")

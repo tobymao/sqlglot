@@ -83,7 +83,6 @@ class Parser:
         TokenType.EXPLAIN,
         TokenType.FALSE,
         TokenType.FOLLOWING,
-        TokenType.FORMAT,
         TokenType.IF,
         TokenType.INTERVAL,
         TokenType.LAZY,
@@ -115,7 +114,6 @@ class Parser:
         TokenType.COUNT,
         TokenType.EXISTS,
         TokenType.EXTRACT,
-        TokenType.FORMAT,
         TokenType.IF,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
@@ -402,19 +400,10 @@ class Parser:
         exists = self._parse_exists(not_=True)
         this = self._parse_table(None, schema=True)
         expression = None
-        file_format = None
+        properties = None
 
         if create_token.token_type == TokenType.TABLE:
-            if self._match(TokenType.STORED):
-                self._match(TokenType.ALIAS)
-                file_format = self.expression(exp.FileFormat, this=self._parse_var())
-            elif self._match(TokenType.WITH):
-                self._match(TokenType.L_PAREN)
-                self._match(TokenType.FORMAT)
-                self._match(TokenType.EQ)
-                file_format = self.expression(exp.FileFormat, this=self._parse_string())
-                if not self._match(TokenType.R_PAREN):
-                    self.raise_error("Expected ) after format")
+            properties = self._parse_properties()
 
         if self._match(TokenType.ALIAS):
             expression = self._parse_cte()
@@ -462,11 +451,55 @@ class Parser:
             kind=create_token.text,
             expression=expression,
             exists=exists,
-            file_format=file_format,
+            properties=properties,
             temporary=temporary,
             replace=replace,
             **options,
         )
+
+    def _parse_properties(self):
+        properties = []
+
+        if self._match(TokenType.WITH):
+            self._match(TokenType.L_PAREN)
+            properties.extend(
+                self._parse_csv(
+                    lambda: self.expression(
+                        exp.Property,
+                        this=exp.Literal.string(self._parse_var().this),
+                        value=self._match(TokenType.EQ) and self._parse_string(),
+                    )
+                )
+            )
+            if not self._match(TokenType.R_PAREN):
+                self.raise_error("Expecting )")
+        else:
+            if self._match(TokenType.STORED):
+                self._match(TokenType.ALIAS)
+                properties.append(
+                    self.expression(
+                        exp.Property,
+                        this=exp.Literal.string("FORMAT"),
+                        value=exp.Literal.string(self._parse_var().text("this")),
+                    )
+                )
+
+            if self._match(TokenType.PROPERTIES):
+                self._match(TokenType.L_PAREN)
+                properties.extend(
+                    self._parse_csv(
+                        lambda: self.expression(
+                            exp.Property,
+                            this=self._parse_string(),
+                            value=self._match(TokenType.EQ) and self._parse_string(),
+                        )
+                    )
+                )
+                if not self._match(TokenType.R_PAREN):
+                    self.raise_error("Expecting )")
+        if properties:
+            return self.expression(exp.Properties, expressions=properties)
+        return None
 
     def _parse_insert(self):
         overwrite = self._match(TokenType.OVERWRITE)

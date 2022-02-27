@@ -459,6 +459,18 @@ class TestDialects(unittest.TestCase):
 
         sql = transpile(ctas, read="presto", write="spark")[0]
         self.assertEqual(sql, "CREATE TABLE test STORED AS PARQUET AS SELECT 1")
+        self.validate(
+            "CREATE TABLE test WITH (FORMAT = 'PARQUET', X = '1', Z = '2') AS SELECT 1",
+            "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('X' = '1', 'Z' = '2') AS SELECT 1",
+            read="presto",
+            write="spark",
+        )
+        self.validate(
+            "CREATE TABLE test STORED AS parquet TBLPROPERTIES ('x' = '1', 'Z' = '2') AS SELECT 1",
+            "CREATE TABLE test WITH (FORMAT = 'parquet', x = '1', Z = '2') AS SELECT 1",
+            read="spark",
+            write="presto",
+        )
 
         sql = transpile(
             "SELECT JSON_EXTRACT(x, '$.name')", read="presto", write="spark"

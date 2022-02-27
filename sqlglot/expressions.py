@@ -252,7 +252,7 @@ class Create(Expression):
         "kind": True,
         "expression": False,
         "exists": False,
-        "file_format": False,
+        "properties": False,
         "temporary": False,
         "replace": False,
         "engine": False,
@@ -310,10 +310,6 @@ class Drop(Expression):
 
 class Except(Expression):
     arg_types = {"this": True, "expression": True, "distinct": False}
-
-
-class FileFormat(Expression):
-    pass
 
 
 class From(Expression):
@@ -415,6 +411,14 @@ class Order(Expression):
 
 class Ordered(Expression):
     arg_types = {"this": True, "desc": False}
+
+
+class Properties(Expression):
+    arg_types = {"expressions": True}
+
+
+class Property(Expression):
+    arg_types = {"this": True, "value": True}
 
 
 class Table(Expression):

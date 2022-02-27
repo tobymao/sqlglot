@@ -22,25 +22,24 @@ class Rewriter:
         self.expression = deepcopy(expression) if copy else expression
 
     @chainable
-    def ctas(self, table, db=None, file_format=None):
-        create = self.expression.find(exp.Create)
+    def ctas(self, table, db=None, **properties):
+        if self.expression.find(exp.Create):
+            raise ValueError("Expression already a CTAS")
 
-        if create:
-            create.args["db"] = db
-            create.args["this"] = table
-            if file_format is not None:
-                create.args["file_format"] = exp.FileFormat(this=file_format)
-        else:
-            create = exp.Create(
-                this=exp.Table(this=table, db=db),
-                kind="table",
-                expression=self.expression,
-                file_format=exp.FileFormat(this=file_format)
-                if file_format is not None
-                else None,
-            )
-
-        return create
+        return exp.Create(
+            this=exp.Table(this=table, db=db),
+            kind="table",
+            expression=self.expression,
+            properties=exp.Properties(
+                expressions=[
+                    exp.Property(
+                        this=exp.Literal.string(k),
+                        value=exp.Literal.string(v),
+                    )
+                    for k, v in properties.items()
+                ]
+            ),
+        )
 
     @chainable
     def add_selects(self, *selects, read=None):

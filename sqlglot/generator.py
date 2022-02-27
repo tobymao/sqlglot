@@ -146,6 +146,11 @@ class Generator:
     def seg(self, sql, sep=" ", level=None, pad=0):
         return f"{self.sep(sep)}{self.indent(sql, level=level, pad=pad)}"
 
+    def properties(self, name, expression):
+        if expression.args["expressions"]:
+            return f"{self.seg(name)} ({self.sep('')}{self.expressions(expression)}{self.sep('')})"
+        return ""
+
     def wrap(self, expression):
         self._level += 1
         this_sql = self.indent(self.sql(expression, "this"))
@@ -262,8 +267,7 @@ class Generator:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
-        file_format = self.sql(expression, "file_format")
-        file_format = f" {file_format} " if file_format else " "
+        properties = self.sql(expression, "properties")
         engine = self.sql(expression, "engine")
         engine = f"ENGINE={engine}" if engine else ""
         auto_increment = self.sql(expression, "auto_increment")
@@ -286,7 +290,7 @@ class Generator:
             if option
         )
 
-        return f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{file_format}{expression_sql}{options}"
+        return f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}{options}"
 
     def cte_sql(self, expression):
         sql = ", ".join(
@@ -321,11 +325,6 @@ class Generator:
             f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}",
         )
 
-    def fileformat_sql(self, expression):
-        if self.sql(expression, "this"):
-            self.unsupported("File formats are not supported")
-        return ""
-
     def hint_sql(self, expression):
         if self.sql(expression, "this"):
             self.unsupported("Hints are not supported")
@@ -345,6 +344,14 @@ class Generator:
             ]
         )
         return f"PARTITION({keys}) "
+
+    def properties_sql(self, expression):
+        return self.properties("WITH", expression)
+
+    def property_sql(self, expression):
+        key = expression.text("this")
+        value = self.sql(expression, "value")
+        return f"{key} = {value}"
 
     def insert_sql(self, expression):
         kind = "OVERWRITE TABLE" if expression.args.get("overwrite") else "INTO"

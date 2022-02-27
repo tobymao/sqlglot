@@ -326,11 +326,25 @@ class Hive(Dialect):
             return None
         return time_format
 
-    def _fileformat_sql(self, expression):
-        file_format = self.sql(expression, "this").replace(self.quote, "")
-        if file_format:
-            return f"STORED AS {file_format}"
-        return ""
+    def _properties_sql(self, expression):
+        expression = expression.copy()
+        properties = expression.args["expressions"]
+        stored_as = next(
+            (p for p in properties if p.text("this").upper() == "FORMAT"), None
+        )
+
+        if stored_as:
+            properties.remove(stored_as)
+            stored_as = self.seg(f"STORED AS {stored_as.text('value').upper()}")
+        else:
+            stored_as = ""
+
+        return f"{stored_as}{self.properties('TBLPROPERTIES', expression)}"
+
+    def _property_sql(self, expression):
+        key = expression.text("this")
+        value = self.sql(expression, "value")
+        return f"'{key}' = {value}"
 
     def _str_to_unix(self, expression):
         return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), Hive._time_format(self, expression))})"
@@ -367,7 +381,8 @@ class Hive(Dialect):
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
-        exp.FileFormat: _fileformat_sql,
+        exp.Properties: _properties_sql,
+        exp.Property: _property_sql,
         exp.If: _if_sql,
         exp.ILike: _no_ilike_sql,
         exp.Join: _unnest_to_explode_sql,
@@ -499,12 +514,6 @@ class Presto(Dialect):
             sql = f"{sql} WITH TIME ZONE"
         return sql
 
-    def _fileformat_sql(self, expression):
-        file_format = self.sql(expression, "this").replace(self.quote, "")
-        if file_format:
-            return f"WITH (FORMAT = '{file_format}')"
-        return ""
-
     def _date_parse_sql(self, expression):
         return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
 
@@ -564,7 +573,6 @@ class Presto(Dialect):
         exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
-        exp.FileFormat: _fileformat_sql,
         exp.If: _if_sql,
         exp.ILike: _no_ilike_sql,
         exp.Initcap: _initcap_sql,

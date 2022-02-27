@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 import unittest
 
 from sqlglot import parse_one
@@ -15,25 +16,18 @@ class TestRewriter(unittest.TestCase):
 
         self.assertEqual(
             Rewriter(expression)
-            .ctas("x", db="foo", file_format="parquet")
+            .ctas("x", db="foo", format="parquet", y="2")
             .expression.sql("hive"),
-            "CREATE TABLE foo.x STORED AS parquet AS SELECT * FROM y",
+            "CREATE TABLE foo.x STORED AS PARQUET TBLPROPERTIES ('y' = '2') AS SELECT * FROM y",
         )
 
         self.assertEqual(expression.sql(), "SELECT * FROM y")
 
         rewriter = Rewriter(expression).ctas("x")
         self.assertEqual(rewriter.expression.sql(), "CREATE TABLE x AS SELECT * FROM y")
-        self.assertEqual(
-            rewriter.ctas("y").expression.sql(),
-            "CREATE TABLE y AS SELECT * FROM y",
-        )
 
-        expression = parse_one("CREATE TABLE x AS SELECT * FROM y")
-        rewriter = Rewriter(expression, copy=False).ctas("x", file_format="ORC")
-        self.assertEqual(
-            expression.sql("hive"), "CREATE TABLE x STORED AS ORC AS SELECT * FROM y"
-        )
+        with self.assertRaises(ValueError):
+            rewriter.ctas("y").expression.sql()
 
     def test_add_selects(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x) y")

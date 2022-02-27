@@ -107,7 +107,6 @@ class TokenType(AutoName):
     EXTRACT = auto()
     FALSE = auto()
     FOLLOWING = auto()
-    FORMAT = auto()
     FULL = auto()
     FROM = auto()
     GROUP = auto()
@@ -146,6 +145,7 @@ class TokenType(AutoName):
     PERCENT = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
+    PROPERTIES = auto()
     RANGE = auto()
     RECURSIVE = auto()
     REPLACE = auto()
@@ -298,7 +298,6 @@ class Tokenizer:
         "EXPLAIN": TokenType.EXPLAIN,
         "EXTRACT": TokenType.EXTRACT,
         "FALSE": TokenType.FALSE,
-        "FORMAT": TokenType.FORMAT,
         "FULL": TokenType.FULL,
         "FOLLOWING": TokenType.FOLLOWING,
         "FROM": TokenType.FROM,
@@ -348,6 +347,7 @@ class Tokenizer:
         "SHOW": TokenType.SHOW,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
+        "TBLPROPERTIES": TokenType.PROPERTIES,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,

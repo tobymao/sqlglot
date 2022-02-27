@@ -32,6 +32,10 @@ class TestTranspile(unittest.TestCase):
             "SELECT * FROM (SELECT 1)",
         )
 
+        with self.assertRaises(ParseError):
+            transpile("1 + (2 + 3")
+            transpile("select f(")
+
     def test_space(self):
         self.validate("SELECT MIN(3)>MIN(2)", "SELECT MIN(3) > MIN(2)")
         self.validate("SELECT MIN(3)>=MIN(2)", "SELECT MIN(3) >= MIN(2)")

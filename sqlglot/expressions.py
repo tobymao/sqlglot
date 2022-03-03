@@ -451,7 +451,7 @@ class Values(Expression):
 
 
 class Schema(Expression):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": False, "expressions": True}
 
 
 class Select(Expression):

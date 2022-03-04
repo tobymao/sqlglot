@@ -193,7 +193,7 @@ class Expression:
 
         return indent + left + right
 
-    def transform(self, fun, copy=True):
+    def transform(self, fun, *args, copy=True, **kwargs):
         """
         Recursively visits all tree nodes (excluding already transformed ones)
         and applies the given transformation function to each node.
@@ -208,7 +208,7 @@ class Expression:
             the transformed tree.
         """
         node = self.copy() if copy else self
-        new_node = fun(node)
+        new_node = fun(node, *args, **kwargs)
 
         if new_node is None:
             raise ValueError("A transformed node cannot be None")
@@ -223,7 +223,7 @@ class Expression:
 
             for cn in child_nodes:
                 if isinstance(cn, Expression):
-                    new_child_node = cn.transform(fun, copy=False)
+                    new_child_node = cn.transform(fun, *args, copy=False, **kwargs)
                     new_child_node.parent = new_node
                 else:
                     new_child_node = cn

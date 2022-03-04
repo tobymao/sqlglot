@@ -95,6 +95,20 @@ class TestExpressions(unittest.TestCase):
             parse_one('select "x"').sql(dialect="hive", pretty=True) == "SELECT\n  `x`"
         )
 
+    def test_transform_with_arguments(self):
+        expression = parse_one("a")
+
+        def fun(node, alias=True):
+            if alias:
+                return parse_one("a AS a")
+            return node
+
+        transformed_expression = expression.transform(fun)
+        self.assertEqual(transformed_expression.sql(dialect="presto"), "a AS a")
+
+        transformed_expression_2 = expression.transform(fun, alias=False)
+        self.assertEqual(transformed_expression_2.sql(dialect="presto"), "a")
+
     def test_transform_simple(self):
         expression = parse_one("IF(a > 0, a, b)")
 

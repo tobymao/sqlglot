@@ -496,8 +496,10 @@ class Generator:
         )
 
     def schema_sql(self, expression):
+        this = self.sql(expression, "this")
+        this = f"{this} " if this else ""
         sql = f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
-        return f"{self.sql(expression, 'this')} {sql}"
+        return f"{this}{sql}"
 
     def star_sql(self, expression):
         # pylint: disable=unused-argument

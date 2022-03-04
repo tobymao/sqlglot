@@ -332,6 +332,7 @@ class Tokenizer:
         "OVERWRITE": TokenType.OVERWRITE,
         "PARTITION": TokenType.PARTITION,
         "PARTITION BY": TokenType.PARTITION_BY,
+        "PARTITIONED BY": TokenType.PARTITION_BY,
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,

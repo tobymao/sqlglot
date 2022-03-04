@@ -1,5 +1,6 @@
 import logging
 
+import sqlglot.constants as c
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import apply_index_offset, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -398,12 +399,14 @@ class Parser:
             self.raise_error("Expected TABLE or View")
 
         exists = self._parse_exists(not_=True)
-        this = self._parse_table(None, schema=True)
+        this = self._parse_schema(self._parse_table(alias=None, func=False))
         expression = None
         properties = None
 
         if create_token.token_type == TokenType.TABLE:
-            properties = self._parse_properties()
+            properties = self._parse_properties(
+                this if isinstance(this, exp.Schema) else None
+            )
 
         if self._match(TokenType.ALIAS):
             expression = self._parse_cte()
@@ -457,28 +460,56 @@ class Parser:
             **options,
         )
 
-    def _parse_properties(self):
+    def _parse_property(self, schema):
+        key = self._parse_var().this
+        self._match(TokenType.EQ)
+
+        if key.upper() == c.PARTITIONED_BY:
+            value = self._parse_schema() or self._parse_field()
+
+            if schema and not isinstance(value, exp.Schema):
+                columns = {v.text("this").upper() for v in value.args["expressions"]}
+                partitions = [
+                    expression
+                    for expression in schema.args["expressions"]
+                    if expression.this.text("this").upper() in columns
+                ]
+                schema.args["expressions"] = [
+                    e for e in schema.args["expressions"] if e not in partitions
+                ]
+                value = self.expression(exp.Schema, expressions=partitions)
+        else:
+            value = self._parse_string()
+
+        return self.expression(
+            exp.Property,
+            this=exp.Literal.string(key),
+            value=value,
+        )
+
+    def _parse_properties(self, schema):
         properties = []
 
         if self._match(TokenType.WITH):
             self._match_l_paren()
-            properties.extend(
-                self._parse_csv(
-                    lambda: self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(self._parse_var().this),
-                        value=self._match(TokenType.EQ) and self._parse_string(),
-                    )
-                )
-            )
+            properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
             self._match_r_paren()
         else:
+            if self._match(TokenType.PARTITION_BY):
+                properties.append(
+                    self.expression(
+                        exp.Property,
+                        this=exp.Literal.string(c.PARTITIONED_BY),
+                        value=self._parse_schema(),
+                    )
+                )
+
             if self._match(TokenType.STORED):
                 self._match(TokenType.ALIAS)
                 properties.append(
                     self.expression(
                         exp.Property,
-                        this=exp.Literal.string("FORMAT"),
+                        this=exp.Literal.string(c.FORMAT),
                         value=exp.Literal.string(self._parse_var().text("this")),
                     )
                 )
@@ -723,7 +754,7 @@ class Parser:
                 )
             )
 
-    def _parse_table(self, alias=False, schema=False):
+    def _parse_table(self, alias=False, func=True):
         unnest = self._parse_unnest()
 
         if unnest:
@@ -734,7 +765,7 @@ class Parser:
             self._match_r_paren()
         else:
             db = None
-            table = self._parse_function(schema=schema) or self._parse_id_var()
+            table = (func and self._parse_function()) or self._parse_id_var()
 
             if self._match(TokenType.DOT):
                 db = table
@@ -1075,7 +1106,7 @@ class Parser:
             self._parse_primary() or self._parse_function() or self._parse_id_var()
         )
 
-    def _parse_function(self, schema=False):
+    def _parse_function(self):
         if self._match(TokenType.CASE):
             return self._parse_case()
 
@@ -1102,25 +1133,18 @@ class Parser:
             self._advance(2)
 
             function = self.functions.get(this.upper())
+            args = self._parse_csv(self._parse_lambda)
 
-            if schema:
-                args = self._parse_csv(
-                    lambda: self._parse_column_def(self._parse_field())
-                )
-                this = self.expression(exp.Schema, this=this, expressions=args)
+            if not callable(function):
+                this = self.expression(exp.Anonymous, this=this, expressions=args)
             else:
-                args = self._parse_csv(self._parse_lambda)
-
-                if not callable(function):
-                    this = self.expression(exp.Anonymous, this=this, expressions=args)
-                else:
-                    this = function(args)
-                    self.validate_expression(this)
-                    if len(args) > len(this.arg_types) and not this.is_var_len_args:
-                        self.raise_error(
-                            f"The number of provided arguments ({len(args)}) is greater than "
-                            f"the maximum number of supported arguments ({len(this.arg_types)})"
-                        )
+                this = function(args)
+                self.validate_expression(this)
+                if len(args) > len(this.arg_types) and not this.is_var_len_args:
+                    self.raise_error(
+                        f"The number of provided arguments ({len(args)}) is greater than "
+                        f"the maximum number of supported arguments ({len(this.arg_types)})"
+                    )
         self._match_r_paren()
         return self._parse_window(this)
 
@@ -1142,6 +1166,14 @@ class Parser:
             this=self._parse_conjunction(),
             expressions=expressions,
         )
+
+    def _parse_schema(self, this=None):
+        if not self._match(TokenType.L_PAREN):
+            return this
+
+        args = self._parse_csv(lambda: self._parse_column_def(self._parse_field()))
+        self._match_r_paren()
+        return self.expression(exp.Schema, this=this, expressions=args)
 
     def _parse_column_def(self, this):
         kind = self._parse_function() or self._parse_types()

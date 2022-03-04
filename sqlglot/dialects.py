@@ -1,4 +1,5 @@
 # pylint: disable=no-member, protected-access
+import sqlglot.constants as c
 import sqlglot.expressions as exp
 from sqlglot.generator import Generator
 from sqlglot.helper import RegisteringMeta, csv, list_get
@@ -329,17 +330,28 @@ class Hive(Dialect):
     def _properties_sql(self, expression):
         expression = expression.copy()
         properties = expression.args["expressions"]
-        stored_as = next(
-            (p for p in properties if p.text("this").upper() == "FORMAT"), None
-        )
 
+        stored_as = ""
+        partitioned_by = ""
+
+        for p in properties:
+            if p.text("this").upper() == c.FORMAT:
+                stored_as = p
+            if isinstance(p.args["value"], exp.Schema):
+                partitioned_by = p
+
+        if partitioned_by:
+            properties.remove(partitioned_by)
+            partitioned_by = self.seg(
+                f"PARTITIONED BY {self.sql(partitioned_by.args['value'])}"
+            )
         if stored_as:
             properties.remove(stored_as)
             stored_as = self.seg(f"STORED AS {stored_as.text('value').upper()}")
-        else:
-            stored_as = ""
 
-        return f"{stored_as}{self.properties('TBLPROPERTIES', expression)}"
+        return (
+            f"{partitioned_by}{stored_as}{self.properties('TBLPROPERTIES', expression)}"
+        )
 
     def _property_sql(self, expression):
         key = expression.text("this")
@@ -521,6 +533,20 @@ class Presto(Dialect):
         regex = "(\w)(\w*)"  # pylint: disable=anomalous-backslash-in-string
         return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
+    def _schema_sql(self, expression):
+        if isinstance(expression.parent, exp.Property):
+            columns = ", ".join(
+                f"'{c.text('this')}'" for c in expression.args["expressions"]
+            )
+            return f"ARRAY[{columns}]"
+
+        for schema in expression.parent.find_all(exp.Schema):
+            if isinstance(schema.parent, exp.Property):
+                expression = expression.copy()
+                expression.args["expressions"].extend(schema.args["expressions"])
+
+        return self.schema_sql(expression)
+
     def _quantile_sql(self, expression):
         self.unsupported("Presto does not support exact quantiles")
         return f"APPROX_PERCENTILE({self.sql(expression, 'this')}, {self.sql(expression, 'quantile')})"
@@ -580,6 +606,7 @@ class Presto(Dialect):
         exp.Lateral: _explode_to_unnest_sql,
         exp.Quantile: _quantile_sql,
         exp.RegexLike: lambda self, e: f"REGEXP_LIKE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.Schema: _schema_sql,
         exp.StrPosition: _str_position_sql,
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",

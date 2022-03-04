@@ -48,10 +48,10 @@ ORDER BY
 short = "select 1 as a, case when 1 then 1 when 2 then 2 else 3 end as b, c from x"
 
 crazy = "SELECT 1+"
-crazy += '+'.join(str(i) for i in range(500))
-crazy += ' AS a, 2*'
-crazy += '*'.join(str(i) for i in range(500))
-crazy += ' AS b FROM x'
+crazy += "+".join(str(i) for i in range(500))
+crazy += " AS a, 2*"
+crazy += "*".join(str(i) for i in range(500))
+crazy += " AS b FROM x"
 
 
 def sqlglot_parse(sql):
@@ -65,10 +65,19 @@ def sqlparse_parse(sql):
 def moz_sql_parser_parse(sql):
     moz_sql_parser.parse(sql)
 
+
 def sqloxide_parse(sql):
-    sqloxide.parse_sql(sql, dialect='ansi')
+    sqloxide.parse_sql(sql, dialect="ansi")
 
 
-for lib in ['sqlglot_parse', 'sqlparse_parse', 'moz_sql_parser_parse', 'sqloxide_parse']:
-    for name, sql in {'short': short, 'long': long, 'crazy': crazy}.items():
-        print(f"{lib} {name}", np.mean(timeit.repeat(lambda: globals()[lib](sql), number=1)))
+for lib in [
+    "sqlglot_parse",
+    "sqlparse_parse",
+    "moz_sql_parser_parse",
+    "sqloxide_parse",
+]:
+    for name, sql in {"short": short, "long": long, "crazy": crazy}.items():
+        print(
+            f"{lib} {name}",
+            np.mean(timeit.repeat(lambda: globals()[lib](sql), number=1)),
+        )

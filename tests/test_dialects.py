@@ -628,6 +628,19 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY = ARRAY['y', 'z'])",
+            "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
+            read="presto",
+            write="hive",
+        )
+        self.validate(
+            "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
+            "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY = ARRAY['y', 'z'])",
+            read="hive",
+            write="presto",
+        )
+
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")

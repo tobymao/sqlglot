@@ -2,6 +2,7 @@
 
 disable=
     attribute-defined-outside-init,
+    consider-using-ternary,
     cyclic-import,
     import-outside-toplevel,
     invalid-name,

@@ -472,10 +472,18 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
-        sql = transpile(
-            "SELECT JSON_EXTRACT(x, '$.name')", read="presto", write="spark"
-        )[0]
-        self.assertEqual(sql, "SELECT GET_JSON_OBJECT(x, '$.name')")
+        self.validate(
+            "SELECT JSON_EXTRACT(x, '$.name')",
+            "SELECT GET_JSON_OBJECT(x, '$.name')",
+            read="presto",
+            write="spark",
+        )
+        self.validate(
+            "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
+            "SELECT GET_JSON_OBJECT(x, '$.name')",
+            read="presto",
+            write="spark",
+        )
 
         # pylint: disable=anomalous-backslash-in-string
         self.validate(

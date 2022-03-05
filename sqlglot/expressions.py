@@ -887,9 +887,13 @@ class Initcap(Func):
     pass
 
 
-class JSONPath(Func):
+class JSONExtract(Func):
     arg_types = {"this": True, "path": True}
-    _sql_names = ["JSON_PATH"]
+    _sql_names = ["JSON_EXTRACT"]
+
+
+class JSONExtractScalar(JSONExtract):
+    _sql_names = ["JSON_EXTRACT_SCALAR"]
 
 
 class Least(Func):

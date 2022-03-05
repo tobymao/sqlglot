@@ -164,7 +164,10 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("GREATEST(a, b)"), exp.Greatest)
         self.assertIsInstance(parse_one("IF(a, b, c)"), exp.If)
         self.assertIsInstance(parse_one("INITCAP(a)"), exp.Initcap)
-        self.assertIsInstance(parse_one("JSON_PATH(a, '$.name')"), exp.JSONPath)
+        self.assertIsInstance(parse_one("JSON_EXTRACT(a, '$.name')"), exp.JSONExtract)
+        self.assertIsInstance(
+            parse_one("JSON_EXTRACT_SCALAR(a, '$.name')"), exp.JSONExtractScalar
+        )
         self.assertIsInstance(parse_one("LEAST(a, b)"), exp.Least)
         self.assertIsInstance(parse_one("LN(a)"), exp.Ln)
         self.assertIsInstance(parse_one("LOG10(a)"), exp.Log10)

@@ -454,6 +454,9 @@ class Generator:
     def limit_sql(self, expression):
         return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
 
+    def offset_sql(self, expression):
+        return f"{self.seg('OFFSET')} {self.sql(expression, 'this')}"
+
     def literal_sql(self, expression):
         text = expression.this or ""
         if expression.is_string:
@@ -493,6 +496,7 @@ class Generator:
             self.sql(expression, "having"),
             self.sql(expression, "order"),
             self.sql(expression, "limit"),
+            self.sql(expression, "offset"),
             sep="",
         )
 

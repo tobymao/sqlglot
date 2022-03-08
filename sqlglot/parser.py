@@ -60,6 +60,7 @@ class Parser:
         TokenType.ARRAY,
         TokenType.DECIMAL,
         TokenType.MAP,
+        TokenType.UUID,
     }
 
     NESTED_TYPE_TOKENS = {
@@ -1187,6 +1188,7 @@ class Parser:
             "collate": None,
             "comment": None,
             "default": None,
+            "primary": None,
             "parsed": True,
         }
 
@@ -1217,6 +1219,10 @@ class Parser:
             parse_option(
                 "comment",
                 lambda: self._match(TokenType.SCHEMA_COMMENT) and self._parse_string(),
+            )
+            parse_option(
+                "primary",
+                lambda: self._match(TokenType.PRIMARY_KEY),
             )
 
         options.pop("parsed")

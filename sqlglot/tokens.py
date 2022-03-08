@@ -63,10 +63,12 @@ class TokenType(AutoName):
     VARCHAR = auto()
     TEXT = auto()
     BINARY = auto()
+    BYTEA = auto()
     JSON = auto()
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
     DATE = auto()
+    UUID = auto()
 
     # keywords
     ADD_FILE = auto()
@@ -397,9 +399,11 @@ class Tokenizer:
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,
         "BINARY": TokenType.BINARY,
+        "BYTEA": TokenType.BINARY,
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "DATE": TokenType.DATE,
+        "UUID": TokenType.UUID,
     }
 
     WHITE_SPACE = {

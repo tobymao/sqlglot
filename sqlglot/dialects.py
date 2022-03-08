@@ -1,4 +1,6 @@
 # pylint: disable=no-member, protected-access
+import re
+
 import sqlglot.constants as c
 import sqlglot.expressions as exp
 from sqlglot.generator import Generator
@@ -230,7 +232,9 @@ class DuckDB(Dialect):
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.Explode: lambda self, e: f"UNNEST({self.sql(e, 'this')})",
         exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
-        exp.RegexLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.RegexpLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.RegexpSplit: lambda self, e: f"STR_SPLIT_REGEX({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.Split: lambda self, e: f"STR_SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
         exp.TableSample: _no_tablesample_sql,
@@ -260,9 +264,14 @@ DuckDB.functions = {
     ),
     "LIST_VALUE": exp.Array.from_arg_list,
     "QUANTILE": exp.Quantile.from_arg_list,
-    "REGEXP_MATCHES": exp.RegexLike.from_arg_list,
+    "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
     "STRFTIME": _format_time(exp.TimeToStr, DuckDB),
     "STRPTIME": _format_time(exp.StrToTime, DuckDB),
+    "STR_SPLIT": exp.Split.from_arg_list,
+    "STRING_SPLIT": exp.Split.from_arg_list,
+    "STRING_TO_ARRAY": exp.Split.from_arg_list,
+    "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
+    "STRING_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
     "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
     "UNNEST": exp.Explode.from_arg_list,
 }
@@ -401,7 +410,10 @@ class Hive(Dialect):
         exp.JSONExtract: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.JSONExtractScalar: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
+        exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
+        exp.RegexpSplit: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.SetAgg: lambda self, e: f"COLLECT_SET({self.sql(e, 'this')})",
+        exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {re.escape(self.sql(e, 'expression'))})",
         exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
@@ -459,6 +471,7 @@ Hive.functions = {
     "PERCENTILE": exp.Quantile.from_arg_list,
     "COLLECT_SET": exp.SetAgg.from_arg_list,
     "SIZE": exp.ArraySize.from_arg_list,
+    "SPLIT": exp.RegexpSplit.from_arg_list,
     "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
     "UNIX_TIMESTAMP": _format_time(exp.StrToUnix, Hive, Hive.TIME_FORMAT),
     "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
@@ -605,7 +618,6 @@ class Presto(Dialect):
         exp.Initcap: _initcap_sql,
         exp.Lateral: _explode_to_unnest_sql,
         exp.Quantile: _quantile_sql,
-        exp.RegexLike: lambda self, e: f"REGEXP_LIKE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Schema: _schema_sql,
         exp.StrPosition: _str_position_sql,
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)})",
@@ -644,7 +656,6 @@ Presto.functions = {
     "DATE_FORMAT": _format_time(exp.TimeToStr, Presto),
     "DATE_PARSE": _format_time(exp.StrToTime, Presto),
     "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
-    "REGEXP_LIKE": exp.RegexLike.from_arg_list,
     "STRPOS": exp.StrPosition.from_arg_list,
     "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
 }

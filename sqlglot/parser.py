@@ -948,7 +948,7 @@ class Parser:
             this = self.expression(exp.ILike, this=this, expression=self._parse_term())
         elif self._match(TokenType.RLIKE):
             this = self.expression(
-                exp.RegexLike, this=this, expression=self._parse_term()
+                exp.RegexpLike, this=this, expression=self._parse_term()
             )
         elif self._match(TokenType.IN):
             self._match_l_paren()

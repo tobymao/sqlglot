@@ -257,7 +257,8 @@ class Generator:
         collate = f" COLLATE {collate}" if collate else ""
         comment = self.sql(expression, "comment")
         comment = f" COMMENT {comment}" if comment else ""
-        return f"{column} {kind}{not_null}{default}{collate}{auto_increment}{comment}"
+        primary = " PRIMARY KEY" if expression.args.get("primary") else ""
+        return f"{column} {kind}{not_null}{default}{collate}{auto_increment}{comment}{primary}"
 
     def create_sql(self, expression):
         this = self.sql(expression, "this")

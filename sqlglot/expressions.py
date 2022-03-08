@@ -534,6 +534,7 @@ class DataType(Expression):
         DATE = auto()
         ARRAY = auto()
         MAP = auto()
+        UUID = auto()
 
 
 # Commands to interact with the databases or engines

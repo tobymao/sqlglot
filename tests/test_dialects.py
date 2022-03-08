@@ -239,6 +239,12 @@ class TestDialects(unittest.TestCase):
             read="postgres",
             write="postgres",
         )
+        self.validate(
+            "CREATE TABLE x (a BYTEA)",
+            "CREATE TABLE x (a BINARY)",
+            read="postgres",
+            write="hive",
+        )
 
     def test_presto(self):
         self.validate(

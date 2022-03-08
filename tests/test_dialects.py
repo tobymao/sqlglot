@@ -57,6 +57,27 @@ class TestDialects(unittest.TestCase):
             read="duckdb",
             write="presto",
         )
+        self.validate(
+            "STR_SPLIT(x, 'a')", "SPLIT(x, 'a')", read="duckdb", write="presto"
+        )
+        self.validate(
+            "STRING_SPLIT(x, 'a')", "SPLIT(x, 'a')", read="duckdb", write="presto"
+        )
+        self.validate(
+            "STRING_TO_ARRAY(x, 'a')", "SPLIT(x, 'a')", read="duckdb", write="presto"
+        )
+        self.validate(
+            "STR_SPLIT_REGEX(x, 'a')",
+            "REGEXP_SPLIT(x, 'a')",
+            read="duckdb",
+            write="presto",
+        )
+        self.validate(
+            "STRING_SPLIT_REGEX(x, 'a')",
+            "REGEXP_SPLIT(x, 'a')",
+            read="duckdb",
+            write="presto",
+        )
 
         self.validate(
             "STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb"
@@ -329,6 +350,12 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "a REGEXP 'x'", "REGEXP_LIKE(a, 'x')", read="hive", write="presto"
         )
+
+        self.validate("SPLIT(x, 'a.')", "SPLIT(x, 'a\\.')", read="presto", write="hive")
+        self.validate(
+            "REGEXP_SPLIT(x, 'a.')", "SPLIT(x, 'a.')", read="presto", write="hive"
+        )
+
         self.validate(
             "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
             "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",

@@ -132,6 +132,7 @@ class TokenType(AutoName):
     MAP = auto()
     MOD = auto()
     NULL = auto()
+    OFFSET = auto()
     ON = auto()
     OPTIMIZE = auto()
     OPTIONS = auto()
@@ -322,6 +323,7 @@ class Tokenizer:
         "LIMIT": TokenType.LIMIT,
         "NOT": TokenType.NOT,
         "NULL": TokenType.NULL,
+        "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
         "OPTIMIZE": TokenType.OPTIMIZE,
         "OPTIONS": TokenType.OPTIONS,

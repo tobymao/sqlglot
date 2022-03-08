@@ -681,6 +681,7 @@ class Parser:
                     "having": self._parse_having(),
                     "order": self._parse_order(),
                     "limit": self._parse_limit(),
+                    "offset": self._parse_offset(),
                 },
             )
 
@@ -895,8 +896,12 @@ class Parser:
     def _parse_limit(self):
         if not self._match(TokenType.LIMIT):
             return None
-
         return self.expression(exp.Limit, this=self._parse_number())
+
+    def _parse_offset(self):
+        if not self._match(TokenType.OFFSET):
+            return None
+        return self.expression(exp.Offset, this=self._parse_number())
 
     def _parse_set_operations(self, this):
         if not self._match_set(self.SET_OPERATIONS):

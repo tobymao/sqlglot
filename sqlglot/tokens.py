@@ -59,6 +59,7 @@ class TokenType(AutoName):
     FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()
+    ORA_NUMBER = auto()
     CHAR = auto()
     VARCHAR = auto()
     TEXT = auto()
@@ -151,6 +152,7 @@ class TokenType(AutoName):
     RANGE = auto()
     RECURSIVE = auto()
     REPLACE = auto()
+    ROLE = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROWS = auto()
@@ -385,6 +387,7 @@ class Tokenizer:
         "BIGINT": TokenType.BIGINT,
         "INT8": TokenType.BIGINT,
         "DECIMAL": TokenType.DECIMAL,
+        "NUMBER": TokenType.ORA_NUMBER,
         "MAP": TokenType.MAP,
         "NUMERIC": TokenType.DECIMAL,
         "FIXED": TokenType.DECIMAL,
@@ -404,6 +407,7 @@ class Tokenizer:
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "DATE": TokenType.DATE,
         "UUID": TokenType.UUID,
+        "ROLE": TokenType.ROLE,
     }
 
     WHITE_SPACE = {

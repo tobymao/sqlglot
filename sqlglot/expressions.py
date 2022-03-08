@@ -527,6 +527,8 @@ class DataType(Expression):
         FLOAT = auto()
         DOUBLE = auto()
         DECIMAL = auto()
+        ORA_NUMBER = "NUMBER"
+        NUMBER = auto()
         BOOLEAN = auto()
         JSON = auto()
         TIMESTAMP = auto()

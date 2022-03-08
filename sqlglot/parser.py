@@ -39,6 +39,7 @@ class Parser:
         **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
         "DECIMAL": _parse_decimal,
         "NUMERIC": _parse_decimal,
+        "NUMBER": _parse_decimal,
     }
 
     TYPE_TOKENS = {
@@ -59,6 +60,7 @@ class Parser:
         TokenType.DATE,
         TokenType.ARRAY,
         TokenType.DECIMAL,
+        TokenType.ORA_NUMBER,
         TokenType.MAP,
         TokenType.UUID,
     }
@@ -394,10 +396,12 @@ class Parser:
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
 
-        create_token = self._match_set((TokenType.TABLE, TokenType.VIEW)) and self._prev
+        valid_tokens = (TokenType.TABLE, TokenType.VIEW, TokenType.ROLE)
+        create_token = self._match_set(valid_tokens) and self._prev
 
         if not create_token:
-            self.raise_error("Expected TABLE or View")
+            self.raise_error("CREATE expected one of the following: {}".format(', '.join(t.name for t in valid_tokens)))
+            self.check_errors()
 
         exists = self._parse_exists(not_=True)
         this = self._parse_schema(self._parse_table(alias=None, func=False))

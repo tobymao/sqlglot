@@ -1023,3 +1023,23 @@ class TestDialects(unittest.TestCase):
             read="spark",
             write="sqlite",
         )
+        self.validate(
+            "CREATE TABLE z (n1 DECIMAL, n2 DECIMAL(10), n3 DECIMAL(10, 8))",
+            "CREATE TABLE z (n1 REAL, n2 REAL(10), n3 REAL(10, 8))",
+            read="sqlite",
+            write="sqlite",
+        )
+
+    def test_oracle(self):
+        self.validate(
+            "CREATE TABLE z (n1 NUMBER, n2 NUMBER(10), n3 NUMBER(10, 8))",
+            "CREATE TABLE z (n1 REAL, n2 REAL(10), n3 REAL(10, 8))",
+            read="oracle",
+            write="sqlite",
+        )
+        self.validate(
+            "CREATE TABLE z (n1 INTEGER, n2 INTEGER(10), n3 REAL(8), c1 VARCHAR(30))",
+            "CREATE TABLE z (n1 NUMBER, n2 NUMBER(10), n3 FLOAT(8), c1 VARCHAR2(30))",
+            read="sqlite",
+            write="oracle",
+        )

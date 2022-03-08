@@ -706,6 +706,7 @@ class SQLite(Dialect):
         exp.DataType.Type.FLOAT: "REAL",
         exp.DataType.Type.DOUBLE: "REAL",
         exp.DataType.Type.DECIMAL: "REAL",
+        exp.DataType.Type.ORA_NUMBER: "REAL",
         exp.DataType.Type.CHAR: "TEXT",
         exp.DataType.Type.VARCHAR: "TEXT",
         exp.DataType.Type.BINARY: "BLOB",
@@ -716,10 +717,18 @@ class SQLite(Dialect):
         exp.TryCast: _no_trycast_sql,
     }
 
-
 class Trino(Presto):
     pass
 
+class Oracle(Dialect):
+    type_mapping = {
+        exp.DataType.Type.TINYINT: "NUMBER",
+        exp.DataType.Type.SMALLINT: "NUMBER",
+        exp.DataType.Type.INT: "NUMBER",
+        exp.DataType.Type.BIGINT: "NUMBER",
+        exp.DataType.Type.DECIMAL: "REAL",
+        exp.DataType.Type.VARCHAR: "VARCHAR2",
+    }
 
 for d in Dialect.classes.values():
     d.time_trie = new_trie(d.time_mapping)

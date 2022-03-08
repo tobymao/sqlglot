@@ -730,9 +730,6 @@ class Generator:
     def or_sql(self, expression):
         return self.binary(expression, "OR", newline=self.pretty)
 
-    def regexlike_sql(self, expression):
-        return self.binary(expression, "RLIKE")
-
     def sub_sql(self, expression):
         return self.binary(expression, "-")
 

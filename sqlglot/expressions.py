@@ -961,7 +961,11 @@ class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
-class RegexLike(Func):
+class RegexpLike(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegexpSplit(Func):
     arg_types = {"this": True, "expression": True}
 
 
@@ -971,6 +975,10 @@ class Round(Func):
 
 class SetAgg(AggFunc):
     pass
+
+
+class Split(Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class Substring(Func):

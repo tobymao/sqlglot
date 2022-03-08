@@ -52,7 +52,6 @@ POSEXPLODE("x") AS ("a", "b")
 POSEXPLODE("x") AS ("a", "b", "c")
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
-x RLIKE '%[0-9]+$'
 x LIKE '%y%'
 x ILIKE '%y%'
 INTERVAL '1' day
@@ -60,6 +59,9 @@ INTERVAL '1' month
 INTERVAL 2 months
 QUANTILE(x, 0.5)
 REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))
+REGEXP_LIKE('new york', '.')
+REGEXP_SPLIT('new york', '.')
+SPLIT('new york', '.')
 REPLACE(1)
 DATE(x) = DATE(y)
 x[y - 1]

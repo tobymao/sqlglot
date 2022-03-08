@@ -1017,3 +1017,9 @@ class TestDialects(unittest.TestCase):
             read="sqlite",
             write="sqlite",
         )
+        self.validate(
+            "CAST(`a`.`b` AS INT)",
+            'CAST("a"."b" AS INTEGER)',
+            read="spark",
+            write="sqlite",
+        )

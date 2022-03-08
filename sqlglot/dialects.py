@@ -713,6 +713,7 @@ class SQLite(Dialect):
 
     transforms = {
         exp.TableSample: _no_tablesample_sql,
+        exp.TryCast: _no_trycast_sql,
     }
 
 

@@ -405,6 +405,10 @@ class Lateral(Expression):
     arg_types = {"this": True, "outer": False, "table": False, "columns": False}
 
 
+class Offset(Expression):
+    pass
+
+
 class Order(Expression):
     arg_types = {"expressions": True}
 
@@ -467,6 +471,7 @@ class Select(Expression):
         "having": False,
         "order": False,
         "limit": False,
+        "offset": False,
     }
 
 

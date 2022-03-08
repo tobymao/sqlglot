@@ -400,7 +400,7 @@ class Parser:
         create_token = self._match_set(valid_tokens) and self._prev
 
         if not create_token:
-            self.raise_error("CREATE expected one of the following: {}".format(', '.join(t.name for t in valid_tokens)))
+            self.raise_error(f"CREATE expected one of the following: {', '.join(t.name for t in valid_tokens)}")
             self.check_errors()
 
         exists = self._parse_exists(not_=True)

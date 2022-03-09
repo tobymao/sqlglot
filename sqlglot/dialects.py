@@ -730,6 +730,17 @@ class Trino(Presto):
     pass
 
 
+class Oracle(Dialect):
+    type_mapping = {
+        exp.DataType.Type.TINYINT: "NUMBER",
+        exp.DataType.Type.SMALLINT: "NUMBER",
+        exp.DataType.Type.INT: "NUMBER",
+        exp.DataType.Type.BIGINT: "NUMBER",
+        exp.DataType.Type.DECIMAL: "NUMBER",
+        exp.DataType.Type.VARCHAR: "VARCHAR2",
+    }
+
+
 for d in Dialect.classes.values():
     d.time_trie = new_trie(d.time_mapping)
     d.inverse_time_mapping = {v: k for k, v in d.time_mapping.items()}

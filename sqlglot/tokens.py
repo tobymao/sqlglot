@@ -388,6 +388,7 @@ class Tokenizer:
         "INT8": TokenType.BIGINT,
         "DECIMAL": TokenType.DECIMAL,
         "MAP": TokenType.MAP,
+        "NUMBER": TokenType.DECIMAL,
         "NUMERIC": TokenType.DECIMAL,
         "FIXED": TokenType.DECIMAL,
         "REAL": TokenType.FLOAT,

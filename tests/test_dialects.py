@@ -351,7 +351,12 @@ class TestDialects(unittest.TestCase):
             "a REGEXP 'x'", "REGEXP_LIKE(a, 'x')", read="hive", write="presto"
         )
 
-        self.validate("SPLIT(x, 'a.')", "SPLIT(x, CONCAT('\\\\Q', 'a.'))", read="presto", write="hive")
+        self.validate(
+            "SPLIT(x, 'a.')",
+            "SPLIT(x, CONCAT('\\\\Q', 'a.'))",
+            read="presto",
+            write="hive",
+        )
         self.validate(
             "REGEXP_SPLIT(x, 'a.')", "SPLIT(x, 'a.')", read="presto", write="hive"
         )

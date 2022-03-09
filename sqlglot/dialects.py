@@ -1,6 +1,4 @@
 # pylint: disable=no-member, protected-access
-import re
-
 import sqlglot.constants as c
 import sqlglot.expressions as exp
 from sqlglot.generator import Generator
@@ -413,7 +411,7 @@ class Hive(Dialect):
         exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         exp.RegexpSplit: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.SetAgg: lambda self, e: f"COLLECT_SET({self.sql(e, 'this')})",
-        exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {re.escape(self.sql(e, 'expression'))})",
+        exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
         exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,

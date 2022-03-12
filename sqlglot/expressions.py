@@ -312,6 +312,10 @@ class Except(Expression):
     arg_types = {"this": True, "expression": True, "distinct": False}
 
 
+class Exists(Expression):
+    arg_types = {"this": True, "not": False}
+
+
 class From(Expression):
     arg_types = {"expressions": True}
 

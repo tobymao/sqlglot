@@ -326,6 +326,10 @@ class Generator:
             f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}",
         )
 
+    def exists_sql(self, expression):
+        exists = "NOT EXISTS" if expression.args.get("not") else "EXISTS"
+        return f"{exists} {self.wrap(expression)}"
+
     def hint_sql(self, expression):
         if self.sql(expression, "this"):
             self.unsupported("Hints are not supported")

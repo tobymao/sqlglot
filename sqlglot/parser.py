@@ -865,7 +865,20 @@ class Parser:
     def _parse_where(self):
         if not self._match(TokenType.WHERE):
             return None
-        return self.expression(exp.Where, this=self._parse_conjunction())
+
+        index = self._index
+        not_exists = self._match(TokenType.NOT)
+
+        if self._match(TokenType.EXISTS):
+            this = self.expression(
+                exp.Exists, **{"this": self._parse_select(), "not": not_exists}
+            )
+        else:
+            if not_exists:
+                self._retreat(index)
+            this = self._parse_conjunction()
+
+        return self.expression(exp.Where, this=this)
 
     def _parse_group(self):
         if not self._match(TokenType.GROUP):

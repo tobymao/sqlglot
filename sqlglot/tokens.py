@@ -144,7 +144,6 @@ class TokenType(AutoName):
     OVER = auto()
     OVERWRITE = auto()
     PARTITION = auto()
-    PARTITION_BY = auto()
     PERCENT = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
@@ -304,7 +303,7 @@ class Tokenizer:
         "FULL": TokenType.FULL,
         "FOLLOWING": TokenType.FOLLOWING,
         "FROM": TokenType.FROM,
-        "GROUP BY": TokenType.GROUP,
+        "GROUP": TokenType.GROUP,
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
@@ -328,15 +327,14 @@ class Tokenizer:
         "OPTIMIZE": TokenType.OPTIMIZE,
         "OPTIONS": TokenType.OPTIONS,
         "OR": TokenType.OR,
-        "ORDER BY": TokenType.ORDER,
+        "ORDER": TokenType.ORDER,
         "ORDINALITY": TokenType.ORDINALITY,
         "OUTER": TokenType.OUTER,
         "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
         "OVERWRITE": TokenType.OVERWRITE,
         "PARTITION": TokenType.PARTITION,
-        "PARTITION BY": TokenType.PARTITION_BY,
-        "PARTITIONED BY": TokenType.PARTITION_BY,
+        "PARTITIONED": TokenType.PARTITION,
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,

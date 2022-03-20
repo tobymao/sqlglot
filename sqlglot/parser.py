@@ -496,7 +496,7 @@ class Parser:
             properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
             self._match_r_paren()
         else:
-            if self._match(TokenType.PARTITION_BY):
+            if self._match_by(TokenType.PARTITION):
                 properties.append(
                     self.expression(
                         exp.Property,
@@ -881,9 +881,8 @@ class Parser:
         return self.expression(exp.Where, this=this)
 
     def _parse_group(self):
-        if not self._match(TokenType.GROUP):
+        if not self._match_by(TokenType.GROUP):
             return None
-
         return self.expression(
             exp.Group, expressions=self._parse_csv(self._parse_conjunction)
         )
@@ -894,7 +893,7 @@ class Parser:
         return self.expression(exp.Having, this=self._parse_conjunction())
 
     def _parse_order(self):
-        if not self._match(TokenType.ORDER):
+        if not self._match_by(TokenType.ORDER):
             return None
 
         return self.expression(
@@ -1316,7 +1315,7 @@ class Parser:
         self._match_l_paren()
         partition = None
 
-        if self._match(TokenType.PARTITION_BY):
+        if self._match_by(TokenType.PARTITION):
             partition = self._parse_csv(self._parse_type)
 
         order = self._parse_order()
@@ -1467,3 +1466,10 @@ class Parser:
     def _match_r_paren(self):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
+
+    def _match_by(self, token_type):
+        if self._match(token_type):
+            if not self._match(TokenType.BY):
+                self.raise_error("Expecting BY")
+            return True
+        return False

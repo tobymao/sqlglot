@@ -379,7 +379,7 @@ class Parser:
         return self.expression(
             exp.Drop,
             exists=self._parse_exists(),
-            this=self._parse_table(None),
+            this=self._parse_table(None, schema=True),
             kind=kind,
         )
 
@@ -400,7 +400,7 @@ class Parser:
             self.raise_error("Expected TABLE or View")
 
         exists = self._parse_exists(not_=True)
-        this = self._parse_schema(self._parse_table(alias=None, func=False))
+        this = self._parse_table(alias=None, schema=True)
         expression = None
         properties = None
 
@@ -538,7 +538,7 @@ class Parser:
 
         return self.expression(
             exp.Insert,
-            this=self._parse_table(alias=None),
+            this=self._parse_table(alias=None, schema=True),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_select(),
@@ -550,7 +550,7 @@ class Parser:
 
         return self.expression(
             exp.Delete,
-            this=self._parse_table(alias=None),
+            this=self._parse_table(alias=None, schema=True),
             where=self._parse_where(),
         )
 
@@ -558,7 +558,7 @@ class Parser:
         return self.expression(
             exp.Update,
             **{
-                "this": self._parse_table(alias=None),
+                "this": self._parse_table(alias=None, schema=True),
                 "expressions": self._match(TokenType.SET)
                 and self._parse_csv(self._parse_equality),
                 "from": self._parse_from(),
@@ -570,13 +570,15 @@ class Parser:
         if not self._match(TokenType.TABLE):
             self.raise_error("Expecting TABLE after UNCACHE")
         return self.expression(
-            exp.Uncache, exists=self._parse_exists(), this=self._parse_table()
+            exp.Uncache,
+            exists=self._parse_exists(),
+            this=self._parse_table(schema=True),
         )
 
     def _parse_cache(self):
         lazy = self._match(TokenType.LAZY)
         self._match(TokenType.TABLE)
-        table = self._parse_table(alias=None)
+        table = self._parse_table(alias=None, schema=True)
         options = []
 
         if self._match(TokenType.OPTIONS):
@@ -756,7 +758,7 @@ class Parser:
                 )
             )
 
-    def _parse_table(self, alias=False, func=True):
+    def _parse_table(self, alias=False, schema=False):
         unnest = self._parse_unnest()
 
         if unnest:
@@ -767,7 +769,7 @@ class Parser:
             self._match_r_paren()
         else:
             db = None
-            table = (func and self._parse_function()) or self._parse_id_var()
+            table = (not schema and self._parse_function()) or self._parse_id_var()
 
             if self._match(TokenType.DOT):
                 db = table
@@ -789,6 +791,8 @@ class Parser:
         if not isinstance(this, (exp.Alias, exp.Table)):
             this = self.expression(exp.Alias, this=this, alias=None)
 
+        if schema:
+            return self._parse_schema(this=expression)
         return this
 
     def _parse_unnest(self):
@@ -1194,7 +1198,7 @@ class Parser:
         return self.expression(exp.Schema, this=this, expressions=args)
 
     def _parse_column_def(self, this):
-        kind = self._parse_function() or self._parse_types()
+        kind = self._parse_types()
 
         if not kind:
             return this

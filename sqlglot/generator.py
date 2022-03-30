@@ -306,7 +306,14 @@ class Generator:
         type_value = expression.this
         type_sql = self.type_mapping.get(type_value, type_value.value)
         args = self.expressions(expression, flat=True)
-        args = f"({args})" if args else ""
+        if args:
+            nested_strct = self.sql(expression, "nested_struct").strip("'")
+            if nested_strct == "<>":
+                args = f"<{args}>"
+            if nested_strct == "()":
+                args = f"({args})"
+        else:
+            args = ""
         return f"{type_sql}{args}"
 
     def delete_sql(self, expression):

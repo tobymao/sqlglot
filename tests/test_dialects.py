@@ -315,7 +315,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "CAST(ARRAY[1, 2] AS ARRAY<BIGINT>)",
-            "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
+            "CAST(ARRAY[1, 2] AS ARRAY<BIGINT>)",
             read="presto",
             write="presto",
         )

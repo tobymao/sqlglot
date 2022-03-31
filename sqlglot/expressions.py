@@ -233,6 +233,13 @@ class Expression:
         return new_node
 
 
+class Annotation(Expression):
+    arg_types = {
+        "this": True,
+        "expression": True,
+    }
+
+
 class Cache(Expression):
     arg_types = {
         "this": True,

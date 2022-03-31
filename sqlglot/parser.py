@@ -673,7 +673,9 @@ class Parser:
                 exp.Select,
                 hint=self._parse_hint(),
                 distinct=self._match(TokenType.DISTINCT),
-                expressions=self._parse_csv(self._parse_expression),
+                expressions=self._parse_csv(
+                    lambda: self._parse_annotation(self._parse_expression())
+                ),
                 **{
                     "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
@@ -688,6 +690,14 @@ class Parser:
             )
 
         return self._parse_set_operations(this)
+
+    def _parse_annotation(self, expression):
+        if self._match(TokenType.ANNOTATION):
+            return self.expression(
+                exp.Annotation, this=self._prev.text, expression=expression
+            )
+
+        return expression
 
     def _parse_hint(self):
         if self._match(TokenType.HINT):

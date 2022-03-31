@@ -26,11 +26,11 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        assert expression.args["expressions"][0].args["this"].args["this"] == "a"
-        assert expression.args["expressions"][1].args["this"].args["this"] == "b"
-        assert expression.args["expressions"][2].args["alias"].args["this"] == "c"
-        assert expression.args["expressions"][3].args["alias"].args["this"] == "D"
-        assert expression.args["expressions"][4].args["alias"].args["this"] == "y|z'"
+        assert expression.args["expressions"][0].text("this") == "a"
+        assert expression.args["expressions"][1].text("this") == "b"
+        assert expression.args["expressions"][2].text("alias") == "c"
+        assert expression.args["expressions"][3].text("alias") == "D"
+        assert expression.args["expressions"][4].text("alias") == "y|z'"
         table = expression.args["from"].args["expressions"][0]
         assert table.args["this"].args["this"] == "z"
         assert table.args["db"].args["this"] == "y"
@@ -86,3 +86,22 @@ class TestParser(unittest.TestCase):
     def test_missing_by(self):
         with self.assertRaises(ParseError):
             parse_one("SELECT FROM x GROUP BY")
+
+    def test_annotations(self):
+        expression = parse_one(
+            """
+            SELECT
+                a #annotation1,
+                b as B #annotation2:testing ,
+                "test#annotation",c#annotation3, d #annotation4,
+                e #
+            FROM foo
+        """
+        )
+
+        assert expression.args["expressions"][0].text("this") == "annotation1"
+        assert expression.args["expressions"][1].text("this") == "annotation2:testing"
+        assert expression.args["expressions"][2].text("this") == "test#annotation"
+        assert expression.args["expressions"][3].text("this") == "c#annotation3"
+        assert expression.args["expressions"][4].text("this") == "annotation4"
+        assert expression.args["expressions"][5].text("this") == ""

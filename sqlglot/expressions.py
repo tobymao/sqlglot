@@ -529,7 +529,11 @@ class Boolean(Expression):
 
 
 class DataType(Expression):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {
+        "this": True,
+        "expressions": False,
+        "nested": True,
+    }
 
     class Type(AutoName):
         CHAR = auto()

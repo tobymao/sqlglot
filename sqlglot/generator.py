@@ -308,9 +308,11 @@ class Generator:
     def datatype_sql(self, expression):
         type_value = expression.this
         type_sql = self.type_mapping.get(type_value, type_value.value)
-        args = self.expressions(expression, flat=True)
-        args = f"({args})" if args else ""
-        return f"{type_sql}{args}"
+        nested = ""
+        interior = self.expressions(expression, flat=True)
+        if interior:
+            nested = f"<{interior}>" if expression.args["nested"] else f"({interior})"
+        return f"{type_sql}{nested}"
 
     def delete_sql(self, expression):
         this = self.sql(expression, "this")

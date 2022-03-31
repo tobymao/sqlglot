@@ -1079,15 +1079,20 @@ class Parser:
             self._match(TokenType.ZONE)
             if tz:
                 return exp.DataType(
-                    this=exp.DataType.Type.TIMESTAMPTZ, expressions=expressions
+                    this=exp.DataType.Type.TIMESTAMPTZ,
+                    expressions=expressions,
+                    nested=nested,
                 )
             return exp.DataType(
-                this=exp.DataType.Type.TIMESTAMP, expressions=expressions
+                this=exp.DataType.Type.TIMESTAMP,
+                expressions=expressions,
+                nested=nested,
             )
 
         return exp.DataType(
             this=exp.DataType.Type[type_token.value.upper()],
             expressions=expressions,
+            nested=nested,
         )
 
     def _parse_column(self):

@@ -525,8 +525,7 @@ class DataType(Expression):
     arg_types = {
         "this": True,
         "expressions": False,
-        "nested_start": False,
-        "nested_end": False,
+        "nested": True,
     }
 
     class Type(AutoName):

@@ -1039,8 +1039,6 @@ class Parser:
 
         type_token = self._prev.token_type
         nested = type_token in self.NESTED_TYPE_TOKENS
-        nested_start = None
-        nested_end = None
         expressions = None
 
         if self._match(TokenType.L_BRACKET):
@@ -1057,16 +1055,12 @@ class Parser:
                 return None
 
             self._match_r_paren()
-            nested_start = exp.Literal.string("(")
-            nested_end = exp.Literal.string(")")
 
         if nested and self._match(TokenType.LT):
             expressions = self._parse_csv(self._parse_types)
 
             if not self._match(TokenType.GT):
                 self.raise_error("Expecting >")
-            nested_start = exp.Literal.string("<")
-            nested_end = exp.Literal.string(">")
 
         if type_token in self.TIMESTAMPS:
             tz = self._match(TokenType.WITH)
@@ -1077,21 +1071,18 @@ class Parser:
                 return exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPTZ,
                     expressions=expressions,
-                    nested_start=nested_start,
-                    nested_end=nested_end,
+                    nested=nested,
                 )
             return exp.DataType(
                 this=exp.DataType.Type.TIMESTAMP,
                 expressions=expressions,
-                nested_start=nested_start,
-                nested_end=nested_end,
+                nested=nested,
             )
 
         return exp.DataType(
             this=exp.DataType.Type[type_token.value.upper()],
             expressions=expressions,
-            nested_start=nested_start,
-            nested_end=nested_end,
+            nested=nested,
         )
 
     def _parse_column(self):

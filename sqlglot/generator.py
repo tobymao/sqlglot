@@ -206,6 +206,9 @@ class Generator:
 
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
+    def annotation_sql(self, expression):
+        return self.sql(expression, "expression")
+
     def uncache_sql(self, expression):
         table = self.sql(expression, "this")
         exists_sql = " IF EXISTS" if expression.args.get("exists") else ""

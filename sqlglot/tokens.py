@@ -37,6 +37,7 @@ class TokenType(AutoName):
     LSHIFT = auto()
     RSHIFT = auto()
     LAMBDA = auto()
+    ANNOTATION = auto()
 
     SPACE = auto()
     BREAK = auto()
@@ -518,9 +519,10 @@ class Tokenizer:
                 self._scan_string()
             elif self._char == self.identifier:
                 self._scan_identifier()
+            elif self._char == "#":
+                self._scan_annotation()
             else:
                 self._scan_var()
-
         return self.tokens
 
     def _chars(self, size):
@@ -595,6 +597,13 @@ class Tokenizer:
             self._advance(comment_end_size - 1)
             return True
         return False
+
+    def _scan_annotation(self):
+        while (
+            not self._end and self._peek not in self.WHITE_SPACE and self._peek != ","
+        ):
+            self._advance()
+        self._add(TokenType.ANNOTATION, self._text[1:])
 
     def _scan_number(self):
         decimal = False

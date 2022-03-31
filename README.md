@@ -214,6 +214,17 @@ Rewriter(expression).ctas('x').expression.sql()
 CREATE TABLE x AS SELECT * FROM y
 ```
 
+### SQL Annotations
+
+SQLGlot supports annotations in the sql expression. This is an experimental feature that is not part of any of the SQL standards but it can be useful when needing to annotate what a selected field is supposed to be. Below is an example:
+
+```sql
+SELECT
+  user #primary_key,
+  country
+FROM users
+```
+
 ### Benchmarks
 
 [Benchmarks](benchmarks) run on Python 3.9.6 in seconds.

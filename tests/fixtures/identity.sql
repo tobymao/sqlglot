@@ -78,6 +78,7 @@ ADD FILE s3://file
 ADD FILES s3://file, s3://a
 ADD ARCHIVE s3://file
 ADD ARCHIVES s3://file, s3://a
+USE db
 NOT 1
 NOT NOT 1
 SELECT * FROM test

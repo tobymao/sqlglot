@@ -171,6 +171,7 @@ class TokenType(AutoName):
     UNION = auto()
     UNNEST = auto()
     UPDATE = auto()
+    USE = auto()
     VALUES = auto()
     VIEW = auto()
     WHEN = auto()
@@ -364,6 +365,7 @@ class Tokenizer:
         "UNION": TokenType.UNION,
         "UNNEST": TokenType.UNNEST,
         "UPDATE": TokenType.UPDATE,
+        "USE": TokenType.USE,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "WHEN": TokenType.WHEN,
@@ -424,6 +426,7 @@ class Tokenizer:
         TokenType.SET,
         TokenType.SHOW,
         TokenType.TRUNCATE,
+        TokenType.USE,
     }
 
     ESCAPE_CODE = "__sqlglot_escape__"

@@ -279,7 +279,7 @@ class CTE(Expression):
 
 
 class Column(Expression):
-    arg_types = {"this": False, "table": False, "db": False, "fields": False}
+    arg_types = {"this": False, "table": False, "db": False}
 
     @property
     def table(self):
@@ -288,10 +288,6 @@ class Column(Expression):
     @property
     def db(self):
         return self.args.get("db")
-
-    @property
-    def fields(self):
-        return self.args.get("fields")
 
 
 class ColumnDef(Expression):

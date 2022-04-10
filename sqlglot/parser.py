@@ -1096,28 +1096,38 @@ class Parser:
         )
 
     def _parse_column(self):
-        this = self._parse_field()
-        table = None
-        db = None
-        fields = None
+        fields = [self._parse_field()]
 
         while self._match(TokenType.DOT):
-            if db:
-                fields = fields if fields else [db, table, this]
-                fields.append(self._parse_field())
-                continue
-            if table:
-                db = table
-            table = this
-            this = self._parse_field()
+            fields.append(self._parse_field())
 
-        if fields:
-            return self.expression(exp.Column, fields=fields)
-        if any(
-            isinstance(field, (exp.Identifier, exp.Star)) for field in (this, table, db)
-        ):
-            return self.expression(exp.Column, this=this, table=table, db=db)
-        return this
+        this = None
+        table = None
+        db = None
+        bracket = None
+        column = None
+
+        for field in fields:
+            if bracket:
+                pass
+
+            if isinstance(field, exp.Bracket):
+                bracket = field
+                field = field.this
+
+            if isinstance(field, exp.Identifier):
+                db = table
+                table = this
+                this = field
+                column = self.expression(exp.Column, this=column, table=table, db=db)
+            else:
+                self.expression(exp.Dot, this=field, expression=prev)
+
+            if bracket:
+                bracket.args["this"] = self.expression(exp.Column, this=column, table=table, db=db)
+                return bracket
+
+        return
 
     def _parse_primary(self):
         this = (

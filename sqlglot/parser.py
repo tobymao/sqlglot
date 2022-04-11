@@ -466,7 +466,7 @@ class Parser:
         self._match(TokenType.EQ)
 
         if key.upper() == c.PARTITIONED_BY:
-            value = self._parse_schema() or self._parse_field()
+            value = self._parse_schema() or self._parse_bracket(self._parse_field())
 
             if schema and not isinstance(value, exp.Schema):
                 columns = {v.text("this").upper() for v in value.args["expressions"]}
@@ -1097,26 +1097,18 @@ class Parser:
 
     def _parse_column(self):
         this = self._parse_field()
-        table = None
-        db = None
-        fields = None
+        if isinstance(this, exp.Identifier):
+            this = self.expression(exp.Column, this=this)
+        this = self._parse_bracket(this)
 
         while self._match(TokenType.DOT):
-            if db:
-                fields = fields if fields else [db, table, this]
-                fields.append(self._parse_field())
-                continue
-            if table:
-                db = table
-            table = this
-            this = self._parse_field()
+            field = self._parse_id_var() or self._parse_star()
+            if isinstance(this, exp.Column) and not this.table:
+                this = self.expression(exp.Column, this=field, table=this.this)
+            else:
+                this = self.expression(exp.Dot, this=this, expression=field)
+            this = self._parse_bracket(this)
 
-        if fields:
-            return self.expression(exp.Column, fields=fields)
-        if any(
-            isinstance(field, (exp.Identifier, exp.Star)) for field in (this, table, db)
-        ):
-            return self.expression(exp.Column, this=this, table=table, db=db)
         return this
 
     def _parse_primary(self):
@@ -1139,9 +1131,7 @@ class Parser:
         return None
 
     def _parse_field(self):
-        return self._parse_bracket(
-            self._parse_primary() or self._parse_function() or self._parse_id_var()
-        )
+        return self._parse_primary() or self._parse_function() or self._parse_id_var()
 
     def _parse_function(self):
         if self._match(TokenType.CASE):
@@ -1265,19 +1255,21 @@ class Parser:
         return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
 
     def _parse_bracket(self, this):
-        while self._match(TokenType.L_BRACKET):
-            expressions = self._parse_csv(self._parse_conjunction)
+        if not self._match(TokenType.L_BRACKET):
+            return this
 
-            if isinstance(this, exp.Identifier) and this.this.upper() == "ARRAY":
-                this = self.expression(exp.Array, expressions=expressions)
-            else:
-                expressions = apply_index_offset(expressions, -self.index_offset)
-                this = self.expression(exp.Bracket, this=this, expressions=expressions)
+        expressions = self._parse_csv(self._parse_conjunction)
 
-            if not self._match(TokenType.R_BRACKET):
-                self.raise_error("Expected ]")
+        if this.text("this").upper() == "ARRAY":
+            this = self.expression(exp.Array, expressions=expressions)
+        else:
+            expressions = apply_index_offset(expressions, -self.index_offset)
+            this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
-        return this
+        if not self._match(TokenType.R_BRACKET):
+            self.raise_error("Expected ]")
+
+        return self._parse_bracket(this)
 
     def _parse_case(self):
         ifs = []

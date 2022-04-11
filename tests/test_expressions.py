@@ -231,6 +231,14 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(column.this, exp.Bracket)
         self.assertIsInstance(column.this.this, exp.Column)
 
+        column = parse_one("a.*")
+        self.assertIsInstance(column, exp.Column)
+        self.assertIsInstance(column.this, exp.Star)
+        self.assertIsInstance(column.table, exp.Identifier)
+        self.assertEqual(column.text("table"), "a")
+
+        self.assertIsInstance(parse_one("*"), exp.Star)
+
     def test_text(self):
         column = parse_one("a.b.c")
         self.assertEqual(column.text("expression"), "c")

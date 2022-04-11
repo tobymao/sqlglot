@@ -208,28 +208,32 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("YEAR(a)"), exp.Year)
 
     def test_column(self):
-        column = parse_one("a.b.c")
-        self.assertEqual(column.args["this"].args["this"], "c")
-        self.assertEqual(column.args["table"].args["this"], "b")
-        self.assertEqual(column.args["db"].args["this"], "a")
+        dot = parse_one("a.b.c")
+        column = dot.this
+        self.assertEqual(column.text("table"), "a")
+        self.assertEqual(column.text("this"), "b")
+        self.assertEqual(dot.text("expression"), "c")
 
         column = parse_one("a")
-        self.assertEqual(column.args["this"].args["this"], "a")
-        self.assertIsNone(column.args.get("table"))
-        self.assertIsNone(column.args.get("db"))
+        self.assertEqual(column.text("this"), "a")
+        self.assertIsNone(column.table)
 
-        column = parse_one("a.b.c.d")
-        self.assertIsNone(column.args.get("this"))
-        self.assertIsNone(column.args.get("table"))
-        self.assertIsNone(column.args.get("db"))
-        self.assertEqual(
-            [f.args["this"] for f in column.args["fields"]],
-            ["a", "b", "c", "d"],
-        )
+        fields = parse_one("a.b.c.d")
+        self.assertIsInstance(fields, exp.Dot)
+        self.assertEqual(fields.text("expression"), "d")
+        self.assertEqual(fields.this.text("expression"), "c")
+        column = fields.find(exp.Column)
+        self.assertEqual(column.text("this"), "b")
+        self.assertEqual(column.text("table"), "a")
+
+        column = parse_one("a[0].b")
+        self.assertIsInstance(column, exp.Dot)
+        self.assertIsInstance(column.this, exp.Bracket)
+        self.assertIsInstance(column.this.this, exp.Column)
 
     def test_text(self):
         column = parse_one("a.b.c")
-        self.assertEqual(column.text("this"), "c")
+        self.assertEqual(column.text("expression"), "c")
         self.assertEqual(column.text("y"), "")
         self.assertEqual(parse_one("select * from x.y").find(exp.Table).text("db"), "x")
         self.assertEqual(parse_one("select *").text("this"), "")

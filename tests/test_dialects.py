@@ -734,6 +734,30 @@ class TestDialects(unittest.TestCase):
             read="hive",
             write="presto",
         )
+        self.validate(
+            "MAP(ARRAY(a, b), ARRAY(c, d))",
+            "MAP(a, c, b, d)",
+            read="presto",
+            write="hive",
+        )
+        self.validate(
+            'MAP(ARRAY("a", "b"), ARRAY("c", "d"))',
+            "MAP(`a`, `c`, `b`, `d`)",
+            read="presto",
+            write="hive",
+        )
+        self.validate(
+            "MAP(ARRAY(a), ARRAY(b))",
+            "MAP(a, b)",
+            read="presto",
+            write="hive",
+        )
+        self.validate(
+            "MAP(ARRAY('a'), ARRAY('b'))",
+            "MAP('a', 'b')",
+            read="presto",
+            write="hive",
+        )
         self.validate("LOG(10)", "LN(10)", read="hive", write="presto")
         self.validate("LOG(2, 10)", "LOG(2, 10)", read="hive", write="presto")
         self.validate("'\"x\"'", "'\"x\"'", read="hive", write="presto")

@@ -317,6 +317,16 @@ class Hive(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
+    def _map_sql(self, expression):
+        keys = expression.args["keys"].args["expressions"]
+        # values is an array because map is var_len_args due to hive dialect
+        values = expression.args["values"][0].args["expressions"]
+        args = []
+        for key, value in zip(keys, values):
+            args.append(self.sql(key))
+            args.append(self.sql(value))
+        return f"MAP({csv(*args)})"
+
     def _parse_map(args):
         keys = []
         values = []
@@ -407,6 +417,7 @@ class Hive(Dialect):
         exp.Join: _unnest_to_explode_sql,
         exp.JSONExtract: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.JSONExtractScalar: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.Map: _map_sql,
         exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         exp.RegexpSplit: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",

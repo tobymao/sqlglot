@@ -317,12 +317,21 @@ class Hive(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
+    class HiveMap(exp.Map):
+        is_var_len_args = True
+
     def _map_sql(self, expression):
-        keys = expression.args["keys"].args["expressions"]
-        # values is an array because map is var_len_args due to hive dialect
-        values = expression.args["values"][0].args["expressions"]
+        keys = expression.args["keys"]
+        values = expression.args["values"]
+
+        if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
+            self.unsupported(
+                "Cannot convert array columns into map use SparkSQL instead."
+            )
+            return f"MAP({self.sql(keys)}, {self.sql(values)})"
+
         args = []
-        for key, value in zip(keys, values):
+        for key, value in zip(keys.args["expressions"], values.args["expressions"]):
             args.append(self.sql(key))
             args.append(self.sql(value))
         return f"MAP({csv(*args)})"
@@ -333,7 +342,7 @@ class Hive(Dialect):
         for i in range(0, len(args), 2):
             keys.append(args[i])
             values.append(args[i + 1])
-        return exp.Map(
+        return Hive.HiveMap(
             keys=exp.Array(expressions=keys),
             values=exp.Array(expressions=values),
         )
@@ -418,6 +427,7 @@ class Hive(Dialect):
         exp.JSONExtract: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.JSONExtractScalar: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Map: _map_sql,
+        HiveMap: _map_sql,
         exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         exp.RegexpSplit: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -679,6 +689,11 @@ class Spark(Hive):
             return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
         return self.create_sql(e)
 
+    def _map_sql(self, expression):
+        keys = self.sql(expression.args["keys"])
+        values = self.sql(expression.args["values"])
+        return f"MAP_FROM_ARRAYS({keys}, {values})"
+
     type_mapping = {
         **Hive.type_mapping,
         exp.DataType.Type.TINYINT: "BYTE",
@@ -692,11 +707,14 @@ class Spark(Hive):
         exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.Create: _create_sql,
+        exp.Map: _map_sql,
+        Hive.HiveMap: _map_sql,
     }
 
 
 Spark.functions = {
     **Hive.functions,
+    "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
     "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
     "LEFT": lambda args: exp.Substring(
         this=list_get(args, 0),

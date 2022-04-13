@@ -730,6 +730,33 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "MAP(a, b, c, d)",
+            "MAP(a, b, c, d)",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "MAP(a, b)",
+            "MAP(a, b)",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "MAP(a, b)",
+            "MAP(ARRAY[a], ARRAY[b])",
+            read="hive",
+            write="presto",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "MAP(a, b)",
+                read="presto",
+                write="hive",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        self.validate(
+            "MAP(a, b, c, d)",
             "MAP(ARRAY[a, c], ARRAY[b, d])",
             read="hive",
             write="presto",
@@ -1070,6 +1097,26 @@ class TestDialects(unittest.TestCase):
             "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
             "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
             write="spark",
+        )
+
+        self.validate(
+            "MAP(a, b)",
+            "MAP_FROM_ARRAYS(a, b)",
+            read="presto",
+            write="spark",
+        )
+
+        self.validate(
+            "MAP(ARRAY[1], ARRAY[2])",
+            "MAP_FROM_ARRAYS(ARRAY(1), ARRAY(2))",
+            read="presto",
+            write="spark",
+        )
+        self.validate(
+            "MAP_FROM_ARRAYS(ARRAY(1), c)",
+            "MAP(ARRAY[1], c)",
+            read="spark",
+            write="presto",
         )
 
     def test_sqlite(self):

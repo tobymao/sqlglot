@@ -386,6 +386,7 @@ class Generator:
         return ".".join(
             part
             for part in [
+                self.sql(expression, "catalog"),
                 self.sql(expression, "db"),
                 self.sql(expression, "table"),
                 self.sql(expression, "this"),

@@ -429,7 +429,7 @@ class Property(Expression):
 
 
 class Table(Expression):
-    arg_types = {"this": True, "db": False}
+    arg_types = {"this": True, "db": False, "catalog": False}
 
 
 class Tuple(Expression):

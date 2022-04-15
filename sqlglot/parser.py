@@ -778,16 +778,18 @@ class Parser:
             expression = self._parse_cte()
             self._match_r_paren()
         else:
+            catalog = None
             db = None
             table = (not schema and self._parse_function()) or self._parse_id_var()
 
-            if self._match(TokenType.DOT):
+            while self._match(TokenType.DOT):
+                catalog = db
                 db = table
                 table = self._parse_id_var()
                 if not table:
                     self.raise_error("Expected table name")
 
-            expression = self.expression(exp.Table, this=table, db=db)
+            expression = self.expression(exp.Table, this=table, db=db, catalog=catalog)
 
         expression = self._parse_table_sample(expression)
 

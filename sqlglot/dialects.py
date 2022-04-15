@@ -59,6 +59,11 @@ class Dialect(metaclass=RegisteringMeta):
     def parse(self, code, **opts):
         return self.parser(**opts).parse(self.tokenizer().tokenize(code), code)
 
+    def parse_into(self, expression_type, code, **opts):
+        return self.parser(**opts).parse_into(
+            expression_type, self.tokenizer().tokenize(code), code
+        )
+
     def generate(self, expression, **opts):
         return self.generator(**opts).generate(expression)
 

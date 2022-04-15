@@ -197,6 +197,11 @@ class Generator:
         if transform:
             return transform
 
+        if not hasattr(expression, "key"):
+            raise ValueError(
+                f"Expected an Expression. Received {type(expression)}: {expression}"
+            )
+
         exp_handler_name = f"{expression.key}_sql"
         if hasattr(self, exp_handler_name):
             return getattr(self, exp_handler_name)(expression)
@@ -297,10 +302,7 @@ class Generator:
         return f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}{options}"
 
     def cte_sql(self, expression):
-        sql = ", ".join(
-            f"{self.sql(e, 'alias')} AS {self.wrap(e)}"
-            for e in expression.args["expressions"]
-        )
+        sql = ", ".join(self.sql(e) for e in expression.args["expressions"])
         recursive = "RECURSIVE " if expression.args.get("recursive") else ""
 
         return f"WITH {recursive}{sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
@@ -393,6 +395,19 @@ class Generator:
             ]
             if part
         )
+
+    def tableexpression_sql(self, expression):
+        alias = self.sql(expression, "alias")
+        return f"{alias} AS {self.wrap(expression)}"
+
+    def tableexpressionalias_sql(self, expression):
+        alias = self.sql(expression, "this")
+        columns_str = ""
+        columns = expression.args.get("columns")
+        if columns:
+            columns_str = ", ".join([self.sql(e) for e in columns])
+            columns_str = f"({columns_str})"
+        return f"{alias}{columns_str}"
 
     def tablesample_sql(self, expression):
         this = self.sql(expression, "this")

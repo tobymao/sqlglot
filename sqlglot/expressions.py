@@ -1,6 +1,8 @@
+import abc
 from enum import auto
 import inspect
 import sys
+from typing import TypeVar
 
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
 
@@ -232,6 +234,95 @@ class Expression:
             new_node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
         return new_node
 
+    def assert_selectable(self) -> "Selectable":
+        assert isinstance(self, Selectable)
+        return self
+
+
+class Selectable(Expression, abc.ABC):
+    @abc.abstractmethod
+    def from_(
+        self, expression, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def group_by(
+        self, expression, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def order_by(
+        self, expression, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def limit(
+        self, expression, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def offset(
+        self, expression, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def select(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def lateral(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def join(
+        self,
+        *expressions,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+        prefix="JOIN",
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def where(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def having(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def distinct(self, distinct=True, copy=True) -> "Selectable":
+        ...
+
+    @abc.abstractmethod
+    def with_(
+        self,
+        alias,
+        as_,
+        recursive=None,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+    ) -> "CTE":
+        ...
+
 
 class Annotation(Expression):
     arg_types = {
@@ -274,8 +365,171 @@ class CharacterSet(Expression):
     arg_types = {"this": True, "default": False}
 
 
-class CTE(Expression):
+class CTE(Selectable):
     arg_types = {"this": True, "expressions": True, "recursive": False}
+
+    def from_(self, expression, dialect=None, parser_opts=None, copy=True):
+        return _apply_delegate(
+            self,
+            "from_",
+            expression=expression,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def select(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_delegate(
+            self,
+            "select",
+            *expressions,
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def group_by(self, expression, dialect=None, parser_opts=None, copy=True):
+        return _apply_delegate(
+            self,
+            "group_by",
+            expression=expression,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def order_by(self, expression, dialect=None, parser_opts=None, copy=True):
+        return _apply_delegate(
+            self,
+            "order_by",
+            expression=expression,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def limit(self, expression, dialect=None, parser_opts=None, copy=True):
+        return _apply_delegate(
+            self,
+            "limit",
+            expression=expression,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def offset(self, expression, dialect=None, parser_opts=None, copy=True):
+        return _apply_delegate(
+            self,
+            "offset",
+            expression=expression,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def lateral(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_delegate(
+            self,
+            "lateral",
+            *expressions,
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def join(
+        self,
+        *expressions,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+        prefix="JOIN",
+    ):
+        return _apply_delegate(
+            self,
+            "join",
+            *expressions,
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+            prefix=prefix,
+        )
+
+    def where(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_delegate(
+            self,
+            "where",
+            *expressions,
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def having(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_delegate(
+            self,
+            "having",
+            *expressions,
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def distinct(self, distinct=True, copy=True):
+        return _apply_delegate(self, "distinct", distinct=distinct, copy=copy)
+
+    def with_(
+        self,
+        alias,
+        as_,
+        recursive=None,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+    ):
+        instance = _maybe_copy(self, copy)
+        alias_expression = _maybe_parse(
+            alias,
+            dialect=dialect,
+            expression_type=TableExpressionAlias,
+            parser_opts=parser_opts,
+        )
+        as_expression = _maybe_parse(
+            as_,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        expression = TableExpression(
+            this=as_expression,
+            alias=alias_expression,
+        )
+
+        expressions = [expression]
+        existing_expressions = instance.args.get("expressions")
+        if append and existing_expressions:
+            expressions = existing_expressions + expressions
+        instance.args["expressions"] = expressions
+
+        if recursive is not None:
+            instance.args["recursive"] = recursive
+
+        return instance
 
 
 class Column(Expression):
@@ -432,6 +686,14 @@ class Table(Expression):
     arg_types = {"this": True, "db": False, "catalog": False}
 
 
+class TableExpression(Expression):
+    arg_types = {"this": True, "alias": True}
+
+
+class TableExpressionAlias(Expression):
+    arg_types = {"this": True, "columns": False}
+
+
 class Tuple(Expression):
     arg_types = {"expressions": True}
 
@@ -461,7 +723,7 @@ class Schema(Expression):
     arg_types = {"this": False, "expressions": True}
 
 
-class Select(Expression):
+class Select(Selectable):
     arg_types = {
         "expressions": False,
         "hint": False,
@@ -476,6 +738,197 @@ class Select(Expression):
         "limit": False,
         "offset": False,
     }
+
+    def from_(self, expression, dialect=None, parser_opts=None, copy=True):
+        if _is_wrong_expression(expression, From):
+            expression = From(expressions=[expression])
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="from",
+            parse_into=From,
+            prefix="FROM",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def group_by(self, expression, dialect=None, parser_opts=None, copy=True):
+        if _is_wrong_expression(expression, Group):
+            expression = Group(expressions=[expression])
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="group",
+            parse_into=Group,
+            prefix="GROUP BY",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def order_by(self, expression, dialect=None, parser_opts=None, copy=True):
+        if _is_wrong_expression(expression, Order):
+            expression = Order(this=expression)
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="order",
+            parse_into=Order,
+            prefix="ORDER BY",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def limit(self, expression, dialect=None, parser_opts=None, copy=True):
+        if _is_wrong_expression(expression, Limit):
+            expression = Limit(this=expression)
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="limit",
+            parse_into=Limit,
+            prefix="LIMIT",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def offset(self, expression, dialect=None, parser_opts=None, copy=True):
+        if _is_wrong_expression(expression, Offset):
+            expression = Offset(this=expression)
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="offset",
+            parse_into=Offset,
+            prefix="OFFSET",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def select(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_list_builder(
+            *expressions,
+            instance=self,
+            arg="expressions",
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def lateral(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_list_builder(
+            *expressions,
+            instance=self,
+            arg="laterals",
+            append=append,
+            parse_into=Lateral,
+            prefix="LATERAL VIEW",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def join(
+        self,
+        *expressions,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+        prefix="JOIN",
+    ):
+        return _apply_list_builder(
+            *expressions,
+            instance=self,
+            arg="joins",
+            append=append,
+            parse_into=Join,
+            prefix=prefix,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def where(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="where",
+            append=append,
+            parse_into=Where,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def having(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        return _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="having",
+            append=append,
+            parse_into=Having,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def distinct(self, distinct=True, copy=True):
+        instance = _maybe_copy(self, copy)
+        instance.args["distinct"] = distinct
+        return instance
+
+    def with_(
+        self,
+        alias,
+        as_,
+        recursive=None,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+    ):
+        instance = _maybe_copy(self, copy)
+        alias_expression = _maybe_parse(
+            alias,
+            dialect=dialect,
+            expression_type=TableExpressionAlias,
+            parser_opts=parser_opts,
+        )
+        as_expression = _maybe_parse(
+            as_,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        expression = TableExpression(
+            this=as_expression,
+            alias=alias_expression,
+        )
+        return CTE(
+            this=instance,
+            expressions=[expression],
+            recursive=recursive or False,
+        )
+
+    def subquery(self, alias=None, copy=True):
+        instance = _maybe_copy(self, copy)
+        return Alias(
+            this=instance,
+            alias=alias,
+        )
 
 
 class TableSample(Expression):
@@ -1117,3 +1570,141 @@ def _all_functions():
 
 
 ALL_FUNCTIONS = _all_functions()
+
+
+def _maybe_parse(
+    code_or_expression,
+    *,
+    expression_type=None,
+    dialect=None,
+    prefix=None,
+    parser_opts=None,
+):
+    if isinstance(code_or_expression, Expression):
+        return code_or_expression
+
+    parser_opts = parser_opts or {}
+    code = str(code_or_expression)
+    if prefix:
+        code = f"{prefix} {code}"
+
+    from sqlglot.dialects import Dialect
+
+    dialect = Dialect.get_or_raise(dialect)()
+
+    if expression_type:
+        result = dialect.parse_into(expression_type, code, **parser_opts)
+    else:
+        result = dialect.parse(code, **parser_opts)
+
+    if not result:
+        return None
+    return result[0]
+
+
+T = TypeVar("T", bound=Expression)
+
+
+def _maybe_copy(instance: T, copy=True) -> T:
+    if copy:
+        instance = instance.transform(lambda node: node, copy=True)
+    return instance
+
+
+def _is_wrong_expression(expression, parse_into):
+    return isinstance(expression, Expression) and not isinstance(expression, parse_into)
+
+
+def _apply_builder(
+    expression,
+    instance: T,
+    arg,
+    copy=True,
+    prefix=None,
+    parse_into=None,
+    dialect=None,
+    parser_opts=None,
+) -> T:
+    instance = _maybe_copy(instance, copy)
+    expression = _maybe_parse(
+        code_or_expression=expression,
+        prefix=prefix,
+        expression_type=parse_into,
+        dialect=dialect,
+        parser_opts=parser_opts,
+    )
+    instance.args[arg] = expression
+    return instance
+
+
+def _apply_list_builder(
+    *expressions,
+    instance: T,
+    arg,
+    append=True,
+    copy=True,
+    prefix=None,
+    parse_into=None,
+    dialect=None,
+    parser_opts=None,
+) -> T:
+    inst = _maybe_copy(instance, copy)
+
+    expressions = [
+        _maybe_parse(
+            code_or_expression=expression,
+            expression_type=parse_into,
+            prefix=prefix,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        for expression in expressions
+    ]
+
+    existing_expressions = inst.args.get(arg)
+    if append and existing_expressions:
+        expressions = existing_expressions + expressions
+
+    inst.args[arg] = expressions
+    return inst
+
+
+def _apply_conjunction_builder(
+    *expressions,
+    instance: T,
+    arg,
+    parse_into,
+    append=True,
+    copy=True,
+    dialect=None,
+    parser_opts=None,
+) -> T:
+    inst = _maybe_copy(instance, copy)
+    expressions = [
+        _maybe_parse(
+            code_or_expression=expression,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        for expression in expressions
+    ]
+
+    existing = inst.args.get(arg)
+    if append and existing is not None:
+        expressions = [existing.this] + expressions
+
+    node = expressions[0]
+
+    for expression in expressions[1:]:
+        node = And(this=node, expression=expression)
+
+    inst.args[arg] = parse_into(this=node)
+    return inst
+
+
+def _apply_delegate(instance: T, method, *args, **kwargs) -> T:
+    copy = kwargs.pop("copy", True)
+    kwargs["copy"] = False
+    instance = _maybe_copy(instance, copy)
+    getattr(instance.this, method)(*args, **kwargs)
+    return instance

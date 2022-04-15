@@ -1,3 +1,5 @@
+import typing
+
 from sqlglot.dialects import Dialect
 from sqlglot.errors import ErrorLevel, UnsupportedError, ParseError, TokenError
 from sqlglot.expressions import Expression
@@ -9,7 +11,7 @@ from sqlglot.parser import Parser
 __version__ = "1.29.3"
 
 
-def parse(code, read=None, **opts):
+def parse(code, read=None, **opts) -> typing.List[Expression]:
     """
     Parses the given SQL string into a collection of syntax trees, one per
     parsed SQL statement.
@@ -27,7 +29,7 @@ def parse(code, read=None, **opts):
     return dialect.parse(code, **opts)
 
 
-def parse_one(code, read=None, **opts):
+def parse_one(code, read=None, **opts) -> Expression:
     """
     Parses the given SQL string and returns a syntax tree for the first
     parsed SQL statement.

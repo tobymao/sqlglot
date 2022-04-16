@@ -185,6 +185,7 @@ class Parser:
         "errors",
         "index_offset",
         "strict_cast",
+        "spec",
         "_tokens",
         "_chunks",
         "_index",
@@ -200,12 +201,25 @@ class Parser:
         error_message_context=100,
         index_offset=0,
         strict_cast=True,
+        spec=None,
     ):
+        """
+        Initializes the parser.
+
+        Args
+            functions (dict): override function parsing
+            error_level (ErrorLevel): defaults to raise
+            error_message_context (int): length of sql to show on error
+            index_offset (int): offset to use for array indicies, defaults to 0
+            strict_cast (boolean): whether to treat cast as strict or trycast, defaults to True
+            spec (lambda self: self._parse...): a custom parser for parsing specific parts of sql
+        """
         self.functions = {**self.FUNCTIONS, **(functions or {})}
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
         self.strict_cast = strict_cast
+        self.spec = spec(self) if spec else self._parse_statement
         self.reset()
 
     def reset(self):
@@ -247,7 +261,7 @@ class Parser:
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(self._parse_statement())
+            expressions.append(self.spec())
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")

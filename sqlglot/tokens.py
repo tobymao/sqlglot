@@ -442,7 +442,7 @@ class Tokenizer:
         "escape",
         "encode",
         "numeric_literals",
-        "code",
+        "sql",
         "size",
         "tokens",
         "_start",
@@ -481,7 +481,7 @@ class Tokenizer:
         self.reset()
 
     def reset(self):
-        self.code = ""
+        self.sql = ""
         self.size = 0
         self.tokens = []
         self._start = 0
@@ -494,10 +494,10 @@ class Tokenizer:
         self._peek = None
         self.__text = None
 
-    def tokenize(self, code):  # pylint: disable=too-many-branches
+    def tokenize(self, sql):  # pylint: disable=too-many-branches
         self.reset()
-        self.code = code
-        self.size = len(code)
+        self.sql = sql
+        self.size = len(sql)
 
         while not self._end:
             self._start = self._current
@@ -532,21 +532,21 @@ class Tokenizer:
         start = self._current - 1
         end = start + size
         if end <= self.size:
-            return self.code[start:end].upper()
+            return self.sql[start:end].upper()
         return ""
 
     def _advance(self, i=1):
         self._col += i
         self._current += i
-        self._char = list_get(self.code, self._current - 1)
-        self._peek = list_get(self.code, self._current) or ""
+        self._char = list_get(self.sql, self._current - 1)
+        self._peek = list_get(self.sql, self._current) or ""
         self._end = self._current >= self.size
         self.__text = None
 
     @property
     def _text(self):
         if self.__text is None:
-            self.__text = self.code[self._start : self._current]
+            self.__text = self.sql[self._start : self._current]
         return self.__text
 
     def _add(self, token_type, text=None):

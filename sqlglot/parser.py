@@ -177,11 +177,23 @@ class Parser:
         TokenType.EXCEPT,
     }
 
+    JOIN_SIDES = {
+        TokenType.LEFT,
+        TokenType.RIGHT,
+        TokenType.FULL,
+    }
+
+    JOIN_KINDS = {
+        TokenType.INNER,
+        TokenType.OUTER,
+        TokenType.CROSS,
+    }
+
     __slots__ = (
         "functions",
         "error_level",
         "error_message_context",
-        "code",
+        "sql",
         "errors",
         "index_offset",
         "strict_cast",
@@ -209,7 +221,7 @@ class Parser:
         self.reset()
 
     def reset(self):
-        self.code = ""
+        self.sql = ""
         self.errors = []
         self._tokens = []
         self._chunks = [[]]
@@ -218,23 +230,23 @@ class Parser:
         self._next = None
         self._prev = None
 
-    def parse(self, raw_tokens, code=None):
+    def parse(self, raw_tokens, sql=None):
         """
         Parses the given list of tokens and returns a list of syntax trees, one tree
         per parsed SQL statement.
 
         Args
             raw_tokens (list): the list of tokens (:class:`~sqlglot.tokens.Token`).
-            code (str): the original SQL string. Used to produce helpful debug messages.
+            sql (str): the original SQL string. Used to produce helpful debug messages.
 
         Returns
             the list of syntax trees (:class:`~sqlglot.expressions.Expression`).
         """
         return self._parse(
-            parse_method=self._parse_statement, raw_tokens=raw_tokens, code=code
+            parse_method=self._parse_statement, raw_tokens=raw_tokens, sql=sql
         )
 
-    def parse_into(self, expression_type, raw_tokens, code=None):
+    def parse_into(self, expression_type, raw_tokens, sql=None):
         methods = {
             exp.From: self._parse_from,
             exp.Group: self._parse_group,
@@ -249,16 +261,16 @@ class Parser:
             raise TypeError(f"No parser registered for {expression_type}")
 
         method = methods[expression_type]
-        expressions = self._parse(method, raw_tokens, code)
+        expressions = self._parse(method, raw_tokens, sql)
 
         if not expressions:
             raise ValueError(f"Failed to parse into {expression_type}")
 
         return expressions
 
-    def _parse(self, parse_method, raw_tokens, code=None):
+    def _parse(self, parse_method, raw_tokens, sql=None):
         self.reset()
-        self.code = code or ""
+        self.sql = sql or ""
         total = len(raw_tokens)
 
         for i, token in enumerate(raw_tokens):
@@ -302,11 +314,11 @@ class Parser:
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
-        start = self._find_token(token, self.code)
+        start = self._find_token(token, self.sql)
         end = start + len(token.text)
-        start_context = self.code[max(start - self.error_message_context, 0) : start]
-        highlight = self.code[start:end]
-        end_context = self.code[end : end + self.error_message_context]
+        start_context = self.sql[max(start - self.error_message_context, 0) : start]
+        highlight = self.sql[start:end]
+        end_context = self.sql[end : end + self.error_message_context]
         self.errors.append(
             ParseError(
                 f"{message}. Line {token.line}, Col: {token.col}.\n"
@@ -335,13 +347,13 @@ class Parser:
                     f"Required keyword: '{k}' missing for {expression.__class__}"
                 )
 
-    def _find_token(self, token, code):
+    def _find_token(self, token, sql):
         line = 1
         col = 1
         index = 0
 
         while line < token.line or col < token.col:
-            if code[index] == "\n":
+            if sql[index] == "\n":
                 line += 1
                 col = 1
             else:
@@ -798,14 +810,8 @@ class Parser:
         return self._parse_all(self._parse_join)
 
     def _parse_join(self):
-        side = (
-            self._match_set((TokenType.LEFT, TokenType.RIGHT, TokenType.FULL))
-            and self._prev
-        )
-        kind = (
-            self._match_set((TokenType.INNER, TokenType.OUTER, TokenType.CROSS))
-            and self._prev
-        )
+        side = self._match_set(self.JOIN_SIDES) and self._prev
+        kind = self._match_set(self.JOIN_KINDS) and self._prev
 
         if not self._match(TokenType.JOIN):
             return None

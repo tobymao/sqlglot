@@ -197,7 +197,7 @@ class Generator:
         if transform:
             return transform
 
-        if not hasattr(expression, "key"):
+        if not isinstance(expression, exp.Expression):
             raise ValueError(
                 f"Expected an Expression. Received {type(expression)}: {expression}"
             )
@@ -405,7 +405,7 @@ class Generator:
         columns_str = ""
         columns = expression.args.get("columns")
         if columns:
-            columns_str = ", ".join([self.sql(e) for e in columns])
+            columns_str = ", ".join(self.sql(e) for e in columns)
             columns_str = f"({columns_str})"
         return f"{alias}{columns_str}"
 

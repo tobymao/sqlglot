@@ -1,8 +1,8 @@
 import abc
+from copy import deepcopy
 from enum import auto
 import inspect
 import sys
-from typing import TypeVar
 
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
 
@@ -55,9 +55,11 @@ class Expression:
         return ""
 
     def copy(self):
-        from copy import deepcopy
-
-        return deepcopy(self)
+        new = deepcopy(self)
+        for item, parent, _ in new.bfs():
+            if isinstance(item, Expression) and parent:
+                item.parent = parent
+        return new
 
     @property
     def depth(self):
@@ -244,7 +246,18 @@ class Selectable(Expression, abc.ABC):
     def from_(
         self, expression, dialect=None, parser_opts=None, copy=True
     ) -> "Selectable":
-        ...
+        """
+        Sets the FROM expression.
+
+        Args:
+            expression (str or Expression):
+            dialect (str): dialect used to parse the expression if it's a SQL string
+            parser_opts (dict): additional parser options
+            copy (bool): if False, modify the expression in-place
+
+        Returns:
+            the new expression
+        """
 
     @abc.abstractmethod
     def group_by(
@@ -368,7 +381,7 @@ class CharacterSet(Expression):
 class CTE(Selectable):
     arg_types = {"this": True, "expressions": True, "recursive": False}
 
-    def from_(self, expression, dialect=None, parser_opts=None, copy=True):
+    def from_(self, expression, dialect=None, parser_opts=None, copy=True) -> "CTE":
         return _apply_delegate(
             self,
             "from_",
@@ -380,7 +393,7 @@ class CTE(Selectable):
 
     def select(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "CTE":
         return _apply_delegate(
             self,
             "select",
@@ -391,7 +404,7 @@ class CTE(Selectable):
             copy=copy,
         )
 
-    def group_by(self, expression, dialect=None, parser_opts=None, copy=True):
+    def group_by(self, expression, dialect=None, parser_opts=None, copy=True) -> "CTE":
         return _apply_delegate(
             self,
             "group_by",
@@ -401,7 +414,7 @@ class CTE(Selectable):
             copy=copy,
         )
 
-    def order_by(self, expression, dialect=None, parser_opts=None, copy=True):
+    def order_by(self, expression, dialect=None, parser_opts=None, copy=True) -> "CTE":
         return _apply_delegate(
             self,
             "order_by",
@@ -411,7 +424,7 @@ class CTE(Selectable):
             copy=copy,
         )
 
-    def limit(self, expression, dialect=None, parser_opts=None, copy=True):
+    def limit(self, expression, dialect=None, parser_opts=None, copy=True) -> "CTE":
         return _apply_delegate(
             self,
             "limit",
@@ -421,7 +434,7 @@ class CTE(Selectable):
             copy=copy,
         )
 
-    def offset(self, expression, dialect=None, parser_opts=None, copy=True):
+    def offset(self, expression, dialect=None, parser_opts=None, copy=True) -> "CTE":
         return _apply_delegate(
             self,
             "offset",
@@ -433,7 +446,7 @@ class CTE(Selectable):
 
     def lateral(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "CTE":
         return _apply_delegate(
             self,
             "lateral",
@@ -452,7 +465,7 @@ class CTE(Selectable):
         parser_opts=None,
         copy=True,
         prefix="JOIN",
-    ):
+    ) -> "CTE":
         return _apply_delegate(
             self,
             "join",
@@ -466,7 +479,7 @@ class CTE(Selectable):
 
     def where(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "CTE":
         return _apply_delegate(
             self,
             "where",
@@ -479,7 +492,7 @@ class CTE(Selectable):
 
     def having(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "CTE":
         return _apply_delegate(
             self,
             "having",
@@ -490,7 +503,7 @@ class CTE(Selectable):
             copy=copy,
         )
 
-    def distinct(self, distinct=True, copy=True):
+    def distinct(self, distinct=True, copy=True) -> "CTE":
         return _apply_delegate(self, "distinct", distinct=distinct, copy=copy)
 
     def with_(
@@ -502,7 +515,7 @@ class CTE(Selectable):
         dialect=None,
         parser_opts=None,
         copy=True,
-    ):
+    ) -> "CTE":
         instance = _maybe_copy(self, copy)
         alias_expression = _maybe_parse(
             alias,
@@ -739,7 +752,7 @@ class Select(Selectable):
         "offset": False,
     }
 
-    def from_(self, expression, dialect=None, parser_opts=None, copy=True):
+    def from_(self, expression, dialect=None, parser_opts=None, copy=True) -> "Select":
         if _is_wrong_expression(expression, From):
             expression = From(expressions=[expression])
         return _apply_builder(
@@ -753,7 +766,9 @@ class Select(Selectable):
             copy=copy,
         )
 
-    def group_by(self, expression, dialect=None, parser_opts=None, copy=True):
+    def group_by(
+        self, expression, dialect=None, parser_opts=None, copy=True
+    ) -> "Select":
         if _is_wrong_expression(expression, Group):
             expression = Group(expressions=[expression])
         return _apply_builder(
@@ -767,7 +782,9 @@ class Select(Selectable):
             copy=copy,
         )
 
-    def order_by(self, expression, dialect=None, parser_opts=None, copy=True):
+    def order_by(
+        self, expression, dialect=None, parser_opts=None, copy=True
+    ) -> "Select":
         if _is_wrong_expression(expression, Order):
             expression = Order(this=expression)
         return _apply_builder(
@@ -781,7 +798,7 @@ class Select(Selectable):
             copy=copy,
         )
 
-    def limit(self, expression, dialect=None, parser_opts=None, copy=True):
+    def limit(self, expression, dialect=None, parser_opts=None, copy=True) -> "Select":
         if _is_wrong_expression(expression, Limit):
             expression = Limit(this=expression)
         return _apply_builder(
@@ -795,7 +812,7 @@ class Select(Selectable):
             copy=copy,
         )
 
-    def offset(self, expression, dialect=None, parser_opts=None, copy=True):
+    def offset(self, expression, dialect=None, parser_opts=None, copy=True) -> "Select":
         if _is_wrong_expression(expression, Offset):
             expression = Offset(this=expression)
         return _apply_builder(
@@ -811,7 +828,7 @@ class Select(Selectable):
 
     def select(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "Select":
         return _apply_list_builder(
             *expressions,
             instance=self,
@@ -824,7 +841,7 @@ class Select(Selectable):
 
     def lateral(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "Select":
         return _apply_list_builder(
             *expressions,
             instance=self,
@@ -845,7 +862,7 @@ class Select(Selectable):
         parser_opts=None,
         copy=True,
         prefix="JOIN",
-    ):
+    ) -> "Select":
         return _apply_list_builder(
             *expressions,
             instance=self,
@@ -860,7 +877,7 @@ class Select(Selectable):
 
     def where(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "Select":
         return _apply_conjunction_builder(
             *expressions,
             instance=self,
@@ -874,7 +891,7 @@ class Select(Selectable):
 
     def having(
         self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    ) -> "Select":
         return _apply_conjunction_builder(
             *expressions,
             instance=self,
@@ -886,7 +903,7 @@ class Select(Selectable):
             copy=copy,
         )
 
-    def distinct(self, distinct=True, copy=True):
+    def distinct(self, distinct=True, copy=True) -> "Select":
         instance = _maybe_copy(self, copy)
         instance.args["distinct"] = distinct
         return instance
@@ -900,7 +917,7 @@ class Select(Selectable):
         dialect=None,
         parser_opts=None,
         copy=True,
-    ):
+    ) -> "CTE":
         instance = _maybe_copy(self, copy)
         alias_expression = _maybe_parse(
             alias,
@@ -923,7 +940,7 @@ class Select(Selectable):
             recursive=recursive or False,
         )
 
-    def subquery(self, alias=None, copy=True):
+    def subquery(self, alias=None, copy=True) -> "Alias":
         instance = _maybe_copy(self, copy)
         return Alias(
             this=instance,
@@ -1602,13 +1619,8 @@ def _maybe_parse(
     return result[0]
 
 
-T = TypeVar("T", bound=Expression)
-
-
-def _maybe_copy(instance: T, copy=True) -> T:
-    if copy:
-        instance = instance.transform(lambda node: node, copy=True)
-    return instance
+def _maybe_copy(instance, copy=True):
+    return instance.copy() if copy else instance
 
 
 def _is_wrong_expression(expression, parse_into):
@@ -1617,14 +1629,14 @@ def _is_wrong_expression(expression, parse_into):
 
 def _apply_builder(
     expression,
-    instance: T,
+    instance,
     arg,
     copy=True,
     prefix=None,
     parse_into=None,
     dialect=None,
     parser_opts=None,
-) -> T:
+):
     instance = _maybe_copy(instance, copy)
     expression = _maybe_parse(
         code_or_expression=expression,
@@ -1639,7 +1651,7 @@ def _apply_builder(
 
 def _apply_list_builder(
     *expressions,
-    instance: T,
+    instance,
     arg,
     append=True,
     copy=True,
@@ -1647,7 +1659,7 @@ def _apply_list_builder(
     parse_into=None,
     dialect=None,
     parser_opts=None,
-) -> T:
+):
     inst = _maybe_copy(instance, copy)
 
     expressions = [
@@ -1671,14 +1683,14 @@ def _apply_list_builder(
 
 def _apply_conjunction_builder(
     *expressions,
-    instance: T,
+    instance,
     arg,
     parse_into,
     append=True,
     copy=True,
     dialect=None,
     parser_opts=None,
-) -> T:
+):
     inst = _maybe_copy(instance, copy)
     expressions = [
         _maybe_parse(
@@ -1702,7 +1714,7 @@ def _apply_conjunction_builder(
     return inst
 
 
-def _apply_delegate(instance: T, method, *args, **kwargs) -> T:
+def _apply_delegate(instance, method, *args, **kwargs):
     copy = kwargs.pop("copy", True)
     kwargs["copy"] = False
     instance = _maybe_copy(instance, copy)

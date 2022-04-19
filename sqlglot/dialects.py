@@ -56,12 +56,12 @@ class Dialect(metaclass=RegisteringMeta):
             )
         return expression
 
-    def parse(self, code, **opts):
-        return self.parser(**opts).parse(self.tokenizer().tokenize(code), code)
+    def parse(self, sql, **opts):
+        return self.parser(**opts).parse(self.tokenizer().tokenize(sql), sql)
 
-    def parse_into(self, expression_type, code, **opts):
+    def parse_into(self, expression_type, sql, **opts):
         return self.parser(**opts).parse_into(
-            expression_type, self.tokenizer().tokenize(code), code
+            expression_type, self.tokenizer().tokenize(sql), sql
         )
 
     def generate(self, expression, **opts):

@@ -1,7 +1,6 @@
 import unittest
 
-from sqlglot import parse_one
-from sqlglot.build import select
+from sqlglot import parse_one, select, from_
 
 
 class TestBuild(unittest.TestCase):
@@ -175,12 +174,11 @@ class TestBuild(unittest.TestCase):
                 lambda: select("x").from_(select("x").from_("tbl").subquery()),
                 "SELECT x FROM (SELECT x FROM tbl)",
             ),
+            (lambda: from_("tbl").select("x"), "SELECT x FROM tbl"),
+            (
+                lambda: parse_one("SELECT a FROM tbl").assert_selectable().select("b"),
+                "SELECT a, b FROM tbl",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(), sql)
-
-    def test_parse_and_update(self):
-        self.assertEqual(
-            parse_one("SELECT a FROM tbl").assert_selectable().select("b").sql(),
-            "SELECT a, b FROM tbl",
-        )

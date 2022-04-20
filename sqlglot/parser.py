@@ -255,7 +255,8 @@ class Parser:
             exp.Order: self._parse_order,
             exp.Limit: self._parse_limit,
             exp.Offset: self._parse_offset,
-            exp.TableExpressionAlias: self._parse_table_expression_alias,
+            exp.CTEAlias: self._parse_cte_alias,
+            exp.Table: self._parse_table,
         }
         if expression_type not in methods:
             raise TypeError(f"No parser registered for {expression_type}")
@@ -405,7 +406,9 @@ class Parser:
                 expression=self._parse_string(),
             )
 
-        return self._parse_set_operations(self._parse_expression()) or self._parse_cte()
+        return (
+            self._parse_set_operations(self._parse_expression()) or self._parse_with()
+        )
 
     def _parse_drop(self):
         if self._match(TokenType.TABLE):
@@ -449,7 +452,7 @@ class Parser:
             )
 
         if self._match(TokenType.ALIAS):
-            expression = self._parse_cte()
+            expression = self._parse_with()
 
         options = {
             "engine": None,
@@ -634,7 +637,7 @@ class Parser:
             this=table,
             lazy=lazy,
             options=options,
-            expression=self._parse_cte(),
+            expression=self._parse_with(),
         )
 
     def _parse_partition(self):
@@ -671,7 +674,7 @@ class Parser:
         self._match_r_paren()
         return self.expression(exp.Tuple, expressions=expressions)
 
-    def _parse_cte(self):
+    def _parse_with(self):
         if not self._match(TokenType.WITH):
             return self._parse_select()
 
@@ -680,20 +683,25 @@ class Parser:
         expressions = []
 
         while True:
-            expressions.append(self._parse_table_expression())
+            expressions.append(self._parse_cte())
 
             if not self._match(TokenType.COMMA):
                 break
 
-        return self.expression(
-            exp.CTE,
-            this=self._parse_statement(),
+        this = self._parse_statement()
+
+        if "with" not in this.arg_types:
+            self.raise_error(f"{this.key} does not support CTE")
+
+        this.args["with"] = self.expression(
+            exp.With,
             expressions=expressions,
             recursive=recursive,
         )
+        return this
 
-    def _parse_table_expression(self):
-        alias = self._parse_table_expression_alias()
+    def _parse_cte(self):
+        alias = self._parse_cte_alias()
 
         if not self._match(TokenType.ALIAS):
             self.raise_error("Expected AS in CTE")
@@ -703,12 +711,12 @@ class Parser:
         self._match_r_paren()
 
         return self.expression(
-            exp.TableExpression,
+            exp.CTE,
             this=expression,
             alias=alias,
         )
 
-    def _parse_table_expression_alias(self):
+    def _parse_cte_alias(self):
         alias = self._parse_id_var()
 
         if not alias:
@@ -721,7 +729,7 @@ class Parser:
             self._match_r_paren()
 
         return self.expression(
-            exp.TableExpressionAlias,
+            exp.CTEAlias,
             this=alias,
             columns=columns,
         )
@@ -831,7 +839,7 @@ class Parser:
             return unnest
 
         if self._match(TokenType.L_PAREN):
-            expression = self._parse_cte()
+            expression = self._parse_with()
             self._match_r_paren()
         else:
             catalog = None

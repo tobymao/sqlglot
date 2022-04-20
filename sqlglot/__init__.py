@@ -80,7 +80,8 @@ def select(*expressions, dialect=None, **opts) -> Select:
     Initializes a syntax tree from one or multiple SELECT expressions.
 
     Example
-        assert select("col1", "col2").from_("tbl").sql() == "SELECT col1, col2 FROM tbl
+        >>> select("col1", "col2").from_("tbl").sql()
+        'SELECT col1, col2 FROM tbl'
 
     Args
         expressions (str or Expression): the SQL code string to parse as the expressions of a
@@ -101,14 +102,15 @@ def from_(expression, dialect=None, **opts) -> Select:
     Initializes a syntax tree from a FROM expression.
 
     Example
-        assert from_("tbl").select("col1", "col2").sql() == "SELECT col1, col2 FROM tbl
+        >>> from_("tbl").select("col1", "col2").sql()
+        'SELECT col1, col2 FROM tbl'
 
     Args
         expression (str or Expression): the SQL code string to parse as the FROM expression of a
             SELECT statement. If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression (in the case that the
             input expression is a SQL string).
-        opts (dict): other options to use to parse the input expressions(again, in the case
+        opts (dict): other options to use to parse the input expressions (again, in the case
             that the input expression is a SQL string).
 
     Returns

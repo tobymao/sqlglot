@@ -135,7 +135,7 @@ def _no_recursive_cte_sql(self, expression):
     if expression.args.get("recursive"):
         self.unsupported("Recursive CTEs are unsupported")
         expression.args["recursive"] = False
-    return self.cte_sql(expression)
+    return self.with_sql(expression)
 
 
 def _no_tablesample_sql(self, expression):
@@ -420,7 +420,7 @@ class Hive(Dialect):
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
-        exp.CTE: _no_recursive_cte_sql,
+        exp.With: _no_recursive_cte_sql,
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),

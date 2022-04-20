@@ -269,6 +269,7 @@ class TestTranspile(unittest.TestCase):
             for i in range(0, size, 2):
                 if i + 1 < size:
                     sql = lines[i]
+                    # with self.subTest(sql):
                     pretty = lines[i + 1].strip()
                     generated = transpile(sql, pretty=True)[0]
                     self.assertEqual(generated, pretty)

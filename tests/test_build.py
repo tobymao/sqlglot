@@ -1,12 +1,23 @@
 import unittest
+import doctest
 
 from sqlglot import parse_one, select, from_
+from sqlglot import expressions as exp
+
+
+def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
+    """
+    This finds and runs all the doctests in the expressions module
+    """
+    tests.addTests(doctest.DocTestSuite(exp))
+    return tests
 
 
 class TestBuild(unittest.TestCase):
-    def test_create(self):
-        for expression, sql in [
+    def test_build(self):
+        for expression, sql, *dialect in [
             (lambda: select("x"), "SELECT x"),
+            (lambda: select("x", "y"), "SELECT x, y"),
             (lambda: select("x").from_("tbl"), "SELECT x FROM tbl"),
             (lambda: select("x", "y").from_("tbl"), "SELECT x, y FROM tbl"),
             (lambda: select("x").select("y").from_("tbl"), "SELECT x, y FROM tbl"),
@@ -19,6 +30,10 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x").from_("tbl").where("x > 0"),
                 "SELECT x FROM tbl WHERE x > 0",
+            ),
+            (
+                lambda: select("x").from_("tbl").where("x < 4 OR x > 5"),
+                "SELECT x FROM tbl WHERE x < 4 OR x > 5",
             ),
             (
                 lambda: select("x").from_("tbl").where("x > 0").where("x < 9"),
@@ -57,16 +72,23 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl JOIN tbl2 ON tbl1.y = tbl2.y",
             ),
             (
-                lambda: select("x").from_("tbl").join("tbl2", prefix="left outer join"),
+                lambda: select("x").from_("tbl").join("tbl2", join_type="left outer"),
                 "SELECT x FROM tbl LEFT OUTER JOIN tbl2",
             ),
             (
-                lambda: select("x", "y").from_("tbl").group_by("x").having("y > 0"),
-                "SELECT x, y FROM tbl GROUP BY x HAVING y > 0",
+                lambda: select("x", "COUNT(y)")
+                .from_("tbl")
+                .group_by("x")
+                .having("COUNT(y) > 0"),
+                "SELECT x, COUNT(y) FROM tbl GROUP BY x HAVING COUNT(y) > 0",
             ),
             (
                 lambda: select("x").from_("tbl").order_by("y"),
                 "SELECT x FROM tbl ORDER BY y",
+            ),
+            (
+                lambda: select("x").from_("tbl").order_by("x, y DESC"),
+                "SELECT x FROM tbl ORDER BY x, y DESC",
             ),
             (lambda: select("x").from_("tbl").limit(10), "SELECT x FROM tbl LIMIT 10"),
             (
@@ -176,9 +198,22 @@ class TestBuild(unittest.TestCase):
             ),
             (lambda: from_("tbl").select("x"), "SELECT x FROM tbl"),
             (
-                lambda: parse_one("SELECT a FROM tbl").assert_selectable().select("b"),
+                lambda: parse_one("SELECT a FROM tbl")
+                .assert_is(exp.Select)
+                .select("b"),
                 "SELECT a, b FROM tbl",
+            ),
+            (
+                lambda: parse_one("SELECT * FROM y").assert_is(exp.Select).ctas("x"),
+                "CREATE TABLE x AS SELECT * FROM y",
+            ),
+            (
+                lambda: parse_one("SELECT * FROM y")
+                .assert_is(exp.Select)
+                .ctas("foo.x", properties={"format": "parquet", "y": "2"}),
+                "CREATE TABLE foo.x STORED AS PARQUET TBLPROPERTIES ('y' = '2') AS SELECT * FROM y",
+                "hive",
             ),
         ]:
             with self.subTest(sql):
-                self.assertEqual(expression().sql(), sql)
+                self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

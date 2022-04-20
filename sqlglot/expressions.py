@@ -254,6 +254,19 @@ class Expression:
         return new_node
 
     def assert_is(self, type_: typing.Type[T]) -> T:
+        """
+        Assert that this `Expression` is an instance of `type_`.
+
+        If it is NOT an instance of `type_`, this raises an assertion error.
+        Otherwise, this returns this expression.
+
+        Examples:
+            This is useful for type security in chained expressions:
+
+            >>> import sqlglot
+            >>> sqlglot.parse_one("SELECT x from y").assert_is(Select).select("z").sql()
+            'SELECT x, z FROM y'
+        """
         assert isinstance(self, type_)
         return self
 

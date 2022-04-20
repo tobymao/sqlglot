@@ -152,27 +152,6 @@ Generator(transforms={
 SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
 ```
 
-#### Syntax Tree Transformation
-There is also a way to transform the parsed tree directly by applying a mapping function to each tree node recursively:
-```python
-import sqlglot
-import sqlglot.expressions as exp
-
-expression_tree = sqlglot.parse_one("SELECT a FROM x")
-
-def transformer(node):
-    if isinstance(node, exp.Column) and node.text("this") == "a":
-        return sqlglot.parse_one("FUN(a)")
-    return node
-
-transformed_tree = expression_tree.transform(transformer)
-transformed_tree.sql()
-```
-The snippet above produces the following transformed expression:
-```sql
-SELECT FUN(a) FROM x
-```
-
 ### Parser Errors
 A syntax error will result in a parser error.
 ```python
@@ -199,19 +178,51 @@ WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
 SELECT APPROX_COUNT_DISTINCT(a) FROM foo
 ```
 
-### Rewrite Sql
-Modify sql expressions like adding a CTAS
+### Build and Modify Sql
+SQLGlot supports incrementally building sql expressions.
 
 ```python
-from sqlglot import Generator, parse_one
-from sqlglot.rewriter import Rewriter
+from sqlglot import select
 
-expression = parse_one("SELECT * FROM y")
-Rewriter(expression).ctas('x').expression.sql()
+select("*").from_("y").where("x > 1").sql()
 ```
 
 ```sql
-CREATE TABLE x AS SELECT * FROM y
+SELECT * FROM y WHERE x > 1
+```
+
+You can also modify a parsed tree:
+
+```python
+from sqlglot import parse_one
+
+parse_one("SELECT x FROM y").from_("z").sql()
+```
+
+```sql
+SELECT x FROM z
+```
+
+There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:
+
+```python
+import sqlglot
+import sqlglot.expressions as exp
+
+expression_tree = sqlglot.parse_one("SELECT a FROM x")
+
+def transformer(node):
+    if isinstance(node, exp.Column) and node.text("this") == "a":
+        return sqlglot.parse_one("FUN(a)")
+    return node
+
+transformed_tree = expression_tree.transform(transformer)
+transformed_tree.sql()
+```
+
+The snippet above produces the following transformed expression:
+```sql
+SELECT FUN(a) FROM x
 ```
 
 ### SQL Annotations

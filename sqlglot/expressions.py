@@ -929,13 +929,6 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        instance = _maybe_copy(self, copy)
-        with_ = instance.args.get("with")
-        if not with_:
-            with_ = With()
-            instance.set("with", with_)
-        with_.args["recursive"] = recursive or False
-
         alias_expression = _maybe_parse(
             alias,
             dialect=dialect,
@@ -951,13 +944,17 @@ class Select(Expression):
             this=as_expression,
             alias=alias_expression,
         )
-        _apply_list_builder(
+
+        instance = _maybe_copy(self, copy)
+        with_ = _apply_list_builder(
             cte,
-            instance=with_,
+            instance=instance.args.get("with") or With(),
             arg="expressions",
             append=append,
             copy=False,
         )
+        with_.set("recursive", recursive or False)
+        instance.set("with", with_)
         return instance
 
     def subquery(self, alias=None, copy=True):

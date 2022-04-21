@@ -177,11 +177,23 @@ class Parser:
         TokenType.EXCEPT,
     }
 
+    JOIN_SIDES = {
+        TokenType.LEFT,
+        TokenType.RIGHT,
+        TokenType.FULL,
+    }
+
+    JOIN_KINDS = {
+        TokenType.INNER,
+        TokenType.OUTER,
+        TokenType.CROSS,
+    }
+
     __slots__ = (
         "functions",
         "error_level",
         "error_message_context",
-        "code",
+        "sql",
         "errors",
         "index_offset",
         "strict_cast",
@@ -209,7 +221,7 @@ class Parser:
         self.reset()
 
     def reset(self):
-        self.code = ""
+        self.sql = ""
         self.errors = []
         self._tokens = []
         self._chunks = [[]]
@@ -218,20 +230,49 @@ class Parser:
         self._next = None
         self._prev = None
 
-    def parse(self, raw_tokens, code=None):
+    def parse(self, raw_tokens, sql=None):
         """
         Parses the given list of tokens and returns a list of syntax trees, one tree
         per parsed SQL statement.
 
         Args
             raw_tokens (list): the list of tokens (:class:`~sqlglot.tokens.Token`).
-            code (str): the original SQL string. Used to produce helpful debug messages.
+            sql (str): the original SQL string. Used to produce helpful debug messages.
 
         Returns
             the list of syntax trees (:class:`~sqlglot.expressions.Expression`).
         """
+        return self._parse(
+            parse_method=self._parse_statement, raw_tokens=raw_tokens, sql=sql
+        )
+
+    def parse_into(self, expression_type, raw_tokens, sql=None):
+        methods = {
+            exp.From: self._parse_from,
+            exp.Group: self._parse_group,
+            exp.Lateral: self._parse_lateral,
+            exp.Join: self._parse_join,
+            exp.Order: self._parse_order,
+            exp.Limit: self._parse_limit,
+            exp.Offset: self._parse_offset,
+            exp.TableAlias: self._parse_table_alias,
+            exp.Table: self._parse_table,
+            exp.CONJUNCTION: self._parse_conjunction,
+        }
+        if expression_type not in methods:
+            raise TypeError(f"No parser registered for {expression_type}")
+
+        method = methods[expression_type]
+        expressions = self._parse(method, raw_tokens, sql)
+
+        if not expressions:
+            raise ValueError(f"Failed to parse into {expression_type}")
+
+        return expressions
+
+    def _parse(self, parse_method, raw_tokens, sql=None):
         self.reset()
-        self.code = code or ""
+        self.sql = sql or ""
         total = len(raw_tokens)
 
         for i, token in enumerate(raw_tokens):
@@ -247,7 +288,7 @@ class Parser:
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(self._parse_statement())
+            expressions.append(parse_method())
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")
@@ -275,11 +316,11 @@ class Parser:
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
-        start = self._find_token(token, self.code)
+        start = self._find_token(token, self.sql)
         end = start + len(token.text)
-        start_context = self.code[max(start - self.error_message_context, 0) : start]
-        highlight = self.code[start:end]
-        end_context = self.code[end : end + self.error_message_context]
+        start_context = self.sql[max(start - self.error_message_context, 0) : start]
+        highlight = self.sql[start:end]
+        end_context = self.sql[end : end + self.error_message_context]
         self.errors.append(
             ParseError(
                 f"{message}. Line {token.line}, Col: {token.col}.\n"
@@ -308,13 +349,13 @@ class Parser:
                     f"Required keyword: '{k}' missing for {expression.__class__}"
                 )
 
-    def _find_token(self, token, code):
+    def _find_token(self, token, sql):
         line = 1
         col = 1
         index = 0
 
         while line < token.line or col < token.col:
-            if code[index] == "\n":
+            if sql[index] == "\n":
                 line += 1
                 col = 1
             else:
@@ -366,7 +407,9 @@ class Parser:
                 expression=self._parse_string(),
             )
 
-        return self._parse_set_operations(self._parse_expression()) or self._parse_cte()
+        return (
+            self._parse_set_operations(self._parse_expression()) or self._parse_with()
+        )
 
     def _parse_drop(self):
         if self._match(TokenType.TABLE):
@@ -410,7 +453,7 @@ class Parser:
             )
 
         if self._match(TokenType.ALIAS):
-            expression = self._parse_cte()
+            expression = self._parse_with()
 
         options = {
             "engine": None,
@@ -595,7 +638,7 @@ class Parser:
             this=table,
             lazy=lazy,
             options=options,
-            expression=self._parse_cte(),
+            expression=self._parse_with(),
         )
 
     def _parse_partition(self):
@@ -632,32 +675,65 @@ class Parser:
         self._match_r_paren()
         return self.expression(exp.Tuple, expressions=expressions)
 
-    def _parse_cte(self):
+    def _parse_with(self):
         if not self._match(TokenType.WITH):
             return self._parse_select()
+
+        recursive = self._match(TokenType.RECURSIVE)
 
         expressions = []
 
         while True:
-            recursive = self._match(TokenType.RECURSIVE)
-            alias = self._parse_function() or self._parse_id_var()
-
-            if not alias:
-                self.raise_error("Expected alias after WITH")
-
-            if not self._match(TokenType.ALIAS):
-                self.raise_error("Expected AS after WITH")
-
-            expressions.append(self._parse_table(alias=alias))
+            expressions.append(self._parse_cte())
 
             if not self._match(TokenType.COMMA):
                 break
 
-        return self.expression(
-            exp.CTE,
-            this=self._parse_statement(),
+        this = self._parse_statement()
+
+        if "with" not in this.arg_types:
+            self.raise_error(f"{this.key} does not support CTE")
+
+        this.args["with"] = self.expression(
+            exp.With,
             expressions=expressions,
             recursive=recursive,
+        )
+        return this
+
+    def _parse_cte(self):
+        alias = self._parse_table_alias()
+        if not alias or not alias.this:
+            self.raise_error("Expected CTE to have alias")
+
+        if not self._match(TokenType.ALIAS):
+            self.raise_error("Expected AS in CTE")
+
+        self._match_l_paren()
+        expression = self._parse_select()
+        self._match_r_paren()
+
+        return self.expression(
+            exp.CTE,
+            this=expression,
+            alias=alias,
+        )
+
+    def _parse_table_alias(self):
+        alias = self._parse_id_var()
+        columns = None
+
+        if self._match(TokenType.L_PAREN):
+            columns = self._parse_csv(self._parse_id_var)
+            self._match_r_paren()
+
+        if not alias and not columns:
+            return None
+
+        return self.expression(
+            exp.TableAlias,
+            this=alias,
+            columns=columns,
         )
 
     def _parse_select(self):
@@ -714,59 +790,49 @@ class Parser:
         return self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
 
     def _parse_laterals(self):
-        laterals = []
+        return self._parse_all(self._parse_lateral)
 
-        while True:
-            if not self._match(TokenType.LATERAL):
-                return laterals
+    def _parse_lateral(self):
+        if not self._match(TokenType.LATERAL):
+            return None
 
-            if not self._match(TokenType.VIEW):
-                self.raise_error("Expected VIEW afteral LATERAL")
+        if not self._match(TokenType.VIEW):
+            self.raise_error("Expected VIEW after LATERAL")
 
-            outer = self._match(TokenType.OUTER)
-            this = self._parse_function()
-            table = self._parse_id_var()
-            columns = (
-                self._parse_csv(self._parse_id_var)
-                if self._match(TokenType.ALIAS)
-                else None
-            )
+        outer = self._match(TokenType.OUTER)
+        this = self._parse_function()
+        table = self._parse_id_var()
+        columns = (
+            self._parse_csv(self._parse_id_var)
+            if self._match(TokenType.ALIAS)
+            else None
+        )
 
-            laterals.append(
-                self.expression(
-                    exp.Lateral,
-                    this=this,
-                    outer=outer,
-                    table=self.expression(exp.Table, this=table),
-                    columns=columns,
-                )
-            )
+        return self.expression(
+            exp.Lateral,
+            this=this,
+            outer=outer,
+            table=self.expression(exp.Table, this=table),
+            columns=columns,
+        )
 
     def _parse_joins(self):
-        joins = []
+        return self._parse_all(self._parse_join)
 
-        while True:
-            side = (
-                self._match_set((TokenType.LEFT, TokenType.RIGHT, TokenType.FULL))
-                and self._prev
-            )
-            kind = (
-                self._match_set((TokenType.INNER, TokenType.OUTER, TokenType.CROSS))
-                and self._prev
-            )
+    def _parse_join(self):
+        side = self._match_set(self.JOIN_SIDES) and self._prev
+        kind = self._match_set(self.JOIN_KINDS) and self._prev
 
-            if not self._match(TokenType.JOIN):
-                return joins
+        if not self._match(TokenType.JOIN):
+            return None
 
-            joins.append(
-                self.expression(
-                    exp.Join,
-                    this=self._parse_table(),
-                    side=side.text if side else None,
-                    kind=kind.text if kind else None,
-                    on=self._parse_conjunction() if self._match(TokenType.ON) else None,
-                )
-            )
+        return self.expression(
+            exp.Join,
+            this=self._parse_table(),
+            side=side.text if side else None,
+            kind=kind.text if kind else None,
+            on=self._parse_conjunction() if self._match(TokenType.ON) else None,
+        )
 
     def _parse_table(self, alias=False, schema=False):
         unnest = self._parse_unnest()
@@ -775,7 +841,7 @@ class Parser:
             return unnest
 
         if self._match(TokenType.L_PAREN):
-            expression = self._parse_cte()
+            expression = self._parse_with()
             self._match_r_paren()
         else:
             catalog = None
@@ -1451,6 +1517,9 @@ class Parser:
             )
 
         return this
+
+    def _parse_all(self, parse):
+        return list(iter(parse, None))
 
     def _match(self, token_type):
         if not self._curr:

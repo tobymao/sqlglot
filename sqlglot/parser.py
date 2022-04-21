@@ -257,6 +257,7 @@ class Parser:
             exp.Offset: self._parse_offset,
             exp.CTEAlias: self._parse_cte_alias,
             exp.Table: self._parse_table,
+            exp.CONJUNCTION: self._parse_conjunction,
         }
         if expression_type not in methods:
             raise TypeError(f"No parser registered for {expression_type}")

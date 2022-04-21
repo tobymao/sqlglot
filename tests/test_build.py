@@ -83,8 +83,12 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl LATERAL VIEW OUTER EXPLODE(y) tbl2 AS z",
             ),
             (
-                lambda: select("x").from_("tbl").join("tbl2 ON tbl1.y = tbl2.y"),
-                "SELECT x FROM tbl JOIN tbl2 ON tbl1.y = tbl2.y",
+                lambda: select("x").from_("tbl").join("tbl2 ON tbl.y = tbl2.y"),
+                "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y",
+            ),
+            (
+                lambda: select("x").from_("tbl").join("tbl2", on="tbl.y = tbl2.y"),
+                "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y",
             ),
             (
                 lambda: select("x").from_("tbl").join("tbl2", join_type="left outer"),

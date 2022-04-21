@@ -766,7 +766,8 @@ class Select(Expression):
 
     def join(
         self,
-        *expressions,
+        expression,
+        on=None,
         append=True,
         join_type=None,
         dialect=None,
@@ -777,16 +778,18 @@ class Select(Expression):
         Append to or set the JOIN expressions.
 
         Example:
-            >>> Select().select("*").from_("tbl").join("tbl2 ON tbl1.y = tbl2.y").sql()
+            >>> Select().select("*").from_("tbl").join("tbl2", on="tbl1.y = tbl2.y").sql()
             'SELECT * FROM tbl JOIN tbl2 ON tbl1.y = tbl2.y'
 
             Use `join_type` to change the type of join:
 
-            >>> Select().select("*").from_("tbl").join("tbl2 ON tbl1.y = tbl2.y", join_type="left outer").sql()
+            >>> Select().select("*").from_("tbl").join("tbl2", on="tbl1.y = tbl2.y", join_type="left outer").sql()
             'SELECT * FROM tbl LEFT OUTER JOIN tbl2 ON tbl1.y = tbl2.y'
 
         Args:
-            *expressions (str or Expression): the SQL code strings to parse.
+            expression (str or Expression): the SQL code string to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            on (str or Expression): optionally specify the join criteria as a SQL string.
                 If an `Expression` instance is passed, it will be used as-is.
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
@@ -801,15 +804,26 @@ class Select(Expression):
         prefix = "JOIN"
         if join_type:
             prefix = f"{join_type} {prefix}"
+        expression = _maybe_parse(
+            expression,
+            parse_into=Join,
+            dialect=dialect,
+            prefix=prefix,
+            parser_opts=parser_opts,
+        )
+        if on:
+            on = _maybe_parse(
+                on,
+                parse_into=CONJUNCTION,
+                dialect=dialect,
+                parser_opts=parser_opts,
+            )
+            expression.set("on", on)
         return _apply_list_builder(
-            *expressions,
+            expression,
             instance=self,
             arg="joins",
             append=append,
-            parse_into=Join,
-            prefix=prefix,
-            dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
         )
 
@@ -1660,6 +1674,10 @@ def _all_functions():
 
 
 ALL_FUNCTIONS = _all_functions()
+
+# Type alias to help use Parser.parse_into for expressions that
+# can output one of multiple different expression types
+CONJUNCTION = (And, Or)
 
 
 def _maybe_parse(

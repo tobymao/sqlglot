@@ -37,18 +37,6 @@ class Generator:
             unsupported expressions. Default ErrorLevel.WARN.
     """
 
-    BODY_EXP = (
-        exp.Select,
-        exp.From,
-        exp.Join,
-        exp.Where,
-        exp.Group,
-        exp.Having,
-        exp.Order,
-        exp.Union,
-        exp.CTE,
-    )
-
     TRANSFORMS = {
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -357,7 +345,7 @@ class Generator:
 
     def exists_sql(self, expression):
         exists = "NOT EXISTS" if expression.args.get("not") else "EXISTS"
-        return f"{exists} {self.wrap(expression)}"
+        return f"{exists} {self.sql(expression, 'this')}"
 
     def hint_sql(self, expression):
         if self.sql(expression, "this"):
@@ -547,6 +535,13 @@ class Generator:
         # pylint: disable=unused-argument
         return "*"
 
+    def subquery_sql(self, expression):
+        alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else ""
+        if self.pretty:
+            return f"{self.wrap(expression)}{alias}"
+        return f"({self.sql(expression, 'this')}){alias}"
+
     def union_sql(self, expression):
         return self.set_operation(
             expression, f"UNION{'' if expression.args.get('distinct') else ' ALL'}"
@@ -667,11 +662,6 @@ class Generator:
     def alias_sql(self, expression):
         to_sql = self.sql(expression, "alias")
         to_sql = f" AS {to_sql}" if to_sql else ""
-
-        if isinstance(expression.args["this"], self.BODY_EXP):
-            if self.pretty:
-                return f"{self.wrap(expression)}{to_sql}"
-            return f"({self.sql(expression, 'this')}){to_sql}"
         return f"{self.sql(expression, 'this')}{to_sql}"
 
     def aliases_sql(self, expression):

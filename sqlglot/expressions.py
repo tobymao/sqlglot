@@ -973,7 +973,7 @@ class Select(Expression):
 
     def subquery(self, alias=None, copy=True):
         """
-        Convert this expression to an aliased expression that can be used as a subquery.
+        Convert this expression to an aliased expression that can be used as a Subquery.
 
         Example:
             >>> subquery = Select().select("x").from_("tbl").subquery()
@@ -988,7 +988,7 @@ class Select(Expression):
             Alias: the subquery
         """
         instance = _maybe_copy(self, copy)
-        return Alias(
+        return Subquery(
             this=instance,
             alias=alias,
         )
@@ -1033,6 +1033,10 @@ class Select(Expression):
                 ]
             ),
         )
+
+
+class Subquery(Expression):
+    arg_types = {"this": True, "alias": False}
 
 
 class TableSample(Expression):

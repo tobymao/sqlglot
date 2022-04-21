@@ -189,6 +189,18 @@ class Parser:
         TokenType.CROSS,
     }
 
+    BODY_EXPRESSIONS = (
+        exp.Select,
+        exp.From,
+        exp.Join,
+        exp.Where,
+        exp.Group,
+        exp.Having,
+        exp.Order,
+        exp.Union,
+        exp.CTE,
+    )
+
     __slots__ = (
         "functions",
         "error_level",
@@ -422,7 +434,7 @@ class Parser:
         return self.expression(
             exp.Drop,
             exists=self._parse_exists(),
-            this=self._parse_table(None, schema=True),
+            this=self._parse_table(schema=True),
             kind=kind,
         )
 
@@ -443,7 +455,7 @@ class Parser:
             self.raise_error("Expected TABLE or View")
 
         exists = self._parse_exists(not_=True)
-        this = self._parse_table(alias=None, schema=True)
+        this = self._parse_table(schema=True)
         expression = None
         properties = None
 
@@ -581,7 +593,7 @@ class Parser:
 
         return self.expression(
             exp.Insert,
-            this=self._parse_table(alias=None, schema=True),
+            this=self._parse_table(schema=True),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_select(),
@@ -593,7 +605,7 @@ class Parser:
 
         return self.expression(
             exp.Delete,
-            this=self._parse_table(alias=None, schema=True),
+            this=self._parse_table(schema=True),
             where=self._parse_where(),
         )
 
@@ -601,7 +613,7 @@ class Parser:
         return self.expression(
             exp.Update,
             **{
-                "this": self._parse_table(alias=None, schema=True),
+                "this": self._parse_table(schema=True),
                 "expressions": self._match(TokenType.SET)
                 and self._parse_csv(self._parse_equality),
                 "from": self._parse_from(),
@@ -621,7 +633,7 @@ class Parser:
     def _parse_cache(self):
         lazy = self._match(TokenType.LAZY)
         self._match(TokenType.TABLE)
-        table = self._parse_table(alias=None, schema=True)
+        table = self._parse_table(schema=True)
         options = []
 
         if self._match(TokenType.OPTIONS):
@@ -720,6 +732,7 @@ class Parser:
         )
 
     def _parse_table_alias(self):
+        self._match(TokenType.ALIAS)
         alias = self._parse_id_var()
         columns = None
 
@@ -742,9 +755,13 @@ class Parser:
         if self._match(TokenType.L_PAREN):
             this = self._parse_select()
             self._match_r_paren()
-            this = self._parse_alias(this)
+            this = self.expression(
+                exp.Subquery,
+                this=this,
+                alias=self._parse_table_alias(),
+            )
 
-        if isinstance(this, exp.Alias) or self._match(TokenType.SELECT):
+        if isinstance(this, exp.Subquery) or self._match(TokenType.SELECT):
             this = self.expression(
                 exp.Select,
                 hint=self._parse_hint(),
@@ -834,14 +851,14 @@ class Parser:
             on=self._parse_conjunction() if self._match(TokenType.ON) else None,
         )
 
-    def _parse_table(self, alias=False, schema=False):
+    def _parse_table(self, schema=False):
         unnest = self._parse_unnest()
 
         if unnest:
             return unnest
 
         if self._match(TokenType.L_PAREN):
-            expression = self._parse_with()
+            this = self._parse_with()
             self._match_r_paren()
         else:
             catalog = None
@@ -855,22 +872,18 @@ class Parser:
                 if not table:
                     self.raise_error("Expected table name")
 
-            expression = self.expression(exp.Table, this=table, db=db, catalog=catalog)
-
-        expression = self._parse_table_sample(expression)
-
-        if alias is None:
-            this = expression
-        elif alias:
-            this = self.expression(exp.Alias, this=expression, alias=alias)
-        else:
-            this = self._parse_alias(expression)
-
-        if not isinstance(this, (exp.Alias, exp.Table)):
-            this = self.expression(exp.Alias, this=this, alias=None)
+            this = self.expression(exp.Table, this=table, db=db, catalog=catalog)
 
         if schema:
-            return self._parse_schema(this=expression)
+            return self._parse_schema(this=this)
+
+        this = self._parse_table_sample(this)
+        alias = self._parse_table_alias()
+
+        if isinstance(this, self.BODY_EXPRESSIONS):
+            return self.expression(exp.Subquery, this=this, alias=alias)
+        if alias:
+            return self.expression(exp.Alias, this=this, alias=alias)
         return this
 
     def _parse_unnest(self):

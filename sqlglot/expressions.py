@@ -1,8 +1,12 @@
+from copy import deepcopy
 from enum import auto
+import typing
 import inspect
 import sys
 
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
+
+T = typing.TypeVar("T")
 
 
 class Expression:
@@ -53,9 +57,24 @@ class Expression:
         return ""
 
     def copy(self):
-        from copy import deepcopy
+        new = deepcopy(self)
+        for item, parent, _ in new.bfs():
+            if isinstance(item, Expression) and parent:
+                item.parent = parent
+        return new
 
-        return deepcopy(self)
+    def set(self, arg, value):
+        """
+        Sets `arg` to `value`.
+
+        Args:
+            arg (str): name of the expression arg
+            value: value to set the arg to.
+        """
+        self.args[arg] = value
+        for v in ensure_list(value):
+            if isinstance(v, Expression):
+                v.parent = self
 
     @property
     def depth(self):
@@ -232,6 +251,23 @@ class Expression:
             new_node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
         return new_node
 
+    def assert_is(self, type_: typing.Type[T]) -> T:
+        """
+        Assert that this `Expression` is an instance of `type_`.
+
+        If it is NOT an instance of `type_`, this raises an assertion error.
+        Otherwise, this returns this expression.
+
+        Examples:
+            This is useful for type security in chained expressions:
+
+            >>> import sqlglot
+            >>> sqlglot.parse_one("SELECT x from y").assert_is(Select).select("z").sql()
+            'SELECT x, z FROM y'
+        """
+        assert isinstance(self, type_)
+        return self
+
 
 class Annotation(Expression):
     arg_types = {
@@ -242,6 +278,7 @@ class Annotation(Expression):
 
 class Cache(Expression):
     arg_types = {
+        "with": False,
         "this": True,
         "lazy": False,
         "options": False,
@@ -255,6 +292,7 @@ class Uncache(Expression):
 
 class Create(Expression):
     arg_types = {
+        "with": False,
         "this": True,
         "kind": True,
         "expression": False,
@@ -274,8 +312,16 @@ class CharacterSet(Expression):
     arg_types = {"this": True, "default": False}
 
 
+class With(Expression):
+    arg_types = {"expressions": True, "recursive": False}
+
+
 class CTE(Expression):
-    arg_types = {"this": True, "expressions": True, "recursive": False}
+    arg_types = {"this": True, "alias": True}
+
+
+class TableAlias(Expression):
+    arg_types = {"this": True, "columns": False}
 
 
 class Column(Expression):
@@ -300,7 +346,7 @@ class ColumnDef(Expression):
 
 
 class Delete(Expression):
-    arg_types = {"this": True, "where": False}
+    arg_types = {"with": False, "this": True, "where": False}
 
 
 class Drop(Expression):
@@ -342,6 +388,7 @@ class Identifier(Expression):
 
 class Insert(Expression):
     arg_types = {
+        "with": False,
         "this": True,
         "expression": True,
         "overwrite": False,
@@ -450,7 +497,13 @@ class Unnest(Expression):
 
 
 class Update(Expression):
-    arg_types = {"this": True, "expressions": True, "from": False, "where": False}
+    arg_types = {
+        "with": False,
+        "this": True,
+        "expressions": True,
+        "from": False,
+        "where": False,
+    }
 
 
 class Values(Expression):
@@ -463,6 +516,7 @@ class Schema(Expression):
 
 class Select(Expression):
     arg_types = {
+        "with": False,
         "expressions": False,
         "hint": False,
         "distinct": False,
@@ -476,6 +530,509 @@ class Select(Expression):
         "limit": False,
         "offset": False,
     }
+
+    def from_(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Set the FROM expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").sql()
+            'SELECT x FROM tbl'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If a `From` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `From`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `From` expression into a single expression.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="from",
+            append=append,
+            copy=copy,
+            prefix="FROM",
+            parse_into=From,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+
+    def group_by(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Set the GROUP BY expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x", "COUNT(1)").group_by("x").sql()
+            'SELECT x, COUNT(1) FROM tbl GROUP BY x'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If a `Group` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Group`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Group` expression into a single expression.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="group",
+            append=append,
+            copy=copy,
+            prefix="GROUP BY",
+            parse_into=Group,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+
+    def order_by(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Set the ORDER BY expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").order_by("x DESC").sql()
+            'SELECT x FROM tbl ORDER BY x DESC'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If a `Group` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Order`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Order` expression into a single expression.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="order",
+            append=append,
+            copy=copy,
+            prefix="ORDER BY",
+            parse_into=Order,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+
+    def limit(self, expression, dialect=None, parser_opts=None, copy=True):
+        """
+        Set the LIMIT expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").limit(10).sql()
+            'SELECT x FROM tbl LIMIT 10'
+
+        Args:
+            expression (str or int or Expression): the SQL code string to parse.
+                This can also be an integer.
+                If a `Limit` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Limit`.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="limit",
+            parse_into=Limit,
+            prefix="LIMIT",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def offset(self, expression, dialect=None, parser_opts=None, copy=True):
+        """
+        Set the OFFSET expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").offset(10).sql()
+            'SELECT x FROM tbl OFFSET 10'
+
+        Args:
+            expression (str or int or Expression): the SQL code string to parse.
+                This can also be an integer.
+                If a `Offset` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Offset`.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="offset",
+            parse_into=Offset,
+            prefix="OFFSET",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def select(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Append to or set the SELECT expressions.
+
+        Example:
+            >>> Select().select("x", "y").sql()
+            'SELECT x, y'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect (str): the dialect used to parse the input expressions.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_list_builder(
+            *expressions,
+            instance=self,
+            arg="expressions",
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def lateral(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Append to or set the LATERAL expressions.
+
+        Example:
+            >>> Select().select("x").lateral("OUTER explode(y) tbl2 AS z").from_("tbl").sql()
+            'SELECT x FROM tbl LATERAL VIEW OUTER EXPLODE(y) tbl2 AS z'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect (str): the dialect used to parse the input expressions.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_list_builder(
+            *expressions,
+            instance=self,
+            arg="laterals",
+            append=append,
+            parse_into=Lateral,
+            prefix="LATERAL VIEW",
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def join(
+        self,
+        expression,
+        on=None,
+        append=True,
+        join_type=None,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+    ):
+        """
+        Append to or set the JOIN expressions.
+
+        Example:
+            >>> Select().select("*").from_("tbl").join("tbl2", on="tbl1.y = tbl2.y").sql()
+            'SELECT * FROM tbl JOIN tbl2 ON tbl1.y = tbl2.y'
+
+            Use `join_type` to change the type of join:
+
+            >>> Select().select("*").from_("tbl").join("tbl2", on="tbl1.y = tbl2.y", join_type="left outer").sql()
+            'SELECT * FROM tbl LEFT OUTER JOIN tbl2 ON tbl1.y = tbl2.y'
+
+        Args:
+            expression (str or Expression): the SQL code string to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            on (str or Expression): optionally specify the join criteria as a SQL string.
+                If an `Expression` instance is passed, it will be used as-is.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            join_type (str): If set, alter the parsed join type
+            dialect (str): the dialect used to parse the input expressions.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        prefix = "JOIN"
+        if join_type:
+            prefix = f"{join_type} {prefix}"
+        expression = _maybe_parse(
+            expression,
+            parse_into=Join,
+            dialect=dialect,
+            prefix=prefix,
+            parser_opts=parser_opts,
+        )
+        if on:
+            on = _maybe_parse(
+                on,
+                parse_into=CONJUNCTION,
+                dialect=dialect,
+                parser_opts=parser_opts,
+            )
+            expression.set("on", on)
+        return _apply_list_builder(
+            expression,
+            instance=self,
+            arg="joins",
+            append=append,
+            copy=copy,
+        )
+
+    def where(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Append to or set the WHERE expressions.
+
+        Example:
+            >>> Select().select("x").from_("tbl").where("x = 'a' OR x < 'b'").sql()
+            "SELECT x FROM tbl WHERE x = 'a' OR x < 'b'"
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+                Multiple expressions are combined with an AND operator.
+            append (bool): if `True`, AND the new expressions to any existing expression.
+                Otherwise, this resets the expression.
+            dialect (str): the dialect used to parse the input expressions.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="where",
+            append=append,
+            parse_into=Where,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def having(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Append to or set the HAVING expressions.
+
+        Example:
+            >>> Select().select("x", "COUNT(y)").from_("tbl").group_by("x").having("COUNT(y) > 3").sql()
+            'SELECT x, COUNT(y) FROM tbl GROUP BY x HAVING COUNT(y) > 3'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+                Multiple expressions are combined with an AND operator.
+            append (bool): if `True`, AND the new expressions to any existing expression.
+                Otherwise, this resets the expression.
+            dialect (str): the dialect used to parse the input expressions.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="having",
+            append=append,
+            parse_into=Having,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+    def distinct(self, distinct=True, copy=True):
+        """
+        Set the OFFSET expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").distinct().sql()
+            'SELECT DISTINCT x FROM tbl'
+
+        Args:
+            distinct (bool): whether the Select should be distinct
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        instance = _maybe_copy(self, copy)
+        instance.set("distinct", distinct)
+        return instance
+
+    def with_(
+        self,
+        alias,
+        as_,
+        recursive=None,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+    ):
+        """
+        Append to or set the common table expressions.
+
+        Example:
+            >>> Select().with_("tbl2", as_="SELECT * FROM tbl").select("x").from_("tbl2").sql()
+            'WITH tbl2 AS (SELECT * FROM tbl) SELECT x FROM tbl2'
+
+        Args:
+            alias (str or Expression): the SQL code string to parse as the table name.
+                If an `Expression` instance is passed, this is used as-is.
+            as_ (str or Expression): the SQL code string to parse as the table expression.
+                If an `Expression` instance is passed, it will be used as-is.
+            recursive (bool): set the RECURSIVE part of the expression. Defaults to `False`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        alias_expression = _maybe_parse(
+            alias,
+            dialect=dialect,
+            parse_into=TableAlias,
+            parser_opts=parser_opts,
+        )
+        as_expression = _maybe_parse(
+            as_,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        cte = CTE(
+            this=as_expression,
+            alias=alias_expression,
+        )
+        return _apply_child_list_builder(
+            cte,
+            instance=self,
+            arg="with",
+            append=append,
+            copy=copy,
+            parse_into=With,
+            recursive=recursive or False,
+        )
+
+    def subquery(self, alias=None, copy=True):
+        """
+        Convert this expression to an aliased expression that can be used as a subquery.
+
+        Example:
+            >>> subquery = Select().select("x").from_("tbl").subquery()
+            >>> Select().select("x").from_(subquery).sql()
+            'SELECT x FROM (SELECT x FROM tbl)'
+
+        Args:
+            alias (str): an optional alias for the subquery
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Alias: the subquery
+        """
+        instance = _maybe_copy(self, copy)
+        return Alias(
+            this=instance,
+            alias=alias,
+        )
+
+    def ctas(self, table, properties=None, dialect=None, parser_opts=None, copy=True):
+        """
+        Convert this expression to a CREATE TABLE AS statement.
+
+        Example:
+            >>> Select().select("*").from_("tbl").ctas("x").sql()
+            'CREATE TABLE x AS SELECT * FROM tbl'
+
+        Args:
+            table (str or Expression): the SQL code string to parse as the table name.
+                If another `Expression` instance is passed, it will be used as-is.
+            properties (dict): an optional mapping of table properties
+            dialect (str): the dialect used to parse the input table.
+            parser_opts (dict): other options to use to parse the input table.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Create: the CREATE TABLE AS expression
+        """
+        instance = _maybe_copy(self, copy)
+        table_expression = _maybe_parse(
+            table,
+            parse_into=Table,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        return Create(
+            this=table_expression,
+            kind="table",
+            expression=instance,
+            properties=Properties(
+                expressions=[
+                    Property(
+                        this=Literal.string(k),
+                        value=Literal.string(v),
+                    )
+                    for k, v in (properties or {}).items()
+                ]
+            ),
+        )
 
 
 class TableSample(Expression):
@@ -1117,3 +1674,172 @@ def _all_functions():
 
 
 ALL_FUNCTIONS = _all_functions()
+
+# Type alias to help use Parser.parse_into for expressions that
+# can output one of multiple different expression types
+CONJUNCTION = (And, Or)
+
+
+def _maybe_parse(
+    code_or_expression,
+    *,
+    parse_into=None,
+    dialect=None,
+    prefix=None,
+    parser_opts=None,
+):
+    if isinstance(code_or_expression, Expression):
+        return code_or_expression
+
+    parser_opts = parser_opts or {}
+    code = str(code_or_expression)
+    if prefix:
+        code = f"{prefix} {code}"
+
+    from sqlglot.dialects import Dialect
+
+    dialect = Dialect.get_or_raise(dialect)()
+
+    if parse_into:
+        result = dialect.parse_into(parse_into, code, **parser_opts)
+    else:
+        result = dialect.parse(code, **parser_opts)
+
+    if not result:
+        return None
+    return result[0]
+
+
+def _maybe_copy(instance, copy=True):
+    return instance.copy() if copy else instance
+
+
+def _is_wrong_expression(expression, parse_into):
+    return isinstance(expression, Expression) and not isinstance(expression, parse_into)
+
+
+def _apply_builder(
+    expression,
+    instance,
+    arg,
+    copy=True,
+    prefix=None,
+    parse_into=None,
+    dialect=None,
+    parser_opts=None,
+):
+    if _is_wrong_expression(expression, parse_into):
+        expression = parse_into(this=expression)
+    instance = _maybe_copy(instance, copy)
+    expression = _maybe_parse(
+        code_or_expression=expression,
+        prefix=prefix,
+        parse_into=parse_into,
+        dialect=dialect,
+        parser_opts=parser_opts,
+    )
+    instance.set(arg, expression)
+    return instance
+
+
+def _apply_child_list_builder(
+    *expressions,
+    instance,
+    arg,
+    append=True,
+    copy=True,
+    prefix=None,
+    parse_into=None,
+    dialect=None,
+    parser_opts=None,
+    **kwargs,
+):
+    # pylint: disable=too-many-locals
+    instance = _maybe_copy(instance, copy)
+    parsed = []
+    for expression in expressions:
+        if _is_wrong_expression(expression, parse_into):
+            expression = parse_into(expressions=[expression])
+        expression = _maybe_parse(
+            expression,
+            parse_into=parse_into,
+            dialect=dialect,
+            prefix=prefix,
+            parser_opts=parser_opts,
+        )
+        parsed.extend(expression.args["expressions"])
+
+    existing = instance.args.get(arg)
+    if append and existing:
+        parsed = ensure_list(existing.args.get("expressions")) + parsed
+
+    child = parse_into(expressions=parsed)
+    for k, v in kwargs.items():
+        child.set(k, v)
+    instance.set(arg, child)
+    return instance
+
+
+def _apply_list_builder(
+    *expressions,
+    instance,
+    arg,
+    append=True,
+    copy=True,
+    prefix=None,
+    parse_into=None,
+    dialect=None,
+    parser_opts=None,
+):
+    inst = _maybe_copy(instance, copy)
+
+    expressions = [
+        _maybe_parse(
+            code_or_expression=expression,
+            parse_into=parse_into,
+            prefix=prefix,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        for expression in expressions
+    ]
+
+    existing_expressions = inst.args.get(arg)
+    if append and existing_expressions:
+        expressions = existing_expressions + expressions
+
+    inst.set(arg, expressions)
+    return inst
+
+
+def _apply_conjunction_builder(
+    *expressions,
+    instance,
+    arg,
+    parse_into,
+    append=True,
+    copy=True,
+    dialect=None,
+    parser_opts=None,
+):
+    inst = _maybe_copy(instance, copy)
+    expressions = [
+        _maybe_parse(
+            code_or_expression=expression,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        for expression in expressions
+    ]
+
+    existing = inst.args.get(arg)
+    if append and existing is not None:
+        expressions = [existing.this] + expressions
+
+    node = expressions[0]
+
+    for expression in expressions[1:]:
+        node = And(this=node, expression=expression)
+
+    inst.set(arg, parse_into(this=node))
+    return inst

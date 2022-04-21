@@ -197,6 +197,11 @@ class Generator:
         if transform:
             return transform
 
+        if not isinstance(expression, exp.Expression):
+            raise ValueError(
+                f"Expected an Expression. Received {type(expression)}: {expression}"
+            )
+
         exp_handler_name = f"{expression.key}_sql"
         if hasattr(self, exp_handler_name):
             return getattr(self, exp_handler_name)(expression)
@@ -223,9 +228,10 @@ class Generator:
             if options
             else ""
         )
-        expression = self.sql(expression, "expression")
-        expression = f" AS{self.sep()}{expression}" if expression else ""
-        return f"CACHE{lazy} TABLE {table}{options}{expression}"
+        sql = self.sql(expression, "expression")
+        sql = f" AS{self.sep()}{sql}" if sql else ""
+        sql = f"CACHE{lazy} TABLE {table}{options}{sql}"
+        return self.prepend_ctes(expression, sql)
 
     def characterset_sql(self, expression):
         default = "DEFAULT " if expression.args.get("default") else ""
@@ -294,16 +300,33 @@ class Generator:
             if option
         )
 
-        return f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}{options}"
+        expression_sql = f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}{options}"
+        return self.prepend_ctes(expression, expression_sql)
 
-    def cte_sql(self, expression):
-        sql = ", ".join(
-            f"{self.sql(e, 'alias')} AS {self.wrap(e)}"
-            for e in expression.args["expressions"]
-        )
+    def prepend_ctes(self, expression, sql):
+        with_ = self.sql(expression, "with")
+        if with_:
+            sql = f"{with_}{self.sep()}{self.indent(sql)}"
+        return sql
+
+    def with_sql(self, expression):
+        sql = ", ".join(self.sql(e) for e in expression.args["expressions"])
         recursive = "RECURSIVE " if expression.args.get("recursive") else ""
 
-        return f"WITH {recursive}{sql}{self.sep()}{self.indent(self.sql(expression, 'this'))}"
+        return f"WITH {recursive}{sql}"
+
+    def cte_sql(self, expression):
+        alias = self.sql(expression, "alias")
+        return f"{alias} AS {self.wrap(expression)}"
+
+    def tablealias_sql(self, expression):
+        alias = self.sql(expression, "this")
+        columns_str = ""
+        columns = expression.args.get("columns")
+        if columns:
+            columns_str = ", ".join(self.sql(e) for e in columns)
+            columns_str = f"({columns_str})"
+        return f"{alias}{columns_str}"
 
     def datatype_sql(self, expression):
         type_value = expression.this
@@ -317,7 +340,8 @@ class Generator:
     def delete_sql(self, expression):
         this = self.sql(expression, "this")
         where_sql = self.sql(expression, "where")
-        return f"DELETE FROM {this}{where_sql}"
+        sql = f"DELETE FROM {this}{where_sql}"
+        return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression):
         this = self.sql(expression, "this")
@@ -374,7 +398,8 @@ class Generator:
         )
         expression_sql = self.sql(expression, "expression")
         sep = self.sep(sep="") if partition_sql else ""
-        return f"INSERT {kind} {this}{exists}{partition_sql}{sep}{expression_sql}"
+        sql = f"INSERT {kind} {this}{exists}{partition_sql}{sep}{expression_sql}"
+        return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression):
         return self.set_operation(
@@ -416,7 +441,8 @@ class Generator:
         set_sql = self.expressions(expression, flat=True)
         from_sql = self.sql(expression, "from")
         where_sql = self.sql(expression, "where")
-        return f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}"
+        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}"
+        return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression):
         return f"VALUES{self.seg('')}{self.expressions(expression)}"
@@ -496,7 +522,7 @@ class Generator:
         expressions = self.expressions(expression)
         select = "SELECT" if expressions else ""
         sep = self.sep() if expressions else ""
-        return csv(
+        sql = csv(
             f"{select}{hint}{distinct}{sep}{expressions}",
             self.sql(expression, "from"),
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
@@ -509,6 +535,7 @@ class Generator:
             self.sql(expression, "offset"),
             sep="",
         )
+        return self.prepend_ctes(expression, sql)
 
     def schema_sql(self, expression):
         this = self.sql(expression, "this")

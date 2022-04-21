@@ -315,43 +315,6 @@ class CharacterSet(Expression):
 class With(Expression):
     arg_types = {"expressions": True, "recursive": False}
 
-    def cte(
-        self,
-        alias,
-        as_,
-        append=True,
-        dialect=None,
-        parser_opts=None,
-        copy=True,
-    ):
-        alias_expression = _maybe_parse(
-            alias,
-            dialect=dialect,
-            parse_into=CTEAlias,
-            parser_opts=parser_opts,
-        )
-        as_expression = _maybe_parse(
-            as_,
-            dialect=dialect,
-            parser_opts=parser_opts,
-        )
-        cte = CTE(
-            this=as_expression,
-            alias=alias_expression,
-        )
-        return _apply_list_builder(
-            cte,
-            instance=self,
-            arg="expressions",
-            append=append,
-            copy=copy,
-        )
-
-    def recursive(self, recursive=True, copy=True):
-        instance = _maybe_copy(self, copy)
-        instance.set("recursive", recursive)
-        return instance
-
 
 class CTE(Expression):
     arg_types = {"this": True, "alias": True}
@@ -591,29 +554,21 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        instance = _maybe_copy(self, copy)
-        parsed = []
-        for expression in expressions:
-            if _is_wrong_expression(expression, From):
-                expression = From(expressions=[expression])
-            expression = _maybe_parse(
-                expression,
-                parse_into=From,
-                dialect=dialect,
-                prefix="FROM",
-                parser_opts=parser_opts,
-            )
-            parsed.extend(expression.args["expressions"])
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="from",
+            append=append,
+            copy=copy,
+            prefix="FROM",
+            parse_into=From,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
 
-        existing_from = instance.args.get("from")
-        if append and existing_from:
-            parsed = ensure_list(existing_from.args.get("expressions")) + parsed
-
-        from_ = From(expressions=parsed)
-        instance.set("from", from_)
-        return instance
-
-    def group_by(self, expression, dialect=None, parser_opts=None, copy=True):
+    def group_by(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
         """
         Set the GROUP BY expression.
 
@@ -622,9 +577,11 @@ class Select(Expression):
             'SELECT x, COUNT(1) FROM tbl GROUP BY x'
 
         Args:
-            expression (str or Expression): the SQL code string to parse.
+            *expressions (str or Expression): the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
                 If another `Expression` instance is passed, it will be wrapped in a `Group`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Group` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
             parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
@@ -632,20 +589,21 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        if _is_wrong_expression(expression, Group):
-            expression = Group(expressions=[expression])
-        return _apply_builder(
-            expression=expression,
+        return _apply_child_list_builder(
+            *expressions,
             instance=self,
             arg="group",
-            parse_into=Group,
+            append=append,
+            copy=copy,
             prefix="GROUP BY",
+            parse_into=Group,
             dialect=dialect,
             parser_opts=parser_opts,
-            copy=copy,
         )
 
-    def order_by(self, expression, dialect=None, parser_opts=None, copy=True):
+    def order_by(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
         """
         Set the ORDER BY expression.
 
@@ -654,9 +612,11 @@ class Select(Expression):
             'SELECT x FROM tbl ORDER BY x DESC'
 
         Args:
-            expression (str or Expression): the SQL code string to parse.
+            *expressions (str or Expression): the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Group`.
+                If another `Expression` instance is passed, it will be wrapped in a `Order`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Order` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
             parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
@@ -664,17 +624,16 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        if _is_wrong_expression(expression, Order):
-            expression = Order(this=expression)
-        return _apply_builder(
-            expression=expression,
+        return _apply_child_list_builder(
+            *expressions,
             instance=self,
             arg="order",
-            parse_into=Order,
+            append=append,
+            copy=copy,
             prefix="ORDER BY",
+            parse_into=Order,
             dialect=dialect,
             parser_opts=parser_opts,
-            copy=copy,
         )
 
     def limit(self, expression, dialect=None, parser_opts=None, copy=True):
@@ -697,8 +656,6 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        if _is_wrong_expression(expression, Limit):
-            expression = Limit(this=expression)
         return _apply_builder(
             expression=expression,
             instance=self,
@@ -730,8 +687,6 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        if _is_wrong_expression(expression, Offset):
-            expression = Offset(this=expression)
         return _apply_builder(
             expression=expression,
             instance=self,
@@ -992,18 +947,15 @@ class Select(Expression):
             this=as_expression,
             alias=alias_expression,
         )
-
-        instance = _maybe_copy(self, copy)
-        with_ = _apply_list_builder(
+        return _apply_child_list_builder(
             cte,
-            instance=instance.args.get("with") or With(),
-            arg="expressions",
+            instance=self,
+            arg="with",
             append=append,
-            copy=False,
+            copy=copy,
+            parse_into=With,
+            recursive=recursive or False,
         )
-        with_.set("recursive", recursive or False)
-        instance.set("with", with_)
-        return instance
 
     def subquery(self, alias=None, copy=True):
         """
@@ -1758,6 +1710,8 @@ def _apply_builder(
     dialect=None,
     parser_opts=None,
 ):
+    if _is_wrong_expression(expression, parse_into):
+        expression = parse_into(this=expression)
     instance = _maybe_copy(instance, copy)
     expression = _maybe_parse(
         code_or_expression=expression,
@@ -1767,6 +1721,44 @@ def _apply_builder(
         parser_opts=parser_opts,
     )
     instance.set(arg, expression)
+    return instance
+
+
+def _apply_child_list_builder(
+    *expressions,
+    instance,
+    arg,
+    append=True,
+    copy=True,
+    prefix=None,
+    parse_into=None,
+    dialect=None,
+    parser_opts=None,
+    **kwargs,
+):
+    # pylint: disable=too-many-locals
+    instance = _maybe_copy(instance, copy)
+    parsed = []
+    for expression in expressions:
+        if _is_wrong_expression(expression, parse_into):
+            expression = parse_into(expressions=[expression])
+        expression = _maybe_parse(
+            expression,
+            parse_into=parse_into,
+            dialect=dialect,
+            prefix=prefix,
+            parser_opts=parser_opts,
+        )
+        parsed.extend(expression.args["expressions"])
+
+    existing = instance.args.get(arg)
+    if append and existing:
+        parsed = ensure_list(existing.args.get("expressions")) + parsed
+
+    child = parse_into(expressions=parsed)
+    for k, v in kwargs.items():
+        child.set(k, v)
+    instance.set(arg, child)
     return instance
 
 

@@ -67,6 +67,13 @@ class TestBuild(unittest.TestCase):
                 "SELECT x, y FROM tbl GROUP BY x, y",
             ),
             (
+                lambda: select("x", "y", "z", "a")
+                .from_("tbl")
+                .group_by("x, y", "z")
+                .group_by("a"),
+                "SELECT x, y, z, a FROM tbl GROUP BY x, y, z, a",
+            ),
+            (
                 lambda: select("x").distinct(True).from_("tbl"),
                 "SELECT DISTINCT x FROM tbl",
             ),
@@ -97,6 +104,13 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x").from_("tbl").order_by("x, y DESC"),
                 "SELECT x FROM tbl ORDER BY x, y DESC",
+            ),
+            (
+                lambda: select("x", "y", "z", "a")
+                .from_("tbl")
+                .order_by("x, y", "z")
+                .order_by("a"),
+                "SELECT x, y, z, a FROM tbl ORDER BY x, y, z, a",
             ),
             (lambda: select("x").from_("tbl").limit(10), "SELECT x FROM tbl LIMIT 10"),
             (

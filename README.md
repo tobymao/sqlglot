@@ -178,7 +178,7 @@ WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
 SELECT APPROX_COUNT_DISTINCT(a) FROM foo
 ```
 
-### Build and Modify Sql
+### Build and Modify SQL
 SQLGlot supports incrementally building sql expressions.
 
 ```python

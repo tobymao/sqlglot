@@ -1,8 +1,9 @@
 import unittest
 import doctest
 
-from sqlglot import parse_one, select, from_
+from sqlglot import parse_one, select, from_, and_, or_, condition
 from sqlglot import expressions as exp
+from sqlglot.expressions import not_
 
 
 def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
@@ -245,6 +246,32 @@ class TestBuild(unittest.TestCase):
                 .ctas("foo.x", properties={"format": "parquet", "y": "2"}),
                 "CREATE TABLE foo.x STORED AS PARQUET TBLPROPERTIES ('y' = '2') AS SELECT * FROM y",
                 "hive",
+            ),
+            (lambda: and_("x=1", "y=1"), "x = 1 AND y = 1"),
+            (lambda: condition("x=1").and_("y=1"), "x = 1 AND y = 1"),
+            (lambda: and_("x=1", "y=1", "z=1"), "x = 1 AND y = 1 AND z = 1"),
+            (lambda: condition("x=1").and_("y=1", "z=1"), "x = 1 AND y = 1 AND z = 1"),
+            (lambda: and_("x=1", and_("y=1", "z=1")), "x = 1 AND (y = 1 AND z = 1)"),
+            (
+                lambda: condition("x=1").and_("y=1").and_("z=1"),
+                "(x = 1 AND y = 1) AND z = 1",
+            ),
+            (lambda: or_(and_("x=1", "y=1"), "z=1"), "(x = 1 AND y = 1) OR z = 1"),
+            (
+                lambda: condition("x=1").and_("y=1").or_("z=1"),
+                "(x = 1 AND y = 1) OR z = 1",
+            ),
+            (lambda: or_("z=1", and_("x=1", "y=1")), "z = 1 OR (x = 1 AND y = 1)"),
+            (
+                lambda: or_("z=1 OR a=1", and_("x=1", "y=1")),
+                "(z = 1 OR a = 1) OR (x = 1 AND y = 1)",
+            ),
+            (lambda: not_("x=1"), "NOT x = 1"),
+            (lambda: condition("x=1").not_(), "NOT x = 1"),
+            (lambda: condition("x=1").and_("y=1").not_(), "NOT (x = 1 AND y = 1)"),
+            (
+                lambda: select("*").from_("x").where(condition("y=1").and_("z=1")),
+                "SELECT * FROM x WHERE y = 1 AND z = 1",
             ),
         ]:
             with self.subTest(sql):

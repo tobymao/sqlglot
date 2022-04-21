@@ -269,6 +269,59 @@ class Expression:
         return self
 
 
+class Condition(Expression):
+    def and_(self, *expressions, dialect=None, parser_opts=None):
+        """
+        AND this condition with one or multiple expressions.
+
+        Example:
+            >>> condition("x=1").and_("y=1").sql()
+            'x = 1 AND y = 1'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+
+        Returns:
+            And: the new condition.
+        """
+        return and_(self, *expressions, dialect=dialect, **(parser_opts or {}))
+
+    def or_(self, *expressions, dialect=None, parser_opts=None):
+        """
+        OR this condition with one or multiple expressions.
+
+        Example:
+            >>> condition("x=1").or_("y=1").sql()
+            'x = 1 OR y = 1'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+
+        Returns:
+            Or: the new condition.
+        """
+        return or_(self, *expressions, dialect=dialect, **(parser_opts or {}))
+
+    def not_(self):
+        """
+        Wrap this condition with NOT.
+
+        Example:
+            >>> condition("x=1").not_().sql()
+            'NOT x = 1'
+
+        Returns:
+            Not: the new condition.
+        """
+        return not_(self)
+
+
 class Annotation(Expression):
     arg_types = {
         "this": True,
@@ -1132,7 +1185,7 @@ class Add(Binary):
     pass
 
 
-class And(Binary):
+class And(Binary, Condition):
     pass
 
 
@@ -1168,19 +1221,19 @@ class DPipe(Binary):
     pass
 
 
-class EQ(Binary):
+class EQ(Binary, Condition):
     pass
 
 
-class GT(Binary):
+class GT(Binary, Condition):
     pass
 
 
-class GTE(Binary):
+class GTE(Binary, Condition):
     pass
 
 
-class ILike(Binary):
+class ILike(Binary, Condition):
     pass
 
 
@@ -1188,19 +1241,19 @@ class IntDiv(Binary):
     pass
 
 
-class Is(Binary):
+class Is(Binary, Condition):
     pass
 
 
-class Like(Binary):
+class Like(Binary, Condition):
     pass
 
 
-class LT(Binary):
+class LT(Binary, Condition):
     pass
 
 
-class LTE(Binary):
+class LTE(Binary, Condition):
     pass
 
 
@@ -1212,11 +1265,11 @@ class Mul(Binary):
     pass
 
 
-class NEQ(Binary):
+class NEQ(Binary, Condition):
     pass
 
 
-class Or(Binary):
+class Or(Binary, Condition):
     pass
 
 
@@ -1234,11 +1287,11 @@ class BitwiseNot(Unary):
     pass
 
 
-class Not(Unary):
+class Not(Unary, Condition):
     pass
 
 
-class Paren(Unary):
+class Paren(Unary, Condition):
     pass
 
 
@@ -1823,23 +1876,130 @@ def _apply_conjunction_builder(
     parser_opts=None,
 ):
     inst = _maybe_copy(instance, copy)
-    expressions = [
-        _maybe_parse(
-            code_or_expression=expression,
-            dialect=dialect,
-            parser_opts=parser_opts,
-        )
-        for expression in expressions
-    ]
 
     existing = inst.args.get(arg)
     if append and existing is not None:
-        expressions = [existing.this] + expressions
+        expressions = [existing.this] + list(expressions)
 
-    node = expressions[0]
-
-    for expression in expressions[1:]:
-        node = And(this=node, expression=expression)
+    node = and_(*expressions, dialect=dialect, **(parser_opts or {}))
 
     inst.set(arg, parse_into(this=node))
     return inst
+
+
+def _combine(expressions, operator, dialect=None, **opts):
+    expressions = [
+        condition(expression, dialect=dialect, **opts) for expression in expressions
+    ]
+    this = expressions[0]
+    if expressions[1:]:
+        this = _wrap_operator(this)
+    for expression in expressions[1:]:
+        this = operator(this=this, expression=_wrap_operator(expression))
+    return this
+
+
+def _wrap_operator(expression):
+    if isinstance(expression, (And, Or, Not)):
+        expression = Paren(this=expression)
+    return expression
+
+
+def condition(expression, dialect=None, **opts):
+    """
+    Initialize a logical condition expression.
+
+    Example:
+        >>> condition("x=1").sql()
+        'x = 1'
+
+        This is helpful for composing larger logical syntax trees:
+        >>> where = condition("x=1")
+        >>> where = where.and_("y=1")
+        >>> Select().from_("tbl").select("*").where(where).sql()
+        'SELECT * FROM tbl WHERE x = 1 AND y = 1'
+
+    Args:
+        *expression (str or Expression): the SQL code string to parse.
+            If an Expression instance is passed, this is used as-is.
+        dialect (str): the dialect used to parse the input expression (in the case that the
+            input expression is a SQL string).
+        **opts: other options to use to parse the input expressions (again, in the case
+            that the input expression is a SQL string).
+
+    Returns:
+        Condition: the expression
+    """
+    this = _maybe_parse(
+        expression,
+        dialect=dialect,
+        parser_opts=opts,
+    )
+    if not isinstance(this, Condition):
+        raise ValueError(f"Failed to parse expression into condition: {expression}")
+    return this
+
+
+def and_(*expressions, dialect=None, **opts):
+    """
+    Combine multiple conditions with an AND logical operator.
+
+    Example:
+        >>> and_("x=1", and_("y=1", "z=1")).sql()
+        'x = 1 AND (y = 1 AND z = 1)'
+
+    Args:
+        *expressions (str or Expression): the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        dialect (str): the dialect used to parse the input expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        And: the new condition
+    """
+    return _combine(expressions, And, dialect, **opts)
+
+
+def or_(*expressions, dialect=None, **opts):
+    """
+    Combine multiple conditions with an OR logical operator.
+
+    Example:
+        >>> or_("x=1", or_("y=1", "z=1")).sql()
+        'x = 1 OR (y = 1 OR z = 1)'
+
+    Args:
+        *expressions (str or Expression): the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        dialect (str): the dialect used to parse the input expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Or: the new condition
+    """
+    return _combine(expressions, Or, dialect, **opts)
+
+
+def not_(expression, dialect=None, **opts):
+    """
+    Wrap a condition with a NOT operator.
+
+    Example:
+        >>> not_("this_suit='black'").sql()
+        "NOT this_suit = 'black'"
+
+    Args:
+        expression (str or Expression): the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        dialect (str): the dialect used to parse the input expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Not: the new condition
+    """
+    this = condition(
+        expression,
+        dialect=dialect,
+        **opts,
+    )
+    return Not(this=_wrap_operator(this))

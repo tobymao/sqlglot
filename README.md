@@ -200,7 +200,7 @@ parse_one("SELECT x FROM y").from_("z").sql()
 ```
 
 ```sql
-SELECT x FROM z
+SELECT x FROM y, z
 ```
 
 There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:

@@ -25,7 +25,15 @@ class TestBuild(unittest.TestCase):
                 lambda: select("x").select("y", append=False).from_("tbl"),
                 "SELECT y FROM tbl",
             ),
-            (lambda: select("x").from_("tbl").from_("tbl2"), "SELECT x FROM tbl2"),
+            (lambda: select("x").from_("tbl").from_("tbl2"), "SELECT x FROM tbl, tbl2"),
+            (
+                lambda: select("x").from_("tbl, tbl2", "tbl3").from_("tbl4"),
+                "SELECT x FROM tbl, tbl2, tbl3, tbl4",
+            ),
+            (
+                lambda: select("x").from_("tbl").from_("tbl2", append=False),
+                "SELECT x FROM tbl2",
+            ),
             (lambda: select("SUM(x) AS y"), "SELECT SUM(x) AS y"),
             (
                 lambda: select("x").from_("tbl").where("x > 0"),
@@ -98,6 +106,12 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x").from_("tbl").with_("tbl", as_="SELECT x FROM tbl2"),
                 "WITH tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .with_("tbl", as_="SELECT x FROM tbl2", recursive=True),
+                "WITH RECURSIVE tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl",
             ),
             (
                 lambda: select("x")

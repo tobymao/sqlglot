@@ -72,9 +72,7 @@ class Expression:
             value: value to set the arg to.
         """
         self.args[arg] = value
-        if not isinstance(value, list):
-            value = [value]
-        for v in value:
+        for v in ensure_list(value):
             if isinstance(v, Expression):
                 v.parent = self
 
@@ -317,6 +315,43 @@ class CharacterSet(Expression):
 class With(Expression):
     arg_types = {"expressions": True, "recursive": False}
 
+    def cte(
+        self,
+        alias,
+        as_,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+    ):
+        alias_expression = _maybe_parse(
+            alias,
+            dialect=dialect,
+            parse_into=CTEAlias,
+            parser_opts=parser_opts,
+        )
+        as_expression = _maybe_parse(
+            as_,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        cte = CTE(
+            this=as_expression,
+            alias=alias_expression,
+        )
+        return _apply_list_builder(
+            cte,
+            instance=self,
+            arg="expressions",
+            append=append,
+            copy=copy,
+        )
+
+    def recursive(self, recursive=True, copy=True):
+        instance = _maybe_copy(self, copy)
+        instance.set("recursive", recursive)
+        return instance
+
 
 class CTE(Expression):
     arg_types = {"this": True, "alias": True}
@@ -533,7 +568,9 @@ class Select(Expression):
         "offset": False,
     }
 
-    def from_(self, expression, dialect=None, parser_opts=None, copy=True):
+    def from_(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
         """
         Set the FROM expression.
 
@@ -542,9 +579,11 @@ class Select(Expression):
             'SELECT x FROM tbl'
 
         Args:
-            expression (str or Expression): the SQL code string to parse.
+            *expressions (str or Expression): the SQL code strings to parse.
                 If a `From` instance is passed, this is used as-is.
                 If another `Expression` instance is passed, it will be wrapped in a `From`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `From` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
             parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
@@ -552,18 +591,27 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        if _is_wrong_expression(expression, From):
-            expression = From(expressions=[expression])
-        return _apply_builder(
-            expression=expression,
-            instance=self,
-            arg="from",
-            parse_into=From,
-            prefix="FROM",
-            dialect=dialect,
-            parser_opts=parser_opts,
-            copy=copy,
-        )
+        instance = _maybe_copy(self, copy)
+        parsed = []
+        for expression in expressions:
+            if _is_wrong_expression(expression, From):
+                expression = From(expressions=[expression])
+            expression = _maybe_parse(
+                expression,
+                parse_into=From,
+                dialect=dialect,
+                prefix="FROM",
+                parser_opts=parser_opts,
+            )
+            parsed.extend(expression.args["expressions"])
+
+        existing_from = instance.args.get("from")
+        if append and existing_from:
+            parsed = ensure_list(existing_from.args.get("expressions")) + parsed
+
+        from_ = From(expressions=parsed)
+        instance.set("from", from_)
+        return instance
 
     def group_by(self, expression, dialect=None, parser_opts=None, copy=True):
         """
@@ -894,7 +942,7 @@ class Select(Expression):
             Select: the modified expression.
         """
         instance = _maybe_copy(self, copy)
-        instance.args["distinct"] = distinct
+        instance.set("distinct", distinct)
         return instance
 
     def with_(

@@ -80,7 +80,7 @@ def select(*expressions, dialect=None, **opts):
         'SELECT col1, col2 FROM tbl'
 
     Args:
-        expressions (str or Expression): the SQL code string to parse as the expressions of a
+        *expressions (str or Expression): the SQL code string to parse as the expressions of a
             SELECT statement. If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expressions (in the case that an
             input expression is a SQL string).
@@ -93,7 +93,7 @@ def select(*expressions, dialect=None, **opts):
     return Select().select(*expressions, dialect=dialect, parser_opts=opts)
 
 
-def from_(expression, dialect=None, **opts):
+def from_(*expressions, dialect=None, **opts):
     """
     Initializes a syntax tree from a FROM expression.
 
@@ -102,7 +102,7 @@ def from_(expression, dialect=None, **opts):
         'SELECT col1, col2 FROM tbl'
 
     Args:
-        expression (str or Expression): the SQL code string to parse as the FROM expression of a
+        *expressionss (str or Expression): the SQL code string to parse as the FROM expressions of a
             SELECT statement. If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression (in the case that the
             input expression is a SQL string).
@@ -112,4 +112,4 @@ def from_(expression, dialect=None, **opts):
     Returns:
         Select: the syntax tree for the SELECT statement.
     """
-    return Select().from_(expression, dialect=dialect, parser_opts=opts)
+    return Select().from_(*expressions, dialect=dialect, parser_opts=opts)

@@ -255,7 +255,7 @@ class Parser:
             exp.Order: self._parse_order,
             exp.Limit: self._parse_limit,
             exp.Offset: self._parse_offset,
-            exp.CTEAlias: self._parse_cte_alias,
+            exp.TableAlias: self._parse_table_alias,
             exp.Table: self._parse_table,
             exp.CONJUNCTION: self._parse_conjunction,
         }
@@ -702,7 +702,9 @@ class Parser:
         return this
 
     def _parse_cte(self):
-        alias = self._parse_cte_alias()
+        alias = self._parse_table_alias()
+        if not alias or not alias.this:
+            self.raise_error("Expected CTE to have alias")
 
         if not self._match(TokenType.ALIAS):
             self.raise_error("Expected AS in CTE")
@@ -717,20 +719,19 @@ class Parser:
             alias=alias,
         )
 
-    def _parse_cte_alias(self):
+    def _parse_table_alias(self):
         alias = self._parse_id_var()
-
-        if not alias:
-            self.raise_error("Expected CTE to have alias")
-
         columns = None
 
         if self._match(TokenType.L_PAREN):
             columns = self._parse_csv(self._parse_id_var)
             self._match_r_paren()
 
+        if not alias and not columns:
+            return None
+
         return self.expression(
-            exp.CTEAlias,
+            exp.TableAlias,
             this=alias,
             columns=columns,
         )

@@ -319,7 +319,7 @@ class Generator:
         alias = self.sql(expression, "alias")
         return f"{alias} AS {self.wrap(expression)}"
 
-    def ctealias_sql(self, expression):
+    def tablealias_sql(self, expression):
         alias = self.sql(expression, "this")
         columns_str = ""
         columns = expression.args.get("columns")

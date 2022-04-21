@@ -320,7 +320,7 @@ class CTE(Expression):
     arg_types = {"this": True, "alias": True}
 
 
-class CTEAlias(Expression):
+class TableAlias(Expression):
     arg_types = {"this": True, "columns": False}
 
 
@@ -949,7 +949,7 @@ class Select(Expression):
         alias_expression = _maybe_parse(
             alias,
             dialect=dialect,
-            parse_into=CTEAlias,
+            parse_into=TableAlias,
             parser_opts=parser_opts,
         )
         as_expression = _maybe_parse(

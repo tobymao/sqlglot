@@ -306,7 +306,6 @@ class Parser:
                 self.raise_error("Invalid expression / Unexpected token")
 
             self.check_errors()
-            self.set_parents(expressions)
 
         return expressions
 
@@ -316,15 +315,6 @@ class Parser:
                 raise error
             if self.error_level == ErrorLevel.WARN:
                 logger.error(error)
-
-    def set_parents(self, expressions):
-        for expression in expressions:
-            if not expression:
-                continue
-            for node, parent, key in expression.walk():
-                if isinstance(node, exp.Expression) and parent:
-                    node.parent = parent
-                    node.arg_key = key
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
@@ -530,9 +520,10 @@ class Parser:
                     for expression in schema.args["expressions"]
                     if expression.this.text("this").upper() in columns
                 ]
-                schema.args["expressions"] = [
-                    e for e in schema.args["expressions"] if e not in partitions
-                ]
+                schema.set(
+                    "expressions",
+                    [e for e in schema.args["expressions"] if e not in partitions],
+                )
                 value = self.expression(exp.Schema, expressions=partitions)
         else:
             value = self._parse_string()
@@ -706,10 +697,13 @@ class Parser:
         if "with" not in this.arg_types:
             self.raise_error(f"{this.key} does not support CTE")
 
-        this.args["with"] = self.expression(
-            exp.With,
-            expressions=expressions,
-            recursive=recursive,
+        this.set(
+            "with",
+            self.expression(
+                exp.With,
+                expressions=expressions,
+                recursive=recursive,
+            ),
         )
         return this
 

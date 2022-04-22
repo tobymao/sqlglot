@@ -852,8 +852,11 @@ class Parser:
         if unnest:
             return unnest
 
+        is_body = False
+
         if self._match(TokenType.L_PAREN):
             this = self._parse_with()
+            is_body = isinstance(this, self.BODY_EXPRESSIONS)
             self._match_r_paren()
         else:
             catalog = None
@@ -875,7 +878,7 @@ class Parser:
         this = self._parse_table_sample(this)
         alias = self._parse_table_alias()
 
-        if isinstance(this, self.BODY_EXPRESSIONS):
+        if is_body:
             return self.expression(exp.Subquery, this=this, alias=alias)
         if alias:
             return self.expression(exp.Alias, this=this, alias=alias)

@@ -27,6 +27,7 @@ class Expression:
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
         self.args = args
+        self._set_parent(*args.values())
         self.parent = None
         self.arg_key = None
 
@@ -72,9 +73,13 @@ class Expression:
             value: value to set the arg to.
         """
         self.args[arg] = value
-        for v in ensure_list(value):
-            if isinstance(v, Expression):
-                v.parent = self
+        self._set_parent(value)
+
+    def _set_parent(self, *nodes):
+        for node in nodes:
+            for v in ensure_list(node):
+                if isinstance(v, Expression):
+                    v.parent = self
 
     @property
     def depth(self):

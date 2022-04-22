@@ -1,6 +1,6 @@
 from sqlglot.dialects import Dialect
 from sqlglot.errors import ErrorLevel, UnsupportedError, ParseError, TokenError
-from sqlglot.expressions import Expression, Select
+from sqlglot.expressions import Expression, Select, and_, or_, not_, condition
 from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.parser import Parser
@@ -102,7 +102,7 @@ def from_(*expressions, dialect=None, **opts):
         'SELECT col1, col2 FROM tbl'
 
     Args:
-        *expressionss (str or Expression): the SQL code string to parse as the FROM expressions of a
+        *expressions (str or Expression): the SQL code string to parse as the FROM expressions of a
             SELECT statement. If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression (in the case that the
             input expression is a SQL string).

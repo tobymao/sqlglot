@@ -182,13 +182,14 @@ SELECT APPROX_COUNT_DISTINCT(a) FROM foo
 SQLGlot supports incrementally building sql expressions.
 
 ```python
-from sqlglot import select
+from sqlglot import select, condition
 
-select("*").from_("y").where("x > 1").sql()
+where = condition("x=1").and_("y=1")
+select("*").from_("y").where(where).sql()
 ```
-
+Which outputs:
 ```sql
-SELECT * FROM y WHERE x > 1
+SELECT * FROM y WHERE x = 1 AND y = 1
 ```
 
 You can also modify a parsed tree:
@@ -198,7 +199,7 @@ from sqlglot import parse_one
 
 parse_one("SELECT x FROM y").from_("z").sql()
 ```
-
+Which outputs:
 ```sql
 SELECT x FROM y, z
 ```
@@ -219,8 +220,7 @@ def transformer(node):
 transformed_tree = expression_tree.transform(transformer)
 transformed_tree.sql()
 ```
-
-The snippet above produces the following transformed expression:
+Which outputs:
 ```sql
 SELECT FUN(a) FROM x
 ```

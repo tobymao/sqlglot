@@ -1,9 +1,8 @@
 import unittest
 import doctest
 
-from sqlglot import parse_one, select, from_, and_, or_, condition
+from sqlglot import parse_one, select, from_, and_, or_, condition, not_
 from sqlglot import expressions as exp
-from sqlglot.expressions import not_
 
 
 def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument

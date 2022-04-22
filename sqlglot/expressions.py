@@ -1122,11 +1122,11 @@ class Star(Expression):
     arg_types = {}
 
 
-class Null(Expression):
+class Null(Condition):
     arg_types = {}
 
 
-class Boolean(Expression):
+class Boolean(Condition):
     pass
 
 
@@ -1316,7 +1316,7 @@ class Aliases(Expression):
         return self.args["expressions"]
 
 
-class Between(Expression):
+class Between(Condition):
     arg_types = {"this": True, "low": True, "high": True}
 
 
@@ -1340,7 +1340,7 @@ class Extract(Expression):
     arg_types = {"this": True, "expression": True}
 
 
-class In(Expression):
+class In(Condition):
     arg_types = {"this": True, "expressions": False, "query": False}
 
 
@@ -1353,7 +1353,7 @@ class TryCast(Cast):
 
 
 # Functions
-class Func(Expression):
+class Func(Condition):
     """
     The base class for all function expressions.
 

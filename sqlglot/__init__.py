@@ -1,6 +1,6 @@
 from sqlglot.dialects import Dialect
 from sqlglot.errors import ErrorLevel, UnsupportedError, ParseError, TokenError
-from sqlglot.expressions import Expression, Select, And, Or, Not, and_, or_, condition
+from sqlglot.expressions import Expression, Select, and_, or_, not_, condition
 from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.parser import Parser

@@ -241,6 +241,7 @@ SELECT * FROM ((SELECT 1) AS a UNION ALL (SELECT 2) AS b)
 SELECT 1 FROM ((SELECT 1) AS a JOIN (SELECT 1) AS b)
 SELECT * FROM ((SELECT 1) AS a(b))
 SELECT * FROM x AS y(a, b)
+SELECT zoo, animals FROM (VALUES ('oakland', ARRAY('a', 'b')), ('sf', ARRAY('b', 'c'))) AS t(zoo, animals)
 (SELECT 1) UNION (SELECT 2)
 (SELECT 1) UNION SELECT 2
 SELECT 1 UNION (SELECT 2)

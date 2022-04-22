@@ -199,6 +199,7 @@ class Parser:
         exp.Order,
         exp.Union,
         exp.CTE,
+        exp.Values,
     )
 
     __slots__ = (

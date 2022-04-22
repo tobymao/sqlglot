@@ -27,11 +27,6 @@ class TestTranspile(unittest.TestCase):
         )
 
     def test_paren(self):
-        self.validate(
-            "SELECT * FROM ((SELECT 1))",
-            "SELECT * FROM (SELECT 1)",
-        )
-
         with self.assertRaises(ParseError):
             transpile("1 + (2 + 3")
             transpile("select f(")

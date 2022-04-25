@@ -1146,3 +1146,10 @@ class TestDialects(unittest.TestCase):
             read="sqlite",
             write="oracle",
         )
+
+    def test_tableau(self):
+        self.validate(
+            "IF(x = 'a', y, NULL)",
+            "IF x = 'a' THEN y ELSE NULL END",
+            write="tableau",
+        )

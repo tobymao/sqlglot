@@ -775,6 +775,15 @@ class Oracle(Dialect):
     }
 
 
+class Tableau(Dialect):
+    def _if_sql(self, expression):
+        return f"IF {self.sql(expression, 'this')} THEN {self.sql(expression, 'true')} ELSE {self.sql(expression, 'false')} END"
+
+    transforms = {
+        exp.If: _if_sql,
+    }
+
+
 for d in Dialect.classes.values():
     d.time_trie = new_trie(d.time_mapping)
     d.inverse_time_mapping = {v: k for k, v in d.time_mapping.items()}

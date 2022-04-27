@@ -116,7 +116,6 @@ class Parser:
         TokenType.COUNT,
         TokenType.EXISTS,
         TokenType.EXTRACT,
-        TokenType.IF,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
         TokenType.UNNEST,
@@ -336,7 +335,7 @@ class Parser:
         self.validate_expression(instance)
         return instance
 
-    def validate_expression(self, expression):
+    def validate_expression(self, expression, args=None):
         if self.error_level == ErrorLevel.IGNORE:
             return
 
@@ -351,6 +350,16 @@ class Parser:
                 self.raise_error(
                     f"Required keyword: '{k}' missing for {expression.__class__}"
                 )
+
+        if (
+            args
+            and len(args) > len(expression.arg_types)
+            and not expression.is_var_len_args
+        ):
+            self.raise_error(
+                f"The number of provided arguments ({len(args)}) is greater than "
+                f"the maximum number of supported arguments ({len(expression.arg_types)})"
+            )
 
     def _find_token(self, token, sql):
         line = 1
@@ -1216,6 +1225,9 @@ class Parser:
         if self._match(TokenType.CASE):
             return self._parse_case()
 
+        if self._match(TokenType.IF):
+            return self._parse_if()
+
         if (
             not self._curr
             or self._curr.token_type not in self.FUNC_TOKENS
@@ -1245,12 +1257,7 @@ class Parser:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
             else:
                 this = function(args)
-                self.validate_expression(this)
-                if len(args) > len(this.arg_types) and not this.is_var_len_args:
-                    self.raise_error(
-                        f"The number of provided arguments ({len(args)}) is greater than "
-                        f"the maximum number of supported arguments ({len(this.arg_types)})"
-                    )
+                self.validate_expression(this, args)
         self._match_r_paren()
         return self._parse_window(this)
 
@@ -1368,7 +1375,24 @@ class Parser:
         if not self._match(TokenType.END):
             self.raise_error("Expected END after CASE", self._prev)
 
-        return self.expression(exp.Case, this=expression, ifs=ifs, default=default)
+        return self._parse_window(
+            self.expression(exp.Case, this=expression, ifs=ifs, default=default)
+        )
+
+    def _parse_if(self):
+        if self._match(TokenType.L_PAREN):
+            args = self._parse_csv(self._parse_conjunction)
+            this = exp.If.from_arg_list(args)
+            self.validate_expression(this, args)
+            self._match_r_paren()
+        else:
+            condition = self._parse_conjunction()
+            self._match(TokenType.THEN)
+            true = self._parse_conjunction()
+            false = self._parse_conjunction() if self._match(TokenType.ELSE) else None
+            self._match(TokenType.END)
+            this = self.expression(exp.If, this=condition, true=true, false=false)
+        return self._parse_window(this)
 
     def _parse_count(self):
         return self.expression(

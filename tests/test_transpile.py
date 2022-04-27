@@ -99,6 +99,14 @@ class TestTranspile(unittest.TestCase):
             "SELECT CASE WHEN a > 1 THEN 1 ELSE 0 END FROM foo",
         )
         self.validate(
+            "SELECT IF a > 1 THEN b END",
+            "SELECT CASE WHEN a > 1 THEN b END",
+        )
+        self.validate(
+            "SELECT IF a > 1 THEN b ELSE c END",
+            "SELECT CASE WHEN a > 1 THEN b ELSE c END",
+        )
+        self.validate(
             "SELECT IF(a > 1, 1) FROM foo", "SELECT CASE WHEN a > 1 THEN 1 END FROM foo"
         )
 

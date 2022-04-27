@@ -382,7 +382,7 @@ class TableAlias(Expression):
     arg_types = {"this": True, "columns": False}
 
 
-class Column(Expression):
+class Column(Condition):
     arg_types = {"this": False, "table": False}
 
     @property
@@ -475,7 +475,7 @@ class Limit(Expression):
     pass
 
 
-class Literal(Expression):
+class Literal(Condition):
     arg_types = {"this": True, "is_string": True}
 
     def __eq__(self, other):
@@ -1329,11 +1329,11 @@ class Between(Condition):
     arg_types = {"this": True, "low": True, "high": True}
 
 
-class Bracket(Expression):
+class Bracket(Condition):
     arg_types = {"this": True, "expressions": True}
 
 
-class Case(Expression):
+class Case(Condition):
     arg_types = {"this": False, "ifs": True, "default": False}
 
 

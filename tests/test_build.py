@@ -247,6 +247,7 @@ class TestBuild(unittest.TestCase):
                 "hive",
             ),
             (lambda: and_("x=1", "y=1"), "x = 1 AND y = 1"),
+            (lambda: condition("x").and_("y['a']").and_("1"), "(x AND y['a']) AND 1"),
             (lambda: condition("x=1").and_("y=1"), "x = 1 AND y = 1"),
             (lambda: and_("x=1", "y=1", "z=1"), "x = 1 AND y = 1 AND z = 1"),
             (lambda: condition("x=1").and_("y=1", "z=1"), "x = 1 AND y = 1 AND z = 1"),

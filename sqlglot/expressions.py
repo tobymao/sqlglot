@@ -1,5 +1,7 @@
+# pylint: disable=redefined-outer-name
 from copy import deepcopy
 from enum import auto
+import re
 import typing
 import inspect
 import sys
@@ -2012,3 +2014,37 @@ def not_(expression, dialect=None, **opts):
         **opts,
     )
     return Not(this=_wrap_operator(this))
+
+
+SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
+
+
+def alias(expression, alias, dialect=None, **opts):
+    """
+    Create an Alias expression.
+    Expample:
+        >>> alias('foo', 'bar').sql()
+        'foo AS bar'
+
+    Args:
+        expression (str or Expression): the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        alias (str or Identifier): the alias name to use. If the name has
+            special charachters it is quoted.
+        dialect (str): the dialect used to parse the input expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Alias: the aliased expression
+    """
+    exp = _maybe_parse(expression, dialect=dialect, parser_opts=opts)
+    if isinstance(alias, Identifier):
+        identifier = alias
+    elif isinstance(alias, str):
+        quoted = not re.match(SAFE_IDENTIFIER_RE, alias)
+        identifier = Identifier(this=alias, quoted=quoted)
+    else:
+        raise ValueError(
+            f"Alias needs to be a string or an Identifier, got: {alias.__class__}"
+        )
+    return Alias(this=exp, alias=identifier)

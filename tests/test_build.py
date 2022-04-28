@@ -95,14 +95,24 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl LEFT OUTER JOIN tbl2",
             ),
             (
-                lambda: select("x").from_("tbl").join(exp.Table(this="tbl2"), join_type="left outer"),
+                lambda: select("x")
+                .from_("tbl")
+                .join(exp.Table(this="tbl2"), join_type="left outer"),
                 "SELECT x FROM tbl LEFT OUTER JOIN tbl2",
-            ),(
-                lambda: select("x").from_("tbl").join(select("y").from_("tbl2"), join_type="left outer"),
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .join(select("y").from_("tbl2"), join_type="left outer"),
                 "SELECT x FROM tbl LEFT OUTER JOIN (SELECT y FROM tbl2)",
             ),
             (
-                lambda: select("x").from_("tbl").join(select("y").from_("tbl2").subquery('aliased'), join_type="left outer"),
+                lambda: select("x")
+                .from_("tbl")
+                .join(
+                    select("y").from_("tbl2").subquery("aliased"),
+                    join_type="left outer",
+                ),
                 "SELECT x FROM tbl LEFT OUTER JOIN (SELECT y FROM tbl2) AS aliased",
             ),
             (

@@ -8,6 +8,7 @@ from sqlglot.expressions import (
     not_,
     condition,
     alias_ as alias,
+    subquery,
 )
 from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType

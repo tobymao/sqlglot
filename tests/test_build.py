@@ -294,6 +294,12 @@ class TestBuild(unittest.TestCase):
                 lambda: select("*").from_("x").where(condition("y=1").and_("z=1")),
                 "SELECT * FROM x WHERE y = 1 AND z = 1",
             ),
+            (
+                lambda: exp.subquery("select x from tbl", "foo")
+                .select("x")
+                .where("x > 0"),
+                "SELECT x FROM (SELECT x FROM tbl) AS foo WHERE x > 0",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

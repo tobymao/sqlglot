@@ -247,3 +247,11 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("select *").text("this"), "")
         self.assertEqual(parse_one("1 + 1").text("this"), "1")
         self.assertEqual(parse_one("'a'").text("this"), "a")
+
+    def test_alias(self):
+        self.assertEqual(exp.alias_("foo", "bar").sql(), "foo AS bar")
+        self.assertEqual(exp.alias_("foo", "bar-1").sql(), 'foo AS "bar-1"')
+        self.assertEqual(exp.alias_("foo", "bar_1").sql(), "foo AS bar_1")
+        self.assertEqual(exp.alias_("foo * 2", "2bar").sql(), 'foo * 2 AS "2bar"')
+        self.assertEqual(exp.alias_('"foo"', "_bar").sql(), '"foo" AS "_bar"')
+        self.assertEqual(exp.alias_("foo", "bar", quoted=True).sql(), 'foo AS "bar"')

@@ -865,7 +865,10 @@ class Select(Expression):
         prefix = "JOIN"
         if join_type:
             prefix = f"{join_type} {prefix}"
-        if isinstance(expression, str):
+
+        if isinstance(expression, Join):
+            join = expression
+        elif isinstance(expression, str):
             join = _maybe_parse(expression, into=Join, prefix=prefix, **parse_args)
         else:
             if isinstance(expression, Select):

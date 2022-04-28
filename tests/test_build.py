@@ -116,6 +116,12 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl LEFT OUTER JOIN (SELECT y FROM tbl2) AS aliased",
             ),
             (
+                lambda: select("x")
+                .from_("tbl")
+                .join(parse_one("left join x", into=exp.Join), on="a=b"),
+                "SELECT x FROM tbl LEFT JOIN x ON a = b",
+            ),
+            (
                 lambda: select("x", "COUNT(y)")
                 .from_("tbl")
                 .group_by("x")

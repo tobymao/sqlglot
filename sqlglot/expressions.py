@@ -620,7 +620,7 @@ class Select(Expression):
             append=append,
             copy=copy,
             prefix="FROM",
-            parse_into=From,
+            into=From,
             dialect=dialect,
             parser_opts=parser_opts,
         )
@@ -655,7 +655,7 @@ class Select(Expression):
             append=append,
             copy=copy,
             prefix="GROUP BY",
-            parse_into=Group,
+            into=Group,
             dialect=dialect,
             parser_opts=parser_opts,
         )
@@ -690,7 +690,7 @@ class Select(Expression):
             append=append,
             copy=copy,
             prefix="ORDER BY",
-            parse_into=Order,
+            into=Order,
             dialect=dialect,
             parser_opts=parser_opts,
         )
@@ -719,7 +719,7 @@ class Select(Expression):
             expression=expression,
             instance=self,
             arg="limit",
-            parse_into=Limit,
+            into=Limit,
             prefix="LIMIT",
             dialect=dialect,
             parser_opts=parser_opts,
@@ -750,7 +750,7 @@ class Select(Expression):
             expression=expression,
             instance=self,
             arg="offset",
-            parse_into=Offset,
+            into=Offset,
             prefix="OFFSET",
             dialect=dialect,
             parser_opts=parser_opts,
@@ -816,7 +816,7 @@ class Select(Expression):
             instance=self,
             arg="laterals",
             append=append,
-            parse_into=Lateral,
+            into=Lateral,
             prefix="LATERAL VIEW",
             dialect=dialect,
             parser_opts=parser_opts,
@@ -866,20 +866,18 @@ class Select(Expression):
         if join_type:
             prefix = f"{join_type} {prefix}"
         if isinstance(expression, str):
-            join = _maybe_parse(
-                expression, parse_into=Join, prefix=prefix, **parse_args
-            )
+            join = _maybe_parse(expression, into=Join, prefix=prefix, **parse_args)
         else:
             if isinstance(expression, Select):
                 expression = expression.subquery()
             join = _maybe_parse(
                 f"{prefix} joined_table",
-                parse_into=Join,
+                into=Join,
                 **parse_args,
             )
             join.set("this", expression)  # allows to join more complex queries
         if on:
-            on = _maybe_parse(on, parse_into=CONJUNCTION, **parse_args)
+            on = _maybe_parse(on, into=CONJUNCTION, **parse_args)
             join.set("on", on)
         return _apply_list_builder(
             join,
@@ -917,7 +915,7 @@ class Select(Expression):
             instance=self,
             arg="where",
             append=append,
-            parse_into=Where,
+            into=Where,
             dialect=dialect,
             parser_opts=parser_opts,
             copy=copy,
@@ -951,7 +949,7 @@ class Select(Expression):
             instance=self,
             arg="having",
             append=append,
-            parse_into=Having,
+            into=Having,
             dialect=dialect,
             parser_opts=parser_opts,
             copy=copy,
@@ -1011,7 +1009,7 @@ class Select(Expression):
         alias_expression = _maybe_parse(
             alias,
             dialect=dialect,
-            parse_into=TableAlias,
+            into=TableAlias,
             parser_opts=parser_opts,
         )
         as_expression = _maybe_parse(
@@ -1029,7 +1027,7 @@ class Select(Expression):
             arg="with",
             append=append,
             copy=copy,
-            parse_into=With,
+            into=With,
             recursive=recursive or False,
         )
 
@@ -1077,7 +1075,7 @@ class Select(Expression):
         instance = _maybe_copy(self, copy)
         table_expression = _maybe_parse(
             table,
-            parse_into=Table,
+            into=Table,
             dialect=dialect,
             parser_opts=parser_opts,
         )
@@ -1747,41 +1745,30 @@ CONJUNCTION = (And, Or)
 
 
 def _maybe_parse(
-    code_or_expression,
+    sql_or_expression,
     *,
-    parse_into=None,
+    into=None,
     dialect=None,
     prefix=None,
     parser_opts=None,
 ):
-    if isinstance(code_or_expression, Expression):
-        return code_or_expression
+    if isinstance(sql_or_expression, Expression):
+        return sql_or_expression
 
-    parser_opts = parser_opts or {}
-    code = str(code_or_expression)
+    import sqlglot
+
+    sql = str(sql_or_expression)
     if prefix:
-        code = f"{prefix} {code}"
-
-    from sqlglot.dialects import Dialect
-
-    dialect = Dialect.get_or_raise(dialect)()
-
-    if parse_into:
-        result = dialect.parse_into(parse_into, code, **parser_opts)
-    else:
-        result = dialect.parse(code, **parser_opts)
-
-    if not result:
-        return None
-    return result[0]
+        sql = f"{prefix} {sql}"
+    return sqlglot.parse_one(sql, read=dialect, into=into, **(parser_opts or {}))
 
 
 def _maybe_copy(instance, copy=True):
     return instance.copy() if copy else instance
 
 
-def _is_wrong_expression(expression, parse_into):
-    return isinstance(expression, Expression) and not isinstance(expression, parse_into)
+def _is_wrong_expression(expression, into):
+    return isinstance(expression, Expression) and not isinstance(expression, into)
 
 
 def _apply_builder(
@@ -1790,17 +1777,17 @@ def _apply_builder(
     arg,
     copy=True,
     prefix=None,
-    parse_into=None,
+    into=None,
     dialect=None,
     parser_opts=None,
 ):
-    if _is_wrong_expression(expression, parse_into):
-        expression = parse_into(this=expression)
+    if _is_wrong_expression(expression, into):
+        expression = into(this=expression)
     instance = _maybe_copy(instance, copy)
     expression = _maybe_parse(
-        code_or_expression=expression,
+        sql_or_expression=expression,
         prefix=prefix,
-        parse_into=parse_into,
+        into=into,
         dialect=dialect,
         parser_opts=parser_opts,
     )
@@ -1815,7 +1802,7 @@ def _apply_child_list_builder(
     append=True,
     copy=True,
     prefix=None,
-    parse_into=None,
+    into=None,
     dialect=None,
     parser_opts=None,
     **kwargs,
@@ -1824,11 +1811,11 @@ def _apply_child_list_builder(
     instance = _maybe_copy(instance, copy)
     parsed = []
     for expression in expressions:
-        if _is_wrong_expression(expression, parse_into):
-            expression = parse_into(expressions=[expression])
+        if _is_wrong_expression(expression, into):
+            expression = into(expressions=[expression])
         expression = _maybe_parse(
             expression,
-            parse_into=parse_into,
+            into=into,
             dialect=dialect,
             prefix=prefix,
             parser_opts=parser_opts,
@@ -1839,7 +1826,7 @@ def _apply_child_list_builder(
     if append and existing:
         parsed = ensure_list(existing.args.get("expressions")) + parsed
 
-    child = parse_into(expressions=parsed)
+    child = into(expressions=parsed)
     for k, v in kwargs.items():
         child.set(k, v)
     instance.set(arg, child)
@@ -1853,7 +1840,7 @@ def _apply_list_builder(
     append=True,
     copy=True,
     prefix=None,
-    parse_into=None,
+    into=None,
     dialect=None,
     parser_opts=None,
 ):
@@ -1861,8 +1848,8 @@ def _apply_list_builder(
 
     expressions = [
         _maybe_parse(
-            code_or_expression=expression,
-            parse_into=parse_into,
+            sql_or_expression=expression,
+            into=into,
             prefix=prefix,
             dialect=dialect,
             parser_opts=parser_opts,
@@ -1882,7 +1869,7 @@ def _apply_conjunction_builder(
     *expressions,
     instance,
     arg,
-    parse_into,
+    into,
     append=True,
     copy=True,
     dialect=None,
@@ -1896,7 +1883,7 @@ def _apply_conjunction_builder(
 
     node = and_(*expressions, dialect=dialect, **(parser_opts or {}))
 
-    inst.set(arg, parse_into(this=node))
+    inst.set(arg, into(this=node))
     return inst
 
 

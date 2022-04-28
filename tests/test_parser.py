@@ -5,6 +5,12 @@ from sqlglot import ErrorLevel, Parser, ParseError, parse, parse_one
 
 
 class TestParser(unittest.TestCase):
+    def test_parse_empty(self):
+        self.assertIsNone(parse_one(""))
+
+    def test_parse_into(self):
+        self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
+
     def test_column(self):
         columns = parse_one("select a, ARRAY[1] b, case when 1 then 1 end").find_all(
             exp.Column

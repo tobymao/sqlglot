@@ -859,26 +859,29 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
+        parse_args = {"dialect": dialect, "parser_opts": parser_opts}
+
         prefix = "JOIN"
         if join_type:
             prefix = f"{join_type} {prefix}"
-        expression = _maybe_parse(
-            expression,
-            parse_into=Join,
-            dialect=dialect,
-            prefix=prefix,
-            parser_opts=parser_opts,
-        )
-        if on:
-            on = _maybe_parse(
-                on,
-                parse_into=CONJUNCTION,
-                dialect=dialect,
-                parser_opts=parser_opts,
+        if isinstance(expression, str):
+            join = _maybe_parse(
+                expression, parse_into=Join, prefix=prefix, **parse_args
             )
-            expression.set("on", on)
+        else:
+            if isinstance(expression, Select):
+                expression = expression.subquery()
+            join = _maybe_parse(
+                f"{prefix} joined_table",
+                parse_into=Join,
+                **parse_args,
+            )
+            join.set("this", expression)  # allows to join more complex queries
+        if on:
+            on = _maybe_parse(on, parse_into=CONJUNCTION, **parse_args)
+            join.set("on", on)
         return _apply_list_builder(
-            expression,
+            join,
             instance=self,
             arg="joins",
             append=append,

@@ -35,7 +35,7 @@ def parse(sql, read=None, **opts):
     return dialect.parse(sql, **opts)
 
 
-def parse_one(sql, read=None, **opts):
+def parse_one(sql, read=None, into=None, **opts):
     """
     Parses the given SQL string and returns a syntax tree for the first
     parsed SQL statement.
@@ -44,12 +44,21 @@ def parse_one(sql, read=None, **opts):
         sql (str): the SQL code string to parse.
         read (str): the SQL dialect to apply during parsing
             (eg. "spark", "hive", "presto", "mysql").
+        into (Expression): the SQLGlot Expression to parse into
         **opts: other options.
 
     Returns:
         Expression: the syntax tree for the first parsed statement.
     """
-    return parse(sql, read=read, **opts)[0]
+
+    dialect = Dialect.get_or_raise(read)()
+
+    if into:
+        result = dialect.parse_into(into, sql, **opts)
+    else:
+        result = dialect.parse(sql, **opts)
+
+    return result[0] if result else None
 
 
 def transpile(sql, read=None, write=None, identity=True, error_level=None, **opts):

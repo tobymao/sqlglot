@@ -1,4 +1,3 @@
-# pylint: disable=redefined-outer-name
 from copy import deepcopy
 from enum import auto
 import re
@@ -2019,11 +2018,11 @@ def not_(expression, dialect=None, **opts):
 SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
 
 
-def alias(expression, alias, dialect=None, **opts):
+def alias_(expression, alias, dialect=None, quoted=None, **opts):
     """
     Create an Alias expression.
     Expample:
-        >>> alias('foo', 'bar').sql()
+        >>> alias_('foo', 'bar').sql()
         'foo AS bar'
 
     Args:
@@ -2041,7 +2040,8 @@ def alias(expression, alias, dialect=None, **opts):
     if isinstance(alias, Identifier):
         identifier = alias
     elif isinstance(alias, str):
-        quoted = not re.match(SAFE_IDENTIFIER_RE, alias)
+        if quoted is None:
+            quoted = not re.match(SAFE_IDENTIFIER_RE, alias)
         identifier = Identifier(this=alias, quoted=quoted)
     else:
         raise ValueError(

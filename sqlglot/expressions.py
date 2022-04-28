@@ -1041,7 +1041,7 @@ class Select(Expression):
             'SELECT x FROM (SELECT x FROM tbl)'
 
         Args:
-            alias (str): an optional alias for the subquery
+            alias (str or Identifier): an optional alias for the subquery
             copy (bool): if `False`, modify this expression instance in-place.
 
         Returns:
@@ -1050,7 +1050,7 @@ class Select(Expression):
         instance = _maybe_copy(self, copy)
         return Subquery(
             this=instance,
-            alias=alias,
+            alias=_to_identifier(alias),
         )
 
     def ctas(self, table, properties=None, dialect=None, parser_opts=None, copy=True):
@@ -2008,6 +2008,22 @@ def not_(expression, dialect=None, **opts):
 SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
 
 
+def _to_identifier(alias, quoted=None):
+    if alias is None:
+        return None
+    if isinstance(alias, Identifier):
+        identifier = alias
+    elif isinstance(alias, str):
+        if quoted is None:
+            quoted = not re.match(SAFE_IDENTIFIER_RE, alias)
+        identifier = Identifier(this=alias, quoted=quoted)
+    else:
+        raise ValueError(
+            f"Alias needs to be a string or an Identifier, got: {alias.__class__}"
+        )
+    return identifier
+
+
 def alias_(expression, alias, dialect=None, quoted=None, **opts):
     """
     Create an Alias expression.
@@ -2027,14 +2043,26 @@ def alias_(expression, alias, dialect=None, quoted=None, **opts):
         Alias: the aliased expression
     """
     exp = _maybe_parse(expression, dialect=dialect, parser_opts=opts)
-    if isinstance(alias, Identifier):
-        identifier = alias
-    elif isinstance(alias, str):
-        if quoted is None:
-            quoted = not re.match(SAFE_IDENTIFIER_RE, alias)
-        identifier = Identifier(this=alias, quoted=quoted)
-    else:
-        raise ValueError(
-            f"Alias needs to be a string or an Identifier, got: {alias.__class__}"
-        )
-    return Alias(this=exp, alias=identifier)
+    return Alias(this=exp, alias=_to_identifier(alias, quoted=quoted))
+
+
+def subquery(expression, alias=None, dialect=None, **opts):
+    """
+    Build a subquery expression.
+    Expample:
+        >>> subquery('select x from tbl', 'bar').select('x').sql()
+        'SELECT x FROM (SELECT x FROM tbl) AS bar'
+
+    Args:
+        expression (str or Expression): the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        alias (str or Expression): the alias name to use.
+        dialect (str): the dialect used to parse the input expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Select: a new select with the subquery epxresion included
+    """
+
+    expression = _maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
+    return Select().from_(expression, dialect=dialect, **opts)

@@ -2051,3 +2051,25 @@ def alias_(expression, alias, dialect=None, quoted=None, **opts):
             f"Alias needs to be a string or an Identifier, got: {alias.__class__}"
         )
     return Alias(this=exp, alias=identifier)
+
+
+def subquery(expression, alias=None, dialect=None, **opts):
+    """
+    Build a subquery expression.
+    Expample:
+        >>> subquery('select x from tbl', 'bar').select('x').sql()
+        'SELECT x FROM (SELECT x FROM tbl) AS bar'
+
+    Args:
+        expression (str or Expression): the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        alias (str or Expression): the alias name to use.
+        dialect (str): the dialect used to parse the input expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Select: a new select with the subquery epxresion included
+    """
+
+    expression = _maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
+    return Select().from_(expression, dialect=dialect, **opts)

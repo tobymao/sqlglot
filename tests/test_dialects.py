@@ -1119,6 +1119,13 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+    def test_snowflake(self):
+        self.validate(
+            'x:a:"b c"',
+            "x['a']['b c']",
+            read="snowflake",
+        )
+
     def test_sqlite(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",

@@ -188,6 +188,11 @@ class Parser:
         TokenType.CROSS,
     }
 
+    COLUMN_OPERATORS = {
+        TokenType.COLON,
+        TokenType.DOT,
+    }
+
     BODY_EXPRESSIONS = (
         exp.Select,
         exp.From,
@@ -1189,9 +1194,16 @@ class Parser:
             this = self.expression(exp.Column, this=this)
         this = self._parse_bracket(this)
 
-        while self._match(TokenType.DOT):
+        while self._match_set(self.COLUMN_OPERATORS):
+            colon = self._prev.token_type == TokenType.COLON
             field = self._parse_id_var() or self._parse_star()
-            if isinstance(this, exp.Column) and not this.table:
+            if colon:
+                this = self.expression(
+                    exp.Bracket,
+                    this=this,
+                    expressions=[exp.Literal.string(field.this)],
+                )
+            elif isinstance(this, exp.Column) and not this.table:
                 this = self.expression(exp.Column, this=field, table=this.this)
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)

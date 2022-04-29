@@ -515,11 +515,14 @@ class MySQL(Dialect):
     }
 
 
-class StarRocks(MySQL):
+class Oracle(Dialect):
     type_mapping = {
-        exp.DataType.Type.TEXT: "STRING",
-        exp.DataType.Type.TIMESTAMP: "DATETIME",
-        exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
+        exp.DataType.Type.TINYINT: "NUMBER",
+        exp.DataType.Type.SMALLINT: "NUMBER",
+        exp.DataType.Type.INT: "NUMBER",
+        exp.DataType.Type.BIGINT: "NUMBER",
+        exp.DataType.Type.DECIMAL: "NUMBER",
+        exp.DataType.Type.VARCHAR: "VARCHAR2",
     }
 
 
@@ -739,6 +742,10 @@ Spark.functions = {
 }
 
 
+class Snowflake(Dialect):
+    pass
+
+
 class SQLite(Dialect):
     type_mapping = {
         exp.DataType.Type.BOOLEAN: "INTEGER",
@@ -760,18 +767,11 @@ class SQLite(Dialect):
     }
 
 
-class Trino(Presto):
-    pass
-
-
-class Oracle(Dialect):
+class StarRocks(MySQL):
     type_mapping = {
-        exp.DataType.Type.TINYINT: "NUMBER",
-        exp.DataType.Type.SMALLINT: "NUMBER",
-        exp.DataType.Type.INT: "NUMBER",
-        exp.DataType.Type.BIGINT: "NUMBER",
-        exp.DataType.Type.DECIMAL: "NUMBER",
-        exp.DataType.Type.VARCHAR: "VARCHAR2",
+        exp.DataType.Type.TEXT: "STRING",
+        exp.DataType.Type.TIMESTAMP: "DATETIME",
+        exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
     }
 
 
@@ -782,6 +782,10 @@ class Tableau(Dialect):
     transforms = {
         exp.If: _if_sql,
     }
+
+
+class Trino(Presto):
+    pass
 
 
 for d in Dialect.classes.values():

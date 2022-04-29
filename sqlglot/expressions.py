@@ -913,9 +913,6 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
-        expressions = [exp for exp in expressions if exp is not None and exp != ""]
-        if not expressions:
-            return self
         return _apply_conjunction_builder(
             *expressions,
             instance=self,
@@ -1881,6 +1878,10 @@ def _apply_conjunction_builder(
     dialect=None,
     parser_opts=None,
 ):
+    expressions = [exp for exp in expressions if exp is not None and exp != ""]
+    if not expressions:
+        return instance
+
     inst = _maybe_copy(instance, copy)
 
     existing = inst.args.get(arg)

@@ -913,6 +913,9 @@ class Select(Expression):
         Returns:
             Select: the modified expression.
         """
+        expressions = [exp for exp in expressions if exp is not None and exp != ""]
+        if not expressions:
+            return self
         return _apply_conjunction_builder(
             *expressions,
             instance=self,

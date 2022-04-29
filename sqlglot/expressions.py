@@ -542,7 +542,31 @@ class Tuple(Expression):
     arg_types = {"expressions": True}
 
 
-class Union(Expression):
+class Subqueryable:
+    def subquery(self, alias=None, copy=True):
+        """
+        Convert this expression to an aliased expression that can be used as a Subquery.
+
+        Example:
+            >>> subquery = Select().select("x").from_("tbl").subquery()
+            >>> Select().select("x").from_(subquery).sql()
+            'SELECT x FROM (SELECT x FROM tbl)'
+
+        Args:
+            alias (str or Identifier): an optional alias for the subquery
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Alias: the subquery
+        """
+        instance = _maybe_copy(self, copy)
+        return Subquery(
+            this=instance,
+            alias=_to_identifier(alias),
+        )
+
+
+class Union(Subqueryable, Expression):
     arg_types = {"this": True, "expression": True, "distinct": False}
 
 
@@ -573,7 +597,7 @@ class Schema(Expression):
     arg_types = {"this": False, "expressions": True}
 
 
-class Select(Expression):
+class Select(Subqueryable, Expression):
     arg_types = {
         "with": False,
         "expressions": False,
@@ -1032,28 +1056,6 @@ class Select(Expression):
             copy=copy,
             into=With,
             recursive=recursive or False,
-        )
-
-    def subquery(self, alias=None, copy=True):
-        """
-        Convert this expression to an aliased expression that can be used as a Subquery.
-
-        Example:
-            >>> subquery = Select().select("x").from_("tbl").subquery()
-            >>> Select().select("x").from_(subquery).sql()
-            'SELECT x FROM (SELECT x FROM tbl)'
-
-        Args:
-            alias (str or Identifier): an optional alias for the subquery
-            copy (bool): if `False`, modify this expression instance in-place.
-
-        Returns:
-            Alias: the subquery
-        """
-        instance = _maybe_copy(self, copy)
-        return Subquery(
-            this=instance,
-            alias=_to_identifier(alias),
         )
 
     def ctas(self, table, properties=None, dialect=None, parser_opts=None, copy=True):

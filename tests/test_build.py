@@ -310,6 +310,12 @@ class TestBuild(unittest.TestCase):
                 .where("x > 0"),
                 "SELECT x FROM (SELECT x FROM tbl) AS foo WHERE x > 0",
             ),
+            (
+                lambda: exp.subquery(
+                    "select x from tbl UNION select x from bar", "unioned"
+                ).select("x"),
+                "SELECT x FROM (SELECT x FROM tbl UNION SELECT x FROM bar) AS unioned",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

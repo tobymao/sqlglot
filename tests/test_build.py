@@ -52,6 +52,10 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl WHERE x > 0 AND x < 9",
             ),
             (
+                lambda: select("x").from_("tbl").where(None).where(False, ""),
+                "SELECT x FROM tbl WHERE FALSE",
+            ),
+            (
                 lambda: select("x")
                 .from_("tbl")
                 .where("x > 0")

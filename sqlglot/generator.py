@@ -347,6 +347,11 @@ class Generator:
         exists = "NOT EXISTS" if expression.args.get("not") else "EXISTS"
         return f"{exists} {self.sql(expression, 'this')}"
 
+    def filter_sql(self, expression):
+        this = self.sql(expression, "this")
+        where = self.sql(expression, "expression")[1:]  # where has a leading space
+        return f"{this} FILTER({where})"
+
     def hint_sql(self, expression):
         if self.sql(expression, "this"):
             self.unsupported("Hints are not supported")
@@ -584,6 +589,11 @@ class Generator:
             self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" "
         )
         return f"{kind} BETWEEN {start} AND {end}"
+
+    def withingroup_sql(self, expression):
+        this = self.sql(expression, "this")
+        expression = self.sql(expression, "expression")[1:]  # order has a leading space
+        return f"{this} WITHIN GROUP ({expression})"
 
     def between_sql(self, expression):
         this = self.sql(expression, "this")

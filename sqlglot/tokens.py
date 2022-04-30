@@ -109,6 +109,7 @@ class TokenType(AutoName):
     EXPLAIN = auto()
     EXTRACT = auto()
     FALSE = auto()
+    FILTER = auto()
     FOLLOWING = auto()
     FULL = auto()
     FROM = auto()
@@ -177,6 +178,7 @@ class TokenType(AutoName):
     WHEN = auto()
     WHERE = auto()
     WITH = auto()
+    WITHIN_GROUP = auto()
     WITHOUT = auto()
     ZONE = auto()
 
@@ -302,6 +304,7 @@ class Tokenizer:
         "EXPLAIN": TokenType.EXPLAIN,
         "EXTRACT": TokenType.EXTRACT,
         "FALSE": TokenType.FALSE,
+        "FILTER": TokenType.FILTER,
         "FULL": TokenType.FULL,
         "FOLLOWING": TokenType.FOLLOWING,
         "FROM": TokenType.FROM,
@@ -371,6 +374,7 @@ class Tokenizer:
         "WHEN": TokenType.WHEN,
         "WHERE": TokenType.WHERE,
         "WITH": TokenType.WITH,
+        "WITHIN GROUP": TokenType.WITHIN_GROUP,
         "WITHOUT": TokenType.WITHOUT,
         "ZONE": TokenType.ZONE,
         "ARRAY": TokenType.ARRAY,

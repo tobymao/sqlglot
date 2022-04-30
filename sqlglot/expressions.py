@@ -542,6 +542,10 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
+class Qualify(Expression):
+    pass
+
+
 class Table(Expression):
     arg_types = {"this": True, "db": False, "catalog": False}
 
@@ -617,6 +621,7 @@ class Select(Subqueryable, Expression):
         "where": False,
         "group": False,
         "having": False,
+        "qualify": False,
         "order": False,
         "limit": False,
         "offset": False,

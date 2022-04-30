@@ -95,6 +95,7 @@ class Parser:
         TokenType.OVER,
         TokenType.PERCENT,
         TokenType.PRECEDING,
+        TokenType.QUALIFY,
         TokenType.RANGE,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
@@ -786,6 +787,7 @@ class Parser:
                     "where": self._parse_where(),
                     "group": self._parse_group(),
                     "having": self._parse_having(),
+                    "qualify": self._parse_qualify(),
                     "order": self._parse_order(),
                     "limit": self._parse_limit(),
                     "offset": self._parse_offset(),
@@ -999,6 +1001,11 @@ class Parser:
         if not self._match(TokenType.HAVING):
             return None
         return self.expression(exp.Having, this=self._parse_conjunction())
+
+    def _parse_qualify(self):
+        if not self._match(TokenType.QUALIFY):
+            return None
+        return self.expression(exp.Qualify, this=self._parse_conjunction())
 
     def _parse_order(self):
         if not self._match_by(TokenType.ORDER):

@@ -456,23 +456,31 @@ class Parser:
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
 
-        create_token = self._match_set((TokenType.TABLE, TokenType.VIEW)) and self._prev
+        create_token = (
+            self._match_set((TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION))
+            and self._prev
+        )
 
         if not create_token:
-            self.raise_error("Expected TABLE or View")
+            self.raise_error("Expected TABLE, VIEW, or FUNCTION")
 
         exists = self._parse_exists(not_=True)
-        this = self._parse_table(schema=True)
+        this = None
         expression = None
         properties = None
 
-        if create_token.token_type == TokenType.TABLE:
+        if create_token.token_type == TokenType.FUNCTION:
+            this = self._parse_id_var()
+            if self._match(TokenType.ALIAS):
+                expression = self._parse_string()
+
+        if create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
+            this = self._parse_table(schema=True)
             properties = self._parse_properties(
                 this if isinstance(this, exp.Schema) else None
             )
-
-        if self._match(TokenType.ALIAS):
-            expression = self._parse_with()
+            if self._match(TokenType.ALIAS):
+                expression = self._parse_with()
 
         options = {
             "engine": None,

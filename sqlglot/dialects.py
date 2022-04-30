@@ -695,6 +695,8 @@ class Spark(Hive):
 
         if kind.upper() == "TABLE" and temporary is True:
             return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
+        if kind.upper() == "FUNCTION" and temporary is True:
+            return f"CREATE TEMPORARY FUNCTION {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
         return self.create_sql(e)
 
     def _map_sql(self, expression):

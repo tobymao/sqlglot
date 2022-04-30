@@ -375,6 +375,10 @@ class With(Expression):
     arg_types = {"expressions": True, "recursive": False}
 
 
+class WithinGroup(Expression):
+    arg_types = {"this": True, "expression": False}
+
+
 class CTE(Expression):
     arg_types = {"this": True, "alias": True}
 
@@ -418,6 +422,10 @@ class Except(Expression):
 
 class Exists(Expression):
     arg_types = {"this": True, "not": False}
+
+
+class Filter(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 class From(Expression):

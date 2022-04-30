@@ -84,6 +84,7 @@ class Parser:
         TokenType.ENGINE,
         TokenType.EXPLAIN,
         TokenType.FALSE,
+        TokenType.FILTER,
         TokenType.FOLLOWING,
         TokenType.IF,
         TokenType.INTERVAL,
@@ -1435,6 +1436,23 @@ class Parser:
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
     def _parse_window(self, this):
+        if self._match(TokenType.FILTER):
+            self._match_l_paren()
+            this = self.expression(
+                exp.Filter, this=this, expression=self._parse_where()
+            )
+            self._match_r_paren()
+
+        if self._match(TokenType.WITHIN_GROUP):
+            self._match_l_paren()
+            this = self.expression(
+                exp.WithinGroup,
+                this=this,
+                expression=self._parse_order(),
+            )
+            self._match_r_paren()
+            return this
+
         if not self._match(TokenType.OVER):
             return this
 

@@ -523,6 +523,7 @@ class Generator:
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
+            self.sql(expression, "qualify"),
             self.sql(expression, "order"),
             self.sql(expression, "limit"),
             self.sql(expression, "offset"),
@@ -546,6 +547,10 @@ class Generator:
         if self.pretty:
             return f"{self.wrap(expression)}{alias}"
         return f"({self.sql(expression, 'this')}){alias}"
+
+    def qualify_sql(self, expression):
+        this = self.indent_newlines(self.sql(expression, "this"))
+        return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def union_sql(self, expression):
         return self.set_operation(

@@ -150,6 +150,7 @@ class TokenType(AutoName):
     PRECEDING = auto()
     PRIMARY_KEY = auto()
     PROPERTIES = auto()
+    QUALIFY = auto()
     RANGE = auto()
     RECURSIVE = auto()
     REPLACE = auto()
@@ -343,6 +344,7 @@ class Tokenizer:
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
+        "QUALIFY": TokenType.QUALIFY,
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,

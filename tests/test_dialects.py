@@ -1160,3 +1160,18 @@ class TestDialects(unittest.TestCase):
             "IF x = 'a' THEN y ELSE NULL END",
             write="tableau",
         )
+        self.validate(
+            "COALESCE(a, 0)",
+            "IFNULL(a, 0)",
+            write="tableau",
+        )
+        self.validate(
+            "COUNT(DISTINCT(a))",
+            "COUNTD(a)",
+            write = "tableau",
+        )
+        self.validate(
+            "COUNT(a)",
+            "COUNT(a)",
+            write = "tableau",
+        )

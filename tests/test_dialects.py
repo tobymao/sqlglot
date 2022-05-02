@@ -1168,10 +1168,10 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "COUNT(DISTINCT(a))",
             "COUNTD(a)",
-            write = "tableau",
+            write="tableau",
         )
         self.validate(
             "COUNT(a)",
             "COUNT(a)",
-            write = "tableau",
+            write="tableau",
         )

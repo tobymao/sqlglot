@@ -787,11 +787,7 @@ class Tableau(Dialect):
             return f"COUNTD{self.sql(expression, 'this')}"
         return f"COUNT({self.sql(expression, 'this')})"
 
-    transforms = {
-        exp.If: _if_sql,
-        exp.Coalesce: _coalesce_sql,
-        exp.Count: _count_sql
-    }
+    transforms = {exp.If: _if_sql, exp.Coalesce: _coalesce_sql, exp.Count: _count_sql}
 
 
 class Trino(Presto):

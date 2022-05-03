@@ -86,6 +86,7 @@ class Parser:
         TokenType.FALSE,
         TokenType.FILTER,
         TokenType.FOLLOWING,
+        TokenType.FUNCTION,
         TokenType.IF,
         TokenType.INTERVAL,
         TokenType.LAZY,
@@ -207,6 +208,8 @@ class Parser:
         exp.CTE,
         exp.Values,
     )
+
+    CREATBABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     __slots__ = (
         "functions",
@@ -456,10 +459,7 @@ class Parser:
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
 
-        create_token = (
-            self._match_set((TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION))
-            and self._prev
-        )
+        create_token = self._match_set(self.CREATBABLES) and self._prev
 
         if not create_token:
             self.raise_error("Expected TABLE, VIEW, or FUNCTION")
@@ -470,7 +470,7 @@ class Parser:
         properties = None
 
         if create_token.token_type == TokenType.FUNCTION:
-            this = self._parse_id_var()
+            this = self._parse_var()
             if self._match(TokenType.ALIAS):
                 expression = self._parse_string()
 

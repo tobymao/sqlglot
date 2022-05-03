@@ -112,6 +112,7 @@ class TokenType(AutoName):
     FILTER = auto()
     FOLLOWING = auto()
     FULL = auto()
+    FUNCTION = auto()
     FROM = auto()
     GROUP = auto()
     HAVING = auto()
@@ -307,6 +308,7 @@ class Tokenizer:
         "FALSE": TokenType.FALSE,
         "FILTER": TokenType.FILTER,
         "FULL": TokenType.FULL,
+        "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
         "FROM": TokenType.FROM,
         "GROUP": TokenType.GROUP,

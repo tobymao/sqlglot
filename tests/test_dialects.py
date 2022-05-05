@@ -1042,18 +1042,28 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATEDIFF(TO_DATE(SUBSTR(REPLACE(CAST('2020-01-02' as string), '-', ''), 1, 8), 'yyyyMMdd'), TO_DATE(SUBSTR(REPLACE(CAST('2020-01-01' as string), '-', ''), 1, 8), 'yyyyMMdd'))",
+            (
+                "DATEDIFF(TO_DATE(SUBSTR(REPLACE(CAST('2020-01-02' as string), '-', ''), 1, 8), 'yyyyMMdd'), "
+                "TO_DATE(SUBSTR(REPLACE(CAST('2020-01-01' as string), '-', ''), 1, 8), 'yyyyMMdd'))"
+            ),
             read="hive",
         )
         self.validate(
             "DATEDIFF(TO_DATE(y), x)",
-            "DATE_DIFF('day', DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'), DATE_PARSE(SUBSTR(REPLACE(CAST(DATE_FORMAT(DATE_PARSE(SUBSTR(REPLACE(CAST(y as varchar), '-', ''), 1, 8), '%Y%m%d'), '%Y-%m-%d') as varchar), '-', ''), 1, 8), '%Y%m%d'))",
+            (
+                "DATE_DIFF('day', DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'), "
+                "DATE_PARSE(SUBSTR(REPLACE(CAST(DATE_FORMAT(DATE_PARSE(SUBSTR(REPLACE(CAST(y as varchar), '-', ''), 1, 8), "
+                "'%Y%m%d'), '%Y-%m-%d') as varchar), '-', ''), 1, 8), '%Y%m%d'))"
+            ),
             read="hive",
             write="presto",
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATE_DIFF('day', DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-01' as varchar), '-', ''), 1, 8), '%Y%m%d'), DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-02' as varchar), '-', ''), 1, 8), '%Y%m%d'))",
+            (
+                "DATE_DIFF('day', DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-01' as varchar), '-', ''), 1, 8), '%Y%m%d'), "
+                "DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-02' as varchar), '-', ''), 1, 8), '%Y%m%d'))"
+            ),
             read="hive",
             write="presto",
         )

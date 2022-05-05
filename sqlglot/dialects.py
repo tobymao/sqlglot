@@ -216,7 +216,11 @@ class DuckDB(Dialect):
     TS_OR_DS_OR_DI_TO_YEAR = "SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 4)"
     TS_OR_DS_OR_DI_TO_MONTH = "SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 5, 2)"
     TS_OR_DS_OR_DI_TO_DAY = "SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 7, 2)"
-    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = f"CAST({TS_OR_DS_OR_DI_TO_YEAR} || '-' || {TS_OR_DS_OR_DI_TO_MONTH} || '-' || {TS_OR_DS_OR_DI_TO_DAY} as date)"
+    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
+        f"CAST({TS_OR_DS_OR_DI_TO_YEAR} || '-' || "
+        f"{TS_OR_DS_OR_DI_TO_MONTH} || '-' || "
+        f"{TS_OR_DS_OR_DI_TO_DAY} as date)"
+    )
     TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = f"strftime({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
     TS_OR_DS_OR_DI_TO_DI_EXPRESSION = "CAST(SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 8) as int)"
 

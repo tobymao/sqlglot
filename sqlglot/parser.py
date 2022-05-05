@@ -719,6 +719,10 @@ class Parser:
 
         this = self._parse_statement()
 
+        if this is None:
+            self.raise_error("Failed to parse any statement following CTE")
+            return
+
         if "with" not in this.arg_types:
             self.raise_error(f"{this.key} does not support CTE")
 

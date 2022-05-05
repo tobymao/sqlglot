@@ -221,8 +221,12 @@ class DuckDB(Dialect):
         f"{TS_OR_DS_OR_DI_TO_MONTH} || '-' || "
         f"{TS_OR_DS_OR_DI_TO_DAY} as date)"
     )
-    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = f"strftime({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
-    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = "CAST(SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 8) as int)"
+    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
+        f"strftime({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
+    )
+    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
+        "CAST(SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 8) as int)"
+    )
 
     def _unix_to_time(self, expression):
         return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
@@ -272,8 +276,12 @@ class DuckDB(Dialect):
             second_date_value = self.sql(expression, "first_date")
             unit = "'DAY'"
 
-        first_date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=first_date_value)
-        second_date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=second_date_value)
+        first_date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+            this=first_date_value
+        )
+        second_date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+            this=second_date_value
+        )
 
         return f"DATE_DIFF({unit}, {first_date}, {second_date})"
 
@@ -377,9 +385,15 @@ class Hive(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
-    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = "TO_DATE(SUBSTR(REPLACE(CAST({this} as string), '-', ''), 1, 8), 'yyyyMMdd')"
-    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyy-MM-dd')"
-    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyyMMdd') as int)"
+    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
+        "TO_DATE(SUBSTR(REPLACE(CAST({this} as string), '-', ''), 1, 8), 'yyyyMMdd')"
+    )
+    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
+        f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyy-MM-dd')"
+    )
+    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
+        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyyMMdd') as int)"
+    )
 
     class HiveMap(exp.Map):
         is_var_len_args = True
@@ -511,8 +525,12 @@ class Hive(Dialect):
             second_date_value = self.sql(expression, "first_date")
             unit = "'DAY'"
 
-        first_date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=first_date_value)
-        second_date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=second_date_value)
+        first_date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+            this=first_date_value
+        )
+        second_date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+            this=second_date_value
+        )
 
         if unit == "'DAY'":
             return f"DATEDIFF({first_date}, {second_date})"
@@ -665,9 +683,15 @@ class Presto(Dialect):
     index_offset = 1
     TIME_FORMAT = "'%Y-%m-%d %H:%i:%S'"
 
-    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = "DATE_PARSE(SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 8), '%Y%m%d')"
-    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y-%m-%d')"
-    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y%m%d') as int)"
+    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
+        "DATE_PARSE(SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 8), '%Y%m%d')"
+    )
+    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
+        f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y-%m-%d')"
+    )
+    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
+        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y%m%d') as int)"
+    )
 
     def _approx_distinct_sql(self, expression):
         accuracy = expression.args.get("accuracy")
@@ -763,11 +787,14 @@ class Presto(Dialect):
             second_date_value = self.sql(expression, "first_date")
             unit = "'DAY'"
 
-        first_date = Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=first_date_value)
-        second_date = Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=second_date_value)
+        first_date = Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+            this=first_date_value
+        )
+        second_date = Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+            this=second_date_value
+        )
 
         return f"DATE_DIFF({unit}, {first_date}, {second_date})"
-
 
     time_mapping = MYSQL_TIME_MAPPING
 

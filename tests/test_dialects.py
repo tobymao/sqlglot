@@ -1152,7 +1152,7 @@ class TestDialects(unittest.TestCase):
                 "DAY(CAST(SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 1, 4) || "
                 "'-' || SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 5, 2) || '-' "
                 "|| SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 7, 2) as date))"
-             ),
+            ),
             read="hive",
             write="duckdb",
         )

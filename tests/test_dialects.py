@@ -674,7 +674,7 @@ class TestDialects(unittest.TestCase):
         self.validate("MONTH(x)", "MONTH(x)", read="presto", write="hive")
         self.validate(
             "MONTH(x)",
-            "MONTH(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))",
+            "MONTH(DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'))",
             read="hive",
             write="presto",
         )
@@ -682,7 +682,7 @@ class TestDialects(unittest.TestCase):
         self.validate("DAY(x)", "DAY(x)", read="presto", write="hive")
         self.validate(
             "DAY(x)",
-            "DAY(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))",
+            "DAY(DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'))",
             read="hive",
             write="presto",
         )
@@ -691,7 +691,7 @@ class TestDialects(unittest.TestCase):
         self.validate("YEAR(x)", "YEAR(x)", read="presto", write="hive")
         self.validate(
             "YEAR(x)",
-            "YEAR(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))",
+            "YEAR(DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'))",
             read="hive",
             write="presto",
         )
@@ -1126,7 +1126,11 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "MONTH('2021-03-01')",
-            "MONTH(TS_OR_DS_OR_DI_TO_DATE('2021-03-01'))",
+            (
+                "MONTH(CAST(SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 1, 4) || "
+                "'-' || SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 5, 2) || '-' "
+                "|| SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 7, 2) as date))"
+            ),
             read="hive",
             write="duckdb",
         )
@@ -1134,7 +1138,11 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "DAY('2021-03-01')",
-            "DAY(TS_OR_DS_OR_DI_TO_DATE('2021-03-01'))",
+            (
+                "DAY(CAST(SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 1, 4) || "
+                "'-' || SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 5, 2) || '-' "
+                "|| SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 7, 2) as date))"
+             ),
             read="hive",
             write="duckdb",
         )
@@ -1291,13 +1299,21 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "MONTH('2021-03-01')",
-            "MONTH(CAST('2021-03-01' AS DATE))",
+            (
+                "MONTH(CAST(SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 1, 4) || "
+                "'-' || SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 5, 2) || '-' "
+                "|| SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 7, 2) as date))"
+            ),
             read="spark",
             write="duckdb",
         )
         self.validate(
             "YEAR('2021-03-01')",
-            "YEAR(CAST('2021-03-01' AS DATE))",
+            (
+                "YEAR(CAST(SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 1, 4) || "
+                "'-' || SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 5, 2) || '-' "
+                "|| SUBSTR(REPLACE(CAST('2021-03-01' as varchar), '-', ''), 7, 2) as date))"
+            ),
             read="spark",
             write="duckdb",
         )

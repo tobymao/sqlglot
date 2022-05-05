@@ -103,7 +103,14 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "DATEDIFF(a, b)",
-            "CAST(a AS DATE) - CAST(b AS DATE)",
+            (
+                "CAST(SUBSTR(REPLACE(CAST(a as varchar), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(a as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(a as varchar), '-', ''), 7, 2) as date) - "
+                "CAST(SUBSTR(REPLACE(CAST(b as varchar), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(b as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(b as varchar), '-', ''), 7, 2) as date)"
+            ),
             read="hive",
             write="duckdb",
         )
@@ -221,6 +228,113 @@ class TestDialects(unittest.TestCase):
         self.validate("1d", "CAST(1 AS DOUBLE)", read="spark", write="duckdb")
         self.validate(
             "POW(2S, 3)", "POW(CAST(2 AS SMALLINT), 3)", read="spark", write="duckdb"
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
+            (
+                "strftime(CAST(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 7, 2) as date), '%Y-%m-%d')"
+            ),
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DATE(x)",
+            (
+                "CAST(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 7, 2) as date)"
+            ),
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8) as int)",
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "DI_ADD(x, 1, 'YEAR')",
+            (
+                "CAST(strftime(CAST(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 4) || '-' "
+                "|| SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 7, 2) as date) + INTERVAL 1 "
+                "YEAR, '%Y%m%d') as int)"
+            ),
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "DI_ADD(x, 1, 'MONTH')",
+            (
+                "CAST(strftime(CAST(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 4) || '-' "
+                "|| SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 7, 2) as date) + INTERVAL 1 "
+                "MONTH, '%Y%m%d') as int)"
+            ),
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "DI_ADD(x, 1)",
+            (
+                "CAST(strftime(CAST(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 4) || '-' "
+                "|| SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 7, 2) as date) + INTERVAL 1 "
+                "DAY, '%Y%m%d') as int)"
+            ),
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF('YEAR', 20220101, 20220102)",
+            (
+                "DATE_DIFF('YEAR', CAST(SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), "
+                "1, 4) || '-' || SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 5, 2) || "
+                "'-' || SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 7, 2) as date), "
+                "CAST(SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 7, 2) as date))"
+            ),
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF('MONTH', 20220101, 20220102)",
+            (
+                "DATE_DIFF('MONTH', CAST(SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), "
+                "1, 4) || '-' || SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 5, 2) || "
+                "'-' || SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 7, 2) as date), "
+                "CAST(SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 7, 2) as date))"
+            ),
+            write="duckdb",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF(20220101, 20220102)",
+            (
+                "DATE_DIFF('DAY', CAST(SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), "
+                "1, 4) || '-' || SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 5, 2) || "
+                "'-' || SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 7, 2) as date), "
+                "CAST(SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(20220102 as varchar), '-', ''), 7, 2) as date))"
+            ),
+            write="duckdb",
+            identity=False,
         )
 
     def test_mysql(self):
@@ -693,6 +807,58 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
+            "DATE_FORMAT(DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'), '%Y-%m-%d')",
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DATE(x)",
+            "DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d')",
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DI(x)",
+            "CAST(DATE_FORMAT(DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'), '%Y%m%d') as int)",
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "DI_ADD(x, 1, 'DAY')",
+            (
+                "CAST(DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(CAST(x as varchar), 1, 8), '%Y%m%d')), '%Y%m%d') as int)"
+            ),
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF('MONTH', 20220101, 20220102)",
+            (
+                "DATE_DIFF('MONTH', DATE_PARSE(SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 1, 8), '%Y%m%d'), "
+                "DATE_PARSE(SUBSTR(REPLACE(CAST(20220102 as varchar), "
+                "'-', ''), 1, 8), '%Y%m%d'))"
+            ),
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF(20220101, 20220102)",
+            (
+                "DATE_DIFF('DAY', DATE_PARSE(SUBSTR(REPLACE(CAST(20220101 as varchar), '-', ''), 1, 8), '%Y%m%d'), "
+                "DATE_PARSE(SUBSTR(REPLACE(CAST(20220102 as varchar), "
+                "'-', ''), 1, 8), '%Y%m%d'))"
+            ),
+            write="presto",
+            identity=False,
+        )
+
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
@@ -869,25 +1035,25 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-02')",
-            "DATE_DIFF(DATE_STR_TO_DATE('2020-01-02'), DATE_STR_TO_DATE('2020-01-02'))",
+            "DATE_DIFF(TS_OR_DS_OR_DI_TO_DATE('2020-01-02'), TS_OR_DS_OR_DI_TO_DATE('2020-01-02'))",
             read="hive",
             write=None,
             identity=False,
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATEDIFF('2020-01-02', '2020-01-01')",
+            "DATEDIFF(TO_DATE(SUBSTR(REPLACE(CAST('2020-01-02' as string), '-', ''), 1, 8), 'yyyyMMdd'), TO_DATE(SUBSTR(REPLACE(CAST('2020-01-01' as string), '-', ''), 1, 8), 'yyyyMMdd'))",
             read="hive",
         )
         self.validate(
             "DATEDIFF(TO_DATE(y), x)",
-            "DATE_DIFF('day', DATE_PARSE(x, '%Y-%m-%d'), DATE_PARSE(DATE_FORMAT(DATE_PARSE(SUBSTR(y, 1, 10), '%Y-%m-%d'), '%Y-%m-%d'), '%Y-%m-%d'))",
+            "DATE_DIFF('day', DATE_PARSE(SUBSTR(REPLACE(CAST(x as varchar), '-', ''), 1, 8), '%Y%m%d'), DATE_PARSE(SUBSTR(REPLACE(CAST(DATE_FORMAT(DATE_PARSE(SUBSTR(REPLACE(CAST(y as varchar), '-', ''), 1, 8), '%Y%m%d'), '%Y-%m-%d') as varchar), '-', ''), 1, 8), '%Y%m%d'))",
             read="hive",
             write="presto",
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATE_DIFF('day', DATE_PARSE('2020-01-01', '%Y-%m-%d'), DATE_PARSE('2020-01-02', '%Y-%m-%d'))",
+            "DATE_DIFF('day', DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-01' as varchar), '-', ''), 1, 8), '%Y%m%d'), DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-02' as varchar), '-', ''), 1, 8), '%Y%m%d'))",
             read="hive",
             write="presto",
         )
@@ -943,7 +1109,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TO_DATE(x)",
-            "TS_OR_DS_TO_DATE_STR(x)",
+            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
             read="hive",
             identity=False,
         )
@@ -960,7 +1126,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "MONTH('2021-03-01')",
-            "MONTH(CAST('2021-03-01' AS DATE))",
+            "MONTH(TS_OR_DS_OR_DI_TO_DATE('2021-03-01'))",
             read="hive",
             write="duckdb",
         )
@@ -968,7 +1134,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "DAY('2021-03-01')",
-            "DAY(CAST('2021-03-01' AS DATE))",
+            "DAY(TS_OR_DS_OR_DI_TO_DATE('2021-03-01'))",
             read="hive",
             write="duckdb",
         )
@@ -990,6 +1156,77 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "CAST(1 AS INT)", "CAST(1 AS INT)", read="hive", write="starrocks"
+        )
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
+            "DATE_FORMAT(TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd'), 'yyyy-MM-dd')",
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DATE(x)",
+            "TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd')",
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_TO_DI(x)",
+            "CAST(DATE_FORMAT(TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd'), 'yyyyMMdd') as int)",
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "DI_ADD(x, 1, 'YEAR')",
+            "CAST(ADD_MONTHS(TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd'), 1 * 12) as int)",
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "DI_ADD(x, 1, 'MONTH')",
+            "CAST(ADD_MONTHS(TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd'), 1) as int)",
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "DI_ADD(x, 1)",
+            "CAST(DATE_ADD(TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd'), 1) as int)",
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF('YEAR', 20220101, 20220102)",
+            (
+                "ROUND(MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
+                "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd')) / 12, 2)"
+            ),
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF('MONTH', 20220101, 20220102)",
+            (
+                "MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
+                "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'))"
+            ),
+            write="hive",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_OR_DI_DATE_DIFF(20220101, 20220102)",
+            (
+                "DATEDIFF(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
+                "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'))"
+            ),
+            write="hive",
+            identity=False,
         )
 
     def test_spark(self):

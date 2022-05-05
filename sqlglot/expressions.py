@@ -1506,6 +1506,14 @@ class DateDiff(Func):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
+class DiAdd(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class DiDiff(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
 class DateStrToDate(Func):
     pass
 
@@ -1694,11 +1702,27 @@ class TsOrDsAdd(Func):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class TsOrDsToDateStr(Func):
+class TsOrDsOrDiDateDiff(Func):
+    arg_types = {"unit": True, "first_date": True, "second_date": False}
+
+
+class TsOrDsOrDiToDate(Func):
+    pass
+
+
+class TsOrDsOrDiToDateStr(Func):
+    pass
+
+
+class TsOrDsOrDiToDi(Func):
     pass
 
 
 class TsOrDsToDate(Func):
+    pass
+
+
+class TsOrDsToDateStr(Func):
     pass
 
 

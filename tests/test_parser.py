@@ -74,12 +74,15 @@ class TestParser(unittest.TestCase):
         warn.expression(exp.Hint, y="")
         assert isinstance(warn.errors[0], ParseError)
 
-    def test_function_arguments_validation(self):
+    def test_parse_errors(self):
         with self.assertRaises(ParseError):
             parse_one("IF(a > 0, a, b, c)")
 
         with self.assertRaises(ParseError):
             parse_one("IF(a > 0)")
+
+        with self.assertRaises(ParseError):
+            parse_one("WITH cte AS (SELECT * FROM x)")
 
     def test_space(self):
         self.assertEqual(

@@ -213,19 +213,19 @@ class DuckDB(Dialect):
     DATE_FORMAT = "'%Y-%m-%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
-    TS_OR_DS_OR_DI_TO_YEAR = "SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 4)"
-    TS_OR_DS_OR_DI_TO_MONTH = "SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 5, 2)"
-    TS_OR_DS_OR_DI_TO_DAY = "SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 7, 2)"
+    TS_OR_DS_OR_DI_TO_YEAR = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 4)"
+    TS_OR_DS_OR_DI_TO_MONTH = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 5, 2)"
+    TS_OR_DS_OR_DI_TO_DAY = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 7, 2)"
     TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
         f"CAST({TS_OR_DS_OR_DI_TO_YEAR} || '-' || "
         f"{TS_OR_DS_OR_DI_TO_MONTH} || '-' || "
-        f"{TS_OR_DS_OR_DI_TO_DAY} as date)"
+        f"{TS_OR_DS_OR_DI_TO_DAY} AS DATE)"
     )
     TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
-        f"strftime({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
+        f"STRFTIME({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
     )
     TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
-        "CAST(SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 8) as int)"
+        "CAST(SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 8) AS INT)"
     )
 
     def _unix_to_time(self, expression):
@@ -234,13 +234,13 @@ class DuckDB(Dialect):
     def _ts_or_ds_add(self, expression):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
-        unit = self.sql(expression, "unit").strip("'") or "DAY"
+        unit = expression.text("unit") or "DAY"
         return f"STRFTIME(CAST({this} AS DATE) + INTERVAL {e} {unit}, {DuckDB.DATE_FORMAT})"
 
     def _date_add(self, expression):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
-        unit = self.sql(expression, "unit").strip("'") or "DAY"
+        unit = expression.text("unit") or "DAY"
         return f"{this} + INTERVAL {e} {unit}"
 
     def _ts_or_ds_or_di_to_date_str_sql(self, expression):
@@ -258,23 +258,22 @@ class DuckDB(Dialect):
     def _di_add_sql(self, expression):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
-        unit = self.sql(expression, "unit") or "DAY"
-        unit = unit.replace("'", "")
+        unit = expression.text("unit") or "DAY"
 
         date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=this)
 
-        return f"CAST(strftime({date} + INTERVAL {e} {unit}, {DuckDB.DATEINT_FORMAT}) as int)"
+        return f"CAST(strftime({date} + INTERVAL {e} {unit}, {DuckDB.DATEINT_FORMAT}) AS INT)"
 
     def _ts_or_ds_or_di_date_diff_sql(self, expression):
         third_arg = self.sql(expression, "second_date")
         if third_arg:
-            first_date_value = self.sql(expression, "first_date")
+            first_date_value = expression.text("first_date")
             second_date_value = third_arg
-            unit = self.sql(expression, "unit")
+            unit = expression.text("unit")
         else:
-            first_date_value = self.sql(expression, "unit")
-            second_date_value = self.sql(expression, "first_date")
-            unit = "'DAY'"
+            first_date_value = expression.text("unit")
+            second_date_value = expression.text("first_date")
+            unit = "DAY"
 
         first_date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
             this=first_date_value
@@ -283,7 +282,7 @@ class DuckDB(Dialect):
             this=second_date_value
         )
 
-        return f"DATE_DIFF({unit}, {first_date}, {second_date})"
+        return f"DATE_DIFF('{unit}', {first_date}, {second_date})"
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
@@ -392,7 +391,7 @@ class Hive(Dialect):
         f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyy-MM-dd')"
     )
     TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
-        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyyMMdd') as int)"
+        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyyMMdd') AS INT)"
     )
 
     class HiveMap(exp.Map):
@@ -499,31 +498,32 @@ class Hive(Dialect):
     def _di_add_sql(self, expression):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
-        unit = self.sql(expression, "unit") or "'DAY'"
+        unit = expression.text("unit") or "DAY"
 
         date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=this)
 
-        if unit == "'DAY'":
+        add_expression = None
+        if unit == "DAY":
             add_expression = f"DATE_ADD({date}, {e})"
-        elif unit == "'MONTH'":
+        elif unit == "MONTH":
             add_expression = f"ADD_MONTHS({date}, {e})"
-        elif unit == "'YEAR'":
+        elif unit == "YEAR":
             add_expression = f"ADD_MONTHS({date}, {e} * 12)"
         else:
-            raise NotImplementedError(f"Unit not implemented for Spark Di Add: {unit}")
+            self.unsupported(f"Unit not implemented for Spark Di Add: {unit}")
 
-        return f"CAST({add_expression} as int)"
+        return f"CAST({add_expression} AS INT)"
 
     def _ts_or_ds_or_di_date_diff_sql(self, expression):
         third_arg = self.sql(expression, "second_date")
         if third_arg:
             first_date_value = self.sql(expression, "first_date")
             second_date_value = third_arg
-            unit = self.sql(expression, "unit")
+            unit = expression.text("unit")
         else:
-            first_date_value = self.sql(expression, "unit")
+            first_date_value = expression.text("unit")
             second_date_value = self.sql(expression, "first_date")
-            unit = "'DAY'"
+            unit = "DAY"
 
         first_date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
             this=first_date_value
@@ -532,11 +532,11 @@ class Hive(Dialect):
             this=second_date_value
         )
 
-        if unit == "'DAY'":
+        if unit == "DAY":
             return f"DATEDIFF({first_date}, {second_date})"
-        if unit == "'MONTH'":
+        if unit == "MONTH":
             return f"MONTHS_BETWEEN({first_date}, {second_date})"
-        if unit == "'YEAR'":
+        if unit == "YEAR":
             return f"ROUND(MONTHS_BETWEEN({first_date}, {second_date}) / 12, 2)"
         raise NotImplementedError(f"Unit not implemented for Spark Date Diff: {unit}")
 
@@ -684,13 +684,13 @@ class Presto(Dialect):
     TIME_FORMAT = "'%Y-%m-%d %H:%i:%S'"
 
     TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
-        "DATE_PARSE(SUBSTR(REPLACE(CAST({this} as varchar), '-', ''), 1, 8), '%Y%m%d')"
+        "DATE_PARSE(SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')"
     )
     TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
         f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y-%m-%d')"
     )
     TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
-        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y%m%d') as int)"
+        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y%m%d') AS INT)"
     )
 
     def _approx_distinct_sql(self, expression):
@@ -767,25 +767,25 @@ class Presto(Dialect):
     def _ts_or_ds_add_sql(self, expression):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
-        unit = self.sql(expression, "unit") or "'day'"
-        return f"DATE_FORMAT(DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')), '%Y-%m-%d')"
+        unit = expression.text("unit") or "DAY"
+        return f"DATE_FORMAT(DATE_ADD('{unit}', {e}, DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')), '%Y-%m-%d')"
 
     def _di_add_sql(self, expression):
         this = self.sql(expression, "this")
         e = self.sql(expression, "expression")
-        unit = self.sql(expression, "unit") or "'day'"
-        return f"CAST(DATE_FORMAT(DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR(CAST({this} as varchar), 1, 8), '%Y%m%d')), '%Y%m%d') as int)"
+        unit = expression.text("unit") or "DAY"
+        return f"CAST(DATE_FORMAT(DATE_ADD('{unit}', {e}, DATE_PARSE(SUBSTR(CAST({this} AS VARCHAR), 1, 8), '%Y%m%d')), '%Y%m%d') AS INT)"
 
     def _ts_or_ds_or_di_date_diff_sql(self, expression):
         third_arg = self.sql(expression, "second_date")
         if third_arg:
             first_date_value = self.sql(expression, "first_date")
             second_date_value = third_arg
-            unit = self.sql(expression, "unit")
+            unit = expression.text("unit")
         else:
-            first_date_value = self.sql(expression, "unit")
+            first_date_value = expression.text("unit")
             second_date_value = self.sql(expression, "first_date")
-            unit = "'DAY'"
+            unit = "DAY"
 
         first_date = Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
             this=first_date_value
@@ -794,7 +794,7 @@ class Presto(Dialect):
             this=second_date_value
         )
 
-        return f"DATE_DIFF({unit}, {first_date}, {second_date})"
+        return f"DATE_DIFF('{unit}', {first_date}, {second_date})"
 
     time_mapping = MYSQL_TIME_MAPPING
 

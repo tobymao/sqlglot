@@ -717,23 +717,29 @@ class Parser:
             if not self._match(TokenType.COMMA):
                 break
 
+        cte = self.expression(
+            exp.With,
+            expressions=expressions,
+            recursive=recursive,
+        )
         this = self._parse_statement()
 
-        if this is None:
+        if not this:
             self.raise_error("Failed to parse any statement following CTE")
-            return None
+            return cte
 
-        if "with" not in this.arg_types:
+        if "with" in this.arg_types:
+            this.set(
+                "with",
+                self.expression(
+                    exp.With,
+                    expressions=expressions,
+                    recursive=recursive,
+                ),
+            )
+        else:
             self.raise_error(f"{this.key} does not support CTE")
 
-        this.set(
-            "with",
-            self.expression(
-                exp.With,
-                expressions=expressions,
-                recursive=recursive,
-            ),
-        )
         return this
 
     def _parse_cte(self):

@@ -158,7 +158,11 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE_STR(x)",
-            "STRFTIME(CAST(x AS DATE), '%Y-%m-%d')",
+            (
+                "STRFTIME(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 7, 2) AS DATE), '%Y-%m-%d')"
+            ),
             identity=False,
             write="duckdb",
         )
@@ -200,7 +204,11 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE(x)",
-            "CAST(x AS DATE)",
+            (
+                "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' || "
+                "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 5, 2) || '-' || "
+                "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 7, 2) AS DATE)"
+            ),
             write="duckdb",
             identity=False,
         )
@@ -231,7 +239,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
+            "MIXED_TYPE_TO_DATE_STR(x)",
             (
                 "STRFTIME(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' || "
                 "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 5, 2) || '-' || "
@@ -242,7 +250,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DATE(x)",
+            "MIXED_TYPE_TO_DATE(x)",
             (
                 "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' || "
                 "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 5, 2) || '-' || "
@@ -253,7 +261,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DI(x)",
+            "MIXED_TYPE_TO_DI(x)",
             "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
             write="duckdb",
             identity=False,
@@ -296,7 +304,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF('YEAR', 20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF('YEAR', 20220101, 20220102)",
             (
                 "DATE_DIFF('YEAR', CAST(SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), "
                 "1, 4) || '-' || SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), 5, 2) || "
@@ -310,7 +318,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF('MONTH', 20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF('MONTH', 20220101, 20220102)",
             (
                 "DATE_DIFF('MONTH', CAST(SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), "
                 "1, 4) || '-' || SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), 5, 2) || "
@@ -324,7 +332,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF(20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF(20220101, 20220102)",
             (
                 "DATE_DIFF('DAY', CAST(SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), "
                 "1, 4) || '-' || SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), 5, 2) || "
@@ -586,7 +594,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE(x)",
-            "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            "DATE_PARSE(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')",
             write="presto",
             identity=False,
         )
@@ -808,21 +816,21 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
+            "MIXED_TYPE_TO_DATE_STR(x)",
             "DATE_FORMAT(DATE_PARSE(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8), '%Y%m%d'), '%Y-%m-%d')",
             write="presto",
             identity=False,
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DATE(x)",
+            "MIXED_TYPE_TO_DATE(x)",
             "DATE_PARSE(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')",
             write="presto",
             identity=False,
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DI(x)",
+            "MIXED_TYPE_TO_DI(x)",
             "CAST(DATE_FORMAT(DATE_PARSE(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8), '%Y%m%d'), '%Y%m%d') AS INT)",
             write="presto",
             identity=False,
@@ -831,14 +839,15 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "DI_ADD(x, 1, 'DAY')",
             (
-                "CAST(DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 8), '%Y%m%d')), '%Y%m%d') AS INT)"
+                "CAST(DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(REPLACE(CAST(x AS "
+                "VARCHAR), '-', ''), 1, 8), '%Y%m%d')), '%Y%m%d') AS INT)"
             ),
             write="presto",
             identity=False,
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF('MONTH', 20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF('MONTH', 20220101, 20220102)",
             (
                 "DATE_DIFF('MONTH', DATE_PARSE(SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), 1, 8), '%Y%m%d'), "
                 "DATE_PARSE(SUBSTR(REPLACE(CAST(20220102 AS VARCHAR), "
@@ -849,11 +858,41 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF(20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF(20220101, 20220102)",
             (
                 "DATE_DIFF('DAY', DATE_PARSE(SUBSTR(REPLACE(CAST(20220101 AS VARCHAR), '-', ''), 1, 8), '%Y%m%d'), "
                 "DATE_PARSE(SUBSTR(REPLACE(CAST(20220102 AS VARCHAR), "
                 "'-', ''), 1, 8), '%Y%m%d'))"
+            ),
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "MIXED_TYPE_ADD(20220101, 1, 'DAY', 'YYYYMMDD')",
+            (
+                "CAST(DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(REPLACE(CAST(20220101 "
+                "AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')), '%Y%m%d') AS INT)"
+            ),
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "MIXED_TYPE_ADD(20220101, 1, 'DAY', 'YYYY-MM-DD')",
+            (
+                "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(REPLACE(CAST(20220101 AS "
+                "VARCHAR), '-', ''), 1, 8), '%Y%m%d')), '%Y-%m-%d')"
+            ),
+            write="presto",
+            identity=False,
+        )
+
+        self.validate(
+            "TS_OR_DS_ADD('2022-01-01', 1, 'DAY')",
+            (
+                "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(REPLACE(CAST('2022-01-01' "
+                "AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')), '%Y-%m-%d')"
             ),
             write="presto",
             identity=False,
@@ -982,7 +1021,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "TS_OR_DS_ADD('2020-01-01', 1, 'DAY')",
+            "DATE_ADD('2020-01-01', 1, 'DAY')",
             read="hive",
             write=None,
             identity=False,
@@ -999,19 +1038,22 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_SUB('2020-01-01', 1)",
-            "DATE_FORMAT(DATE_ADD('DAY', 1 * -1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
+            "DATE_ADD('DAY', 1 * -1, '2020-01-01')",
             read="hive",
             write="presto",
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
+            "DATE_ADD('DAY', 1, '2020-01-01')",
             read="hive",
             write="presto",
         )
         self.validate(
             "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
-            "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
+            (
+                "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(REPLACE(CAST('2021-02-01' "
+                "AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')), '%Y-%m-%d')"
+            ),
             write="presto",
             identity=False,
         )
@@ -1029,13 +1071,13 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "STRFTIME(CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY, '%Y-%m-%d')",
+            "'2020-01-01' + INTERVAL 1 DAY",
             read="hive",
             write="duckdb",
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-02')",
-            "DATE_DIFF(TS_OR_DS_OR_DI_TO_DATE('2020-01-02'), TS_OR_DS_OR_DI_TO_DATE('2020-01-02'))",
+            "DATE_DIFF(MIXED_TYPE_TO_DATE('2020-01-02'), MIXED_TYPE_TO_DATE('2020-01-02'))",
             read="hive",
             write=None,
             identity=False,
@@ -1113,13 +1155,13 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE(x)",
-            "TO_DATE(x)",
+            "TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd')",
             write="hive",
             identity=False,
         )
         self.validate(
             "TO_DATE(x)",
-            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
+            "MIXED_TYPE_TO_DATE_STR(x)",
             read="hive",
             identity=False,
         )
@@ -1176,21 +1218,21 @@ class TestDialects(unittest.TestCase):
             "CAST(1 AS INT)", "CAST(1 AS INT)", read="hive", write="starrocks"
         )
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DATE_STR(x)",
+            "MIXED_TYPE_TO_DATE_STR(x)",
             "DATE_FORMAT(TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd'), 'yyyy-MM-dd')",
             write="hive",
             identity=False,
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DATE(x)",
+            "MIXED_TYPE_TO_DATE(x)",
             "TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd')",
             write="hive",
             identity=False,
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_TO_DI(x)",
+            "MIXED_TYPE_TO_DI(x)",
             "CAST(DATE_FORMAT(TO_DATE(SUBSTR(REPLACE(CAST(x as string), '-', ''), 1, 8), 'yyyyMMdd'), 'yyyyMMdd') AS INT)",
             write="hive",
             identity=False,
@@ -1218,7 +1260,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF('YEAR', 20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF('YEAR', 20220101, 20220102)",
             (
                 "ROUND(MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
                 "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd')) / 12, 2)"
@@ -1228,7 +1270,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF('MONTH', 20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF('MONTH', 20220101, 20220102)",
             (
                 "MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
                 "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'))"
@@ -1238,7 +1280,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "TS_OR_DS_OR_DI_DATE_DIFF(20220101, 20220102)",
+            "MIXED_TYPE_DATE_DIFF(20220101, 20220102)",
             (
                 "DATEDIFF(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
                 "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'))"

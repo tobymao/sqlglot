@@ -213,29 +213,40 @@ class DuckDB(Dialect):
     DATE_FORMAT = "'%Y-%m-%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
-    TS_OR_DS_OR_DI_TO_YEAR = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 4)"
-    TS_OR_DS_OR_DI_TO_MONTH = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 5, 2)"
-    TS_OR_DS_OR_DI_TO_DAY = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 7, 2)"
-    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
-        f"CAST({TS_OR_DS_OR_DI_TO_YEAR} || '-' || "
-        f"{TS_OR_DS_OR_DI_TO_MONTH} || '-' || "
-        f"{TS_OR_DS_OR_DI_TO_DAY} AS DATE)"
+    MIXED_TYPE_TO_YEAR = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 4)"
+    MIXED_TYPE_TO_MONTH = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 5, 2)"
+    MIXED_TYPE_TO_DAY = "SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 7, 2)"
+    MIXED_TYPE_TO_DATE_EXPRESSION = (
+        f"CAST({MIXED_TYPE_TO_YEAR} || '-' || "
+        f"{MIXED_TYPE_TO_MONTH} || '-' || "
+        f"{MIXED_TYPE_TO_DAY} AS DATE)"
     )
-    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
-        f"STRFTIME({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
+    MIXED_TYPE_TO_DATE_STR_EXPRESSION = (
+        f"STRFTIME({MIXED_TYPE_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
     )
-    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
+    MIXED_TYPE_TO_DI_EXPRESSION = (
         "CAST(SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 8) AS INT)"
     )
 
-    def _unix_to_time(self, expression):
-        return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
+    @classmethod
+    def _mixed_type_add_to_di(cls, generator, expression):
+        this = generator.sql(expression, "this")
+        e = generator.sql(expression, "expression")
+        unit = expression.text("unit") or "DAY"
 
-    def _ts_or_ds_add(self, expression):
-        this = self.sql(expression, "this")
-        e = self.sql(expression, "expression")
+        date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
+
+        return f"CAST(strftime({date} + INTERVAL {e} {unit}, {DuckDB.DATEINT_FORMAT}) AS INT)"
+
+    @classmethod
+    def _mixed_type_add_to_ds(cls, generator, expression):
+        this = generator.sql(expression, "this")
+        e = generator.sql(expression, "expression")
         unit = expression.text("unit") or "DAY"
         return f"STRFTIME(CAST({this} AS DATE) + INTERVAL {e} {unit}, {DuckDB.DATE_FORMAT})"
+
+    def _unix_to_time(self, expression):
+        return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
 
     def _date_add(self, expression):
         this = self.sql(expression, "this")
@@ -243,28 +254,19 @@ class DuckDB(Dialect):
         unit = expression.text("unit") or "DAY"
         return f"{this} + INTERVAL {e} {unit}"
 
-    def _ts_or_ds_or_di_to_date_str_sql(self, expression):
+    def _mixed_type_to_date_str_sql(self, expression):
         this = self.sql(expression, "this")
-        return DuckDB.TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION.format(this=this)
+        return DuckDB.MIXED_TYPE_TO_DATE_STR_EXPRESSION.format(this=this)
 
-    def _ts_or_ds_or_di_to_di_sql(self, expression):
+    def _mixed_type_to_di_sql(self, expression):
         this = self.sql(expression, "this")
-        return DuckDB.TS_OR_DS_OR_DI_TO_DI_EXPRESSION.format(this=this)
+        return DuckDB.MIXED_TYPE_TO_DI_EXPRESSION.format(this=this)
 
-    def _ts_or_ds_or_di_to_date_sql(self, expression):
+    def _mixed_type_to_date_sql(self, expression):
         this = self.sql(expression, "this")
-        return DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=this)
+        return DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
-    def _di_add_sql(self, expression):
-        this = self.sql(expression, "this")
-        e = self.sql(expression, "expression")
-        unit = expression.text("unit") or "DAY"
-
-        date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=this)
-
-        return f"CAST(strftime({date} + INTERVAL {e} {unit}, {DuckDB.DATEINT_FORMAT}) AS INT)"
-
-    def _ts_or_ds_or_di_date_diff_sql(self, expression):
+    def _mixed_type_date_diff_sql(self, expression):
         third_arg = self.sql(expression, "second_date")
         if third_arg:
             first_date_value = expression.text("first_date")
@@ -275,14 +277,21 @@ class DuckDB(Dialect):
             second_date_value = expression.text("first_date")
             unit = "DAY"
 
-        first_date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+        first_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=first_date_value
         )
-        second_date = DuckDB.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+        second_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=second_date_value
         )
 
         return f"DATE_DIFF('{unit}', {first_date}, {second_date})"
+
+    def _mixed_type_add_sql(self, expression):
+        calling_key = expression.key.upper()
+        output_format = expression.text("output_format").upper() or "YYYY-MM-DD"
+        if output_format == "YYYYMMDD" or calling_key == "DIADD":
+            return DuckDB._mixed_type_add_to_di(self, expression)
+        return DuckDB._mixed_type_add_to_ds(self, expression)
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
@@ -290,8 +299,13 @@ class DuckDB(Dialect):
         exp.DateAdd: _date_add,
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
-        exp.DiAdd: _di_add_sql,
+        exp.DiAdd: _mixed_type_add_sql,
         exp.Explode: lambda self, e: f"UNNEST({self.sql(e, 'this')})",
+        exp.MixedTypeAdd: _mixed_type_add_sql,
+        exp.MixedTypeDateDiff: _mixed_type_date_diff_sql,
+        exp.MixedTypeToDate: _mixed_type_to_date_sql,
+        exp.MixedTypeToDateStr: _mixed_type_to_date_str_sql,
+        exp.MixedTypeToDi: _mixed_type_to_di_sql,
         exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.RegexpLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.RegexpSplit: lambda self, e: f"STR_SPLIT_REGEX({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -305,13 +319,9 @@ class DuckDB(Dialect):
         exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TimeToTimeStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
-        exp.TsOrDsAdd: _ts_or_ds_add,
-        exp.TsOrDsOrDiDateDiff: _ts_or_ds_or_di_date_diff_sql,
-        exp.TsOrDsOrDiToDate: _ts_or_ds_or_di_to_date_sql,
-        exp.TsOrDsOrDiToDateStr: _ts_or_ds_or_di_to_date_str_sql,
-        exp.TsOrDsOrDiToDi: _ts_or_ds_or_di_to_di_sql,
-        exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.DATE_FORMAT})",
-        exp.TsOrDsToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+        exp.TsOrDsAdd: _mixed_type_add_sql,  # Alias for Backwards Compatibility
+        exp.TsOrDsToDateStr: _mixed_type_to_date_str_sql,  # Alias for Backwards Compatibility
+        exp.TsOrDsToDate: _mixed_type_to_date_sql,  # Alias for Backwards Compatibility
         exp.UnixToStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {self.format_time(e)})",
         exp.UnixToTime: _unix_to_time,
         exp.UnixToTimeStr: lambda self, e: f"STRFTIME({DuckDB._unix_to_time(self, e)}, {DuckDB.TIME_FORMAT})",
@@ -384,18 +394,65 @@ class Hive(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
-    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
+    MIXED_TYPE_TO_DATE_EXPRESSION = (
         "TO_DATE(SUBSTR(REPLACE(CAST({this} as string), '-', ''), 1, 8), 'yyyyMMdd')"
     )
-    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
-        f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyy-MM-dd')"
+    MIXED_TYPE_TO_DATE_STR_EXPRESSION = (
+        f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, 'yyyy-MM-dd')"
     )
-    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
-        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, 'yyyyMMdd') AS INT)"
+    MIXED_TYPE_TO_DI_EXPRESSION = (
+        f"CAST(DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, 'yyyyMMdd') AS INT)"
     )
 
     class HiveMap(exp.Map):
         is_var_len_args = True
+
+    @classmethod
+    def _mixed_type_add_to_di(cls, generator, expression):
+        this = generator.sql(expression, "this")
+        e = generator.sql(expression, "expression")
+        unit = expression.text("unit") or "DAY"
+
+        date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
+
+        add_expression = None
+        if unit == "DAY":
+            add_expression = f"DATE_ADD({date}, {e})"
+        elif unit == "MONTH":
+            add_expression = f"ADD_MONTHS({date}, {e})"
+        elif unit == "YEAR":
+            add_expression = f"ADD_MONTHS({date}, {e} * 12)"
+        else:
+            generator.unsupported(f"Unit not implemented for Spark Di Add: {unit}")
+
+        return f"CAST({add_expression} AS INT)"
+
+    @classmethod
+    def _mixed_type_add_to_ds(cls, generator, expression):
+        this = generator.sql(expression, "this")
+        e = generator.sql(expression, "expression")
+        unit = expression.text("unit") or "DAY"
+
+        date = Hive.MIXED_TYPE_TO_DATE_STR_EXPRESSION.format(this=this)
+
+        add_expression = None
+        if unit == "DAY":
+            add_expression = f"DATE_ADD({date}, {e})"
+        elif unit == "MONTH":
+            add_expression = f"ADD_MONTHS({date}, {e})"
+        elif unit == "YEAR":
+            add_expression = f"ADD_MONTHS({date}, {e} * 12)"
+        else:
+            generator.unsupported(f"Unit not implemented for Spark Di Add: {unit}")
+
+        return add_expression
+
+    def _mixed_type_add_sql(self, expression):
+        calling_key = expression.key.upper()
+        output_format = expression.text("output_format").upper() or "YYYY-MM-DD"
+        if output_format == "YYYYMMDD" or calling_key == "DIADD":
+            return Hive._mixed_type_add_to_di(self, expression)
+        return Hive._mixed_type_add_to_ds(self, expression)
 
     def _map_sql(self, expression):
         keys = expression.args["keys"]
@@ -483,38 +540,19 @@ class Hive(Dialect):
     def _unix_to_time(self, expression):
         return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
 
-    def _ts_or_ds_or_di_to_date_str_sql(self, expression):
+    def _mixed_type_to_date_str_sql(self, expression):
         this = self.sql(expression, "this")
-        return Hive.TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION.format(this=this)
+        return Hive.MIXED_TYPE_TO_DATE_STR_EXPRESSION.format(this=this)
 
-    def _ts_or_ds_or_di_to_di_sql(self, expression):
+    def _mixed_type_to_di_sql(self, expression):
         this = self.sql(expression, "this")
-        return Hive.TS_OR_DS_OR_DI_TO_DI_EXPRESSION.format(this=this)
+        return Hive.MIXED_TYPE_TO_DI_EXPRESSION.format(this=this)
 
-    def _ts_or_ds_or_di_to_date_sql(self, expression):
+    def _mixed_type_to_date_sql(self, expression):
         this = self.sql(expression, "this")
-        return Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=this)
+        return Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
-    def _di_add_sql(self, expression):
-        this = self.sql(expression, "this")
-        e = self.sql(expression, "expression")
-        unit = expression.text("unit") or "DAY"
-
-        date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=this)
-
-        add_expression = None
-        if unit == "DAY":
-            add_expression = f"DATE_ADD({date}, {e})"
-        elif unit == "MONTH":
-            add_expression = f"ADD_MONTHS({date}, {e})"
-        elif unit == "YEAR":
-            add_expression = f"ADD_MONTHS({date}, {e} * 12)"
-        else:
-            self.unsupported(f"Unit not implemented for Spark Di Add: {unit}")
-
-        return f"CAST({add_expression} AS INT)"
-
-    def _ts_or_ds_or_di_date_diff_sql(self, expression):
+    def _mixed_type_date_diff_sql(self, expression):
         third_arg = self.sql(expression, "second_date")
         if third_arg:
             first_date_value = self.sql(expression, "first_date")
@@ -525,20 +563,24 @@ class Hive(Dialect):
             second_date_value = self.sql(expression, "first_date")
             unit = "DAY"
 
-        first_date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+        first_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=first_date_value
         )
-        second_date = Hive.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+        second_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=second_date_value
         )
 
+        response = None
         if unit == "DAY":
-            return f"DATEDIFF({first_date}, {second_date})"
-        if unit == "MONTH":
-            return f"MONTHS_BETWEEN({first_date}, {second_date})"
-        if unit == "YEAR":
-            return f"ROUND(MONTHS_BETWEEN({first_date}, {second_date}) / 12, 2)"
-        raise NotImplementedError(f"Unit not implemented for Spark Date Diff: {unit}")
+            response = f"DATEDIFF({first_date}, {second_date})"
+        elif unit == "MONTH":
+            response = f"MONTHS_BETWEEN({first_date}, {second_date})"
+        elif unit == "YEAR":
+            response = f"ROUND(MONTHS_BETWEEN({first_date}, {second_date}) / 12, 2)"
+        else:
+            self.unsupported(f"Unit not implemented for Spark Date Diff: {unit}")
+
+        return response
 
     type_mapping = {
         exp.DataType.Type.TEXT: "STRING",
@@ -553,7 +595,7 @@ class Hive(Dialect):
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
-        exp.DiAdd: _di_add_sql,
+        exp.DiAdd: _mixed_type_add_sql,
         exp.Properties: _properties_sql,
         exp.Property: _property_sql,
         exp.If: _if_sql,
@@ -563,6 +605,11 @@ class Hive(Dialect):
         exp.JSONExtractScalar: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
         exp.Map: _map_sql,
         HiveMap: _map_sql,
+        exp.MixedTypeAdd: _mixed_type_add_sql,
+        exp.MixedTypeDateDiff: _mixed_type_date_diff_sql,
+        exp.MixedTypeToDate: _mixed_type_to_date_sql,
+        exp.MixedTypeToDateStr: _mixed_type_to_date_str_sql,
+        exp.MixedTypeToDi: _mixed_type_to_di_sql,
         exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
         exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
         exp.RegexpSplit: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -578,13 +625,9 @@ class Hive(Dialect):
         exp.TimeToStr: _time_to_str,
         exp.TimeToTimeStr: lambda self, e: self.sql(e, "this"),
         exp.TimeToUnix: _time_to_unix,
-        exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.TsOrDsOrDiDateDiff: _ts_or_ds_or_di_date_diff_sql,
-        exp.TsOrDsOrDiToDate: _ts_or_ds_or_di_to_date_sql,
-        exp.TsOrDsOrDiToDateStr: _ts_or_ds_or_di_to_date_str_sql,
-        exp.TsOrDsOrDiToDi: _ts_or_ds_or_di_to_di_sql,
-        exp.TsOrDsToDateStr: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
-        exp.TsOrDsToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
+        exp.TsOrDsAdd: _mixed_type_add_sql,  # Alias for Backwards Compatibility
+        exp.TsOrDsToDateStr: _mixed_type_to_date_str_sql,  # Alias for Backwards Compatibility
+        exp.TsOrDsToDate: _mixed_type_to_date_sql,  # Alias for Backwards Compatibility
         exp.TryCast: _no_trycast_sql,
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), Hive._time_format(self, e))})",
         exp.UnixToTime: _unix_to_time,
@@ -595,16 +638,16 @@ class Hive(Dialect):
 Hive.functions = {
     "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
     "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
-    "DATE_ADD": lambda args: exp.TsOrDsAdd(
+    "DATE_ADD": lambda args: exp.DateAdd(
         this=list_get(args, 0),
         expression=list_get(args, 1),
         unit=exp.Literal.string("DAY"),
     ),
     "DATEDIFF": lambda args: exp.DateDiff(
-        this=exp.TsOrDsOrDiToDate(this=list_get(args, 0)),
-        expression=exp.TsOrDsOrDiToDate(this=list_get(args, 1)),
+        this=exp.MixedTypeToDate(this=list_get(args, 0)),
+        expression=exp.MixedTypeToDate(this=list_get(args, 1)),
     ),
-    "DATE_SUB": lambda args: exp.TsOrDsAdd(
+    "DATE_SUB": lambda args: exp.DateAdd(
         this=list_get(args, 0),
         expression=exp.Mul(
             this=list_get(args, 1),
@@ -613,7 +656,7 @@ Hive.functions = {
         unit=exp.Literal.string("DAY"),
     ),
     "DATE_FORMAT": _format_time(exp.TimeToStr, Hive),
-    "DAY": lambda args: exp.Day(this=exp.TsOrDsOrDiToDate(this=list_get(args, 0))),
+    "DAY": lambda args: exp.Day(this=exp.MixedTypeToDate(this=list_get(args, 0))),
     "FROM_UNIXTIME": _format_time(exp.UnixToStr, Hive, Hive.TIME_FORMAT),
     "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,
     "LOCATE": lambda args: exp.StrPosition(
@@ -625,14 +668,14 @@ Hive.functions = {
         else exp.Ln.from_arg_list(args)
     ),
     "MAP": Hive._parse_map,
-    "MONTH": lambda args: exp.Month(this=exp.TsOrDsOrDiToDate.from_arg_list(args)),
+    "MONTH": lambda args: exp.Month(this=exp.MixedTypeToDate.from_arg_list(args)),
     "PERCENTILE": exp.Quantile.from_arg_list,
     "COLLECT_SET": exp.SetAgg.from_arg_list,
     "SIZE": exp.ArraySize.from_arg_list,
     "SPLIT": exp.RegexpSplit.from_arg_list,
-    "TO_DATE": exp.TsOrDsOrDiToDateStr.from_arg_list,
+    "TO_DATE": exp.MixedTypeToDateStr.from_arg_list,
     "UNIX_TIMESTAMP": _format_time(exp.StrToUnix, Hive, Hive.TIME_FORMAT),
-    "YEAR": lambda args: exp.Year(this=exp.TsOrDsOrDiToDate.from_arg_list(args)),
+    "YEAR": lambda args: exp.Year(this=exp.MixedTypeToDate.from_arg_list(args)),
 }
 
 
@@ -683,15 +726,42 @@ class Presto(Dialect):
     index_offset = 1
     TIME_FORMAT = "'%Y-%m-%d %H:%i:%S'"
 
-    TS_OR_DS_OR_DI_TO_DATE_EXPRESSION = (
+    MIXED_TYPE_TO_DATE_EXPRESSION = (
         "DATE_PARSE(SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')"
     )
-    TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION = (
-        f"DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y-%m-%d')"
+    MIXED_TYPE_TO_DATE_STR_EXPRESSION = (
+        f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, '%Y-%m-%d')"
     )
-    TS_OR_DS_OR_DI_TO_DI_EXPRESSION = (
-        f"CAST(DATE_FORMAT({TS_OR_DS_OR_DI_TO_DATE_EXPRESSION}, '%Y%m%d') AS INT)"
+    MIXED_TYPE_TO_DI_EXPRESSION = (
+        f"CAST(DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, '%Y%m%d') AS INT)"
     )
+
+    @classmethod
+    def _mixed_type_add_to_di(cls, generator, expression):
+        this = generator.sql(expression, "this")
+        e = generator.sql(expression, "expression")
+        unit = expression.text("unit") or "DAY"
+        
+        date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
+        
+        return f"CAST(DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), '%Y%m%d') AS INT)"
+
+    @classmethod
+    def _mixed_type_add_to_ds(cls, generator, expression):
+        this = generator.sql(expression, "this")
+        e = generator.sql(expression, "expression")
+        unit = expression.text("unit") or "DAY"
+
+        date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
+
+        return f"DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), '%Y-%m-%d')"
+
+    def _mixed_type_add_sql(self, expression):
+        calling_key = expression.key.upper()
+        output_format = expression.text("output_format").upper() or "YYYY-MM-DD"
+        if output_format == "YYYYMMDD" or calling_key == "DIADD":
+            return Presto._mixed_type_add_to_di(self, expression)
+        return Presto._mixed_type_add_to_ds(self, expression)
 
     def _approx_distinct_sql(self, expression):
         accuracy = expression.args.get("accuracy")
@@ -748,35 +818,23 @@ class Presto(Dialect):
         this = self.sql(expression, "this")
         return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
 
-    def _ts_or_ds_or_di_to_date_str_sql(self, expression):
+    def _mixed_type_to_date_str_sql(self, expression):
         this = self.sql(expression, "this")
-        return Presto.TS_OR_DS_OR_DI_TO_DATE_STR_EXPRESSION.format(this=this)
+        return Presto.MIXED_TYPE_TO_DATE_STR_EXPRESSION.format(this=this)
 
-    def _ts_or_ds_or_di_to_di_sql(self, expression):
+    def _mixed_type_to_di_sql(self, expression):
         this = self.sql(expression, "this")
-        return Presto.TS_OR_DS_OR_DI_TO_DI_EXPRESSION.format(this=this)
+        return Presto.MIXED_TYPE_TO_DI_EXPRESSION.format(this=this)
 
     def _ts_or_ds_to_date_sql(self, expression):
         this = self.sql(expression, "this")
         return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
 
-    def _ts_or_ds_or_di_to_date_sql(self, expression):
+    def _mixed_type_to_date_sql(self, expression):
         this = self.sql(expression, "this")
-        return Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(this=this)
+        return Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
-    def _ts_or_ds_add_sql(self, expression):
-        this = self.sql(expression, "this")
-        e = self.sql(expression, "expression")
-        unit = expression.text("unit") or "DAY"
-        return f"DATE_FORMAT(DATE_ADD('{unit}', {e}, DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')), '%Y-%m-%d')"
-
-    def _di_add_sql(self, expression):
-        this = self.sql(expression, "this")
-        e = self.sql(expression, "expression")
-        unit = expression.text("unit") or "DAY"
-        return f"CAST(DATE_FORMAT(DATE_ADD('{unit}', {e}, DATE_PARSE(SUBSTR(CAST({this} AS VARCHAR), 1, 8), '%Y%m%d')), '%Y%m%d') AS INT)"
-
-    def _ts_or_ds_or_di_date_diff_sql(self, expression):
+    def _mixed_type_date_diff_sql(self, expression):
         third_arg = self.sql(expression, "second_date")
         if third_arg:
             first_date_value = self.sql(expression, "first_date")
@@ -787,10 +845,10 @@ class Presto(Dialect):
             second_date_value = self.sql(expression, "first_date")
             unit = "DAY"
 
-        first_date = Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+        first_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=first_date_value
         )
-        second_date = Presto.TS_OR_DS_OR_DI_TO_DATE_EXPRESSION.format(
+        second_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=second_date_value
         )
 
@@ -822,11 +880,16 @@ class Presto(Dialect):
         exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
-        exp.DiAdd: _di_add_sql,
+        exp.DiAdd: _mixed_type_add_sql,
         exp.If: _if_sql,
         exp.ILike: _no_ilike_sql,
         exp.Initcap: _initcap_sql,
         exp.Lateral: _explode_to_unnest_sql,
+        exp.MixedTypeAdd: _mixed_type_add_sql,
+        exp.MixedTypeDateDiff: _mixed_type_date_diff_sql,
+        exp.MixedTypeToDate: _mixed_type_to_date_sql,
+        exp.MixedTypeToDateStr: _mixed_type_to_date_str_sql,
+        exp.MixedTypeToDi: _mixed_type_to_di_sql,
         exp.Quantile: _quantile_sql,
         exp.Schema: _schema_sql,
         exp.StrPosition: _str_position_sql,
@@ -840,13 +903,9 @@ class Presto(Dialect):
         exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Presto.TIME_FORMAT})",
         exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
-        exp.TsOrDsAdd: _ts_or_ds_add_sql,
-        exp.TsOrDsOrDiDateDiff: _ts_or_ds_or_di_date_diff_sql,
-        exp.TsOrDsOrDiToDate: _ts_or_ds_or_di_to_date_sql,
-        exp.TsOrDsOrDiToDateStr: _ts_or_ds_or_di_to_date_str_sql,
-        exp.TsOrDsOrDiToDi: _ts_or_ds_or_di_to_di_sql,
-        exp.TsOrDsToDateStr: _ts_or_ds_to_date_str_sql,
-        exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
+        exp.TsOrDsAdd: _mixed_type_add_sql,  # Alias for Backwards Compatibility
+        exp.TsOrDsToDateStr: _mixed_type_to_date_str_sql,  # Alias for Backwards Compatibility
+        exp.TsOrDsToDate: _mixed_type_to_date_sql,  # Alias for Backwards Compatibility
         exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
         exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')})",
         exp.UnixToTimeStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {Presto.TIME_FORMAT})",

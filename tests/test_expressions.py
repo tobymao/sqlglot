@@ -26,7 +26,7 @@ class TestExpressions(unittest.TestCase):
         )
         self.assertEqual(
             parse_one("TO_DATE(x)", read="hive"),
-            parse_one("ts_or_ds_or_di_to_date_str(x)"),
+            parse_one("mixed_type_to_date_str(x)"),
         )
 
     def test_find(self):

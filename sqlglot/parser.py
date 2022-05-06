@@ -209,7 +209,7 @@ class Parser:
         exp.Values,
     )
 
-    CREATBABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
+    CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     __slots__ = (
         "functions",
@@ -459,7 +459,7 @@ class Parser:
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
 
-        create_token = self._match_set(self.CREATBABLES) and self._prev
+        create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
             self.raise_error("Expected TABLE, VIEW, or FUNCTION")
@@ -776,7 +776,7 @@ class Parser:
         this = self._parse_values()
 
         if self._match(TokenType.L_PAREN):
-            this = self._parse_select()
+            this = self._parse_with()
             self._match_r_paren()
             this = self.expression(
                 exp.Subquery,

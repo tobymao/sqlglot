@@ -236,7 +236,7 @@ class DuckDB(Dialect):
 
         date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
-        return f"CAST(strftime({date} + INTERVAL {e} {unit}, {DuckDB.DATEINT_FORMAT}) AS INT)"
+        return f"CAST(STRFTIME({date} + INTERVAL {e} {unit}, {DuckDB.DATEINT_FORMAT}) AS INT)"
 
     @classmethod
     def _mixed_type_add_to_ds(cls, generator, expression):

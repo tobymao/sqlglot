@@ -1598,7 +1598,12 @@ class Min(AggFunc):
 
 
 class MixedTypeAdd(Func):
-    arg_types = {"this": True, "expression": True, "unit": False, "output_format": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "unit": False,
+        "output_format": False,
+    }
 
 
 class MixedTypeDateDiff(Func):

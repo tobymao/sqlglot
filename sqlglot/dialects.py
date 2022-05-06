@@ -277,9 +277,7 @@ class DuckDB(Dialect):
             second_date_value = expression.text("first_date")
             unit = "DAY"
 
-        first_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=first_date_value
-        )
+        first_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=first_date_value)
         second_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=second_date_value
         )
@@ -563,12 +561,8 @@ class Hive(Dialect):
             second_date_value = self.sql(expression, "first_date")
             unit = "DAY"
 
-        first_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=first_date_value
-        )
-        second_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=second_date_value
-        )
+        first_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=first_date_value)
+        second_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=second_date_value)
 
         response = None
         if unit == "DAY":
@@ -741,9 +735,9 @@ class Presto(Dialect):
         this = generator.sql(expression, "this")
         e = generator.sql(expression, "expression")
         unit = expression.text("unit") or "DAY"
-        
+
         date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
-        
+
         return f"CAST(DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), '%Y%m%d') AS INT)"
 
     @classmethod
@@ -845,9 +839,7 @@ class Presto(Dialect):
             second_date_value = self.sql(expression, "first_date")
             unit = "DAY"
 
-        first_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=first_date_value
-        )
+        first_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=first_date_value)
         second_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(
             this=second_date_value
         )

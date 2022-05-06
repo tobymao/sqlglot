@@ -630,22 +630,24 @@ class Hive(Dialect):
 Hive.functions = {
     "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
     "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
-    "DATE_ADD": lambda args: exp.DateAdd(
+    "DATE_ADD": lambda args: exp.MixedTypeAdd(
         this=list_get(args, 0),
         expression=list_get(args, 1),
         unit=exp.Literal.string("DAY"),
+        output_format=exp.Literal.string("YYYY-MM-DD"),
     ),
     "DATEDIFF": lambda args: exp.DateDiff(
         this=exp.MixedTypeToDate(this=list_get(args, 0)),
         expression=exp.MixedTypeToDate(this=list_get(args, 1)),
     ),
-    "DATE_SUB": lambda args: exp.DateAdd(
+    "DATE_SUB": lambda args: exp.MixedTypeAdd(
         this=list_get(args, 0),
         expression=exp.Mul(
             this=list_get(args, 1),
             expression=exp.Literal.number(-1),
         ),
         unit=exp.Literal.string("DAY"),
+        output_format=exp.Literal.string("YYYY-MM-DD"),
     ),
     "DATE_FORMAT": _format_time(exp.TimeToStr, Hive),
     "DAY": lambda args: exp.Day(this=exp.MixedTypeToDate(this=list_get(args, 0))),

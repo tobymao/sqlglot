@@ -270,7 +270,7 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "DI_ADD(x, 1, 'YEAR')",
             (
-                "CAST(strftime(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' "
+                "CAST(STRFTIME(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' "
                 "|| SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 5, 2) || '-' || "
                 "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 7, 2) AS DATE) + INTERVAL 1 "
                 "YEAR, '%Y%m%d') AS INT)"
@@ -282,7 +282,7 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "DI_ADD(x, 1, 'MONTH')",
             (
-                "CAST(strftime(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' "
+                "CAST(STRFTIME(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' "
                 "|| SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 5, 2) || '-' || "
                 "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 7, 2) AS DATE) + INTERVAL 1 "
                 "MONTH, '%Y%m%d') AS INT)"
@@ -294,7 +294,7 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "DI_ADD(x, 1)",
             (
-                "CAST(strftime(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' "
+                "CAST(STRFTIME(CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 4) || '-' "
                 "|| SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 5, 2) || '-' || "
                 "SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 7, 2) AS DATE) + INTERVAL 1 "
                 "DAY, '%Y%m%d') AS INT)"
@@ -1021,30 +1021,30 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD('2020-01-01', 1, 'DAY')",
+            "MIXED_TYPE_ADD('2020-01-01', 1, 'DAY', 'YYYY-MM-DD')",
             read="hive",
             write=None,
             identity=False,
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD('2020-01-01', 1)",
+            "DATE_ADD(DATE_FORMAT(TO_DATE(SUBSTR(REPLACE(CAST('2020-01-01' as string), '-', ''), 1, 8), 'yyyyMMdd'), 'yyyy-MM-dd'), 1)",
             read="hive",
         )
         self.validate(
             "DATE_SUB('2020-01-01', 1)",
-            "DATE_ADD('2020-01-01', 1 * -1)",
+            "DATE_ADD(DATE_FORMAT(TO_DATE(SUBSTR(REPLACE(CAST('2020-01-01' as string), '-', ''), 1, 8), 'yyyyMMdd'), 'yyyy-MM-dd'), 1 * -1)",
             read="hive",
         )
         self.validate(
             "DATE_SUB('2020-01-01', 1)",
-            "DATE_ADD('DAY', 1 * -1, '2020-01-01')",
+            "DATE_FORMAT(DATE_ADD('DAY', 1 * -1, DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-01' AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')), '%Y-%m-%d')",
             read="hive",
             write="presto",
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD('DAY', 1, '2020-01-01')",
+            "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(REPLACE(CAST('2020-01-01' AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')), '%Y-%m-%d')",
             read="hive",
             write="presto",
         )
@@ -1071,7 +1071,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
-            "'2020-01-01' + INTERVAL 1 DAY",
+            "STRFTIME(CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY, '%Y-%m-%d')",
             read="hive",
             write="duckdb",
         )

@@ -285,9 +285,8 @@ class DuckDB(Dialect):
         return f"DATE_DIFF('{unit}', {first_date}, {second_date})"
 
     def _mixed_type_add_sql(self, expression):
-        calling_key = expression.key.upper()
         output_format = expression.text("output_format").upper() or "YYYY-MM-DD"
-        if output_format == "YYYYMMDD" or calling_key == "DIADD":
+        if output_format == "YYYYMMDD" or isinstance(expression, exp.DiAdd):
             return DuckDB._mixed_type_add_to_di(self, expression)
         return DuckDB._mixed_type_add_to_ds(self, expression)
 
@@ -446,9 +445,8 @@ class Hive(Dialect):
         return add_expression
 
     def _mixed_type_add_sql(self, expression):
-        calling_key = expression.key.upper()
         output_format = expression.text("output_format").upper() or "YYYY-MM-DD"
-        if output_format == "YYYYMMDD" or calling_key == "DIADD":
+        if output_format == "YYYYMMDD" or isinstance(expression, exp.DiAdd):
             return Hive._mixed_type_add_to_di(self, expression)
         return Hive._mixed_type_add_to_ds(self, expression)
 
@@ -751,9 +749,8 @@ class Presto(Dialect):
         return f"DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), '%Y-%m-%d')"
 
     def _mixed_type_add_sql(self, expression):
-        calling_key = expression.key.upper()
         output_format = expression.text("output_format").upper() or "YYYY-MM-DD"
-        if output_format == "YYYYMMDD" or calling_key == "DIADD":
+        if output_format == "YYYYMMDD" or isinstance(expression, exp.DiAdd):
             return Presto._mixed_type_add_to_di(self, expression)
         return Presto._mixed_type_add_to_ds(self, expression)
 

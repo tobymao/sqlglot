@@ -328,6 +328,7 @@ CREATE TABLE z WITH (format = 'parquet') AS SELECT 1
 CREATE TABLE z WITH (format = 'ORC', x = '2') AS SELECT 1
 CREATE TABLE z (z INT) WITH (partitioned_by = (x INT, y INT))
 CREATE TABLE z (z INT) WITH (partitioned_by = (x INT)) AS SELECT 1
+CREATE TABLE z (z INT) WITH (partitioned_by = (x INT)) AS (WITH cte AS (SELECT 1) SELECT * FROM cte)
 CREATE TABLE z (a INT PRIMARY KEY, c UUID)
 CREATE TEMPORARY FUNCTION f
 CREATE TEMPORARY FUNCTION f AS 'g'

@@ -480,7 +480,14 @@ class Parser:
                 this if isinstance(this, exp.Schema) else None
             )
             if self._match(TokenType.ALIAS):
+                parenthesized = self._match(TokenType.L_PAREN)
                 expression = self._parse_with()
+                if parenthesized:
+                    self._match(TokenType.R_PAREN)
+                    expression = self.expression(
+                        exp.Subquery,
+                        this=expression,
+                    )
 
         options = {
             "engine": None,

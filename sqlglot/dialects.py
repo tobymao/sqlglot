@@ -390,9 +390,7 @@ class Hive(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
-    MIXED_TYPE_TO_DATE_EXPRESSION = (
-        f"TO_DATE(SUBSTR(REPLACE(CAST({{this}} as string), '-', ''), 1, 8), {DATEINT_FORMAT})"
-    )
+    MIXED_TYPE_TO_DATE_EXPRESSION = f"TO_DATE(SUBSTR(REPLACE(CAST({{this}} as string), '-', ''), 1, 8), {DATEINT_FORMAT})"
     MIXED_TYPE_TO_DATE_STR_EXPRESSION = (
         f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
     )
@@ -722,9 +720,7 @@ class Presto(Dialect):
     DATEINT_FORMAT = "'%Y%m%d'"
     DATE_FORMAT = "'%Y-%m-%d'"
 
-    MIXED_TYPE_TO_DATE_EXPRESSION = (
-        f"DATE_PARSE(SUBSTR(REPLACE(CAST({{this}} AS VARCHAR), '-', ''), 1, 8), {DATEINT_FORMAT})"
-    )
+    MIXED_TYPE_TO_DATE_EXPRESSION = f"DATE_PARSE(SUBSTR(REPLACE(CAST({{this}} AS VARCHAR), '-', ''), 1, 8), {DATEINT_FORMAT})"
     MIXED_TYPE_TO_DATE_STR_EXPRESSION = (
         f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
     )

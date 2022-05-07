@@ -386,17 +386,18 @@ class Hive(Dialect):
         "S": "%f",
     }
 
+    DATEINT_FORMAT = "'yyyyMMdd'"
     DATE_FORMAT = "'yyyy-MM-dd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
     MIXED_TYPE_TO_DATE_EXPRESSION = (
-        "TO_DATE(SUBSTR(REPLACE(CAST({this} as string), '-', ''), 1, 8), 'yyyyMMdd')"
+        f"TO_DATE(SUBSTR(REPLACE(CAST({{this}} as string), '-', ''), 1, 8), {DATEINT_FORMAT})"
     )
     MIXED_TYPE_TO_DATE_STR_EXPRESSION = (
-        f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, 'yyyy-MM-dd')"
+        f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
     )
     MIXED_TYPE_TO_DI_EXPRESSION = (
-        f"CAST(DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, 'yyyyMMdd') AS INT)"
+        f"CAST(DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, {DATEINT_FORMAT}) AS INT)"
     )
 
     class HiveMap(exp.Map):
@@ -420,7 +421,7 @@ class Hive(Dialect):
         else:
             generator.unsupported(f"Unit not implemented for Spark Di Add: {unit}")
 
-        return f"CAST({add_expression} AS INT)"
+        return f"CAST(DATE_FORMAT({add_expression}, {cls.DATEINT_FORMAT}) AS INT)"
 
     @classmethod
     def _mixed_type_add_to_ds(cls, generator, expression):
@@ -564,9 +565,9 @@ class Hive(Dialect):
         if unit == "DAY":
             response = f"DATEDIFF({end_date}, {start_date})"
         elif unit == "MONTH":
-            response = f"MONTHS_BETWEEN({end_date}, {start_date})"
+            response = f"CAST(MONTHS_BETWEEN({end_date}, {start_date}) as int)"
         elif unit == "YEAR":
-            response = f"ROUND(MONTHS_BETWEEN({end_date}, {start_date}) / 12, 2)"
+            response = f"CAST(MONTHS_BETWEEN({end_date}, {start_date}) / 12 as int)"
         else:
             self.unsupported(f"Unit not implemented for Spark Date Diff: {unit}")
 
@@ -718,14 +719,17 @@ class Presto(Dialect):
     index_offset = 1
     TIME_FORMAT = "'%Y-%m-%d %H:%i:%S'"
 
+    DATEINT_FORMAT = "'%Y%m%d'"
+    DATE_FORMAT = "'%Y-%m-%d'"
+
     MIXED_TYPE_TO_DATE_EXPRESSION = (
-        "DATE_PARSE(SUBSTR(REPLACE(CAST({this} AS VARCHAR), '-', ''), 1, 8), '%Y%m%d')"
+        f"DATE_PARSE(SUBSTR(REPLACE(CAST({{this}} AS VARCHAR), '-', ''), 1, 8), {DATEINT_FORMAT})"
     )
     MIXED_TYPE_TO_DATE_STR_EXPRESSION = (
-        f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, '%Y-%m-%d')"
+        f"DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, {DATE_FORMAT})"
     )
     MIXED_TYPE_TO_DI_EXPRESSION = (
-        f"CAST(DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, '%Y%m%d') AS INT)"
+        f"CAST(DATE_FORMAT({MIXED_TYPE_TO_DATE_EXPRESSION}, {DATEINT_FORMAT}) AS INT)"
     )
 
     @classmethod
@@ -736,7 +740,7 @@ class Presto(Dialect):
 
         date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
-        return f"CAST(DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), '%Y%m%d') AS INT)"
+        return f"CAST(DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), {cls.DATEINT_FORMAT}) AS INT)"
 
     @classmethod
     def _mixed_type_add_to_ds(cls, generator, expression):
@@ -746,7 +750,7 @@ class Presto(Dialect):
 
         date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
-        return f"DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), '%Y-%m-%d')"
+        return f"DATE_FORMAT(DATE_ADD('{unit}', {e}, {date}), {cls.DATE_FORMAT})"
 
     def _mixed_type_add_sql(self, expression):
         output_format = expression.text("output_format").upper() or "YYYY-MM-DD"
@@ -807,7 +811,7 @@ class Presto(Dialect):
 
     def _ts_or_ds_to_date_str_sql(self, expression):
         this = self.sql(expression, "this")
-        return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d'), '%Y-%m-%d')"
+        return f"DATE_FORMAT(DATE_PARSE(SUBSTR({this}, 1, 10), {Presto.DATE_FORMAT}), {Presto.DATE_FORMAT})"
 
     def _mixed_type_to_date_str_sql(self, expression):
         this = self.sql(expression, "this")
@@ -819,7 +823,7 @@ class Presto(Dialect):
 
     def _ts_or_ds_to_date_sql(self, expression):
         this = self.sql(expression, "this")
-        return f"DATE_PARSE(SUBSTR({this}, 1, 10), '%Y-%m-%d')"
+        return f"DATE_PARSE(SUBSTR({this}, 1, 10), {Presto.DATE_FORMAT})"
 
     def _mixed_type_to_date_sql(self, expression):
         this = self.sql(expression, "this")
@@ -866,7 +870,7 @@ class Presto(Dialect):
         exp.DataType: _datatype_sql,
         exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
         exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
-        exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, '%Y-%m-%d')",
+        exp.DateStrToDate: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {Presto.DATE_FORMAT})",
         exp.DiAdd: _mixed_type_add_sql,
         exp.If: _if_sql,
         exp.ILike: _no_ilike_sql,

@@ -1262,8 +1262,8 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "MIXED_TYPE_DATE_DIFF('YEAR', 20220101, 20220102)",
             (
-                "ROUND(MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
-                "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd')) / 12, 2)"
+                "ROUND(MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
+                "TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd')) / 12, 2)"
             ),
             write="hive",
             identity=False,
@@ -1272,8 +1272,8 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "MIXED_TYPE_DATE_DIFF('MONTH', 20220101, 20220102)",
             (
-                "MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
-                "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'))"
+                "MONTHS_BETWEEN(TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
+                "TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'))"
             ),
             write="hive",
             identity=False,
@@ -1282,8 +1282,8 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "MIXED_TYPE_DATE_DIFF(20220101, 20220102)",
             (
-                "DATEDIFF(TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
-                "TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'))"
+                "DATEDIFF(TO_DATE(SUBSTR(REPLACE(CAST(20220102 as string), '-', ''), 1, 8), 'yyyyMMdd'), "
+                "TO_DATE(SUBSTR(REPLACE(CAST(20220101 as string), '-', ''), 1, 8), 'yyyyMMdd'))"
             ),
             write="hive",
             identity=False,

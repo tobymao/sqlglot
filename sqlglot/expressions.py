@@ -1607,7 +1607,7 @@ class MixedTypeAdd(Func):
 
 
 class MixedTypeDateDiff(Func):
-    arg_types = {"unit": True, "first_date": True, "second_date": False}
+    arg_types = {"unit": True, "start_date": True, "end_date": False}
 
 
 class MixedTypeToDate(Func):

@@ -267,19 +267,19 @@ class DuckDB(Dialect):
         return DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
     def _mixed_type_date_diff_sql(self, expression):
-        third_arg = self.sql(expression, "second_date")
+        third_arg = self.sql(expression, "end_date")
         if third_arg:
-            first_date_value = expression.text("first_date")
-            second_date_value = third_arg
+            start_date_value = self.sql(expression, "start_date")
+            end_date_value = third_arg
             unit = expression.text("unit")
         else:
-            first_date_value = expression.text("unit")
-            second_date_value = expression.text("first_date")
+            start_date_value = expression.text("unit")
+            end_date_value = self.sql(expression, "start_date")
             unit = "DAY"
 
-        first_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=first_date_value)
+        first_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=start_date_value)
         second_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=second_date_value
+            this=end_date_value
         )
 
         return f"DATE_DIFF('{unit}', {first_date}, {second_date})"
@@ -549,26 +549,26 @@ class Hive(Dialect):
         return Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
     def _mixed_type_date_diff_sql(self, expression):
-        third_arg = self.sql(expression, "second_date")
+        third_arg = self.sql(expression, "end_date")
         if third_arg:
-            first_date_value = self.sql(expression, "first_date")
-            second_date_value = third_arg
+            start_date_value = self.sql(expression, "start_date")
+            end_date_value = third_arg
             unit = expression.text("unit")
         else:
-            first_date_value = expression.text("unit")
-            second_date_value = self.sql(expression, "first_date")
+            start_date_value = expression.text("unit")
+            end_date_value = self.sql(expression, "start_date")
             unit = "DAY"
 
-        first_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=first_date_value)
-        second_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=second_date_value)
+        start_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=start_date_value)
+        end_date = Hive.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=end_date_value)
 
         response = None
         if unit == "DAY":
-            response = f"DATEDIFF({first_date}, {second_date})"
+            response = f"DATEDIFF({end_date}, {start_date})"
         elif unit == "MONTH":
-            response = f"MONTHS_BETWEEN({first_date}, {second_date})"
+            response = f"MONTHS_BETWEEN({end_date}, {start_date})"
         elif unit == "YEAR":
-            response = f"ROUND(MONTHS_BETWEEN({first_date}, {second_date}) / 12, 2)"
+            response = f"ROUND(MONTHS_BETWEEN({end_date}, {start_date}) / 12, 2)"
         else:
             self.unsupported(f"Unit not implemented for Spark Date Diff: {unit}")
 
@@ -828,22 +828,22 @@ class Presto(Dialect):
         return Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=this)
 
     def _mixed_type_date_diff_sql(self, expression):
-        third_arg = self.sql(expression, "second_date")
+        third_arg = self.sql(expression, "end_date")
         if third_arg:
-            first_date_value = self.sql(expression, "first_date")
-            second_date_value = third_arg
+            start_date_value = self.sql(expression, "start_date")
+            end_date_value = third_arg
             unit = expression.text("unit")
         else:
-            first_date_value = expression.text("unit")
-            second_date_value = self.sql(expression, "first_date")
+            start_date_value = expression.text("unit")
+            end_date_value = self.sql(expression, "start_date")
             unit = "DAY"
 
-        first_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=first_date_value)
-        second_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=second_date_value
+        start_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=start_date_value)
+        end_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(
+            this=end_date_value
         )
 
-        return f"DATE_DIFF('{unit}', {first_date}, {second_date})"
+        return f"DATE_DIFF('{unit}', {start_date}, {end_date})"
 
     time_mapping = MYSQL_TIME_MAPPING
 

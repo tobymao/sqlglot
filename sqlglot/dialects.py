@@ -278,9 +278,7 @@ class DuckDB(Dialect):
             unit = "DAY"
 
         first_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=start_date_value)
-        second_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=end_date_value
-        )
+        second_date = DuckDB.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=end_date_value)
 
         return f"DATE_DIFF('{unit}', {first_date}, {second_date})"
 
@@ -839,9 +837,7 @@ class Presto(Dialect):
             unit = "DAY"
 
         start_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=start_date_value)
-        end_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(
-            this=end_date_value
-        )
+        end_date = Presto.MIXED_TYPE_TO_DATE_EXPRESSION.format(this=end_date_value)
 
         return f"DATE_DIFF('{unit}', {start_date}, {end_date})"
 

@@ -338,9 +338,12 @@ class Generator:
         return f"DROP {kind}{exists_sql}{this}"
 
     def except_sql(self, expression):
-        return self.set_operation(
+        return self.prepend_ctes(
             expression,
-            f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}",
+            self.set_operation(
+                expression,
+                f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}",
+            ),
         )
 
     def exists_sql(self, expression):
@@ -395,9 +398,12 @@ class Generator:
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression):
-        return self.set_operation(
+        return self.prepend_ctes(
             expression,
-            f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ''}",
+            self.set_operation(
+                expression,
+                f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ''}",
+            ),
         )
 
     def table_sql(self, expression):
@@ -553,8 +559,11 @@ class Generator:
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def union_sql(self, expression):
-        return self.set_operation(
-            expression, f"UNION{'' if expression.args.get('distinct') else ' ALL'}"
+        return self.prepend_ctes(
+            expression,
+            self.set_operation(
+                expression, f"UNION{'' if expression.args.get('distinct') else ' ALL'}"
+            ),
         )
 
     def unnest_sql(self, expression):

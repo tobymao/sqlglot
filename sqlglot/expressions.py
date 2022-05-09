@@ -416,10 +416,6 @@ class Drop(Expression):
     arg_types = {"this": False, "kind": False, "exists": False}
 
 
-class Except(Expression):
-    arg_types = {"this": True, "expression": True, "distinct": False}
-
-
 class Exists(Expression):
     arg_types = {"this": True, "not": False}
 
@@ -466,10 +462,6 @@ class Insert(Expression):
 
 class Partition(Expression):
     pass
-
-
-class Intersect(Expression):
-    arg_types = {"this": True, "expression": True, "distinct": False}
 
 
 class Group(Expression):
@@ -579,7 +571,15 @@ class Subqueryable:
 
 
 class Union(Subqueryable, Expression):
-    arg_types = {"this": True, "expression": True, "distinct": False}
+    arg_types = {"with": False, "this": True, "expression": True, "distinct": False}
+
+
+class Except(Union):
+    pass
+
+
+class Intersect(Union):
+    pass
 
 
 class Unnest(Expression):

@@ -373,7 +373,7 @@ class Generator:
                 for k, v in expression.args.get("this")
             ]
         )
-        return f"PARTITION({keys}) "
+        return f"PARTITION({keys})"
 
     def properties_sql(self, expression):
         return self.properties("WITH", expression)
@@ -393,7 +393,7 @@ class Generator:
             else ""
         )
         expression_sql = self.sql(expression, "expression")
-        sep = self.sep(sep="") if partition_sql else ""
+        sep = self.sep() if partition_sql else ""
         sql = f"INSERT {kind} {this}{exists}{partition_sql}{sep}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 

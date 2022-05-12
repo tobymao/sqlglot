@@ -230,6 +230,7 @@ class DuckDB(Dialect):
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
+        exp.ArraySize: lambda self, e: f"ARRAY_LENGTH({self.sql(e, 'this')})",
         exp.DateAdd: _date_add,
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
@@ -258,6 +259,7 @@ class DuckDB(Dialect):
 
 DuckDB.functions = {
     "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
+    "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
     "EPOCH": exp.TimeToUnix.from_arg_list,
     "EPOCH_MS": lambda args: exp.UnixToTime(
         this=exp.Div(

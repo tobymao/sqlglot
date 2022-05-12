@@ -377,8 +377,12 @@ class TestDialects(unittest.TestCase):
             "ARRAY_CONTAINS(x, 1)", "CONTAINS(x, 1)", read="hive", write="presto"
         )
         self.validate("SIZE(x)", "CARDINALITY(x)", read="hive", write="presto")
+        self.validate("SIZE(x)", "ARRAY_LENGTH(x)", read="hive", write="duckdb")
         self.validate("CARDINALITY(x)", "SIZE(x)", read="presto", write="hive")
         self.validate("ARRAY_SIZE(x)", "CARDINALITY(x)", write="presto", identity=False)
+        self.validate(
+            "ARRAY_SIZE(x)", "ARRAY_LENGTH(x)", write="duckdb", identity=False
+        )
 
         self.validate(
             "PERCENTILE(x, 0.5)",

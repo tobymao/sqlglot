@@ -73,6 +73,37 @@ class TestExpressions(unittest.TestCase):
             ["b", "c", "d"],
         )
 
+    def test_alias_or_name(self):
+        expression = parse_one(
+            "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"
+        )
+        self.assertEqual(
+            [e.alias_or_name for e in expression.args["expressions"]],
+            ["a", "B", "e", "*", "zz", "z"],
+        )
+        self.assertEqual(
+            [e.alias_or_name for e in expression.args["from"].args["expressions"]],
+            ["bar", "baz"],
+        )
+
+        expression = parse_one(
+            """
+            WITH first AS (SELECT * from foo),
+                 second AS (SELECT * from bar)
+            SELECT * from first, second, (SELECT * from baz) AS third
+        """
+        )
+
+        self.assertEqual(
+            [e.alias_or_name for e in expression.args["with"].args["expressions"]],
+            ["first", "second"],
+        )
+
+        self.assertEqual(
+            [e.alias_or_name for e in expression.args["from"].args["expressions"]],
+            ["first", "second", "third"],
+        )
+
     def test_hash(self):
         self.assertEqual(
             {

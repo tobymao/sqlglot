@@ -17,6 +17,12 @@ class TestParser(unittest.TestCase):
         )
         assert len(list(columns)) == 1
 
+    def test_table(self):
+        tables = [
+            t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)
+        ]
+        self.assertEqual(tables, ["a", "b.c", "d"])
+
     def test_command(self):
         expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1")
         self.assertEqual(len(expressions), 3)

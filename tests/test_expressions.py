@@ -37,7 +37,7 @@ class TestExpressions(unittest.TestCase):
                 table.args["this"].args["this"]
                 for table in expression.find_all(exp.Table)
             ],
-            ["y", "x"],
+            ["x", "y"],
         )
 
     def test_find_all(self):
@@ -70,7 +70,7 @@ class TestExpressions(unittest.TestCase):
                 table.args["this"].args["this"]
                 for table in expression.find_all(exp.Table)
             ],
-            ["d", "c", "b"],
+            ["b", "c", "d"],
         )
 
     def test_hash(self):

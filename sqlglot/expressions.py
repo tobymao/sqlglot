@@ -1,4 +1,5 @@
 from copy import deepcopy
+from collections import deque
 from enum import auto
 import re
 import typing
@@ -163,10 +164,10 @@ class Expression:
         Returns:
             the generator object.
         """
-        queue = [(self, self.parent, None)]
+        queue = deque([(self, self.parent, None)])
 
         while queue:
-            item, parent, key = queue.pop()
+            item, parent, key = queue.popleft()
 
             yield item, parent, key
 

@@ -59,6 +59,20 @@ class Expression:
             return field.this
         return ""
 
+    @property
+    def alias(self):
+        if isinstance(self.args.get("alias"), TableAlias):
+            return self.args["alias"].text("this")
+        return self.text("alias")
+
+    @property
+    def name(self):
+        return self.text("this")
+
+    @property
+    def alias_or_name(self):
+        return self.alias or self.name
+
     def copy(self):
         new = deepcopy(self)
         for item, parent, _ in new.bfs():
@@ -1151,6 +1165,10 @@ class Where(Expression):
 class Star(Expression):
     arg_types = {}
 
+    @property
+    def name(self):
+        return "*"
+
 
 class Null(Condition):
     arg_types = {}
@@ -1332,10 +1350,6 @@ class Neg(Unary):
 # Special Functions
 class Alias(Expression):
     arg_types = {"this": True, "alias": False}
-
-    @property
-    def alias(self):
-        return self.args.get("alias")
 
 
 class Aliases(Expression):

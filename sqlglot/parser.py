@@ -993,20 +993,7 @@ class Parser:
     def _parse_where(self):
         if not self._match(TokenType.WHERE):
             return None
-
-        index = self._index
-        not_exists = self._match(TokenType.NOT)
-
-        if self._match(TokenType.EXISTS):
-            this = self.expression(
-                exp.Exists, **{"this": self._parse_select(), "not": not_exists}
-            )
-        else:
-            if not_exists:
-                self._retreat(index)
-            this = self._parse_conjunction()
-
-        return self.expression(exp.Where, this=this)
+        return self.expression(exp.Where, this=self._parse_conjunction())
 
     def _parse_group(self):
         if not self._match_by(TokenType.GROUP):
@@ -1285,10 +1272,18 @@ class Parser:
             self._advance()
             this = self._parse_extract()
         else:
-            this = self._curr.text
+            this = self._curr.text.upper()
             self._advance(2)
 
-            function = self.functions.get(this.upper())
+            if this == "EXISTS" and self._curr.token_type in (
+                TokenType.SELECT,
+                TokenType.WITH,
+            ):
+                this = self.expression(exp.Exists, this=self._parse_with())
+                self._match_r_paren()
+                return this
+
+            function = self.functions.get(this)
             args = self._parse_csv(self._parse_lambda)
 
             if not callable(function):

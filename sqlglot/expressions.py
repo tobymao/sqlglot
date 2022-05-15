@@ -432,7 +432,7 @@ class Drop(Expression):
 
 
 class Exists(Expression):
-    arg_types = {"this": True, "not": False}
+    pass
 
 
 class Filter(Expression):

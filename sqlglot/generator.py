@@ -347,8 +347,7 @@ class Generator:
         )
 
     def exists_sql(self, expression):
-        exists = "NOT EXISTS" if expression.args.get("not") else "EXISTS"
-        return f"{exists} {self.sql(expression, 'this')}"
+        return f"EXISTS {self.wrap(expression)}"
 
     def filter_sql(self, expression):
         this = self.sql(expression, "this")

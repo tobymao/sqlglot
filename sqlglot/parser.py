@@ -612,7 +612,7 @@ class Parser:
             this=self._parse_table(schema=True),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
-            expression=self._parse_select(),
+            expression=self._parse_with(),
             overwrite=overwrite,
         )
 

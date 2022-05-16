@@ -107,6 +107,12 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x")
                 .from_("tbl")
+                .join(exp.Table(this="tbl2"), join_type="left outer", join_alias="foo"),
+                "SELECT x FROM tbl LEFT OUTER JOIN tbl2 AS foo",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
                 .join(select("y").from_("tbl2"), join_type="left outer"),
                 "SELECT x FROM tbl LEFT OUTER JOIN (SELECT y FROM tbl2)",
             ),
@@ -116,6 +122,16 @@ class TestBuild(unittest.TestCase):
                 .join(
                     select("y").from_("tbl2").subquery("aliased"),
                     join_type="left outer",
+                ),
+                "SELECT x FROM tbl LEFT OUTER JOIN (SELECT y FROM tbl2) AS aliased",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .join(
+                    select("y").from_("tbl2"),
+                    join_type="left outer",
+                    join_alias="aliased",
                 ),
                 "SELECT x FROM tbl LEFT OUTER JOIN (SELECT y FROM tbl2) AS aliased",
             ),
@@ -134,6 +150,17 @@ class TestBuild(unittest.TestCase):
                 .from_("tbl")
                 .join("select b from tbl2", on="a=b", join_type="left"),
                 "SELECT x FROM tbl LEFT JOIN (SELECT b FROM tbl2) ON a = b",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .join(
+                    "select b from tbl2",
+                    on="a=b",
+                    join_type="left",
+                    join_alias="aliased",
+                ),
+                "SELECT x FROM tbl LEFT JOIN (SELECT b FROM tbl2) AS aliased ON a = b",
             ),
             (
                 lambda: select("x", "COUNT(y)")

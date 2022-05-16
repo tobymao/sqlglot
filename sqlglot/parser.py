@@ -2,7 +2,7 @@ import logging
 
 import sqlglot.constants as c
 from sqlglot.errors import ErrorLevel, ParseError
-from sqlglot.helper import apply_index_offset, list_get
+from sqlglot.helper import apply_index_offset, ensure_list, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 import sqlglot.expressions as exp
 
@@ -268,7 +268,7 @@ class Parser:
             parse_method=self._parse_statement, raw_tokens=raw_tokens, sql=sql
         )
 
-    def parse_into(self, expression_type, raw_tokens, sql=None):
+    def parse_into(self, expression_types, raw_tokens, sql=None):
         methods = {
             exp.From: self._parse_from,
             exp.Group: self._parse_group,
@@ -279,18 +279,19 @@ class Parser:
             exp.Offset: self._parse_offset,
             exp.TableAlias: self._parse_table_alias,
             exp.Table: self._parse_table,
-            exp.CONJUNCTION: self._parse_conjunction,
+            exp.Condition: self._parse_conjunction,
+            exp.Expression: self._parse_statement,
+            "JOIN_TYPE": self._parse_join_side_and_kind,
         }
-        if expression_type not in methods:
-            raise TypeError(f"No parser registered for {expression_type}")
-
-        method = methods[expression_type]
-        expressions = self._parse(method, raw_tokens, sql)
-
-        if not expressions:
-            raise ValueError(f"Failed to parse into {expression_type}")
-
-        return expressions
+        error = None
+        for expression_type in ensure_list(expression_types):
+            if expression_type not in methods:
+                raise TypeError(f"No parser registered for {expression_type}")
+            try:
+                return self._parse(methods[expression_type], raw_tokens, sql)
+            except ParseError as e:
+                error = e
+        raise ParseError(f"Failed to parse into {expression_types}") from error
 
     def _parse(self, parse_method, raw_tokens, sql=None):
         self.reset()
@@ -866,9 +867,14 @@ class Parser:
     def _parse_joins(self):
         return self._parse_all(self._parse_join)
 
+    def _parse_join_side_and_kind(self):
+        return (
+            self._match_set(self.JOIN_SIDES) and self._prev,
+            self._match_set(self.JOIN_KINDS) and self._prev,
+        )
+
     def _parse_join(self):
-        side = self._match_set(self.JOIN_SIDES) and self._prev
-        kind = self._match_set(self.JOIN_KINDS) and self._prev
+        side, kind = self._parse_join_side_and_kind()
 
         if not self._match(TokenType.JOIN):
             return None

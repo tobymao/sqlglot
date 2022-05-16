@@ -2,13 +2,11 @@ from copy import deepcopy
 from collections import deque
 from enum import auto
 import re
-import typing
 import inspect
 import sys
 
+from sqlglot.errors import ParseError
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
-
-T = typing.TypeVar("T")
 
 
 class Expression:
@@ -272,7 +270,7 @@ class Expression:
             new_node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
         return new_node
 
-    def assert_is(self, type_: typing.Type[T]) -> T:
+    def assert_is(self, type_):
         """
         Assert that this `Expression` is an instance of `type_`.
 
@@ -881,6 +879,7 @@ class Select(Subqueryable, Expression):
         on=None,
         append=True,
         join_type=None,
+        join_alias=None,
         dialect=None,
         parser_opts=None,
         copy=True,
@@ -914,26 +913,33 @@ class Select(Subqueryable, Expression):
         """
         parse_args = {"dialect": dialect, "parser_opts": parser_opts}
 
-        prefix = "JOIN"
-        if join_type:
-            prefix = f"{join_type} {prefix}"
+        try:
+            expression = _maybe_parse(
+                expression, into=Join, prefix="JOIN", **parse_args
+            )
+        except ParseError:
+            expression = _maybe_parse(expression, into=(Join, Expression), **parse_args)
 
         if isinstance(expression, Join):
             join = expression
-        elif isinstance(expression, str):
-            join = _maybe_parse(expression, into=Join, prefix=prefix, **parse_args)
         else:
             if isinstance(expression, Select):
                 expression = expression.subquery()
-            join = _maybe_parse(
-                f"{prefix} joined_table",
-                into=Join,
-                **parse_args,
-            )
-            join.set("this", expression)  # allows to join more complex queries
+            join = Join(this=expression)
+
+        if join_type:
+            side, kind = _maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
+            if side:
+                join.set("side", side.text)
+            if kind:
+                join.set("kind", kind.text)
+
         if on:
-            on = _maybe_parse(on, into=CONJUNCTION, **parse_args)
+            on = and_(*ensure_list(on), dialect=dialect, **(parser_opts or {}))
             join.set("on", on)
+
+        if join_alias:
+            join.set("this", alias_(join.args["this"], join_alias))
         return _apply_list_builder(
             join,
             instance=self,
@@ -1772,10 +1778,6 @@ def _all_functions():
 
 ALL_FUNCTIONS = _all_functions()
 
-# Type alias to help use Parser.parse_into for expressions that
-# can output one of multiple different expression types
-CONJUNCTION = (And, Or)
-
 
 def _maybe_parse(
     sql_or_expression,
@@ -1967,14 +1969,12 @@ def condition(expression, dialect=None, **opts):
     Returns:
         Condition: the expression
     """
-    this = _maybe_parse(
+    return _maybe_parse(
         expression,
+        into=Condition,
         dialect=dialect,
         parser_opts=opts,
     )
-    if not isinstance(this, Condition):
-        raise ValueError(f"Failed to parse expression into condition: {expression}")
-    return this
 
 
 def and_(*expressions, dialect=None, **opts):
@@ -2080,7 +2080,13 @@ def alias_(expression, alias, dialect=None, quoted=None, **opts):
         Alias: the aliased expression
     """
     exp = _maybe_parse(expression, dialect=dialect, parser_opts=opts)
-    return Alias(this=exp, alias=_to_identifier(alias, quoted=quoted))
+    alias = _to_identifier(alias, quoted=quoted)
+
+    if "alias" in exp.arg_types:
+        exp = exp.copy()
+        exp.set("alias", alias)
+        return exp
+    return Alias(this=exp, alias=alias)
 
 
 def subquery(expression, alias=None, dialect=None, **opts):

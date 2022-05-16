@@ -95,6 +95,12 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y",
             ),
             (
+                lambda: select("x")
+                .from_("tbl")
+                .join("tbl2", on=["tbl.y = tbl2.y", "a = b"]),
+                "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y AND a = b",
+            ),
+            (
                 lambda: select("x").from_("tbl").join("tbl2", join_type="left outer"),
                 "SELECT x FROM tbl LEFT OUTER JOIN tbl2",
             ),
@@ -103,6 +109,12 @@ class TestBuild(unittest.TestCase):
                 .from_("tbl")
                 .join(exp.Table(this="tbl2"), join_type="left outer"),
                 "SELECT x FROM tbl LEFT OUTER JOIN tbl2",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .join(exp.Table(this="tbl2"), join_type="left outer", join_alias="foo"),
+                "SELECT x FROM tbl LEFT OUTER JOIN tbl2 AS foo",
             ),
             (
                 lambda: select("x")
@@ -122,8 +134,39 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x")
                 .from_("tbl")
+                .join(
+                    select("y").from_("tbl2"),
+                    join_type="left outer",
+                    join_alias="aliased",
+                ),
+                "SELECT x FROM tbl LEFT OUTER JOIN (SELECT y FROM tbl2) AS aliased",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
                 .join(parse_one("left join x", into=exp.Join), on="a=b"),
                 "SELECT x FROM tbl LEFT JOIN x ON a = b",
+            ),
+            (
+                lambda: select("x").from_("tbl").join("left join x", on="a=b"),
+                "SELECT x FROM tbl LEFT JOIN x ON a = b",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .join("select b from tbl2", on="a=b", join_type="left"),
+                "SELECT x FROM tbl LEFT JOIN (SELECT b FROM tbl2) ON a = b",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .join(
+                    "select b from tbl2",
+                    on="a=b",
+                    join_type="left",
+                    join_alias="aliased",
+                ),
+                "SELECT x FROM tbl LEFT JOIN (SELECT b FROM tbl2) AS aliased ON a = b",
             ),
             (
                 lambda: select("x", "COUNT(y)")

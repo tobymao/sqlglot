@@ -95,6 +95,12 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y",
             ),
             (
+                lambda: select("x")
+                .from_("tbl")
+                .join("tbl2", on=["tbl.y = tbl2.y", "a = b"]),
+                "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y AND a = b",
+            ),
+            (
                 lambda: select("x").from_("tbl").join("tbl2", join_type="left outer"),
                 "SELECT x FROM tbl LEFT OUTER JOIN tbl2",
             ),

@@ -935,7 +935,7 @@ class Select(Subqueryable, Expression):
                 join.set("kind", kind.text)
 
         if on:
-            on = _maybe_parse(on, into=Condition, **parse_args)
+            on = and_(*ensure_list(on), dialect=dialect, **(parser_opts or {}))
             join.set("on", on)
 
         if join_alias:

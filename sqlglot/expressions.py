@@ -6,6 +6,7 @@ import typing
 import inspect
 import sys
 
+from sqlglot.errors import ParseError
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
 
 T = typing.TypeVar("T")
@@ -914,25 +915,28 @@ class Select(Subqueryable, Expression):
         """
         parse_args = {"dialect": dialect, "parser_opts": parser_opts}
 
-        prefix = "JOIN"
-        if join_type:
-            prefix = f"{join_type} {prefix}"
+        try:
+            expression = _maybe_parse(
+                expression, into=Join, prefix="JOIN", **parse_args
+            )
+        except ParseError:
+            expression = _maybe_parse(expression, into=(Join, Expression), **parse_args)
 
         if isinstance(expression, Join):
             join = expression
-        elif isinstance(expression, str):
-            join = _maybe_parse(expression, into=Join, prefix=prefix, **parse_args)
         else:
             if isinstance(expression, Select):
                 expression = expression.subquery()
-            join = _maybe_parse(
-                f"{prefix} joined_table",
-                into=Join,
-                **parse_args,
-            )
-            join.set("this", expression)  # allows to join more complex queries
+            join = Join(this=expression)
+
+        if join_type:
+            side, kind = _maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
+            if side:
+                join.set("side", side.text)
+            if kind:
+                join.set("kind", kind.text)
         if on:
-            on = _maybe_parse(on, into=CONJUNCTION, **parse_args)
+            on = _maybe_parse(on, into=Condition, **parse_args)
             join.set("on", on)
         return _apply_list_builder(
             join,
@@ -1771,10 +1775,6 @@ def _all_functions():
 
 
 ALL_FUNCTIONS = _all_functions()
-
-# Type alias to help use Parser.parse_into for expressions that
-# can output one of multiple different expression types
-CONJUNCTION = (And, Or)
 
 
 def _maybe_parse(

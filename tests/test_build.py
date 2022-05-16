@@ -126,6 +126,16 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl LEFT JOIN x ON a = b",
             ),
             (
+                lambda: select("x").from_("tbl").join("left join x", on="a=b"),
+                "SELECT x FROM tbl LEFT JOIN x ON a = b",
+            ),
+            (
+                lambda: select("x")
+                .from_("tbl")
+                .join("select b from tbl2", on="a=b", join_type="left"),
+                "SELECT x FROM tbl LEFT JOIN (SELECT b FROM tbl2) ON a = b",
+            ),
+            (
                 lambda: select("x", "COUNT(y)")
                 .from_("tbl")
                 .group_by("x")

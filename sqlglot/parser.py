@@ -287,10 +287,8 @@ class Parser:
         for expression_type in ensure_list(expression_types):
             if expression_type not in methods:
                 raise TypeError(f"No parser registered for {expression_type}")
-
-            method = methods[expression_type]
             try:
-                return self._parse(method, raw_tokens, sql)
+                return self._parse(methods[expression_type], raw_tokens, sql)
             except ParseError as e:
                 error = e
         raise ParseError(f"Failed to parse into {expression_types}") from error

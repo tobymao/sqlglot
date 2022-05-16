@@ -882,6 +882,7 @@ class Select(Subqueryable, Expression):
         on=None,
         append=True,
         join_type=None,
+        join_alias=None,
         dialect=None,
         parser_opts=None,
         copy=True,
@@ -935,9 +936,13 @@ class Select(Subqueryable, Expression):
                 join.set("side", side.text)
             if kind:
                 join.set("kind", kind.text)
+
         if on:
             on = _maybe_parse(on, into=Condition, **parse_args)
             join.set("on", on)
+
+        if join_alias:
+            join.set("this", alias_(join.args["this"], join_alias))
         return _apply_list_builder(
             join,
             instance=self,
@@ -2080,7 +2085,13 @@ def alias_(expression, alias, dialect=None, quoted=None, **opts):
         Alias: the aliased expression
     """
     exp = _maybe_parse(expression, dialect=dialect, parser_opts=opts)
-    return Alias(this=exp, alias=_to_identifier(alias, quoted=quoted))
+    alias = _to_identifier(alias, quoted=quoted)
+
+    if "alias" in exp.arg_types:
+        exp = exp.copy()
+        exp.set("alias", alias)
+        return exp
+    return Alias(this=exp, alias=alias)
 
 
 def subquery(expression, alias=None, dialect=None, **opts):

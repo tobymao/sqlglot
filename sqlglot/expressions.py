@@ -1969,14 +1969,12 @@ def condition(expression, dialect=None, **opts):
     Returns:
         Condition: the expression
     """
-    this = _maybe_parse(
+    return _maybe_parse(
         expression,
+        into=Condition,
         dialect=dialect,
         parser_opts=opts,
     )
-    if not isinstance(this, Condition):
-        raise ValueError(f"Failed to parse expression into condition: {expression}")
-    return this
 
 
 def and_(*expressions, dialect=None, **opts):

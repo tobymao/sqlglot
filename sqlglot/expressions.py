@@ -2,14 +2,11 @@ from copy import deepcopy
 from collections import deque
 from enum import auto
 import re
-import typing
 import inspect
 import sys
 
 from sqlglot.errors import ParseError
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
-
-T = typing.TypeVar("T")
 
 
 class Expression:
@@ -273,7 +270,7 @@ class Expression:
             new_node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
         return new_node
 
-    def assert_is(self, type_: typing.Type[T]) -> T:
+    def assert_is(self, type_):
         """
         Assert that this `Expression` is an instance of `type_`.
 

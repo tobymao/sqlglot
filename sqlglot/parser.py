@@ -552,7 +552,7 @@ class Parser:
                 )
                 value = self.expression(exp.Schema, expressions=partitions)
         else:
-            value = self._parse_string()
+            value = self._parse_column()
 
         return self.expression(
             exp.Property,

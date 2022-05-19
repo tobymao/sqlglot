@@ -696,6 +696,11 @@ class TestDialects(unittest.TestCase):
             read="hive",
             write="presto",
         )
+        self.validate(
+            "CREATE TABLE x WITH (bucket_by = ARRAY['y'], bucket_count = 64) AS SELECT 1 AS y",
+            "CREATE TABLE x WITH (bucket_by = ARRAY['y'], bucket_count = 64) AS SELECT 1 AS y",
+            read="presto",
+        )
 
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]

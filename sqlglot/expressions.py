@@ -586,6 +586,13 @@ class Subqueryable:
 class Union(Subqueryable, Expression):
     arg_types = {"with": False, "this": True, "expression": True, "distinct": False}
 
+    @property
+    def named_selects(self):
+        named_selects = (
+            self.args["this"].named_selects + self.args["expression"].named_selects
+        )
+        return sorted(set(named_selects), key=named_selects.index)
+
 
 class Except(Union):
     pass

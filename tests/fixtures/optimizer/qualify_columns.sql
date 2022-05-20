@@ -1,0 +1,124 @@
+--------------------------------------
+-- Qualify columns
+--------------------------------------
+SELECT a FROM x;
+SELECT x.a AS a FROM x;
+
+SELECT a AS a FROM x;
+SELECT x.a AS a FROM x;
+
+SELECT x.a FROM x;
+SELECT x.a AS a FROM x;
+
+SELECT x.a AS a FROM x;
+SELECT x.a AS a FROM x;
+
+SELECT a AS b FROM x;
+SELECT x.a AS b FROM x;
+
+SELECT 1, 2 FROM x;
+SELECT 1 AS "_col0", 2 AS "_col1" FROM x;
+
+--------------------------------------
+-- Derived tables
+--------------------------------------
+SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y(a);
+SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y(a);
+
+SELECT y.a FROM (SELECT a AS a FROM x) AS y(a);
+SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y(a);
+
+SELECT y.a FROM (SELECT x.a AS a FROM x) AS y;
+SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y(a);
+
+SELECT a FROM (SELECT a AS a FROM x) y;
+SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y(a);
+
+SELECT a FROM (SELECT a AS a FROM x);
+SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x) AS "_alias0"(a);
+
+SELECT a FROM (SELECT a FROM (SELECT a FROM x));
+SELECT "_alias1".a AS a FROM (SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x) AS "_alias0"(a)) AS "_alias1"(a);
+
+--------------------------------------
+-- Joins
+--------------------------------------
+SELECT a, c FROM x JOIN y ON x.b = y.b;
+SELECT x.a AS a, y.c AS c FROM x JOIN y ON x.b = y.b;
+
+SELECT a, c FROM x, y;
+SELECT x.a AS a, y.c AS c FROM x, y;
+
+--------------------------------------
+-- Unions
+--------------------------------------
+SELECT a FROM x UNION SELECT a FROM x;
+SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x;
+
+SELECT a FROM x UNION SELECT a FROM x UNION SELECT a FROM x;
+SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x;
+
+SELECT a FROM (SELECT a FROM x UNION SELECT a FROM x);
+SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x) AS "_alias0"(a);
+
+--------------------------------------
+-- Subqueries
+--------------------------------------
+SELECT a FROM x WHERE b IN (SELECT c FROM y);
+SELECT x.a AS a FROM x WHERE x.b IN (SELECT y.c AS c FROM y);
+
+SELECT (SELECT c FROM y) FROM x;
+SELECT (SELECT y.c AS c FROM y) AS "_col0" FROM x;
+
+--------------------------------------
+-- Correlated subqueries
+--------------------------------------
+SELECT a FROM x WHERE b IN (SELECT c FROM y WHERE y.b = a);
+SELECT x.a AS a FROM x WHERE x.b IN (SELECT y.c AS c FROM y WHERE y.b = x.a);
+
+--------------------------------------
+-- Expand *
+--------------------------------------
+SELECT * FROM x;
+SELECT x.a AS a, x.b AS b FROM x;
+
+SELECT x.* FROM x;
+SELECT x.a AS a, x.b AS b FROM x;
+
+SELECT * FROM x JOIN y ON x.b = y.b;
+SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x JOIN y ON x.b = y.b;
+
+SELECT x.* FROM x JOIN y ON x.b = y.b;
+SELECT x.a AS a, x.b AS b FROM x JOIN y ON x.b = y.b;
+
+SELECT x.*, y.* FROM x JOIN y ON x.b = y.b;
+SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x JOIN y ON x.b = y.b;
+
+SELECT a FROM (SELECT * FROM x);
+SELECT "_alias0".a AS a FROM (SELECT x.a AS a, x.b AS b FROM x) AS "_alias0"(a, b);
+
+SELECT * FROM (SELECT a FROM x);
+SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x) AS "_alias0"(a);
+--
+--------------------------------------
+-- CTEs
+--------------------------------------
+WITH z AS (SELECT a FROM x) SELECT * FROM z;
+WITH z(a) AS (SELECT x.a AS a FROM x) SELECT z.a AS a FROM z;
+
+WITH z AS (SELECT a FROM x) SELECT * FROM z as q;
+WITH z(a) AS (SELECT x.a AS a FROM x) SELECT q.a AS a FROM z AS q;
+
+WITH z(a) AS (SELECT a FROM x) SELECT * FROM z;
+WITH z(a) AS (SELECT x.a AS a FROM x) SELECT z.a AS a FROM z;
+
+WITH z AS (SELECT a FROM x), q AS (SELECT * FROM z) SELECT * FROM q;
+WITH z(a) AS (SELECT x.a AS a FROM x), q(a) AS (SELECT z.a AS a FROM z) SELECT q.a AS a FROM q;
+
+--------------------------------------
+-- TODO: Laterals
+--------------------------------------
+
+--------------------------------------
+-- TODO: Recursive CTEs
+--------------------------------------

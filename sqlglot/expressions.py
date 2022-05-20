@@ -141,23 +141,30 @@ class Expression:
                 return None
         return ancestor
 
-    def walk(self, bfs=True):
+    def walk(self, bfs=True, stop_types=None):
         """
         Returns a generator object which visits all nodes in this tree.
 
         Args:
             bfs (bool): if set to True the BFS traversal order will be applied,
                 otherwise the DFS traversal will be used instead.
+            stop_types (type or tuple of types): Expression type (or tuple of Expression types)
+                to prune the BFS search tree on. That is, if a node of this type is encountered,
+                it will be yield, but it's children will not be yielded.
 
         Returns:
             the generator object.
         """
-        if bfs:
-            yield from self.bfs()
-        else:
-            yield from self.dfs(self.parent, None)
+        prune = None
+        if stop_types:
+            prune = lambda n, *_: isinstance(n, stop_types) and n is not self
 
-    def dfs(self, parent=None, key=None):
+        if bfs:
+            yield from self.bfs(prune=prune)
+        else:
+            yield from self.dfs(self.parent, None, prune=prune)
+
+    def dfs(self, parent=None, key=None, prune=None):
         """
         Returns a generator object which visits all nodes in this tree in
         the DFS (Depth-first) order.
@@ -166,17 +173,19 @@ class Expression:
             the generator object.
         """
         yield self, parent, key
+        if prune and prune(self, parent, key):
+            return
 
         for k, v in self.args.items():
             nodes = ensure_list(v)
 
             for node in nodes:
                 if isinstance(node, Expression):
-                    yield from node.dfs(self, k)
+                    yield from node.dfs(self, k, prune)
                 else:
                     yield node, self, k
 
-    def bfs(self):
+    def bfs(self, prune=None):
         """
         Returns a generator object which visits all nodes in this tree in
         the BFS (Breadth-first) order.
@@ -190,6 +199,8 @@ class Expression:
             item, parent, key = queue.popleft()
 
             yield item, parent, key
+            if prune and prune(item, parent, key):
+                continue
 
             if isinstance(item, Expression):
                 for k, v in item.args.items():
@@ -266,7 +277,7 @@ class Expression:
         )
         return new_node
 
-    def replace(self, expression):
+    def replace(self, *expressions):
         """
         Swap out this expression with a new expression.
 
@@ -284,7 +295,7 @@ class Expression:
             return
 
         self._replace_children(
-            self.parent, lambda child: expression if child is self else child
+            self.parent, lambda child: expressions if child is self else child
         )
 
     def _replace_children(self, node, fun):
@@ -296,11 +307,12 @@ class Expression:
 
             for cn in child_nodes:
                 if isinstance(cn, Expression):
-                    new_child_node = fun(cn)
-                    new_child_node.parent = node
+                    cns = ensure_list(fun(cn))
+                    for child_node in cns:
+                        child_node.parent = node
                 else:
-                    new_child_node = cn
-                new_child_nodes.append(new_child_node)
+                    cns = [cn]
+                new_child_nodes.extend(cns)
 
             node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
 
@@ -613,7 +625,7 @@ class Subqueryable:
         instance = _maybe_copy(self, copy)
         return Subquery(
             this=instance,
-            alias=_to_identifier(alias),
+            alias=to_identifier(alias),
         )
 
 
@@ -2094,7 +2106,7 @@ def not_(expression, dialect=None, **opts):
 SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
 
 
-def _to_identifier(alias, quoted=None):
+def to_identifier(alias, quoted=None):
     if alias is None:
         return None
     if isinstance(alias, Identifier):
@@ -2129,7 +2141,7 @@ def alias_(expression, alias, dialect=None, quoted=None, **opts):
         Alias: the aliased expression
     """
     exp = _maybe_parse(expression, dialect=dialect, parser_opts=opts)
-    alias = _to_identifier(alias, quoted=quoted)
+    alias = to_identifier(alias, quoted=quoted)
 
     if "alias" in exp.arg_types:
         exp = exp.copy()

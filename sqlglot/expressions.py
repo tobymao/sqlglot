@@ -133,6 +133,14 @@ class Expression:
             if isinstance(expression, expression_types):
                 yield expression
 
+    def find_ancestor(self, expression_type):
+        ancestor = self.parent
+        while not isinstance(ancestor, expression_type):
+            ancestor = ancestor.parent
+            if not ancestor:
+                return None
+        return ancestor
+
     def walk(self, bfs=True):
         """
         Returns a generator object which visits all nodes in this tree.

@@ -62,15 +62,6 @@ def apply_index_offset(expressions, offset):
     return expressions
 
 
-def parent(expression, kind):
-    expression = expression.parent
-    while not isinstance(expression, kind):
-        expression = expression.parent
-        if not expression:
-            raise RuntimeError(f"Could not find parent {kind}")
-    return expression
-
-
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 
 

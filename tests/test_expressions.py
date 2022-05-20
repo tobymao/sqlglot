@@ -94,9 +94,9 @@ class TestExpressions(unittest.TestCase):
 
         expression = parse_one(
             """
-            WITH first AS (SELECT * from foo),
-                 second AS (SELECT * from bar)
-            SELECT * from first, second, (SELECT * from baz) AS third
+            WITH first AS (SELECT * FROM foo),
+                 second AS (SELECT * FROM bar)
+            SELECT * FROM first, second, (SELECT * FROM baz) AS third
         """
         )
 
@@ -109,6 +109,29 @@ class TestExpressions(unittest.TestCase):
             [e.alias_or_name for e in expression.args["from"].args["expressions"]],
             ["first", "second", "third"],
         )
+
+    def test_named_selects(self):
+        expression = parse_one(
+            "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"
+        )
+        self.assertEqual(expression.named_selects, ["a", "B", "e", "*", "zz", "z"])
+
+        expression = parse_one(
+            """
+            WITH first AS (SELECT * FROM foo)
+            SELECT foo.bar, foo.baz as bazz, SUM(x) FROM first
+        """
+        )
+        self.assertEqual(expression.named_selects, ["bar", "bazz"])
+
+        expression = parse_one(
+            """
+            SELECT foo, bar FROM first
+            UNION SELECT "ss" as foo, bar FROM second
+            UNION ALL SELECT foo, bazz FROM third
+        """
+        )
+        self.assertEqual(expression.named_selects, ["foo", "bar", "bazz"])
 
     def test_hash(self):
         self.assertEqual(

@@ -73,6 +73,12 @@ class TestExpressions(unittest.TestCase):
             ["b", "c", "d"],
         )
 
+    def test_find_ancestor(self):
+        column = parse_one("select * from foo where (a + 1 > 2)").find(exp.Column)
+        self.assertIsInstance(column, exp.Column)
+        self.assertIsInstance(column.find_ancestor(exp.Select), exp.Select)
+        self.assertIsNone(column.find_ancestor(exp.Join))
+
     def test_alias_or_name(self):
         expression = parse_one(
             "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"

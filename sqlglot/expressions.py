@@ -1313,6 +1313,10 @@ class EQ(Binary, Condition):
     pass
 
 
+class Escape(Binary):
+    pass
+
+
 class GT(Binary, Condition):
     pass
 

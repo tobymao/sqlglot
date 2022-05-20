@@ -104,6 +104,7 @@ class TokenType(AutoName):
     ELSE = auto()
     END = auto()
     ENGINE = auto()
+    ESCAPE = auto()
     EXCEPT = auto()
     EXISTS = auto()
     EXPLAIN = auto()
@@ -301,6 +302,7 @@ class Tokenizer:
         "ELSE": TokenType.ELSE,
         "END": TokenType.END,
         "ENGINE": TokenType.ENGINE,
+        "ESCAPE": TokenType.ESCAPE,
         "EXCEPT": TokenType.EXCEPT,
         "EXISTS": TokenType.EXISTS,
         "EXPLAIN": TokenType.EXPLAIN,

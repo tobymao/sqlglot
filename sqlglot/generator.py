@@ -746,6 +746,9 @@ class Generator:
     def eq_sql(self, expression):
         return self.binary(expression, "=")
 
+    def escape_sql(self, expression):
+        return self.binary(expression, "ESCAPE")
+
     def gt_sql(self, expression):
         return self.binary(expression, ">")
 

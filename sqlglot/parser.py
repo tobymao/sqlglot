@@ -82,6 +82,7 @@ class Parser:
         TokenType.DELETE,
         TokenType.DESC,
         TokenType.ENGINE,
+        TokenType.ESCAPE,
         TokenType.EXPLAIN,
         TokenType.FALSE,
         TokenType.FILTER,
@@ -1081,9 +1082,13 @@ class Parser:
         negate = self._match(TokenType.NOT)
 
         if self._match(TokenType.LIKE):
-            this = self.expression(exp.Like, this=this, expression=self._parse_term())
+            this = self._parse_escape(
+                self.expression(exp.Like, this=this, expression=self._parse_term())
+            )
         elif self._match(TokenType.ILIKE):
-            this = self.expression(exp.ILike, this=this, expression=self._parse_term())
+            this = self._parse_escape(
+                self.expression(exp.ILike, this=this, expression=self._parse_term())
+            )
         elif self._match(TokenType.RLIKE):
             this = self.expression(
                 exp.RegexpLike, this=this, expression=self._parse_term()
@@ -1110,6 +1115,11 @@ class Parser:
             this = self.expression(exp.Not, this=this)
 
         return this
+
+    def _parse_escape(self, this):
+        if not self._match(TokenType.ESCAPE):
+            return this
+        return self.expression(exp.Escape, this=this, expression=self._parse_string())
 
     def _parse_bitwise(self):
         return self._parse_tokens(self._parse_term, self.BITWISE)

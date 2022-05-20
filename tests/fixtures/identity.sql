@@ -56,6 +56,9 @@ STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
 x LIKE '%y%'
 x ILIKE '%y%'
+x LIKE '%y%' ESCAPE '\'
+x ILIKE '%y%' ESCAPE '\'
+1 AS escape
 INTERVAL '1' day
 INTERVAL '1' month
 INTERVAL 2 months

@@ -79,6 +79,7 @@ class TokenType(AutoName):
     ARRAY = auto()
     ASC = auto()
     AUTO_INCREMENT = auto()
+    BEGIN = auto()
     BETWEEN = auto()
     BUCKET = auto()
     BY = auto()
@@ -92,6 +93,7 @@ class TokenType(AutoName):
     COMMENT = auto()
     COMMENT_END = auto()
     COMMENT_START = auto()
+    COMMIT = auto()
     CREATE = auto()
     CROSS = auto()
     CURRENT_ROW = auto()
@@ -279,6 +281,7 @@ class Tokenizer:
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
+        "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,
         "BUCKET": TokenType.BUCKET,
         "BY": TokenType.BY,
@@ -289,6 +292,7 @@ class Tokenizer:
         "CHARACTER SET": TokenType.CHARACTER_SET,
         "COLLATE": TokenType.COLLATE,
         "COMMENT": TokenType.SCHEMA_COMMENT,
+        "COMMIT": TokenType.COMMIT,
         "COUNT": TokenType.COUNT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
@@ -431,6 +435,8 @@ class Tokenizer:
     COMMANDS = {
         TokenType.ALTER,
         TokenType.ADD_FILE,
+        TokenType.BEGIN,
+        TokenType.COMMIT,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,
         TokenType.SET,

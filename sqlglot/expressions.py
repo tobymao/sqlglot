@@ -1133,6 +1133,10 @@ class Select(Subqueryable, Expression):
             ),
         )
 
+    @property
+    def named_selects(self):
+        return [e.alias_or_name for e in self.args["expressions"] if e.alias_or_name]
+
 
 class Subquery(Expression):
     arg_types = {"this": True, "alias": False}

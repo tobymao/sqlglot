@@ -173,6 +173,13 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(expression.transform(fun).sql(), "FUN(a)")
 
+    def test_replace(self):
+        expression = parse_one("SELECT a, b FROM x")
+        expression.find(exp.Column).replace(parse_one("c"))
+        self.assertEqual(expression.sql(), "SELECT c, b FROM x")
+        expression.find(exp.Table).replace(parse_one("y"))
+        self.assertEqual(expression.sql(), "SELECT c, b FROM y")
+
     def test_functions(self):
         # pylint: disable=too-many-statements
         self.assertIsInstance(parse_one("ABS(a)"), exp.Abs)

@@ -253,7 +253,34 @@ class Expression:
         if not isinstance(new_node, Expression) or new_node is not node:
             return new_node
 
-        for k, v in new_node.args.items():
+        self._replace_children(
+            new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs)
+        )
+        return new_node
+
+    def replace(self, expression):
+        """
+        Swap out this expression with a new expression.
+
+        For example::
+
+            >>> tree = Select().select("x").from_("tbl")
+            >>> tree.find(Column).replace(Column(this="y"))
+            >>> tree.sql()
+            'SELECT y FROM tbl'
+
+        Args:
+            expression (Expression): new node
+        """
+        if not self.parent:
+            return
+
+        self._replace_children(
+            self.parent, lambda child: expression if child is self else child
+        )
+
+    def _replace_children(self, node, fun):
+        for k, v in node.args.items():
             is_list_arg = isinstance(v, list)
 
             child_nodes = v if is_list_arg else [v]
@@ -261,14 +288,13 @@ class Expression:
 
             for cn in child_nodes:
                 if isinstance(cn, Expression):
-                    new_child_node = cn.transform(fun, *args, copy=False, **kwargs)
-                    new_child_node.parent = new_node
+                    new_child_node = fun(cn)
+                    new_child_node.parent = node
                 else:
                     new_child_node = cn
                 new_child_nodes.append(new_child_node)
 
-            new_node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
-        return new_node
+            node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
 
     def assert_is(self, type_):
         """

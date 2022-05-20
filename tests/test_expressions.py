@@ -1,5 +1,6 @@
 import unittest
 
+import sqlglot
 import sqlglot.expressions as exp
 from sqlglot import parse_one
 
@@ -172,6 +173,13 @@ class TestExpressions(unittest.TestCase):
             return node
 
         self.assertEqual(expression.transform(fun).sql(), "FUN(a)")
+
+    def test_replace(self):
+        expression = parse_one("SELECT a, b FROM x")
+        expression.find(exp.Column).replace(sqlglot.parse_one("c"))
+        self.assertEqual(expression.sql(), "SELECT c, b FROM x")
+        expression.find(exp.Table).replace(sqlglot.parse_one("y"))
+        self.assertEqual(expression.sql(), "SELECT c, b FROM y")
 
     def test_functions(self):
         # pylint: disable=too-many-statements

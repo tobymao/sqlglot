@@ -104,6 +104,20 @@ class TestExpressions(unittest.TestCase):
             ["first", "second", "third"],
         )
 
+    def test_named_selects(self):
+        expression = parse_one(
+            "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"
+        )
+        self.assertEqual(expression.named_selects, ["a", "B", "e", "*", "zz", "z"])
+
+        expression = parse_one(
+            """
+            WITH first AS (SELECT * from foo)
+            SELECT foo.bar, foo.baz as bazz, SUM(x) from first
+        """
+        )
+        self.assertEqual(expression.named_selects, ["bar", "bazz"])
+
     def test_hash(self):
         self.assertEqual(
             {

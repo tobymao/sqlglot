@@ -33,10 +33,7 @@ class TestExpressions(unittest.TestCase):
         self.assertTrue(expression.find(exp.Create))
         self.assertFalse(expression.find(exp.Group))
         self.assertEqual(
-            [
-                table.args["this"].args["this"]
-                for table in expression.find_all(exp.Table)
-            ],
+            [table.name for table in expression.find_all(exp.Table)],
             ["x", "y"],
         )
 
@@ -66,11 +63,19 @@ class TestExpressions(unittest.TestCase):
         )
 
         self.assertEqual(
-            [
-                table.args["this"].args["this"]
-                for table in expression.find_all(exp.Table)
-            ],
+            [table.name for table in expression.find_all(exp.Table)],
             ["b", "c", "d"],
+        )
+
+        expression = parse_one("select a + b + c + d")
+
+        self.assertEqual(
+            [column.name for column in expression.find_all(exp.Column)],
+            ["d", "c", "a", "b"],
+        )
+        self.assertEqual(
+            [column.name for column in expression.find_all(exp.Column, bfs=False)],
+            ["a", "b", "c", "d"],
         )
 
     def test_find_ancestor(self):
@@ -173,7 +178,7 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("IF(a > 0, a, b)")
 
         def fun(node):
-            if isinstance(node, exp.Column) and node.args["this"].args["this"] == "a":
+            if isinstance(node, exp.Column) and node.name == "a":
                 return parse_one("c - 2")
             return node
 
@@ -196,7 +201,7 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("a")
 
         def fun(node):
-            if isinstance(node, exp.Column) and node.args["this"].args["this"] == "a":
+            if isinstance(node, exp.Column) and node.name == "a":
                 return parse_one("FUN(a)")
             return node
 

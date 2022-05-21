@@ -4,7 +4,7 @@ from sqlglot import optimizer
 from sqlglot import parse_one
 
 
-class TestParser(unittest.TestCase):
+class TestOptimizer(unittest.TestCase):
     def test_qualify_tables(self):
         self.assertEqual(
             optimizer.qualify_tables(parse_one("SELECT 1 FROM z"), db="db").sql(),

@@ -104,7 +104,7 @@ class Expression:
             return self.parent.depth + 1
         return 0
 
-    def find(self, *expression_types):
+    def find(self, *expression_types, bfs=True):
         """
         Returns the first node in this tree which matches at least one of
         the specified types.
@@ -116,9 +116,9 @@ class Expression:
             the node which matches the criteria or None if no node matching
             the criteria was found.
         """
-        return next(self.find_all(*expression_types), None)
+        return next(self.find_all(*expression_types, bfs=bfs), None)
 
-    def find_all(self, *expression_types):
+    def find_all(self, *expression_types, bfs=True):
         """
         Returns a generator object which visits all nodes in this tree and only
         yields those that match at least one of the specified expression types.
@@ -129,13 +129,13 @@ class Expression:
         Returns:
             the generator object.
         """
-        for expression, _, _ in self.walk():
+        for expression, _, _ in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
                 yield expression
 
-    def find_ancestor(self, expression_type):
+    def find_ancestor(self, *expression_types):
         ancestor = self.parent
-        while not isinstance(ancestor, expression_type):
+        while not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
             if not ancestor:
                 return None
@@ -157,7 +157,7 @@ class Expression:
         else:
             yield from self.dfs(self.parent, None)
 
-    def dfs(self, parent, key):
+    def dfs(self, parent=None, key=None):
         """
         Returns a generator object which visits all nodes in this tree in
         the DFS (Depth-first) order.

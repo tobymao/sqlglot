@@ -2,7 +2,7 @@ import doctest
 import os
 import unittest
 
-from sqlglot.optimizer import optimize
+from sqlglot import optimizer
 from sqlglot import parse_one
 
 
@@ -10,7 +10,7 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     """
     This finds and runs all the doctests in the expressions module
     """
-    from sqlglot.optimizer import qualify_columns
+    from sqlglot.optimizer.rules import qualify_columns
 
     tests.addTests(doctest.DocTestSuite(qualify_columns))
     return tests
@@ -22,23 +22,23 @@ class TestOptimizer(unittest.TestCase):
 
     def test_qualify_tables(self):
         self.assertEqual(
-            optimize.qualify_tables(parse_one("SELECT 1 FROM z"), db="db").sql(),
+            optimizer.qualify_tables(parse_one("SELECT 1 FROM z"), db="db").sql(),
             "SELECT 1 FROM db.z",
         )
         self.assertEqual(
-            optimize.qualify_tables(
+            optimizer.qualify_tables(
                 parse_one("SELECT 1 FROM z"), db="db", catalog="c"
             ).sql(),
             "SELECT 1 FROM c.db.z",
         )
         self.assertEqual(
-            optimize.qualify_tables(
+            optimizer.qualify_tables(
                 parse_one("SELECT 1 FROM y.z"), db="db", catalog="c"
             ).sql(),
             "SELECT 1 FROM c.y.z",
         )
         self.assertEqual(
-            optimize.qualify_tables(
+            optimizer.qualify_tables(
                 parse_one("SELECT 1 FROM x.y.z"), db="db", catalog="c"
             ).sql(),
             "SELECT 1 FROM x.y.z",
@@ -65,7 +65,7 @@ class TestOptimizer(unittest.TestCase):
                     expected = statements[i + 1].strip()
                     with self.subTest(sql):
                         self.assertEqual(
-                            optimize.qualify_columns(
+                            optimizer.qualify_columns(
                                 parse_one(sql), schema=schema
                             ).sql(),
                             expected,

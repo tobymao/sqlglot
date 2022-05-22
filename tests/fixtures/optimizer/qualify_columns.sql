@@ -35,10 +35,10 @@ SELECT a FROM (SELECT a AS a FROM x) y;
 SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y(a);
 
 SELECT a FROM (SELECT a AS a FROM x);
-SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x) AS "_alias0"(a);
+SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0"(a);
 
 SELECT a FROM (SELECT a FROM (SELECT a FROM x));
-SELECT "_alias1".a AS a FROM (SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x) AS "_alias0"(a)) AS "_alias1"(a);
+SELECT "_q_1".a AS a FROM (SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0"(a)) AS "_q_1"(a);
 
 --------------------------------------
 -- Joins
@@ -59,7 +59,7 @@ SELECT a FROM x UNION SELECT a FROM x UNION SELECT a FROM x;
 SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x;
 
 SELECT a FROM (SELECT a FROM x UNION SELECT a FROM x);
-SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x) AS "_alias0"(a);
+SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x UNION SELECT x.a AS a FROM x) AS "_q_0"(a);
 
 --------------------------------------
 -- Subqueries
@@ -95,11 +95,11 @@ SELECT x.*, y.* FROM x JOIN y ON x.b = y.b;
 SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x JOIN y ON x.b = y.b;
 
 SELECT a FROM (SELECT * FROM x);
-SELECT "_alias0".a AS a FROM (SELECT x.a AS a, x.b AS b FROM x) AS "_alias0"(a, b);
+SELECT "_q_0".a AS a FROM (SELECT x.a AS a, x.b AS b FROM x) AS "_q_0"(a, b);
 
 SELECT * FROM (SELECT a FROM x);
-SELECT "_alias0".a AS a FROM (SELECT x.a AS a FROM x) AS "_alias0"(a);
---
+SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0"(a);
+
 --------------------------------------
 -- CTEs
 --------------------------------------

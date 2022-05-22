@@ -207,6 +207,16 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(expression.transform(fun).sql(), "FUN(a)")
 
+    def test_transform_multiple_children(self):
+        expression = parse_one("SELECT * FROM x")
+
+        def fun(node):
+            if isinstance(node, exp.Star):
+                return [parse_one(c) for c in ["a", "b"]]
+            return node
+
+        self.assertEqual(expression.transform(fun).sql(), "SELECT a, b FROM x")
+
     def test_replace(self):
         expression = parse_one("SELECT a, b FROM x")
         expression.find(exp.Column).replace(parse_one("c"))

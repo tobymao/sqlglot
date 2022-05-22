@@ -1,3 +1,5 @@
+import itertools
+
 import sqlglot.expressions as exp
 
 
@@ -19,40 +21,18 @@ def qualify_columns(expression, schema):
         sqlglot.Expression: qualified expression
     """
     expression = expression.copy()
-    _qualify_union(expression, schema, Sequence(), {})
+    _qualify_statement(expression, schema, itertools.count(), {})
     return expression
 
 
-class Sequence:
+def _qualify_statement(expression, schema, sequence, parent_selectables):
     """
-    Auto-incrementing sequence.
-
-    Example:
-        >>> seq = Sequence()
-        >>> seq.next()
-        0
-        >>> seq.next()
-        1
-
-    This is useful for autogenerating unique alias names.
-    """
-
-    def __init__(self):
-        self.i = -1
-
-    def next(self):
-        self.i += 1
-        return self.i
-
-
-def _qualify_union(expression, schema, sequence, parent_selectables):
-    """
-    Search UNION for columns to qualify.
+    Search SELECT or UNION for columns to qualify.
 
     Args:
         expression (exp.Select or exp.Union): expression to search
         schema (dict): Mapping of table names to all available columns.
-        sequence (Sequence): Auto-incrementing sequence.
+        sequence (iterator): Auto-incrementing sequence.
         parent_selectables (dict): Mapping of name to selectable columns.
             This can include names set by CTEs or names that are available
             from the parent context (e.g. in the case of correlated subqueries).
@@ -63,7 +43,7 @@ def _qualify_union(expression, schema, sequence, parent_selectables):
         return _qualify_select(expression, schema, sequence, parent_selectables)
     if isinstance(expression, exp.Union):
         left = _qualify_select(expression.this, schema, sequence, parent_selectables)
-        right = _qualify_union(
+        right = _qualify_statement(
             expression.args.get("expression"), schema, sequence, parent_selectables
         )
         if set(left) != set(right):
@@ -84,12 +64,12 @@ def _qualify_select(expression, schema, sequence, parent_selectables):
     """
     # pylint: disable=too-many-locals
     ctes = []
-    derived_tables = []
-    subqueries = []
+    derived_tables = []  # SELECT * FROM (SELECT ...) <- derived table
+    subqueries = []  # SELECT * FROM x WHERE a IN (SELECT ...) <- subquery
     tables = []
     columns = []
-    selections = []
-    select_stars = []
+    selections = []  # SELECT x.a <- selection
+    select_stars = []  # SELECT * <- select_star
 
     # Collect all the selections in this context
     for selection in expression.args.get("expressions", []):
@@ -138,9 +118,21 @@ def _qualify_select(expression, schema, sequence, parent_selectables):
 def _qualify_derived_tables(
     derived_tables, schema, sequence, parent_selectables, chain=False
 ):
+    """
+    Derived tables are subqueries that are selectable in a surrounding context.
+
+    For example:
+        SELECT * FROM (SELECT ...) AS x  <- derived table
+        WITH x AS (SELECT ...) <- derived table
+
+    In both cases, x can be selected from.
+
+    Some derived tables can have their selectable context chained (e.g. CTEs and lateral joins).
+    That is, a CTE can refer to selectables in preceding CTEs.
+    """
     selectables = {}
     for subquery in derived_tables:
-        subquery_outputs = _qualify_union(
+        subquery_outputs = _qualify_statement(
             expression=subquery.this,
             schema=schema,
             sequence=sequence,
@@ -156,7 +148,7 @@ def _qualify_derived_tables(
 
         alias = table_alias.args.get("this")
         if not alias:
-            alias = exp.to_identifier(f"_alias{sequence.next()}")
+            alias = exp.to_identifier(f"_q_{next(sequence)}")
             table_alias.set("this", alias)
 
         alias_columns = table_alias.args.get("columns")
@@ -233,8 +225,18 @@ def _qualify_columns(columns, selectables):
 
 
 def _qualify_subqueries(subqueries, schema, sequence, selectables):
+    """
+    Derived tables are subqueries that are NOT selectable in a surrounding context.
+
+    For example:
+        SELECT * FROM x WHERE a IN (SELECT ...)
+
+    In this case, the subquery cannot be selected from (as opposed to derived tables).
+    Also unlike derived tables, these subqueries CAN reference selectables from the surrounding
+    context (making a subquery a "correlated subquery").
+    """
     for subquery in subqueries:
-        _qualify_union(subquery, schema, sequence, selectables)
+        _qualify_statement(subquery, schema, sequence, selectables)
 
 
 def _qualify_outputs(selections):
@@ -308,14 +310,7 @@ def _unique_columns(columns):
 
     This is necessary because duplicate column names are ambiguous.
     """
-    unique = set()
-    ambiguous = set()
+    counts = {}
     for column in columns:
-        if column in ambiguous:
-            continue
-        if column in unique:
-            unique.remove(column)
-            ambiguous.add(column)
-        else:
-            unique.add(column)
-    return unique
+        counts[column] = counts.get(column, 0) + 1
+    return {column for column, count in counts.items() if count == 1}

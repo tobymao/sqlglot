@@ -2,6 +2,7 @@ import itertools
 
 import sqlglot.expressions as exp
 from sqlglot import parse_one
+from sqlglot.errors import OptimizeError
 
 
 def qualify_columns(expression, schema):
@@ -61,10 +62,10 @@ def _qualify_statement(
             aliased_columns,
         )
         if set(left) != set(right):
-            raise RuntimeError("UNION columns not equal")
+            raise OptimizeError("UNION columns not equal")
         return left
 
-    raise RuntimeError("Unexpected statement type")
+    raise OptimizeError("Unexpected statement type")
 
 
 def _qualify_select(expression, schema, sequence, parent_selectables, aliased_columns):
@@ -123,7 +124,7 @@ def _qualify_select(expression, schema, sequence, parent_selectables, aliased_co
     expansions = _expand_stars(select_stars, selectables)
     columns.extend(expansions)
     selections.extend(expansions)
-    selectables = _merge(parent_selectables, selectables)
+    selectables = _merge(parent_selectables, selectables, check_unique=False)
     _qualify_columns(columns, selectables)
     _qualify_subqueries(subqueries, schema, sequence, selectables)
     return _qualify_outputs(selections, aliased_columns)
@@ -191,8 +192,12 @@ def _qualify_tables(tables, schema, parent_selectables):
 
         if table_name in parent_selectables:
             selectable_columns = parent_selectables[table_name]
-        else:
+        elif selectable_table in parent_selectables:
+            raise OptimizeError(f"Duplicate table name: {selectable_table}")
+        elif table_name in schema:
             selectable_columns = list(schema[table_name])
+        else:
+            raise OptimizeError(f"Unknown table: {table_name}")
 
         selectables = _merge(selectables, {selectable_table: selectable_columns})
     return selectables
@@ -224,14 +229,14 @@ def _qualify_columns(columns, selectables):
         column_table = column.text("table")
 
         if column_table and column_table not in selectables:
-            raise RuntimeError(f"Unknown table reference: {column_table}")
+            raise OptimizeError(f"Unknown table reference: {column_table}")
         if not column_table:
             if unambiguous_columns is None:
                 unambiguous_columns = _get_unambiguous_columns(selectables)
 
             column_table = unambiguous_columns.get(column.text("this"))
             if not column_table:
-                raise RuntimeError(f"Ambiguous column: {column}")
+                raise OptimizeError(f"Ambiguous column: {column}")
             column.set("table", exp.to_identifier(column_table))
 
         column.args.get("table").set("quoted", True)
@@ -283,7 +288,7 @@ def _qualify_outputs(selections, aliased_columns):
     return outputs
 
 
-def _merge(*selectables):
+def _merge(*selectables, check_unique=True):
     """
     Merge two "selectable" dictionaries.
 
@@ -292,8 +297,8 @@ def _merge(*selectables):
     result = {}
     for s in selectables:
         for selectable_table, selectable_columns in s.items():
-            if selectable_table in selectables:
-                raise RuntimeError(f"Duplicate name declared: {selectable_table}")
+            if check_unique and selectable_table in result:
+                raise OptimizeError(f"Duplicate name declared: {selectable_table}")
             result[selectable_table] = selectable_columns
     return result
 

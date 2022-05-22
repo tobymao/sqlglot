@@ -21,11 +21,11 @@ def qualify_columns(expression, schema):
         sqlglot.Expression: qualified expression
     """
     expression = expression.copy()
-    _qualify_statement(expression, schema, itertools.count(), {})
+    _qualify_statement(expression, schema, itertools.count(), {}, [])
     return expression
 
 
-def _qualify_statement(expression, schema, sequence, parent_selectables):
+def _qualify_statement(expression, schema, sequence, parent_selectables, aliased_columns):
     """
     Search SELECT or UNION for columns to qualify.
 
@@ -36,15 +36,18 @@ def _qualify_statement(expression, schema, sequence, parent_selectables):
         parent_selectables (dict): Mapping of name to selectable columns.
             This can include names set by CTEs or names that are available
             from the parent context (e.g. in the case of correlated subqueries).
+        aliased_columns (list): List of column names.
+            This should be set for derived tables or CTEs where the parent context
+            defines alias column names, e.g. "SELECT * FROM (SELECT * FROM x) AS y(a, b)"
     Returns:
         list: output column names
     """
     if isinstance(expression, exp.Select):
-        return _qualify_select(expression, schema, sequence, parent_selectables)
+        return _qualify_select(expression, schema, sequence, parent_selectables, aliased_columns)
     if isinstance(expression, exp.Union):
-        left = _qualify_select(expression.this, schema, sequence, parent_selectables)
+        left = _qualify_select(expression.this, schema, sequence, parent_selectables, aliased_columns)
         right = _qualify_statement(
-            expression.args.get("expression"), schema, sequence, parent_selectables
+            expression.args.get("expression"), schema, sequence, parent_selectables, aliased_columns
         )
         if set(left) != set(right):
             raise RuntimeError("UNION columns not equal")
@@ -53,7 +56,7 @@ def _qualify_statement(expression, schema, sequence, parent_selectables):
     raise RuntimeError("Unexpected statement type")
 
 
-def _qualify_select(expression, schema, sequence, parent_selectables):
+def _qualify_select(expression, schema, sequence, parent_selectables, aliased_columns):
     """
     Search SELECT for columns to qualify.
 
@@ -112,7 +115,7 @@ def _qualify_select(expression, schema, sequence, parent_selectables):
     selectables = _merge(parent_selectables, selectables)
     _qualify_columns(columns, selectables)
     _qualify_subqueries(subqueries, schema, sequence, selectables)
-    return _qualify_outputs(selections)
+    return _qualify_outputs(selections, aliased_columns)
 
 
 def _qualify_derived_tables(
@@ -132,15 +135,6 @@ def _qualify_derived_tables(
     """
     selectables = {}
     for subquery in derived_tables:
-        subquery_outputs = _qualify_statement(
-            expression=subquery.this,
-            schema=schema,
-            sequence=sequence,
-            parent_selectables=_merge(parent_selectables, selectables)
-            if chain
-            else parent_selectables,
-        )
-
         table_alias = subquery.args.get("alias")
         if not table_alias:
             table_alias = exp.TableAlias()
@@ -151,15 +145,25 @@ def _qualify_derived_tables(
             alias = exp.to_identifier(f"_q_{next(sequence)}")
             table_alias.set("this", alias)
 
-        alias_columns = table_alias.args.get("columns")
-        if not alias_columns:
-            alias_columns = [exp.to_identifier(o) for o in subquery_outputs]
-            table_alias.set("columns", alias_columns)
+        pushdown_aliased_columns = []
+        aliased_columns = table_alias.args.get("columns", [])
+        if aliased_columns:
+            pushdown_aliased_columns = [c.text("this") for c in aliased_columns]
+            table_alias.args.pop("columns")
 
         selectable_table = alias.text("this")
 
-        selectable_columns = [c.text("this") for c in alias_columns]
-        selectables = _merge(selectables, {selectable_table: selectable_columns})
+        subquery_outputs = _qualify_statement(
+            expression=subquery.this,
+            schema=schema,
+            sequence=sequence,
+            parent_selectables=_merge(parent_selectables, selectables)
+            if chain
+            else parent_selectables,
+            aliased_columns=pushdown_aliased_columns,
+        )
+
+        selectables = _merge(selectables, {selectable_table: subquery_outputs})
 
     return selectables
 
@@ -236,21 +240,29 @@ def _qualify_subqueries(subqueries, schema, sequence, selectables):
     context (making a subquery a "correlated subquery").
     """
     for subquery in subqueries:
-        _qualify_statement(subquery, schema, sequence, selectables)
+        _qualify_statement(subquery, schema, sequence, selectables, [])
 
 
-def _qualify_outputs(selections):
+def _qualify_outputs(selections, aliased_columns):
     outputs = []
 
-    for i, selection in enumerate(selections):
+    for i, (selection, aliased_column) in enumerate(itertools.zip_longest(selections, aliased_columns)):
         if isinstance(selection, exp.Alias):
             selection_name = selection.text("alias")
         elif isinstance(selection, exp.Column):
             selection_name = selection.text("this")
-            selection.replace(exp.alias_(selection.copy(), selection_name))
+            new_selection = exp.alias_(selection.copy(), selection_name)
+            selection.replace(new_selection)
+            selection = new_selection
         else:
-            selection_name = f"_col{i}"
-            selection.replace(exp.alias_(selection.copy(), selection_name))
+            selection_name = f"_col_{i}"
+            new_selection = exp.alias_(selection.copy(), selection_name)
+            selection.replace(new_selection)
+            selection = new_selection
+
+        if aliased_column:
+            selection_name = aliased_column
+            selection.set("alias", exp.to_identifier(aliased_column))
 
         outputs.append(selection_name)
 

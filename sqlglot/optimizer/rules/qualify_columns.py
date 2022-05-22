@@ -215,7 +215,7 @@ def _expand_stars(select_stars, selectables):
 
         for table in tables:
             columns = selectables.get(table, [])
-            for column in sorted(columns):
+            for column in columns:
                 new_columns.append(parse_one(f'"{table}"."{column}"'))
         star.replace(*new_columns)
         result.extend(new_columns)

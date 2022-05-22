@@ -25,7 +25,9 @@ def qualify_columns(expression, schema):
     return expression
 
 
-def _qualify_statement(expression, schema, sequence, parent_selectables, aliased_columns):
+def _qualify_statement(
+    expression, schema, sequence, parent_selectables, aliased_columns
+):
     """
     Search SELECT or UNION for columns to qualify.
 
@@ -43,11 +45,19 @@ def _qualify_statement(expression, schema, sequence, parent_selectables, aliased
         list: output column names
     """
     if isinstance(expression, exp.Select):
-        return _qualify_select(expression, schema, sequence, parent_selectables, aliased_columns)
+        return _qualify_select(
+            expression, schema, sequence, parent_selectables, aliased_columns
+        )
     if isinstance(expression, exp.Union):
-        left = _qualify_select(expression.this, schema, sequence, parent_selectables, aliased_columns)
+        left = _qualify_select(
+            expression.this, schema, sequence, parent_selectables, aliased_columns
+        )
         right = _qualify_statement(
-            expression.args.get("expression"), schema, sequence, parent_selectables, aliased_columns
+            expression.args.get("expression"),
+            schema,
+            sequence,
+            parent_selectables,
+            aliased_columns,
         )
         if set(left) != set(right):
             raise RuntimeError("UNION columns not equal")
@@ -246,7 +256,9 @@ def _qualify_subqueries(subqueries, schema, sequence, selectables):
 def _qualify_outputs(selections, aliased_columns):
     outputs = []
 
-    for i, (selection, aliased_column) in enumerate(itertools.zip_longest(selections, aliased_columns)):
+    for i, (selection, aliased_column) in enumerate(
+        itertools.zip_longest(selections, aliased_columns)
+    ):
         if isinstance(selection, exp.Alias):
             selection_name = selection.text("alias")
         elif isinstance(selection, exp.Column):

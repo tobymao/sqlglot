@@ -3,7 +3,6 @@ import itertools
 import typing
 
 import sqlglot.expressions as exp
-from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
 
 
@@ -16,7 +15,7 @@ def qualify_columns(expression, schema):
         >>> schema = {"tbl": {"col": "INT"}}
         >>> expression = sqlglot.parse_one("SELECT col FROM tbl")
         >>> qualify_columns(expression, schema).sql()
-        'SELECT "tbl"."col" AS "col" FROM tbl'
+        'SELECT tbl.col AS col FROM tbl'
 
     Args:
         expression (sqlglot.Expression): expression to qualify
@@ -240,7 +239,11 @@ def _expand_stars(select_stars, selectables):
         for table in tables:
             columns = selectables.get(table, [])
             for column in columns:
-                new_columns.append(parse_one(f'"{table}"."{column}"'))
+                new_columns.append(
+                    exp.Column(
+                        this=exp.to_identifier(column), table=exp.to_identifier(table)
+                    )
+                )
         star.replace(*new_columns)
         result.extend(new_columns)
     return result
@@ -265,9 +268,6 @@ def _qualify_columns(columns, selectables):
             if not column_table:
                 raise OptimizeError(f"Ambiguous column: {column_name}")
             column.set("table", exp.to_identifier(column_table))
-
-        column.args.get("table").set("quoted", True)
-        column.args.get("this").set("quoted", True)
 
 
 def _qualify_subqueries(subqueries, context):
@@ -318,8 +318,6 @@ def _qualify_outputs(selections, aliased_columns):
         if aliased_column:
             selection_name = aliased_column
             selection.set("alias", exp.to_identifier(aliased_column))
-
-        selection.args.get("alias").set("quoted", True)
 
         outputs.append(selection_name)
 

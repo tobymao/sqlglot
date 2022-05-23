@@ -5,6 +5,7 @@ import typing
 import sqlglot.expressions as exp
 from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.helper import quote
 
 
 def qualify_columns(expression, schema):
@@ -266,8 +267,8 @@ def _qualify_columns(columns, selectables):
                 raise OptimizeError(f"Ambiguous column: {column_name}")
             column.set("table", exp.to_identifier(column_table))
 
-        column.args.get("table").set("quoted", True)
-        column.args.get("this").set("quoted", True)
+        quote(column, "table")
+        quote(column, "this")
 
 
 def _qualify_subqueries(subqueries, context):
@@ -319,7 +320,7 @@ def _qualify_outputs(selections, aliased_columns):
             selection_name = aliased_column
             selection.set("alias", exp.to_identifier(aliased_column))
 
-        selection.args.get("alias").set("quoted", True)
+        quote(selection, "alias")
 
         outputs.append(selection_name)
 

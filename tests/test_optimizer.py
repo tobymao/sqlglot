@@ -13,9 +13,11 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     """
     This finds and runs all the doctests in the expressions module
     """
-    from sqlglot.optimizer import qualify_columns as mod
+    from sqlglot.optimizer import qualify_columns as mod1
+    from sqlglot.optimizer import qualify_tables as mod2
 
-    tests.addTests(doctest.DocTestSuite(mod))
+    for mod in (mod1, mod2):
+        tests.addTests(doctest.DocTestSuite(mod))
     return tests
 
 
@@ -26,22 +28,15 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_tables(self):
         self.assertEqual(
             qualify_tables(parse_one("SELECT 1 FROM z"), db="db").sql(),
-            "SELECT 1 FROM db.z",
+            'SELECT 1 FROM "db"."z" AS "z"',
         )
-        self.assertEqual(
-            qualify_tables(parse_one("SELECT 1 FROM z"), db="db", catalog="c").sql(),
-            "SELECT 1 FROM c.db.z",
-        )
-        self.assertEqual(
-            qualify_tables(parse_one("SELECT 1 FROM y.z"), db="db", catalog="c").sql(),
-            "SELECT 1 FROM c.y.z",
-        )
-        self.assertEqual(
-            qualify_tables(
-                parse_one("SELECT 1 FROM x.y.z"), db="db", catalog="c"
-            ).sql(),
-            "SELECT 1 FROM x.y.z",
-        )
+
+        for sql, expected in load_sql_fixture_pairs("optimizer/qualify_tables.sql"):
+            with self.subTest(sql):
+                self.assertEqual(
+                    qualify_tables(parse_one(sql), db="db", catalog="c").sql(),
+                    expected,
+                )
 
     def test_qualify_columns(self):
         schema = {

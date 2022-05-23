@@ -1,5 +1,6 @@
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
+from sqlglot.optimizer.quote_identities import quote_identities
 
 
 def optimize(expression, schema=None, db=None, catalog=None):
@@ -8,4 +9,5 @@ def optimize(expression, schema=None, db=None, catalog=None):
     """
     expression = qualify_tables(expression, db=db, catalog=catalog)
     expression = qualify_columns(expression, schema)
+    expression = quote_identities(expression)
     return expression

@@ -14,11 +14,11 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     """
     This finds and runs all the doctests in the expressions module
     """
-    from sqlglot.optimizer import qualify_columns as mod1
-    from sqlglot.optimizer import qualify_tables as mod2
-    from sqlglot.optimizer import quote_identities as mod3
+    from sqlglot.optimizer import qualify_columns as module1
+    from sqlglot.optimizer import qualify_tables as module2
+    from sqlglot.optimizer import quote_identities as module3
 
-    for mod in (mod1, mod2, mod3):
+    for mod in (module1, module2, module3):
         tests.addTests(doctest.DocTestSuite(mod))
     return tests
 

@@ -1,4 +1,6 @@
+import dataclasses
 import itertools
+import typing
 
 import sqlglot.expressions as exp
 from sqlglot import parse_one
@@ -23,44 +25,65 @@ def qualify_columns(expression, schema):
         sqlglot.Expression: qualified expression
     """
     expression = expression.copy()
-    _qualify_statement(expression, schema, itertools.count(), {}, [])
+    _qualify_statement(expression, Context(schema=schema))
     return expression
 
 
-def _qualify_statement(
-    expression, schema, sequence, parent_selectables, aliased_columns
-):
+@dataclasses.dataclass
+class Context:
+    """
+    Scoped context for a SELECT statement.
+
+    This is a convenience for passing information between CTEs, subqueries, etc.
+
+    Attributes:
+        schema: Mapping of table names to all available columns
+        sequence: Auto-incrementing sequence
+        selectables: Mapping of name to selectable columns
+        aliased_columns: List of column names.
+            This should be set for derived tables or CTEs where the parent context
+            defines column names for an alias, e.g. "SELECT * FROM (SELECT * FROM x) AS y(a, b)"
+    """
+
+    schema: dict
+    sequence: typing.Iterable = dataclasses.field(default_factory=itertools.count)
+    selectables: dict = dataclasses.field(default_factory=dict)
+    aliased_columns: list = dataclasses.field(default_factory=list)
+
+    def add_selectables(self, *selectables, check_unique=True):
+        return Context(
+            schema=self.schema,
+            sequence=self.sequence,
+            selectables=_merge(
+                self.selectables, *selectables, check_unique=check_unique
+            ),
+            aliased_columns=self.aliased_columns,
+        )
+
+    def branch(self, aliased_columns):
+        return Context(
+            schema=self.schema,
+            sequence=self.sequence,
+            selectables=self.selectables,
+            aliased_columns=aliased_columns,
+        )
+
+
+def _qualify_statement(expression, context):
     """
     Search SELECT or UNION for columns to qualify.
 
     Args:
         expression (exp.Select or exp.Union): expression to search
-        schema (dict): Mapping of table names to all available columns.
-        sequence (iterator): Auto-incrementing sequence.
-        parent_selectables (dict): Mapping of name to selectable columns.
-            This can include names set by CTEs or names that are available
-            from the parent context (e.g. in the case of correlated subqueries).
-        aliased_columns (list): List of column names.
-            This should be set for derived tables or CTEs where the parent context
-            defines alias column names, e.g. "SELECT * FROM (SELECT * FROM x) AS y(a, b)"
+        context (Context): current context
     Returns:
         list: output column names
     """
     if isinstance(expression, exp.Select):
-        return _qualify_select(
-            expression, schema, sequence, parent_selectables, aliased_columns
-        )
+        return _qualify_select(expression, context)
     if isinstance(expression, exp.Union):
-        left = _qualify_select(
-            expression.this, schema, sequence, parent_selectables, aliased_columns
-        )
-        right = _qualify_statement(
-            expression.args.get("expression"),
-            schema,
-            sequence,
-            parent_selectables,
-            aliased_columns,
-        )
+        left = _qualify_select(expression.this, context)
+        right = _qualify_statement(expression.args.get("expression"), context)
         if set(left) != set(right):
             raise OptimizeError("UNION columns not equal")
         return left
@@ -68,14 +91,15 @@ def _qualify_statement(
     raise OptimizeError("Unexpected statement type")
 
 
-def _qualify_select(expression, schema, sequence, parent_selectables, aliased_columns):
+def _qualify_select(expression, context):
     """
     Search SELECT for columns to qualify.
 
     Args:
-        (Same as `_qualify_union`)
+        expression (exp.Select): expression to search
+        context (Context): current context
     Returns:
-        (Same as `_qualify_union`)
+        list: output column names
     """
     # pylint: disable=too-many-locals
     ctes = []
@@ -112,27 +136,31 @@ def _qualify_select(expression, schema, sequence, parent_selectables, aliased_co
         elif isinstance(node, exp.Column):
             columns.append(node)
 
-    parent_selectables = _merge(
-        parent_selectables,
-        _qualify_derived_tables(ctes, schema, sequence, parent_selectables, chain=True),
+    context = context.add_selectables(
+        _qualify_derived_tables(ctes, context, chain=True)
     )
-    selectables = _merge({}, _qualify_tables(tables, schema, parent_selectables))
-    selectables = _merge(
-        selectables,
-        _qualify_derived_tables(derived_tables, schema, sequence, parent_selectables),
-    )
+
+    selectables = _qualify_tables(tables, context)
+
+    # Don't update context.selectables yet, as derived tables can't depend on each other.
+    selectables = _merge(selectables, _qualify_derived_tables(derived_tables, context))
+
+    # Again, don't update the context yet.
+    # We don't want to expand CTEs or outer query selectables that haven't been
+    # explicitly selected from in this context.
     expansions = _expand_stars(select_stars, selectables)
     columns.extend(expansions)
     selections.extend(expansions)
-    selectables = _merge(parent_selectables, selectables, check_unique=False)
-    _qualify_columns(columns, selectables)
-    _qualify_subqueries(subqueries, schema, sequence, selectables)
-    return _qualify_outputs(selections, aliased_columns)
+
+    # OK - now we can update the context.
+    context = context.add_selectables(selectables, check_unique=False)
+
+    _qualify_columns(columns, context.selectables)
+    _qualify_subqueries(subqueries, context)
+    return _qualify_outputs(selections, context.aliased_columns)
 
 
-def _qualify_derived_tables(
-    derived_tables, schema, sequence, parent_selectables, chain=False
-):
+def _qualify_derived_tables(derived_tables, context, chain=False):
     """
     Derived tables are subqueries that are selectable in a surrounding context.
 
@@ -154,33 +182,33 @@ def _qualify_derived_tables(
 
         alias = table_alias.args.get("this")
         if not alias:
-            alias = exp.to_identifier(f"_q_{next(sequence)}")
+            alias = exp.to_identifier(f"_q_{next(context.sequence)}")
             table_alias.set("this", alias)
 
+        # Remove any alias columns (e.g. "a, b" in this: "SELECT * FROM (...) AS x(a, b)").
+        # If these are set, push them down to the subquery to overwrite the selection aliases.
         pushdown_aliased_columns = []
         aliased_columns = table_alias.args.get("columns", [])
         if aliased_columns:
             pushdown_aliased_columns = [c.text("this") for c in aliased_columns]
             table_alias.args.pop("columns")
 
-        selectable_table = alias.text("this")
-
         subquery_outputs = _qualify_statement(
             expression=subquery.this,
-            schema=schema,
-            sequence=sequence,
-            parent_selectables=_merge(parent_selectables, selectables)
-            if chain
-            else parent_selectables,
-            aliased_columns=pushdown_aliased_columns,
+            context=context.add_selectables(selectables if chain else {}).branch(
+                pushdown_aliased_columns
+            ),
         )
 
+        selectable_table = alias.text("this")
         selectables = _merge(selectables, {selectable_table: subquery_outputs})
 
     return selectables
 
 
-def _qualify_tables(tables, schema, parent_selectables):
+def _qualify_tables(tables, context):
+    """Extract selectables from tables referenced in FROM and JOIN clauses"""
+
     selectables = {}
     for table in tables:
         table_name = table.text("this")
@@ -190,20 +218,23 @@ def _qualify_tables(tables, schema, parent_selectables):
         else:
             selectable_table = table_name
 
-        if table_name in parent_selectables:
-            selectable_columns = parent_selectables[table_name]
-        elif selectable_table in parent_selectables:
+        if table_name in context.selectables:
+            # This is a reference to a parent selectable (e.g. a CTE), not an actual table.
+            selectable_columns = context.selectables[table_name]
+        elif selectable_table in context.selectables:
             raise OptimizeError(f"Duplicate table name: {selectable_table}")
-        elif table_name in schema:
-            selectable_columns = list(schema[table_name])
-        else:
+        elif table_name not in context.schema:
             raise OptimizeError(f"Unknown table: {table_name}")
+        else:
+            selectable_columns = list(context.schema[table_name])
 
         selectables = _merge(selectables, {selectable_table: selectable_columns})
     return selectables
 
 
 def _expand_stars(select_stars, selectables):
+    """Expand stars to lists of column selections"""
+
     result = []
     for star in select_stars:
         new_columns = []
@@ -223,6 +254,8 @@ def _expand_stars(select_stars, selectables):
 
 
 def _qualify_columns(columns, selectables):
+    """Given the map of selectable tables to columns, fully qualify columns"""
+
     unambiguous_columns = None  # lazily loaded
 
     for column in columns:
@@ -243,7 +276,7 @@ def _qualify_columns(columns, selectables):
         column.args.get("this").set("quoted", True)
 
 
-def _qualify_subqueries(subqueries, schema, sequence, selectables):
+def _qualify_subqueries(subqueries, context):
     """
     Derived tables are subqueries that are NOT selectable in a surrounding context.
 
@@ -255,10 +288,21 @@ def _qualify_subqueries(subqueries, schema, sequence, selectables):
     context (making a subquery a "correlated subquery").
     """
     for subquery in subqueries:
-        _qualify_statement(subquery, schema, sequence, selectables, [])
+        _qualify_statement(subquery, context.branch([]))
 
 
 def _qualify_outputs(selections, aliased_columns):
+    """
+    Ensure all output columns have proper aliases.
+
+    `aliased_columns` are passed down from an outer query.
+
+    For example, we want to convert this:
+        SELECT * FROM (SELECT a AS b FROM x) AS y(c)
+    To this:
+        SELECT * FROM (SELECT a AS c FROM x) AS y
+    """
+
     outputs = []
 
     for i, (selection, aliased_column) in enumerate(

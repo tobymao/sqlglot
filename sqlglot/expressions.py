@@ -628,6 +628,13 @@ class Subqueryable:
             alias=to_identifier(alias),
         )
 
+    @property
+    def ctes(self):
+        with_ = self.args.get("with")  # pylint: disable=no-member
+        if not with_:
+            return []
+        return with_.args.get("expressions", [])
+
 
 class Union(Subqueryable, Expression):
     arg_types = {"with": False, "this": True, "expression": True, "distinct": False}

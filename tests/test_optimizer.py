@@ -2,9 +2,11 @@ import doctest
 import os
 import unittest
 
+from sqlglot.optimizer import optimize
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
+from sqlglot.optimizer.remove_unused_columns import remove_unused_columns
 from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
 from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
@@ -17,8 +19,9 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     from sqlglot.optimizer import qualify_columns as module1
     from sqlglot.optimizer import qualify_tables as module2
     from sqlglot.optimizer import quote_identities as module3
+    from sqlglot.optimizer import remove_unused_columns as module4
 
-    for mod in (module1, module2, module3):
+    for mod in (module1, module2, module3, module4):
         tests.addTests(doctest.DocTestSuite(mod))
     return tests
 
@@ -26,6 +29,15 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
 class TestOptimizer(unittest.TestCase):
     file_dir = os.path.dirname(__file__)
     fixtures_dir = os.path.join(file_dir, "fixtures/optimizer")
+
+    def test_optimize(self):
+        schema = {"x": {"a": "INT"}}
+        self.assertEqual(
+            optimize(
+                parse_one("SELECT a FROM x"), schema=schema, db="db", catalog="c"
+            ).sql(),
+            'SELECT "x"."a" AS "a" FROM "c"."db"."x" AS "x"',
+        )
 
     def test_qualify_tables(self):
         self.assertEqual(
@@ -69,3 +81,26 @@ class TestOptimizer(unittest.TestCase):
                     quote_identities(parse_one(sql)).sql(),
                     expected,
                 )
+
+    def test_remove_unused_columns(self):
+        schema = {
+            "x": {"a": "INT", "b": "INT"},
+            "y": {"b": "INT", "c": "INT"},
+        }
+        for sql, expected in load_sql_fixture_pairs(
+            "optimizer/remove_unused_columns.sql"
+        ):
+            with self.subTest(sql):
+                expression = parse_one(sql)
+                expression = qualify_columns(expression, schema)
+                expression = remove_unused_columns(expression)
+                self.assertEqual(
+                    expression.sql(),
+                    expected,
+                )
+
+    def test_remove_unused_columns__invalid(self):
+        for sql in load_sql_fixtures("optimizer/remove_unused_columns__invalid.sql"):
+            with self.subTest(sql):
+                with self.assertRaises(OptimizeError):
+                    remove_unused_columns(parse_one(sql))

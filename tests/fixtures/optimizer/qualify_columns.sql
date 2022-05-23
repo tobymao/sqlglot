@@ -121,6 +121,12 @@ WITH z AS (SELECT x.a AS a FROM x) SELECT z.a AS a FROM z;
 WITH z AS (SELECT a FROM x), q AS (SELECT * FROM z) SELECT * FROM q;
 WITH z AS (SELECT x.a AS a FROM x), q AS (SELECT z.a AS a FROM z) SELECT q.a AS a FROM q;
 
+WITH z AS (SELECT * FROM x) SELECT * FROM z UNION SELECT * FROM z;
+WITH z AS (SELECT x.a AS a, x.b AS b FROM x) SELECT z.a AS a, z.b AS b FROM z UNION SELECT z.a AS a, z.b AS b FROM z;
+
+WITH z AS (SELECT * FROM x), q AS (SELECT b FROM z) SELECT b FROM q;
+WITH z AS (SELECT x.a AS a, x.b AS b FROM x), q AS (SELECT z.b AS b FROM z) SELECT q.b AS b FROM q;
+
 --------------------------------------
 -- TODO: Laterals
 --------------------------------------

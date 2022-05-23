@@ -1,1 +1,1 @@
-from sqlglot.optimizer import optimize
+from sqlglot.optimizer.optimizer import optimize

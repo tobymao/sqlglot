@@ -1,5 +1,4 @@
 import sqlglot.expressions as exp
-from sqlglot.optimizer.helper import quote
 
 
 def qualify_tables(expression, db=None, catalog=None):
@@ -10,7 +9,7 @@ def qualify_tables(expression, db=None, catalog=None):
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT 1 FROM tbl")
         >>> qualify_tables(expression, db="db").sql()
-        'SELECT 1 FROM "db"."tbl" AS "tbl"'
+        'SELECT 1 FROM db.tbl AS tbl'
 
     Args:
         expression (sqlglot.Expression): expression to qualify
@@ -27,13 +26,8 @@ def qualify_tables(expression, db=None, catalog=None):
             if not node.args.get("catalog"):
                 node.set("catalog", exp.to_identifier(catalog))
 
-            quote(node, "db")
-            quote(node, "catalog")
-            quote(node, "this")
-
             if not isinstance(node.parent, exp.Alias):
                 node = exp.alias_(node, node.this)
-                quote(node, "alias")
 
             return node
 

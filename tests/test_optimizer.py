@@ -4,6 +4,7 @@ import unittest
 
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
+from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
 from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
@@ -15,8 +16,9 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     """
     from sqlglot.optimizer import qualify_columns as mod1
     from sqlglot.optimizer import qualify_tables as mod2
+    from sqlglot.optimizer import quote_identities as mod3
 
-    for mod in (mod1, mod2):
+    for mod in (mod1, mod2, mod3):
         tests.addTests(doctest.DocTestSuite(mod))
     return tests
 
@@ -28,7 +30,7 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_tables(self):
         self.assertEqual(
             qualify_tables(parse_one("SELECT 1 FROM z"), db="db").sql(),
-            'SELECT 1 FROM "db"."z" AS "z"',
+            "SELECT 1 FROM db.z AS z",
         )
 
         for sql, expected in load_sql_fixture_pairs("optimizer/qualify_tables.sql"):
@@ -59,3 +61,11 @@ class TestOptimizer(unittest.TestCase):
             with self.subTest(sql):
                 with self.assertRaises(OptimizeError):
                     qualify_columns(parse_one(sql), schema=schema)
+
+    def test_quote_identities(self):
+        for sql, expected in load_sql_fixture_pairs("optimizer/quote_identities.sql"):
+            with self.subTest(sql):
+                self.assertEqual(
+                    quote_identities(parse_one(sql)).sql(),
+                    expected,
+                )

@@ -60,12 +60,12 @@ class Context:
             aliased_columns=self.aliased_columns,
         )
 
-    def branch(self, aliased_columns):
+    def branch(self, aliased_columns=None):
         return Context(
             schema=self.schema,
             sequence=self.sequence,
             selectables=self.selectables,
-            aliased_columns=aliased_columns,
+            aliased_columns=aliased_columns or [],
         )
 
 
@@ -288,7 +288,7 @@ def _qualify_subqueries(subqueries, context):
     context (making a subquery a "correlated subquery").
     """
     for subquery in subqueries:
-        _qualify_statement(subquery, context.branch([]))
+        _qualify_statement(subquery, context.branch())
 
 
 def _qualify_outputs(selections, aliased_columns):

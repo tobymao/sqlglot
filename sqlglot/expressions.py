@@ -141,23 +141,23 @@ class Expression:
                 return None
         return ancestor
 
-    def walk(self, bfs=True, stop_types=None):
+    def walk(self, bfs=True, stop_after=None):
         """
         Returns a generator object which visits all nodes in this tree.
 
         Args:
             bfs (bool): if set to True the BFS traversal order will be applied,
                 otherwise the DFS traversal will be used instead.
-            stop_types (type or tuple of types): Expression type (or tuple of Expression types)
+            stop_after (type or tuple of types): Expression type (or tuple of Expression types)
                 to prune the BFS search tree on. That is, if a node of this type is encountered,
-                it will be yield, but it's children will not be yielded.
+                it will be yielded, but it's children will not be yielded.
 
         Returns:
             the generator object.
         """
         prune = None
-        if stop_types:
-            prune = lambda n, *_: isinstance(n, stop_types) and n is not self
+        if stop_after:
+            prune = lambda n, *_: isinstance(n, stop_after) and n is not self
 
         if bfs:
             yield from self.bfs(prune=prune)
@@ -1189,6 +1189,10 @@ class Select(Subqueryable, Expression):
     @property
     def named_selects(self):
         return [e.alias_or_name for e in self.args["expressions"] if e.alias_or_name]
+
+    @property
+    def selects(self):
+        return self.args.get("expressions", [])
 
 
 class Subquery(Expression):

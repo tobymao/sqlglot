@@ -61,9 +61,6 @@ class Context:
     def set_aliased_columns(self, aliased_columns):
         return dataclasses.replace(self, aliased_columns=aliased_columns)
 
-    def reset_sequence(self):
-        return dataclasses.replace(self, sequence=itertools.count())
-
 
 def _qualify_statement(expression, context):
     """
@@ -81,10 +78,10 @@ def _qualify_statement(expression, context):
         left = _qualify_select(expression.this, context)
         right = _qualify_statement(expression.args.get("expression"), context)
         if set(left) != set(right):
-            raise OptimizeError("UNION columns not equal")
+            raise OptimizeError(f"UNION columns not equal: {left} vs. {right}")
         return left
 
-    raise OptimizeError("Unexpected statement type")
+    raise OptimizeError(f"Unexpected statement type: {type(expression)}")
 
 
 def _qualify_select(expression, context):
@@ -189,11 +186,9 @@ def _qualify_derived_tables(derived_tables, context, chain=False):
             pushdown_aliased_columns = [c.text("this") for c in aliased_columns]
             table_alias.args.pop("columns")
 
-        subquery_context = (
-            context.add_selectables(selectables if chain else {})
-            .set_aliased_columns(pushdown_aliased_columns)
-            .reset_sequence()
-        )
+        subquery_context = context.add_selectables(
+            selectables if chain else {}
+        ).set_aliased_columns(pushdown_aliased_columns)
         subquery_outputs = _qualify_statement(
             expression=subquery.this, context=subquery_context
         )

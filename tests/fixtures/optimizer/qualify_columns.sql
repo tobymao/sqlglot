@@ -38,7 +38,7 @@ SELECT a FROM (SELECT a AS a FROM x);
 SELECT "_q_0"."a" AS "a" FROM (SELECT "x"."a" AS "a" FROM x) AS "_q_0";
 
 SELECT a FROM (SELECT a FROM (SELECT a FROM x));
-SELECT "_q_0"."a" AS "a" FROM (SELECT "_q_0"."a" AS "a" FROM (SELECT "x"."a" AS "a" FROM x) AS "_q_0") AS "_q_0";
+SELECT "_q_0"."a" AS "a" FROM (SELECT "_q_1"."a" AS "a" FROM (SELECT "x"."a" AS "a" FROM x) AS "_q_1") AS "_q_0";
 
 --------------------------------------
 -- Joins

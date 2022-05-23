@@ -9,7 +9,7 @@ class ErrorLevel(AutoName):
     RAISE = auto()
 
 
-class SqlglotError(ValueError):
+class SqlglotError(Exception):
     pass
 
 

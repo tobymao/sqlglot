@@ -97,7 +97,7 @@ def _qualify_select(expression, context):
     select_stars = []  # SELECT * <- select_star
 
     # Collect all the selections in this context
-    for selection in expression.selections:
+    for selection in expression.selects:
         if isinstance(selection, exp.Star) or (
             isinstance(selection, exp.Column) and isinstance(selection.this, exp.Star)
         ):

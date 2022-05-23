@@ -1191,7 +1191,7 @@ class Select(Subqueryable, Expression):
         return [e.alias_or_name for e in self.args["expressions"] if e.alias_or_name]
 
     @property
-    def selections(self):
+    def selects(self):
         return self.args.get("expressions", [])
 
 

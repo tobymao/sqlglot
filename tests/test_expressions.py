@@ -138,15 +138,15 @@ class TestExpressions(unittest.TestCase):
         )
         self.assertEqual(expression.named_selects, ["foo", "bar", "bazz"])
 
-    def test_selections(self):
+    def test_selects(self):
         expression = parse_one("SELECT FROM x")
-        self.assertEqual(expression.selections, [])
+        self.assertEqual(expression.selects, [])
 
         expression = parse_one("SELECT a FROM x")
-        self.assertEqual([s.sql() for s in expression.selections], ["a"])
+        self.assertEqual([s.sql() for s in expression.selects], ["a"])
 
         expression = parse_one("SELECT a, b FROM x")
-        self.assertEqual([s.sql() for s in expression.selections], ["a", "b"])
+        self.assertEqual([s.sql() for s in expression.selects], ["a", "b"])
 
     def test_hash(self):
         self.assertEqual(

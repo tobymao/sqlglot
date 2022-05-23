@@ -51,22 +51,18 @@ class Context:
     aliased_columns: list = dataclasses.field(default_factory=list)
 
     def add_selectables(self, *selectables, check_unique=True):
-        return Context(
-            schema=self.schema,
-            sequence=self.sequence,
+        return dataclasses.replace(
+            self,
             selectables=_merge(
                 self.selectables, *selectables, check_unique=check_unique
             ),
-            aliased_columns=self.aliased_columns,
         )
 
-    def branch(self, aliased_columns=None):
-        return Context(
-            schema=self.schema,
-            sequence=self.sequence,
-            selectables=self.selectables,
-            aliased_columns=aliased_columns or [],
-        )
+    def set_aliased_columns(self, aliased_columns):
+        return dataclasses.replace(self, aliased_columns=aliased_columns)
+
+    def reset_sequence(self):
+        return dataclasses.replace(self, sequence=itertools.count())
 
 
 def _qualify_statement(expression, context):
@@ -193,11 +189,13 @@ def _qualify_derived_tables(derived_tables, context, chain=False):
             pushdown_aliased_columns = [c.text("this") for c in aliased_columns]
             table_alias.args.pop("columns")
 
+        subquery_context = (
+            context.add_selectables(selectables if chain else {})
+            .set_aliased_columns(pushdown_aliased_columns)
+            .reset_sequence()
+        )
         subquery_outputs = _qualify_statement(
-            expression=subquery.this,
-            context=context.add_selectables(selectables if chain else {}).branch(
-                pushdown_aliased_columns
-            ),
+            expression=subquery.this, context=subquery_context
         )
 
         selectable_table = alias.text("this")
@@ -267,9 +265,10 @@ def _qualify_columns(columns, selectables):
             if unambiguous_columns is None:
                 unambiguous_columns = _get_unambiguous_columns(selectables)
 
-            column_table = unambiguous_columns.get(column.text("this"))
+            column_name = column.text("this")
+            column_table = unambiguous_columns.get(column_name)
             if not column_table:
-                raise OptimizeError(f"Ambiguous column: {column}")
+                raise OptimizeError(f"Ambiguous column: {column_name}")
             column.set("table", exp.to_identifier(column_table))
 
         column.args.get("table").set("quoted", True)
@@ -288,7 +287,7 @@ def _qualify_subqueries(subqueries, context):
     context (making a subquery a "correlated subquery").
     """
     for subquery in subqueries:
-        _qualify_statement(subquery, context.branch())
+        _qualify_statement(subquery, context.set_aliased_columns([]))
 
 
 def _qualify_outputs(selections, aliased_columns):

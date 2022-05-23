@@ -1,6 +1,5 @@
 SUM(1)
 SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
-
 1
 1.0
 1E2

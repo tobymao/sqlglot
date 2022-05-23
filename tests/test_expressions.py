@@ -207,12 +207,29 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(expression.transform(fun).sql(), "FUN(a)")
 
+    def test_transform_multiple_children(self):
+        expression = parse_one("SELECT * FROM x")
+
+        def fun(node):
+            if isinstance(node, exp.Star):
+                return [parse_one(c) for c in ["a", "b"]]
+            return node
+
+        self.assertEqual(expression.transform(fun).sql(), "SELECT a, b FROM x")
+
     def test_replace(self):
         expression = parse_one("SELECT a, b FROM x")
         expression.find(exp.Column).replace(parse_one("c"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM x")
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
+        expression.find(exp.Column).replace(parse_one("d"), parse_one("e"))
+        self.assertEqual(expression.sql(), "SELECT d, e, b FROM y")
+
+    def test_walk(self):
+        expression = parse_one("SELECT * FROM (SELECT * FROM x)")
+        self.assertEqual(len(list(expression.walk())), 11)
+        self.assertEqual(len(list(expression.walk(stop_types=exp.Subquery))), 4)
 
     def test_functions(self):
         # pylint: disable=too-many-statements

@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 
 from sqlglot import ErrorLevel, ParseError, parse_one, transpile, expressions as exp
+from tests.helpers import load_sql_fixtures, load_sql_fixture_pairs
 
 
 class TestTranspile(unittest.TestCase):
@@ -249,33 +250,24 @@ class TestTranspile(unittest.TestCase):
         mock_logger.warning.assert_any_call("Applying array index offset (%s)", -1)
 
     def test_identity(self):
-        with open(
-            os.path.join(self.fixtures_dir, "identity.sql"), encoding="utf-8"
-        ) as f:
-            for sql in f:
+        self.assertEqual(transpile("")[0], "")
+        for sql in load_sql_fixtures("identity.sql"):
+            with self.subTest(sql):
                 self.assertEqual(transpile(sql)[0], sql.strip())
 
     def test_partial(self):
-        with open(
-            os.path.join(self.fixtures_dir, "partial.sql"), encoding="utf-8"
-        ) as f:
-            for sql in f:
+        for sql in load_sql_fixtures("partial.sql"):
+            with self.subTest(sql):
                 self.assertEqual(
                     transpile(sql, error_level=ErrorLevel.IGNORE)[0], sql.strip()
                 )
 
     def test_pretty(self):
-        with open(os.path.join(self.fixtures_dir, "pretty.sql"), encoding="utf-8") as f:
-            lines = f.read().split(";")
-            size = len(lines)
-
-            for i in range(0, size, 2):
-                if i + 1 < size:
-                    sql = lines[i]
-                    pretty = lines[i + 1].strip()
-                    generated = transpile(sql, pretty=True)[0]
-                    self.assertEqual(generated, pretty)
-                    self.assertEqual(parse_one(sql), parse_one(pretty))
+        for sql, pretty in load_sql_fixture_pairs("pretty.sql"):
+            with self.subTest(sql[:100]):
+                generated = transpile(sql, pretty=True)[0]
+                self.assertEqual(generated, pretty)
+                self.assertEqual(parse_one(sql), parse_one(pretty))
 
     @mock.patch("sqlglot.parser.logger")
     def test_error_level(self, logger):

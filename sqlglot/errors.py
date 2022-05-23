@@ -19,3 +19,7 @@ class ParseError(ValueError):
 
 class TokenError(ValueError):
     pass
+
+
+class OptimizeError(ValueError):
+    pass

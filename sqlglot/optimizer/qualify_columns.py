@@ -69,7 +69,9 @@ def _qualify_statement(expression, context):
         expression (exp.Select or exp.Union): expression to search
         context (Context): current context
     Returns:
-        list: output column names
+        list: output column names.
+        This is used during recursion, so outer queries can know the selectable columns
+        of derived tables and CTEs.
     """
     if isinstance(expression, exp.Select):
         return _qualify_select(expression, context)
@@ -84,15 +86,7 @@ def _qualify_statement(expression, context):
 
 
 def _qualify_select(expression, context):
-    """
-    Search SELECT for columns to qualify.
-
-    Args:
-        expression (exp.Select): expression to search
-        context (Context): current context
-    Returns:
-        list: output column names
-    """
+    """Search SELECT for columns to qualify"""
     # pylint: disable=too-many-locals
     ctes = []
     derived_tables = []  # SELECT * FROM (SELECT ...) <- derived table
@@ -103,7 +97,7 @@ def _qualify_select(expression, context):
     select_stars = []  # SELECT * <- select_star
 
     # Collect all the selections in this context
-    for selection in expression.args.get("expressions", []):
+    for selection in expression.selects:
         if isinstance(selection, exp.Star) or (
             isinstance(selection, exp.Column) and isinstance(selection.this, exp.Star)
         ):
@@ -113,7 +107,7 @@ def _qualify_select(expression, context):
 
     # Collect all the other relevant nodes in this context
     # Only traverse down to the next SELECT statements - we'll recurse into those later
-    for node, parent, _ in expression.walk(stop_types=exp.Select):
+    for node, parent, _ in expression.walk(stop_after=exp.Select):
         if node is expression:
             continue  # Skip this node itself - we only care about children
         if isinstance(node, exp.CTE):
@@ -354,10 +348,12 @@ def _get_unambiguous_columns(selectables):
     selectables = list(selectables.items())
 
     first_table, first_columns = selectables[0]
-    unambiguous_columns = {col: first_table for col in _unique_columns(first_columns)}
+    unambiguous_columns = {
+        col: first_table for col in _find_unique_columns(first_columns)
+    }
 
     for table, columns in selectables[1:]:
-        unique = _unique_columns(columns)
+        unique = _find_unique_columns(columns)
         ambiguous = set(unambiguous_columns).intersection(unique)
         for column in ambiguous:
             unambiguous_columns.pop(column)
@@ -367,12 +363,12 @@ def _get_unambiguous_columns(selectables):
     return unambiguous_columns
 
 
-def _unique_columns(columns):
+def _find_unique_columns(columns):
     """
     Find the unique columns in a list of columns.
 
     Example:
-        >>> sorted(_unique_columns(["a", "b", "b", "c"]))
+        >>> sorted(_find_unique_columns(["a", "b", "b", "c"]))
         ['a', 'c']
 
     This is necessary because duplicate column names are ambiguous.

@@ -9,17 +9,21 @@ class ErrorLevel(AutoName):
     RAISE = auto()
 
 
-class UnsupportedError(ValueError):
+class SqlglotError(ValueError):
     pass
 
 
-class ParseError(ValueError):
+class UnsupportedError(SqlglotError):
     pass
 
 
-class TokenError(ValueError):
+class ParseError(SqlglotError):
     pass
 
 
-class OptimizeError(ValueError):
+class TokenError(SqlglotError):
+    pass
+
+
+class OptimizeError(SqlglotError):
     pass

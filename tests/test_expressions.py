@@ -138,6 +138,16 @@ class TestExpressions(unittest.TestCase):
         )
         self.assertEqual(expression.named_selects, ["foo", "bar", "bazz"])
 
+    def test_selections(self):
+        expression = parse_one("SELECT FROM x")
+        self.assertEqual(expression.selections, [])
+
+        expression = parse_one("SELECT a FROM x")
+        self.assertEqual([s.sql() for s in expression.selections], ["a"])
+
+        expression = parse_one("SELECT a, b FROM x")
+        self.assertEqual([s.sql() for s in expression.selections], ["a", "b"])
+
     def test_hash(self):
         self.assertEqual(
             {
@@ -229,7 +239,7 @@ class TestExpressions(unittest.TestCase):
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")
         self.assertEqual(len(list(expression.walk())), 11)
-        self.assertEqual(len(list(expression.walk(stop_types=exp.Subquery))), 4)
+        self.assertEqual(len(list(expression.walk(stop_after=exp.Subquery))), 4)
 
     def test_functions(self):
         # pylint: disable=too-many-statements

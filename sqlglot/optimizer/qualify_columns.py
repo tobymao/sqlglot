@@ -4,7 +4,7 @@ import typing
 
 import sqlglot.expressions as exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.helper import select_scope
+from sqlglot.optimizer.helper import SelectParts
 
 
 def qualify_columns(expression, schema):
@@ -108,7 +108,7 @@ def _qualify_select(expression, context):
     Returns:
          Same as `_qualify_statement`
     """
-    scope = select_scope(expression)
+    parts = SelectParts.build(expression)
     selections = []  # SELECT x.a <- selection
     select_stars = []  # SELECT * <- select_star
 
@@ -122,25 +122,25 @@ def _qualify_select(expression, context):
             selections.append(selection)
 
     context = context.add_selectables(
-        _qualify_derived_tables(scope.ctes, context, chain=True)
+        _qualify_derived_tables(parts.ctes, context, chain=True)
     )
 
-    selectables = _qualify_tables(scope.tables, context)
+    selectables = _qualify_tables(parts.tables, context)
 
     # Don't update context.selectables yet, as derived tables can't depend on each other.
     selectables = _merge(
-        selectables, _qualify_derived_tables(scope.derived_tables, context)
+        selectables, _qualify_derived_tables(parts.derived_tables, context)
     )
 
     # Again, don't update the context yet.
     # We don't want to expand CTEs or outer query selectables that haven't been
     # explicitly selected from in this context.
     expansions = _expand_stars(select_stars, selectables)
-    scope.columns.extend(expansions)
+    parts.columns.extend(expansions)
     selections.extend(expansions)
 
-    _qualify_columns(scope.columns, selectables, context)
-    _qualify_subqueries(scope.subqueries, selectables, context)
+    _qualify_columns(parts.columns, selectables, context)
+    _qualify_subqueries(parts.subqueries, selectables, context)
     return _qualify_outputs(selections, context.aliased_columns)
 
 

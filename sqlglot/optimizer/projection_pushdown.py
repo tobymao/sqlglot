@@ -3,10 +3,10 @@ from copy import copy
 
 from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.helper import select_scope
+from sqlglot.optimizer.helper import SelectParts
 
 # Sentinel value that means an outer query selecting ALL columns
-SELECT_ALL = "*"
+SELECT_ALL = object()
 
 
 def projection_pushdown(expression):
@@ -36,7 +36,7 @@ def _pushdown_statement(expression, parent_selections):
 
     Args:
         expression (exp.Select or exp.Union): expression to search
-        parent_selections (set or str): columns being selected by an outer query.
+        parent_selections: columns being selected by an outer query.
             This can be the special value `SELECT_ALL`, which mean the outer query
             is selecting everything.
     Returns:
@@ -71,11 +71,11 @@ def _pushdown_select(expression, parent_selections):
     Returns:
          Same as `_pushdown_statement`
     """
-    scope = select_scope(expression)
+    parts = SelectParts.build(expression)
 
     # Collect a map of all referenced columns
     columns = {}
-    for column in scope.columns:
+    for column in parts.columns:
         selectable_name = column.text("table")
         column_name = column.text("this")
         if not selectable_name:
@@ -93,7 +93,7 @@ def _pushdown_select(expression, parent_selections):
     if not expression.args.get("distinct"):
         columns = _remove_unused_selections(expression, columns, parent_selections)
 
-    for subquery in scope.subqueries:
+    for subquery in parts.subqueries:
         # Subqueries (as opposed to "derived_tables") aren't "selectable".
         # So none of the columns in the current scope can reference these.
         _pushdown_statement(subquery, SELECT_ALL)
@@ -104,10 +104,10 @@ def _pushdown_select(expression, parent_selections):
     for column in columns.values():
         derived_table_selections[column.text("table")].add(column.text("this"))
 
-    for subquery in scope.derived_tables:
+    for subquery in parts.derived_tables:
         _pushdown_statement(subquery.this, derived_table_selections[subquery.alias])
 
-    _pushdown_ctes(scope.ctes, derived_table_selections)
+    _pushdown_ctes(parts.ctes, derived_table_selections)
 
     # Push the selections back UP so they can be used by CTEs in outer queries
     return derived_table_selections
@@ -137,7 +137,7 @@ def _remove_unused_selections(expression, columns, parent_selections):
             )
             raise OptimizeError(msg)
 
-        if parent_selections == SELECT_ALL or selection.alias in parent_selections:
+        if parent_selections is SELECT_ALL or selection.alias in parent_selections:
             new_selections.append(selection)
         else:
             # Pop the column out of the set of all columns.

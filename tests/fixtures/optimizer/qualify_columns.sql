@@ -19,6 +19,15 @@ SELECT x.a AS b FROM x;
 SELECT 1, 2 FROM x;
 SELECT 1 AS "_col_0", 2 AS "_col_1" FROM x;
 
+SELECT a + b FROM x;
+SELECT x.a + x.b AS "_col_0" FROM x;
+
+SELECT a + b FROM x;
+SELECT x.a + x.b AS "_col_0" FROM x;
+
+SELECT a, SUM(b) FROM x WHERE a > 1 AND b > 1 GROUP BY a;
+SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------
@@ -39,6 +48,9 @@ SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0";
 
 SELECT a FROM (SELECT a FROM (SELECT a FROM x));
 SELECT "_q_0".a AS a FROM (SELECT "_q_1".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_1") AS "_q_0";
+
+SELECT x.a FROM x AS x JOIN (SELECT * FROM x);
+SELECT x.a AS a FROM x AS x JOIN (SELECT x.a AS a, x.b AS b FROM x) AS "_q_0";
 
 --------------------------------------
 -- Joins

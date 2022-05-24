@@ -3,7 +3,7 @@ from sqlglot import expressions as exp
 
 
 @dataclasses.dataclass
-class SelectScope:
+class SelectParts:
     """
     Collection of SELECT child nodes in the current SELECT scope.
 
@@ -23,37 +23,37 @@ class SelectScope:
     tables: list = dataclasses.field(default_factory=list)
     columns: list = dataclasses.field(default_factory=list)
 
+    @classmethod
+    def build(cls, expression):
+        """
+        Collect some common arbitrarily-nested child nodes from a SELECT expression.
 
-def select_scope(select):
-    """
-    Collect some common arbitrarily-nested child nodes from a SELECT expression.
+        For example, given the following statement:
+            SELECT a + 1 AS b FROM (SELECT a FROM x)
 
-    For example, given the following statement:
-        SELECT a + 1 AS b FROM (SELECT a FROM x)
+        This will find and collect all the child nodes in the outer query, but it
+        won't traverse into the inner query.
 
-    This will find and collect all the child nodes in the outer query, but it
-    won't traverse into the inner query.
+        Args:
+             expression (exp.Select): expression to search
+        Returns:
+            SelectParts: SelectParts instance
+        """
+        scope = SelectParts()
 
-    Args:
-         select (exp.Select): expression to search
-    Returns:
-        SelectScope: SelectScope instance
-    """
-    scope = SelectScope()
+        for node, parent, _ in expression.walk(stop_after=(exp.Select, exp.Union)):
+            if node is expression:
+                continue  # Skip this node itself - we only care about children
+            if isinstance(node, (exp.Select, exp.Union)):
+                if isinstance(parent, exp.CTE):
+                    scope.ctes.append(parent)
+                elif isinstance(parent, exp.Subquery):
+                    scope.derived_tables.append(parent)
+                else:
+                    scope.subqueries.append(node)
+            elif isinstance(node, exp.Table):
+                scope.tables.append(node)
+            elif isinstance(node, exp.Column):
+                scope.columns.append(node)
 
-    for node, parent, _ in select.walk(stop_after=(exp.Select, exp.Union)):
-        if node is select:
-            continue  # Skip this node itself - we only care about children
-        if isinstance(node, (exp.Select, exp.Union)):
-            if isinstance(parent, exp.CTE):
-                scope.ctes.append(parent)
-            elif isinstance(parent, exp.Subquery):
-                scope.derived_tables.append(parent)
-            else:
-                scope.subqueries.append(node)
-        elif isinstance(node, exp.Table):
-            scope.tables.append(node)
-        elif isinstance(node, exp.Column):
-            scope.columns.append(node)
-
-    return scope
+        return scope

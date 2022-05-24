@@ -1,9 +1,5 @@
+from sqlglot.expressions import FALSE, NULL, TRUE
 import sqlglot.expressions as exp
-
-
-TRUE = exp.Boolean(this=True)
-FALSE = exp.Boolean(this=False)
-NULL = exp.Null()
 
 
 def simplify(expression):

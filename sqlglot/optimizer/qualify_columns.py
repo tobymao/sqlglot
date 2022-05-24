@@ -4,6 +4,7 @@ import typing
 
 import sqlglot.expressions as exp
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.helper import select_scope
 
 
 def qualify_columns(expression, schema):
@@ -42,12 +43,16 @@ class Context:
         aliased_columns: List of column names.
             This should be set for derived tables or CTEs where the parent context
             defines column names for an alias, e.g. "SELECT * FROM (SELECT * FROM x) AS y(a, b)"
+        correlated_selectables: Mapping of name to selectable columns.
+            This is different from the regular `selectables` because correlated subqueries don't
+            need to explicitly add these in a FROM or JOIN clause.
     """
 
     schema: dict
     sequence: typing.Iterable = dataclasses.field(default_factory=itertools.count)
     selectables: dict = dataclasses.field(default_factory=dict)
     aliased_columns: list = dataclasses.field(default_factory=list)
+    correlated_selectables: dict = dataclasses.field(default_factory=dict)
 
     def add_selectables(self, *selectables, check_unique=True):
         return dataclasses.replace(
@@ -55,6 +60,12 @@ class Context:
             selectables=_merge(
                 self.selectables, *selectables, check_unique=check_unique
             ),
+        )
+
+    def set_correlated_selectables(self, selectables):
+        return dataclasses.replace(
+            self,
+            correlated_selectables=selectables,
         )
 
     def set_aliased_columns(self, aliased_columns):
@@ -76,6 +87,11 @@ def _qualify_statement(expression, context):
     if isinstance(expression, exp.Select):
         return _qualify_select(expression, context)
     if isinstance(expression, exp.Union):
+        if expression.ctes:
+            context = context.add_selectables(
+                _qualify_derived_tables(expression.ctes, context, chain=True)
+            )
+
         left = _qualify_select(expression.this, context)
         right = _qualify_statement(expression.args.get("expression"), context)
         if set(left) != set(right):
@@ -86,13 +102,13 @@ def _qualify_statement(expression, context):
 
 
 def _qualify_select(expression, context):
-    """Search SELECT for columns to qualify"""
-    # pylint: disable=too-many-locals
-    ctes = []
-    derived_tables = []  # SELECT * FROM (SELECT ...) <- derived table
-    subqueries = []  # SELECT * FROM x WHERE a IN (SELECT ...) <- subquery
-    tables = []
-    columns = []
+    """
+    Search SELECT for columns to qualify.
+
+    Returns:
+         Same as `_qualify_statement`
+    """
+    scope = select_scope(expression)
     selections = []  # SELECT x.a <- selection
     select_stars = []  # SELECT * <- select_star
 
@@ -105,44 +121,26 @@ def _qualify_select(expression, context):
         else:
             selections.append(selection)
 
-    # Collect all the other relevant nodes in this context
-    # Only traverse down to the next SELECT statements - we'll recurse into those later
-    for node, parent, _ in expression.walk(stop_after=exp.Select):
-        if node is expression:
-            continue  # Skip this node itself - we only care about children
-        if isinstance(node, exp.CTE):
-            ctes.append(node)
-        elif isinstance(node, (exp.Select, exp.Union)):
-            if isinstance(parent, exp.Subquery):
-                derived_tables.append(parent)
-            else:
-                subqueries.append(node)
-        elif isinstance(node, exp.Table):
-            tables.append(node)
-        elif isinstance(node, exp.Column):
-            columns.append(node)
-
     context = context.add_selectables(
-        _qualify_derived_tables(ctes, context, chain=True)
+        _qualify_derived_tables(scope.ctes, context, chain=True)
     )
 
-    selectables = _qualify_tables(tables, context)
+    selectables = _qualify_tables(scope.tables, context)
 
     # Don't update context.selectables yet, as derived tables can't depend on each other.
-    selectables = _merge(selectables, _qualify_derived_tables(derived_tables, context))
+    selectables = _merge(
+        selectables, _qualify_derived_tables(scope.derived_tables, context)
+    )
 
     # Again, don't update the context yet.
     # We don't want to expand CTEs or outer query selectables that haven't been
     # explicitly selected from in this context.
     expansions = _expand_stars(select_stars, selectables)
-    columns.extend(expansions)
+    scope.columns.extend(expansions)
     selections.extend(expansions)
 
-    # OK - now we can update the context.
-    context = context.add_selectables(selectables, check_unique=False)
-
-    _qualify_columns(columns, context.selectables)
-    _qualify_subqueries(subqueries, context)
+    _qualify_columns(scope.columns, selectables, context)
+    _qualify_subqueries(scope.subqueries, selectables, context)
     return _qualify_outputs(selections, context.aliased_columns)
 
 
@@ -243,8 +241,11 @@ def _expand_stars(select_stars, selectables):
     return result
 
 
-def _qualify_columns(columns, selectables):
+def _qualify_columns(columns, selectables, context):
     """Given the map of selectable tables to columns, fully qualify columns"""
+
+    # If correlated_selectables is set, this can be a correlated subquery
+    selectables = _merge(selectables, context.correlated_selectables)
 
     unambiguous_columns = None  # lazily loaded
 
@@ -264,9 +265,9 @@ def _qualify_columns(columns, selectables):
             column.set("table", exp.to_identifier(column_table))
 
 
-def _qualify_subqueries(subqueries, context):
+def _qualify_subqueries(subqueries, selectables, context):
     """
-    Derived tables are subqueries that are NOT selectable in a surrounding context.
+    Regular ol' "subqueries" are subqueries that are NOT selectable in a surrounding context.
 
     For example:
         SELECT * FROM x WHERE a IN (SELECT ...)
@@ -275,8 +276,11 @@ def _qualify_subqueries(subqueries, context):
     Also unlike derived tables, these subqueries CAN reference selectables from the surrounding
     context (making a subquery a "correlated subquery").
     """
+    child_context = context.set_correlated_selectables(selectables).set_aliased_columns(
+        []
+    )
     for subquery in subqueries:
-        _qualify_statement(subquery, context.set_aliased_columns([]))
+        _qualify_statement(subquery, child_context)
 
 
 def _qualify_outputs(selections, aliased_columns):

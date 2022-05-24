@@ -148,6 +148,13 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("SELECT a, b FROM x")
         self.assertEqual([s.sql() for s in expression.selects], ["a", "b"])
 
+    def test_ctes(self):
+        expression = parse_one("SELECT a FROM x")
+        self.assertEqual(expression.ctes, [])
+
+        expression = parse_one("WITH x AS (SELECT a FROM y) SELECT a FROM x")
+        self.assertEqual([s.sql() for s in expression.ctes], ["x AS (SELECT a FROM y)"])
+
     def test_hash(self):
         self.assertEqual(
             {

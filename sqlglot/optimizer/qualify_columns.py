@@ -267,7 +267,7 @@ def _qualify_columns(columns, selectables, context):
 
 def _qualify_subqueries(subqueries, selectables, context):
     """
-    Derived tables are subqueries that are NOT selectable in a surrounding context.
+    Regular ol' "subqueries" are subqueries that are NOT selectable in a surrounding context.
 
     For example:
         SELECT * FROM x WHERE a IN (SELECT ...)

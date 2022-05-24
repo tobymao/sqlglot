@@ -9,7 +9,7 @@ from sqlglot.optimizer.helper import select_scope
 SELECT_ALL = "*"
 
 
-def remove_unused_columns(expression):
+def projection_pushdown(expression):
     """
     Rewrite sqlglot AST to remove unused columns projections.
 
@@ -17,7 +17,7 @@ def remove_unused_columns(expression):
         >>> import sqlglot
         >>> sql = "SELECT y.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x) AS y"
         >>> expression = sqlglot.parse_one(sql)
-        >>> remove_unused_columns(expression).sql()
+        >>> projection_pushdown(expression).sql()
         'SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y'
 
     Args:
@@ -49,7 +49,7 @@ def _pushdown_statement(expression, parent_selections):
         return _pushdown_select(expression, parent_selections)
     if isinstance(expression, exp.Union):
         if expression.args.get("distinct"):
-            # We can't remove selections on UNION ALL
+            # We can't remove selections on simple UNION
             parent_selections = SELECT_ALL
 
         selections = _pushdown_select(expression.this, parent_selections)
@@ -91,11 +91,11 @@ def _pushdown_select(expression, parent_selections):
 
     # Collect all the selections
     if not expression.args.get("distinct"):
-        columns = _remove_unused_columns(expression, columns, parent_selections)
+        columns = _remove_unused_selections(expression, columns, parent_selections)
 
     for subquery in scope.subqueries:
         # Subqueries (as opposed to "derived_tables") aren't "selectable".
-        # So the none of the columns in the current scope to reference these.
+        # So none of the columns in the current scope can reference these.
         _pushdown_statement(subquery, SELECT_ALL)
 
     # Now that we've removed all the unused columns from the selections, let's
@@ -124,7 +124,7 @@ def _pushdown_ctes(ctes, selections):
         )
 
 
-def _remove_unused_columns(expression, columns, parent_selections):
+def _remove_unused_selections(expression, columns, parent_selections):
     columns = copy(columns)
 
     new_selections = []

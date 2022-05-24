@@ -1,0 +1,3 @@
+SELECT a AS a FROM x;
+SELECT x.a FROM x;
+INSERT INTO x VALUES (1, 2);

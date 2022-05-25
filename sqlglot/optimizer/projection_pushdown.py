@@ -32,7 +32,7 @@ def projection_pushdown(expression):
     # over the result in reverse order. This should ensure that the set of selected
     # columns for a particular scope are completely build by the time we get to it.
     for scope in reversed(list(traverse_scope(expression))):
-        parent_selections = referenced_columns.get(id(scope), {SELECT_ALL})
+        parent_selections = referenced_columns.get(scope, {SELECT_ALL})
 
         if scope.expression.args.get("distinct"):
             # We can't remove columns SELECT DISTINCT nor UNION DISTINCT
@@ -40,8 +40,8 @@ def projection_pushdown(expression):
 
         if isinstance(scope.expression, exp.Union):
             left, right = scope.union
-            referenced_columns[id(left)] = parent_selections
-            referenced_columns[id(right)] = parent_selections
+            referenced_columns[left] = parent_selections
+            referenced_columns[right] = parent_selections
 
         if isinstance(scope.expression, exp.Select):
             _remove_unused_selections(scope, parent_selections)
@@ -56,7 +56,7 @@ def projection_pushdown(expression):
             # Push the selected columns down to the next scope
             for name, child_scope in scope.referenced_scopes.items():
                 columns = selects.get(name) or set()
-                referenced_columns[id(child_scope)].update(columns)
+                referenced_columns[child_scope].update(columns)
 
     return expression
 

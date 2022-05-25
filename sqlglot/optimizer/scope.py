@@ -116,10 +116,10 @@ class Scope:
         For example, for the following expression:
             SELECT 1 as a, 2 as b FROM x
 
-        The outputs are {"a", "b"}
+        The outputs are ["a", "b"]
 
         Returns:
-            set[str]: outputs
+            list[str]: outputs
         """
         return self.expression.named_selects
 
@@ -249,6 +249,9 @@ def _traverse_derived_tables(derived_tables, scope):
         ):
             yield child_scope
             # Tables without aliases will be set as ""
+            # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
+            # Until then, this means that only a single, unaliased derived table is allowed (rather,
+            # the latest one wins.
             scope.selectables[derived_table.alias] = child_scope
 
 

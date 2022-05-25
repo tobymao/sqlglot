@@ -8,4 +8,4 @@ INSERT INTO x VALUES (1, 2);
 SELECT a FROM x AS z JOIN y AS z;
 WITH z AS (SELECT * FROM x) SELECT * FROM x AS z;
 SELECT a FROM x JOIN (SELECT b FROM y WHERE y.b = x.c);
-SELECT a FROM x AS y JOIN (SELECT a FROM y) AS q ON y.a = q.a
+SELECT a FROM x AS y JOIN (SELECT a FROM y) AS q ON y.a = q.a;

@@ -245,7 +245,14 @@ class TestExpressions(unittest.TestCase):
 
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")
-        self.assertEqual(len(list(expression.walk())), 11)
+        self.assertEqual(len(list(expression.walk())), 9)
+        self.assertEqual(len(list(expression.walk(bfs=False))), 9)
+        self.assertTrue(
+            all(isinstance(e, exp.Expression) for e, _, _ in expression.walk())
+        )
+        self.assertTrue(
+            all(isinstance(e, exp.Expression) for e, _, _ in expression.walk(bfs=False))
+        )
         self.assertEqual(len(list(expression.walk(stop_after=exp.Subquery))), 4)
 
     def test_functions(self):

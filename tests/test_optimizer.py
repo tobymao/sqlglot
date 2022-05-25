@@ -98,9 +98,3 @@ class TestOptimizer(unittest.TestCase):
                     expression.sql(),
                     expected,
                 )
-
-    def test_projection_pushdown__invalid(self):
-        for sql in load_sql_fixtures("optimizer/projection_pushdown__invalid.sql"):
-            with self.subTest(sql):
-                with self.assertRaises(OptimizeError):
-                    projection_pushdown(parse_one(sql))

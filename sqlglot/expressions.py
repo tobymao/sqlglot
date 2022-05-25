@@ -141,28 +141,21 @@ class Expression:
                 return None
         return ancestor
 
-    def walk(self, bfs=True, stop_after=None):
+    def walk(self, bfs=True):
         """
         Returns a generator object which visits all nodes in this tree.
 
         Args:
             bfs (bool): if set to True the BFS traversal order will be applied,
                 otherwise the DFS traversal will be used instead.
-            stop_after (type or tuple of types): Expression type (or tuple of Expression types)
-                to prune the BFS search tree on. That is, if a node of this type is encountered,
-                it will be yielded, but it's children will not be yielded.
 
         Returns:
             the generator object.
         """
-        prune = None
-        if stop_after:
-            prune = lambda n, *_: isinstance(n, stop_after) and n is not self
-
         if bfs:
-            yield from self.bfs(prune=prune)
+            yield from self.bfs()
         else:
-            yield from self.dfs(self.parent, None, prune=prune)
+            yield from self.dfs(self.parent)
 
     def dfs(self, parent=None, key=None, prune=None):
         """
@@ -386,6 +379,16 @@ class Condition(Expression):
         return not_(self)
 
 
+class DerivedTable:
+    @property
+    def alias_column_names(self):
+        table_alias = self.args.get("alias")  # pylint: disable=no-member
+        if not table_alias:
+            return []
+        column_list = table_alias.assert_is(TableAlias).args.get("columns") or []
+        return [c.name for c in column_list]
+
+
 class Annotation(Expression):
     arg_types = {
         "this": True,
@@ -437,7 +440,7 @@ class WithinGroup(Expression):
     arg_types = {"this": True, "expression": False}
 
 
-class CTE(Expression):
+class CTE(Expression, DerivedTable):
     arg_types = {"this": True, "alias": True}
 
 
@@ -644,6 +647,14 @@ class Union(Subqueryable, Expression):
             self.args["this"].named_selects + self.args["expression"].named_selects
         )
         return sorted(set(named_selects), key=named_selects.index)
+
+    @property
+    def left(self):
+        return self.this
+
+    @property
+    def right(self):
+        return self.args.get("expression")
 
 
 class Except(Union):
@@ -1201,7 +1212,7 @@ class Select(Subqueryable, Expression):
         return self.args.get("expressions", [])
 
 
-class Subquery(Expression):
+class Subquery(Expression, DerivedTable):
     arg_types = {"this": True, "alias": False}
 
 

@@ -20,8 +20,9 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     from sqlglot.optimizer import qualify_tables as module2
     from sqlglot.optimizer import quote_identities as module3
     from sqlglot.optimizer import projection_pushdown as module4
+    from sqlglot.optimizer import scope as module5
 
-    for mod in (module1, module2, module3, module4):
+    for mod in (module1, module2, module3, module4, module5):
         tests.addTests(doctest.DocTestSuite(mod))
     return tests
 
@@ -98,9 +99,3 @@ class TestOptimizer(unittest.TestCase):
                     expression.sql(),
                     expected,
                 )
-
-    def test_projection_pushdown__invalid(self):
-        for sql in load_sql_fixtures("optimizer/projection_pushdown__invalid.sql"):
-            with self.subTest(sql):
-                with self.assertRaises(OptimizeError):
-                    projection_pushdown(parse_one(sql))

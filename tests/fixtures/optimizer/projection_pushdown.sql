@@ -13,9 +13,6 @@ SELECT x1.a AS a FROM (SELECT x.a AS a FROM x) AS x1, (SELECT 1 AS "_" FROM x) A
 SELECT x1.a FROM (SELECT * FROM x) AS x1, (SELECT * FROM x) AS x2;
 SELECT x1.a AS a FROM (SELECT x.a AS a FROM x) AS x1, (SELECT 1 AS "_" FROM x) AS x2;
 
-SELECT a FROM x WHERE a IN (SELECT * FROM y WHERE x.b = y.b);
-SELECT x.a AS a FROM x WHERE x.a IN (SELECT y.b AS b, y.c AS c FROM y WHERE x.b = y.b);
-
 SELECT a FROM (SELECT DISTINCT a, b FROM x);
 SELECT "_q_0".a AS a FROM (SELECT DISTINCT x.a AS a, x.b AS b FROM x) AS "_q_0";
 

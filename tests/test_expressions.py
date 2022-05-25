@@ -148,6 +148,27 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("SELECT a, b FROM x")
         self.assertEqual([s.sql() for s in expression.selects], ["a", "b"])
 
+    def test_alias_column_names(self):
+        expression = parse_one("SELECT * FROM (SELECT * FROM x) AS y")
+        subquery = expression.find(exp.Subquery)
+        self.assertEqual(subquery.alias_column_names, [])
+
+        expression = parse_one("SELECT * FROM (SELECT * FROM x) AS y(a)")
+        subquery = expression.find(exp.Subquery)
+        self.assertEqual(subquery.alias_column_names, ["a"])
+
+        expression = parse_one("SELECT * FROM (SELECT * FROM x) AS y(a, b)")
+        subquery = expression.find(exp.Subquery)
+        self.assertEqual(subquery.alias_column_names, ["a", "b"])
+
+        expression = parse_one("WITH y AS (SELECT * FROM x) SELECT * FROM y")
+        cte = expression.find(exp.CTE)
+        self.assertEqual(cte.alias_column_names, [])
+
+        expression = parse_one("WITH y(a, b) AS (SELECT * FROM x) SELECT * FROM y")
+        cte = expression.find(exp.CTE)
+        self.assertEqual(cte.alias_column_names, ["a", "b"])
+
     def test_ctes(self):
         expression = parse_one("SELECT a FROM x")
         self.assertEqual(expression.ctes, [])
@@ -253,7 +274,6 @@ class TestExpressions(unittest.TestCase):
         self.assertTrue(
             all(isinstance(e, exp.Expression) for e, _, _ in expression.walk(bfs=False))
         )
-        self.assertEqual(len(list(expression.walk(stop_after=exp.Subquery))), 4)
 
     def test_functions(self):
         # pylint: disable=too-many-statements

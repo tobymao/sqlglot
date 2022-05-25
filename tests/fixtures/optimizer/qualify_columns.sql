@@ -4,6 +4,12 @@
 SELECT a FROM x;
 SELECT x.a AS a FROM x;
 
+SELECT a FROM x AS z;
+SELECT z.a AS a FROM x AS z;
+
+SELECT z.a FROM z;
+SELECT z.a AS a FROM z;
+
 SELECT a AS a FROM x;
 SELECT x.a AS a FROM x;
 
@@ -47,7 +53,7 @@ SELECT a FROM (SELECT a AS a FROM x);
 SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0";
 
 SELECT a FROM (SELECT a FROM (SELECT a FROM x));
-SELECT "_q_0".a AS a FROM (SELECT "_q_1".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_1") AS "_q_0";
+SELECT "_q_1".a AS a FROM (SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0") AS "_q_1";
 
 SELECT x.a FROM x AS x JOIN (SELECT * FROM x);
 SELECT x.a AS a FROM x AS x JOIN (SELECT x.a AS a, x.b AS b FROM x) AS "_q_0";
@@ -83,7 +89,7 @@ SELECT (SELECT c FROM y) FROM x;
 SELECT (SELECT y.c AS c FROM y) AS "_col_0" FROM x;
 
 SELECT a FROM (SELECT a FROM x) WHERE a IN (SELECT b FROM (SELECT b FROM y));
-SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0" WHERE "_q_0".a IN (SELECT "_q_1".b AS b FROM (SELECT y.b AS b FROM y) AS "_q_1");
+SELECT "_q_1".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_1" WHERE "_q_1".a IN (SELECT "_q_0".b AS b FROM (SELECT y.b AS b FROM y) AS "_q_0");
 
 --------------------------------------
 -- Correlated subqueries

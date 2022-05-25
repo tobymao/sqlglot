@@ -1,10 +1,8 @@
-import dataclasses
 import itertools
-import typing
 
 import sqlglot.expressions as exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.helper import SelectParts
+from sqlglot.optimizer.scope import traverse_scope
 
 
 def qualify_columns(expression, schema):
@@ -25,238 +23,68 @@ def qualify_columns(expression, schema):
         sqlglot.Expression: qualified expression
     """
     expression = expression.copy()
-    _qualify_statement(expression, Context(schema=schema))
+
+    # We'll use this when generating alias names
+    sequence = itertools.count()
+
+    for scope in traverse_scope(expression):
+        _check_union_outputs(scope)
+        _qualify_derived_tables(scope.ctes, scope, sequence)
+        _qualify_derived_tables(scope.derived_tables, scope, sequence)
+        _qualify_columns(scope, schema)
+        _expand_stars(scope, schema)
+        _qualify_outputs(scope)
     return expression
 
 
-@dataclasses.dataclass
-class Context:
-    """
-    Scoped context for a SELECT statement.
-
-    This is a convenience for passing information between CTEs, subqueries, etc.
-
-    Attributes:
-        schema: Mapping of table names to all available columns
-        sequence: Auto-incrementing sequence
-        selectables: Mapping of name to selectable columns
-        aliased_columns: List of column names.
-            This should be set for derived tables or CTEs where the parent context
-            defines column names for an alias, e.g. "SELECT * FROM (SELECT * FROM x) AS y(a, b)"
-        correlated_selectables: Mapping of name to selectable columns.
-            This is different from the regular `selectables` because correlated subqueries don't
-            need to explicitly add these in a FROM or JOIN clause.
-    """
-
-    schema: dict
-    sequence: typing.Iterable = dataclasses.field(default_factory=itertools.count)
-    selectables: dict = dataclasses.field(default_factory=dict)
-    aliased_columns: list = dataclasses.field(default_factory=list)
-    correlated_selectables: dict = dataclasses.field(default_factory=dict)
-
-    def add_selectables(self, *selectables, check_unique=True):
-        return dataclasses.replace(
-            self,
-            selectables=_merge(
-                self.selectables, *selectables, check_unique=check_unique
-            ),
+def _check_union_outputs(scope):
+    """Assert that the outputs of both sides of a UNION are the same"""
+    if not isinstance(scope.expression, exp.Union):
+        return
+    left, right = scope.union
+    if left.outputs != right.outputs:
+        raise OptimizeError(
+            f"UNION outputs not equal: {left.outputs} vs. {left.outputs}"
         )
 
-    def set_correlated_selectables(self, selectables):
-        return dataclasses.replace(
-            self,
-            correlated_selectables=selectables,
-        )
 
-    def set_aliased_columns(self, aliased_columns):
-        return dataclasses.replace(self, aliased_columns=aliased_columns)
+def _qualify_derived_tables(derived_tables, scope, sequence):
+    """Ensure all derived tables have aliases"""
+    for derived_table in derived_tables:
+        table_alias = derived_table.args.get("alias")
 
-
-def _qualify_statement(expression, context):
-    """
-    Search SELECT or UNION for columns to qualify.
-
-    Args:
-        expression (exp.Select or exp.Union): expression to search
-        context (Context): current context
-    Returns:
-        list: output column names.
-        This is used during recursion, so outer queries can know the selectable columns
-        of derived tables and CTEs.
-    """
-    if isinstance(expression, exp.Select):
-        return _qualify_select(expression, context)
-    if isinstance(expression, exp.Union):
-        if expression.ctes:
-            context = context.add_selectables(
-                _qualify_derived_tables(expression.ctes, context, chain=True)
-            )
-
-        left = _qualify_select(expression.this, context)
-        right = _qualify_statement(expression.args.get("expression"), context)
-        if set(left) != set(right):
-            raise OptimizeError(f"UNION columns not equal: {left} vs. {right}")
-        return left
-
-    raise OptimizeError(f"Unexpected statement type: {type(expression)}")
-
-
-def _qualify_select(expression, context):
-    """
-    Search SELECT for columns to qualify.
-
-    Returns:
-         Same as `_qualify_statement`
-    """
-    parts = SelectParts.build(expression)
-    selections = []  # SELECT x.a <- selection
-    select_stars = []  # SELECT * <- select_star
-
-    # Collect all the selections in this context
-    for selection in expression.selects:
-        if isinstance(selection, exp.Star) or (
-            isinstance(selection, exp.Column) and isinstance(selection.this, exp.Star)
-        ):
-            select_stars.append(selection)
-        else:
-            selections.append(selection)
-
-    context = context.add_selectables(
-        _qualify_derived_tables(parts.ctes, context, chain=True)
-    )
-
-    selectables = _qualify_tables(parts.tables, context)
-
-    # Don't update context.selectables yet, as derived tables can't depend on each other.
-    selectables = _merge(
-        selectables, _qualify_derived_tables(parts.derived_tables, context)
-    )
-
-    # Again, don't update the context yet.
-    # We don't want to expand CTEs or outer query selectables that haven't been
-    # explicitly selected from in this context.
-    expansions = _expand_stars(select_stars, selectables)
-    parts.columns.extend(expansions)
-    selections.extend(expansions)
-
-    _qualify_columns(parts.columns, selectables, context)
-    _qualify_subqueries(parts.subqueries, selectables, context)
-    return _qualify_outputs(selections, context.aliased_columns)
-
-
-def _qualify_derived_tables(derived_tables, context, chain=False):
-    """
-    Derived tables are subqueries that are selectable in a surrounding context.
-
-    For example:
-        SELECT * FROM (SELECT ...) AS x  <- derived table
-        WITH x AS (SELECT ...) <- derived table
-
-    In both cases, x can be selected from.
-
-    Some derived tables can have their selectable context chained (e.g. CTEs and lateral joins).
-    That is, a CTE can refer to selectables in preceding CTEs.
-    """
-    selectables = {}
-    for subquery in derived_tables:
-        table_alias = subquery.args.get("alias")
         if not table_alias:
             table_alias = exp.TableAlias()
-            subquery.set("alias", table_alias)
+            derived_table.set("alias", table_alias)
 
         alias = table_alias.args.get("this")
         if not alias:
-            alias = exp.to_identifier(f"_q_{next(context.sequence)}")
+            alias = exp.to_identifier(f"_q_{next(sequence)}")
+            scope.rename_selectable(None, alias.name)
             table_alias.set("this", alias)
 
-        # Remove any alias columns (e.g. "a, b" in this: "SELECT * FROM (...) AS x(a, b)").
-        # If these are set, push them down to the subquery to overwrite the selection aliases.
-        pushdown_aliased_columns = []
-        aliased_columns = table_alias.args.get("columns", [])
-        if aliased_columns:
-            pushdown_aliased_columns = [c.text("this") for c in aliased_columns]
-            table_alias.args.pop("columns")
-
-        subquery_context = context.add_selectables(
-            selectables if chain else {}
-        ).set_aliased_columns(pushdown_aliased_columns)
-        subquery_outputs = _qualify_statement(
-            expression=subquery.this, context=subquery_context
-        )
-
-        selectable_table = alias.text("this")
-        selectables = _merge(selectables, {selectable_table: subquery_outputs})
-
-    return selectables
+        # Remove any alias column list
+        # (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
+        table_alias.args.pop("columns", None)
 
 
-def _qualify_tables(tables, context):
-    """Extract selectables from tables referenced in FROM and JOIN clauses"""
-
-    selectables = {}
-    for table in tables:
-        table_name = table.text("this")
-
-        if isinstance(table.parent, exp.Alias):
-            selectable_table = table.parent.alias
-        else:
-            selectable_table = table_name
-
-        if table_name in context.selectables:
-            # This is a reference to a parent selectable (e.g. a CTE), not an actual table.
-            selectable_columns = context.selectables[table_name]
-        elif selectable_table in context.selectables:
-            raise OptimizeError(f"Duplicate table name: {selectable_table}")
-        elif table_name not in context.schema:
-            raise OptimizeError(f"Unknown table: {table_name}")
-        else:
-            selectable_columns = list(context.schema[table_name])
-
-        selectables = _merge(selectables, {selectable_table: selectable_columns})
-    return selectables
-
-
-def _expand_stars(select_stars, selectables):
-    """Expand stars to lists of column selections"""
-
-    result = []
-    for star in select_stars:
-        new_columns = []
-
-        if isinstance(star, exp.Column):
-            tables = [star.text("table")]
-        else:
-            tables = list(selectables)
-
-        for table in tables:
-            columns = selectables.get(table, [])
-            for column in columns:
-                new_columns.append(
-                    exp.Column(
-                        this=exp.to_identifier(column), table=exp.to_identifier(table)
-                    )
-                )
-        star.replace(*new_columns)
-        result.extend(new_columns)
-    return result
-
-
-def _qualify_columns(columns, selectables, context):
-    """Given the map of selectable tables to columns, fully qualify columns"""
-
-    # If correlated_selectables is set, this can be a correlated subquery
-    selectables = _merge(selectables, context.correlated_selectables)
-
+def _qualify_columns(scope, schema):
+    """Disambiguate columns, ensuring each column reference specifies a selectable"""
     unambiguous_columns = None  # lazily loaded
 
-    for column in columns:
+    for column in scope.columns:
         column_table = column.text("table")
 
-        if column_table and column_table not in selectables:
+        if column_table and column_table not in scope.selectables:
             raise OptimizeError(f"Unknown table reference: {column_table}")
         if not column_table:
             if unambiguous_columns is None:
-                unambiguous_columns = _get_unambiguous_columns(selectables)
+                selectable_columns = {
+                    k: _get_selectable_columns(k, scope.selectables, schema)
+                    for k in scope.referenced_selectables
+                }
+
+                unambiguous_columns = _get_unambiguous_columns(selectable_columns)
 
             column_name = column.text("this")
             column_table = unambiguous_columns.get(column_name)
@@ -265,98 +93,80 @@ def _qualify_columns(columns, selectables, context):
             column.set("table", exp.to_identifier(column_table))
 
 
-def _qualify_subqueries(subqueries, selectables, context):
-    """
-    Regular ol' "subqueries" are subqueries that are NOT selectable in a surrounding context.
+def _expand_stars(scope, schema):
+    """Expand stars to lists of column selections"""
 
-    For example:
-        SELECT * FROM x WHERE a IN (SELECT ...)
+    all_new_columns = []
+    for expression in scope.selects:
+        if isinstance(expression, exp.Star):
+            tables = list(scope.referenced_selectables)
+        elif isinstance(expression, exp.Column) and isinstance(
+            expression.this, exp.Star
+        ):
+            tables = [expression.text("table")]
+        else:
+            continue
 
-    In this case, the subquery cannot be selected from (as opposed to derived tables).
-    Also unlike derived tables, these subqueries CAN reference selectables from the surrounding
-    context (making a subquery a "correlated subquery").
-    """
-    child_context = context.set_correlated_selectables(selectables).set_aliased_columns(
-        []
-    )
-    for subquery in subqueries:
-        _qualify_statement(subquery, child_context)
+        new_columns = []
+
+        for table in tables:
+            if table not in scope.selectables:
+                raise OptimizeError(f"Unknown table: {table}")
+            columns = _get_selectable_columns(table, scope.selectables, schema)
+            for column in columns:
+                new_columns.append(
+                    exp.Column(
+                        this=exp.to_identifier(column), table=exp.to_identifier(table)
+                    )
+                )
+
+        expression.replace(*new_columns)
+        all_new_columns.append(new_columns)
+
+    scope.columns.extend(all_new_columns)
 
 
-def _qualify_outputs(selections, aliased_columns):
-    """
-    Ensure all output columns have proper aliases.
-
-    `aliased_columns` are passed down from an outer query.
-
-    For example, we want to convert this:
-        SELECT * FROM (SELECT a AS b FROM x) AS y(c)
-    To this:
-        SELECT * FROM (SELECT a AS c FROM x) AS y
-    """
-
-    outputs = []
+def _qualify_outputs(scope):
+    """Ensure all output columns are aliased"""
 
     for i, (selection, aliased_column) in enumerate(
-        itertools.zip_longest(selections, aliased_columns)
+        itertools.zip_longest(scope.selects, scope.outer_column_list)
     ):
-        if isinstance(selection, exp.Alias):
-            selection_name = selection.text("alias")
-        elif isinstance(selection, exp.Column):
+        if isinstance(selection, exp.Column):
             selection_name = selection.text("this")
             new_selection = exp.alias_(selection.copy(), selection_name)
             selection.replace(new_selection)
             selection = new_selection
-        else:
+        elif not isinstance(selection, exp.Alias):
             selection_name = f"_col_{i}"
             new_selection = exp.alias_(selection.copy(), selection_name)
             selection.replace(new_selection)
             selection = new_selection
 
         if aliased_column:
-            selection_name = aliased_column
             selection.set("alias", exp.to_identifier(aliased_column))
 
-        outputs.append(selection_name)
 
-    return outputs
-
-
-def _merge(*selectables, check_unique=True):
-    """
-    Merge two "selectable" dictionaries.
-
-    Raise an error if there are any duplicate selectable names.
-    """
-    result = {}
-    for s in selectables:
-        for selectable_table, selectable_columns in s.items():
-            if check_unique and selectable_table in result:
-                raise OptimizeError(f"Duplicate name declared: {selectable_table}")
-            result[selectable_table] = selectable_columns
-    return result
-
-
-def _get_unambiguous_columns(selectables):
+def _get_unambiguous_columns(selectable_columns):
     """
     Find all the unambiguous columns in selectables.
 
     Args:
-        selectables (dict): Mapping of name to selectable columns
+        selectable_columns (dict): Mapping of names to selectable columns
     Returns:
         dict: Mapping of column name to selectable name
     """
-    if not selectables:
+    if not selectable_columns:
         return {}
 
-    selectables = list(selectables.items())
+    selectable_columns = list(selectable_columns.items())
 
-    first_table, first_columns = selectables[0]
+    first_table, first_columns = selectable_columns[0]
     unambiguous_columns = {
         col: first_table for col in _find_unique_columns(first_columns)
     }
 
-    for table, columns in selectables[1:]:
+    for table, columns in selectable_columns[1:]:
         unique = _find_unique_columns(columns)
         ambiguous = set(unambiguous_columns).intersection(unique)
         for column in ambiguous:
@@ -381,3 +191,21 @@ def _find_unique_columns(columns):
     for column in columns:
         counts[column] = counts.get(column, 0) + 1
     return {column for column, count in counts.items() if count == 1}
+
+
+def _get_selectable_columns(name, selectables, schema):
+    """Resolve the selectable columns for a given selectable `name`"""
+    if name not in selectables:
+        raise OptimizeError(f"Unknown table: {name}")
+
+    selectable = selectables[name]
+
+    # If referencing a table, return the columns from the schema
+    if isinstance(selectable, exp.Table):
+        table_name = selectable.text("this")
+        if table_name not in schema:
+            raise OptimizeError(f"Unknown table: {table_name}")
+        return list(schema.get(selectable.text("this")))
+
+    # Otherwise, if referencing another scope, return that scope's outputs
+    return selectable.outputs

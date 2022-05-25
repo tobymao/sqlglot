@@ -1,4 +1,5 @@
 import sqlglot.expressions as exp
+from sqlglot.optimizer.scope import traverse_scope
 
 
 def qualify_tables(expression, db=None, catalog=None):
@@ -18,19 +19,17 @@ def qualify_tables(expression, db=None, catalog=None):
     Returns:
         sqlglot.Expression: qualified expression
     """
+    expression = expression.copy()
+    for scope in traverse_scope(expression):
+        for selectable in scope.selectables.values():
+            if isinstance(selectable, exp.Table):
+                if not selectable.args.get("db"):
+                    selectable.set("db", exp.to_identifier(db))
+                if not selectable.args.get("catalog"):
+                    selectable.set("catalog", exp.to_identifier(catalog))
 
-    def qualify(node):
-        if isinstance(node, exp.Table):
-            if not node.args.get("db"):
-                node.set("db", exp.to_identifier(db))
-            if not node.args.get("catalog"):
-                node.set("catalog", exp.to_identifier(catalog))
+                if not isinstance(selectable.parent, exp.Alias):
+                    node = exp.alias_(selectable.copy(), selectable.this)
+                    selectable.replace(node)
 
-            if not isinstance(node.parent, exp.Alias):
-                node = exp.alias_(node, node.this)
-
-            return node
-
-        return node
-
-    return expression.transform(qualify)
+    return expression

@@ -7,6 +7,7 @@ from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot.optimizer.projection_pushdown import projection_pushdown
+from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
 from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
@@ -95,6 +96,16 @@ class TestOptimizer(unittest.TestCase):
                 expression = parse_one(sql)
                 expression = qualify_columns(expression, schema)
                 expression = projection_pushdown(expression)
+                self.assertEqual(
+                    expression.sql(),
+                    expected,
+                )
+
+    def test_simplify(self):
+        for sql, expected in load_sql_fixture_pairs("optimizer/simplify.sql"):
+            with self.subTest(sql):
+                expression = parse_one(sql)
+                expression = simplify(expression)
                 self.assertEqual(
                     expression.sql(),
                     expected,

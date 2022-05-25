@@ -182,8 +182,6 @@ class Expression:
             for node in nodes:
                 if isinstance(node, Expression):
                     yield from node.dfs(self, k, prune)
-                else:
-                    yield node, self, k
 
     def bfs(self, prune=None):
         """
@@ -207,7 +205,8 @@ class Expression:
                     nodes = ensure_list(v)
 
                     for node in nodes:
-                        queue.append((node, item, k))
+                        if isinstance(node, Expression):
+                            queue.append((node, item, k))
 
     def __repr__(self):
         return self.to_s()

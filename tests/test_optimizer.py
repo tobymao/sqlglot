@@ -20,8 +20,9 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     from sqlglot.optimizer import qualify_tables as module2
     from sqlglot.optimizer import quote_identities as module3
     from sqlglot.optimizer import projection_pushdown as module4
+    from sqlglot.optimizer import scope as module5
 
-    for mod in (module1, module2, module3, module4):
+    for mod in (module1, module2, module3, module4, module5):
         tests.addTests(doctest.DocTestSuite(mod))
     return tests
 

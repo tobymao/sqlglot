@@ -156,6 +156,15 @@ def traverse_scope(expression):
     the expression tree itself. For example, we might care about the selectable
     names within a subquery.
 
+    Examples:
+        >>> import sqlglot
+        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT a FROM x) AS y")
+        >>> scopes = list(traverse_scope(expression))
+        >>> scopes[0].expression.sql(), list(scopes[0].selectables)
+        ('SELECT a FROM x', ['x'])
+        >>> scopes[1].expression.sql(), list(scopes[1].selectables)
+        ('SELECT a FROM (SELECT a FROM x) AS y', ['y'])
+
     Args:
         expression (exp.Expression): expression to traverse
     Yields:

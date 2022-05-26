@@ -223,6 +223,55 @@ class TestDialects(unittest.TestCase):
             "POW(2S, 3)", "POW(CAST(2 AS SMALLINT), 3)", read="spark", write="duckdb"
         )
 
+        self.validate(
+            "DATE_TO_DATE_STR(x)",
+            "STRFTIME(x, '%Y-%m-%d')",
+            read="duckdb",
+            write="duckdb",
+        )
+        self.validate(
+            "DATE_TO_DATE_STR(x)",
+            "DATE_FORMAT(x, 'yyyy-MM-dd')",
+            read="duckdb",
+            write="spark",
+        )
+        self.validate(
+            "DATE_TO_DI(x)",
+            "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
+            read="duckdb",
+            write="duckdb",
+        )
+        self.validate(
+            "DATE_TO_DI(x)",
+            "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
+            read="duckdb",
+            write="spark",
+        )
+        self.validate(
+            "DI_TO_DATE(x)",
+            "CAST(STRPTIME(CAST(x AS STRING), '%Y%m%d') AS DATE)",
+            read="duckdb",
+            write="duckdb",
+        )
+        self.validate(
+            "DI_TO_DATE(x)",
+            "TO_DATE(CAST(x AS STRING), 'yyyyMMdd')",
+            read="duckdb",
+            write="spark",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
+            read="duckdb",
+            write="duckdb",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            read="duckdb",
+            write="presto",
+        )
+
     def test_mysql(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",
@@ -476,7 +525,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE(x)",
-            "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
+            "CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE)",
             write="presto",
             identity=False,
         )
@@ -564,7 +613,7 @@ class TestDialects(unittest.TestCase):
         self.validate("MONTH(x)", "MONTH(x)", read="presto", write="hive")
         self.validate(
             "MONTH(x)",
-            "MONTH(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))",
+            "MONTH(CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
             read="hive",
             write="presto",
         )
@@ -572,7 +621,7 @@ class TestDialects(unittest.TestCase):
         self.validate("DAY(x)", "DAY(x)", read="presto", write="hive")
         self.validate(
             "DAY(x)",
-            "DAY(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))",
+            "DAY(CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
             read="hive",
             write="presto",
         )
@@ -581,7 +630,7 @@ class TestDialects(unittest.TestCase):
         self.validate("YEAR(x)", "YEAR(x)", read="presto", write="hive")
         self.validate(
             "YEAR(x)",
-            "YEAR(DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d'))",
+            "YEAR(CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
             read="hive",
             write="presto",
         )
@@ -700,6 +749,55 @@ class TestDialects(unittest.TestCase):
             "CREATE TABLE x WITH (bucket_by = ARRAY['y'], bucket_count = 64) AS SELECT 1 AS y",
             "CREATE TABLE x WITH (bucket_by = ARRAY['y'], bucket_count = 64) AS SELECT 1 AS y",
             read="presto",
+        )
+
+        self.validate(
+            "DATE_TO_DATE_STR(x)",
+            "DATE_FORMAT(x, '%Y-%m-%d')",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "DATE_TO_DATE_STR(x)",
+            "STRFTIME(x, '%Y-%m-%d')",
+            read="presto",
+            write="duckdb",
+        )
+        self.validate(
+            "DATE_TO_DI(x)",
+            "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "DATE_TO_DI(x)",
+            "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
+            read="presto",
+            write="duckdb",
+        )
+        self.validate(
+            "DI_TO_DATE(x)",
+            "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "DI_TO_DATE(x)",
+            "CAST(STRPTIME(CAST(x AS STRING), '%Y%m%d') AS DATE)",
+            read="presto",
+            write="duckdb",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
+            read="presto",
+            write="spark",
         )
 
     def test_hive(self):
@@ -878,25 +976,28 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-02')",
-            "DATE_DIFF(DATE_STR_TO_DATE('2020-01-02'), DATE_STR_TO_DATE('2020-01-02'))",
+            "DATE_DIFF(TS_OR_DS_TO_DATE('2020-01-02'), TS_OR_DS_TO_DATE('2020-01-02'))",
             read="hive",
             write=None,
             identity=False,
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATEDIFF('2020-01-02', '2020-01-01')",
+            "DATEDIFF(TO_DATE('2020-01-02'), TO_DATE('2020-01-01'))",
             read="hive",
         )
         self.validate(
             "DATEDIFF(TO_DATE(y), x)",
-            "DATE_DIFF('day', DATE_PARSE(x, '%Y-%m-%d'), DATE_PARSE(DATE_FORMAT(DATE_PARSE(SUBSTR(y, 1, 10), '%Y-%m-%d'), '%Y-%m-%d'), '%Y-%m-%d'))",
+            "DATE_DIFF('day', CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE), "
+            "CAST(DATE_PARSE(SUBSTR(CAST(DATE_FORMAT(DATE_PARSE(SUBSTR(CAST(y AS VARCHAR), 1, 10), '%Y-%m-%d'), '%Y-%m-%d') "
+            "AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
             read="hive",
             write="presto",
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATE_DIFF('day', DATE_PARSE('2020-01-01', '%Y-%m-%d'), DATE_PARSE('2020-01-02', '%Y-%m-%d'))",
+            "DATE_DIFF('day', CAST(DATE_PARSE(SUBSTR(CAST('2020-01-01' AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE), "
+            "CAST(DATE_PARSE(SUBSTR(CAST('2020-01-02' AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
             read="hive",
             write="presto",
         )
@@ -999,6 +1100,55 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "CAST(1 AS INT)", "CAST(1 AS INT)", read="hive", write="starrocks"
+        )
+
+        self.validate(
+            "DATE_TO_DATE_STR(x)",
+            "DATE_FORMAT(x, 'yyyy-MM-dd')",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "DATE_TO_DATE_STR(x)",
+            "DATE_FORMAT(x, '%Y-%m-%d')",
+            read="hive",
+            write="presto",
+        )
+        self.validate(
+            "DATE_TO_DI(x)",
+            "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "DATE_TO_DI(x)",
+            "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
+            read="hive",
+            write="presto",
+        )
+        self.validate(
+            "DI_TO_DATE(x)",
+            "TO_DATE(CAST(x AS STRING), 'yyyyMMdd')",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "DI_TO_DATE(x)",
+            "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
+            read="hive",
+            write="presto",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            read="hive",
+            write="presto",
         )
 
     def test_spark(self):

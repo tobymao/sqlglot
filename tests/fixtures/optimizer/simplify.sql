@@ -28,8 +28,11 @@ x = y;
 1 = 1;
 TRUE;
 
+1.0 = 1;
+1.0 = 1;
+
 'x' = 'y';
-'x' = 'y';
+FALSE;
 
 'x' = 'x';
 TRUE;
@@ -76,8 +79,11 @@ TRUE;
 (NOT FALSE) AND (NOT TRUE);
 FALSE;
 
-((NOT FALSE) AND (x = x)) AND (TRUE OR 1 != 2);
+((NOT FALSE) AND (x = x)) AND (TRUE OR 1 <> 3);
 TRUE;
 
 ((NOT FALSE) AND (x = x)) AND (FALSE OR 1 <> 2);
-TRUE AND (1 <> 2)
+TRUE AND (1 <> 2);
+
+(('a' = 'a') AND TRUE and NOT FALSE);
+TRUE;

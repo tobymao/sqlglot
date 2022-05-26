@@ -259,6 +259,18 @@ class TestDialects(unittest.TestCase):
             read="duckdb",
             write="spark",
         )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
+            read="duckdb",
+            write="duckdb",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            read="duckdb",
+            write="presto",
+        )
 
     def test_mysql(self):
         self.validate(
@@ -775,6 +787,18 @@ class TestDialects(unittest.TestCase):
             read="presto",
             write="duckdb",
         )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            read="presto",
+            write="presto",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
+            read="presto",
+            write="spark",
+        )
 
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
@@ -1111,6 +1135,18 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "DI_TO_DATE(x)",
             "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
+            read="hive",
+            write="presto",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "TS_OR_DI_TO_DI(x)",
+            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
             read="hive",
             write="presto",
         )

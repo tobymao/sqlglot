@@ -3,6 +3,20 @@ import sqlglot.expressions as exp
 
 
 def simplify(expression):
+    """
+    Rewrite sqlglot AST to simplify expressions.
+
+    Example:
+        >>> import sqlglot
+        >>> expression = sqlglot.parse_one("TRUE AND TRUE")
+        >>> simplify(expression).sql()
+        'TRUE'
+
+    Args:
+        expression (sqlglot.Expression): expression to simplify
+    Returns:
+        sqlglot.Expression: simplified expression
+    """
     expression = expression.copy()
 
     # wrap because you cannot replace a node without a parent

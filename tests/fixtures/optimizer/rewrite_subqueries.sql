@@ -12,4 +12,3 @@ SELECT * FROM x AS x JOIN (SELECT y.a FROM y AS y WHERE TRUE AND y.a > 1 GROUP B
 
 SELECT * FROM x AS x, y AS y WHERE x.a = y.a AND (SELECT y.b FROM y AS y WHERE x.b = y.b) < 0;
 SELECT * FROM x AS x, y AS y JOIN (SELECT y.b FROM y AS y WHERE TRUE GROUP BY y.b) AS "_d_0" ON _d_0.b = x.b AND ("_d_0".b) < 0 WHERE x.a = y.a AND TRUE;
-

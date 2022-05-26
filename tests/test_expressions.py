@@ -5,6 +5,9 @@ from sqlglot import parse_one
 
 
 class TestExpressions(unittest.TestCase):
+    def test_arg_key(self):
+        self.assertEqual(parse_one("sum(1)").find(exp.Literal).arg_key, "this")
+
     def test_depth(self):
         self.assertEqual(parse_one("x(1)").find(exp.Literal).depth, 1)
 

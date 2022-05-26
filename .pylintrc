@@ -23,3 +23,7 @@ disable=
 [FORMAT]
 
 max-line-length=150
+
+[SIMILARITIES]
+
+ignore-imports=yes

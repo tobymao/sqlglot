@@ -1613,7 +1613,19 @@ class DateStrToDate(Func):
     pass
 
 
+class DateToDateStr(Func):
+    pass
+
+
+class DateToDi(Func):
+    pass
+
+
 class Day(Func):
+    pass
+
+
+class DiToDate(Func):
     pass
 
 
@@ -1802,6 +1814,10 @@ class TsOrDsToDateStr(Func):
 
 
 class TsOrDsToDate(Func):
+    pass
+
+
+class TsOrDiToDi(Func):
     pass
 
 

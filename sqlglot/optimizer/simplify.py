@@ -34,6 +34,14 @@ def simplify_equality(expression):
             node.replace(NULL)
         elif left == right:
             node.replace(TRUE)
+        elif (
+            isinstance(left, exp.Literal)
+            and isinstance(right, exp.Literal)
+            and left.is_string
+            and right.is_string
+            and left != right
+        ):
+            node.replace(FALSE)
     return expression
 
 

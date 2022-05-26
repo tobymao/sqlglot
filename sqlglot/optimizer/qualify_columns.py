@@ -11,14 +11,14 @@ def qualify_columns(expression, schema):
 
     Example:
         >>> import sqlglot
-        >>> schema = {"tbl": {"col": "INT"}}
-        >>> expression = sqlglot.parse_one("SELECT col FROM tbl")
+        >>> schema = {"catalog": {"db": {"tbl": {"col": "INT"}}}}
+        >>> expression = sqlglot.parse_one("SELECT col FROM catalog.db.tbl")
         >>> qualify_columns(expression, schema).sql()
-        'SELECT tbl.col AS col FROM tbl'
+        'SELECT tbl.col AS col FROM catalog.db.tbl'
 
     Args:
         expression (sqlglot.Expression): expression to qualify
-        schema (dict): Mapping of table names to all available columns
+        schema (dict): Mapping of catalogs->dbs->table names->all available columns
     Returns:
         sqlglot.Expression: qualified expression
     """
@@ -215,10 +215,21 @@ def _get_selectable_columns(name, selectables, schema):
 
     # If referencing a table, return the columns from the schema
     if isinstance(selectable, exp.Table):
+        catalog_name = selectable.text("catalog")
+        db_name = selectable.text("db")
         table_name = selectable.text("this")
-        if table_name not in schema:
-            raise OptimizeError(f"Unknown table: {table_name}")
-        return list(schema.get(selectable.text("this")))
+        catalog = schema.get(catalog_name)
+        if catalog is None:
+            raise OptimizeError(
+                f"Unknown catalog: {catalog_name}.{db_name}.{table_name}"
+            )
+        db = catalog.get(db_name)
+        if not db:
+            raise OptimizeError(f"Unknown db: {catalog_name}.{db_name}.{table_name}")
+        columns = db.get(table_name)
+        if not columns:
+            raise OptimizeError(f"Unknown table: {catalog_name}.{db_name}.{table_name}")
+        return list(columns)
 
     # Otherwise, if referencing another scope, return that scope's outputs
     return selectable.outputs

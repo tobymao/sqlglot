@@ -68,7 +68,7 @@ class Generator:
         type_mapping=None,
         time_mapping=None,
         time_trie=None,
-        pretty=False,
+        pretty=None,
         identifier=None,
         identify=False,
         quote=None,
@@ -79,11 +79,13 @@ class Generator:
         unsupported_level=ErrorLevel.WARN,
     ):
         # pylint: disable=too-many-arguments
+        import sqlglot
+
         self.transforms = {**self.TRANSFORMS, **(transforms or {})}
         self.type_mapping = type_mapping or {}
         self.time_mapping = time_mapping or {}
         self.time_trie = time_trie
-        self.pretty = pretty
+        self.pretty = pretty if pretty is not None else sqlglot.pretty
         self.configured_pretty = pretty
         self.identifier = identifier or '"'
         self.identify = identify

@@ -120,3 +120,11 @@ class TestParser(unittest.TestCase):
         assert expression.args["expressions"][3].text("this") == "c#annotation3"
         assert expression.args["expressions"][4].text("this") == "annotation4"
         assert expression.args["expressions"][5].text("this") == ""
+
+    def test_pretty_config_override(self):
+        import sqlglot
+
+        self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
+        sqlglot.pretty = True
+        self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x")
+        sqlglot.pretty = False

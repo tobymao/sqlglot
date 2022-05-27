@@ -17,6 +17,8 @@ from sqlglot.parser import Parser
 
 __version__ = "2.3.2"
 
+pretty = False
+
 
 def parse(sql, read=None, **opts):
     """

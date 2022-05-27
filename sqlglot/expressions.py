@@ -27,7 +27,7 @@ class Expression:
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
         self.args = args
-        self._set_parent(*args.values())
+        self._set_parent(**args)
         self.parent = None
         self.arg_key = None
 
@@ -87,13 +87,14 @@ class Expression:
             value: value to set the arg to.
         """
         self.args[arg] = value
-        self._set_parent(value)
+        self._set_parent(arg=value)
 
-    def _set_parent(self, *nodes):
-        for node in nodes:
+    def _set_parent(self, **kwargs):
+        for arg_key, node in kwargs.items():
             for v in ensure_list(node):
                 if isinstance(v, Expression):
                     v.parent = self
+                    v.arg_key = arg_key
 
     @property
     def depth(self):
@@ -2207,3 +2208,8 @@ def subquery(expression, alias=None, dialect=None, **opts):
 
     expression = _maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
     return Select().from_(expression, dialect=dialect, **opts)
+
+
+TRUE = Boolean(this=True)
+FALSE = Boolean(this=False)
+NULL = Null()

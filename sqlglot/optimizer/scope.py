@@ -227,12 +227,13 @@ def traverse_scope(expression):
 
     This is helpful for optimizing queries, where we need more information than
     the expression tree itself. For example, we might care about the selectable
-    names within a subquery.
+    names within a subquery. Returns a list because a generator could result in
+    incomplete properties which is confusing.
 
     Examples:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT a FROM x) AS y")
-        >>> scopes = list(traverse_scope(expression))
+        >>> scopes = traverse_scope(expression)
         >>> scopes[0].expression.sql(), list(scopes[0].selectables)
         ('SELECT a FROM x', ['x'])
         >>> scopes[1].expression.sql(), list(scopes[1].selectables)
@@ -240,10 +241,10 @@ def traverse_scope(expression):
 
     Args:
         expression (exp.Expression): expression to traverse
-    Yields:
-        Scope: scope instances
+    Returns:
+        List[Scope]: scope instances
     """
-    yield from _traverse_scope(Scope(expression))
+    return list(_traverse_scope(Scope(expression)))
 
 
 def _traverse_scope(scope):

@@ -1,3 +1,6 @@
+--------------------------------------
+-- Decorrelate Subqueries
+--------------------------------------
 SELECT * FROM x AS x WHERE (SELECT y.a FROM y AS y WHERE x.a = y.a) = 1;
 SELECT * FROM x AS x JOIN (SELECT y.a FROM y AS y WHERE TRUE GROUP BY y.a) AS "_d_0" ON _d_0.a = x.a AND ("_d_0".a) = 1 WHERE TRUE;
 

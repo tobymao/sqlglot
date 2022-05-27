@@ -17,8 +17,6 @@ def simplify(expression):
     Returns:
         sqlglot.Expression: simplified expression
     """
-    expression = expression.copy()
-
     # wrap because you cannot replace a node without a parent
     expression = exp.Paren(this=expression)
 

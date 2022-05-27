@@ -125,7 +125,9 @@ class TestParser(unittest.TestCase):
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
         with patch("sqlglot.pretty", True):
-            self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x")
+            self.assertEqual(
+                parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x"
+            )
 
         self.assertEqual(
             parse_one("SELECT col FROM x").sql(pretty=True), "SELECT\n  col\nFROM x"

@@ -7,9 +7,6 @@ SELECT x.a AS a FROM x;
 SELECT a FROM x AS z;
 SELECT z.a AS a FROM x AS z;
 
-SELECT z.a FROM z;
-SELECT z.a AS a FROM z;
-
 SELECT a AS a FROM x;
 SELECT x.a AS a FROM x;
 
@@ -43,8 +40,8 @@ SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y;
 SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y(a);
 SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y;
 
-SELECT y.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x) AS y(c);
-SELECT y.a AS a FROM (SELECT x.a AS c, x.b AS b FROM x) AS y;
+SELECT y.c AS c FROM (SELECT x.a AS a, x.b AS b FROM x) AS y(c);
+SELECT y.c AS c FROM (SELECT x.a AS c, x.b AS b FROM x) AS y;
 
 SELECT a FROM (SELECT a FROM x) y;
 SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y;
@@ -94,8 +91,11 @@ SELECT "_q_1".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_1" WHERE "_q_1".a IN (
 --------------------------------------
 -- Correlated subqueries
 --------------------------------------
-SELECT a FROM x WHERE b IN (SELECT c FROM y WHERE y.b = a);
+SELECT a FROM x WHERE b IN (SELECT c FROM y WHERE y.b = x.a);
 SELECT x.a AS a FROM x WHERE x.b IN (SELECT y.c AS c FROM y WHERE y.b = x.a);
+
+SELECT a FROM x WHERE b IN (SELECT b FROM y AS x);
+SELECT x.a AS a FROM x WHERE x.b IN (SELECT x.b AS b FROM y AS x);
 
 --------------------------------------
 -- Expand *

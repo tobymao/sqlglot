@@ -48,7 +48,7 @@ def projection_pushdown(expression):
 
             # Group columns by selectable name
             selects = defaultdict(set)
-            for col in scope.columns:
+            for col in scope.references:
                 table_name = col.text("table")
                 col_name = col.text("this")
                 selects[table_name].add(col_name)

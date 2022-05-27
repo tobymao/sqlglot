@@ -4,6 +4,9 @@ SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_0";
 SELECT 1 FROM (SELECT * FROM x) WHERE b = 2;
 SELECT 1 AS "_col_0" FROM (SELECT x.b AS b FROM x) AS "_q_0" WHERE "_q_0".b = 2;
 
+SELECT (SELECT c FROM y WHERE q.b = y.b) FROM (SELECT * FROM x) AS q;
+SELECT (SELECT y.c AS c FROM y WHERE q.b = y.b) AS "_col_0" FROM (SELECT x.b AS b FROM x) AS q;
+
 SELECT a FROM x JOIN (SELECT b, c FROM y) AS z ON x.b = z.b;
 SELECT x.a AS a FROM x JOIN (SELECT y.b AS b FROM y) AS z ON x.b = z.b;
 

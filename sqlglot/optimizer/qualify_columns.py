@@ -34,6 +34,8 @@ def qualify_columns(expression, schema):
         _qualify_columns(scope, schema)
         _expand_stars(scope, schema)
         _qualify_outputs(scope)
+        _check_unknown_tables(scope)
+
     return expression
 
 
@@ -72,11 +74,18 @@ def _qualify_columns(scope, schema):
     """Disambiguate columns, ensuring each column reference specifies a selectable"""
     unambiguous_columns = None  # lazily loaded
 
-    for column in scope.columns:
+    for column in scope.references:
         column_table = column.text("table")
+        column_name = column.text("this")
 
-        if column_table and column_table not in scope.selectables:
-            raise OptimizeError(f"Unknown table reference: {column_table}")
+        if (
+            column_table
+            and column_table in scope.selectables
+            and column_name
+            not in _get_selectable_columns(column_table, scope.selectables, schema)
+        ):
+            raise OptimizeError(f"Unknown column: {column_name}")
+
         if not column_table:
             if unambiguous_columns is None:
                 selectable_columns = {
@@ -86,7 +95,6 @@ def _qualify_columns(scope, schema):
 
                 unambiguous_columns = _get_unambiguous_columns(selectable_columns)
 
-            column_name = column.text("this")
             column_table = unambiguous_columns.get(column_name)
             if not column_table:
                 raise OptimizeError(f"Ambiguous column: {column_name}")
@@ -121,7 +129,7 @@ def _expand_stars(scope, schema):
                 )
 
         expression.replace(*new_columns)
-        all_new_columns.append(new_columns)
+        all_new_columns.extend(new_columns)
 
     scope.columns.extend(all_new_columns)
 
@@ -145,6 +153,13 @@ def _qualify_outputs(scope):
 
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
+
+
+def _check_unknown_tables(scope):
+    if scope.external_references and not scope.is_correlated_subquery:
+        raise OptimizeError(
+            f"Unknown table: {scope.external_references[0].text('table')}"
+        )
 
 
 def _get_unambiguous_columns(selectable_columns):

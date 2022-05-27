@@ -1,7 +1,16 @@
 from copy import copy
+from enum import Enum, auto
 
 from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
+
+
+class ScopeType(Enum):
+    ROOT = auto()
+    SUBQUERY = auto()
+    DERIVED_TABLE = auto()
+    CTE = auto()
+    UNION = auto()
 
 
 class Scope:
@@ -20,11 +29,12 @@ class Scope:
             For example:
                 SELECT * FROM (SELECT ...) AS y(col1, col2)
             The inner query would have `["col1", "col2"]` for its `outer_column_list`
+        parent (Scope): Parent scope
+        scope_type (ScopeType): Type of this scope, relative to it's parent
+        subquery_scopes (list[Scope]): List of all child scopes for subqueries.
+            This does not include derived tables or CTEs.
         union (tuple[Scope, Scope]): If this Scope is for a Union expression, this will be
             a tuple of the left and right child scopes.
-        correlated_selectables (set[str]): If this scope is a subquery, this a set
-            of selectable names from the outer scope. If any of these are selected from in this
-            scope, it is a correlated subquery.
         columns (list[exp.Column]): list of columns in this scope
         tables (list[exp.Table]): list of tables in this scope
         derived_tables (list[exp.Subquery]): list of derived tables in this scope.
@@ -41,12 +51,16 @@ class Scope:
         expression,
         selectables=None,
         outer_column_list=None,
-        correlated_selectables=None,
+        parent=None,
+        scope_type=ScopeType.ROOT,
     ):
         self.expression = expression
         self.selectables = selectables or {}
         self.outer_column_list = outer_column_list or []
-        self.correlated_selectables = correlated_selectables or set()
+        self.parent = parent
+        self.scope_type = scope_type
+        self.subquery_scopes = []
+
         self.union = None
         self.columns = []
         self.tables = []
@@ -54,11 +68,16 @@ class Scope:
         self.subqueries = []
         self.ctes = []
 
-    def branch(self, expression, **kwargs):
+    def branch(self, expression, scope_type, add_selectables=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
+        selectables = copy(self.selectables)
+        if add_selectables:
+            selectables.update(add_selectables)
         return Scope(
             expression=expression,
-            selectables=copy(self.selectables),
+            selectables=selectables,
+            parent=self,
+            scope_type=scope_type,
             **kwargs,
         )
 
@@ -82,8 +101,6 @@ class Scope:
                 referenced_names.append(table.name)
         for derived_table in self.derived_tables:
             referenced_names.append(derived_table.alias)
-
-        referenced_names.extend(self.correlated_selectables)
 
         result = {}
 
@@ -139,6 +156,62 @@ class Scope:
         if isinstance(self.expression, exp.Union):
             return []
         return self.expression.selects
+
+    @property
+    def correlations(self):
+        """
+        Columns referenced by correlated subqueries.
+
+        Returns:
+            list[tuple[exp.Column, Scope]]: List of Column instances from
+                child scopes that reference this scope, along with the child
+                scope instance itself.
+        """
+        result = []
+        for scope in self.subquery_scopes:
+            for column in scope.external_references:
+                if column.text("table") in self.selectables:
+                    result.append((column, scope))
+        return result
+
+    @property
+    def external_references(self):
+        """
+        Columns that appear to reference selectables in outer scopes.
+
+        Returns:
+            list[exp.Column]: Column instances that don't reference
+                tables in the current scope.
+        """
+        result = []
+        for column in self.columns:
+            if column.text("table") not in self.selectables:
+                result.append(column)
+        for column, _ in self.correlations:
+            if column.text("table") not in self.selectables:
+                result.append(column)
+        return result
+
+    @property
+    def references(self):
+        """
+        All column references in the current scope.
+
+        Returns:
+            list[exp.Column]: Column instances in this scope, plus any
+                Columns that reference this scope from correlated subqueries.
+        """
+        return self.columns + [c for c, _ in self.correlations]
+
+    @property
+    def is_subquery(self):
+        """Determine if this scope is a subquery"""
+        return self.scope_type == ScopeType.SUBQUERY
+
+    @property
+    def is_correlated_subquery(self):
+        """Determine if this scope is a correlated subquery"""
+        return self.is_subquery and self.external_references
 
     def rename_selectable(self, old_name, new_name):
         """Rename a selectable in this scope"""
@@ -200,9 +273,59 @@ def _traverse_scope(scope):
 
 
 def _traverse_select(scope):
-    yield from _traverse_derived_tables(scope.ctes, scope)
-    yield from _traverse_derived_tables(scope.derived_tables, scope)
+    yield from _traverse_derived_tables(scope.ctes, scope, ScopeType.CTE)
+    yield from _traverse_subqueries(scope)
+    yield from _traverse_derived_tables(
+        scope.derived_tables, scope, ScopeType.DERIVED_TABLE
+    )
+    _add_table_selectables(scope)
 
+
+def _traverse_union(scope):
+    if scope.ctes:
+        yield from _traverse_derived_tables(
+            scope.ctes, scope, scope_type=ScopeType.DERIVED_TABLE
+        )
+
+    # The last scope to be yield should be the top most scope
+    left = None
+    for left in _traverse_scope(
+        scope.branch(scope.expression.left, scope_type=ScopeType.UNION)
+    ):
+        yield left
+
+    right = None
+    for right in _traverse_scope(
+        scope.branch(scope.expression.right, scope_type=ScopeType.UNION)
+    ):
+        yield right
+
+    scope.union = (left, right)
+
+
+def _traverse_derived_tables(derived_tables, scope, scope_type):
+    selectables = {}
+    chain = scope_type == ScopeType.CTE
+    for derived_table in derived_tables:
+        for child_scope in _traverse_scope(
+            scope.branch(
+                derived_table.this,
+                add_selectables=selectables if chain else None,
+                outer_column_list=derived_table.alias_column_names,
+                scope_type=scope_type,
+            )
+        ):
+            yield child_scope
+            # Tables without aliases will be set as ""
+            # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
+            # Until then, this means that only a single, unaliased derived table is allowed (rather,
+            # the latest one wins.
+            selectables[derived_table.alias] = child_scope
+    scope.selectables.update(selectables)
+
+
+def _add_table_selectables(scope):
+    selectables = {}
     for table in scope.tables:
         table_name = table.text("this")
 
@@ -217,52 +340,18 @@ def _traverse_select(scope):
         elif selectable_table in scope.selectables:
             raise OptimizeError(f"Duplicate table name: {selectable_table}")
         else:
-            scope.selectables[selectable_table] = table
+            selectables[selectable_table] = table
 
-    yield from _traverse_subqueries(scope)
-
-
-def _traverse_union(scope):
-    if scope.ctes:
-        yield from _traverse_derived_tables(scope.ctes, scope)
-
-    # The last scope to be yield should be the top most scope
-    top_left = None
-    for child_scope in _traverse_scope(scope.branch(scope.expression.left)):
-        yield child_scope
-        top_left = child_scope
-
-    top_right = None
-    for child_scope in _traverse_scope(scope.branch(scope.expression.right)):
-        yield child_scope
-        top_right = child_scope
-
-    scope.union = (top_left, top_right)
-
-
-def _traverse_derived_tables(derived_tables, scope):
-    for derived_table in derived_tables:
-        for child_scope in _traverse_scope(
-            scope.branch(
-                derived_table.this, outer_column_list=derived_table.alias_column_names
-            )
-        ):
-            yield child_scope
-            # Tables without aliases will be set as ""
-            # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
-            # Until then, this means that only a single, unaliased derived table is allowed (rather,
-            # the latest one wins.
-            scope.selectables[derived_table.alias] = child_scope
+    scope.selectables.update(selectables)
 
 
 def _traverse_subqueries(scope):
     for subquery in scope.subqueries:
         for child_scope in _traverse_scope(
-            scope.branch(
-                subquery, correlated_selectables=set(scope.referenced_selectables)
-            )
+            scope.branch(subquery, scope_type=ScopeType.SUBQUERY)
         ):
             yield child_scope
+            scope.subquery_scopes.append(child_scope)
 
 
 def _bfs_until_next_scope(expression):

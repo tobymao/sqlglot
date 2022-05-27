@@ -22,7 +22,7 @@ def decorrelate_subqueries(expression):
     Returns:
         sqlglot.Expression: qualified expression
     """
-    expresison = expression.copy()
+    expression = expression.copy()
     sequence = itertools.count()
 
     for scope in traverse_scope(expression):

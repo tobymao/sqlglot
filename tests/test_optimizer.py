@@ -121,7 +121,9 @@ class TestOptimizer(unittest.TestCase):
                 )
 
     def test_decorrelate_subqueries(self):
-        for sql, expected in load_sql_fixture_pairs("optimizer/decorrelate_subqueries.sql"):
+        for sql, expected in load_sql_fixture_pairs(
+            "optimizer/decorrelate_subqueries.sql"
+        ):
             with self.subTest(sql):
                 self.assertEqual(
                     decorrelate_subqueries(parse_one(sql)).sql(),
@@ -129,7 +131,9 @@ class TestOptimizer(unittest.TestCase):
                 )
 
     def test_expand_multi_table_selects(self):
-        for sql, expected in load_sql_fixture_pairs("optimizer/expand_multi_table_selects.sql"):
+        for sql, expected in load_sql_fixture_pairs(
+            "optimizer/expand_multi_table_selects.sql"
+        ):
             with self.subTest(sql):
                 self.assertEqual(
                     expand_multi_table_selects(parse_one(sql)).sql(),

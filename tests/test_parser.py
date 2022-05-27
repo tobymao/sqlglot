@@ -129,6 +129,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x")
         sqlglot.pretty = False
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
+
         self.assertEqual(
             parse_one("SELECT col FROM x").sql(pretty=True), "SELECT\n  col\nFROM x"
         )

@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import sqlglot.expressions as exp
 from sqlglot import ErrorLevel, Parser, ParseError, parse, parse_one
@@ -126,9 +127,8 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
         sqlglot.pretty = True
-        self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x")
-        sqlglot.pretty = False
-        self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
+        with patch("sqlglot.pretty", True):
+            self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x")
 
         self.assertEqual(
             parse_one("SELECT col FROM x").sql(pretty=True), "SELECT\n  col\nFROM x"

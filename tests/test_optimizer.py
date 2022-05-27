@@ -1,12 +1,15 @@
 import doctest
+import inspect
 import os
 import unittest
 
+import sqlglot
 from sqlglot.optimizer import optimize
+from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
-from sqlglot.optimizer.projection_pushdown import projection_pushdown
+from sqlglot.optimizer.rewrite_subqueries import rewrite_subqueries
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
@@ -17,14 +20,8 @@ def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
     """
     This finds and runs all the doctests in the expressions module
     """
-    from sqlglot.optimizer import qualify_columns as module1
-    from sqlglot.optimizer import qualify_tables as module2
-    from sqlglot.optimizer import quote_identities as module3
-    from sqlglot.optimizer import projection_pushdown as module4
-    from sqlglot.optimizer import scope as module5
-
-    for mod in (module1, module2, module3, module4, module5):
-        tests.addTests(doctest.DocTestSuite(mod))
+    for _, module in inspect.getmembers(sqlglot.optimizer, inspect.ismodule):
+        tests.addTests(doctest.DocTestSuite(module))
     return tests
 
 
@@ -108,5 +105,13 @@ class TestOptimizer(unittest.TestCase):
                 expression = simplify(expression)
                 self.assertEqual(
                     expression.sql(),
+                    expected,
+                )
+
+    def test_rewrite_subqueries(self):
+        for sql, expected in load_sql_fixture_pairs("optimizer/rewrite_subqueries.sql"):
+            with self.subTest(sql):
+                self.assertEqual(
+                    rewrite_subqueries(parse_one(sql)).sql(),
                     expected,
                 )

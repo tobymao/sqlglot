@@ -4,12 +4,6 @@ from sqlglot.optimizer.scope import traverse_scope
 import sqlglot.expressions as exp
 
 
-def rewrite_subqueries(expression):
-    expression = expression.copy()
-    expression = decorrelate_subqueries(expression)
-    return expression
-
-
 def decorrelate_subqueries(expression):
     """
     Rewrite sqlglot AST to remove correlated subqueries.
@@ -68,13 +62,11 @@ def decorrelate_subqueries(expression):
                 )
             )
 
-            condition = select.find_ancestor(
-                exp.EQ, exp.NEQ, exp.LT, exp.LTE, exp.GT, exp.GTE, exp.In
-            )
+            predicate = select.find_ancestor(exp.PREDICATES)
 
-            if condition:
-                on.append(condition.sql())
-                condition.replace(exp.TRUE)
+            if predicate:
+                on.append(predicate.sql())
+                predicate.replace(exp.TRUE)
 
             scope.parent.expression.join(
                 select.group_by(internal),

@@ -5,11 +5,12 @@ import unittest
 
 import sqlglot
 from sqlglot.optimizer import optimize
+from sqlglot.optimizer.decorrelate_subqueries import decorrelate_subqueries
+from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
-from sqlglot.optimizer.rewrite_subqueries import rewrite_subqueries
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
@@ -30,13 +31,24 @@ class TestOptimizer(unittest.TestCase):
     fixtures_dir = os.path.join(file_dir, "fixtures/optimizer")
 
     def test_optimize(self):
-        schema = {"x": {"a": "INT"}}
+        schema = {
+            "x": {"a": "INT"},
+            "y": {"a": "INT", "b": "INT"},
+            "z": {"a": "INT", "c": "INT"},
+        }
         self.assertEqual(
             optimize(
                 parse_one("SELECT a FROM x"), schema=schema, db="db", catalog="c"
             ).sql(),
             'SELECT "x"."a" AS "a" FROM "c"."db"."x" AS "x"',
         )
+
+        for sql, expected in load_sql_fixture_pairs("optimizer/optimizer.sql"):
+            with self.subTest(sql):
+                self.assertEqual(
+                    optimize(parse_one(sql), schema=schema).sql(pretty=True),
+                    expected,
+                )
 
     def test_qualify_tables(self):
         self.assertEqual(
@@ -108,10 +120,22 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                 )
 
-    def test_rewrite_subqueries(self):
-        for sql, expected in load_sql_fixture_pairs("optimizer/rewrite_subqueries.sql"):
+    def test_decorrelate_subqueries(self):
+        for sql, expected in load_sql_fixture_pairs(
+            "optimizer/decorrelate_subqueries.sql"
+        ):
             with self.subTest(sql):
                 self.assertEqual(
-                    rewrite_subqueries(parse_one(sql)).sql(),
+                    decorrelate_subqueries(parse_one(sql)).sql(),
+                    expected,
+                )
+
+    def test_expand_multi_table_selects(self):
+        for sql, expected in load_sql_fixture_pairs(
+            "optimizer/expand_multi_table_selects.sql"
+        ):
+            with self.subTest(sql):
+                self.assertEqual(
+                    expand_multi_table_selects(parse_one(sql)).sql(),
                     expected,
                 )

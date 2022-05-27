@@ -7,8 +7,10 @@ from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
+from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
+from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
 from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
 
@@ -18,14 +20,13 @@ class TestOptimizer(unittest.TestCase):
 
     def setUp(self):
         self.schema = {
-            # catalog:
-            "": {
-                # db:
-                "": {
-                    # tables: columns
-                    "x": {"a": "INT", "b": "INT"},
-                    "y": {"b": "INT", "c": "INT"},
-                }
+            "x": {
+                "a": {"type": "INT"},
+                "b": {"type": "INT"},
+            },
+            "y": {
+                "b": {"type": "INT"},
+                "c": {"type": "INT"},
             },
         }
 
@@ -215,3 +216,17 @@ class TestOptimizer(unittest.TestCase):
                     optimize(parse_one(sql), schema=schema).sql(pretty=True),
                     expected,
                 )
+
+    def test_schema(self):
+        schema = ensure_schema({
+            "x": {
+                "a": "uint64",
+            }
+        })
+        self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db", catalog="c"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x2"))

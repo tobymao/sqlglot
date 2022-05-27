@@ -10,10 +10,21 @@ from sqlglot.optimizer.simplify import simplify
 def optimize(expression, schema=None, db=None, catalog=None):
     """
     Rewrite a sqlglot AST into an optimized form.
+
+    Args:
+        expression (sqlglot.Expression): expression to optimize
+        schema (dict|sqlglot.optimizer.Schema): database schema.
+            This either be an instance of `sqlglot.optimizer.Schema` or a mapping of table names
+            to mappings of column names to data types. For example:
+                {"table": {"col": "type"}}
+        db (str): specify the default database, as might be set by a `USE DATABASE db` statement
+        catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
+    Returns:
+        sqlglot.Expression: optimized expression
     """
     expression = expression.copy()
     expression = qualify_tables(expression, db=db, catalog=catalog)
-    expression = qualify_columns(expression, schema or {})
+    expression = qualify_columns(expression, schema)
     expression = projection_pushdown(expression)
     expression = decorrelate_subqueries(expression)
     expression = expand_multi_table_selects(expression)

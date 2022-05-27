@@ -2,6 +2,7 @@ import itertools
 
 import sqlglot.expressions as exp
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -11,17 +12,19 @@ def qualify_columns(expression, schema):
 
     Example:
         >>> import sqlglot
-        >>> schema = {"catalog": {"db": {"tbl": {"col": "INT"}}}}
-        >>> expression = sqlglot.parse_one("SELECT col FROM catalog.db.tbl")
+        >>> schema = {"tbl": {"col": "INT"}}
+        >>> expression = sqlglot.parse_one("SELECT col FROM tbl")
         >>> qualify_columns(expression, schema).sql()
-        'SELECT tbl.col AS col FROM catalog.db.tbl'
+        'SELECT tbl.col AS col FROM tbl'
 
     Args:
         expression (sqlglot.Expression): expression to qualify
-        schema (dict): Mapping of catalogs->dbs->table names->all available columns
+        schema (dict|sqlglot.optimizer.Schema): Database schema
     Returns:
         sqlglot.Expression: qualified expression
     """
+    schema = ensure_schema(schema)
+
     # We'll use this when generating alias names
     sequence = itertools.count()
 
@@ -215,21 +218,14 @@ def _get_selectable_columns(name, selectables, schema):
 
     # If referencing a table, return the columns from the schema
     if isinstance(selectable, exp.Table):
-        catalog_name = selectable.text("catalog")
-        db_name = selectable.text("db")
-        table_name = selectable.text("this")
-        catalog = schema.get(catalog_name)
-        if catalog is None:
-            raise OptimizeError(
-                f"Unknown catalog: {catalog_name}.{db_name}.{table_name}"
-            )
-        db = catalog.get(db_name)
-        if not db:
-            raise OptimizeError(f"Unknown db: {catalog_name}.{db_name}.{table_name}")
-        columns = db.get(table_name)
-        if not columns:
-            raise OptimizeError(f"Unknown table: {catalog_name}.{db_name}.{table_name}")
-        return list(columns)
+        return _get_column_names(schema, selectable)
 
     # Otherwise, if referencing another scope, return that scope's outputs
     return selectable.outputs
+
+
+def _get_column_names(schema, table):
+    try:
+        return schema.column_names(table)
+    except Exception as e:
+        raise OptimizeError(str(e))

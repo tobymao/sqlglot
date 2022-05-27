@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import sqlglot.expressions as exp
 from sqlglot import ErrorLevel, Parser, ParseError, parse, parse_one
@@ -120,3 +121,14 @@ class TestParser(unittest.TestCase):
         assert expression.args["expressions"][3].text("this") == "c#annotation3"
         assert expression.args["expressions"][4].text("this") == "annotation4"
         assert expression.args["expressions"][5].text("this") == ""
+
+    def test_pretty_config_override(self):
+        self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
+        with patch("sqlglot.pretty", True):
+            self.assertEqual(
+                parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x"
+            )
+
+        self.assertEqual(
+            parse_one("SELECT col FROM x").sql(pretty=True), "SELECT\n  col\nFROM x"
+        )

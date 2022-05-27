@@ -11,6 +11,7 @@ def optimize(expression, schema=None, db=None, catalog=None):
     """
     Rewrite a sqlglot AST into an optimized form.
     """
+    expression = expression.copy()
     expression = qualify_tables(expression, db=db, catalog=catalog)
     expression = qualify_columns(expression, schema or {})
     expression = projection_pushdown(expression)

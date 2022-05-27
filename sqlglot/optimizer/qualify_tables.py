@@ -19,7 +19,6 @@ def qualify_tables(expression, db=None, catalog=None):
     Returns:
         sqlglot.Expression: qualified expression
     """
-    expression = expression.copy()
     for scope in traverse_scope(expression):
         for selectable in scope.selectables.values():
             if isinstance(selectable, exp.Table):

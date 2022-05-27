@@ -22,4 +22,4 @@ def quote_identities(expression):
             node.set("quoted", True)
         return node
 
-    return expression.transform(qualify)
+    return expression.transform(qualify, copy=False)

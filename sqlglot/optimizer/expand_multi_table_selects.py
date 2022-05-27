@@ -22,4 +22,5 @@ def expand_multi_table_selects(expression):
                 predicate.replace(exp.TRUE)
             parent.join(query, on=predicates, copy=False)
             from_.args["expressions"].remove(query)
+
     return expression

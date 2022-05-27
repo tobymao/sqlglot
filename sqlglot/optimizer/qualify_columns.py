@@ -22,8 +22,6 @@ def qualify_columns(expression, schema):
     Returns:
         sqlglot.Expression: qualified expression
     """
-    expression = expression.copy()
-
     # We'll use this when generating alias names
     sequence = itertools.count()
 

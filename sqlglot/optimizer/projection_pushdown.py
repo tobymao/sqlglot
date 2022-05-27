@@ -23,8 +23,6 @@ def projection_pushdown(expression):
     Returns:
         sqlglot.Expression: optimized expression
     """
-    expression = expression.copy()
-
     # Map of Scope to all columns being selected by outer queries.
     referenced_columns = defaultdict(set)
 

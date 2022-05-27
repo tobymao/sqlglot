@@ -31,56 +31,56 @@ def decorrelate_subqueries(expression):
     sequence = itertools.count()
 
     for scope in traverse_scope(expression):
-        if scope.correlated_selectables:
-            select = scope.expression
-            parent_select = select.find_ancestor(exp.Select)
-            where = select.args["where"]
+        select = scope.expression
+        where = select.args.get("where")
 
-            if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
+        if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
+            continue
+
+        for external in scope.external_references:
+            eq = external.find_ancestor(exp.EQ)
+
+            if external.find_ancestor(exp.Where) != where or not eq:
                 continue
 
-            for external in where.find_all(exp.Column):
-                table = external.text("table")
-                eq = external.parent
+            internal = eq.right if eq.left == external else eq.left
+            value = select.selects[0]
 
-                if table not in scope.correlated_selectables or not isinstance(
-                    eq, exp.EQ
-                ):
+            # if the join column is not in the select, we need to add it
+            # but we can only do so if the original expression is an agg.
+            # if the original subquery was (select foo from x where bar = y.bar)
+            # adding bar would make the subquery result in more than 1 row...
+            # (select foo, bar from x group by bar).
+            # a possible optimization is to do a collect on foo and change operations to lists
+            if internal not in scope.selects:
+                if not value.find(exp.AggFunc):
                     continue
+                select.select(internal, copy=False)
 
-                internal = eq.right if eq.left == external else eq.left
-                value = select.selects[0]
+            alias = f"_d_{next(sequence)}"
+            on = [f"{alias}.{internal.text('this')} = {external.sql()}"]
 
-                # if the join column is not in the select, we need to add it
-                # but we can only do so if the original expression is an agg.
-                # if the original subquery was (select foo from x where bar = y.bar)
-                # adding bar would make the subquery result in more than 1 row...
-                # (select foo, bar from x group by bar).
-                # a possible optimization is to do a collect on foo and change operations to lists
-                if internal not in scope.selects:
-                    if not value.find(exp.AggFunc):
-                        continue
-                    select.select(internal, copy=False)
-
-                alias = f"_d_{next(sequence)}"
-                eq.replace(exp.TRUE)
-                select.replace(
-                    exp.Column(
-                        this=exp.to_identifier(value.alias_or_name),
-                        table=exp.to_identifier(alias),
-                    )
+            eq.replace(exp.TRUE)
+            select.replace(
+                exp.Column(
+                    this=exp.to_identifier(value.alias_or_name),
+                    table=exp.to_identifier(alias),
                 )
+            )
 
-                condition = select.find_ancestor(
-                    exp.EQ, exp.NEQ, exp.LT, exp.LTE, exp.GT, exp.GTE
-                )
+            condition = select.find_ancestor(
+                exp.EQ, exp.NEQ, exp.LT, exp.LTE, exp.GT, exp.GTE, exp.In
+            )
 
-                parent_select.join(
-                    select.group_by(internal),
-                    on=f"{alias}.{internal.text('this')} = {external.sql()} AND {condition.sql()}",
-                    join_alias=alias,
-                    copy=False,
-                )
-
+            if condition:
+                on.append(condition.sql())
                 condition.replace(exp.TRUE)
+
+            scope.parent.expression.join(
+                select.group_by(internal),
+                on=" AND ".join(on),
+                join_alias=alias,
+                copy=False,
+            )
+
     return expression

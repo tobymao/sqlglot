@@ -86,7 +86,7 @@ class Generator:
         self.time_mapping = time_mapping or {}
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
-        self.configured_pretty = pretty
+        self.configured_pretty = self.pretty
         self.identifier = identifier or '"'
         self.identify = identify
         self.quote = quote or "'"

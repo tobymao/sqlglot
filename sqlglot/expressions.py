@@ -2213,3 +2213,4 @@ def subquery(expression, alias=None, dialect=None, **opts):
 TRUE = Boolean(this=True)
 FALSE = Boolean(this=False)
 NULL = Null()
+PREDICATES = (EQ, GT, GTE, ILike, In, Is, Like, LT, LTE, NEQ)

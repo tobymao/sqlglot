@@ -170,8 +170,7 @@ class Scope:
         result = []
         for scope in self.subquery_scopes:
             for column in scope.external_references:
-                if column.text("table") in self.selectables:
-                    result.append((column, scope))
+                result.append((column, scope))
         return result
 
     @property

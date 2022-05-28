@@ -4,7 +4,7 @@ FROM (
     FROM x, y
     WHERE (SELECT max(b) FROM y WHERE x.a = y.a) >= 0 AND x.a = y.a
 ) d
-WHERE TRUE AND TRUE OR 'a' = 'b'
+WHERE (TRUE AND TRUE OR 'a' = 'b') AND a > 1
 GROUP BY a;
 SELECT
   "d"."a" AS "a",
@@ -19,8 +19,6 @@ FROM (
           MAX("y"."b") AS "_col_0",
           "y"."a"
         FROM "y" AS "y"
-        WHERE
-          TRUE
         GROUP BY
           "y"."a"
     ) AS "_d_0"
@@ -28,10 +26,8 @@ FROM (
       AND "_d_0"."_col_0" >= 0
     JOIN "y" AS "y"
       ON "x"."a" = "y"."a"
-    WHERE
-      TRUE
 ) AS "d"
 WHERE
-  TRUE
+  "d"."a" > 1
 GROUP BY
   "d"."a";

@@ -30,7 +30,7 @@ FROM (
 WHERE
   "d"."a" > 1
 GROUP BY
-  "a";
+  "d"."a";
 SELECT x.a, SUM(y.b)
 FROM x, y
 WHERE

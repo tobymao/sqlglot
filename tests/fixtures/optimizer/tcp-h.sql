@@ -37,11 +37,11 @@ FROM "lineitem" AS "lineitem"
 WHERE
   "lineitem"."l_shipdate" <= CAST('1998-12-01' AS DATE) - INTERVAL '90' "day"
 GROUP BY
-  "l_returnflag",
-  "l_linestatus"
+  "lineitem"."l_returnflag",
+  "lineitem"."l_linestatus"
 ORDER BY
-  "l_returnflag",
-  "l_linestatus";
+  "lineitem"."l_returnflag",
+  "lineitem"."l_linestatus";
 --------------------------------------
 -- TCP-H 2
 --------------------------------------
@@ -130,10 +130,10 @@ WHERE
   "part"."p_size" = 15
   AND "part"."p_type" LIKE '%BRASS'
 ORDER BY
-  "s_acctbal" DESC,
-  "n_name",
-  "s_name",
-  "p_partkey"
+  "supplier"."s_acctbal" DESC,
+  "nation"."n_name",
+  "supplier"."s_name",
+  "part"."p_partkey"
 LIMIT 100;
 --------------------------------------
 -- TCP-H 3
@@ -177,10 +177,10 @@ JOIN "lineitem" AS "lineitem"
 WHERE
   "customer"."c_mktsegment" = 'BUILDING'
 GROUP BY
-  "l_orderkey",
-  "o_orderdate",
-  "o_shippriority"
+  "lineitem"."l_orderkey",
+  "orders"."o_orderdate",
+  "orders"."o_shippriority"
 ORDER BY
   "revenue" DESC,
-  "o_orderdate"
+  "orders"."o_orderdate"
 LIMIT 10;

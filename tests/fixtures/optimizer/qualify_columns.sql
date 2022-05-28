@@ -29,7 +29,7 @@ SELECT a + b FROM x;
 SELECT x.a + x.b AS "_col_0" FROM x;
 
 SELECT a, SUM(b) FROM x WHERE a > 1 AND b > 1 GROUP BY a;
-SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x WHERE x.a > 1 AND x.b > 1 GROUP BY a;
+SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
 
 SELECT a AS j, b FROM x ORDER BY j;
 SELECT x.a AS j, x.b AS b FROM x ORDER BY j;
@@ -41,7 +41,7 @@ SELECT a AS a, b FROM x ORDER BY a;
 SELECT x.a AS a, x.b AS b FROM x ORDER BY a;
 
 SELECT a, b FROM x ORDER BY a;
-SELECT x.a AS a, x.b AS b FROM x ORDER BY a;
+SELECT x.a AS a, x.b AS b FROM x ORDER BY x.a;
 
 --------------------------------------
 -- Derived tables

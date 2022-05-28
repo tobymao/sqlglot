@@ -219,10 +219,16 @@ class Scope:
         table_name = column.text("table")
         column_name = column.text("this")
 
+        aliased_outputs = {
+            e.alias
+            for e in self.expression.args.get("expressions", [])
+            if isinstance(e, exp.Alias)
+        }
+
         return (
             not table_name
             and column.find_ancestor(exp.Group, exp.Order)
-            and column_name in self.outputs
+            and column_name in aliased_outputs
         )
 
 

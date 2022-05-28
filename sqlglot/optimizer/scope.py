@@ -182,14 +182,7 @@ class Scope:
             list[exp.Column]: Column instances that don't reference
                 tables in the current scope.
         """
-        result = []
-        for column in self.columns:
-            if column.text("table") not in self.selectables:
-                result.append(column)
-        for column, _ in self.correlations:
-            if column.text("table") not in self.selectables:
-                result.append(column)
-        return result
+        return [c for c in self.references if c.text("table") not in self.selectables]
 
     @property
     def references(self):
@@ -200,7 +193,11 @@ class Scope:
             list[exp.Column]: Column instances in this scope, plus any
                 Columns that reference this scope from correlated subqueries.
         """
-        return self.columns + [c for c, _ in self.correlations]
+        return [
+            c
+            for c in self.columns + [c for c, _ in self.correlations]
+            if not self._is_output_reference(c)
+        ]
 
     @property
     def is_subquery(self):
@@ -216,6 +213,17 @@ class Scope:
         """Rename a selectable in this scope"""
         columns = self.selectables.pop(old_name or "", [])
         self.selectables[new_name] = columns
+
+    def _is_output_reference(self, column):
+        """Determine if column is a reference to a SELECT output column"""
+        table_name = column.text("table")
+        column_name = column.text("this")
+
+        return (
+            not table_name
+            and column.find_ancestor(exp.Group, exp.Order)
+            and column_name in self.outputs
+        )
 
 
 def traverse_scope(expression):

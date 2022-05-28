@@ -14,6 +14,8 @@ from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
 
 
 class TestOptimizer(unittest.TestCase):
+    maxDiff = None
+
     def test_optimize(self):
         schema = {
             "x": {"a": "INT", "b": "INT"},
@@ -155,7 +157,7 @@ class TestOptimizer(unittest.TestCase):
                 "o_shippriority": "int32",
                 "o_comment": "string",
             },
-            "customers": {
+            "customer": {
                 "c_custkey": "uint64",
                 "c_name": "string",
                 "c_address": "string",

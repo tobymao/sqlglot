@@ -94,7 +94,7 @@ def _qualify_columns(scope, schema):
                 unambiguous_columns = _get_unambiguous_columns(selectable_columns)
 
             column_table = unambiguous_columns.get(column_name)
-            if not column_table:
+            if not column_table and not scope.is_subquery:
                 raise OptimizeError(f"Ambiguous column: {column_name}")
             column.set("table", exp.to_identifier(column_table))
 

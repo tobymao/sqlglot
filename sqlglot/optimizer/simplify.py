@@ -26,6 +26,7 @@ def simplify(expression):
         expression = simplify_not(expression)
         expression = simplify_conjunctions(expression)
         expression = simplify_parens(expression)
+        expression = remove_where_true(expression)
 
         if start == hash(expression):
             break
@@ -74,6 +75,10 @@ def simplify_conjunctions(expression):
                 node.replace(FALSE)
             elif always_true(left) and always_true(right):
                 node.replace(TRUE)
+            elif always_true(left):
+                node.replace(right)
+            elif always_true(right):
+                node.replace(left)
         elif isinstance(node, exp.Or):
             if always_true(left) or always_true(right):
                 node.replace(TRUE)
@@ -96,6 +101,13 @@ def simplify_parens(expression):
     for node in reverse_traverse(expression, exp.Paren):
         if not isinstance(node.this, exp.Binary):
             node.replace(node.this)
+    return expression
+
+
+def remove_where_true(expression):
+    for where in expression.find_all(exp.Where):
+        if always_true(where.this):
+            where.parent.args.pop("where")
     return expression
 
 

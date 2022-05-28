@@ -1,16 +1,7 @@
 import unittest
-import doctest
 
 from sqlglot import parse_one, select, from_, and_, or_, condition, not_
 from sqlglot import expressions as exp
-
-
-def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
-    """
-    This finds and runs all the doctests in the expressions module
-    """
-    tests.addTests(doctest.DocTestSuite(exp))
-    return tests
 
 
 class TestBuild(unittest.TestCase):

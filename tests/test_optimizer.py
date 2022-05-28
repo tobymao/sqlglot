@@ -1,9 +1,6 @@
-import doctest
-import inspect
 import os
 import unittest
 
-import sqlglot
 from sqlglot.optimizer import optimize
 from sqlglot.optimizer.decorrelate_subqueries import decorrelate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
@@ -15,15 +12,6 @@ from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
 from sqlglot.errors import OptimizeError
 from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
-
-
-def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
-    """
-    This finds and runs all the doctests in the expressions module
-    """
-    for _, module in inspect.getmembers(sqlglot.optimizer, inspect.ismodule):
-        tests.addTests(doctest.DocTestSuite(module))
-    return tests
 
 
 class TestOptimizer(unittest.TestCase):
@@ -139,3 +127,138 @@ class TestOptimizer(unittest.TestCase):
                     expand_multi_table_selects(parse_one(sql)).sql(),
                     expected,
                 )
+
+
+#    def test_tcph(self):
+#        schema = {
+#            "lineitem": {
+#                "l_orderkey": "uint64",
+#                "l_partkey": "uint64",
+#                "l_suppkey": "uint64",
+#                "l_linenumber": "uint64",
+#                "l_quantity": "float64",
+#                "l_extendedprice": "float64",
+#                "l_discount": "float64",
+#                "l_tax": "float64",
+#                "l_returnflag": "string",
+#                "l_linestatus": "string",
+#                "l_shipdate": "date32",
+#                "l_commitdate": "date32",
+#                "l_receiptdate": "date32",
+#                "l_shipinstruct": "string",
+#                "l_shipmode": "string",
+#                "l_comment": "string",
+#            },
+#            "orders": {
+#                "o_orderkey": "uint64",
+#                "o_custkey": "uint64",
+#                "o_orderstatus": "string",
+#                "o_totalprice": "float64",
+#                "o_orderdate": "date32",
+#                "o_orderpriority": "string",
+#                "o_clerk": "string",
+#                "o_shippriority": "int32",
+#                "o_comment": "string",
+#            },
+#            "customers": {
+#                "c_custkey": "uint64",
+#                "c_name": "string",
+#                "c_address": "string",
+#                "c_nationkey": "uint64",
+#                "c_phone": "string",
+#                "c_acctbal": "float64",
+#                "c_mktsegment": "string",
+#                "c_comment": "string",
+#            },
+#            "part": {
+#                "p_partkey" : "uint64",
+#                "p_name": "string",
+#                "p_mfgr": "string",
+#                "p_brand": "string",
+#                "p_type": "string",
+#                "p_size": "int32",
+#                "p_container": "string",
+#                "p_retailprice": "float64",
+#                "p_comment": "string",
+#            },
+#            "supplier": {
+#                "s_suppkey": "uint64",
+#                "s_name": "string",
+#                "s_address": "string",
+#                "s_nationkey": "uint64",
+#                "s_phone": "string",
+#                "s_acctbal": "float64",
+#                "s_comment": "string",
+#            },
+#            "partsupp": {
+#                "ps_partkey": "uint64",
+#                "ps_suppkey": "uint64",
+#                "ps_availqty": "int32",
+#                "ps_supplycost": "float64",
+#                "ps_comment": "string",
+#            },
+#            "nation": {
+#                "n_nationkey": "uint64",
+#                "n_name": "string",
+#                "n_regionkey": "uint64",
+#                "n_comment": "string",
+#            },
+#            "region": {
+#                "r_regionkey" : "uint64",
+#                "r_name": "string",
+#                "r_comment": "string",
+#            },
+#        }
+#
+#        query = parse_one(
+#            """
+#            -- TPC-H Query 2
+# select
+#    s_acctbal,
+#    s_name,
+#    n_name,
+#    p_partkey,
+#    p_mfgr,
+#    s_address,
+#    s_phone,
+#    s_comment
+# from
+#    part,
+#    supplier,
+#    partsupp,
+#    nation,
+#    region
+# where
+#    p_partkey = ps_partkey
+#    and s_suppkey = ps_suppkey
+#    and p_size = 15
+#    and p_type like '%BRASS'
+#    and s_nationkey = n_nationkey
+#    and n_regionkey = r_regionkey
+#    and r_name = 'EUROPE'
+#    and ps_supplycost = (
+#            select
+#                    min(ps_supplycost)
+#            from
+#                    partsupp,
+#                    supplier,
+#                    nation,
+#                    region
+#            where
+#                    p_partkey = ps_partkey
+#                    and s_suppkey = ps_suppkey
+#                    and s_nationkey = n_nationkey
+#                    and n_regionkey = r_regionkey
+#                    and r_name = 'EUROPE'
+#    )
+# order by
+#    s_acctbal desc,
+#    n_name,
+#    s_name,
+#    p_partkey
+# limit
+#    100
+#
+#            """
+#        )
+#        self.assertEqual(optimize(query, schema=schema), "")

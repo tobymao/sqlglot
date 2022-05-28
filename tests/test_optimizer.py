@@ -206,10 +206,9 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
-        for i in [2]:
-            for sql, expected in load_sql_fixture_pairs(f"optimizer/tcph{i}.sql"):
-                with self.subTest(sql):
-                    self.assertEqual(
-                        optimize(parse_one(sql), schema=schema).sql(pretty=True),
-                        expected,
-                    )
+        for sql, expected in load_sql_fixture_pairs("optimizer/tcp-h.sql"):
+            with self.subTest(sql):
+                self.assertEqual(
+                    optimize(parse_one(sql), schema=schema).sql(pretty=True),
+                    expected,
+                )

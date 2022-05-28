@@ -94,6 +94,9 @@ SELECT "_q_1".a AS a FROM (SELECT x.a AS a FROM x) AS "_q_1" WHERE "_q_1".a IN (
 SELECT a FROM x WHERE b IN (SELECT c FROM y WHERE y.b = x.a);
 SELECT x.a AS a FROM x WHERE x.b IN (SELECT y.c AS c FROM y WHERE y.b = x.a);
 
+SELECT a FROM x WHERE b IN (SELECT c FROM y WHERE y.b = a);
+SELECT x.a AS a FROM x WHERE x.b IN (SELECT y.c AS c FROM y WHERE y.b = x.a);
+
 SELECT a FROM x WHERE b IN (SELECT b FROM y AS x);
 SELECT x.a AS a FROM x WHERE x.b IN (SELECT x.b AS b FROM y AS x);
 

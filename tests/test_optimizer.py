@@ -124,7 +124,6 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                 )
 
-    @unittest.skip("ambiguous column due to correlation")
     def test_tcph(self):
         schema = {
             "lineitem": {

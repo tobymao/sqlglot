@@ -16,7 +16,7 @@ from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
 class TestOptimizer(unittest.TestCase):
     def test_optimize(self):
         schema = {
-            "x": {"a": "INT"},
+            "x": {"a": "INT", "b": "INT"},
             "y": {"a": "INT", "b": "INT"},
             "z": {"a": "INT", "c": "INT"},
         }

@@ -46,7 +46,9 @@ def decorrelate_subqueries(expression):
             # adding bar would make the subquery result in more than 1 row...
             # (select foo, bar from x group by bar).
             # a possible optimization is to do a collect on foo and change operations to lists
-            if internal not in scope.selects:
+            if internal not in [
+                s.this if isinstance(s, exp.Alias) else s for s in scope.selects
+            ]:
                 if not value.find(exp.AggFunc):
                     continue
                 select.select(internal, copy=False)

@@ -107,7 +107,7 @@ def simplify_parens(expression):
 def remove_where_true(expression):
     for where in expression.find_all(exp.Where):
         if always_true(where.this):
-            where.parent.args.pop("where")
+            where.parent.args.pop("where", None)
     return expression
 
 

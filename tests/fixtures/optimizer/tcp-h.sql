@@ -184,3 +184,66 @@ ORDER BY
   "revenue" DESC,
   "orders"."o_orderdate"
 LIMIT 10;
+--------------------------------------
+-- TCP-H 4
+--------------------------------------
+select
+        o_orderpriority,
+        count(*) as order_count
+from
+        orders
+where
+        o_orderdate >= date '1993-07-01'
+        and o_orderdate < date '1993-07-01' + interval '3' month
+        and exists (
+                select
+                        *
+                from
+                        lineitem
+                where
+                        l_orderkey = o_orderkey
+                        and l_commitdate < l_receiptdate
+        )
+group by
+        o_orderpriority
+order by
+        o_orderpriority;
+SELECT
+  "orders"."o_orderpriority" AS "o_orderpriority",
+  COUNT(*) AS "order_count"
+FROM "orders" AS "orders"
+JOIN (
+    SELECT
+      "lineitem"."l_orderkey" AS "l_orderkey",
+      "lineitem"."l_partkey" AS "l_partkey",
+      "lineitem"."l_suppkey" AS "l_suppkey",
+      "lineitem"."l_linenumber" AS "l_linenumber",
+      "lineitem"."l_quantity" AS "l_quantity",
+      "lineitem"."l_extendedprice" AS "l_extendedprice",
+      "lineitem"."l_discount" AS "l_discount",
+      "lineitem"."l_tax" AS "l_tax",
+      "lineitem"."l_returnflag" AS "l_returnflag",
+      "lineitem"."l_linestatus" AS "l_linestatus",
+      "lineitem"."l_shipdate" AS "l_shipdate",
+      "lineitem"."l_commitdate" AS "l_commitdate",
+      "lineitem"."l_receiptdate" AS "l_receiptdate",
+      "lineitem"."l_shipinstruct" AS "l_shipinstruct",
+      "lineitem"."l_shipmode" AS "l_shipmode",
+      "lineitem"."l_comment" AS "l_comment"
+    FROM "lineitem" AS "lineitem"
+    WHERE
+      "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
+    GROUP BY
+      "lineitem"."l_orderkey"
+) AS "_d_0"
+  ON "_d_0"."l_orderkey" = "orders"."o_orderkey"
+WHERE
+  "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
+  AND "orders"."o_orderdate" < CAST('1993-07-01' AS DATE) + INTERVAL '3' "month"
+  AND EXISTS (
+      "_d_0"."l_orderkey"
+  )
+GROUP BY
+  "orders"."o_orderpriority"
+ORDER BY
+  "orders"."o_orderpriority";

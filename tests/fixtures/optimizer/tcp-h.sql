@@ -218,7 +218,8 @@ JOIN (
     FROM "lineitem" AS "lineitem"
     WHERE
       "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
-    LIMIT 1
+    GROUP BY
+      "lineitem"."l_orderkey"
 ) AS "_d_0"
   ON "_d_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE

@@ -70,12 +70,11 @@ def decorrelate_subqueries(expression):
                 predicate.replace(exp.TRUE)
 
             if isinstance(predicate, exp.Exists):
-                select = select.select(internal, append=False).limit(1)
-            else:
-                select = select.group_by(internal)
+                select = select.select(internal, append=False)
+            elif predicate:
+                on.append(predicate.sql())
 
-                if predicate:
-                    on.append(predicate.sql())
+            select = select.group_by(internal)
 
             scope.parent.expression.join(
                 select,

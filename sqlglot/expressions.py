@@ -1001,7 +1001,7 @@ class Select(Subqueryable, Expression):
             join.set("on", on)
 
         if join_alias:
-            join.set("this", alias_(join.args["this"], join_alias))
+            join.set("this", alias_(join.args["this"], join_alias, table=True))
         return _apply_list_builder(
             join,
             instance=self,
@@ -2158,7 +2158,7 @@ def to_identifier(alias, quoted=None):
     return identifier
 
 
-def alias_(expression, alias, dialect=None, quoted=None, **opts):
+def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     """
     Create an Alias expression.
     Expample:
@@ -2170,6 +2170,7 @@ def alias_(expression, alias, dialect=None, quoted=None, **opts):
             If an Expression instance is passed, this is used as-is.
         alias (str or Identifier): the alias name to use. If the name has
             special charachters it is quoted.
+        alias (boolean): create a table alias, default false
         dialect (str): the dialect used to parse the input expression.
         **opts: other options to use to parse the input expressions.
 
@@ -2178,6 +2179,7 @@ def alias_(expression, alias, dialect=None, quoted=None, **opts):
     """
     exp = _maybe_parse(expression, dialect=dialect, parser_opts=opts)
     alias = to_identifier(alias, quoted=quoted)
+    alias = TableAlias(this=alias) if table else alias
 
     if "alias" in exp.arg_types:
         exp = exp.copy()

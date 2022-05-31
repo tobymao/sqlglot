@@ -7,7 +7,7 @@ from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
-from sqlglot.optimizer.schema import ensure_schema, SingleDatabaseSchema
+from sqlglot.optimizer.schema import ensure_schema, MappingSchema
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
 from sqlglot import expressions as exp
@@ -21,12 +21,12 @@ class TestOptimizer(unittest.TestCase):
     def setUp(self):
         self.schema = {
             "x": {
-                "a": {"type": "INT"},
-                "b": {"type": "INT"},
+                "a": "INT",
+                "b": "INT",
             },
             "y": {
-                "b": {"type": "INT"},
-                "c": {"type": "INT"},
+                "b": "INT",
+                "c": "INT",
             },
         }
 
@@ -233,11 +233,60 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(exp.Table(this="x2"))
 
-        schema = SingleDatabaseSchema(
+        schema = ensure_schema(
             {
-                "x": {
-                    "a": "uint64",
+                "db": {
+                    "x": {
+                        "a": "uint64",
+                    }
                 }
             }
         )
+        self.assertEqual(schema.column_names(exp.Table(this="x", db="db")), ["a"])
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db", catalog="c"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db2"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x2", db="db"))
+
+        schema = ensure_schema(
+            {
+                "c": {
+                    "db": {
+                        "x": {
+                            "a": "uint64",
+                        }
+                    }
+                }
+            }
+        )
+        self.assertEqual(
+            schema.column_names(exp.Table(this="x", db="db", catalog="c")), ["a"]
+        )
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db", catalog="c2"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db2"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x2", db="db"))
+
+        schema = ensure_schema(
+            MappingSchema(
+                {
+                    "x": {
+                        "a": "uint64",
+                    }
+                }
+            )
+        )
         self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])
+
+        with self.assertRaises(OptimizeError):
+            ensure_schema({})

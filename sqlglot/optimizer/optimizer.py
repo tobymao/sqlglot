@@ -14,9 +14,11 @@ def optimize(expression, schema=None, db=None, catalog=None):
     Args:
         expression (sqlglot.Expression): expression to optimize
         schema (dict|sqlglot.optimizer.Schema): database schema.
-            This either be an instance of `sqlglot.optimizer.Schema` or a mapping of table names
-            to mappings of column names to data types. For example:
-                {"table": {"col": "type"}}
+            This can either be an instance of `sqlglot.optimizer.Schema` or a mapping in one of
+            the following forms:
+                1. {table: {col: type}}
+                2. {db: {table: {col: type}}}
+                3. {catalog: {db: {table: {col: type}}}}
         db (str): specify the default database, as might be set by a `USE DATABASE db` statement
         catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
     Returns:

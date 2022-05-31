@@ -218,14 +218,10 @@ def _get_selectable_columns(name, selectables, schema):
 
     # If referencing a table, return the columns from the schema
     if isinstance(selectable, exp.Table):
-        return _get_column_names(schema, selectable)
+        try:
+            return schema.column_names(selectable)
+        except Exception as e:
+            raise OptimizeError(str(e)) from e
 
     # Otherwise, if referencing another scope, return that scope's outputs
     return selectable.outputs
-
-
-def _get_column_names(schema, table):
-    try:
-        return schema.column_names(table)
-    except Exception as e:
-        raise OptimizeError(str(e)) from e

@@ -49,6 +49,6 @@ class SingleDatabaseSchema(Schema):
 
 def ensure_schema(schema):
     if isinstance(schema, Schema):
-        raise schema
+        return schema
 
     return SingleDatabaseSchema(schema)

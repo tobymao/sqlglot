@@ -7,7 +7,7 @@ from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
-from sqlglot.optimizer.schema import ensure_schema
+from sqlglot.optimizer.schema import ensure_schema, SingleDatabaseSchema
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
 from sqlglot import expressions as exp
@@ -232,3 +232,10 @@ class TestOptimizer(unittest.TestCase):
             schema.column_names(exp.Table(this="x", db="db"))
         with self.assertRaises(ValueError):
             schema.column_names(exp.Table(this="x2"))
+
+        schema = SingleDatabaseSchema({
+            "x": {
+                "a": "uint64",
+            }
+        })
+        self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])

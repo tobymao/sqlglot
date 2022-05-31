@@ -42,7 +42,7 @@ class SingleDatabaseSchema(Schema):
 
         columns = self._tables.get(table_name)
         if columns is None:
-            raise ValueError(f"Table not found: Received: {table_str}")
+            raise ValueError(f"Unknown table: {table_name}")
 
         return list(columns)
 

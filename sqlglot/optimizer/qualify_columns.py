@@ -2,6 +2,7 @@ import itertools
 
 import sqlglot.expressions as exp
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -18,10 +19,12 @@ def qualify_columns(expression, schema):
 
     Args:
         expression (sqlglot.Expression): expression to qualify
-        schema (dict): Mapping of table names to all available columns
+        schema (dict|sqlglot.optimizer.Schema): Database schema
     Returns:
         sqlglot.Expression: qualified expression
     """
+    schema = ensure_schema(schema)
+
     # We'll use this when generating alias names
     sequence = itertools.count()
 
@@ -215,10 +218,10 @@ def _get_selectable_columns(name, selectables, schema):
 
     # If referencing a table, return the columns from the schema
     if isinstance(selectable, exp.Table):
-        table_name = selectable.text("this")
-        if table_name not in schema:
-            raise OptimizeError(f"Unknown table: {table_name}")
-        return list(schema.get(selectable.text("this")))
+        try:
+            return schema.column_names(selectable)
+        except Exception as e:
+            raise OptimizeError(str(e)) from e
 
     # Otherwise, if referencing another scope, return that scope's outputs
     return selectable.outputs

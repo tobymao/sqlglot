@@ -7,14 +7,28 @@ from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
+from sqlglot.optimizer.schema import ensure_schema, MappingSchema
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
+from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
 from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
 
 
 class TestOptimizer(unittest.TestCase):
     maxDiff = None
+
+    def setUp(self):
+        self.schema = {
+            "x": {
+                "a": "INT",
+                "b": "INT",
+            },
+            "y": {
+                "b": "INT",
+                "c": "INT",
+            },
+        }
 
     def test_optimize(self):
         schema = {
@@ -24,9 +38,10 @@ class TestOptimizer(unittest.TestCase):
         }
         self.assertEqual(
             optimize(
-                parse_one("SELECT a FROM x"), schema=schema, db="db", catalog="c"
+                parse_one("SELECT a FROM x"),
+                schema=self.schema,
             ).sql(),
-            'SELECT "x"."a" AS "a" FROM "c"."db"."x" AS "x"',
+            'SELECT "x"."a" AS "a" FROM "x" AS "x"',
         )
 
         for sql, expected in load_sql_fixture_pairs("optimizer/optimizer.sql"):
@@ -50,26 +65,18 @@ class TestOptimizer(unittest.TestCase):
                 )
 
     def test_qualify_columns(self):
-        schema = {
-            "x": {"a": "INT", "b": "INT"},
-            "y": {"b": "INT", "c": "INT"},
-        }
         for sql, expected in load_sql_fixture_pairs("optimizer/qualify_columns.sql"):
             with self.subTest(sql):
                 self.assertEqual(
-                    qualify_columns(parse_one(sql), schema=schema).sql(),
+                    qualify_columns(parse_one(sql), schema=self.schema).sql(),
                     expected,
                 )
 
     def test_qualify_columns__invalid(self):
-        schema = {
-            "x": {"a": "INT", "b": "INT"},
-            "y": {"b": "INT", "c": "INT"},
-        }
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
             with self.subTest(sql):
                 with self.assertRaises(OptimizeError):
-                    qualify_columns(parse_one(sql), schema=schema)
+                    qualify_columns(parse_one(sql), schema=self.schema)
 
     def test_quote_identities(self):
         for sql, expected in load_sql_fixture_pairs("optimizer/quote_identities.sql"):
@@ -80,16 +87,12 @@ class TestOptimizer(unittest.TestCase):
                 )
 
     def test_projection_pushdown(self):
-        schema = {
-            "x": {"a": "INT", "b": "INT"},
-            "y": {"b": "INT", "c": "INT"},
-        }
         for sql, expected in load_sql_fixture_pairs(
             "optimizer/projection_pushdown.sql"
         ):
             with self.subTest(sql):
                 expression = parse_one(sql)
-                expression = qualify_columns(expression, schema)
+                expression = qualify_columns(expression, self.schema)
                 expression = projection_pushdown(expression)
                 self.assertEqual(
                     expression.sql(),
@@ -213,3 +216,77 @@ class TestOptimizer(unittest.TestCase):
                     optimize(parse_one(sql), schema=schema).sql(pretty=True),
                     expected,
                 )
+
+    def test_schema(self):
+        schema = ensure_schema(
+            {
+                "x": {
+                    "a": "uint64",
+                }
+            }
+        )
+        self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db", catalog="c"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x2"))
+
+        schema = ensure_schema(
+            {
+                "db": {
+                    "x": {
+                        "a": "uint64",
+                    }
+                }
+            }
+        )
+        self.assertEqual(schema.column_names(exp.Table(this="x", db="db")), ["a"])
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db", catalog="c"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db2"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x2", db="db"))
+
+        schema = ensure_schema(
+            {
+                "c": {
+                    "db": {
+                        "x": {
+                            "a": "uint64",
+                        }
+                    }
+                }
+            }
+        )
+        self.assertEqual(
+            schema.column_names(exp.Table(this="x", db="db", catalog="c")), ["a"]
+        )
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db", catalog="c2"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x", db="db2"))
+        with self.assertRaises(ValueError):
+            schema.column_names(exp.Table(this="x2", db="db"))
+
+        schema = ensure_schema(
+            MappingSchema(
+                {
+                    "x": {
+                        "a": "uint64",
+                    }
+                }
+            )
+        )
+        self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])
+
+        with self.assertRaises(OptimizeError):
+            ensure_schema({})

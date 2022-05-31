@@ -24,6 +24,7 @@ class SingleDatabaseSchema(Schema):
         tables (dict): Mapping of table names to mappings of column names to data types.
             For example: {"table1": {"col1": "int64"}}
     """
+
     def __init__(self, tables):
         self._tables = tables
 

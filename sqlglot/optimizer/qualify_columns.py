@@ -228,4 +228,4 @@ def _get_column_names(schema, table):
     try:
         return schema.column_names(table)
     except Exception as e:
-        raise OptimizeError(str(e))
+        raise OptimizeError(str(e)) from e

@@ -218,11 +218,13 @@ class TestOptimizer(unittest.TestCase):
                 )
 
     def test_schema(self):
-        schema = ensure_schema({
-            "x": {
-                "a": "uint64",
+        schema = ensure_schema(
+            {
+                "x": {
+                    "a": "uint64",
+                }
             }
-        })
+        )
         self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])
         with self.assertRaises(ValueError):
             schema.column_names(exp.Table(this="x", db="db", catalog="c"))

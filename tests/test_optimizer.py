@@ -233,9 +233,11 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(exp.Table(this="x2"))
 
-        schema = SingleDatabaseSchema({
-            "x": {
-                "a": "uint64",
+        schema = SingleDatabaseSchema(
+            {
+                "x": {
+                    "a": "uint64",
+                }
             }
-        })
+        )
         self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])

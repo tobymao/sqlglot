@@ -2,6 +2,7 @@ import doctest
 import inspect
 
 import sqlglot
+import sqlglot.optimizer
 
 
 def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument

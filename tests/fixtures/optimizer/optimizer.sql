@@ -26,9 +26,9 @@ FROM (
       AND "_d_0"."_col_0" >= 0
     JOIN "y" AS "y"
       ON "x"."a" = "y"."a"
+    WHERE
+      "x"."a" > 1
 ) AS "d"
-WHERE
-  "d"."a" > 1
 GROUP BY
   "d"."a";
 

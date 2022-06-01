@@ -22,4 +22,5 @@ A OR ((((B OR C) AND (B OR D)) OR C) AND (((B OR C) AND (B OR D)) OR D));
 (A AND B) OR (C AND D);
 (A OR C) AND (A OR D) AND (B OR C) AND (B OR D);
 
---(A AND B) OR (C OR (D AND E));
+(A AND B) OR (C OR (D AND E));
+(A OR C OR D) AND (A OR C OR E) AND (B OR C OR D) AND (B OR C OR E);

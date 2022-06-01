@@ -1,3 +1,4 @@
+from sqlglot.helper import while_changing
 from sqlglot.expressions import FALSE, NULL, TRUE
 import sqlglot.expressions as exp
 
@@ -17,8 +18,8 @@ def simplify(expression):
     Returns:
         sqlglot.Expression: simplified expression
     """
-    while True:
-        start = hash(expression)
+
+    def _simplify(expression):
         expression = expression.transform(simplify_equality, copy=False)
         expression = expression.transform(simplify_not, copy=False)
         expression = expression.transform(simplify_conjunctions, copy=False)
@@ -26,10 +27,9 @@ def simplify(expression):
         # elimination, absorbption, and commutativity
         expression = expression.transform(simplify_parens, copy=False)
         remove_where_true(expression)
+        return expression
 
-        if start == hash(expression):
-            break
-
+    expression = while_changing(expression, _simplify)
     return expression
 
 
@@ -105,6 +105,10 @@ def simplify_conjunctions(expression):
                 return left
             if is_complement(left, right):
                 return TRUE
+    elif isinstance(expression, exp.Not) and isinstance(expression.this, exp.Not):
+        # double negation
+        # NOT NOT x -> x
+        return expression.this.this
     return expression
 
 

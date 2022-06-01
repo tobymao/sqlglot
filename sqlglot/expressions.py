@@ -202,6 +202,15 @@ class Expression:
                         if isinstance(node, Expression):
                             queue.append((node, item, k))
 
+    def unnest(self):
+        """
+        Returns the first non parenthesis child or self.
+        """
+        expression = self
+        while isinstance(expression, Paren):
+            expression = expression.this
+        return expression
+
     def __repr__(self):
         return self.to_s()
 

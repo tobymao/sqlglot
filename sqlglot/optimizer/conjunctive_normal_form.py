@@ -1,26 +1,25 @@
+from sqlglot.helper import while_changing
 from sqlglot.optimizer.simplify import simplify
 import sqlglot.expressions as exp
 
 
 def conjunctive_normal_form(expression):
-    expression = simplify(expression)
-    expression = expression.transform(double_negation, copy=False)
-    expression = expression.transform(de_morgans_law, copy=False)
-    while True:
-        start = hash(expression)
-        expression = simplify(distributive_law(expression))
-        if start == hash(expression):
-            break
-
-    return expression
-
-
-def double_negation(expression):
     """
-    NOT NOT x -> x
+    Rewrite sqlglot AST into conjunctive normal form.
+
+    Example:
+        >>> import sqlglot
+        >>> expression = sqlglot.parse_one("(x AND y) OR z")
+        >>> conjunctive_normal_form(expression).sql()
+        '(z OR x) AND (z OR y)'
+
+    Args:
+        expression (sqlglot.Expression): expression to normalize
+    Returns:
+        sqlglot.Expression: normalized expression
     """
-    if isinstance(expression, exp.Not) and isinstance(expression.this, exp.Not):
-        return expression.this.this
+    expression = simplify(expression).transform(de_morgans_law, copy=False)
+    expression = while_changing(expression, distributive_law)
     return expression
 
 
@@ -31,7 +30,7 @@ def de_morgans_law(expression):
     """
 
     if isinstance(expression, exp.Not) and isinstance(expression.this, exp.Paren):
-        condition = _inner(expression.this)
+        condition = expression.this.unnest()
 
         if isinstance(condition, exp.And):
             return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
@@ -47,44 +46,31 @@ def distributive_law(expression):
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
     """
+    expression = simplify(expression)
+    exp.replace_children(expression, distributive_law)
+
     if isinstance(expression, exp.Or):
-        l = _inner(expression.left)
-        r = _inner(expression.right)
+        l = expression.left.unnest()
+        r = expression.right.unnest()
 
         if isinstance(r, exp.And):
-            if _is_nested(l):
-                exp.replace_children(
-                    l,
-                    lambda c: exp.and_(
-                        exp.paren(exp.or_(c, r.left)),
-                        exp.paren(exp.or_(c, r.right)),
-                    ),
-                )
-            else:
-                l = exp.and_(exp.or_(l, r.left), exp.or_(l, r.right))
-            return l
+            return _distribute(l, r)
         if isinstance(l, exp.And):
-            if _is_nested(r):
-                exp.replace_children(
-                    r,
-                    lambda c: exp.and_(
-                        exp.paren(exp.or_(c, l.left)),
-                        exp.paren(exp.or_(c, l.right)),
-                    ),
-                )
-            else:
-                r = exp.and_(exp.or_(r, l.left), exp.or_(r, l.right))
-            return r
+            return _distribute(r, l)
 
-    exp.replace_children(expression, distributive_law)
     return expression
 
 
-def _is_nested(expression):
-    return bool(expression.find(exp.And, exp.Or))
+def _distribute(a, b):
+    if isinstance(a, (exp.And, exp.Or)):
+        exp.replace_children(
+            a,
+            lambda c: exp.and_(
+                exp.paren(exp.or_(c, b.left)),
+                exp.paren(exp.or_(c, b.right)),
+            ),
+        )
+    else:
+        a = exp.and_(exp.or_(a, b.left), exp.or_(a, b.right))
 
-
-def _inner(expression):
-    while isinstance(expression, exp.Paren):
-        expression = expression.this
-    return expression
+    return a

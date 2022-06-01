@@ -61,6 +61,27 @@ TRUE;
 NULL = NULL;
 NULL;
 
+NOT (NOT TRUE);
+TRUE;
+
+--------------------------------------
+-- Associativity
+--------------------------------------
+(A AND B) AND C;
+A AND B AND C;
+
+A AND (B AND C);
+A AND B AND C;
+
+(A OR B) OR C;
+A OR B OR C;
+
+A OR (B OR C);
+A OR B OR C;
+
+((A AND B) AND C) AND D;
+A AND B AND C AND D;
+
 --------------------------------------
 -- Where removal
 --------------------------------------

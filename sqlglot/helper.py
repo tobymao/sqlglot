@@ -3,6 +3,7 @@ import re
 from enum import Enum
 
 
+CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 logger = logging.getLogger("sqlglot")
 
 
@@ -62,8 +63,14 @@ def apply_index_offset(expressions, offset):
     return expressions
 
 
-CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
-
-
 def camel_to_snake_case(name):
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
+
+
+def while_changing(expression, func):
+    while True:
+        start = hash(expression)
+        expression = func(expression)
+        if start == hash(expression):
+            break
+    return expression

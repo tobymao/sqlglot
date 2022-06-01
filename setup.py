@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 version = (
     open("sqlglot/__init__.py")
@@ -20,7 +20,7 @@ setup(
     author="Toby Mao",
     author_email="toby.mao@gmail.com",
     license="MIT",
-    packages=["sqlglot"],
+    packages=find_packages(include=["sqlglot", "sqlglot.*"]),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

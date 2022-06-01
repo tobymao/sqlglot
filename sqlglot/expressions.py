@@ -265,7 +265,7 @@ class Expression:
         if not isinstance(new_node, Expression) or new_node is not node:
             return new_node
 
-        self._replace_children(
+        replace_children(
             new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs)
         )
         return new_node
@@ -287,27 +287,9 @@ class Expression:
         if not self.parent:
             return
 
-        self._replace_children(
+        replace_children(
             self.parent, lambda child: expressions if child is self else child
         )
-
-    def _replace_children(self, node, fun):
-        for k, v in node.args.items():
-            is_list_arg = isinstance(v, list)
-
-            child_nodes = v if is_list_arg else [v]
-            new_child_nodes = []
-
-            for cn in child_nodes:
-                if isinstance(cn, Expression):
-                    cns = ensure_list(fun(cn))
-                    for child_node in cns:
-                        child_node.parent = node
-                else:
-                    cns = [cn]
-                new_child_nodes.extend(cns)
-
-            node.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
 
     def assert_is(self, type_):
         """
@@ -2141,6 +2123,10 @@ def not_(expression, dialect=None, **opts):
     return Not(this=_wrap_operator(this))
 
 
+def paren(expression):
+    return Paren(this=expression)
+
+
 SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
 
 
@@ -2208,6 +2194,28 @@ def subquery(expression, alias=None, dialect=None, **opts):
 
     expression = _maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
     return Select().from_(expression, dialect=dialect, **opts)
+
+
+def replace_children(expression, fun):
+    """
+    Replace children of an expression with the result of a lambda fun(child) -> exp.
+    """
+    for k, v in expression.args.items():
+        is_list_arg = isinstance(v, list)
+
+        child_nodes = v if is_list_arg else [v]
+        new_child_nodes = []
+
+        for cn in child_nodes:
+            if isinstance(cn, Expression):
+                cns = ensure_list(fun(cn))
+                for child_node in cns:
+                    child_node.parent = expression
+            else:
+                cns = [cn]
+            new_child_nodes.extend(cns)
+
+        expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
 
 
 TRUE = Boolean(this=True)

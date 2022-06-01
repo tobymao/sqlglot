@@ -1,0 +1,25 @@
+NOT NOT NOT (A OR B);
+NOT A AND NOT B;
+
+A OR B;
+A OR B;
+
+A AND (B AND C);
+A AND B AND C;
+
+A OR (B AND C);
+(A OR B) AND (A OR C);
+
+(A AND B) OR C;
+(C OR A) AND (C OR B);
+
+A OR (B OR (C AND D));
+(A OR B OR C) AND (A OR B OR D);
+
+A OR ((((B OR C) AND (B OR D)) OR C) AND (((B OR C) AND (B OR D)) OR D));
+(A OR C OR B OR C) AND (A OR C OR B OR D) AND (A OR D OR B OR C) AND (A OR D OR B OR D);
+
+(A AND B) OR (C AND D);
+(A OR C) AND (A OR D) AND (B OR C) AND (B OR D);
+
+--(A AND B) OR (C OR (D AND E));

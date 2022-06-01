@@ -62,6 +62,24 @@ NULL = NULL;
 NULL;
 
 --------------------------------------
+-- Associativity
+--------------------------------------
+(A AND B) AND C;
+A AND B AND C;
+
+A AND (B AND C);
+A AND B AND C;
+
+(A OR B) OR C;
+A OR B OR C;
+
+A OR (B OR C);
+A OR B OR C;
+
+((A AND B) AND C) AND D;
+A AND B AND C AND D;
+
+--------------------------------------
 -- Where removal
 --------------------------------------
 SELECT x WHERE TRUE;

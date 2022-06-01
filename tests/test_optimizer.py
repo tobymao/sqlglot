@@ -4,6 +4,7 @@ from sqlglot.optimizer import optimize
 from sqlglot.optimizer.conjunctive_normal_form import conjunctive_normal_form
 from sqlglot.optimizer.decorrelate_subqueries import decorrelate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
+from sqlglot.optimizer.predicate_pushdown import predicate_pushdown
 from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
@@ -127,6 +128,14 @@ class TestOptimizer(unittest.TestCase):
             with self.subTest(sql):
                 self.assertEqual(
                     decorrelate_subqueries(parse_one(sql)).sql(),
+                    expected,
+                )
+
+    def test_predicate_pushdown(self):
+        for sql, expected in load_sql_fixture_pairs("optimizer/predicate_pushdown.sql"):
+            with self.subTest(sql):
+                self.assertEqual(
+                    predicate_pushdown(parse_one(sql)).sql(),
                     expected,
                 )
 

@@ -1,6 +1,7 @@
 from sqlglot.optimizer.conjunctive_normal_form import conjunctive_normal_form
 from sqlglot.optimizer.decorrelate_subqueries import decorrelate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
+from sqlglot.optimizer.predicate_pushdown import predicate_pushdown
 from sqlglot.optimizer.projection_pushdown import projection_pushdown
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
@@ -32,6 +33,7 @@ def optimize(expression, schema=None, db=None, catalog=None):
     expression = conjunctive_normal_form(expression)
     expression = decorrelate_subqueries(expression)
     expression = expand_multi_table_selects(expression)
+    expression = predicate_pushdown(expression)
     expression = simplify(expression)
     expression = quote_identities(expression)
     return expression

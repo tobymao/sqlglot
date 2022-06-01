@@ -65,6 +65,30 @@ NOT (NOT TRUE);
 TRUE;
 
 --------------------------------------
+-- Absorption
+--------------------------------------
+A AND (A OR B);
+A;
+
+(A OR B) AND A;
+A;
+
+A OR (A AND B);
+A;
+
+(A AND B) OR A;
+A;
+
+A AND (NOT A OR B);
+A AND B;
+
+(NOT A OR B) AND A;
+A AND B;
+
+A OR (NOT A AND B);
+A OR B;
+
+--------------------------------------
 -- Associativity
 --------------------------------------
 (A AND B) AND C;

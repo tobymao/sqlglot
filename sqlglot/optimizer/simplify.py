@@ -22,6 +22,8 @@ def simplify(expression):
     def _simplify(expression):
         expression = expression.transform(simplify_equality, copy=False)
         expression = expression.transform(simplify_not, copy=False)
+        expression = expression.transform(flatten, copy=False)
+        expression = expression.transform(absorb, copy=False)
         expression = expression.transform(simplify_conjunctions, copy=False)
         # future work
         # elimination, absorbption, and commutativity
@@ -68,8 +70,6 @@ def simplify_conjunctions(expression):
         right = expression.right
 
         if isinstance(expression, exp.And):
-            flatten(left, right, kind=exp.And)
-
             if NULL in (left, right):
                 return NULL
             if FALSE in (left, right):
@@ -85,8 +85,6 @@ def simplify_conjunctions(expression):
             if is_complement(left, right):
                 return FALSE
         elif isinstance(expression, exp.Or):
-            flatten(left, right, kind=exp.Or)
-
             if always_true(left) or always_true(right):
                 return TRUE
             if left == FALSE and right == FALSE:
@@ -112,10 +110,62 @@ def simplify_conjunctions(expression):
     return expression
 
 
-def flatten(*expressions, kind):
-    for expression in expressions:
-        if isinstance(expression, exp.Paren) and isinstance(expression.this, kind):
-            expression.replace(expression.this)
+def flatten(expression):
+    """
+    A AND (B AND C) -> A AND B AND C
+    A OR (B OR C) -> A OR B OR C
+    """
+    if isinstance(expression, (exp.And, exp.Or)):
+        for node in (expression.left, expression.right):
+            if isinstance(node, exp.Paren) and isinstance(
+                node.this, expression.__class__
+            ):
+                node.replace(node.this)
+    return expression
+
+
+def absorb(expression):
+    """
+    A AND (A OR B) -> A
+    A OR (A AND B) -> A
+    A AND (NOT A OR B) -> A AND B
+    A OR (NOT A AND B) -> A OR B
+    """
+
+    def _absorb(expression, kind):
+        left = expression.left.unnest()
+        right = expression.right.unnest()
+
+        for a, b in [(left, right), (right, left)]:
+            if isinstance(a, kind):
+                if b in (a.left, a.right):
+                    return b
+                if exp.not_(b) == a.left:
+                    return expression.__class__(this=b, expression=a.right)
+                if exp.not_(b) == a.right:
+                    return expression.__class__(this=b, expression=a.left)
+        return expression
+
+    if isinstance(expression, exp.And):
+        return _absorb(expression, exp.Or)
+    if isinstance(expression, exp.Or):
+        return _absorb(expression, exp.And)
+    return expression
+
+
+def eliminate(expression):
+    """
+    (A AND B) OR (A AND NOT B) -> A
+    (A OR B) AND (A OR NOT B) -> A
+    """
+    if isinstance(expression, exp.Or):
+        left = expression.left.unnest()
+        right = expression.right.unnest()
+
+        if isinstance(left, exp.And) and isinstance(right, exp.And):
+            pass
+
+    return expression
 
 
 def is_complement(a, b):

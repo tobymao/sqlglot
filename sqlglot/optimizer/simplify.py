@@ -1,3 +1,4 @@
+from sqlglot.helper import while_changing
 from sqlglot.expressions import FALSE, NULL, TRUE
 import sqlglot.expressions as exp
 
@@ -17,104 +18,123 @@ def simplify(expression):
     Returns:
         sqlglot.Expression: simplified expression
     """
-    # wrap because you cannot replace a node without a parent
-    expression = exp.Paren(this=expression)
 
-    while True:
-        start = hash(expression)
-        expression = simplify_equality(expression)
-        expression = simplify_not(expression)
-        expression = simplify_conjunctions(expression)
-        expression = simplify_parens(expression)
-        expression = remove_where_true(expression)
+    def _simplify(expression):
+        expression = expression.transform(simplify_equality, copy=False)
+        expression = expression.transform(simplify_not, copy=False)
+        expression = expression.transform(simplify_conjunctions, copy=False)
+        # future work
+        # elimination, absorbption, and commutativity
+        expression = expression.transform(simplify_parens, copy=False)
+        remove_where_true(expression)
+        return expression
 
-        if start == hash(expression):
-            break
-
-    return expression.this
+    expression = while_changing(expression, _simplify)
+    return expression
 
 
 def simplify_equality(expression):
-    for node in reverse_traverse(expression, exp.EQ):
-        left = node.left
-        right = node.right
+    if isinstance(expression, exp.EQ):
+        left = expression.left
+        right = expression.right
 
         if NULL in (left, right):
-            node.replace(NULL)
-        elif left == right:
-            node.replace(TRUE)
-        elif (
+            return NULL
+        if left == right:
+            return TRUE
+        if (
             isinstance(left, exp.Literal)
             and isinstance(right, exp.Literal)
             and left.is_string
             and right.is_string
             and left != right
         ):
-            node.replace(FALSE)
+            return FALSE
     return expression
 
 
 def simplify_not(expression):
-    for node in reverse_traverse(expression, exp.Not):
-        if always_true(node.this):
-            node.replace(FALSE)
-        elif node.this == FALSE:
-            node.replace(TRUE)
+    if isinstance(expression, exp.Not):
+        if always_true(expression.this):
+            return FALSE
+        if expression.this == FALSE:
+            return TRUE
     return expression
 
 
 def simplify_conjunctions(expression):
-    for node in reverse_traverse(expression, exp.And, exp.Or):
-        left = node.left
-        right = node.right
+    if isinstance(expression, (exp.And, exp.Or)):
+        left = expression.left
+        right = expression.right
 
-        if isinstance(node, exp.And):
+        if isinstance(expression, exp.And):
+            flatten(left, right, kind=exp.And)
+
             if NULL in (left, right):
-                node.replace(NULL)
-            elif FALSE in (left, right):
-                node.replace(FALSE)
-            elif always_true(left) and always_true(right):
-                node.replace(TRUE)
-            elif always_true(left):
-                node.replace(right)
-            elif always_true(right):
-                node.replace(left)
-        elif isinstance(node, exp.Or):
+                return NULL
+            if FALSE in (left, right):
+                return FALSE
+            if always_true(left) and always_true(right):
+                return TRUE
+            if always_true(left):
+                return right
+            if always_true(right):
+                return left
+            if left == right:
+                return left
+            if is_complement(left, right):
+                return FALSE
+        elif isinstance(expression, exp.Or):
+            flatten(left, right, kind=exp.Or)
+
             if always_true(left) or always_true(right):
-                node.replace(TRUE)
-            elif left == FALSE and right == FALSE:
-                node.replace(FALSE)
-            elif (
+                return TRUE
+            if left == FALSE and right == FALSE:
+                return FALSE
+            if (
                 (left == NULL and right == NULL)
                 or (left == NULL and right == FALSE)
                 or (left == FALSE and right == NULL)
             ):
-                node.replace(NULL)
-            elif left == FALSE:
-                node.replace(right)
-            elif right == FALSE:
-                node.replace(left)
+                return NULL
+            if left == FALSE:
+                return right
+            if right == FALSE:
+                return left
+            if left == right:
+                return left
+            if is_complement(left, right):
+                return TRUE
+    elif isinstance(expression, exp.Not) and isinstance(expression.this, exp.Not):
+        # double negation
+        # NOT NOT x -> x
+        return expression.this.this
     return expression
 
 
+def flatten(*expressions, kind):
+    for expression in expressions:
+        if isinstance(expression, exp.Paren) and isinstance(expression.this, kind):
+            expression.replace(expression.this)
+
+
+def is_complement(a, b):
+    return exp.not_(a) == b or exp.not_(b) == a
+
+
 def simplify_parens(expression):
-    for node in reverse_traverse(expression, exp.Paren):
-        if not isinstance(node.this, exp.Binary):
-            node.replace(node.this)
+    if isinstance(expression, exp.Paren) and not isinstance(
+        expression.this, exp.Binary
+    ):
+        return expression.this
     return expression
 
 
 def remove_where_true(expression):
     for where in expression.find_all(exp.Where):
         if always_true(where.this):
-            where.parent.args.pop("where", None)
-    return expression
+            where.parent.args["where"] = None
 
 
 def always_true(expression):
     return expression == TRUE or isinstance(expression, exp.Literal)
-
-
-def reverse_traverse(expression, *types):
-    for node in reversed(list(expression.find_all(types or exp.Expression, bfs=False))):
-        yield node

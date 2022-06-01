@@ -510,7 +510,7 @@ class Tokenizer:
         self._peek = None
         self.__text = None
 
-    def tokenize(self, sql):  # pylint: disable=too-many-branches
+    def tokenize(self, sql):
         self.reset()
         self.sql = sql
         self.size = len(sql)

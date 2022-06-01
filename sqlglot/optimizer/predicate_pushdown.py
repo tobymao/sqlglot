@@ -38,7 +38,7 @@ def predicate_pushdown(expression):
             if isinstance(selectable, exp.Table):
                 node = selectable.find_ancestor(exp.Join, exp.From)
 
-                if not isinstance(node, exp.From):
+                if isinstance(node, exp.Join):
                     predicate.replace(exp.TRUE)
             elif selectable:
                 node = selectable.expression

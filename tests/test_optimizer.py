@@ -1,16 +1,11 @@
 import unittest
 
+import sqlglot
+import sqlglot.optimizer
 from sqlglot.optimizer import optimize
-from sqlglot.optimizer.conjunctive_normal_form import conjunctive_normal_form
-from sqlglot.optimizer.decorrelate_subqueries import decorrelate_subqueries
-from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
-from sqlglot.optimizer.predicate_pushdown import predicate_pushdown
 from sqlglot.optimizer.projection_pushdown import projection_pushdown
-from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
-from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot.optimizer.schema import ensure_schema, MappingSchema
-from sqlglot.optimizer.simplify import simplify
 from sqlglot import parse_one
 from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
@@ -32,57 +27,34 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
+    def check_file(self, file, func=None, pretty=False, **kwargs):
+        module = getattr(sqlglot.optimizer, file)
+        func = getattr(module, func or file)
+
+        for sql, expected in load_sql_fixture_pairs(f"optimizer/{file}.sql"):
+            with self.subTest(sql):
+                self.assertEqual(
+                    func(parse_one(sql), **kwargs).sql(pretty=pretty),
+                    expected,
+                )
+
     def test_optimize(self):
         schema = {
             "x": {"a": "INT", "b": "INT"},
             "y": {"a": "INT", "b": "INT"},
             "z": {"a": "INT", "c": "INT"},
         }
-        self.assertEqual(
-            optimize(
-                parse_one("SELECT a FROM x"),
-                schema=self.schema,
-            ).sql(),
-            'SELECT "x"."a" AS "a" FROM "x" AS "x"',
-        )
 
-        for sql, expected in load_sql_fixture_pairs("optimizer/optimizer.sql"):
-            with self.subTest(sql):
-                self.assertEqual(
-                    optimize(parse_one(sql), schema=schema).sql(pretty=True),
-                    expected,
-                )
+        self.check_file("optimizer", func="optimize", pretty=True, schema=schema)
 
     def test_qualify_tables(self):
-        self.assertEqual(
-            qualify_tables(parse_one("SELECT 1 FROM z"), db="db").sql(),
-            "SELECT 1 FROM db.z AS z",
-        )
-
-        for sql, expected in load_sql_fixture_pairs("optimizer/qualify_tables.sql"):
-            with self.subTest(sql):
-                self.assertEqual(
-                    qualify_tables(parse_one(sql), db="db", catalog="c").sql(),
-                    expected,
-                )
+        self.check_file("qualify_tables", db="db", catalog="c")
 
     def test_conjunctive_normal_form(self):
-        for sql, expected in load_sql_fixture_pairs(
-            "optimizer/conjunctive_normal_form.sql"
-        ):
-            with self.subTest(sql):
-                self.assertEqual(
-                    conjunctive_normal_form(parse_one(sql)).sql(),
-                    expected,
-                )
+        self.check_file("conjunctive_normal_form")
 
     def test_qualify_columns(self):
-        for sql, expected in load_sql_fixture_pairs("optimizer/qualify_columns.sql"):
-            with self.subTest(sql):
-                self.assertEqual(
-                    qualify_columns(parse_one(sql), schema=self.schema).sql(),
-                    expected,
-                )
+        self.check_file("qualify_columns", schema=self.schema)
 
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
@@ -91,12 +63,7 @@ class TestOptimizer(unittest.TestCase):
                     qualify_columns(parse_one(sql), schema=self.schema)
 
     def test_quote_identities(self):
-        for sql, expected in load_sql_fixture_pairs("optimizer/quote_identities.sql"):
-            with self.subTest(sql):
-                self.assertEqual(
-                    quote_identities(parse_one(sql)).sql(),
-                    expected,
-                )
+        self.check_file("quote_identities")
 
     def test_projection_pushdown(self):
         for sql, expected in load_sql_fixture_pairs(
@@ -112,42 +79,16 @@ class TestOptimizer(unittest.TestCase):
                 )
 
     def test_simplify(self):
-        for sql, expected in load_sql_fixture_pairs("optimizer/simplify.sql"):
-            with self.subTest(sql):
-                expression = parse_one(sql)
-                expression = simplify(expression)
-                self.assertEqual(
-                    expression.sql(),
-                    expected,
-                )
+        self.check_file("simplify")
 
     def test_decorrelate_subqueries(self):
-        for sql, expected in load_sql_fixture_pairs(
-            "optimizer/decorrelate_subqueries.sql"
-        ):
-            with self.subTest(sql):
-                self.assertEqual(
-                    decorrelate_subqueries(parse_one(sql)).sql(),
-                    expected,
-                )
+        self.check_file("decorrelate_subqueries")
 
     def test_predicate_pushdown(self):
-        for sql, expected in load_sql_fixture_pairs("optimizer/predicate_pushdown.sql"):
-            with self.subTest(sql):
-                self.assertEqual(
-                    predicate_pushdown(parse_one(sql)).sql(),
-                    expected,
-                )
+        self.check_file("predicate_pushdown")
 
     def test_expand_multi_table_selects(self):
-        for sql, expected in load_sql_fixture_pairs(
-            "optimizer/expand_multi_table_selects.sql"
-        ):
-            with self.subTest(sql):
-                self.assertEqual(
-                    expand_multi_table_selects(parse_one(sql)).sql(),
-                    expected,
-                )
+        self.check_file("expand_multi_table_selects")
 
     def test_tcph(self):
         schema = {

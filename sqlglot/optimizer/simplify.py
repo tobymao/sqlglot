@@ -23,10 +23,9 @@ def simplify(expression):
         expression = expression.transform(simplify_equality, copy=False)
         expression = expression.transform(simplify_not, copy=False)
         expression = expression.transform(flatten, copy=False)
-        expression = expression.transform(absorb, copy=False)
         expression = expression.transform(simplify_conjunctions, copy=False)
-        # future work
-        # elimination, absorbption, and commutativity
+        expression = expression.transform(absorb, copy=False)
+        expression = expression.transform(eliminate, copy=False)
         expression = expression.transform(simplify_parens, copy=False)
         remove_where_true(expression)
         return expression
@@ -131,25 +130,25 @@ def absorb(expression):
     A AND (NOT A OR B) -> A AND B
     A OR (NOT A AND B) -> A OR B
     """
-
-    def _absorb(expression, kind):
-        left = expression.left.unnest()
-        right = expression.right.unnest()
-
-        for a, b in [(left, right), (right, left)]:
-            if isinstance(a, kind):
-                if b in (a.left, a.right):
-                    return b
-                if exp.not_(b) == a.left:
-                    return expression.__class__(this=b, expression=a.right)
-                if exp.not_(b) == a.right:
-                    return expression.__class__(this=b, expression=a.left)
-        return expression
-
     if isinstance(expression, exp.And):
         return _absorb(expression, exp.Or)
     if isinstance(expression, exp.Or):
         return _absorb(expression, exp.And)
+    return expression
+
+
+def _absorb(expression, kind):
+    left = expression.left.unnest()
+    right = expression.right.unnest()
+
+    for a, b in [(left, right), (right, left)]:
+        if isinstance(a, kind):
+            if b in (a.left, a.right):
+                return b
+            if exp.not_(b) == a.left:
+                return expression.__class__(this=b, expression=a.right)
+            if exp.not_(b) == a.right:
+                return expression.__class__(this=b, expression=a.left)
     return expression
 
 
@@ -159,12 +158,29 @@ def eliminate(expression):
     (A OR B) AND (A OR NOT B) -> A
     """
     if isinstance(expression, exp.Or):
-        left = expression.left.unnest()
-        right = expression.right.unnest()
+        return _eliminate(expression, exp.And)
+    if isinstance(expression, exp.And):
+        return _eliminate(expression, exp.Or)
+    return expression
 
-        if isinstance(left, exp.And) and isinstance(right, exp.And):
-            pass
 
+def _eliminate(expression, kind):
+    left = expression.left.unnest()
+    right = expression.right.unnest()
+
+    if isinstance(left, kind) and isinstance(right, kind):
+        aa = left.left.unnest()
+        ab = left.right.unnest()
+        ba = right.left.unnest()
+        bb = right.right.unnest()
+
+        for lhs, rhs in [
+            ([(aa, ab), (ab, aa)], (ba, bb)),
+            ([(ba, bb), (bb, ba)], (aa, ab)),
+        ]:
+            for a, b in lhs:
+                if a in rhs and exp.not_(b) in rhs:
+                    return a
     return expression
 
 

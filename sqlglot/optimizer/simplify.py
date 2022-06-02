@@ -1,3 +1,5 @@
+import itertools
+
 from sqlglot.helper import while_changing
 from sqlglot.expressions import FALSE, NULL, TRUE
 import sqlglot.expressions as exp
@@ -24,6 +26,7 @@ def simplify(expression):
         expression = expression.transform(simplify_not, copy=False)
         expression = expression.transform(flatten, copy=False)
         expression = expression.transform(simplify_conjunctions, copy=False)
+        expression = expression.transform(compare_and_prune, copy=False)
         expression = expression.transform(absorb, copy=False)
         expression = expression.transform(eliminate, copy=False)
         expression = expression.transform(simplify_parens, copy=False)
@@ -79,10 +82,6 @@ def simplify_conjunctions(expression):
                 return right
             if always_true(right):
                 return left
-            if left == right:
-                return left
-            if is_complement(left, right):
-                return FALSE
         elif isinstance(expression, exp.Or):
             if always_true(left) or always_true(right):
                 return TRUE
@@ -98,15 +97,44 @@ def simplify_conjunctions(expression):
                 return right
             if right == FALSE:
                 return left
-            if left == right:
-                return left
-            if is_complement(left, right):
-                return TRUE
     elif isinstance(expression, exp.Not) and isinstance(expression.this, exp.Not):
         # double negation
         # NOT NOT x -> x
         return expression.this.this
     return expression
+
+
+def compare_and_prune(expression):
+    """
+    Sorts ANDs and ORs, removing duplicates and compliment expressions.
+    """
+    if isinstance(expression, exp.And):
+        return _compare_and_prune(expression, exp.And, FALSE, exp.and_)
+    if isinstance(expression, exp.Or):
+        return _compare_and_prune(expression, exp.Or, TRUE, exp.or_)
+    return expression
+
+
+def _compare_and_prune(expression, kind, compliment, result_func):
+    queue = [expression]
+    args = set()
+
+    while queue:
+        expression = queue.pop()
+
+        for value in expression.args.values():
+            if isinstance(value, kind):
+                queue.append(value)
+            else:
+                args.add(value)
+
+    args = sorted(args, key=lambda a: a.sql())
+
+    for a, b in itertools.combinations(args, 2):
+        if is_complement(a, b):
+            return compliment
+
+    return result_func(*args)
 
 
 def flatten(expression):

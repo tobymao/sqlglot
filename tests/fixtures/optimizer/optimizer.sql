@@ -22,8 +22,8 @@ FROM (
         GROUP BY
           "y"."a"
     ) AS "_d_0"
-      ON "_d_0"."a" = "x"."a"
-      AND "_d_0"."_col_0" >= 0
+      ON "_d_0"."_col_0" >= 0
+      AND "_d_0"."a" = "x"."a"
     JOIN "y" AS "y"
       ON "x"."a" = "y"."a"
     WHERE
@@ -88,8 +88,8 @@ FROM (
         GROUP BY
           "y"."a"
     ) AS "_d_0"
-      ON "_d_0"."a" = "x"."a"
-      AND "_d_0"."_col_0" >= 0
+      ON "_d_0"."_col_0" >= 0
+      AND "_d_0"."a" = "x"."a"
     JOIN "y" AS "y"
       ON "x"."a" = "y"."a"
     WHERE

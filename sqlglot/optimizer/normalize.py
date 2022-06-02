@@ -11,7 +11,7 @@ def normalize(expression, dnf=False):
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("(x AND y) OR z")
         >>> normalize(expression).sql()
-        '(z OR x) AND (z OR y)'
+        '(x OR z) AND (y OR z)'
 
     Args:
         expression (sqlglot.Expression): expression to normalize

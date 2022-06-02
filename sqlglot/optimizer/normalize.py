@@ -22,7 +22,7 @@ def normalize(expression, dnf=False):
     expression = simplify(expression).transform(de_morgans_law, copy=False)
     expression = while_changing(
         expression,
-        lambda e: distributive_law(e, exp.And, exp.Or) if dnf else distributive_law(e, exp.Or, exp.And)
+        lambda e: distributive_law(e, exp.Or) if dnf else distributive_law(e, exp.And),
     )
     return expression
 
@@ -45,36 +45,46 @@ def de_morgans_law(expression):
     return expression
 
 
-def distributive_law(expression, from_exp, to_exp):
+def distributive_law(expression, to_exp):
     """
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
     """
+    if to_exp == exp.And:
+        from_exp = exp.Or
+    elif to_exp == exp.Or:
+        from_exp = exp.And
+    else:
+        raise ValueError("Not support expression")
+
     expression = simplify(expression)
-    exp.replace_children(expression, lambda e: distributive_law(e, from_exp, to_exp))
+    exp.replace_children(expression, lambda e: distributive_law(e, to_exp))
 
     if isinstance(expression, from_exp):
         l = expression.left.unnest()
         r = expression.right.unnest()
 
+        from_func = exp.and_ if from_exp == exp.And else exp.or_
+        to_func = exp.and_ if to_exp == exp.And else exp.or_
+
         if isinstance(r, to_exp):
-            return _distribute(l, r)
+            return _distribute(l, r, from_func, to_func)
         if isinstance(l, to_exp):
-            return _distribute(r, l)
+            return _distribute(r, l, from_func, to_func)
 
     return expression
 
 
-def _distribute(a, b):
+def _distribute(a, b, from_func, to_func):
     if isinstance(a, (exp.And, exp.Or)):
         exp.replace_children(
             a,
-            lambda c: exp.and_(
-                exp.paren(exp.or_(c, b.left)),
-                exp.paren(exp.or_(c, b.right)),
+            lambda c: to_func(
+                exp.paren(from_func(c, b.left)),
+                exp.paren(from_func(c, b.right)),
             ),
         )
     else:
-        a = exp.and_(exp.or_(a, b.left), exp.or_(a, b.right))
+        a = to_func(from_func(a, b.left), from_func(a, b.right))
 
     return a

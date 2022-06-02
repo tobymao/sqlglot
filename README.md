@@ -1,6 +1,6 @@
 # SQLGlot
 
-SQLGlot is a no dependency Python SQL parser and transpiler. It can be used to format SQL or translate between different dialects like Presto, Spark, and Hive. It aims to read a wide variety of SQL inputs and output syntatically correct SQL in the targeted dialects.
+SQLGlot is a no dependency Python SQL parser, transpiler, and optimizer. It can be used to format SQL or translate between different dialects like Presto, Spark, and Hive. It aims to read a wide variety of SQL inputs and output syntatically correct SQL in the targeted dialects.
 
 It is currently the [fastest](#benchmarks) pure-Python SQL parser.
 
@@ -234,6 +234,22 @@ SELECT
   user #primary_key,
   country
 FROM users
+```
+
+### SQL Optimizer
+
+SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standaradize queries or provide the foundations for implementing an actual engine. 
+
+```python
+import sqlglot
+from sqlglot.optimizer import optimize
+
+>>> optimize(
+        sqlglot.parse_one("SELECT A OR (B OR (C AND D)) FROM x"), 
+        schema={"x": {"A": "INT", "B": "DINT", "C": "INT", "D": "INT"}}
+    ).sql()
+
+'SELECT ("x"."A" OR "x"."B" OR "x"."C") AND ("x"."A" OR "x"."B" OR "x"."D") AS "_col_0" FROM "x" AS "x"'
 ```
 
 ### Benchmarks

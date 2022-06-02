@@ -1,6 +1,12 @@
 --------------------------------------
 -- Conditions
 --------------------------------------
+(a AND b AND c AND d) AND (d AND c AND b AND a);
+a AND b AND c AND d;
+
+(c AND (a AND b)) AND ((b AND a) AND c);
+a AND b AND c;
+
 x AND x;
 x;
 
@@ -82,11 +88,17 @@ TRUE;
 A AND (A OR B);
 A;
 
-A AND (B OR A);
-A;
+A AND D AND E AND (B OR A);
+A AND D AND E;
+
+D AND A AND E AND (B OR A);
+A AND D AND E;
 
 (A OR B) AND A;
 A;
+
+C AND D AND (A OR B) AND E AND F AND A;
+A AND C AND D AND E AND F;
 
 A OR (A AND B);
 A;
@@ -139,6 +151,9 @@ NOT A;
 (NOT A OR NOT B) AND (NOT A OR NOT NOT B);
 NOT A;
 
+E OR (A AND B) OR C OR D OR (A AND NOT B);
+A OR C OR D OR E;
+
 --------------------------------------
 -- Associativity
 --------------------------------------
@@ -159,6 +174,16 @@ A AND B AND C AND D;
 
 (((((A) AND B)) AND C)) AND D;
 A AND B AND C AND D;
+
+--------------------------------------
+-- Comparison and Pruning
+--------------------------------------
+A AND D AND B AND E AND F AND G AND E AND A;
+A AND B AND D AND E AND F AND G;
+
+A AND NOT B AND C AND B;
+FALSE;
+
 
 --------------------------------------
 -- Where removal

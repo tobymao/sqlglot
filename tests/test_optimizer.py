@@ -48,10 +48,10 @@ class TestOptimizer(unittest.TestCase):
             catalog="c",
         )
 
-    def test_conjunctive_normal_form(self):
+    def test_normalize(self):
         self.check_file(
-            "conjunctive_normal_form",
-            optimizer.conjunctive_normal_form.conjunctive_normal_form,
+            "normalize",
+            optimizer.normalize.normalize,
         )
 
     def test_qualify_columns(self):

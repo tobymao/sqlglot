@@ -3,23 +3,27 @@ from sqlglot.optimizer.simplify import simplify
 import sqlglot.expressions as exp
 
 
-def conjunctive_normal_form(expression):
+def normalize(expression, dnf=False):
     """
     Rewrite sqlglot AST into conjunctive normal form.
 
     Example:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("(x AND y) OR z")
-        >>> conjunctive_normal_form(expression).sql()
+        >>> normalize(expression).sql()
         '(z OR x) AND (z OR y)'
 
     Args:
         expression (sqlglot.Expression): expression to normalize
+        dnf (bool): rewrite in disjunctive normal form instead
     Returns:
         sqlglot.Expression: normalized expression
     """
     expression = simplify(expression).transform(de_morgans_law, copy=False)
-    expression = while_changing(expression, distributive_law)
+    expression = while_changing(
+        expression,
+        lambda e: distributive_law(e, exp.And, exp.Or) if dnf else distributive_law(e, exp.Or, exp.And)
+    )
     return expression
 
 
@@ -41,21 +45,21 @@ def de_morgans_law(expression):
     return expression
 
 
-def distributive_law(expression):
+def distributive_law(expression, from_exp, to_exp):
     """
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
     """
     expression = simplify(expression)
-    exp.replace_children(expression, distributive_law)
+    exp.replace_children(expression, lambda e: distributive_law(e, from_exp, to_exp))
 
-    if isinstance(expression, exp.Or):
+    if isinstance(expression, from_exp):
         l = expression.left.unnest()
         r = expression.right.unnest()
 
-        if isinstance(r, exp.And):
+        if isinstance(r, to_exp):
             return _distribute(l, r)
-        if isinstance(l, exp.And):
+        if isinstance(l, to_exp):
             return _distribute(r, l)
 
     return expression

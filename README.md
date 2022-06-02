@@ -246,7 +246,7 @@ from sqlglot.optimizer import optimize
 
 >>> optimize(
         sqlglot.parse_one("SELECT A OR (B OR (C AND D)) FROM x"), 
-        schema={"x": {"A": "INT", "B": "DINT", "C": "INT", "D": "INT"}}
+        schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT"}}
     ).sql()
 
 'SELECT ("x"."A" OR "x"."B" OR "x"."C") AND ("x"."A" OR "x"."B" OR "x"."D") AS "_col_0" FROM "x" AS "x"'

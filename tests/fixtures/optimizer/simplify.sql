@@ -1,6 +1,18 @@
 --------------------------------------
 -- Conditions
 --------------------------------------
+x AND x;
+x;
+
+y OR y;
+y;
+
+x AND NOT x;
+FALSE;
+
+x OR NOT x;
+TRUE;
+
 1 AND TRUE;
 TRUE;
 
@@ -65,6 +77,69 @@ NOT (NOT TRUE);
 TRUE;
 
 --------------------------------------
+-- Absorption
+--------------------------------------
+A AND (A OR B);
+A;
+
+A AND (B OR A);
+A;
+
+(A OR B) AND A;
+A;
+
+A OR (A AND B);
+A;
+
+(A AND B) OR A;
+A;
+
+A AND (NOT A OR B);
+A AND B;
+
+(NOT A OR B) AND A;
+A AND B;
+
+A OR (NOT A AND B);
+A OR B;
+
+(A OR C) AND ((A OR C) OR B);
+A OR C;
+
+--------------------------------------
+-- Elimination
+--------------------------------------
+(A AND B) OR (A AND NOT B);
+A;
+
+(A AND B) OR (NOT A AND B);
+B;
+
+(A AND NOT B) OR (A AND B);
+A;
+
+(NOT A AND B) OR (A AND B);
+B;
+
+(A OR B) AND (A OR NOT B);
+A;
+
+(A OR B) AND (NOT A OR B);
+B;
+
+(A OR NOT B) AND (A OR B);
+A;
+
+(NOT A OR B) AND (A OR B);
+B;
+
+(NOT A OR NOT B) AND (NOT A OR B);
+NOT A;
+
+(NOT A OR NOT B) AND (NOT A OR NOT NOT B);
+NOT A;
+
+--------------------------------------
 -- Associativity
 --------------------------------------
 (A AND B) AND C;
@@ -80,6 +155,9 @@ A OR (B OR C);
 A OR B OR C;
 
 ((A AND B) AND C) AND D;
+A AND B AND C AND D;
+
+(((((A) AND B)) AND C)) AND D;
 A AND B AND C AND D;
 
 --------------------------------------

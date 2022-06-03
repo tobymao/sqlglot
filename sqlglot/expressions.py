@@ -647,6 +647,63 @@ class Subqueryable:
             return []
         return with_.args.get("expressions", [])
 
+    def with_(
+        self,
+        alias,
+        as_,
+        recursive=None,
+        append=True,
+        dialect=None,
+        parser_opts=None,
+        copy=True,
+    ):
+        """
+        Append to or set the common table expressions.
+
+        Example:
+            >>> Select().with_("tbl2", as_="SELECT * FROM tbl").select("x").from_("tbl2").sql()
+            'WITH tbl2 AS (SELECT * FROM tbl) SELECT x FROM tbl2'
+
+        Args:
+            alias (str or Expression): the SQL code string to parse as the table name.
+                If an `Expression` instance is passed, this is used as-is.
+            as_ (str or Expression): the SQL code string to parse as the table expression.
+                If an `Expression` instance is passed, it will be used as-is.
+            recursive (bool): set the RECURSIVE part of the expression. Defaults to `False`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        alias_expression = _maybe_parse(
+            alias,
+            dialect=dialect,
+            into=TableAlias,
+            parser_opts=parser_opts,
+        )
+        as_expression = _maybe_parse(
+            as_,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+        cte = CTE(
+            this=as_expression,
+            alias=alias_expression,
+        )
+        return _apply_child_list_builder(
+            cte,
+            instance=self,
+            arg="with",
+            append=append,
+            copy=copy,
+            into=With,
+            recursive=recursive or False,
+        )
+
 
 class Union(Subqueryable, Expression):
     arg_types = {"with": False, "this": True, "expression": True, "distinct": False}
@@ -1114,63 +1171,6 @@ class Select(Subqueryable, Expression):
         instance = _maybe_copy(self, copy)
         instance.set("distinct", distinct)
         return instance
-
-    def with_(
-        self,
-        alias,
-        as_,
-        recursive=None,
-        append=True,
-        dialect=None,
-        parser_opts=None,
-        copy=True,
-    ):
-        """
-        Append to or set the common table expressions.
-
-        Example:
-            >>> Select().with_("tbl2", as_="SELECT * FROM tbl").select("x").from_("tbl2").sql()
-            'WITH tbl2 AS (SELECT * FROM tbl) SELECT x FROM tbl2'
-
-        Args:
-            alias (str or Expression): the SQL code string to parse as the table name.
-                If an `Expression` instance is passed, this is used as-is.
-            as_ (str or Expression): the SQL code string to parse as the table expression.
-                If an `Expression` instance is passed, it will be used as-is.
-            recursive (bool): set the RECURSIVE part of the expression. Defaults to `False`.
-            append (bool): if `True`, add to any existing expressions.
-                Otherwise, this resets the expressions.
-            dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
-            copy (bool): if `False`, modify this expression instance in-place.
-
-        Returns:
-            Select: the modified expression.
-        """
-        alias_expression = _maybe_parse(
-            alias,
-            dialect=dialect,
-            into=TableAlias,
-            parser_opts=parser_opts,
-        )
-        as_expression = _maybe_parse(
-            as_,
-            dialect=dialect,
-            parser_opts=parser_opts,
-        )
-        cte = CTE(
-            this=as_expression,
-            alias=alias_expression,
-        )
-        return _apply_child_list_builder(
-            cte,
-            instance=self,
-            arg="with",
-            append=append,
-            copy=copy,
-            into=With,
-            recursive=recursive or False,
-        )
 
     def ctas(self, table, properties=None, dialect=None, parser_opts=None, copy=True):
         """

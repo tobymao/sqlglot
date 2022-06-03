@@ -211,6 +211,24 @@ class Expression:
             expression = expression.this
         return expression
 
+    def unnest_operands(self):
+        """
+        Returns unnested operands as a list.
+        """
+        return [arg.unnest() for arg in self.args.values()]
+
+    def flatten(self):
+        """
+        Returns a generator which yields child nodes who's parents are the same class.
+
+        A AND B AND C -> [A, B, C]
+        """
+        for node, _, _ in self.dfs(
+            prune=lambda n, p, *_: p and not isinstance(n, self.__class__)
+        ):
+            if not isinstance(node, self.__class__):
+                yield node
+
     def __repr__(self):
         return self.to_s()
 
@@ -1309,7 +1327,15 @@ class Add(Binary):
     pass
 
 
-class And(Binary, Condition):
+class Connector(Binary, Condition):
+    pass
+
+
+class And(Connector):
+    pass
+
+
+class Or(Connector):
     pass
 
 
@@ -1394,10 +1420,6 @@ class Mul(Binary):
 
 
 class NEQ(Binary, Condition):
-    pass
-
-
-class Or(Binary, Condition):
     pass
 
 

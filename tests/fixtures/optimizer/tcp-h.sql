@@ -169,9 +169,9 @@ SELECT
   "orders"."o_shippriority" AS "o_shippriority"
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
-  ON "orders"."o_orderdate" < CAST('1995-03-15' AS DATE)
+  ON "customer"."c_custkey" = "orders"."o_custkey"
   AND "lineitem"."l_orderkey" = "orders"."o_orderkey"
-  AND "customer"."c_custkey" = "orders"."o_custkey"
+  AND "orders"."o_orderdate" < CAST('1995-03-15' AS DATE)
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_shipdate" > CAST('1995-03-15' AS DATE)
 WHERE
@@ -223,8 +223,8 @@ JOIN (
 ) AS "_d_0"
   ON "_d_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE
-  "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
-  AND "orders"."o_orderdate" < CAST('1993-07-01' AS DATE) + INTERVAL '3' "month"
+  "orders"."o_orderdate" < CAST('1993-07-01' AS DATE) + INTERVAL '3' "month"
+  AND "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
 GROUP BY
   "orders"."o_orderpriority"
 ORDER BY

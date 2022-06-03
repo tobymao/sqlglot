@@ -114,6 +114,7 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "eliminate_subqueries",
             optimizer.eliminate_subqueries.eliminate_subqueries,
+            pretty=True,
         )
 
     def test_tcph(self):

@@ -80,13 +80,15 @@ class TestOptimizer(unittest.TestCase):
     def test_quote_identities(self):
         self.check_file("quote_identities", optimizer.quote_identities.quote_identities)
 
-    def test_projection_pushdown(self):
-        def projection_pushdown(expression, **kwargs):
+    def test_pushdown_projection(self):
+        def pushdown_projections(expression, **kwargs):
             expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
-            expression = optimizer.projection_pushdown.projection_pushdown(expression)
+            expression = optimizer.pushdown_projections.pushdown_projections(expression)
             return expression
 
-        self.check_file("projection_pushdown", projection_pushdown, schema=self.schema)
+        self.check_file(
+            "pushdown_projections", pushdown_projections, schema=self.schema
+        )
 
     def test_simplify(self):
         self.check_file("simplify", optimizer.simplify.simplify)
@@ -97,15 +99,21 @@ class TestOptimizer(unittest.TestCase):
             optimizer.decorrelate_subqueries.decorrelate_subqueries,
         )
 
-    def test_predicate_pushdown(self):
+    def test_pushdown_predicate(self):
         self.check_file(
-            "predicate_pushdown", optimizer.predicate_pushdown.predicate_pushdown
+            "pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates
         )
 
     def test_expand_multi_table_selects(self):
         self.check_file(
             "expand_multi_table_selects",
             optimizer.expand_multi_table_selects.expand_multi_table_selects,
+        )
+
+    def test_eliminate_subqueries(self):
+        self.check_file(
+            "eliminate_subqueries",
+            optimizer.eliminate_subqueries.eliminate_subqueries,
         )
 
     def test_tcph(self):

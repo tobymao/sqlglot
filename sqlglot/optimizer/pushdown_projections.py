@@ -7,7 +7,7 @@ from sqlglot.optimizer.scope import traverse_scope
 SELECT_ALL = object()
 
 
-def projection_pushdown(expression):
+def pushdown_projections(expression):
     """
     Rewrite sqlglot AST to remove unused columns projections.
 
@@ -15,7 +15,7 @@ def projection_pushdown(expression):
         >>> import sqlglot
         >>> sql = "SELECT y.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x) AS y"
         >>> expression = sqlglot.parse_one(sql)
-        >>> projection_pushdown(expression).sql()
+        >>> pushdown_projections(expression).sql()
         'SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y'
 
     Args:

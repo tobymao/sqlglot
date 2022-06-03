@@ -2,7 +2,7 @@ from sqlglot import expressions as exp
 from sqlglot.optimizer.scope import traverse_scope
 
 
-def predicate_pushdown(expression):
+def pushdown_predicates(expression):
     """
     Rewrite sqlglot AST to pushdown predicates in FROMS and JOINS
 
@@ -10,7 +10,7 @@ def predicate_pushdown(expression):
         >>> import sqlglot
         >>> sql = "SELECT * FROM (SELECT * FROM x AS x) AS y WHERE y.a = 1"
         >>> expression = sqlglot.parse_one(sql)
-        >>> predicate_pushdown(expression).sql()
+        >>> pushdown_predicates(expression).sql()
         'SELECT * FROM (SELECT * FROM x AS x WHERE y.a = 1) AS y WHERE TRUE'
 
     Args:

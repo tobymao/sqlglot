@@ -63,11 +63,15 @@ def simplify_not(expression):
             return FALSE
         if expression.this == FALSE:
             return TRUE
+        if isinstance(expression.this, exp.Not):
+            # double negation
+            # NOT NOT x -> x
+            return expression.this.this
     return expression
 
 
 def simplify_conjunctions(expression):
-    if isinstance(expression, (exp.And, exp.Or)):
+    if isinstance(expression, exp.Connector):
         left = expression.left
         right = expression.right
 
@@ -97,10 +101,6 @@ def simplify_conjunctions(expression):
                 return right
             if right == FALSE:
                 return left
-    elif isinstance(expression, exp.Not) and isinstance(expression.this, exp.Not):
-        # double negation
-        # NOT NOT x -> x
-        return expression.this.this
     return expression
 
 
@@ -109,32 +109,20 @@ def compare_and_prune(expression):
     Sorts ANDs and ORs, removing duplicates and compliment expressions.
     """
     if isinstance(expression, exp.And):
-        return _compare_and_prune(expression, exp.And, FALSE, exp.and_)
+        return _compare_and_prune(expression, FALSE, exp.and_)
     if isinstance(expression, exp.Or):
-        return _compare_and_prune(expression, exp.Or, TRUE, exp.or_)
+        return _compare_and_prune(expression, TRUE, exp.or_)
     return expression
 
 
-def _compare_and_prune(expression, kind, compliment, result_func):
-    queue = [expression]
-    args = set()
-
-    while queue:
-        expression = queue.pop()
-
-        for value in expression.args.values():
-            if isinstance(value, kind):
-                queue.append(value)
-            else:
-                args.add(value)
-
-    args = sorted(args, key=lambda a: a.sql())
+def _compare_and_prune(connector, compliment, result_func):
+    args = set(connector.flatten())
 
     for a, b in itertools.combinations(args, 2):
         if is_complement(a, b):
             return compliment
 
-    return result_func(*args)
+    return result_func(*sorted(args, key=lambda a: a.sql()))
 
 
 def flatten(expression):
@@ -142,12 +130,11 @@ def flatten(expression):
     A AND (B AND C) -> A AND B AND C
     A OR (B OR C) -> A OR B OR C
     """
-    if isinstance(expression, (exp.And, exp.Or)):
-        for node in (expression.left, expression.right):
-            if isinstance(node, exp.Paren) and isinstance(
-                node.this, expression.__class__
-            ):
-                node.replace(node.this)
+    if isinstance(expression, exp.Connector):
+        for node in expression.args.values():
+            child = node.unnest()
+            if isinstance(child, expression.__class__):
+                node.replace(child)
     return expression
 
 
@@ -165,19 +152,16 @@ def absorb(expression):
     return expression
 
 
-def _absorb(expression, kind):
-    left = expression.left.unnest()
-    right = expression.right.unnest()
-
-    for a, b in [(left, right), (right, left)]:
+def _absorb(connector, kind):
+    for a, b in itertools.permutations(connector.unnest_operands()):
         if isinstance(a, kind):
             if b in (a.left, a.right):
                 return b
             if exp.not_(b) == a.left:
-                return expression.__class__(this=b, expression=a.right)
+                return connector.__class__(this=b, expression=a.right)
             if exp.not_(b) == a.right:
-                return expression.__class__(this=b, expression=a.left)
-    return expression
+                return connector.__class__(this=b, expression=a.left)
+    return connector
 
 
 def eliminate(expression):
@@ -192,15 +176,12 @@ def eliminate(expression):
     return expression
 
 
-def _eliminate(expression, kind):
-    left = expression.left.unnest()
-    right = expression.right.unnest()
+def _eliminate(connector, kind):
+    left, right = connector.unnest_operands()
 
     if isinstance(left, kind) and isinstance(right, kind):
-        aa = left.left.unnest()
-        ab = left.right.unnest()
-        ba = right.left.unnest()
-        bb = right.right.unnest()
+        aa, ab = left.unnest_operands()
+        ba, bb = right.unnest_operands()
 
         for lhs, rhs in [
             ([(aa, ab), (ab, aa)], (ba, bb)),
@@ -209,7 +190,7 @@ def _eliminate(expression, kind):
             for a, b in lhs:
                 if a in rhs and exp.not_(b) in rhs:
                     return a
-    return expression
+    return connector
 
 
 def is_complement(a, b):

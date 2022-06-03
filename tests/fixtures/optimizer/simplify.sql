@@ -1,12 +1,6 @@
 --------------------------------------
 -- Conditions
 --------------------------------------
-(a AND b AND c AND d) AND (d AND c AND b AND a);
-a AND b AND c AND d;
-
-(c AND (a AND b)) AND ((b AND a) AND c);
-a AND b AND c;
-
 x AND x;
 x;
 
@@ -184,6 +178,11 @@ A AND B AND D AND E AND F AND G;
 A AND NOT B AND C AND B;
 FALSE;
 
+(a AND b AND c AND d) AND (d AND c AND b AND a);
+a AND b AND c AND d;
+
+(c AND (a AND b)) AND ((b AND a) AND c);
+a AND b AND c;
 
 --------------------------------------
 -- Where removal

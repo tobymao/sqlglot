@@ -76,7 +76,7 @@ def distributive_law(expression, to_exp):
 
 
 def _distribute(a, b, from_func, to_func):
-    if isinstance(a, (exp.And, exp.Or)):
+    if isinstance(a, exp.Connector):
         exp.replace_children(
             a,
             lambda c: to_func(

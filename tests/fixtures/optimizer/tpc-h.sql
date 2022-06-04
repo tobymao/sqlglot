@@ -1,5 +1,5 @@
 --------------------------------------
--- TCP-H 1
+-- TPC-H 1
 --------------------------------------
 select
         l_returnflag,
@@ -43,7 +43,7 @@ ORDER BY
   "lineitem"."l_returnflag",
   "lineitem"."l_linestatus";
 --------------------------------------
--- TCP-H 2
+-- TPC-H 2
 --------------------------------------
 select
    s_acctbal,
@@ -136,7 +136,7 @@ ORDER BY
   "part"."p_partkey"
 LIMIT 100;
 --------------------------------------
--- TCP-H 3
+-- TPC-H 3
 --------------------------------------
 select
         l_orderkey,
@@ -185,7 +185,7 @@ ORDER BY
   "orders"."o_orderdate"
 LIMIT 10;
 --------------------------------------
--- TCP-H 4
+-- TPC-H 4
 --------------------------------------
 select
         o_orderpriority,

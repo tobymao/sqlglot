@@ -117,7 +117,7 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
         )
 
-    def test_tcph(self):
+    def test_tpch(self):
         schema = {
             "lineitem": {
                 "l_orderkey": "uint64",
@@ -198,7 +198,7 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
-        self.check_file("tcp-h", optimizer.optimize, schema=schema, pretty=True)
+        self.check_file("tpc-h", optimizer.optimize, schema=schema, pretty=True)
 
     def test_schema(self):
         schema = ensure_schema(

@@ -308,81 +308,292 @@ WHERE
 --------------------------------------
 -- TPC-H 7
 --------------------------------------
---select
---        supp_nation,
---        cust_nation,
---        l_year,
---        sum(volume) as revenue
---from
---        (
---                select
---                        n1.n_name as supp_nation,
---                        n2.n_name as cust_nation,
---                        extract(year from l_shipdate) as l_year,
---                        l_extendedprice * (1 - l_discount) as volume
---                from
---                        supplier,
---                        lineitem,
---                        orders,
---                        customer,
---                        nation n1,
---                        nation n2
---                where
---                        s_suppkey = l_suppkey
---                        and o_orderkey = l_orderkey
---                        and c_custkey = o_custkey
---                        and s_nationkey = n1.n_nationkey
---                        and c_nationkey = n2.n_nationkey
---                        and (
---                                (n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')
---                                or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')
---                        )
---                        and l_shipdate between date '1995-01-01' and date '1996-12-31'
---        ) as shipping
---group by
---        supp_nation,
---        cust_nation,
---        l_year
---order by
---        supp_nation,
---        cust_nation,
---        l_year;
---SELECT
---  "shipping"."supp_nation" AS "supp_nation",
---  "shipping"."cust_nation" AS "cust_nation",
---  "shipping"."l_year" AS "l_year",
---  SUM("shipping"."volume") AS "revenue"
---FROM (
---    SELECT
---      "n1"."n_name" AS "supp_nation",
---      "n2"."n_name" AS "cust_nation",
---      EXTRACT(year FROM "lineitem"."l_shipdate") AS "l_year",
---      "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS "volume"
---    FROM "supplier" AS "supplier"
---    JOIN "nation" AS "n2"
---      ON "n2"."n_name" = 'FRANCE'
---      AND "n2"."n_name" = 'GERMANY'
---    JOIN "customer" AS "customer"
---      ON "customer"."c_nationkey" = "n2"."n_nationkey"
---    JOIN "orders" AS "orders"
---      ON "customer"."c_custkey" = "orders"."o_custkey"
---    JOIN "lineitem" AS "lineitem"
---      ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
---      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
---    JOIN "nation" AS "n1"
---      ON "n1"."n_name" = 'FRANCE'
---      AND "n1"."n_name" = 'GERMANY'
---      AND "supplier"."s_nationkey" = "n1"."n_nationkey"
---    WHERE
---      ("n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY')
---      AND ("n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY')
---      AND "lineitem"."l_shipdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
---) AS "shipping"
---GROUP BY
---  "shipping"."supp_nation",
---  "shipping"."cust_nation",
---  "shipping"."l_year"
---ORDER BY
---  "shipping"."supp_nation",
---  "shipping"."cust_nation",
---  "shipping"."l_year";
+select
+        supp_nation,
+        cust_nation,
+        l_year,
+        sum(volume) as revenue
+from
+        (
+                select
+                        n1.n_name as supp_nation,
+                        n2.n_name as cust_nation,
+                        extract(year from l_shipdate) as l_year,
+                        l_extendedprice * (1 - l_discount) as volume
+                from
+                        supplier,
+                        lineitem,
+                        orders,
+                        customer,
+                        nation n1,
+                        nation n2
+                where
+                        s_suppkey = l_suppkey
+                        and o_orderkey = l_orderkey
+                        and c_custkey = o_custkey
+                        and s_nationkey = n1.n_nationkey
+                        and c_nationkey = n2.n_nationkey
+                        and (
+                                (n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')
+                                or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')
+                        )
+                        and l_shipdate between date '1995-01-01' and date '1996-12-31'
+        ) as shipping
+group by
+        supp_nation,
+        cust_nation,
+        l_year
+order by
+        supp_nation,
+        cust_nation,
+        l_year;
+SELECT
+  "shipping"."supp_nation" AS "supp_nation",
+  "shipping"."cust_nation" AS "cust_nation",
+  "shipping"."l_year" AS "l_year",
+  SUM("shipping"."volume") AS "revenue"
+FROM (
+    SELECT
+      "n1"."n_name" AS "supp_nation",
+      "n2"."n_name" AS "cust_nation",
+      EXTRACT(year FROM "lineitem"."l_shipdate") AS "l_year",
+      "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS "volume"
+    FROM "supplier" AS "supplier"
+    JOIN "nation" AS "n2"
+      ON ("n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY')
+    JOIN "customer" AS "customer"
+      ON "customer"."c_nationkey" = "n2"."n_nationkey"
+    JOIN "orders" AS "orders"
+      ON "customer"."c_custkey" = "orders"."o_custkey"
+    JOIN "lineitem" AS "lineitem"
+      ON "lineitem"."l_shipdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
+      AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
+      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+    JOIN "nation" AS "n1"
+      ON ("n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY')
+      AND ("n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE')
+      AND ("n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY')
+      AND "supplier"."s_nationkey" = "n1"."n_nationkey"
+) AS "shipping"
+GROUP BY
+  "shipping"."supp_nation",
+  "shipping"."cust_nation",
+  "shipping"."l_year"
+ORDER BY
+  "shipping"."supp_nation",
+  "shipping"."cust_nation",
+  "shipping"."l_year";
+
+--------------------------------------
+-- TPC-H 8
+--------------------------------------
+select
+        o_year,
+        sum(case
+                when nation = 'BRAZIL' then volume
+                else 0
+        end) / sum(volume) as mkt_share
+from
+        (
+                select
+                        extract(year from o_orderdate) as o_year,
+                        l_extendedprice * (1 - l_discount) as volume,
+                        n2.n_name as nation
+                from
+                        part,
+                        supplier,
+                        lineitem,
+                        orders,
+                        customer,
+                        nation n1,
+                        nation n2,
+                        region
+                where
+                        p_partkey = l_partkey
+                        and s_suppkey = l_suppkey
+                        and l_orderkey = o_orderkey
+                        and o_custkey = c_custkey
+                        and c_nationkey = n1.n_nationkey
+                        and n1.n_regionkey = r_regionkey
+                        and r_name = 'AMERICA'
+                        and s_nationkey = n2.n_nationkey
+                        and o_orderdate between date '1995-01-01' and date '1996-12-31'
+                        and p_type = 'ECONOMY ANODIZED STEEL'
+        ) as all_nations
+group by
+        o_year
+order by
+        o_year;
+SELECT
+  "all_nations"."o_year" AS "o_year",
+  SUM(CASE
+    WHEN "all_nations"."nation" = 'BRAZIL' THEN "all_nations"."volume"
+    ELSE 0
+  END) / SUM("all_nations"."volume") AS "mkt_share"
+FROM (
+    SELECT
+      EXTRACT(year FROM "orders"."o_orderdate") AS "o_year",
+      "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS "volume",
+      "n2"."n_name" AS "nation"
+    FROM "part" AS "part"
+    CROSS JOIN "nation" AS "n2"
+    JOIN "region" AS "region"
+      ON "region"."r_name" = 'AMERICA'
+    JOIN "nation" AS "n1"
+      ON "n1"."n_regionkey" = "region"."r_regionkey"
+    JOIN "customer" AS "customer"
+      ON "customer"."c_nationkey" = "n1"."n_nationkey"
+    JOIN "orders" AS "orders"
+      ON "orders"."o_custkey" = "customer"."c_custkey"
+      AND "orders"."o_orderdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
+    JOIN "lineitem" AS "lineitem"
+      ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+      AND "part"."p_partkey" = "lineitem"."l_partkey"
+    JOIN "supplier" AS "supplier"
+      ON "supplier"."s_nationkey" = "n2"."n_nationkey"
+      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+    WHERE
+      "part"."p_type" = 'ECONOMY ANODIZED STEEL'
+) AS "all_nations"
+GROUP BY
+  "all_nations"."o_year"
+ORDER BY
+  "all_nations"."o_year";
+
+--------------------------------------
+-- TPC-H 9
+-- TODO add transitive predicate push down
+--------------------------------------
+select
+        nation,
+        o_year,
+        sum(amount) as sum_profit
+from
+        (
+                select
+                        n_name as nation,
+                        extract(year from o_orderdate) as o_year,
+                        l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount
+                from
+                        part,
+                        supplier,
+                        lineitem,
+                        partsupp,
+                        orders,
+                        nation
+                where
+                        s_suppkey = l_suppkey
+                        and ps_suppkey = l_suppkey
+                        and ps_partkey = l_partkey
+                        and p_partkey = l_partkey
+                        and o_orderkey = l_orderkey
+                        and s_nationkey = n_nationkey
+                        and p_name like '%green%'
+        ) as profit
+group by
+        nation,
+        o_year
+order by
+        nation,
+        o_year desc;
+SELECT
+  "profit"."nation" AS "nation",
+  "profit"."o_year" AS "o_year",
+  SUM("profit"."amount") AS "sum_profit"
+FROM (
+    SELECT
+      "nation"."n_name" AS "nation",
+      EXTRACT(year FROM "orders"."o_orderdate") AS "o_year",
+      "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") - "partsupp"."ps_supplycost" * "lineitem"."l_quantity" AS "amount"
+    FROM "part" AS "part"
+    CROSS JOIN "nation" AS "nation"
+    CROSS JOIN "partsupp" AS "partsupp"
+    CROSS JOIN "orders" AS "orders"
+    JOIN "lineitem" AS "lineitem"
+      ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
+      AND "part"."p_partkey" = "lineitem"."l_partkey"
+      AND "partsupp"."ps_partkey" = "lineitem"."l_partkey"
+      AND "partsupp"."ps_suppkey" = "lineitem"."l_suppkey"
+    JOIN "supplier" AS "supplier"
+      ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+    WHERE
+      "part"."p_name" LIKE '%green%'
+) AS "profit"
+GROUP BY
+  "profit"."nation",
+  "profit"."o_year"
+ORDER BY
+  "profit"."nation",
+  "profit"."o_year" DESC;
+
+--------------------------------------
+-- TPC-H 10
+--------------------------------------
+select
+        c_custkey,
+        c_name,
+        sum(l_extendedprice * (1 - l_discount)) as revenue,
+        c_acctbal,
+        n_name,
+        c_address,
+        c_phone,
+        c_comment
+from
+        customer,
+        orders,
+        lineitem,
+        nation
+where
+        c_custkey = o_custkey
+        and l_orderkey = o_orderkey
+        and o_orderdate >= date '1993-10-01'
+        and o_orderdate < date '1993-10-01' + interval '3' month
+        and l_returnflag = 'R'
+        and c_nationkey = n_nationkey
+group by
+        c_custkey,
+        c_name,
+        c_acctbal,
+        c_phone,
+        n_name,
+        c_address,
+        c_comment
+order by
+        revenue desc
+limit
+        20;
+SELECT
+  "customer"."c_custkey" AS "c_custkey",
+  "customer"."c_name" AS "c_name",
+  SUM("lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount")) AS "revenue",
+  "customer"."c_acctbal" AS "c_acctbal",
+  "nation"."n_name" AS "n_name",
+  "customer"."c_address" AS "c_address",
+  "customer"."c_phone" AS "c_phone",
+  "customer"."c_comment" AS "c_comment"
+FROM "customer" AS "customer"
+JOIN "lineitem" AS "lineitem"
+  ON "lineitem"."l_returnflag" = 'R'
+JOIN "orders" AS "orders"
+  ON "customer"."c_custkey" = "orders"."o_custkey"
+  AND "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "orders"."o_orderdate" < CAST('1993-10-01' AS DATE) + INTERVAL '3' month
+  AND "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
+JOIN "nation" AS "nation"
+  ON "customer"."c_nationkey" = "nation"."n_nationkey"
+GROUP BY
+  "customer"."c_custkey",
+  "customer"."c_name",
+  "customer"."c_acctbal",
+  "customer"."c_phone",
+  "nation"."n_name",
+  "customer"."c_address",
+  "customer"."c_comment"
+ORDER BY
+  "revenue" DESC
+LIMIT 20;
+
+--------------------------------------
+-- TPC-H 11
+--------------------------------------

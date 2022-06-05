@@ -11,19 +11,29 @@ def expand_multi_table_selects(expression):
         for query in tail:
             alias = query.alias_or_name
 
-            predicates = [
-                predicate
-                for predicate in [
-                    column.find_ancestor(exp.PREDICATES)
-                    for column in (where.find_all(exp.Column) if where else [])
-                    if column.text("table") == alias
-                ]
-                if predicate
-            ]
+            predicates = []
+
+            if where:
+                condition = where.this.unnest()
+
+                if isinstance(condition, exp.Connector):
+                    condition = condition.flatten()
+                else:
+                    condition = [condition]
+
+                for predicate in condition:
+                    for column in predicate.find_all(exp.Column):
+                        if column.text("table") == alias:
+                            predicates.append(predicate)
 
             for predicate in predicates:
                 predicate.replace(exp.TRUE)
-            parent.join(query, on=predicates, copy=False)
+            parent.join(
+                query,
+                on=predicates,
+                join_type=None if predicates else "CROSS",
+                copy=False,
+            )
             from_.args["expressions"].remove(query)
 
         if tail:
@@ -40,12 +50,12 @@ def reorder_joins(from_):
 
     for name, join in joins.items():
         on = join.args.get("on")
-        dag[name] = set()
+        dag[name] = []
         if on:
             for column in on.find_all(exp.Column):
                 table = column.text("table")
                 if table != name:
-                    dag[name].add(table)
+                    dag[name].append(table)
 
         parent.set(
             "joins",

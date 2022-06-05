@@ -16,6 +16,7 @@ disable=
     too-many-boolean-expressions,
     too-many-locals,
     too-many-lines,
+    too-many-nested-blocks,
     too-many-public-methods,
     too-many-instance-attributes,
     too-many-return-statements,

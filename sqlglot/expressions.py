@@ -512,7 +512,7 @@ class Identifier(Expression):
 
     def __eq__(self, other):
         return (
-            isinstance(other, Identifier)
+            isinstance(other, self.__class__)
             and (self.this or "").upper() == (other.this or "").upper()
         )
 
@@ -753,6 +753,17 @@ class Update(Expression):
 
 class Values(Expression):
     arg_types = {"expressions": True}
+
+
+class Var(Expression):
+    def __eq__(self, other):
+        return (
+            isinstance(other, self.__class__)
+            and (self.this or "").upper() == (other.this or "").upper()
+        )
+
+    def __hash__(self):
+        return hash((self.key, self.this.upper()))
 
 
 class Schema(Expression):
@@ -1957,7 +1968,6 @@ def _apply_child_list_builder(
     parser_opts=None,
     **kwargs,
 ):
-    # pylint: disable=too-many-locals
     instance = _maybe_copy(instance, copy)
     parsed = []
     for expression in expressions:

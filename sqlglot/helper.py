@@ -74,3 +74,26 @@ def while_changing(expression, func):
         if start == hash(expression):
             break
     return expression
+
+
+def tsort(dag):
+    result = []
+
+    def visit(node, visited):
+        if node in result:
+            return
+        if node in visited:
+            raise ValueError("Cycle error")
+
+        visited.add(node)
+
+        for dep in dag.get(node, []):
+            visit(dep, visited)
+
+        visited.remove(node)
+        result.append(node)
+
+    for node in dag:
+        visit(node, set())
+
+    return result

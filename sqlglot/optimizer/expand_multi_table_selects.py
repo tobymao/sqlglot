@@ -1,11 +1,14 @@
 import sqlglot.expressions as exp
+from sqlglot.helper import tsort
 
 
 def expand_multi_table_selects(expression):
     for from_ in expression.find_all(exp.From):
         parent = from_.parent
         where = parent.args.get("where")
-        for query in from_.args["expressions"][1:]:
+        tail = from_.args["expressions"][1:]
+
+        for query in tail:
             alias = query.alias_or_name
 
             predicates = [
@@ -23,4 +26,28 @@ def expand_multi_table_selects(expression):
             parent.join(query, on=predicates, copy=False)
             from_.args["expressions"].remove(query)
 
+        if tail:
+            reorder_joins(from_)
+
     return expression
+
+
+def reorder_joins(from_):
+    head = from_.args["expressions"][0]
+    parent = from_.parent
+    joins = {join.this.alias_or_name: join for join in parent.args.get("joins", [])}
+    dag = {head.alias_or_name: set()}
+
+    for name, join in joins.items():
+        on = join.args.get("on")
+        dag[name] = set()
+        if on:
+            for column in on.find_all(exp.Column):
+                table = column.text("table")
+                if table != name:
+                    dag[name].add(table)
+
+        parent.set(
+            "joins",
+            [joins[name] for name in tsort(dag) if name != head.alias_or_name],
+        )

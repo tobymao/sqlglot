@@ -1,11 +1,12 @@
 import unittest
 
+import duckdb
 import sqlglot
 from sqlglot import optimizer
 from sqlglot.optimizer.schema import ensure_schema, MappingSchema
 from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
-from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
+from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures, FIXTURES_DIR
 
 
 class TestOptimizer(unittest.TestCase):
@@ -198,7 +199,28 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
-        self.check_file("tpc-h", optimizer.optimize, schema=schema, pretty=True)
+        self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=schema, pretty=True)
+
+        conn = duckdb.connect()
+
+        def replace_table(sql):
+            expression = sqlglot.parse_one(sql)
+            for table in schema:
+                expression = expression.with_(
+                    table,
+                    sqlglot.select("*").from_(
+                        f"READ_CSV_AUTO('{FIXTURES_DIR}/optimizer/tpc-h/{table}.csv.gz')"
+                    ),
+                )
+            return expression.sql(dialect="duckdb", pretty=True)
+
+        for sql, optimized in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql"):
+            sql = replace_table(sql)
+            optimized = replace_table(optimized)
+            self.assertEqual(
+                conn.execute(sql).fetchall(),
+                conn.execute(optimized).fetchall(),
+            )
 
     def test_schema(self):
         schema = ensure_schema(

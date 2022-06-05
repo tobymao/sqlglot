@@ -1,3 +1,4 @@
 black
 duckdb
+pandas
 pylint

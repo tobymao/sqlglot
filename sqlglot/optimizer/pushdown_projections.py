@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from sqlglot import expressions as exp
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import traverse_scope, Scope
 
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
@@ -44,17 +44,18 @@ def pushdown_projections(expression):
         if isinstance(scope.expression, exp.Select):
             _remove_unused_selections(scope, parent_selections)
 
-            # Group columns by selectable name
+            # Group columns by source name
             selects = defaultdict(set)
-            for col in scope.references:
+            for col in scope.columns:
                 table_name = col.text("table")
                 col_name = col.text("this")
                 selects[table_name].add(col_name)
 
             # Push the selected columns down to the next scope
-            for name, child_scope in scope.referenced_scopes.items():
-                columns = selects.get(name) or set()
-                referenced_columns[child_scope].update(columns)
+            for name, source in scope.selected_sources.items():
+                if isinstance(source, Scope):
+                    columns = selects.get(name) or set()
+                    referenced_columns[source].update(columns)
 
     return expression
 

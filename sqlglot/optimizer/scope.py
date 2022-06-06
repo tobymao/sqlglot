@@ -19,7 +19,7 @@ class Scope:
 
     Attributes:
         expression (exp.Select|exp.Union): Root expression of this scope
-        selectables (dict[str, exp.Table|Scope]): Mapping of selectable name to either
+        sources (dict[str, exp.Table|Scope]): Mapping of source name to either
             a Table expression or another Scope instance. For example:
                 SELECT * FROM x                     {"x": Table(this="x")}
                 SELECT * FROM x AS y                {"y": Table(this="x")}
@@ -35,62 +35,121 @@ class Scope:
             This does not include derived tables or CTEs.
         union (tuple[Scope, Scope]): If this Scope is for a Union expression, this will be
             a tuple of the left and right child scopes.
-        columns (list[exp.Column]): list of columns in this scope
-        tables (list[exp.Table]): list of tables in this scope
-        derived_tables (list[exp.Subquery]): list of derived tables in this scope.
-            For example:
-                SELECT * FROM (SELECT ...) <- that's a derived table
-        subqueries (list[exp.Select]): list of subqueries in this scope.
-            For example:
-                SELECT * FROM x WHERE a IN (SELECT ...) < that's a subquery
-        ctes (list[exp.CTE]): list of ctes in this scope
     """
 
     def __init__(
         self,
         expression,
-        selectables=None,
+        sources=None,
         outer_column_list=None,
         parent=None,
         scope_type=ScopeType.ROOT,
     ):
         self.expression = expression
-        self.selectables = selectables or {}
+        self.sources = sources or {}
         self.outer_column_list = outer_column_list or []
         self.parent = parent
         self.scope_type = scope_type
         self.subquery_scopes = []
-
         self.union = None
-        self.columns = []
-        self.tables = []
-        self.derived_tables = []
-        self.subqueries = []
-        self.ctes = []
 
-    def branch(self, expression, scope_type, add_selectables=None, **kwargs):
+    def branch(self, expression, scope_type, add_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
-        selectables = copy(self.selectables)
-        if add_selectables:
-            selectables.update(add_selectables)
+        sources = copy(self.sources)
+        if add_sources:
+            sources.update(add_sources)
         return Scope(
             expression=expression,
-            selectables=selectables,
+            sources=sources,
             parent=self,
             scope_type=scope_type,
             **kwargs,
         )
 
-    @property
-    def referenced_selectables(self):
-        """
-        Mapping of selectables that are actually selected from in this scope.
+    def _find_in_scope(self, predicate):
+        return [
+            node
+            for node, *_ in _bfs_until_next_scope(self.expression)
+            if node is not self.expression and predicate(node)
+        ]
 
-        For example, all tables in a schema are selectable at any point. But a
-        table only becomes a referenced selectable if it's included in a FROM or JOIN clause.
+    @property
+    def tables(self):
+        """
+        List of tables in this scope.
 
         Returns:
-            dict[str, exp.Table|Scope]: referenced selectables
+            list[exp.Table]: tables
+        """
+        return self._find_in_scope(lambda n: isinstance(n, exp.Table))
+
+    @property
+    def ctes(self):
+        """
+        List of CTEs in this scope.
+
+        Returns:
+            list[exp.CTE]: ctes
+        """
+        return self._find_in_scope(lambda n: isinstance(n, exp.CTE))
+
+    @property
+    def derived_tables(self):
+        """
+        List of derived tables in this scope.
+
+        For example:
+            SELECT * FROM (SELECT ...) <- that's a derived table
+
+        Returns:
+            list[exp.Subquery]: derived tables
+        """
+        return self._find_in_scope(lambda n: isinstance(n, exp.Subquery))
+
+    @property
+    def subqueries(self):
+        """
+        List of subqueries in this scope.
+
+        For example:
+            SELECT * FROM x WHERE a IN (SELECT ...) <- that's a subquery
+
+        Returns:
+            list[exp.Subqueryable]: subqueries
+        """
+        return self._find_in_scope(
+            lambda n: isinstance(n, exp.Subqueryable)
+            and not isinstance(n.parent, (exp.CTE, exp.Subquery))
+        )
+
+    @property
+    def columns(self):
+        """
+        List of columns in this scope.
+
+        Returns:
+            list[exp.Column]: Column instances in this scope, plus any
+                Columns that reference this scope from correlated subqueries.
+        """
+        columns = self._find_in_scope(
+            lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
+        )
+        return [
+            c
+            for c in columns + [c for c, _ in self.columns_from_subqueries]
+            if not self._is_reference_to_named_select(c)
+        ]
+
+    @property
+    def selected_sources(self):
+        """
+        Mapping of sources that are actually selected from in this scope.
+
+        That is, all tables in a schema are selectable at any point. But a
+        table only becomes a selected source if it's included in a FROM or JOIN clause.
+
+        Returns:
+            dict[str, exp.Table|Scope]: selected sources
         """
         referenced_names = []
 
@@ -105,40 +164,10 @@ class Scope:
         result = {}
 
         for name in referenced_names:
-            if name in self.selectables:
-                result[name] = self.selectables[name]
+            if name in self.sources:
+                result[name] = self.sources[name]
 
         return result
-
-    @property
-    def referenced_scopes(self):
-        """
-        Mapping of selectables that are actually selected from in this scope.
-
-        This is like `referenced_selectables`, except it only returns referenced
-        scopes, not referenced tables.
-
-        Returns:
-            dict[str, Scope]: referenced scopes
-        """
-        return {
-            k: v for k, v in self.referenced_selectables.items() if isinstance(v, Scope)
-        }
-
-    @property
-    def outputs(self):
-        """
-        Column outputs of this scope.
-
-        For example, for the following expression:
-            SELECT 1 as a, 2 as b FROM x
-
-        The outputs are ["a", "b"]
-
-        Returns:
-            list[str]: outputs
-        """
-        return self.expression.named_selects
 
     @property
     def selects(self):
@@ -158,45 +187,43 @@ class Scope:
         return self.expression.selects
 
     @property
-    def correlations(self):
+    def columns_from_subqueries(self):
         """
         Columns referenced by correlated subqueries.
 
         Returns:
             list[tuple[exp.Column, Scope]]: List of Column instances from
-                child scopes that reference this scope, along with the child
+                child scopes that reference sources in this scope, along with the child
                 scope instance itself.
         """
         result = []
         for scope in self.subquery_scopes:
-            for column in scope.external_references:
+            for column in scope.external_columns:
                 result.append((column, scope))
         return result
 
     @property
-    def external_references(self):
+    def external_columns(self):
         """
-        Columns that appear to reference selectables in outer scopes.
+        Columns that appear to reference sources in outer scopes.
 
         Returns:
             list[exp.Column]: Column instances that don't reference
-                tables in the current scope.
+                sources in the current scope.
         """
-        return [c for c in self.references if c.text("table") not in self.selectables]
+        return [c for c in self.columns if c.text("table") not in self.sources]
 
-    @property
-    def references(self):
+    def source_columns(self, source_name):
         """
-        All column references in the current scope.
+        Get all columns in the current scope for a particular source.
 
+        Args:
+            source_name (str): Name of the source
         Returns:
-            list[exp.Column]: Column instances in this scope, plus any
-                Columns that reference this scope from correlated subqueries.
+            list[exp.Column]: Column instances that reference `source_name`
         """
         return [
-            c
-            for c in self.columns + [c for c, _ in self.correlations]
-            if not self._is_output_reference(c)
+            column for column in self.columns if column.text("table") == source_name
         ]
 
     @property
@@ -207,18 +234,20 @@ class Scope:
     @property
     def is_correlated_subquery(self):
         """Determine if this scope is a correlated subquery"""
-        return self.is_subquery and self.external_references
+        return self.is_subquery and self.external_columns
 
-    def rename_selectable(self, old_name, new_name):
-        """Rename a selectable in this scope"""
-        columns = self.selectables.pop(old_name or "", [])
-        self.selectables[new_name] = columns
+    def rename_source(self, old_name, new_name):
+        """Rename a source in this scope"""
+        columns = self.sources.pop(old_name or "", [])
+        self.sources[new_name] = columns
 
-    def _is_output_reference(self, column):
+    def _is_reference_to_named_select(self, column):
         """Determine if column is a reference to a SELECT output column"""
         table_name = column.text("table")
         column_name = column.text("this")
 
+        # Expression.named_selects also includes unaliased columns.
+        # In this case, we want to be sure to only include selects that are aliased.
         aliased_outputs = {
             e.alias
             for e in self.expression.args.get("expressions", [])
@@ -239,7 +268,7 @@ def traverse_scope(expression):
     "Scope" represents the current context of a Select statement.
 
     This is helpful for optimizing queries, where we need more information than
-    the expression tree itself. For example, we might care about the selectable
+    the expression tree itself. For example, we might care about the source
     names within a subquery. Returns a list because a generator could result in
     incomplete properties which is confusing.
 
@@ -247,9 +276,9 @@ def traverse_scope(expression):
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT a FROM x) AS y")
         >>> scopes = traverse_scope(expression)
-        >>> scopes[0].expression.sql(), list(scopes[0].selectables)
+        >>> scopes[0].expression.sql(), list(scopes[0].sources)
         ('SELECT a FROM x', ['x'])
-        >>> scopes[1].expression.sql(), list(scopes[1].selectables)
+        >>> scopes[1].expression.sql(), list(scopes[1].sources)
         ('SELECT a FROM (SELECT a FROM x) AS y', ['y'])
 
     Args:
@@ -261,22 +290,6 @@ def traverse_scope(expression):
 
 
 def _traverse_scope(scope):
-    # Collect all the relevant Expression parts in this scope
-    for node, parent, _ in _bfs_until_next_scope(scope.expression):
-        if node is scope.expression:
-            continue  # Skip this node itself - we only care about children
-        if isinstance(node, (exp.Select, exp.Union)):
-            if isinstance(parent, exp.CTE):
-                scope.ctes.append(parent)
-            elif isinstance(parent, exp.Subquery):
-                scope.derived_tables.append(parent)
-            else:
-                scope.subqueries.append(node)
-        elif isinstance(node, exp.Table):
-            scope.tables.append(node)
-        elif isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
-            scope.columns.append(node)
-
     if isinstance(scope.expression, exp.Select):
         yield from _traverse_select(scope)
     elif isinstance(scope.expression, exp.Union):
@@ -292,13 +305,14 @@ def _traverse_select(scope):
     yield from _traverse_derived_tables(
         scope.derived_tables, scope, ScopeType.DERIVED_TABLE
     )
-    _add_table_selectables(scope)
+    _add_table_sources(scope)
 
 
 def _traverse_union(scope):
-    if scope.ctes:
+    ctes = scope.ctes
+    if ctes:
         yield from _traverse_derived_tables(
-            scope.ctes, scope, scope_type=ScopeType.DERIVED_TABLE
+            ctes, scope, scope_type=ScopeType.DERIVED_TABLE
         )
 
     # The last scope to be yield should be the top most scope
@@ -318,13 +332,13 @@ def _traverse_union(scope):
 
 
 def _traverse_derived_tables(derived_tables, scope, scope_type):
-    selectables = {}
+    sources = {}
     chain = scope_type == ScopeType.CTE
     for derived_table in derived_tables:
         for child_scope in _traverse_scope(
             scope.branch(
                 derived_table.this,
-                add_selectables=selectables if chain else None,
+                add_sources=sources if chain else None,
                 outer_column_list=derived_table.alias_column_names,
                 scope_type=scope_type,
             )
@@ -334,29 +348,29 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
             # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
             # Until then, this means that only a single, unaliased derived table is allowed (rather,
             # the latest one wins.
-            selectables[derived_table.alias] = child_scope
-    scope.selectables.update(selectables)
+            sources[derived_table.alias] = child_scope
+    scope.sources.update(sources)
 
 
-def _add_table_selectables(scope):
-    selectables = {}
+def _add_table_sources(scope):
+    sources = {}
     for table in scope.tables:
         table_name = table.text("this")
 
         if isinstance(table.parent, exp.Alias):
-            selectable_table = table.parent.alias
+            source_name = table.parent.alias
         else:
-            selectable_table = table_name
+            source_name = table_name
 
-        if table_name in scope.selectables:
-            # This is a reference to a parent selectable (e.g. a CTE), not an actual table.
-            scope.selectables[selectable_table] = scope.selectables[table_name]
-        elif selectable_table in scope.selectables:
-            raise OptimizeError(f"Duplicate table name: {selectable_table}")
+        if table_name in scope.sources:
+            # This is a reference to a parent source (e.g. a CTE), not an actual table.
+            scope.sources[source_name] = scope.sources[table_name]
+        elif source_name in scope.sources:
+            raise OptimizeError(f"Duplicate table name: {source_name}")
         else:
-            selectables[selectable_table] = table
+            sources[source_name] = table
 
-    scope.selectables.update(selectables)
+    scope.sources.update(sources)
 
 
 def _traverse_subqueries(scope):
@@ -375,6 +389,5 @@ def _bfs_until_next_scope(expression):
     This will yield the Select or Union node itself, but it won't recurse any further.
     """
     yield from expression.bfs(
-        prune=lambda n, *_: isinstance(n, (exp.Select, exp.Union))
-        and n is not expression
+        prune=lambda n, *_: isinstance(n, exp.Subqueryable) and n is not expression
     )

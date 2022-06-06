@@ -637,7 +637,7 @@ class Subqueryable:
         instance = _maybe_copy(self, copy)
         return Subquery(
             this=instance,
-            alias=to_identifier(alias),
+            alias=TableAlias(this=to_identifier(alias)),
         )
 
     @property

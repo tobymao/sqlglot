@@ -31,13 +31,13 @@ def decorrelate_subqueries(expression):
         if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
             continue
 
-        for external in scope.external_references:
-            eq = external.find_ancestor(exp.EQ)
+        for column in scope.external_columns:
+            eq = column.find_ancestor(exp.EQ)
 
-            if external.find_ancestor(exp.Where) != where or not eq:
+            if column.find_ancestor(exp.Where) != where or not eq:
                 continue
 
-            internal = eq.right if eq.left == external else eq.left
+            internal = eq.right if eq.left == column else eq.left
             value = select.selects[0]
 
             # if the join column is not in the select, we need to add it
@@ -54,7 +54,7 @@ def decorrelate_subqueries(expression):
                 select.select(internal, copy=False)
 
             alias = f"_d_{next(sequence)}"
-            on = [f"{alias}.{internal.text('this')} = {external.sql()}"]
+            on = [f"{alias}.{internal.text('this')} = {column.sql()}"]
 
             eq.replace(exp.TRUE)
             select.replace(

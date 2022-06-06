@@ -2264,6 +2264,26 @@ def replace_children(expression, fun):
         expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
 
 
+def column_table_names(expression):
+    """
+    Return all table names referenced through columns in an expression.
+
+    Example:
+        >>> import sqlglot
+        >>> column_table_names(sqlglot.parse_one("a.b AND c.d AND c.e"))
+        ['c', 'a']
+
+    Args:
+        expression (sqlglot.Expression): expression to find table names
+
+    Returns:
+        list: A list of unique names
+    """
+    return list(
+        dict.fromkeys(column.text("table") for column in expression.find_all(Column))
+    )
+
+
 TRUE = Boolean(this=True)
 FALSE = Boolean(this=False)
 NULL = Null()

@@ -74,23 +74,9 @@ class Scope:
         ]
 
     @property
-    def column_nodes(self):
+    def tables(self):
         """
-        List of column nodes in this scope.
-
-        This does not include columns from subqueries.
-
-        Returns:
-            list[exp.Column]: columns
-        """
-        return self._find_in_scope(
-            lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
-        )
-
-    @property
-    def table_nodes(self):
-        """
-        List of table nodes in this scope.
+        List of tables in this scope.
 
         Returns:
             list[exp.Table]: tables
@@ -98,7 +84,7 @@ class Scope:
         return self._find_in_scope(lambda n: isinstance(n, exp.Table))
 
     @property
-    def cte_nodes(self):
+    def ctes(self):
         """
         List of CTEs in this scope.
 
@@ -108,7 +94,7 @@ class Scope:
         return self._find_in_scope(lambda n: isinstance(n, exp.CTE))
 
     @property
-    def derived_table_nodes(self):
+    def derived_tables(self):
         """
         List of derived tables in this scope.
 
@@ -121,7 +107,7 @@ class Scope:
         return self._find_in_scope(lambda n: isinstance(n, exp.Subquery))
 
     @property
-    def subquery_nodes(self):
+    def subqueries(self):
         """
         List of subqueries in this scope.
 
@@ -137,6 +123,24 @@ class Scope:
         )
 
     @property
+    def columns(self):
+        """
+        List of columns in this scope.
+
+        Returns:
+            list[exp.Column]: Column instances in this scope, plus any
+                Columns that reference this scope from correlated subqueries.
+        """
+        columns = self._find_in_scope(
+            lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
+        )
+        return [
+            c
+            for c in columns + [c for c, _ in self.columns_from_subqueries]
+            if not self._is_reference_to_named_select(c)
+        ]
+
+    @property
     def selected_sources(self):
         """
         Mapping of sources that are actually selected from in this scope.
@@ -149,12 +153,12 @@ class Scope:
         """
         referenced_names = []
 
-        for table in self.table_nodes:
+        for table in self.tables:
             if isinstance(table.parent, exp.Alias):
                 referenced_names.append(table.parent.alias)
             else:
                 referenced_names.append(table.name)
-        for derived_table in self.derived_table_nodes:
+        for derived_table in self.derived_tables:
             referenced_names.append(derived_table.alias)
 
         result = {}
@@ -194,12 +198,12 @@ class Scope:
         """
         result = []
         for scope in self.subquery_scopes:
-            for column in scope.columns_referencing_outer_sources:
+            for column in scope.external_columns:
                 result.append((column, scope))
         return result
 
     @property
-    def columns_referencing_outer_sources(self):
+    def external_columns(self):
         """
         Columns that appear to reference sources in outer scopes.
 
@@ -208,21 +212,6 @@ class Scope:
                 sources in the current scope.
         """
         return [c for c in self.columns if c.text("table") not in self.sources]
-
-    @property
-    def columns(self):
-        """
-        All columns in the current scope.
-
-        Returns:
-            list[exp.Column]: Column instances in this scope, plus any
-                Columns that reference this scope from correlated subqueries.
-        """
-        return [
-            c
-            for c in self.column_nodes + [c for c, _ in self.columns_from_subqueries]
-            if not self._is_reference_to_named_select(c)
-        ]
 
     def source_columns(self, source_name):
         """
@@ -245,7 +234,7 @@ class Scope:
     @property
     def is_correlated_subquery(self):
         """Determine if this scope is a correlated subquery"""
-        return self.is_subquery and self.columns_referencing_outer_sources
+        return self.is_subquery and self.external_columns
 
     def rename_source(self, old_name, new_name):
         """Rename a source in this scope"""
@@ -311,16 +300,16 @@ def _traverse_scope(scope):
 
 
 def _traverse_select(scope):
-    yield from _traverse_derived_tables(scope.cte_nodes, scope, ScopeType.CTE)
+    yield from _traverse_derived_tables(scope.ctes, scope, ScopeType.CTE)
     yield from _traverse_subqueries(scope)
     yield from _traverse_derived_tables(
-        scope.derived_table_nodes, scope, ScopeType.DERIVED_TABLE
+        scope.derived_tables, scope, ScopeType.DERIVED_TABLE
     )
     _add_table_sources(scope)
 
 
 def _traverse_union(scope):
-    ctes = scope.cte_nodes
+    ctes = scope.ctes
     if ctes:
         yield from _traverse_derived_tables(
             ctes, scope, scope_type=ScopeType.DERIVED_TABLE
@@ -365,7 +354,7 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
 
 def _add_table_sources(scope):
     sources = {}
-    for table in scope.table_nodes:
+    for table in scope.tables:
         table_name = table.text("this")
 
         if isinstance(table.parent, exp.Alias):
@@ -385,7 +374,7 @@ def _add_table_sources(scope):
 
 
 def _traverse_subqueries(scope):
-    for subquery in scope.subquery_nodes:
+    for subquery in scope.subqueries:
         for child_scope in _traverse_scope(
             scope.branch(subquery, scope_type=ScopeType.SUBQUERY)
         ):

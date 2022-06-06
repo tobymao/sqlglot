@@ -30,8 +30,8 @@ def qualify_columns(expression, schema):
 
     for scope in traverse_scope(expression):
         _check_union_outputs(scope)
-        _qualify_derived_tables(scope.cte_nodes, scope, sequence)
-        _qualify_derived_tables(scope.derived_table_nodes, scope, sequence)
+        _qualify_derived_tables(scope.ctes, scope, sequence)
+        _qualify_derived_tables(scope.derived_tables, scope, sequence)
         _qualify_columns(scope, schema)
         _expand_stars(scope, schema)
         _qualify_outputs(scope)
@@ -153,10 +153,8 @@ def _qualify_outputs(scope):
 
 
 def _check_unknown_tables(scope):
-    if scope.columns_referencing_outer_sources and not scope.is_correlated_subquery:
-        raise OptimizeError(
-            f"Unknown table: {scope.columns_referencing_outer_sources[0].text('table')}"
-        )
+    if scope.external_columns and not scope.is_correlated_subquery:
+        raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
 
 
 def _get_unambiguous_columns(source_columns):

@@ -31,7 +31,7 @@ def decorrelate_subqueries(expression):
         if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
             continue
 
-        for column in scope.columns_referencing_outer_sources:
+        for column in scope.external_columns:
             eq = column.find_ancestor(exp.EQ)
 
             if column.find_ancestor(exp.Where) != where or not eq:

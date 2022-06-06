@@ -182,7 +182,7 @@ class TestOptimizer(unittest.TestCase):
             optimizer.decorrelate_subqueries.decorrelate_subqueries,
         )
 
-    def test_pushdown_predicate(self):
+    def test_pushdown_predicates(self):
         self.check_file(
             "pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates
         )

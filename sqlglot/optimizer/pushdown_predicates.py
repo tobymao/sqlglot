@@ -21,19 +21,24 @@ def pushdown_predicates(expression):
     for scope in reversed(traverse_scope(expression)):
         where = scope.expression.args.get("where")
 
-        if not where or where.find(exp.Or):
+        if not where:
             continue
 
-        for predicate in where.find_all(exp.PREDICATES):
-            selectables = {
+        condition = where.this.unnest()
+        predicates = (
+            condition.flatten() if isinstance(condition, exp.And) else [condition]
+        )
+
+        for predicate in predicates:
+            selectables = [
                 scope.selectables.get(table)
                 for table in exp.column_table_names(predicate)
-            }
+            ]
 
             if len(selectables) != 1:
                 continue
 
-            selectable = selectables.pop()
+            selectable = selectables[0]
 
             if isinstance(selectable, exp.Table):
                 node = selectable.find_ancestor(exp.Join, exp.From)

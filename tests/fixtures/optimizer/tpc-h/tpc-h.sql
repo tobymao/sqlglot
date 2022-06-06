@@ -597,3 +597,420 @@ LIMIT 20;
 --------------------------------------
 -- TPC-H 11
 --------------------------------------
+select
+        ps_partkey,
+        sum(ps_supplycost * ps_availqty) as value
+from
+        partsupp,
+        supplier,
+        nation
+where
+        ps_suppkey = s_suppkey
+        and s_nationkey = n_nationkey
+        and n_name = 'GERMANY'
+group by
+        ps_partkey having
+                sum(ps_supplycost * ps_availqty) > (
+                        select
+                                sum(ps_supplycost * ps_availqty) * 0.0001
+                        from
+                                partsupp,
+                                supplier,
+                                nation
+                        where
+                                ps_suppkey = s_suppkey
+                                and s_nationkey = n_nationkey
+                                and n_name = 'GERMANY'
+                )
+order by
+        value desc;
+SELECT
+  "partsupp"."ps_partkey" AS "ps_partkey",
+  SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") AS "value"
+FROM "partsupp" AS "partsupp"
+JOIN "supplier" AS "supplier"
+  ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
+JOIN "nation" AS "nation"
+  ON "nation"."n_name" = 'GERMANY'
+  AND "supplier"."s_nationkey" = "nation"."n_nationkey"
+GROUP BY
+  "partsupp"."ps_partkey"
+HAVING
+  SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") > (SELECT SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") * 0.0001 AS "_col_0" FROM "partsupp" AS "partsupp" JOIN "supplier" AS "supplier" ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey" JOIN "nation" AS "nation" ON "nation"."n_name" = 'GERMANY' AND "supplier"."s_nationkey" = "nation"."n_nationkey")
+ORDER BY
+  "value" DESC;
+
+--------------------------------------
+-- TPC-H 12
+--------------------------------------
+select
+        l_shipmode,
+        sum(case
+                when o_orderpriority = '1-URGENT'
+                        or o_orderpriority = '2-HIGH'
+                        then 1
+                else 0
+        end) as high_line_count,
+        sum(case
+                when o_orderpriority <> '1-URGENT'
+                        and o_orderpriority <> '2-HIGH'
+                        then 1
+                else 0
+        end) as low_line_count
+from
+        orders,
+        lineitem
+where
+        o_orderkey = l_orderkey
+        and l_shipmode in ('MAIL', 'SHIP')
+        and l_commitdate < l_receiptdate
+        and l_shipdate < l_commitdate
+        and l_receiptdate >= date '1994-01-01'
+        and l_receiptdate < date '1994-01-01' + interval '1' year
+group by
+        l_shipmode
+order by
+        l_shipmode;
+SELECT
+  "lineitem"."l_shipmode" AS "l_shipmode",
+  SUM(CASE
+    WHEN "orders"."o_orderpriority" = '1-URGENT' OR "orders"."o_orderpriority" = '2-HIGH' THEN 1
+    ELSE 0
+  END) AS "high_line_count",
+  SUM(CASE
+    WHEN "orders"."o_orderpriority" <> '1-URGENT' AND "orders"."o_orderpriority" <> '2-HIGH' THEN 1
+    ELSE 0
+  END) AS "low_line_count"
+FROM "orders" AS "orders"
+JOIN "lineitem" AS "lineitem"
+  ON "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
+  AND "lineitem"."l_receiptdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
+  AND "lineitem"."l_receiptdate" >= CAST('1994-01-01' AS DATE)
+  AND "lineitem"."l_shipdate" < "lineitem"."l_commitdate"
+  AND "lineitem"."l_shipmode" IN ('MAIL', 'SHIP')
+  AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
+GROUP BY
+  "lineitem"."l_shipmode"
+ORDER BY
+  "lineitem"."l_shipmode";
+
+--------------------------------------
+-- TPC-H 13
+--------------------------------------
+select
+        c_count,
+        count(*) as custdist
+from
+        (
+                select
+                        c_custkey,
+                        count(o_orderkey)
+                from
+                        customer left outer join orders on
+                                c_custkey = o_custkey
+                                and o_comment not like '%special%requests%'
+                group by
+                        c_custkey
+        ) as c_orders (c_custkey, c_count)
+group by
+        c_count
+order by
+        custdist desc,
+        c_count desc;
+SELECT
+  "c_orders"."c_count" AS "c_count",
+  COUNT(*) AS "custdist"
+FROM (
+    SELECT
+      COUNT("orders"."o_orderkey") AS "c_count"
+    FROM "customer" AS "customer"
+    LEFT JOIN "orders" AS "orders"
+      ON NOT "orders"."o_comment" LIKE '%special%requests%'
+      AND "customer"."c_custkey" = "orders"."o_custkey"
+    GROUP BY
+      "customer"."c_custkey"
+) AS "c_orders"
+GROUP BY
+  "c_orders"."c_count"
+ORDER BY
+  "custdist" DESC,
+  "c_orders"."c_count" DESC;
+
+--------------------------------------
+-- TPC-H 14
+--------------------------------------
+select
+        100.00 * sum(case
+                when p_type like 'PROMO%'
+                        then l_extendedprice * (1 - l_discount)
+                else 0
+        end) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue
+from
+        lineitem,
+        part
+where
+        l_partkey = p_partkey
+        and l_shipdate >= date '1995-09-01'
+        and l_shipdate < date '1995-09-01' + interval '1' month;
+SELECT
+  100.00 * SUM(CASE
+    WHEN "part"."p_type" LIKE 'PROMO%' THEN "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount")
+    ELSE 0
+  END) / SUM("lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount")) AS "promo_revenue"
+FROM "lineitem" AS "lineitem"
+JOIN "part" AS "part"
+  ON "lineitem"."l_partkey" = "part"."p_partkey"
+WHERE
+  "lineitem"."l_shipdate" < CAST('1995-09-01' AS DATE) + INTERVAL '1' month
+  AND "lineitem"."l_shipdate" >= CAST('1995-09-01' AS DATE);
+
+--------------------------------------
+-- TPC-H 15
+--------------------------------------
+with revenue (supplier_no, total_revenue) as (
+        select
+                l_suppkey,
+                sum(l_extendedprice * (1 - l_discount))
+        from
+                lineitem
+        where
+                l_shipdate >= date '1996-01-01'
+                and l_shipdate < date '1996-01-01' + interval '3' month
+        group by
+                l_suppkey)
+select
+        s_suppkey,
+        s_name,
+        s_address,
+        s_phone,
+        total_revenue
+from
+        supplier,
+        revenue
+where
+        s_suppkey = supplier_no
+        and total_revenue = (
+                select
+                        max(total_revenue)
+                from
+                        revenue
+        )
+order by
+        s_suppkey;
+WITH "revenue" AS (
+    SELECT
+      "lineitem"."l_suppkey" AS "supplier_no",
+      SUM("lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount")) AS "total_revenue"
+    FROM "lineitem" AS "lineitem"
+    WHERE
+      "lineitem"."l_shipdate" < CAST('1996-01-01' AS DATE) + INTERVAL '3' month
+      AND "lineitem"."l_shipdate" >= CAST('1996-01-01' AS DATE)
+    GROUP BY
+      "lineitem"."l_suppkey"
+)
+SELECT
+  "supplier"."s_suppkey" AS "s_suppkey",
+  "supplier"."s_name" AS "s_name",
+  "supplier"."s_address" AS "s_address",
+  "supplier"."s_phone" AS "s_phone",
+  "revenue"."total_revenue" AS "total_revenue"
+FROM "supplier" AS "supplier"
+JOIN "revenue"
+  ON "revenue"."total_revenue" = (SELECT MAX("revenue"."total_revenue") AS "_col_0" FROM "revenue")
+  AND "supplier"."s_suppkey" = "revenue"."supplier_no"
+ORDER BY
+  "supplier"."s_suppkey";
+
+--------------------------------------
+-- TPC-H 16
+--------------------------------------
+select
+        p_brand,
+        p_type,
+        p_size,
+        count(distinct ps_suppkey) as supplier_cnt
+from
+        partsupp,
+        part
+where
+        p_partkey = ps_partkey
+        and p_brand <> 'Brand#45'
+        and p_type not like 'MEDIUM POLISHED%'
+        and p_size in (49, 14, 23, 45, 19, 3, 36, 9)
+        and ps_suppkey not in (
+                select
+                        s_suppkey
+                from
+                        supplier
+                where
+                        s_comment like '%Customer%Complaints%'
+        )
+group by
+        p_brand,
+        p_type,
+        p_size
+order by
+        supplier_cnt desc,
+        p_brand,
+        p_type,
+        p_size;
+SELECT
+  "part"."p_brand" AS "p_brand",
+  "part"."p_type" AS "p_type",
+  "part"."p_size" AS "p_size",
+  COUNT(DISTINCT "partsupp"."ps_suppkey") AS "supplier_cnt"
+FROM "partsupp" AS "partsupp"
+JOIN "part" AS "part"
+  ON NOT "part"."p_type" LIKE 'MEDIUM POLISHED%'
+  AND "part"."p_brand" <> 'Brand#45'
+  AND "part"."p_partkey" = "partsupp"."ps_partkey"
+  AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
+WHERE
+  NOT "partsupp"."ps_suppkey" IN (SELECT "supplier"."s_suppkey" AS "s_suppkey" FROM "supplier" AS "supplier" WHERE "supplier"."s_comment" LIKE '%Customer%Complaints%')
+GROUP BY
+  "part"."p_brand",
+  "part"."p_type",
+  "part"."p_size"
+ORDER BY
+  "supplier_cnt" DESC,
+  "part"."p_brand",
+  "part"."p_type",
+  "part"."p_size";
+
+--------------------------------------
+-- TPC-H 17
+--------------------------------------
+select
+        sum(l_extendedprice) / 7.0 as avg_yearly
+from
+        lineitem,
+        part
+where
+        p_partkey = l_partkey
+        and p_brand = 'Brand#23'
+        and p_container = 'MED BOX'
+        and l_quantity < (
+                select
+                        0.2 * avg(l_quantity)
+                from
+                        lineitem
+                where
+                        l_partkey = p_partkey
+        );
+SELECT
+  SUM("lineitem"."l_extendedprice") / 7.0 AS "avg_yearly"
+FROM "lineitem" AS "lineitem"
+JOIN "part" AS "part"
+  ON "part"."p_brand" = 'Brand#23'
+  AND "part"."p_container" = 'MED BOX'
+  AND "part"."p_partkey" = "lineitem"."l_partkey"
+JOIN (
+    SELECT
+      0.2 * AVG("lineitem"."l_quantity") AS "_col_0",
+      "lineitem"."l_partkey"
+    FROM "lineitem" AS "lineitem"
+    GROUP BY
+      "lineitem"."l_partkey"
+) AS "_d_0"
+  ON "_d_0"."l_partkey" = "part"."p_partkey"
+  AND "lineitem"."l_quantity" < "_d_0"."_col_0";
+--------------------------------------
+-- TPC-H 18
+--------------------------------------
+select
+        c_name,
+        c_custkey,
+        o_orderkey,
+        o_orderdate,
+        o_totalprice,
+        sum(l_quantity)
+from
+        customer,
+        orders,
+        lineitem
+where
+        o_orderkey in (
+                select
+                        l_orderkey
+                from
+                        lineitem
+                group by
+                        l_orderkey having
+                                sum(l_quantity) > 300
+        )
+        and c_custkey = o_custkey
+        and o_orderkey = l_orderkey
+group by
+        c_name,
+        c_custkey,
+        o_orderkey,
+        o_orderdate,
+        o_totalprice
+order by
+        o_totalprice desc,
+        o_orderdate
+limit
+        100;
+SELECT
+  "customer"."c_name" AS "c_name",
+  "customer"."c_custkey" AS "c_custkey",
+  "orders"."o_orderkey" AS "o_orderkey",
+  "orders"."o_orderdate" AS "o_orderdate",
+  "orders"."o_totalprice" AS "o_totalprice",
+  SUM("lineitem"."l_quantity") AS "_col_5"
+FROM "customer" AS "customer"
+JOIN "orders" AS "orders"
+  ON "customer"."c_custkey" = "orders"."o_custkey"
+JOIN "lineitem" AS "lineitem"
+  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
+  AND "orders"."o_orderkey" IN (SELECT "lineitem"."l_orderkey" AS "l_orderkey" FROM "lineitem" AS "lineitem" GROUP BY "lineitem"."l_orderkey" HAVING SUM("lineitem"."l_quantity") > 300)
+GROUP BY
+  "customer"."c_name",
+  "customer"."c_custkey",
+  "orders"."o_orderkey",
+  "orders"."o_orderdate",
+  "orders"."o_totalprice"
+ORDER BY
+  "orders"."o_totalprice" DESC,
+  "orders"."o_orderdate"
+LIMIT 100;
+
+--------------------------------------
+-- TPC-H 19
+--------------------------------------
+--select
+--        sum(l_extendedprice* (1 - l_discount)) as revenue
+--from
+--        lineitem,
+--        part
+--where
+--        (
+--                p_partkey = l_partkey
+--                and p_brand = 'Brand#12'
+--                and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+--                and l_quantity >= 1 and l_quantity <= 1 + 10
+--                and p_size between 1 and 5
+--                and l_shipmode in ('AIR', 'AIR REG')
+--                and l_shipinstruct = 'DELIVER IN PERSON'
+--        )
+--        or
+--        (
+--                p_partkey = l_partkey
+--                and p_brand = 'Brand#23'
+--                and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
+--                and l_quantity >= 10 and l_quantity <= 10 + 10
+--                and p_size between 1 and 10
+--                and l_shipmode in ('AIR', 'AIR REG')
+--                and l_shipinstruct = 'DELIVER IN PERSON'
+--        )
+--        or
+--        (
+--                p_partkey = l_partkey
+--                and p_brand = 'Brand#34'
+--                and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
+--                and l_quantity >= 20 and l_quantity <= 20 + 10
+--                and p_size between 1 and 15
+--                and l_shipmode in ('AIR', 'AIR REG')
+--                and l_shipinstruct = 'DELIVER IN PERSON'
+--        );
+--

@@ -185,9 +185,6 @@ def _unnest_to_explode_sql(self, expression):
 def _levenshtein_sql(self, expression, levenshtein_function):
 
     expr = expression.args.get("expression")
-    if not expr:
-        raise ValueError("Error: No comparison provided for levenshtein function.")
-
     this = self.sql(expression, "this")
     expr = ", ".join([self.sql(e) for e in expr])
     return f"{levenshtein_function}({this}, {expr})"

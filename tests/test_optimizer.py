@@ -193,6 +193,12 @@ class TestOptimizer(unittest.TestCase):
             optimizer.expand_multi_table_selects.expand_multi_table_selects,
         )
 
+    def test_optimize_joins(self):
+        self.check_file(
+            "optimize_joins",
+            optimizer.optimize_joins.optimize_joins,
+        )
+
     def test_eliminate_subqueries(self):
         self.check_file(
             "eliminate_subqueries",
@@ -208,20 +214,16 @@ class TestOptimizer(unittest.TestCase):
     def test_tpch_duckdb(self):
         conn = duckdb.connect()
 
-        def replace_table(sql):
-            expression = sqlglot.parse_one(sql)
-            for table in self.tpch_schema:
-                expression = expression.with_(
-                    table,
-                    sqlglot.select("*").from_(
-                        f"READ_CSV_AUTO('{FIXTURES_DIR}/optimizer/tpc-h/{table}.csv.gz')"
-                    ),
-                )
-            return expression.sql(dialect="duckdb", pretty=True)
+        for table in self.tpch_schema:
+            conn.execute(
+                f"""
+                CREATE VIEW {table} AS
+                SELECT *
+                FROM READ_CSV_AUTO('{FIXTURES_DIR}/optimizer/tpc-h/{table}.csv.gz')
+                """
+            )
 
         for sql, optimized in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql"):
-            sql = replace_table(sql)
-            optimized = replace_table(optimized)
             assert_frame_equal(
                 conn.execute(sql).fetchdf(),
                 conn.execute(optimized).fetchdf(),

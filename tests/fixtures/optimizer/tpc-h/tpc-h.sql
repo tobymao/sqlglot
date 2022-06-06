@@ -170,12 +170,12 @@ SELECT
   "orders"."o_orderdate" AS "o_orderdate",
   "orders"."o_shippriority" AS "o_shippriority"
 FROM "customer" AS "customer"
-JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_shipdate" > CAST('1995-03-15' AS DATE)
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "orders"."o_orderdate" < CAST('1995-03-15' AS DATE)
+JOIN "lineitem" AS "lineitem"
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "lineitem"."l_shipdate" > CAST('1995-03-15' AS DATE)
 WHERE
   "customer"."c_mktsegment" = 'BUILDING'
 GROUP BY
@@ -359,8 +359,13 @@ FROM (
       EXTRACT(year FROM "lineitem"."l_shipdate") AS "l_year",
       "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS "volume"
     FROM "supplier" AS "supplier"
+    JOIN "nation" AS "n1"
+      ON ("n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY')
+      AND "supplier"."s_nationkey" = "n1"."n_nationkey"
     JOIN "nation" AS "n2"
-      ON ("n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY')
+      ON ("n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE')
+      AND ("n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY')
+      AND ("n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY')
     JOIN "customer" AS "customer"
       ON "customer"."c_nationkey" = "n2"."n_nationkey"
     JOIN "orders" AS "orders"
@@ -369,11 +374,6 @@ FROM (
       ON "lineitem"."l_shipdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
       AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
       AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
-    JOIN "nation" AS "n1"
-      ON ("n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY')
-      AND ("n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE')
-      AND ("n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY')
-      AND "supplier"."s_nationkey" = "n1"."n_nationkey"
 ) AS "shipping"
 GROUP BY
   "shipping"."supp_nation",
@@ -436,7 +436,6 @@ FROM (
       "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS "volume",
       "n2"."n_name" AS "nation"
     FROM "part" AS "part"
-    CROSS JOIN "nation" AS "n2"
     JOIN "region" AS "region"
       ON "region"."r_name" = 'AMERICA'
     JOIN "nation" AS "n1"
@@ -450,8 +449,9 @@ FROM (
       ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
       AND "part"."p_partkey" = "lineitem"."l_partkey"
     JOIN "supplier" AS "supplier"
+      ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+    JOIN "nation" AS "n2"
       ON "supplier"."s_nationkey" = "n2"."n_nationkey"
-      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
     WHERE
       "part"."p_type" = 'ECONOMY ANODIZED STEEL'
 ) AS "all_nations"
@@ -506,17 +506,17 @@ FROM (
       EXTRACT(year FROM "orders"."o_orderdate") AS "o_year",
       "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") - "partsupp"."ps_supplycost" * "lineitem"."l_quantity" AS "amount"
     FROM "part" AS "part"
-    CROSS JOIN "nation" AS "nation"
-    CROSS JOIN "partsupp" AS "partsupp"
-    CROSS JOIN "orders" AS "orders"
     JOIN "lineitem" AS "lineitem"
-      ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
-      AND "part"."p_partkey" = "lineitem"."l_partkey"
-      AND "partsupp"."ps_partkey" = "lineitem"."l_partkey"
-      AND "partsupp"."ps_suppkey" = "lineitem"."l_suppkey"
+      ON "part"."p_partkey" = "lineitem"."l_partkey"
     JOIN "supplier" AS "supplier"
+      ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+    JOIN "partsupp" AS "partsupp"
+      ON "partsupp"."ps_partkey" = "lineitem"."l_partkey"
+      AND "partsupp"."ps_suppkey" = "lineitem"."l_suppkey"
+    JOIN "orders" AS "orders"
+      ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
+    JOIN "nation" AS "nation"
       ON "supplier"."s_nationkey" = "nation"."n_nationkey"
-      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
     WHERE
       "part"."p_name" LIKE '%green%'
 ) AS "profit"
@@ -573,13 +573,13 @@ SELECT
   "customer"."c_phone" AS "c_phone",
   "customer"."c_comment" AS "c_comment"
 FROM "customer" AS "customer"
-JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_returnflag" = 'R'
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "orders"."o_orderdate" < CAST('1993-10-01' AS DATE) + INTERVAL '3' month
   AND "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
+JOIN "lineitem" AS "lineitem"
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "lineitem"."l_returnflag" = 'R'
 JOIN "nation" AS "nation"
   ON "customer"."c_nationkey" = "nation"."n_nationkey"
 GROUP BY

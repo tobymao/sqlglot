@@ -30,28 +30,27 @@ def pushdown_predicates(expression):
         )
 
         for predicate in predicates:
-            selectables = [
-                scope.selectables.get(table)
-                for table in exp.column_table_names(predicate)
+            sources = [
+                scope.sources.get(table) for table in exp.column_table_names(predicate)
             ]
 
-            if len(selectables) != 1:
+            if len(sources) != 1:
                 continue
 
-            selectable = selectables[0]
+            source = sources[0]
 
-            if isinstance(selectable, exp.Table):
-                node = selectable.find_ancestor(exp.Join, exp.From)
+            if isinstance(source, exp.Table):
+                node = source.find_ancestor(exp.Join, exp.From)
 
                 if isinstance(node, exp.Join):
                     predicate.replace(exp.TRUE)
-            elif selectable:
-                node = selectable.expression
+            elif source:
+                node = source.expression
                 predicate.replace(exp.TRUE)
 
                 aliases = {}
 
-                for select in selectable.selects:
+                for select in source.selects:
                     if isinstance(select, exp.Alias):
                         aliases[select.alias] = select.this
                     else:

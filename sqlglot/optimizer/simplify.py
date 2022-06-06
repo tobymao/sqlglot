@@ -199,7 +199,7 @@ def is_complement(a, b):
 
 def simplify_parens(expression):
     if isinstance(expression, exp.Paren) and not isinstance(
-        expression.this, exp.Binary
+        expression.this, (exp.Binary, exp.Select)
     ):
         return expression.this
     return expression

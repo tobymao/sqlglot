@@ -1580,7 +1580,7 @@ class Parser:
 
     def _parse_var(self):
         if self._match(TokenType.VAR):
-            return exp.Identifier(this=self._prev.text, quoted=False)
+            return exp.Var(this=self._prev.text)
         return None
 
     def _parse_null(self):

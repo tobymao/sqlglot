@@ -26,8 +26,8 @@ def pushdown_predicates(expression):
 
         for predicate in where.find_all(exp.PREDICATES):
             selectables = {
-                scope.selectables.get(column.text("table"))
-                for column in predicate.find_all(exp.Column)
+                scope.selectables.get(table)
+                for table in exp.column_table_names(predicate)
             }
 
             if len(selectables) != 1:

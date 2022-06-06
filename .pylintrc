@@ -14,7 +14,9 @@ disable=
     too-many-arguments,
     too-many-branches,
     too-many-boolean-expressions,
+    too-many-locals,
     too-many-lines,
+    too-many-nested-blocks,
     too-many-public-methods,
     too-many-instance-attributes,
     too-many-return-statements,
@@ -27,3 +29,6 @@ max-line-length=150
 [SIMILARITIES]
 
 ignore-imports=yes
+
+[TYPECHECK]
+ignored-modules=duckdb

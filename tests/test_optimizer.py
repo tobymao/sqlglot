@@ -1,11 +1,14 @@
 import unittest
 
+import duckdb
+from pandas.testing import assert_frame_equal
+
 import sqlglot
 from sqlglot import optimizer
 from sqlglot.optimizer.schema import ensure_schema, MappingSchema
 from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
-from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures
+from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures, FIXTURES_DIR
 
 
 class TestOptimizer(unittest.TestCase):
@@ -20,6 +23,86 @@ class TestOptimizer(unittest.TestCase):
             "y": {
                 "b": "INT",
                 "c": "INT",
+            },
+        }
+
+        self.tpch_schema = {
+            "lineitem": {
+                "l_orderkey": "uint64",
+                "l_partkey": "uint64",
+                "l_suppkey": "uint64",
+                "l_linenumber": "uint64",
+                "l_quantity": "float64",
+                "l_extendedprice": "float64",
+                "l_discount": "float64",
+                "l_tax": "float64",
+                "l_returnflag": "string",
+                "l_linestatus": "string",
+                "l_shipdate": "date32",
+                "l_commitdate": "date32",
+                "l_receiptdate": "date32",
+                "l_shipinstruct": "string",
+                "l_shipmode": "string",
+                "l_comment": "string",
+            },
+            "orders": {
+                "o_orderkey": "uint64",
+                "o_custkey": "uint64",
+                "o_orderstatus": "string",
+                "o_totalprice": "float64",
+                "o_orderdate": "date32",
+                "o_orderpriority": "string",
+                "o_clerk": "string",
+                "o_shippriority": "int32",
+                "o_comment": "string",
+            },
+            "customer": {
+                "c_custkey": "uint64",
+                "c_name": "string",
+                "c_address": "string",
+                "c_nationkey": "uint64",
+                "c_phone": "string",
+                "c_acctbal": "float64",
+                "c_mktsegment": "string",
+                "c_comment": "string",
+            },
+            "part": {
+                "p_partkey": "uint64",
+                "p_name": "string",
+                "p_mfgr": "string",
+                "p_brand": "string",
+                "p_type": "string",
+                "p_size": "int32",
+                "p_container": "string",
+                "p_retailprice": "float64",
+                "p_comment": "string",
+            },
+            "supplier": {
+                "s_suppkey": "uint64",
+                "s_name": "string",
+                "s_address": "string",
+                "s_nationkey": "uint64",
+                "s_phone": "string",
+                "s_acctbal": "float64",
+                "s_comment": "string",
+            },
+            "partsupp": {
+                "ps_partkey": "uint64",
+                "ps_suppkey": "uint64",
+                "ps_availqty": "int32",
+                "ps_supplycost": "float64",
+                "ps_comment": "string",
+            },
+            "nation": {
+                "n_nationkey": "uint64",
+                "n_name": "string",
+                "n_regionkey": "uint64",
+                "n_comment": "string",
+            },
+            "region": {
+                "r_regionkey": "uint64",
+                "r_name": "string",
+                "r_comment": "string",
             },
         }
 
@@ -110,6 +193,12 @@ class TestOptimizer(unittest.TestCase):
             optimizer.expand_multi_table_selects.expand_multi_table_selects,
         )
 
+    def test_optimize_joins(self):
+        self.check_file(
+            "optimize_joins",
+            optimizer.optimize_joins.optimize_joins,
+        )
+
     def test_eliminate_subqueries(self):
         self.check_file(
             "eliminate_subqueries",
@@ -118,87 +207,27 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_tpch(self):
-        schema = {
-            "lineitem": {
-                "l_orderkey": "uint64",
-                "l_partkey": "uint64",
-                "l_suppkey": "uint64",
-                "l_linenumber": "uint64",
-                "l_quantity": "float64",
-                "l_extendedprice": "float64",
-                "l_discount": "float64",
-                "l_tax": "float64",
-                "l_returnflag": "string",
-                "l_linestatus": "string",
-                "l_shipdate": "date32",
-                "l_commitdate": "date32",
-                "l_receiptdate": "date32",
-                "l_shipinstruct": "string",
-                "l_shipmode": "string",
-                "l_comment": "string",
-            },
-            "orders": {
-                "o_orderkey": "uint64",
-                "o_custkey": "uint64",
-                "o_orderstatus": "string",
-                "o_totalprice": "float64",
-                "o_orderdate": "date32",
-                "o_orderpriority": "string",
-                "o_clerk": "string",
-                "o_shippriority": "int32",
-                "o_comment": "string",
-            },
-            "customer": {
-                "c_custkey": "uint64",
-                "c_name": "string",
-                "c_address": "string",
-                "c_nationkey": "uint64",
-                "c_phone": "string",
-                "c_acctbal": "float64",
-                "c_mktsegment": "string",
-                "c_comment": "string",
-            },
-            "part": {
-                "p_partkey": "uint64",
-                "p_name": "string",
-                "p_mfgr": "string",
-                "p_brand": "string",
-                "p_type": "string",
-                "p_size": "int32",
-                "p_container": "string",
-                "p_retailprice": "float64",
-                "p_comment": "string",
-            },
-            "supplier": {
-                "s_suppkey": "uint64",
-                "s_name": "string",
-                "s_address": "string",
-                "s_nationkey": "uint64",
-                "s_phone": "string",
-                "s_acctbal": "float64",
-                "s_comment": "string",
-            },
-            "partsupp": {
-                "ps_partkey": "uint64",
-                "ps_suppkey": "uint64",
-                "ps_availqty": "int32",
-                "ps_supplycost": "float64",
-                "ps_comment": "string",
-            },
-            "nation": {
-                "n_nationkey": "uint64",
-                "n_name": "string",
-                "n_regionkey": "uint64",
-                "n_comment": "string",
-            },
-            "region": {
-                "r_regionkey": "uint64",
-                "r_name": "string",
-                "r_comment": "string",
-            },
-        }
+        self.check_file(
+            "tpc-h/tpc-h", optimizer.optimize, schema=self.tpch_schema, pretty=True
+        )
 
-        self.check_file("tpc-h", optimizer.optimize, schema=schema, pretty=True)
+    def test_tpch_duckdb(self):
+        conn = duckdb.connect()
+
+        for table in self.tpch_schema:
+            conn.execute(
+                f"""
+                CREATE VIEW {table} AS
+                SELECT *
+                FROM READ_CSV_AUTO('{FIXTURES_DIR}/optimizer/tpc-h/{table}.csv.gz')
+                """
+            )
+
+        for sql, optimized in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql"):
+            assert_frame_equal(
+                conn.execute(sql).fetchdf(),
+                conn.execute(optimized).fetchdf(),
+            )
 
     def test_schema(self):
         schema = ensure_schema(

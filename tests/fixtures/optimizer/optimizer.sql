@@ -48,6 +48,8 @@ SELECT
   "x"."a" AS "a",
   SUM("y"."b") AS "_col_1"
 FROM "x" AS "x"
+JOIN "y" AS "y"
+  ON "x"."a" = "y"."a"
 JOIN (
     SELECT
       "y"."b" AS "b"
@@ -59,8 +61,6 @@ JOIN (
 ) AS "_d_0"
   ON "_d_0"."b" = "x"."b"
   AND "y"."b" = "_d_0"."b"
-JOIN "y" AS "y"
-  ON "x"."a" = "y"."a"
 GROUP BY
   "x"."a";
 

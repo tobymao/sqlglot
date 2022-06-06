@@ -8,6 +8,7 @@ from sqlglot import optimizer
 from sqlglot.optimizer.schema import ensure_schema, MappingSchema
 from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.scope import traverse_scope
 from tests.helpers import load_sql_fixture_pairs, load_sql_fixtures, FIXTURES_DIR
 
 
@@ -304,3 +305,39 @@ class TestOptimizer(unittest.TestCase):
 
         with self.assertRaises(OptimizeError):
             ensure_schema({})
+
+    def test_scope(self):
+        sql = """
+        WITH q AS (
+          SELECT x.b FROM x
+        ), r AS (
+          SELECT y.b FROM y  
+        )
+        SELECT 
+          r.b,
+          s.b
+        FROM r
+        JOIN (
+          SELECT y.c AS b FROM y 
+        ) s
+        ON s.b = r.b
+        WHERE s.b > (SELECT MAX(x.a) FROM x WHERE x.b = s.b)
+        """
+        scopes = traverse_scope(sqlglot.parse_one(sql))
+        self.assertEqual(len(scopes), 5)
+        self.assertEqual(scopes[0].expression.sql(), "SELECT x.b FROM x")
+        self.assertEqual(scopes[1].expression.sql(), "SELECT y.b FROM y")
+        self.assertEqual(
+            scopes[2].expression.sql(), "SELECT MAX(x.a) FROM x WHERE x.b = s.b"
+        )
+        self.assertEqual(scopes[3].expression.sql(), "SELECT y.c AS b FROM y")
+        self.assertEqual(scopes[4].expression.sql(), sqlglot.parse_one(sql).sql())
+
+        self.assertEqual(set(scopes[4].selectables), {"q", "r", "s"})
+        self.assertEqual(len(scopes[4].references), 6)
+        self.assertEqual(set(c.text("table") for c in scopes[4].references), {"r", "s"})
+        self.assertEqual(scopes[4].selectable_references("q"), [])
+        self.assertEqual(len(scopes[4].selectable_references("r")), 2)
+        self.assertEqual(
+            set(c.text("table") for c in scopes[4].selectable_references("r")), {"r"}
+        )

@@ -199,6 +199,21 @@ class Scope:
             if not self._is_output_reference(c)
         ]
 
+    def selectable_references(self, selectable_name):
+        """
+        Get all column references in the current scope for a particular selectable.
+
+        Args:
+            selectable_name (str): Name of the selectable
+        Returns:
+            list[exp.Column]: Column instances that reference `selectable_name`
+        """
+        return [
+            column
+            for column in self.references
+            if column.text("table") == selectable_name
+        ]
+
     @property
     def is_subquery(self):
         """Determine if this scope is a subquery"""

@@ -333,11 +333,11 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(scopes[3].expression.sql(), "SELECT y.c AS b FROM y")
         self.assertEqual(scopes[4].expression.sql(), sqlglot.parse_one(sql).sql())
 
-        self.assertEqual(set(scopes[4].selectables), {"q", "r", "s"})
-        self.assertEqual(len(scopes[4].references), 6)
-        self.assertEqual(set(c.text("table") for c in scopes[4].references), {"r", "s"})
-        self.assertEqual(scopes[4].selectable_references("q"), [])
-        self.assertEqual(len(scopes[4].selectable_references("r")), 2)
+        self.assertEqual(set(scopes[4].sources), {"q", "r", "s"})
+        self.assertEqual(len(scopes[4].columns), 6)
+        self.assertEqual(set(c.text("table") for c in scopes[4].columns), {"r", "s"})
+        self.assertEqual(scopes[4].source_columns("q"), [])
+        self.assertEqual(len(scopes[4].source_columns("r")), 2)
         self.assertEqual(
-            set(c.text("table") for c in scopes[4].selectable_references("r")), {"r"}
+            set(c.text("table") for c in scopes[4].source_columns("r")), {"r"}
         )

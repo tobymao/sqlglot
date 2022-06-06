@@ -30,8 +30,8 @@ def qualify_columns(expression, schema):
 
     for scope in traverse_scope(expression):
         _check_union_outputs(scope)
-        _qualify_derived_tables(scope.ctes, scope, sequence)
-        _qualify_derived_tables(scope.derived_tables, scope, sequence)
+        _qualify_derived_tables(scope.cte_nodes, scope, sequence)
+        _qualify_derived_tables(scope.derived_table_nodes, scope, sequence)
         _qualify_columns(scope, schema)
         _expand_stars(scope, schema)
         _qualify_outputs(scope)
@@ -45,9 +45,9 @@ def _check_union_outputs(scope):
     if not isinstance(scope.expression, exp.Union):
         return
     left, right = scope.union
-    if left.outputs != right.outputs:
+    if left.expression.named_selects != right.expression.named_selects:
         raise OptimizeError(
-            f"UNION outputs not equal: {left.outputs} vs. {left.outputs}"
+            f"UNION outputs not equal: {left.expression.named_selects} vs. {left.expression.named_selects}"
         )
 
 
@@ -63,7 +63,7 @@ def _qualify_derived_tables(derived_tables, scope, sequence):
         alias = table_alias.args.get("this")
         if not alias:
             alias = exp.to_identifier(f"_q_{next(sequence)}")
-            scope.rename_selectable(None, alias.name)
+            scope.rename_source(None, alias.name)
             table_alias.set("this", alias)
 
         # Remove any alias column list
@@ -72,29 +72,29 @@ def _qualify_derived_tables(derived_tables, scope, sequence):
 
 
 def _qualify_columns(scope, schema):
-    """Disambiguate columns, ensuring each column reference specifies a selectable"""
+    """Disambiguate columns, ensuring each column specifies a source"""
     unambiguous_columns = None  # lazily loaded
 
-    for column in scope.references:
+    for column in scope.columns:
         column_table = column.text("table")
         column_name = column.text("this")
 
         if (
             column_table
-            and column_table in scope.selectables
+            and column_table in scope.sources
             and column_name
-            not in _get_selectable_columns(column_table, scope.selectables, schema)
+            not in _get_source_columns(column_table, scope.sources, schema)
         ):
             raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:
             if unambiguous_columns is None:
-                selectable_columns = {
-                    k: _get_selectable_columns(k, scope.selectables, schema)
-                    for k in scope.referenced_selectables
+                source_columns = {
+                    k: _get_source_columns(k, scope.sources, schema)
+                    for k in scope.selected_sources
                 }
 
-                unambiguous_columns = _get_unambiguous_columns(selectable_columns)
+                unambiguous_columns = _get_unambiguous_columns(source_columns)
 
             column_table = unambiguous_columns.get(column_name)
             if not column_table and not scope.is_subquery:
@@ -105,10 +105,9 @@ def _qualify_columns(scope, schema):
 def _expand_stars(scope, schema):
     """Expand stars to lists of column selections"""
 
-    all_new_columns = []
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
-            tables = list(scope.referenced_selectables)
+            tables = list(scope.selected_sources)
         elif isinstance(expression, exp.Column) and isinstance(
             expression.this, exp.Star
         ):
@@ -119,9 +118,9 @@ def _expand_stars(scope, schema):
         new_columns = []
 
         for table in tables:
-            if table not in scope.selectables:
+            if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
-            columns = _get_selectable_columns(table, scope.selectables, schema)
+            columns = _get_source_columns(table, scope.sources, schema)
             for column in columns:
                 new_columns.append(
                     exp.Column(
@@ -130,9 +129,6 @@ def _expand_stars(scope, schema):
                 )
 
         expression.replace(*new_columns)
-        all_new_columns.extend(new_columns)
-
-    scope.columns.extend(all_new_columns)
 
 
 def _qualify_outputs(scope):
@@ -157,32 +153,32 @@ def _qualify_outputs(scope):
 
 
 def _check_unknown_tables(scope):
-    if scope.external_references and not scope.is_correlated_subquery:
+    if scope.columns_referencing_outer_sources and not scope.is_correlated_subquery:
         raise OptimizeError(
-            f"Unknown table: {scope.external_references[0].text('table')}"
+            f"Unknown table: {scope.columns_referencing_outer_sources[0].text('table')}"
         )
 
 
-def _get_unambiguous_columns(selectable_columns):
+def _get_unambiguous_columns(source_columns):
     """
-    Find all the unambiguous columns in selectables.
+    Find all the unambiguous columns in sources.
 
     Args:
-        selectable_columns (dict): Mapping of names to selectable columns
+        source_columns (dict): Mapping of names to source columns
     Returns:
-        dict: Mapping of column name to selectable name
+        dict: Mapping of column name to source name
     """
-    if not selectable_columns:
+    if not source_columns:
         return {}
 
-    selectable_columns = list(selectable_columns.items())
+    source_columns = list(source_columns.items())
 
-    first_table, first_columns = selectable_columns[0]
+    first_table, first_columns = source_columns[0]
     unambiguous_columns = {
         col: first_table for col in _find_unique_columns(first_columns)
     }
 
-    for table, columns in selectable_columns[1:]:
+    for table, columns in source_columns[1:]:
         unique = _find_unique_columns(columns)
         ambiguous = set(unambiguous_columns).intersection(unique)
         for column in ambiguous:
@@ -209,19 +205,19 @@ def _find_unique_columns(columns):
     return {column for column, count in counts.items() if count == 1}
 
 
-def _get_selectable_columns(name, selectables, schema):
-    """Resolve the selectable columns for a given selectable `name`"""
-    if name not in selectables:
+def _get_source_columns(name, sources, schema):
+    """Resolve the source columns for a given source `name`"""
+    if name not in sources:
         raise OptimizeError(f"Unknown table: {name}")
 
-    selectable = selectables[name]
+    source = sources[name]
 
     # If referencing a table, return the columns from the schema
-    if isinstance(selectable, exp.Table):
+    if isinstance(source, exp.Table):
         try:
-            return schema.column_names(selectable)
+            return schema.column_names(source)
         except Exception as e:
             raise OptimizeError(str(e)) from e
 
-    # Otherwise, if referencing another scope, return that scope's outputs
-    return selectable.outputs
+    # Otherwise, if referencing another scope, return that scope's named selects
+    return source.expression.named_selects

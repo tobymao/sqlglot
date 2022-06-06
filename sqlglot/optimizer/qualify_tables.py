@@ -20,15 +20,15 @@ def qualify_tables(expression, db=None, catalog=None):
         sqlglot.Expression: qualified expression
     """
     for scope in traverse_scope(expression):
-        for selectable in scope.selectables.values():
-            if isinstance(selectable, exp.Table):
-                if not selectable.args.get("db"):
-                    selectable.set("db", exp.to_identifier(db))
-                if not selectable.args.get("catalog"):
-                    selectable.set("catalog", exp.to_identifier(catalog))
+        for source in scope.sources.values():
+            if isinstance(source, exp.Table):
+                if not source.args.get("db"):
+                    source.set("db", exp.to_identifier(db))
+                if not source.args.get("catalog"):
+                    source.set("catalog", exp.to_identifier(catalog))
 
-                if not isinstance(selectable.parent, exp.Alias):
-                    node = exp.alias_(selectable.copy(), selectable.this)
-                    selectable.replace(node)
+                if not isinstance(source.parent, exp.Alias):
+                    node = exp.alias_(source.copy(), source.this)
+                    source.replace(node)
 
     return expression

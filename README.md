@@ -264,4 +264,8 @@ from sqlglot.optimizer import optimize
 
 
 ## Run Tests and Lint
-```python -m unittest && python -m pylint sqlglot/ tests/```
+```
+pip install -r requirements.txt
+./format_code.sh
+./run_checks.sh
+```

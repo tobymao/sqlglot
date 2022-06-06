@@ -224,10 +224,12 @@ class TestOptimizer(unittest.TestCase):
             )
 
         for sql, optimized in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql"):
-            assert_frame_equal(
-                conn.execute(sql).fetchdf(),
-                conn.execute(optimized).fetchdf(),
-            )
+            a = conn.execute(sql).fetchdf()
+            b = conn.execute(optimized).fetchdf()
+            for i, column in enumerate(b.columns):
+                if "_col_" in column:
+                    b.rename(columns={column: a.columns[i]}, inplace=True)
+            assert_frame_equal(a, b)
 
     def test_schema(self):
         schema = ensure_schema(

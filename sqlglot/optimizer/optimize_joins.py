@@ -31,10 +31,12 @@ def optimize_joins(expression):
                                 "on",
                                 exp.and_(join.args.get("on") or exp.TRUE, predicate),
                             )
-                            if (join.args.get("kind") or "").upper() == "CROSS":
+                            if join_kind(join) == "CROSS":
                                 join.set("kind", None)
 
-    return reorder_joins(expression)
+    expression = reorder_joins(expression)
+    expression = normalize(expression)
+    return expression
 
 
 def reorder_joins(expression):
@@ -56,9 +58,23 @@ def reorder_joins(expression):
     return expression
 
 
+def normalize(expression):
+    """
+    Remove INNER and OUTER from joins as they are optional.
+    """
+    for join in expression.find_all(exp.Join):
+        if join_kind(join) != "CROSS":
+            join.set("kind", None)
+    return expression
+
+
 def other_table_names(join, exclude):
     return [
         name
         for name in (exp.column_table_names(join.args.get("on") or exp.TRUE))
         if name != exclude
     ]
+
+
+def join_kind(join):
+    return (join.args.get("kind") or "").upper()

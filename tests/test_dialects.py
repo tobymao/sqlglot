@@ -1313,7 +1313,8 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "LEVENSHTEIN(col1, col2)",
-            "EDITDIST3(col1, col2)"
+            "EDITDIST3(col1, col2)",
+            write="sqlite"
         )
 
     def test_oracle(self):

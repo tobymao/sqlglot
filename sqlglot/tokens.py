@@ -76,6 +76,7 @@ class TokenType(AutoName):
     ALIAS = auto()
     ALL = auto()
     ALTER = auto()
+    ANALYZE = auto()
     ARRAY = auto()
     ASC = auto()
     AUTO_INCREMENT = auto()
@@ -277,6 +278,7 @@ class Tokenizer:
         "ADD JARS": TokenType.ADD_FILE,
         "ALL": TokenType.ALL,
         "ALTER": TokenType.ALTER,
+        "ANALYZE": TokenType.ANALYZE,
         "AND": TokenType.AND,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
@@ -435,6 +437,7 @@ class Tokenizer:
     COMMANDS = {
         TokenType.ALTER,
         TokenType.ADD_FILE,
+        TokenType.ANALYZE,
         TokenType.BEGIN,
         TokenType.COMMIT,
         TokenType.EXPLAIN,

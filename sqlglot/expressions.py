@@ -512,7 +512,7 @@ class Identifier(Expression):
 
     def __eq__(self, other):
         return (
-            isinstance(other, Identifier)
+            isinstance(other, self.__class__)
             and (self.this or "").upper() == (other.this or "").upper()
         )
 
@@ -753,6 +753,17 @@ class Update(Expression):
 
 class Values(Expression):
     arg_types = {"expressions": True}
+
+
+class Var(Expression):
+    def __eq__(self, other):
+        return (
+            isinstance(other, self.__class__)
+            and (self.this or "").upper() == (other.this or "").upper()
+        )
+
+    def __hash__(self):
+        return hash((self.key, self.this.upper()))
 
 
 class Schema(Expression):
@@ -1957,7 +1968,6 @@ def _apply_child_list_builder(
     parser_opts=None,
     **kwargs,
 ):
-    # pylint: disable=too-many-locals
     instance = _maybe_copy(instance, copy)
     parsed = []
     for expression in expressions:
@@ -2252,6 +2262,26 @@ def replace_children(expression, fun):
             new_child_nodes.extend(cns)
 
         expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
+
+
+def column_table_names(expression):
+    """
+    Return all table names referenced through columns in an expression.
+
+    Example:
+        >>> import sqlglot
+        >>> column_table_names(sqlglot.parse_one("a.b AND c.d AND c.e"))
+        ['c', 'a']
+
+    Args:
+        expression (sqlglot.Expression): expression to find table names
+
+    Returns:
+        list: A list of unique names
+    """
+    return list(
+        dict.fromkeys(column.text("table") for column in expression.find_all(Column))
+    )
 
 
 TRUE = Boolean(this=True)

@@ -446,6 +446,9 @@ class Generator:
     def values_sql(self, expression):
         return f"VALUES{self.seg('')}{self.expressions(expression)}"
 
+    def var_sql(self, expression):
+        return self.sql(expression, "this")
+
     def from_sql(self, expression):
         expressions = ", ".join(self.sql(e) for e in expression.args["expressions"])
         return f"{self.seg('FROM')} {expressions}"

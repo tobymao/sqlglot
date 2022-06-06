@@ -182,6 +182,17 @@ def _unnest_to_explode_sql(self, expression):
     return self.join_sql(expression)
 
 
+def _levenshtein_sql(self, expression, levenshtein_function):
+
+    expr = expression.args.get("expression")
+    if not expr:
+        raise ValueError("Error: No comparison provided for levenshtein function.")
+
+    this = self.sql(expression, "this")
+    expr = ", ".join([self.sql(e) for e in expr])
+    return f"{levenshtein_function}({this}, {expr})"
+
+
 def _struct_extract_sql(self, expression):
     this = self.sql(expression, "this")
     struct_key = self.sql(expression, "expression").replace(self.quote, self.identifier)
@@ -662,6 +673,7 @@ class Presto(Dialect):
         exp.ILike: _no_ilike_sql,
         exp.Initcap: _initcap_sql,
         exp.Lateral: _explode_to_unnest_sql,
+        exp.Levenshtein: lambda self, e: _levenshtein_sql(self, e, levenshtein_function="LEVENSHTEIN_DISTANCE"),
         exp.Quantile: _quantile_sql,
         exp.Schema: _schema_sql,
         exp.StrPosition: _str_position_sql,
@@ -781,6 +793,7 @@ class SQLite(Dialect):
     }
 
     transforms = {
+        exp.Levenshtein: lambda self, e: _levenshtein_sql(self, e, levenshtein_function="EDITDIST3"),
         exp.TableSample: _no_tablesample_sql,
         exp.TryCast: _no_trycast_sql,
     }

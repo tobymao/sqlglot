@@ -30,6 +30,7 @@ def pushdown_predicates(expression):
         )
 
         for predicate in predicates:
+            print(predicate.sql())
             sources = [
                 scope.sources.get(table) for table in exp.column_table_names(predicate)
             ]

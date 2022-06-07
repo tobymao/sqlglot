@@ -1,9 +1,9 @@
 from sqlglot.helper import while_changing
-from sqlglot.optimizer.simplify import simplify
+from sqlglot.optimizer.simplify import simplify, compare_and_prune, flatten
 import sqlglot.expressions as exp
 
 
-def normalize(expression, dnf=False):
+def normalize(expression, dnf=False, max_distance=128):
     """
     Rewrite sqlglot AST into conjunctive normal form.
 
@@ -20,11 +20,58 @@ def normalize(expression, dnf=False):
         sqlglot.Expression: normalized expression
     """
     expression = simplify(expression).transform(de_morgans_law, copy=False)
+
     expression = while_changing(
         expression,
-        lambda e: distributive_law(e, exp.Or) if dnf else distributive_law(e, exp.And),
+        lambda e: distributive_law(e, dnf, max_distance)
     )
-    return expression
+    return simplify(expression)
+
+
+def normalization_distance(expression, dnf=False):
+    """
+    The difference in the number of predicates between the current expression and the normalized form.
+
+    This is used as an estimate of the cost of the conversion which is exponential in complexity.
+
+    Example:
+        >>> import sqlglot
+        >>> expression = sqlglot.parse_one("(a AND b) OR (c AND d)")
+        >>> normalization_distance(expression)
+        4
+
+    Args:
+        expression (sqlglot.Expression): expression to compute distance
+        dnf (bool): compute to dnf distance instead
+    Returns:
+        int: difference
+    """
+    return sum(_predicate_lengths(expression, dnf)) - (
+        len(list(expression.find_all(exp.Connector))) + 1
+    )
+
+
+def _predicate_lengths(expression, dnf):
+    """
+    Returns a list of predicates lengths when expanded to normalized form.
+
+    (A AND B) OR C -> [2, 2] because len(A OR C), len(B OR C).
+    """
+    expression = expression.unnest()
+
+    if not isinstance(expression, exp.Connector):
+        return [1]
+
+    left, right = expression.args.values()
+
+    if isinstance(expression, exp.And if dnf else exp.Or):
+        x = [
+            a + b
+            for a in _predicate_lengths(left, dnf)
+            for b in _predicate_lengths(right, dnf)
+        ]
+        return x
+    return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
 
 
 def de_morgans_law(expression):
@@ -45,20 +92,22 @@ def de_morgans_law(expression):
     return expression
 
 
-def distributive_law(expression, to_exp):
+def distributive_law(expression, dnf, max_distance):
     """
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
     """
-    if to_exp == exp.And:
-        from_exp = exp.Or
-    elif to_exp == exp.Or:
-        from_exp = exp.And
-    else:
-        raise ValueError("Not support expression")
+    if isinstance(expression.unnest(), exp.Connector):
+        if normalization_distance(expression, dnf) > max_distance:
+            return expression
 
-    expression = simplify(expression)
-    exp.replace_children(expression, lambda e: distributive_law(e, to_exp))
+    to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)
+
+    expression = expression.transform(flatten, copy=False).transform(
+        compare_and_prune, copy=False
+    )
+
+    exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance))
 
     if isinstance(expression, from_exp):
         l = expression.left.unnest()

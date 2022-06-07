@@ -66,19 +66,19 @@ def decorrelate_subqueries(expression):
 
             predicate = select.find_ancestor(*exp.PREDICATES, exp.Exists)
 
-            if predicate:
-                predicate.replace(exp.TRUE)
+            #if predicate:
+            #    predicate.replace(exp.TRUE)
 
             if isinstance(predicate, exp.Exists):
                 select = select.select(internal, append=False)
-            elif predicate:
-                on.append(predicate.sql())
+            #elif predicate:
+            #    on.append(predicate.sql())
 
             select = select.group_by(internal)
 
             scope.parent.expression.join(
                 select,
-                on=" AND ".join(on),
+                #on=" AND ".join(on),
                 join_alias=alias,
                 copy=False,
             )

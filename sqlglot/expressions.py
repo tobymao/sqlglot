@@ -136,10 +136,8 @@ class Expression:
 
     def find_ancestor(self, *expression_types):
         ancestor = self.parent
-        while not isinstance(ancestor, expression_types):
+        while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
-            if not ancestor:
-                return None
         return ancestor
 
     def walk(self, bfs=True):

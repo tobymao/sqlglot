@@ -803,13 +803,13 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "LEVENSHTEIN(col1, col2)",
             "LEVENSHTEIN_DISTANCE(col1, col2)",
-            write="presto"
+            write="presto",
         )
 
         self.validate(
             "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
-            "LEVENSHTEIN_DISTANCE(coalesce(col1, col2), coalesce(col2, col1))",
-            write="presto"
+            "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
+            write="presto",
         )
 
     def test_hive(self):
@@ -1312,9 +1312,7 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "LEVENSHTEIN(col1, col2)",
-            "EDITDIST3(col1, col2)",
-            write="sqlite"
+            "LEVENSHTEIN(col1, col2)", "EDITDIST3(col1, col2)", write="sqlite"
         )
 
     def test_oracle(self):

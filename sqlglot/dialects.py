@@ -662,6 +662,7 @@ class Presto(Dialect):
         exp.ILike: _no_ilike_sql,
         exp.Initcap: _initcap_sql,
         exp.Lateral: _explode_to_unnest_sql,
+        exp.Levenshtein: lambda self, e: f"LEVENSHTEIN_DISTANCE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Quantile: _quantile_sql,
         exp.Schema: _schema_sql,
         exp.StrPosition: _str_position_sql,
@@ -781,6 +782,7 @@ class SQLite(Dialect):
     }
 
     transforms = {
+        exp.Levenshtein: lambda self, e: f"EDITDIST3({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.TableSample: _no_tablesample_sql,
         exp.TryCast: _no_trycast_sql,
     }

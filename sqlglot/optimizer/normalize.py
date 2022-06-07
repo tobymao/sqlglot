@@ -28,6 +28,15 @@ def normalize(expression, dnf=False, max_distance=128):
     return simplify(expression)
 
 
+def normalized(expression, dnf=False):
+    ancestor, root = (exp.And, exp.Or) if dnf else (exp.Or, exp.And)
+
+    return not any(
+        connector.find_ancestor(ancestor)
+        for connector in expression.find_all(root)
+    )
+
+
 def normalization_distance(expression, dnf=False):
     """
     The difference in the number of predicates between the current expression and the normalized form.

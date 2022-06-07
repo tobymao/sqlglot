@@ -800,6 +800,18 @@ class TestDialects(unittest.TestCase):
             write="spark",
         )
 
+        self.validate(
+            "LEVENSHTEIN(col1, col2)",
+            "LEVENSHTEIN_DISTANCE(col1, col2)",
+            write="presto",
+        )
+
+        self.validate(
+            "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
+            "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
+            write="presto",
+        )
+
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
@@ -1297,6 +1309,10 @@ class TestDialects(unittest.TestCase):
             'CAST("a"."b" AS INTEGER)',
             read="spark",
             write="sqlite",
+        )
+
+        self.validate(
+            "LEVENSHTEIN(col1, col2)", "EDITDIST3(col1, col2)", write="sqlite"
         )
 
     def test_oracle(self):

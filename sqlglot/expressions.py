@@ -1697,6 +1697,10 @@ class Length(Func):
     pass
 
 
+class Levenshtein(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class Ln(Func):
     pass
 

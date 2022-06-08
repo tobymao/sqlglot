@@ -608,7 +608,6 @@ class Join(Expression):
             instance=self,
             arg="on",
             append=append,
-            into=Paren,
             dialect=dialect,
             parser_opts=parser_opts,
             copy=copy,
@@ -2068,7 +2067,7 @@ def _apply_conjunction_builder(
     *expressions,
     instance,
     arg,
-    into,
+    into=None,
     append=True,
     copy=True,
     dialect=None,
@@ -2082,11 +2081,11 @@ def _apply_conjunction_builder(
 
     existing = inst.args.get(arg)
     if append and existing is not None:
-        expressions = [existing.this] + list(expressions)
+        expressions = [existing.this if into else existing] + list(expressions)
 
     node = and_(*expressions, dialect=dialect, **(parser_opts or {}))
 
-    inst.set(arg, into(this=node))
+    inst.set(arg, into(this=node) if into else node)
     return inst
 
 

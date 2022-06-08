@@ -2,6 +2,7 @@ import itertools
 
 import sqlglot
 import sqlglot.expressions as exp
+from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -21,6 +22,7 @@ def eliminate_subqueries(expression):
     Returns:
         sqlglot.Expression: qualified expression
     """
+    expression = simplify(expression)
     queries = {}
 
     for scope in traverse_scope(expression):

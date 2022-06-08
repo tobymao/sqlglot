@@ -154,18 +154,22 @@ class Scope:
         referenced_names = []
 
         for table in self.tables:
-            if isinstance(table.parent, exp.Alias):
-                referenced_names.append(table.parent.alias)
-            else:
-                referenced_names.append(table.name)
+            referenced_names.append(
+                (
+                    table.parent.alias
+                    if isinstance(table.parent, exp.Alias)
+                    else table.name,
+                    table,
+                )
+            )
         for derived_table in self.derived_tables:
-            referenced_names.append(derived_table.alias)
+            referenced_names.append((derived_table.alias, derived_table.this))
 
         result = {}
 
-        for name in referenced_names:
+        for name, node in referenced_names:
             if name in self.sources:
-                result[name] = self.sources[name]
+                result[name] = (node, self.sources[name])
 
         return result
 

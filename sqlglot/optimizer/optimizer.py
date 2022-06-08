@@ -8,7 +8,6 @@ from sqlglot.optimizer.pushdown_projections import pushdown_projections
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.quote_identities import quote_identities
-from sqlglot.optimizer.simplify import simplify
 
 
 def optimize(expression, schema=None, db=None, catalog=None):
@@ -37,7 +36,6 @@ def optimize(expression, schema=None, db=None, catalog=None):
     expression = expand_multi_table_selects(expression)
     expression = pushdown_predicates(expression)
     expression = optimize_joins(expression)
-    expression = simplify(expression)
     expression = eliminate_subqueries(expression)
     expression = quote_identities(expression)
     return expression

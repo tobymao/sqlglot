@@ -1,6 +1,7 @@
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.simplify import simplify
 
 
 def pushdown_predicates(expression):
@@ -19,6 +20,8 @@ def pushdown_predicates(expression):
     Returns:
         sqlglot.Expression: optimized expression
     """
+    expression = simplify(expression)
+
     for scope in reversed(traverse_scope(expression)):
         where = scope.expression.args.get("where")
 
@@ -38,12 +41,12 @@ def pushdown_predicates(expression):
         if cnf_like:
             for predicate in predicates:
                 for node in nodes_for_predicate(predicate, scope).values():
-                    predicate.replace(exp.TRUE)
-
                     if isinstance(node, exp.Join):
+                        predicate.replace(exp.TRUE)
                         node.on(predicate, copy=False)
                         break
-                    elif isinstance(node, exp.Select):
+                    if isinstance(node, exp.Select):
+                        predicate.replace(exp.TRUE)
                         node.where(replace_aliases(node, predicate), copy=False)
         else:
             pushdown = set()
@@ -101,15 +104,16 @@ def nodes_for_predicate(predicate, scope):
     nodes = {}
     tables = exp.column_table_names(predicate)
     for table in tables:
-        source = scope.sources.get(table)
+        node, _ = scope.selected_sources.get(table) or (None, None)
 
-        if isinstance(source, exp.Table):
-            node = source.find_ancestor(exp.From, exp.Join)
+        if isinstance(node, exp.Table):
+            node = node.find_ancestor(exp.Join, exp.From)
             # only pushdown if the node's parent is a join
             if isinstance(node, exp.Join):
                 nodes[table] = node
-        elif source and len(tables) == 1:
-            nodes[table] = source.expression
+        elif node and len(tables) == 1:
+            if not node.args.get("group"):
+                nodes[table] = node
     return nodes
 
 

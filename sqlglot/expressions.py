@@ -388,6 +388,42 @@ class Condition(Expression):
         """
         return not_(self)
 
+    def eq(self, expression, dialect=None, parser_opts=None):
+        """
+        Equals.
+
+        Example:
+            >>> column("a").eq("b").sql()
+            'a = b'
+
+        Returns:
+            EQ: equality operation
+        """
+        return EQ(
+            this=self,
+            expression=_maybe_parse(
+                expression, dialect=dialect, parser_opts=parser_opts
+            ),
+        )
+
+    def neq(self, expression, dialect=None, parser_opts=None):
+        """
+        Not equals.
+
+        Example:
+            >>> column("a").neq("b").sql()
+            'a <> b'
+
+        Returns:
+            NEQ: equality operation
+        """
+        return NEQ(
+            this=self,
+            expression=_maybe_parse(
+                expression, dialect=dialect, parser_opts=parser_opts
+            ),
+        )
+
 
 class DerivedTable:
     @property

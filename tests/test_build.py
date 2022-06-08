@@ -362,6 +362,18 @@ class TestBuild(unittest.TestCase):
                 lambda: exp.column("x.y", "a.b"),
                 '"a.b"."x.y"',
             ),
+            (
+                lambda: exp.column("a").eq("b"),
+                "a = b",
+            ),
+            (
+                lambda: exp.column("a").eq(exp.column("b")),
+                "a = b",
+            ),
+            (
+                lambda: exp.column("a").neq("b"),
+                "a <> b",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

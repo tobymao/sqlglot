@@ -134,11 +134,11 @@ class TestOptimizer(unittest.TestCase):
 
     def test_normalize(self):
         self.assertEqual(
-           optimizer.normalize.normalize(
-               sqlglot.parse_one("x AND (y OR z)"),
-               dnf=True,
-           ).sql(),
-           "(x AND y) OR (x AND z)",
+            optimizer.normalize.normalize(
+                sqlglot.parse_one("x AND (y OR z)"),
+                dnf=True,
+            ).sql(),
+            "(x AND y) OR (x AND z)",
         )
 
         self.check_file(

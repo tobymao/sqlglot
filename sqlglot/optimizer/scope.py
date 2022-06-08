@@ -143,13 +143,13 @@ class Scope:
     @property
     def selected_sources(self):
         """
-        Mapping of sources that are actually selected from in this scope.
+        Mapping of nodes and sources that are actually selected from in this scope.
 
         That is, all tables in a schema are selectable at any point. But a
         table only becomes a selected source if it's included in a FROM or JOIN clause.
 
         Returns:
-            dict[str, exp.Table|Scope]: selected sources
+            dict[str, (exp.Table|exp.Subquery, exp.Table|Scope)]: selected sources and nodes
         """
         referenced_names = []
 

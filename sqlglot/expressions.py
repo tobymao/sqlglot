@@ -587,8 +587,9 @@ class Join(Expression):
         Append to or set the ON expressions.
 
         Example:
-            >>> Select().select("x").from_("tbl").where("x = 'a' OR x < 'b'").sql()
-            "SELECT x FROM tbl WHERE x = 'a' OR x < 'b'"
+            >>> import sqlglot
+            >>> sqlglot.parse_one("JOIN x", into=Join).on("y = 1").sql()
+            'JOIN x ON y = 1'
 
         Args:
             *expressions (str or Expression): the SQL code strings to parse.
@@ -601,7 +602,7 @@ class Join(Expression):
             copy (bool): if `False`, modify this expression instance in-place.
 
         Returns:
-            Select: the modified expression.
+            Join: the modified join expression.
         """
         join = _apply_conjunction_builder(
             *expressions,

@@ -23,95 +23,131 @@ def pushdown_predicates(expression):
     expression = simplify(expression)
 
     for scope in reversed(traverse_scope(expression)):
-        where = scope.expression.args.get("where")
+        select = scope.expression
+        where = select.args.get("where")
+        conditions = [(where.this, scope.selected_sources)] if where else []
 
-        if not where:
-            continue
+        # joins should only pushdown into itself, not to other joins
+        # so we limit the selected sources to only itself
+        for join in select.args.get("joins") or []:
+            name = join.this.alias_or_name
+            conditions.append(
+                (join.args.get("on"), {name: scope.selected_sources[name]})
+            )
 
-        condition = where.this.unnest()
+        for condition, sources in conditions:
+            if not condition:
+                continue
 
-        cnf_like = normalized(condition) or not normalized(condition, dnf=True)
+            condition = condition.unnest()
+            cnf_like = normalized(condition) or not normalized(condition, dnf=True)
 
-        predicates = list(
-            condition.flatten()
-            if isinstance(condition, exp.And if cnf_like else exp.Or)
-            else [condition]
-        )
+            predicates = list(
+                condition.flatten()
+                if isinstance(condition, exp.And if cnf_like else exp.Or)
+                else [condition]
+            )
 
-        if cnf_like:
-            for predicate in predicates:
-                for node in nodes_for_predicate(predicate, scope).values():
-                    if isinstance(node, exp.Join):
-                        predicate.replace(exp.TRUE)
-                        node.on(predicate, copy=False)
-                        break
-                    if isinstance(node, exp.Select):
-                        predicate.replace(exp.TRUE)
-                        node.where(replace_aliases(node, predicate), copy=False)
-        else:
-            pushdown = set()
-
-            for a in predicates:
-                a_tables = set(exp.column_table_names(a))
-
-                for b in predicates:
-                    a_tables &= set(exp.column_table_names(b))
-
-                pushdown.update(a_tables)
-
-            conditions = {}
-
-            for table in sorted(pushdown):
-                for predicate in predicates:
-                    nodes = nodes_for_predicate(predicate, scope)
-
-                    if table not in nodes:
-                        continue
-
-                    predicate_condition = None
-
-                    for column in predicate.find_all(exp.Column):
-                        if column.text("table") == table:
-                            condition = column.find_ancestor(exp.Condition)
-                            predicate_condition = (
-                                exp.and_(predicate_condition, condition)
-                                if predicate_condition
-                                else condition
-                            )
-
-                    if predicate_condition:
-                        conditions[table] = (
-                            exp.or_(conditions[table], predicate_condition)
-                            if table in conditions
-                            else predicate_condition
-                        )
-
-                for name, node in nodes.items():
-                    if name not in conditions:
-                        continue
-                    predicate = conditions[name]
-
-                    if isinstance(node, exp.Join):
-                        node.on(predicate, copy=False)
-
-                    elif isinstance(node, exp.Select):
-                        node.where(replace_aliases(node, predicate), copy=False)
+            if cnf_like:
+                pushdown_cnf(predicates, sources)
+            else:
+                pushdown_dnf(predicates, sources)
 
     return expression
 
 
-def nodes_for_predicate(predicate, scope):
+def pushdown_cnf(predicates, scope):
+    """
+    If the predicates are in CNF like form, we can simply replace each block in the parent.
+    """
+    for predicate in predicates:
+        for node in nodes_for_predicate(predicate, scope).values():
+            if isinstance(node, exp.Join):
+                predicate.replace(exp.TRUE)
+                node.on(predicate, copy=False)
+                break
+            if isinstance(node, exp.Select):
+                predicate.replace(exp.TRUE)
+                node.where(replace_aliases(node, predicate), copy=False)
+
+
+def pushdown_dnf(predicates, scope):
+    """
+    If the predicates are in DNF form, we can only push down conditions that are in all blocks.
+    Additionally, we can't remove predicates from their original form.
+    """
+    # find all the tables that can be pushdown too
+    # these are tables that are referenced in all blocks of a DNF
+    # (a.x AND b.x) OR (a.y AND c.y)
+    # only table a can be push down
+    pushdown_tables = set()
+
+    for a in predicates:
+        a_tables = set(exp.column_table_names(a))
+
+        for b in predicates:
+            a_tables &= set(exp.column_table_names(b))
+
+        pushdown_tables.update(a_tables)
+
+    conditions = {}
+
+    # for every pushdown table, find all related conditions in all predicates
+    # combine them with ORS
+    # (a.x AND and a.y AND b.x) OR (a.z AND c.y) -> (a.x AND a.y) OR (a.z)
+    for table in sorted(pushdown_tables):
+        for predicate in predicates:
+            nodes = nodes_for_predicate(predicate, scope)
+
+            if table not in nodes:
+                continue
+
+            predicate_condition = None
+
+            for column in predicate.find_all(exp.Column):
+                if column.text("table") == table:
+                    condition = column.find_ancestor(exp.Condition)
+                    predicate_condition = (
+                        exp.and_(predicate_condition, condition)
+                        if predicate_condition
+                        else condition
+                    )
+
+            if predicate_condition:
+                conditions[table] = (
+                    exp.or_(conditions[table], predicate_condition)
+                    if table in conditions
+                    else predicate_condition
+                )
+
+        for name, node in nodes.items():
+            if name not in conditions:
+                continue
+
+            predicate = conditions[name]
+
+            if isinstance(node, exp.Join):
+                node.on(predicate, copy=False)
+            elif isinstance(node, exp.Select):
+                node.where(replace_aliases(node, predicate), copy=False)
+
+
+def nodes_for_predicate(predicate, sources):
     nodes = {}
     tables = exp.column_table_names(predicate)
     for table in tables:
-        node, _ = scope.selected_sources.get(table) or (None, None)
+        node, source = sources.get(table) or (None, None)
 
         if isinstance(node, exp.Table):
             node = node.find_ancestor(exp.Join, exp.From)
-            # only pushdown if the node's parent is a join
-            if isinstance(node, exp.Join):
-                nodes[table] = node
-        elif node and len(tables) == 1:
+
+            # a node can reference a CTE which should be push down
+            if isinstance(node, exp.From) and not isinstance(source, exp.Table):
+                node = source.expression
+
+        if isinstance(node, exp.Join):
+            nodes[table] = node
+        elif isinstance(node, exp.Select) and len(tables) == 1:
             if not node.args.get("group"):
                 nodes[table] = node
     return nodes

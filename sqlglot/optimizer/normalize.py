@@ -16,6 +16,7 @@ def normalize(expression, dnf=False, max_distance=128):
     Args:
         expression (sqlglot.Expression): expression to normalize
         dnf (bool): rewrite in disjunctive normal form instead
+        max_distance (int): the maximal estimated distance from cnf to attempt conversion
     Returns:
         sqlglot.Expression: normalized expression
     """
@@ -60,7 +61,7 @@ def normalization_distance(expression, dnf=False):
 
 def _predicate_lengths(expression, dnf):
     """
-    Returns a list of predicates lengths when expanded to normalized form.
+    Returns a list of predicate lengths when expanded to normalized form.
 
     (A AND B) OR C -> [2, 2] because len(A OR C), len(B OR C).
     """

@@ -350,6 +350,18 @@ class TestBuild(unittest.TestCase):
                 ).select("x"),
                 "SELECT x FROM (SELECT x FROM tbl UNION SELECT x FROM bar) AS unioned",
             ),
+            (
+                lambda: exp.column("x"),
+                "x",
+            ),
+            (
+                lambda: exp.column("x", "a"),
+                "a.x",
+            ),
+            (
+                lambda: exp.column("x.y", "a.b"),
+                '"a.b"."x.y"',
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

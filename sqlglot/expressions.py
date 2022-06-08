@@ -2288,6 +2288,19 @@ def column_table_names(expression):
     )
 
 
+def column(col, table=None):
+    """
+    Build a Column.
+
+    Args:
+        col (str or Expression): column name
+        table (str or Expression): table name
+    Returns:
+        Column: column instance
+    """
+    return Column(this=to_identifier(col), table=to_identifier(table))
+
+
 TRUE = Boolean(this=True)
 FALSE = Boolean(this=False)
 NULL = Null()

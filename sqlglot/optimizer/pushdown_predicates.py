@@ -1,6 +1,5 @@
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.optimize_joins import join_kind
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -42,8 +41,7 @@ def pushdown_predicates(expression):
                     predicate.replace(exp.TRUE)
 
                     if isinstance(node, exp.Join):
-                        on = node.args.get("on")
-                        node.set("on", exp.and_(predicate, on) if on else predicate)
+                        node.on(predicate, copy=False)
                         break
                     elif isinstance(node, exp.Select):
                         node.where(replace_aliases(node, predicate), copy=False)
@@ -85,19 +83,16 @@ def pushdown_predicates(expression):
                             else predicate_condition
                         )
 
-            for name, node in nodes.items():
-                if name not in conditions:
-                    continue
-                predicate = conditions[name]
+                for name, node in nodes.items():
+                    if name not in conditions:
+                        continue
+                    predicate = conditions[name]
 
-                if isinstance(node, exp.Join):
-                    on = node.args.get("on")
-                    node.set("on", exp.and_(predicate, on) if on else predicate)
-                    if join_kind(node) == "CROSS":
-                        node.set("kind", None)
+                    if isinstance(node, exp.Join):
+                        node.on(predicate, copy=False)
 
-                elif isinstance(node, exp.Select):
-                    node.where(replace_aliases(node, predicate), copy=False)
+                    elif isinstance(node, exp.Select):
+                        node.where(replace_aliases(node, predicate), copy=False)
 
     return expression
 
@@ -106,13 +101,14 @@ def nodes_for_predicate(predicate, scope):
     nodes = {}
     tables = exp.column_table_names(predicate)
     for table in tables:
-        source = scope.sources[table]
+        source = scope.sources.get(table)
 
         if isinstance(source, exp.Table):
-            node = source.find_ancestor(exp.Join)
-            if node:
+            node = source.find_ancestor(exp.From, exp.Join)
+            # only pushdown if the node's parent is a join
+            if isinstance(node, exp.Join):
                 nodes[table] = node
-        elif len(tables) == 1:
+        elif source and len(tables) == 1:
             nodes[table] = source.expression
     return nodes
 

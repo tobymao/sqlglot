@@ -198,8 +198,13 @@ def is_complement(a, b):
 
 
 def simplify_parens(expression):
-    if isinstance(expression, exp.Paren) and not isinstance(
-        expression.this, (exp.Binary, exp.Select)
+    if (
+        isinstance(expression, exp.Paren)
+        and not isinstance(expression.this, exp.Select)
+        and (
+            not isinstance(expression.parent, (exp.Condition, exp.Binary))
+            or not isinstance(expression.this, exp.Binary)
+        )
     ):
         return expression.this
     return expression
@@ -208,7 +213,11 @@ def simplify_parens(expression):
 def remove_where_true(expression):
     for where in expression.find_all(exp.Where):
         if always_true(where.this):
-            where.parent.args["where"] = None
+            where.parent.set("where", None)
+    for join in expression.find_all(exp.Join):
+        if always_true(join.args.get("on")):
+            join.set("kind", "CROSS")
+            join.set("on", None)
 
 
 def always_true(expression):

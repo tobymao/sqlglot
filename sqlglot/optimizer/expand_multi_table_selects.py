@@ -7,9 +7,6 @@ def expand_multi_table_selects(expression):
         where = parent.args.get("where")
 
         for query in from_.args["expressions"][1:]:
-
-            # for predicate in predicates:
-            #    predicate.replace(exp.TRUE)
             parent.join(
                 query,
                 join_type="CROSS",

@@ -578,6 +578,47 @@ class Literal(Condition):
 class Join(Expression):
     arg_types = {"this": True, "on": False, "side": False, "kind": False}
 
+    @property
+    def kind(self):
+        return self.text("kind").upper()
+
+    def on(self, *expressions, append=True, dialect=None, parser_opts=None, copy=True):
+        """
+        Append to or set the ON expressions.
+
+        Example:
+            >>> Select().select("x").from_("tbl").where("x = 'a' OR x < 'b'").sql()
+            "SELECT x FROM tbl WHERE x = 'a' OR x < 'b'"
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+                Multiple expressions are combined with an AND operator.
+            append (bool): if `True`, AND the new expressions to any existing expression.
+                Otherwise, this resets the expression.
+            dialect (str): the dialect used to parse the input expressions.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        join = _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="on",
+            append=append,
+            into=Paren,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+        if join.kind == "CROSS":
+            join.set("kind", None)
+
+        return join
+
 
 class Lateral(Expression):
     arg_types = {"this": True, "outer": False, "table": False, "columns": False}

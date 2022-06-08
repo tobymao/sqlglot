@@ -54,7 +54,7 @@ def decorrelate_subqueries(expression):
                 select.select(internal, copy=False)
 
             alias = f"_d_{next(sequence)}"
-            on = [f"{alias}.{internal.text('this')} = {column.sql()}"]
+            on = exp.and_(f"{alias}.{internal.text('this')} = {column.sql()}")
 
             eq.replace(exp.TRUE)
             select.replace(
@@ -66,19 +66,19 @@ def decorrelate_subqueries(expression):
 
             predicate = select.find_ancestor(*exp.PREDICATES, exp.Exists)
 
-            # if predicate:
-            #    predicate.replace(exp.TRUE)
+            if predicate:
+                predicate.replace(exp.TRUE)
 
             if isinstance(predicate, exp.Exists):
                 select = select.select(internal, append=False)
-            # elif predicate:
-            #    on.append(predicate.sql())
+            elif predicate:
+                on = exp.and_(on, predicate)
 
             select = select.group_by(internal)
 
             scope.parent.expression.join(
                 select,
-                # on=" AND ".join(on),
+                on=on,
                 join_alias=alias,
                 copy=False,
             )

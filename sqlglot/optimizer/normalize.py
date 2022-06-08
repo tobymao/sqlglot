@@ -22,8 +22,7 @@ def normalize(expression, dnf=False, max_distance=128):
     expression = simplify(expression).transform(de_morgans_law, copy=False)
 
     expression = while_changing(
-        expression,
-        lambda e: distributive_law(e, dnf, max_distance)
+        expression, lambda e: distributive_law(e, dnf, max_distance)
     )
     return simplify(expression)
 
@@ -32,8 +31,7 @@ def normalized(expression, dnf=False):
     ancestor, root = (exp.And, exp.Or) if dnf else (exp.Or, exp.And)
 
     return not any(
-        connector.find_ancestor(ancestor)
-        for connector in expression.find_all(root)
+        connector.find_ancestor(ancestor) for connector in expression.find_all(root)
     )
 
 

@@ -1097,7 +1097,7 @@ class Parser:
             )
         elif self._match(TokenType.IN):
             self._match_l_paren()
-            query = self._parse_select()
+            query = self._parse_with()
 
             if query:
                 this = self.expression(exp.In, this=this, query=query)

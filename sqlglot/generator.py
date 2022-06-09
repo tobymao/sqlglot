@@ -143,7 +143,11 @@ class Generator:
 
     def wrap(self, expression):
         self._level += 1
-        this_sql = self.indent(self.sql(expression, "this"))
+        this_sql = self.indent(
+            self.sql(expression)
+            if isinstance(expression, exp.Select)
+            else self.sql(expression, "this")
+        )
         self._level -= 1
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
@@ -666,10 +670,13 @@ class Generator:
         )
 
     def in_sql(self, expression):
-        in_sql = self.no_format(
-            lambda: self.sql(expression, "query")
-        ) or self.expressions(expression, flat=True)
-        return f"{self.sql(expression, 'this')} IN ({in_sql})"
+        query = expression.args.get("query")
+        in_sql = (
+            self.wrap(query)
+            if query
+            else f"({self.expressions(expression, flat=True)})"
+        )
+        return f"{self.sql(expression, 'this')} IN {in_sql}"
 
     def interval_sql(self, expression):
         return f"INTERVAL {self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
@@ -678,6 +685,8 @@ class Generator:
         return f"{self.sql(expression, 'this').upper()}({self.expressions(expression, flat=True)})"
 
     def paren_sql(self, expression):
+        if isinstance(expression.unnest(), exp.Select):
+            return self.wrap(expression)
         return self.no_format(lambda: f"({self.sql(expression, 'this')})")
 
     def neg_sql(self, expression):

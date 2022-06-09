@@ -311,14 +311,14 @@ class TestOptimizer(unittest.TestCase):
         WITH q AS (
           SELECT x.b FROM x
         ), r AS (
-          SELECT y.b FROM y  
+          SELECT y.b FROM y
         )
-        SELECT 
+        SELECT
           r.b,
           s.b
         FROM r
         JOIN (
-          SELECT y.c AS b FROM y 
+          SELECT y.c AS b FROM y
         ) s
         ON s.b = r.b
         WHERE s.b > (SELECT MAX(x.a) FROM x WHERE x.b = s.b)

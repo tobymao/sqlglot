@@ -265,6 +265,10 @@ SELECT
   "nation"."n_name" AS "n_name",
   SUM("lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount")) AS "revenue"
 FROM "customer" AS "customer"
+JOIN "orders" AS "orders"
+  ON "customer"."c_custkey" = "orders"."o_custkey"
+  AND "orders"."o_orderdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
+  AND "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
 JOIN "region" AS "region"
   ON "region"."r_name" = 'ASIA'
 JOIN "nation" AS "nation"
@@ -273,12 +277,8 @@ JOIN "supplier" AS "supplier"
   ON "customer"."c_nationkey" = "supplier"."s_nationkey"
   AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_suppkey" = "supplier"."s_suppkey"
-JOIN "orders" AS "orders"
-  ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "lineitem"."l_orderkey" = "orders"."o_orderkey"
-  AND "orders"."o_orderdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
-  AND "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "lineitem"."l_suppkey" = "supplier"."s_suppkey"
 GROUP BY
   "nation"."n_name"
 ORDER BY
@@ -359,6 +359,13 @@ FROM (
       EXTRACT(year FROM "lineitem"."l_shipdate") AS "l_year",
       "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS "volume"
     FROM "supplier" AS "supplier"
+    JOIN "lineitem" AS "lineitem"
+      ON "lineitem"."l_shipdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
+      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+    JOIN "orders" AS "orders"
+      ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
+    JOIN "customer" AS "customer"
+      ON "customer"."c_custkey" = "orders"."o_custkey"
     JOIN "nation" AS "n1"
       ON ("n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY')
       AND "supplier"."s_nationkey" = "n1"."n_nationkey"
@@ -366,14 +373,7 @@ FROM (
       ON ("n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE')
       AND ("n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY')
       AND ("n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY')
-    JOIN "customer" AS "customer"
-      ON "customer"."c_nationkey" = "n2"."n_nationkey"
-    JOIN "orders" AS "orders"
-      ON "customer"."c_custkey" = "orders"."o_custkey"
-    JOIN "lineitem" AS "lineitem"
-      ON "lineitem"."l_shipdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
-      AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
-      AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+      AND "customer"."c_nationkey" = "n2"."n_nationkey"
 ) AS "shipping"
 GROUP BY
   "shipping"."supp_nation",
@@ -462,7 +462,6 @@ ORDER BY
 
 --------------------------------------
 -- TPC-H 9
--- TODO add transitive predicate push down
 --------------------------------------
 select
         nation,
@@ -978,39 +977,49 @@ LIMIT 100;
 --------------------------------------
 -- TPC-H 19
 --------------------------------------
---select
---        sum(l_extendedprice* (1 - l_discount)) as revenue
---from
---        lineitem,
---        part
---where
---        (
---                p_partkey = l_partkey
---                and p_brand = 'Brand#12'
---                and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
---                and l_quantity >= 1 and l_quantity <= 1 + 10
---                and p_size between 1 and 5
---                and l_shipmode in ('AIR', 'AIR REG')
---                and l_shipinstruct = 'DELIVER IN PERSON'
---        )
---        or
---        (
---                p_partkey = l_partkey
---                and p_brand = 'Brand#23'
---                and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
---                and l_quantity >= 10 and l_quantity <= 10 + 10
---                and p_size between 1 and 10
---                and l_shipmode in ('AIR', 'AIR REG')
---                and l_shipinstruct = 'DELIVER IN PERSON'
---        )
---        or
---        (
---                p_partkey = l_partkey
---                and p_brand = 'Brand#34'
---                and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
---                and l_quantity >= 20 and l_quantity <= 20 + 10
---                and p_size between 1 and 15
---                and l_shipmode in ('AIR', 'AIR REG')
---                and l_shipinstruct = 'DELIVER IN PERSON'
---        );
---
+select
+        sum(l_extendedprice* (1 - l_discount)) as revenue
+from
+        lineitem,
+        part
+where
+        (
+                p_partkey = l_partkey
+                and p_brand = 'Brand#12'
+                and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+                and l_quantity >= 1 and l_quantity <= 1 + 10
+                and p_size between 1 and 5
+                and l_shipmode in ('AIR', 'AIR REG')
+                and l_shipinstruct = 'DELIVER IN PERSON'
+        )
+        or
+        (
+                p_partkey = l_partkey
+                and p_brand = 'Brand#23'
+                and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
+                and l_quantity >= 10 and l_quantity <= 10 + 10
+                and p_size between 1 and 10
+                and l_shipmode in ('AIR', 'AIR REG')
+                and l_shipinstruct = 'DELIVER IN PERSON'
+        )
+        or
+        (
+                p_partkey = l_partkey
+                and p_brand = 'Brand#34'
+                and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
+                and l_quantity >= 20 and l_quantity <= 20 + 10
+                and p_size between 1 and 15
+                and l_shipmode in ('AIR', 'AIR REG')
+                and l_shipinstruct = 'DELIVER IN PERSON'
+        );
+SELECT
+  SUM("lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount")) AS "revenue"
+FROM "lineitem" AS "lineitem"
+JOIN "part" AS "part"
+  ON ("part"."p_size" BETWEEN 1 AND 10 AND "part"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK') AND "part"."p_partkey" = "lineitem"."l_partkey" AND "part"."p_brand" = 'Brand#23')
+  OR ("part"."p_size" BETWEEN 1 AND 15 AND "part"."p_container" IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG') AND "part"."p_partkey" = "lineitem"."l_partkey" AND "part"."p_brand" = 'Brand#34')
+  OR ("part"."p_size" BETWEEN 1 AND 5 AND "part"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG') AND "part"."p_partkey" = "lineitem"."l_partkey" AND "part"."p_brand" = 'Brand#12')
+WHERE
+  ("part"."p_partkey" = "lineitem"."l_partkey" AND "part"."p_brand" = 'Brand#12' AND "part"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG') AND "lineitem"."l_quantity" >= 1 AND "lineitem"."l_quantity" <= 1 + 10 AND "part"."p_size" BETWEEN 1 AND 5 AND "lineitem"."l_shipmode" IN ('AIR', 'AIR REG') AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON')
+  OR ("part"."p_partkey" = "lineitem"."l_partkey" AND "part"."p_brand" = 'Brand#23' AND "part"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK') AND "lineitem"."l_quantity" >= 10 AND "lineitem"."l_quantity" <= 10 + 10 AND "part"."p_size" BETWEEN 1 AND 10 AND "lineitem"."l_shipmode" IN ('AIR', 'AIR REG') AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON')
+  OR ("part"."p_partkey" = "lineitem"."l_partkey" AND "part"."p_brand" = 'Brand#34' AND "part"."p_container" IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG') AND "lineitem"."l_quantity" >= 20 AND "lineitem"."l_quantity" <= 20 + 10 AND "part"."p_size" BETWEEN 1 AND 15 AND "lineitem"."l_shipmode" IN ('AIR', 'AIR REG') AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON');

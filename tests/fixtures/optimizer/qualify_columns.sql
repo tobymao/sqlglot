@@ -112,6 +112,9 @@ SELECT x.a AS a FROM x WHERE x.b IN (SELECT y.c AS c FROM y WHERE y.b = x.a);
 SELECT a FROM x WHERE b IN (SELECT b FROM y AS x);
 SELECT x.a AS a FROM x WHERE x.b IN (SELECT x.b AS b FROM y AS x);
 
+SELECT a FROM x AS i WHERE b IN (SELECT b FROM y AS j WHERE j.b IN (SELECT c FROM y AS k WHERE k.b = j.b));
+SELECT i.a AS a FROM x AS i WHERE i.b IN (SELECT j.b AS b FROM y AS j WHERE j.b IN (SELECT k.c AS c FROM y AS k WHERE k.b = j.b));
+
 --------------------------------------
 -- Expand *
 --------------------------------------

@@ -206,7 +206,7 @@ class Scope:
             list[exp.Column]: Column instances that don't reference
                 sources in the current scope.
         """
-        return [c for c in self.columns if c.text("table") not in self.sources]
+        return [c for c in self.columns if c.text("table") not in self.selected_sources]
 
     def source_columns(self, source_name):
         """
@@ -370,11 +370,13 @@ def _add_table_sources(scope):
 
 def _traverse_subqueries(scope):
     for subquery in scope.subqueries:
+        top = None
         for child_scope in _traverse_scope(
             scope.branch(subquery, scope_type=ScopeType.SUBQUERY)
         ):
             yield child_scope
-            scope.subquery_scopes.append(child_scope)
+            top = child_scope
+        scope.subquery_scopes.append(top)
 
 
 def _bfs_until_next_scope(expression):

@@ -136,10 +136,8 @@ class Expression:
 
     def find_ancestor(self, *expression_types):
         ancestor = self.parent
-        while not isinstance(ancestor, expression_types):
+        while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
-            if not ancestor:
-                return None
         return ancestor
 
     def walk(self, bfs=True):
@@ -579,6 +577,47 @@ class Literal(Condition):
 
 class Join(Expression):
     arg_types = {"this": True, "on": False, "side": False, "kind": False}
+
+    @property
+    def kind(self):
+        return self.text("kind").upper()
+
+    def on(self, *expressions, append=True, dialect=None, parser_opts=None, copy=True):
+        """
+        Append to or set the ON expressions.
+
+        Example:
+            >>> import sqlglot
+            >>> sqlglot.parse_one("JOIN x", into=Join).on("y = 1").sql()
+            'JOIN x ON y = 1'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+                Multiple expressions are combined with an AND operator.
+            append (bool): if `True`, AND the new expressions to any existing expression.
+                Otherwise, this resets the expression.
+            dialect (str): the dialect used to parse the input expressions.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Join: the modified join expression.
+        """
+        join = _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="on",
+            append=append,
+            dialect=dialect,
+            parser_opts=parser_opts,
+            copy=copy,
+        )
+
+        if join.kind == "CROSS":
+            join.set("kind", None)
+
+        return join
 
 
 class Lateral(Expression):
@@ -2033,7 +2072,7 @@ def _apply_conjunction_builder(
     *expressions,
     instance,
     arg,
-    into,
+    into=None,
     append=True,
     copy=True,
     dialect=None,
@@ -2047,11 +2086,11 @@ def _apply_conjunction_builder(
 
     existing = inst.args.get(arg)
     if append and existing is not None:
-        expressions = [existing.this] + list(expressions)
+        expressions = [existing.this if into else existing] + list(expressions)
 
     node = and_(*expressions, dialect=dialect, **(parser_opts or {}))
 
-    inst.set(arg, into(this=node))
+    inst.set(arg, into(this=node) if into else node)
     return inst
 
 

@@ -1,11 +1,14 @@
 import sqlglot.expressions as exp
 from sqlglot.helper import tsort
+from sqlglot.optimizer.simplify import simplify
 
 
 def optimize_joins(expression):
     """
     Removes cross joins if possible and reorder joins based on predicate dependencies.
     """
+    expression = simplify(expression)
+
     for select in expression.find_all(exp.Select):
         references = {}
         cross_joins = []
@@ -27,12 +30,7 @@ def optimize_joins(expression):
                     for predicate in on.flatten():
                         if name in exp.column_table_names(predicate):
                             predicate.replace(exp.TRUE)
-                            join.set(
-                                "on",
-                                exp.and_(join.args.get("on") or exp.TRUE, predicate),
-                            )
-                            if join_kind(join) == "CROSS":
-                                join.set("kind", None)
+                            join.on(predicate, copy=False)
 
     expression = reorder_joins(expression)
     expression = normalize(expression)
@@ -51,10 +49,11 @@ def reorder_joins(expression):
 
         for name, join in joins.items():
             dag[name] = other_table_names(join, name)
-            parent.set(
-                "joins",
-                [joins[name] for name in tsort(dag) if name != head.alias_or_name],
-            )
+
+        parent.set(
+            "joins",
+            [joins[name] for name in tsort(dag) if name != head.alias_or_name],
+        )
     return expression
 
 
@@ -63,7 +62,7 @@ def normalize(expression):
     Remove INNER and OUTER from joins as they are optional.
     """
     for join in expression.find_all(exp.Join):
-        if join_kind(join) != "CROSS":
+        if join.kind != "CROSS":
             join.set("kind", None)
     return expression
 
@@ -74,7 +73,3 @@ def other_table_names(join, exclude):
         for name in (exp.column_table_names(join.args.get("on") or exp.TRUE))
         if name != exclude
     ]
-
-
-def join_kind(join):
-    return (join.args.get("kind") or "").upper()

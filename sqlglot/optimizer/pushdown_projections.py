@@ -52,7 +52,7 @@ def pushdown_projections(expression):
                 selects[table_name].add(col_name)
 
             # Push the selected columns down to the next scope
-            for name, source in scope.selected_sources.items():
+            for name, (_, source) in scope.selected_sources.items():
                 if isinstance(source, Scope):
                     columns = selects.get(name) or set()
                     referenced_columns[source].update(columns)

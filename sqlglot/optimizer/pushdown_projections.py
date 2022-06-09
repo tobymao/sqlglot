@@ -29,7 +29,7 @@ def pushdown_projections(expression):
     # We build the scope tree (which is traversed in DFS postorder), then iterate
     # over the result in reverse order. This should ensure that the set of selected
     # columns for a particular scope are completely build by the time we get to it.
-    for scope in reversed(list(traverse_scope(expression))):
+    for scope in reversed(traverse_scope(expression)):
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
 
         if scope.expression.args.get("distinct"):

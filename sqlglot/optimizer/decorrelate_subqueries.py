@@ -15,7 +15,7 @@ def decorrelate_subqueries(expression):
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT * FROM x AS x WHERE (SELECT y.a FROM y AS y WHERE x.a = y.a) = 1 ")
         >>> decorrelate_subqueries(expression).sql()
-        'SELECT * FROM x AS x JOIN (SELECT y.a FROM y AS y WHERE TRUE GROUP BY y.a) AS "_d_0" ON _d_0.a = x.a AND ("_d_0".a) = 1 WHERE TRUE'
+        'SELECT * FROM x AS x JOIN (SELECT y.a FROM y AS y WHERE TRUE GROUP BY y.a) AS "_d_0" ON "_d_0"."a" = x.a AND ("_d_0".a) = 1 WHERE TRUE'
 
     Args:
         expression (sqlglot.Expression): expression to decorrelated
@@ -54,7 +54,7 @@ def decorrelate_subqueries(expression):
                 select.select(internal, copy=False)
 
             alias = f"_d_{next(sequence)}"
-            on = exp.and_(f"{alias}.{internal.text('this')} = {column.sql()}")
+            on = exp.and_(f"\"{alias}\".\"{internal.text('this')}\" = {column.sql()}")
 
             eq.replace(exp.TRUE)
             select.replace(

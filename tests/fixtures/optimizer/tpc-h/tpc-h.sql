@@ -635,7 +635,16 @@ JOIN "nation" AS "nation"
 GROUP BY
   "partsupp"."ps_partkey"
 HAVING
-  SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") > (SELECT SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") * 0.0001 AS "_col_0" FROM "partsupp" AS "partsupp" JOIN "supplier" AS "supplier" ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey" JOIN "nation" AS "nation" ON "nation"."n_name" = 'GERMANY' AND "supplier"."s_nationkey" = "nation"."n_nationkey")
+  SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") > (
+      SELECT
+        SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") * 0.0001 AS "_col_0"
+      FROM "partsupp" AS "partsupp"
+      JOIN "supplier" AS "supplier"
+        ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
+      JOIN "nation" AS "nation"
+        ON "nation"."n_name" = 'GERMANY'
+        AND "supplier"."s_nationkey" = "nation"."n_nationkey"
+  )
 ORDER BY
   "value" DESC;
 
@@ -815,7 +824,11 @@ SELECT
   "revenue"."total_revenue" AS "total_revenue"
 FROM "supplier" AS "supplier"
 JOIN "revenue"
-  ON "revenue"."total_revenue" = (SELECT MAX("revenue"."total_revenue") AS "_col_0" FROM "revenue")
+  ON "revenue"."total_revenue" = (
+      SELECT
+        MAX("revenue"."total_revenue") AS "_col_0"
+      FROM "revenue"
+  )
   AND "supplier"."s_suppkey" = "revenue"."supplier_no"
 ORDER BY
   "supplier"."s_suppkey";
@@ -865,7 +878,13 @@ JOIN "part" AS "part"
   AND "part"."p_partkey" = "partsupp"."ps_partkey"
   AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
 WHERE
-  NOT "partsupp"."ps_suppkey" IN (SELECT "supplier"."s_suppkey" AS "s_suppkey" FROM "supplier" AS "supplier" WHERE "supplier"."s_comment" LIKE '%Customer%Complaints%')
+  NOT "partsupp"."ps_suppkey" IN (
+      SELECT
+        "supplier"."s_suppkey" AS "s_suppkey"
+      FROM "supplier" AS "supplier"
+      WHERE
+        "supplier"."s_comment" LIKE '%Customer%Complaints%'
+  )
 GROUP BY
   "part"."p_brand",
   "part"."p_type",
@@ -913,6 +932,7 @@ JOIN (
 ) AS "_d_0"
   ON "_d_0"."l_partkey" = "part"."p_partkey"
   AND "lineitem"."l_quantity" < "_d_0"."_col_0";
+
 --------------------------------------
 -- TPC-H 18
 --------------------------------------
@@ -962,7 +982,15 @@ JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
 JOIN "lineitem" AS "lineitem"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
-  AND "orders"."o_orderkey" IN (SELECT "lineitem"."l_orderkey" AS "l_orderkey" FROM "lineitem" AS "lineitem" GROUP BY "lineitem"."l_orderkey" HAVING SUM("lineitem"."l_quantity") > 300)
+  AND "orders"."o_orderkey" IN (
+      SELECT
+        "lineitem"."l_orderkey" AS "l_orderkey"
+      FROM "lineitem" AS "lineitem"
+      GROUP BY
+        "lineitem"."l_orderkey"
+      HAVING
+        SUM("lineitem"."l_quantity") > 300
+  )
 GROUP BY
   "customer"."c_name",
   "customer"."c_custkey",

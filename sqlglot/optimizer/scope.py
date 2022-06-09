@@ -134,9 +134,16 @@ class Scope:
         columns = self._find_in_scope(
             lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
         )
+
+        external_columns = [
+            column
+            for scope in self.subquery_scopes
+            for column in scope.external_columns
+        ]
+
         return [
             c
-            for c in columns + [c for c, _ in self.columns_from_subqueries]
+            for c in columns + external_columns
             if not self._is_reference_to_named_select(c)
         ]
 
@@ -191,22 +198,6 @@ class Scope:
         return self.expression.selects
 
     @property
-    def columns_from_subqueries(self):
-        """
-        Columns referenced by correlated subqueries.
-
-        Returns:
-            list[tuple[exp.Column, Scope]]: List of Column instances from
-                child scopes that reference sources in this scope, along with the child
-                scope instance itself.
-        """
-        result = []
-        for scope in self.subquery_scopes:
-            for column in scope.external_columns:
-                result.append((column, scope))
-        return result
-
-    @property
     def external_columns(self):
         """
         Columns that appear to reference sources in outer scopes.
@@ -238,7 +229,7 @@ class Scope:
     @property
     def is_correlated_subquery(self):
         """Determine if this scope is a correlated subquery"""
-        return self.is_subquery and self.external_columns
+        return bool(self.is_subquery and self.external_columns)
 
     def rename_source(self, old_name, new_name):
         """Rename a source in this scope"""

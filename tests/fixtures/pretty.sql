@@ -82,7 +82,11 @@ FROM (
       1 + 1 AS c
     FROM foo
     WHERE
-      w IN (SELECT z FROM q)
+      w IN (
+              SELECT
+                z
+              FROM q
+          )
     GROUP BY
       a,
       b
@@ -166,7 +170,11 @@ WITH regional_sales AS (
       region
     FROM regional_sales
     WHERE
-      total_sales > (SELECT SUM(total_sales) / 10 FROM regional_sales)
+      total_sales > (
+              SELECT
+                SUM(total_sales) / 10
+              FROM regional_sales
+          )
 )
 SELECT
   region,
@@ -175,7 +183,11 @@ SELECT
   SUM(amount) AS product_sales
 FROM orders
 WHERE
-  region IN (SELECT region FROM top_regions)
+  region IN (
+      SELECT
+        region
+      FROM top_regions
+  )
 GROUP BY
   region,
   product;

@@ -75,6 +75,9 @@ def simplify_conjunctions(expression):
         left = expression.left
         right = expression.right
 
+        if left == right:
+            return left
+
         if isinstance(expression, exp.And):
             if NULL in (left, right):
                 return NULL

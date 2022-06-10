@@ -2245,7 +2245,7 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
             If an Expression instance is passed, this is used as-is.
         alias (str or Identifier): the alias name to use. If the name has
             special charachters it is quoted.
-        alias (boolean): create a table alias, default false
+        table (boolean): create a table alias, default false
         dialect (str): the dialect used to parse the input expression.
         **opts: other options to use to parse the input expressions.
 

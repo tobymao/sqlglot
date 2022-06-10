@@ -76,6 +76,12 @@ NULL;
 NOT (NOT TRUE);
 TRUE;
 
+a AND (b OR b);
+a AND b;
+
+a AND (b AND b);
+a AND b;
+
 --------------------------------------
 -- Absorption
 --------------------------------------

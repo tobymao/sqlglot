@@ -1,104 +1,93 @@
+import itertools
 from collections import defaultdict
 
 import sqlglot.expressions as exp
 from sqlglot.helper import tsort
-from sqlglot.optimizer import optimize
 from sqlglot.optimizer.scope import traverse_scope
 
 
-class Plan:
-    @classmethod
-    def from_expression(cls, expression):
-        plan = Plan()
-        scope = traverse_scope(expression)[-1]
-        expression = scope.expression
-        print(expression.sql(pretty=True))
-        plan.add_expression_tree(expression, scope)
-        for step in tsort(plan.dependencies):
-            print(step)
-            for e in step.projections:
-                print(e.sql())
-            for dep in step.dependencies:
-                print(f"-- {dep}")
-            print(f"----")
-        return plan
-
-
-    def __init__(self):
-        self.dependencies = defaultdict(set)
-
-    def add_dependency(self, step, dependency):
-        step.add_dependency(dependency)
-        self.dependencies[step].add(dependency)
-        self.dependencies[dependency]
-
-    def add_expression_tree(self, node, scope, name=None):
-        scope = scope.selected_sources[name] if name else scope
-
-        if isinstance(node, exp.Select):
-            step = Scan(name)
-            from_ = node.args.get("from")
-            group = node.args.get("group")
-            where = node.args.get("where")
-            expressions = node.args["expressions"]
-
-            if from_:
-                from_ = from_.args["expressions"][0]
-                alias = from_.alias
-
-                step.projections = [
-                    expression
-                    for expression in expressions
-                    if exp.column_table_names(expression) in ([alias], [])
-                    and (not group or not expression.find(exp.AggFunc))
-                ]
-
-                if isinstance(from_, exp.Subquery):
-                    self.add_dependency(
-                        step,
-                        self.add_expression_tree(
-                            from_.this,
-                            scope,
-                            alias
-                        ),
-                    )
-                else:
-                    pass
-
-            joins = node.args.get("joins", [])
-
-            if joins:
-                join_step = Join(name)
-
-                for join in joins:
-                    source = join.this
-
-                    self.add_dependency(
-                        join_step,
-                        self.add_expression_tree(
-                            source.this,
-                            scope,
-                            source.alias,
-                        ),
-                    )
-
-                self.add_dependency(join_step, step)
-                step = join_step
-
-            if group:
-                aggregate = Aggregate(name)
-                aggregate.projections = [
-                    expression if expression.find(exp.AggFunc) else exp.to_identifier(expression.alias_or_name)
-                    for expression in expressions
-
-                ]
-                self.add_dependency(aggregate, step)
-                step = aggregate
-
-            return step
+def plan(expression):
+    scope = traverse_scope(expression)[-1]
+    expression = scope.expression
+    return Step.from_expression(expression, scope)
 
 
 class Step:
+    @classmethod
+    def from_expression(cls, expression, scope, name=None):
+        step = Scan(name or "root")
+        scope = scope.selected_sources[name] if name else scope
+        from_ = expression.args.get("from")
+        group = expression.args.get("group")
+        expressions = expression.args["expressions"]
+
+        if from_:
+            from_ = from_.args["expressions"][0]
+            alias = from_.alias
+
+            if isinstance(from_, exp.Subquery):
+                step.add_dependency(
+                    Step.from_expression(
+                        from_.this,
+                        scope,
+                        alias
+                    ),
+                )
+                step.source = alias
+            else:
+                step.source = from_.this.sql()
+
+        join = Join.from_expression(expression, scope, name)
+
+        if join:
+            for dependency in step.dependencies:
+                join.add_dependency(dependency)
+            step = join
+
+        projections = []
+        temporary = set()
+        aggregations = []
+        sequence = itertools.count()
+
+        for e in expressions:
+            agg = e.find(exp.AggFunc)
+
+            if agg:
+                aggregations.append(e)
+                for operand in agg.unnest_operands():
+                    alias = f"_a_{next(sequence)}"
+                    temporary.add(alias)
+                    operand.replace(exp.to_identifier(alias))
+                    projections.append(exp.alias_(operand, alias))
+            else:
+                projections.append(e)
+
+        step.projections = projections
+
+        where = expression.args.get("where")
+
+        if where:
+            step.filter = where.this
+
+        if group:
+            aggregate = Aggregate(name)
+
+            aggregate.projections = [
+                exp.to_identifier(e.alias_or_name)
+                for e in projections
+                if e.alias_or_name not in temporary
+            ] + aggregations
+
+            aggregate.add_dependency(step)
+            step = aggregate
+
+            having = expression.args.get("having")
+
+            if having:
+                step.filter = having.this
+
+        return step
+
     def __init__(self, name):
         self.name = name
         self.dependencies = set()
@@ -106,16 +95,53 @@ class Step:
         self.projections = []
         self.filter = None
 
-    def __repr__(self):
-        return f"""{self.__class__.__name__}: {self.name or "root"}"""
-
     def add_dependency(self, dependency):
         self.dependencies.add(dependency)
         dependency.dependents.add(self)
 
+    def __repr__(self):
+        return self.to_s()
+
+    def to_s(self, level=0):
+        indent = "".join(["  "] * level)
+        nested = f"{indent}    "
+
+        context = self._to_s(f"{nested}  ")
+
+        if context:
+            context = [f"{nested}Context:"] + context
+
+        lines = [
+            f"{indent}- {self.__class__.__name__}: {self.name}",
+            *context,
+            f"{nested}Projections:",
+        ]
+
+        for expression in self.projections:
+            lines.append(f"{nested}  - {expression.sql()}")
+
+        if self.filter:
+            lines.append(f"{nested}Filter: {self.filter.sql()}")
+        if self.dependencies:
+            lines.append(f"{nested}Dependencies:")
+            for dependency in self.dependencies:
+                lines.append("  " + dependency.to_s(level + 1))
+
+        return "\n".join(lines)
+
+    def _to_s(self, indent):
+        return []
+
 
 class Scan(Step):
-    pass
+    def __init__(self, name):
+        super().__init__(name)
+        self.source = None
+
+    def _to_s(self, indent):
+        return [
+            f"{indent}Source: {self.source}"
+        ]
 
 
 class Write(Step):
@@ -123,7 +149,46 @@ class Write(Step):
 
 
 class Join(Step):
-    pass
+    @classmethod
+    def from_expression(cls, expression, scope, name=None):
+        joins = expression.args.get("joins")
+
+        if not joins:
+            return None
+
+        step = Join(name)
+
+        for join in joins:
+            source = join.this
+            alias = source.alias
+
+            step.joins[alias] = {
+                "kind": join.args["kind"],
+                "on": join.args["on"],
+            }
+
+            step.add_dependency(
+                Step.from_expression(
+                    source.this,
+                    scope,
+                    alias,
+                )
+            )
+
+        return step
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.joins = {}
+
+    def _to_s(self, indent):
+        lines = []
+        for name, join in self.joins.items():
+            lines.extend([
+                f"{indent}{name}: {join['kind'] or 'INNER'}",
+                f"{indent}On: {join['on'].sql()}",
+            ])
+        return lines
 
 
 class Aggregate(Step):
@@ -132,27 +197,3 @@ class Aggregate(Step):
 
 class Sort(Step):
     pass
-
-
-import sqlglot
-
-expression = sqlglot.parse_one(
-    """
-    SELECT x.a, SUM(a + x.b) total
-    FROM (
-        SELECT *
-        FROM x
-    ) x
-    JOIN (
-        SELECT b
-        FROM x
-    ) y
-    ON x.a = y.b
-    WHERE a = 1
-    GROUP BY x.a
-    """
-)
-
-expression = optimize(expression, {"x": {"a": "int", "b": "int"}})
-
-Plan.from_expression(expression)

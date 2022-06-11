@@ -2,7 +2,6 @@ import itertools
 from collections import defaultdict
 
 import sqlglot.expressions as exp
-from sqlglot.helper import tsort
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -35,7 +34,7 @@ class Step:
                 )
                 step.source = alias
             else:
-                step.source = from_.this.sql()
+                step.source = from_.this
 
         join = Join.from_expression(expression, scope, name)
 
@@ -55,6 +54,8 @@ class Step:
             if agg:
                 aggregations.append(e)
                 for operand in agg.unnest_operands():
+                    if isinstance(operand, exp.Star):
+                        continue
                     alias = f"_a_{next(sequence)}"
                     temporary.add(alias)
                     operand.replace(exp.to_identifier(alias))

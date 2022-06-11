@@ -53,7 +53,7 @@ class Expression:
         field = self.args.get(key)
         if isinstance(field, str):
             return field
-        if isinstance(field, (Identifier, Literal)):
+        if isinstance(field, (Identifier, Literal, Var)):
             return field.this
         return ""
 
@@ -213,7 +213,7 @@ class Expression:
         """
         Returns unnested operands as a list.
         """
-        return [arg.unnest() for arg in self.args.values()]
+        return [arg.unnest() for arg in self.args.values() if arg]
 
     def flatten(self):
         """

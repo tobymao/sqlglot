@@ -1,20 +1,42 @@
 import itertools
 from collections import defaultdict
 
+import sqlglot
 import sqlglot.expressions as exp
 from sqlglot.optimizer.scope import traverse_scope
 
 
-def plan(expression):
-    scope = traverse_scope(expression)[-1]
-    expression = scope.expression
-    return Step.from_expression(expression, scope)
+class Plan:
+    def __init__(self, expression):
+        self.scope = traverse_scope(expression)[-1]
+        self.expression = self.scope.expression
+        self.root = Step.from_expression(self.expression, self.scope)
+        self._dag = {}
 
+    @property
+    def dag(self):
+        if not self._dag:
+            dag = {}
+            nodes = {self.root}
+
+            while nodes:
+                node = nodes.pop()
+                dag[node] = set()
+                for dep in node.dependencies:
+                    dag[node].add(dep)
+                    nodes.add(dep)
+            self._dag = dag
+
+        return self._dag
+
+    @property
+    def leaves(self):
+        return (node for node, deps in self.dag.items() if not deps)
 
 class Step:
     @classmethod
     def from_expression(cls, expression, scope, name=None):
-        step = Scan(name or "root")
+        step = Scan(name)
         scope = scope.selected_sources[name] if name else scope
         from_ = expression.args.get("from")
         group = expression.args.get("group")
@@ -58,7 +80,7 @@ class Step:
                         continue
                     alias = f"_a_{next(sequence)}"
                     temporary.add(alias)
-                    operand.replace(exp.to_identifier(alias))
+                    operand.replace(sqlglot.parse_one(alias))
                     projections.append(exp.alias_(operand, alias))
             else:
                 projections.append(e)
@@ -73,11 +95,16 @@ class Step:
         if group:
             aggregate = Aggregate(name)
 
+            aggregate.aggregations = aggregations
+            aggregate.group = [
+                sqlglot.parse_one(e.alias_or_name)
+                for e in group.args["expressions"]
+            ]
             aggregate.projections = [
-                exp.to_identifier(e.alias_or_name)
+                sqlglot.parse_one(e.alias_or_name)
                 for e in projections
                 if e.alias_or_name not in temporary
-            ] + aggregations
+            ]
 
             aggregate.add_dependency(step)
             step = aggregate
@@ -90,7 +117,7 @@ class Step:
         return step
 
     def __init__(self, name):
-        self.name = name
+        self.name = name or "root"
         self.dependencies = set()
         self.dependents = set()
         self.projections = []
@@ -193,7 +220,23 @@ class Join(Step):
 
 
 class Aggregate(Step):
-    pass
+    def __init__(self, name):
+        super().__init__(name)
+        self.aggregations = []
+        self.group = []
+
+    def _to_s(self, indent):
+        lines = [f"{indent}Aggregations:"]
+
+        for expression in self.aggregations:
+            lines.append(f"{indent}  - {expression.sql()}")
+
+        if self.group:
+            lines.append(f"{indent}Group:")
+        for expression in self.group:
+            lines.append(f"{indent}  - {expression.sql()}")
+
+        return lines
 
 
 class Sort(Step):

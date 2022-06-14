@@ -36,10 +36,14 @@ class Step:
     @classmethod
     def from_expression(cls, expression, scope, name=None):
         step = Scan(name)
-        scope = scope.selected_sources[name] if name else scope
+
+        if name:
+            scope_ = scope.selected_sources[name][-1]
+            if not isinstance(scope_, exp.Table):
+                scope = scope_
+
         from_ = expression.args.get("from")
         group = expression.args.get("group")
-        expressions = expression.args["expressions"]
 
         if from_:
             from_ = from_.args["expressions"][0]
@@ -53,11 +57,19 @@ class Step:
             else:
                 step.source = from_.this
 
+            expressions = expression.args["expressions"]
+        else:
+            step.source = expression
+
+            expressions = [
+                column for column in scope.columns if column.text("table") == name
+            ]
+
         join = Join.from_expression(expression, scope, name)
 
         if join:
-            for dependency in step.dependencies:
-                join.add_dependency(dependency)
+            step.name = step.source.name  # hmmm
+            join.add_dependency(step)
             step = join
 
         projections = []
@@ -157,6 +169,7 @@ class Step:
 
         if self.filter:
             lines.append(f"{nested}Filter: {self.filter.sql()}")
+
         if self.dependencies:
             lines.append(f"{nested}Dependencies:")
             for dependency in self.dependencies:

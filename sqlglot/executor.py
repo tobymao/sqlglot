@@ -52,6 +52,7 @@ def execute(sql, schema, read=None):
     expression = optimize(expression, schema)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = planner.Plan(expression)
+    print(plan.root)
     logger.debug("Logical Plan: %s", plan)
     now = time.time()
     result = execute_plan(plan)
@@ -63,20 +64,33 @@ def execute_plan(plan, env=None):
     env = env or ENV.copy()
 
     running = set()
-    queue = deque((leaf, None) for leaf in plan.leaves)
+    queue = deque(leaf for leaf in plan.leaves)
+    contexts = {}
 
     while queue:
-        node, context = queue.popleft()
+        node = queue.popleft()
+        context = Context(
+            {
+                name: data_table
+                for dep in node.dependencies
+                for name, data_table in contexts[dep].data_tables.items()
+            },
+            env=env,
+        )
         running.add(node)
 
         if isinstance(node, planner.Scan):
-            context = scan(node, context)
+            contexts[node] = scan(node, context)
         elif isinstance(node, planner.Aggregate):
-            context = aggregate(node, context)
+            contexts[node] = aggregate(node, context)
+        elif isinstance(node, planner.Join):
+            contexts[node] = join(node, context)
+        else:
+            raise NotImplementedError
 
         for dep in node.dependents:
-            if dep not in running:
-                queue.append((dep, context))
+            if dep not in running and all(d in contexts for d in dep.dependencies):
+                queue.append(dep)
 
     return context.data_tables["root"]
 
@@ -85,6 +99,54 @@ def generate(expression):
     """Convert a SQL expression into literal Python code and compile it into bytecode."""
     sql = PYTHON_GENERATOR.generate(expression)
     return compile(sql, sql, "eval", optimize=2)
+
+
+def scan(step, _context):
+    table = step.source.name
+    sink = DataTable(expression.alias_or_name for expression in step.projections)
+
+    filter_code = generate(step.filter) if step.filter else None
+    projections = tuple(generate(expression) for expression in step.projections)
+
+    for csv_context in scan_csv(table):
+        if filter_code and not csv_context.eval(filter_code):
+            continue
+
+        sink.add(tuple(csv_context.eval(code) for code in projections))
+        if step.limit and sink.length >= step.limit:
+            break
+    return Context({step.name: sink})
+
+
+def scan_csv(table):
+    # pylint: disable=stop-iteration-return
+    with gzip.open(f"tests/fixtures/optimizer/tpc-h/{table}.csv.gz", "rt") as f:
+        reader = csv.reader(f, delimiter="|")
+        columns = next(reader)
+        row = next(reader)
+
+        types = []
+
+        for v in row:
+            try:
+                types.append(type(ast.literal_eval(v)))
+            except (ValueError, SyntaxError):
+                types.append(str)
+
+        f.seek(0)
+        next(reader)
+
+        context = Context({table: columns})
+
+        for row in reader:
+            context.set_row(table, tuple(t(v) for t, v in zip(types, row)))
+            yield context
+
+
+def join(step, context):
+    print(step)
+    raise
+    return context
 
 
 def aggregate(step, context):
@@ -131,47 +193,6 @@ def aggregate(step, context):
     return Context({step.name: sink})
 
 
-def scan(step, _context):
-    table = step.source.name
-    sink = DataTable(expression.alias for expression in step.projections)
-
-    filter_code = generate(step.filter) if step.filter else None
-    projections = tuple(generate(expression) for expression in step.projections)
-
-    for csv_context in scan_csv(table):
-        if filter_code and not csv_context.eval(filter_code):
-            continue
-        sink.add(tuple(csv_context.eval(code) for code in projections))
-        if step.limit and sink.length >= step.limit:
-            break
-    return Context({step.name: sink})
-
-
-def scan_csv(table):
-    # pylint: disable=stop-iteration-return
-    with gzip.open(f"tests/fixtures/optimizer/tpc-h/{table}.csv.gz", "rt") as f:
-        reader = csv.reader(f, delimiter="|")
-        columns = next(reader)
-        row = next(reader)
-
-        types = []
-
-        for v in row:
-            try:
-                types.append(type(ast.literal_eval(v)))
-            except (ValueError, SyntaxError):
-                types.append(str)
-
-        f.seek(0)
-        next(reader)
-
-        context = Context({table: columns})
-
-        for row in reader:
-            context.set_row(table, tuple(t(v) for t, v in zip(types, row)))
-            yield context
-
-
 class DataTable:
     def __init__(self, columns):
         self.table = {column: [] for column in columns}
@@ -198,6 +219,9 @@ class DataTable:
                 )
             )
         return "\n".join(lines)
+
+    def __getitem__(self, column):
+        return self.columns[column]
 
     def add(self, row):
         for i in range(self.width):

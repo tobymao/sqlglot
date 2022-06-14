@@ -24,7 +24,7 @@ ENV = {
     "int": int,
     "str": str,
     "SUM": sum,
-    "AVG": statistics.fmean,
+    "AVG": statistics.fmean if hasattr(statistics, "fmean") else statistics.mean,
     "COUNT": len,
     "MAX": max,
     "POW": pow,
@@ -32,6 +32,22 @@ ENV = {
 
 
 def execute(sql, schema, read=None):
+    """
+    Run a sql query against data.
+
+    Args:
+        sql (str): a sql statement
+        schema (dict|sqlglot.optimizer.Schema): database schema.
+            This can either be an instance of `sqlglot.optimizer.Schema` or a mapping in one of
+            the following forms:
+                1. {table: {col: type}}
+                2. {db: {table: {col: type}}}
+                3. {catalog: {db: {table: {col: type}}}}
+        read (str): the SQL dialect to apply during parsing
+            (eg. "spark", "hive", "presto", "mysql").
+    Returns:
+        sqlglot.executor.DataTable: optimized expression
+    """
     expression = parse_one(sql, read=read)
     expression = optimize(expression, schema)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
@@ -41,137 +57,6 @@ def execute(sql, schema, read=None):
     result = execute_plan(plan)
     logger.debug("Query finished: %f", time.time() - now)
     return result
-
-
-class DataTable:
-    def __init__(self, columns):
-        self.table = {column: [] for column in columns}
-        self.columns = dict(enumerate(self.table))
-        self.width = len(self.columns)
-        self.length = 0
-        self.reader = ColumnarReader(self.table)
-
-    def __iter__(self):
-        return DataTableIter(self)
-
-    def __repr__(self):
-        widths = {column: len(column) for column in self.table}
-        lines = [" ".join(column for column in self.table)]
-
-        for i, row in enumerate(self):
-            if i > 10:
-                break
-
-            lines.append(
-                " ".join(
-                    str(row[column]).rjust(widths[column])[0 : widths[column]]
-                    for column in self.table
-                )
-            )
-        return "\n".join(lines)
-
-    def add(self, row):
-        for i in range(self.width):
-            self.table[self.columns[i]].append(row[i])
-        self.length += 1
-
-    def pop(self):
-        for column in self.table.values():
-            column.pop()
-        self.length -= 1
-
-
-class DataTableIter:
-    def __init__(self, data_table):
-        self.data_table = data_table
-        self.index = -1
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        self.index += 1
-        if self.index < self.data_table.length:
-            self.data_table.reader.row = self.index
-            return self.data_table.reader
-        raise StopIteration
-
-
-class Context:
-    def __init__(self, tables, env=None):
-        self.data_tables = {
-            name: table
-            for name, table in tables.items()
-            if isinstance(table, DataTable)
-        }
-        self.range_readers = {
-            name: RangeReader(data_table.table)
-            for name, data_table in self.data_tables.items()
-        }
-        self.row_readers = {
-            name: dt_or_columns.reader
-            if name in self.data_tables
-            else RowReader(dt_or_columns)
-            for name, dt_or_columns in tables.items()
-        }
-        self.env = {**(env or {}), "scope": self.row_readers}
-
-    def eval(self, code):
-        # pylint: disable=eval-used
-        return eval(code, ENV, self.env)
-
-    def sort(self, table, key):
-        def _sort(i):
-            self.set_row(table, i)
-            return key(self)
-
-        data_table = self.data_tables[table]
-        index = list(range(data_table.length))
-        index.sort(key=_sort)
-
-        for column, rows in data_table.table.items():
-            data_table.table[column] = [rows[i] for i in index]
-
-    def set_row(self, table, row):
-        self.row_readers[table].row = row
-        self.env["scope"] = self.row_readers
-
-    def set_range(self, table, start, end):
-        self.range_readers[table].range = range(start, end)
-        self.env["scope"] = self.range_readers
-
-    def __getitem__(self, table):
-        return self.env["scope"][table]
-
-
-class RangeReader:
-    def __init__(self, columns):
-        self.columns = columns
-        self.range = range(0)
-
-    def __len__(self):
-        return len(self.range)
-
-    def __getitem__(self, column):
-        return (self.columns[column][i] for i in self.range)
-
-
-class ColumnarReader:
-    def __init__(self, columns):
-        self.columns = columns
-        self.row = None
-
-    def __getitem__(self, column):
-        return self.columns[column][self.row]
-
-
-class RowReader:
-    def __init__(self, columns):
-        self.columns = {column: i for i, column in enumerate(columns)}
-        self.row = None
-
-    def __getitem__(self, column):
-        return self.row[self.columns[column]]
 
 
 def execute_plan(plan, env=None):
@@ -197,6 +82,7 @@ def execute_plan(plan, env=None):
 
 
 def generate(expression):
+    """Convert a SQL expression into literal Python code and compile it into bytecode."""
     sql = PYTHON_GENERATOR.generate(expression)
     return compile(sql, sql, "eval", optimize=2)
 
@@ -284,6 +170,147 @@ def scan_csv(table):
         for row in reader:
             context.set_row(table, tuple(t(v) for t, v in zip(types, row)))
             yield context
+
+
+class DataTable:
+    def __init__(self, columns):
+        self.table = {column: [] for column in columns}
+        self.columns = dict(enumerate(self.table))
+        self.width = len(self.columns)
+        self.length = 0
+        self.reader = ColumnarReader(self.table)
+
+    def __iter__(self):
+        return DataTableIter(self)
+
+    def __repr__(self):
+        widths = {column: len(column) for column in self.table}
+        lines = [" ".join(column for column in self.table)]
+
+        for i, row in enumerate(self):
+            if i > 10:
+                break
+
+            lines.append(
+                " ".join(
+                    str(row[column]).rjust(widths[column])[0 : widths[column]]
+                    for column in self.table
+                )
+            )
+        return "\n".join(lines)
+
+    def add(self, row):
+        for i in range(self.width):
+            self.table[self.columns[i]].append(row[i])
+        self.length += 1
+
+    def pop(self):
+        for column in self.table.values():
+            column.pop()
+        self.length -= 1
+
+
+class DataTableIter:
+    def __init__(self, data_table):
+        self.data_table = data_table
+        self.index = -1
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.index += 1
+        if self.index < self.data_table.length:
+            self.data_table.reader.row = self.index
+            return self.data_table.reader
+        raise StopIteration
+
+
+class Context:
+    """
+    Execution context for sql expressions.
+
+    Context is used to hold relevant data tables which can then be queried on with eval.
+
+    References to columns can either be scalar or vectors. When set_row is used, column references
+    evaluate to scalars while set_range evaluates to vectors. This allows convenient and efficient
+    evaluation of aggregation functions.
+    """
+
+    def __init__(self, tables, env=None):
+        self.data_tables = {
+            name: table
+            for name, table in tables.items()
+            if isinstance(table, DataTable)
+        }
+        self.range_readers = {
+            name: RangeReader(data_table.table)
+            for name, data_table in self.data_tables.items()
+        }
+        self.row_readers = {
+            name: dt_or_columns.reader
+            if name in self.data_tables
+            else RowReader(dt_or_columns)
+            for name, dt_or_columns in tables.items()
+        }
+        self.env = {**(env or {}), "scope": self.row_readers}
+
+    def eval(self, code):
+        # pylint: disable=eval-used
+        return eval(code, ENV, self.env)
+
+    def sort(self, table, key):
+        def _sort(i):
+            self.set_row(table, i)
+            return key(self)
+
+        data_table = self.data_tables[table]
+        index = list(range(data_table.length))
+        index.sort(key=_sort)
+
+        for column, rows in data_table.table.items():
+            data_table.table[column] = [rows[i] for i in index]
+
+    def set_row(self, table, row):
+        self.row_readers[table].row = row
+        self.env["scope"] = self.row_readers
+
+    def set_range(self, table, start, end):
+        self.range_readers[table].range = range(start, end)
+        self.env["scope"] = self.range_readers
+
+    def __getitem__(self, table):
+        return self.env["scope"][table]
+
+
+class RangeReader:
+    def __init__(self, columns):
+        self.columns = columns
+        self.range = range(0)
+
+    def __len__(self):
+        return len(self.range)
+
+    def __getitem__(self, column):
+        return (self.columns[column][i] for i in self.range)
+
+
+class ColumnarReader:
+    def __init__(self, columns):
+        self.columns = columns
+        self.row = None
+
+    def __getitem__(self, column):
+        return self.columns[column][self.row]
+
+
+class RowReader:
+    def __init__(self, columns):
+        self.columns = {column: i for i, column in enumerate(columns)}
+        self.row = None
+
+    def __getitem__(self, column):
+        return self.row[self.columns[column]]
 
 
 class Python(Dialect):

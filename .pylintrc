@@ -18,6 +18,7 @@ disable=
     too-many-lines,
     too-many-nested-blocks,
     too-many-public-methods,
+    too-many-statements,
     too-many-instance-attributes,
     too-many-return-statements,
     unsubscriptable-object,

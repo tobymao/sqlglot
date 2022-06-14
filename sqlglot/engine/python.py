@@ -3,17 +3,31 @@ import csv
 import datetime
 import gzip
 import statistics
-from collections import deque, defaultdict
+from collections import deque
+
 import sqlglot.expressions as exp
-import sqlglot.planner as planner
-from sqlglot.helper import tsort
+from sqlglot import planner
 from sqlglot.dialects import Dialect
+
+
+ENV = {
+    "__builtins__": {},
+    "datetime": datetime,
+    "float": float,
+    "int": int,
+    "str": str,
+    "SUM": sum,
+    "AVG": statistics.fmean,
+    "COUNT": len,
+    "MAX": max,
+    "POW": pow,
+}
 
 
 class DataTable:
     def __init__(self, columns):
         self.table = {column: [] for column in columns}
-        self.columns = {i: column for i, column in enumerate(self.table)}
+        self.columns = dict(enumerate(self.table))
         self.width = len(self.columns)
         self.length = 0
         self.reader = ColumnarReader(self.table)
@@ -22,18 +36,19 @@ class DataTable:
         return DataTableIter(self)
 
     def __repr__(self):
-        widths =  {column: len(column) for column in self.table}
-        lines = [" | ".join(column for column in self.table)]
+        widths = {column: len(column) for column in self.table}
+        lines = [" ".join(column for column in self.table)]
 
-        for i in range(self.length):
-            self.reader.row = i
+        for i, row in enumerate(self):
             if i > 10:
                 break
 
-            lines.append(" | ".join(
-                str(self.reader[column]).rjust(widths[column])[0:widths[column]]
-                for column in self.table
-            ))
+            lines.append(
+                " ".join(
+                    str(row[column]).rjust(widths[column])[0 : widths[column]]
+                    for column in self.table
+                )
+            )
         return "\n".join(lines)
 
     def add(self, row):
@@ -50,11 +65,17 @@ class DataTable:
 class DataTableIter:
     def __init__(self, data_table):
         self.data_table = data_table
-        self.index = 0
+        self.index = -1
 
     def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.index += 1
         if self.index < self.data_table.length:
-            return
+            self.data_table.reader.row = self.index
+            return self.data_table.reader
+        raise StopIteration
 
 
 class Context:
@@ -77,6 +98,7 @@ class Context:
         self.env = {**(env or {}), "scope": self.row_readers}
 
     def eval(self, code):
+        # pylint: disable=eval-used
         return eval(code, ENV, self.env)
 
     def sort(self, table, key):
@@ -91,9 +113,6 @@ class Context:
         for column, rows in data_table.table.items():
             data_table.table[column] = [rows[i] for i in index]
 
-    def __getitem__(self, table):
-        return self.env["scope"][table]
-
     def set_row(self, table, row):
         self.row_readers[table].row = row
         self.env["scope"] = self.row_readers
@@ -102,11 +121,14 @@ class Context:
         self.range_readers[table].range = range(start, end)
         self.env["scope"] = self.range_readers
 
+    def __getitem__(self, table):
+        return self.env["scope"][table]
+
 
 class RangeReader:
     def __init__(self, columns):
         self.columns = columns
-        self.range = None
+        self.range = range(0)
 
     def __len__(self):
         return len(self.range)
@@ -133,20 +155,6 @@ class RowReader:
         return self.row[self.columns[column]]
 
 
-ENV = {
-    "__builtins__": {},
-    "datetime": datetime,
-    "float": float,
-    "int": int,
-    "str": str,
-    "SUM": sum,
-    "AVG": statistics.fmean,
-    "COUNT": len,
-    "MAX": max,
-    "POW": pow,
-}
-
-
 def execute(plan, env=None):
     env = env or ENV.copy()
 
@@ -167,6 +175,11 @@ def execute(plan, env=None):
                 queue.append((dep, context))
 
     return context.data_tables["root"]
+
+
+def generate(expression):
+    sql = PYTHON_GENERATOR.generate(expression)
+    return compile(sql, sql, "eval", optimize=2)
 
 
 def aggregate(step, context):
@@ -190,38 +203,47 @@ def aggregate(step, context):
 
     group = None
     start = 0
-    stop = 1
+    end = 1
+    length = context.data_tables[table].length
 
-    for i in range(context.data_tables[table].length):
+    for i in range(length):
         context.set_row(table, i)
         key = tuple(context.eval(code) for code in projections)
         group = key if group is None else group
-        if key != group:
-            group = key
-            context.set_range(table, start, stop)
-            aggs = tuple(context.eval(agg) for agg in aggregations)
-            sink.add(group + aggs)
-            start = stop
-        stop += 1
+        end += 1
+
+        if i == length - 1:
+            context.set_range(table, start, end - 1)
+        elif key != group:
+            context.set_range(table, start, end - 2)
+        else:
+            continue
+        aggs = tuple(context.eval(agg) for agg in aggregations)
+        sink.add(group + aggs)
+        group = key
+        start = end - 2
 
     return Context({step.name: sink})
 
 
-def scan(step, context):
+def scan(step, _context):
     table = step.source.name
     sink = DataTable(expression.alias for expression in step.projections)
 
     filter_code = generate(step.filter) if step.filter else None
     projections = tuple(generate(expression) for expression in step.projections)
 
-    for i, context in enumerate(scan_csv(table)):
-        if filter_code and not context.eval(filter_code):
+    for csv_context in scan_csv(table):
+        if filter_code and not csv_context.eval(filter_code):
             continue
-        sink.add(tuple(context.eval(code) for code in projections))
+        sink.add(tuple(csv_context.eval(code) for code in projections))
+        if step.limit and sink.length >= step.limit:
+            break
     return Context({step.name: sink})
 
 
 def scan_csv(table):
+    # pylint: disable=stop-iteration-return
     with gzip.open(f"tests/fixtures/optimizer/tpc-h/{table}.csv.gz", "rt") as f:
         reader = csv.reader(f, delimiter="|")
         columns = next(reader)
@@ -229,7 +251,7 @@ def scan_csv(table):
 
         types = []
 
-        for k, v in zip(columns, row):
+        for v in row:
             try:
                 types.append(type(ast.literal_eval(v)))
             except (ValueError, SyntaxError):
@@ -246,13 +268,14 @@ def scan_csv(table):
 
 
 class Python(Dialect):
+    # pylint: disable=no-member
     def _cast_py(self, expression):
         to = expression.args["to"].this
         this = self.sql(expression, "this")
 
         if to == exp.DataType.Type.DATE:
             return f"datetime.date.fromisoformat({this})"
-        raise
+        raise NotImplementedError
 
     def _column_py(self, expression):
         table = self.sql(expression, "table")
@@ -264,7 +287,7 @@ class Python(Dialect):
         unit = expression.text("unit").upper()
         if unit == "DAY":
             return f"datetime.timedelta(days=float({this}))"
-        raise
+        raise NotImplementedError
 
     transforms = {
         exp.Alias: lambda self, e: self.sql(e.this),
@@ -275,6 +298,4 @@ class Python(Dialect):
     }
 
 
-def generate(expression):
-    sql = Python().generator(identify=True).generate(expression)
-    return compile(sql, sql, "eval", optimize=2)
+PYTHON_GENERATOR = Python().generator(identify=True)

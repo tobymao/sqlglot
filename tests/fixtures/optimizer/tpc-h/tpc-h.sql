@@ -15,7 +15,7 @@ select
 from
         lineitem
 where
-        l_shipdate <= date '1998-12-01' - interval '90' day
+        CAST(l_shipdate AS DATE) <= date '1998-12-01' - interval '90' day
 group by
         l_returnflag,
         l_linestatus
@@ -35,7 +35,7 @@ SELECT
   COUNT(*) AS "count_order"
 FROM "lineitem" AS "lineitem"
 WHERE
-  "lineitem"."l_shipdate" <= CAST('1998-12-01' AS DATE) - INTERVAL '90' day
+  CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1998-12-01' AS DATE) - INTERVAL '90' day
 GROUP BY
   "lineitem"."l_returnflag",
   "lineitem"."l_linestatus"

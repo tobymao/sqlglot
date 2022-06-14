@@ -279,7 +279,6 @@ class TestExpressions(unittest.TestCase):
         )
 
     def test_functions(self):
-        # pylint: disable=too-many-statements
         self.assertIsInstance(parse_one("ABS(a)"), exp.Abs)
         self.assertIsInstance(parse_one("APPROX_DISTINCT(a)"), exp.ApproxDistinct)
         self.assertIsInstance(parse_one("ARRAY(a)"), exp.Array)

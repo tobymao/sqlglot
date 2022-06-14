@@ -1,4 +1,3 @@
-# pylint: disable=too-many-statements
 import unittest
 
 from sqlglot import ErrorLevel, UnsupportedError, transpile

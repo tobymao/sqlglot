@@ -1,7 +1,5 @@
 import itertools
-from collections import defaultdict
 
-import sqlglot
 import sqlglot.expressions as exp
 from sqlglot.optimizer.scope import traverse_scope
 
@@ -111,6 +109,17 @@ class Step:
             if having:
                 step.filter = having.this
 
+        # order = expression.args.get("order")
+
+        # if order:
+        #    sort = Sort(name)
+        #    step = sort
+
+        limit = expression.args.get("limit")
+
+        if limit:
+            step.limit = int(limit.name)
+
         return step
 
     def __init__(self, name):
@@ -118,6 +127,7 @@ class Step:
         self.dependencies = set()
         self.dependents = set()
         self.projections = []
+        self.limit = None
         self.filter = None
 
     def add_dependency(self, dependency):
@@ -154,7 +164,7 @@ class Step:
 
         return "\n".join(lines)
 
-    def _to_s(self, indent):
+    def _to_s(self, _indent):
         return []
 
 
@@ -237,4 +247,6 @@ class Aggregate(Step):
 
 
 class Sort(Step):
-    pass
+    def __init__(self, name):
+        super().__init__(name)
+        self.key = None

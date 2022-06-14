@@ -46,7 +46,7 @@ class TestExecutor(unittest.TestCase):
             self.rename_anonymous(b, a)
             assert_frame_equal(a, b)
 
-    def test_engine_tpch(self):
+    def test_execute_tpch(self):
         for sql, _ in self.sqls[0:1]:
             a = self.cached_execute(sql)
             b = pd.DataFrame(execute(sql, TPCH_SCHEMA).table)

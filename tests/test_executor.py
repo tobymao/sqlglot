@@ -4,11 +4,11 @@ import duckdb
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from sqlglot.engine import execute
+from sqlglot.executor import execute
 from tests.helpers import load_sql_fixture_pairs, FIXTURES_DIR, TPCH_SCHEMA
 
 
-class TestEngine(unittest.TestCase):
+class TestExecutor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.conn = duckdb.connect()

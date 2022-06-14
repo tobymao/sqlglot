@@ -2285,6 +2285,18 @@ def subquery(expression, alias=None, dialect=None, **opts):
     return Select().from_(expression, dialect=dialect, **opts)
 
 
+def column(col, table=None):
+    """
+    Build a Column.
+    Args:
+        col (str or Expression): column name
+        table (str or Expression): table name
+    Returns:
+        Column: column instance
+    """
+    return Column(this=to_identifier(col), table=to_identifier(table))
+
+
 def replace_children(expression, fun):
     """
     Replace children of an expression with the result of a lambda fun(child) -> exp.

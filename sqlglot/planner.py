@@ -33,6 +33,7 @@ class Plan:
     def leaves(self):
         return (node for node, deps in self.dag.items() if not deps)
 
+
 class Step:
     @classmethod
     def from_expression(cls, expression, scope, name=None):
@@ -48,11 +49,7 @@ class Step:
 
             if isinstance(from_, exp.Subquery):
                 step.add_dependency(
-                    Step.from_expression(
-                        from_.this,
-                        scope,
-                        alias
-                    ),
+                    Step.from_expression(from_.this, scope, alias),
                 )
                 step.source = alias
             else:
@@ -80,7 +77,7 @@ class Step:
                         continue
                     alias = f"_a_{next(sequence)}"
                     temporary.add(alias)
-                    operand.replace(sqlglot.parse_one(alias))
+                    operand.replace(exp.column(alias, step.name))
                     projections.append(exp.alias_(operand, alias))
             else:
                 projections.append(e)
@@ -97,11 +94,11 @@ class Step:
 
             aggregate.aggregations = aggregations
             aggregate.group = [
-                sqlglot.parse_one(e.alias_or_name)
+                exp.column(e.alias_or_name, step.name)
                 for e in group.args["expressions"]
             ]
             aggregate.projections = [
-                sqlglot.parse_one(e.alias_or_name)
+                exp.column(e.alias_or_name, step.name)
                 for e in projections
                 if e.alias_or_name not in temporary
             ]
@@ -167,9 +164,7 @@ class Scan(Step):
         self.source = None
 
     def _to_s(self, indent):
-        return [
-            f"{indent}Source: {self.source}"
-        ]
+        return [f"{indent}Source: {self.source}"]
 
 
 class Write(Step):
@@ -212,10 +207,12 @@ class Join(Step):
     def _to_s(self, indent):
         lines = []
         for name, join in self.joins.items():
-            lines.extend([
-                f"{indent}{name}: {join['kind'] or 'INNER'}",
-                f"{indent}On: {join['on'].sql()}",
-            ])
+            lines.extend(
+                [
+                    f"{indent}{name}: {join['kind'] or 'INNER'}",
+                    f"{indent}On: {join['on'].sql()}",
+                ]
+            )
         return lines
 
 

@@ -1,7 +1,8 @@
 import ast
 import csv
-import gzip
 import datetime
+import gzip
+import statistics
 from collections import deque, defaultdict
 import sqlglot.expressions as exp
 import sqlglot.planner as planner
@@ -15,9 +16,25 @@ class DataTable:
         self.columns = {i: column for i, column in enumerate(self.table)}
         self.width = len(self.columns)
         self.length = 0
+        self.reader = ColumnarReader(self.table)
+
+    def __iter__(self):
+        return DataTableIter(self)
 
     def __repr__(self):
-        return str(self.table)
+        widths =  {column: len(column) for column in self.table}
+        lines = [" | ".join(column for column in self.table)]
+
+        for i in range(self.length):
+            self.reader.row = i
+            if i > 10:
+                break
+
+            lines.append(" | ".join(
+                str(self.reader[column]).rjust(widths[column])[0:widths[column]]
+                for column in self.table
+            ))
+        return "\n".join(lines)
 
     def add(self, row):
         for i in range(self.width):
@@ -29,44 +46,82 @@ class DataTable:
             column.pop()
         self.length -= 1
 
-    def sort(self, key=None):
-        reader = RowReader(self.columns)
-        index = list(range(self.length))
-        index.sort(key=key)
-
-        for column, rows in self.table.items():
-            self.table[column] = [rows[i] for i in index]
-
-    def __iter__(self):
-        return DataTableIter(self)
-
-    def __getitem__(self, column):
-        return self.table[column]
-
 
 class DataTableIter:
     def __init__(self, data_table):
         self.data_table = data_table
-        self.index = -1
-
-    def __repr__(self):
-        return {
-            column: rows[self.index]
-            for column, rows in self.data_table.table.items()
-        }.__repr__()
+        self.index = 0
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        table = self.data_table.table
-        self.index += 1
         if self.index < self.data_table.length:
-            return self
-        raise StopIteration
+            return
+
+
+class Context:
+    def __init__(self, tables, env=None):
+        self.data_tables = {
+            name: table
+            for name, table in tables.items()
+            if isinstance(table, DataTable)
+        }
+        self.range_readers = {
+            name: RangeReader(data_table.table)
+            for name, data_table in self.data_tables.items()
+        }
+        self.row_readers = {
+            name: dt_or_columns.reader
+            if name in self.data_tables
+            else RowReader(dt_or_columns)
+            for name, dt_or_columns in tables.items()
+        }
+        self.env = {**(env or {}), "scope": self.row_readers}
+
+    def eval(self, code):
+        return eval(code, ENV, self.env)
+
+    def sort(self, table, key):
+        def _sort(i):
+            self.set_row(table, i)
+            return key(self)
+
+        data_table = self.data_tables[table]
+        index = list(range(data_table.length))
+        index.sort(key=_sort)
+
+        for column, rows in data_table.table.items():
+            data_table.table[column] = [rows[i] for i in index]
+
+    def __getitem__(self, table):
+        return self.env["scope"][table]
+
+    def set_row(self, table, row):
+        self.row_readers[table].row = row
+        self.env["scope"] = self.row_readers
+
+    def set_range(self, table, start, end):
+        self.range_readers[table].range = range(start, end)
+        self.env["scope"] = self.range_readers
+
+
+class RangeReader:
+    def __init__(self, columns):
+        self.columns = columns
+        self.range = None
+
+    def __len__(self):
+        return len(self.range)
 
     def __getitem__(self, column):
-        return self.data_table[column][self.index]
+        return (self.columns[column][i] for i in self.range)
+
+
+class ColumnarReader:
+    def __init__(self, columns):
+        self.columns = columns
+        self.row = None
+
+    def __getitem__(self, column):
+        return self.columns[column][self.row]
 
 
 class RowReader:
@@ -80,83 +135,93 @@ class RowReader:
 
 ENV = {
     "__builtins__": {},
-    "globals": None,
-    "locals": None,
     "datetime": datetime,
     "float": float,
     "int": int,
     "str": str,
+    "SUM": sum,
+    "AVG": statistics.fmean,
+    "COUNT": len,
+    "MAX": max,
+    "POW": pow,
 }
+
 
 def execute(plan, env=None):
     env = env or ENV.copy()
-    env["scope"] = {}
-    env["table"] = {}
 
     running = set()
-    queue = deque(plan.leaves)
+    queue = deque((leaf, None) for leaf in plan.leaves)
 
     while queue:
-        node = queue.popleft()
+        node, context = queue.popleft()
         running.add(node)
 
         if isinstance(node, planner.Scan):
-            result = scan(node, env)
-            env["scope"][node.name] = result
+            context = scan(node, context)
         elif isinstance(node, planner.Aggregate):
-            result = aggregate(node, env)
-            env["scope"][node.name] = result
+            context = aggregate(node, context)
 
         for dep in node.dependents:
             if dep not in running:
-                queue.append(dep)
+                queue.append((dep, context))
 
-    return env["scope"][plan.root.name]
+    return context.data_tables["root"]
 
 
-def aggregate(step, env):
-    #sink = DataTable(expression.alias for expression in step.projections)
+def aggregate(step, context):
     group = []
     projections = []
     aggregations = []
 
+    columns = []
+
     for expression in step.group:
+        columns.append(expression.alias_or_name)
         projections.append(generate(expression))
     for expression in step.aggregations:
+        columns.append(expression.alias_or_name)
         aggregations.append(generate(expression))
 
-    table = env["scope"][step.name]
-    table_iter = iter(table)
-    env["table"] = table_iter
+    sink = DataTable(columns)
+
+    table = step.name
+    context.sort(table, lambda c: tuple(c.eval(code) for code in projections))
+
+    group = None
+    start = 0
+    stop = 1
+
+    for i in range(context.data_tables[table].length):
+        context.set_row(table, i)
+        key = tuple(context.eval(code) for code in projections)
+        group = key if group is None else group
+        if key != group:
+            group = key
+            context.set_range(table, start, stop)
+            aggs = tuple(context.eval(agg) for agg in aggregations)
+            sink.add(group + aggs)
+            start = stop
+        stop += 1
+
+    return Context({step.name: sink})
 
 
-    def sortit(i):
-        table_iter.index = i
-        return tuple(eval(code, env) for code in projections)
-
-    table.sort(key=sortit)
-
-    env["table"] = table
-    for i, row in enumerate(table):
-        x = tuple(eval(code, env) for code in projections)
-        print(x)
-
-
-def scan(step, env):
+def scan(step, context):
     table = step.source.name
     sink = DataTable(expression.alias for expression in step.projections)
 
     filter_code = generate(step.filter) if step.filter else None
     projections = tuple(generate(expression) for expression in step.projections)
 
-    for i, row in enumerate(scan_csv(table, env)):
-        if filter_code and not eval(filter_code, env):
+    for i, context in enumerate(scan_csv(table)):
+        if filter_code and not context.eval(filter_code):
             continue
-        sink.add(tuple(eval(code, env) for code in projections))
-    return sink
+        sink.add(tuple(context.eval(code) for code in projections))
+    return Context({step.name: sink})
 
 
-def scan_csv(table, env):
+def scan_csv(table):
     with gzip.open(f"tests/fixtures/optimizer/tpc-h/{table}.csv.gz", "rt") as f:
         reader = csv.reader(f, delimiter="|")
         columns = next(reader)
@@ -173,18 +238,17 @@ def scan_csv(table, env):
         f.seek(0)
         next(reader)
 
-        row_reader = RowReader(columns)
-        env["scope"][table] = row_reader
+        context = Context({table: columns})
 
         for row in reader:
-            row_reader.row = tuple(t(v) for t, v in zip(types, row))
-            yield row_reader
+            context.set_row(table, tuple(t(v) for t, v in zip(types, row)))
+            yield context
 
 
 class Python(Dialect):
     def _cast_py(self, expression):
         to = expression.args["to"].this
-        this = self.sql(expression, 'this')
+        this = self.sql(expression, "this")
 
         if to == exp.DataType.Type.DATE:
             return f"datetime.date.fromisoformat({this})"
@@ -193,12 +257,10 @@ class Python(Dialect):
     def _column_py(self, expression):
         table = self.sql(expression, "table")
         this = self.sql(expression, "this")
-        if table:
-            return f"scope[{table}][{this}]"
-        return f"table[{this}]"
+        return f"scope[{table}][{this}]"
 
     def _interval_py(self, expression):
-        this = self.sql(expression, 'this')
+        this = self.sql(expression, "this")
         unit = expression.text("unit").upper()
         if unit == "DAY":
             return f"datetime.timedelta(days=float({this}))"
@@ -209,76 +271,10 @@ class Python(Dialect):
         exp.Cast: _cast_py,
         exp.Column: _column_py,
         exp.Interval: _interval_py,
-        exp.Star: lambda *_: "1",
+        exp.Star: lambda *_: "scope['root']",
     }
+
 
 def generate(expression):
     sql = Python().generator(identify=True).generate(expression)
-    print(sql)
     return compile(sql, sql, "eval", optimize=2)
-
-
-
-import time
-import sqlglot
-from sqlglot.optimizer import optimize
-
-expression = sqlglot.parse_one(
-    """
-select
-        l_returnflag,
-        l_linestatus,
-        sum(l_quantity) as sum_qty,
-        sum(l_extendedprice) as sum_base_price,
-        sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
-        sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
-        avg(l_quantity) as avg_qty,
-        avg(l_extendedprice) as avg_price,
-        avg(l_discount) as avg_disc,
-        count(*) as count_order
-from
-        lineitem
-where
-        date l_shipdate <= date '1998-12-01' - interval '90' day
-group by
-        l_returnflag,
-        l_linestatus
-order by
-        l_returnflag,
-        l_linestatus;
-    """
-)
-
-#import sys
-#
-#sql = sys.argv[1]
-#expression = sqlglot.parse_one(sql)
-tpch_schema = {
-    "lineitem": {
-        "l_orderkey": "uint64",
-        "l_partkey": "uint64",
-        "l_suppkey": "uint64",
-        "l_linenumber": "uint64",
-        "l_quantity": "float64",
-        "l_extendedprice": "float64",
-        "l_discount": "float64",
-        "l_tax": "float64",
-        "l_returnflag": "string",
-        "l_linestatus": "string",
-        "l_shipdate": "date32",
-        "l_commitdate": "date32",
-        "l_receiptdate": "date32",
-        "l_shipinstruct": "string",
-        "l_shipmode": "string",
-        "l_comment": "string",
-    },
-}
-
-now = time.time()
-expression = optimize(expression, tpch_schema)
-plan = planner.Plan(expression)
-optimize_time = time.time() - now
-now = time.time()
-#print(expression.sql(pretty=True))
-print(execute(plan))
-print(optimize_time, time.time() - now)

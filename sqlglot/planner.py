@@ -1,6 +1,7 @@
 import itertools
 
 import sqlglot.expressions as exp
+from sqlglot.errors import UnsupportedError
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -34,41 +35,23 @@ class Plan:
 
 class Step:
     @classmethod
-    def from_expression(cls, expression, scope, name=None):
-        step = Scan(name)
-
-        if name:
-            scope_ = scope.selected_sources[name][-1]
-            if not isinstance(scope_, exp.Table):
-                scope = scope_
-
+    def from_expression(cls, expression, scope):
         from_ = expression.args.get("from")
-        group = expression.args.get("group")
 
         if from_:
-            from_ = from_.args["expressions"][0]
-            alias = from_.alias
+            from_ = from_.args["expressions"]
+            if len(from_) > 1:
+                raise UnsupportedError("Multi-from statements are unsupported. Run it through the optimizer")
 
-            if isinstance(from_, exp.Subquery):
-                step.add_dependency(
-                    Step.from_expression(from_.this, scope, alias),
-                )
-                step.source = alias
-            else:
-                step.source = from_.this
-
-            expressions = expression.args["expressions"]
+            step = Scan.from_expression(from_[0], scope)
         else:
-            step.source = expression
+            raise UnsupportedError("Static selects are unsupported.")
 
-            expressions = [
-                column for column in scope.columns if column.text("table") == name
-            ]
+        joins = expression.args.get("joins")
 
-        join = Join.from_expression(expression, scope, name)
-
-        if join:
-            step.name = step.source.name  # hmmm
+        if joins:
+            join = Join.from_expression(joins, scope)
+            join.name = step.name
             join.add_dependency(step)
             step = join
 
@@ -77,7 +60,7 @@ class Step:
         aggregations = []
         sequence = itertools.count()
 
-        for e in expressions:
+        for e in expression.args["expressions"]:
             agg = e.find(exp.AggFunc)
 
             if agg:
@@ -99,9 +82,11 @@ class Step:
         if where:
             step.filter = where.this
 
-        if group:
-            aggregate = Aggregate(name)
+        group = expression.args.get("group")
 
+        if group:
+            aggregate = Aggregate()
+            aggregate.name = step.name
             aggregate.aggregations = aggregations
             aggregate.group = [
                 exp.column(e.alias_or_name, step.name)
@@ -134,8 +119,8 @@ class Step:
 
         return step
 
-    def __init__(self, name):
-        self.name = name or "root"
+    def __init__(self):
+        self.name = None
         self.dependencies = set()
         self.dependents = set()
         self.projections = []
@@ -182,12 +167,36 @@ class Step:
 
 
 class Scan(Step):
-    def __init__(self, name):
-        super().__init__(name)
+    @classmethod
+    def from_expression(cls, expression, scope):
+        alias = expression.alias
+        source = expression.this
+
+        if not alias:
+            raise UnsupportedError("Tables/Subqueries must be aliased. Run it through the optimizer")
+
+        step = Scan()
+        step.name = alias
+        step.source = source
+
+        if isinstance(expression, exp.Subquery):
+            step.source = expression.args.get("alias")
+            step.add_dependency(Step.from_expression(source, scope.selected_sources[alias][-1]))
+
+        step.projections = [
+            column
+            for column in scope.columns
+            if alias == column.text("table")
+        ]
+
+        return step
+
+    def __init__(self):
+        super().__init__()
         self.source = None
 
     def _to_s(self, indent):
-        return [f"{indent}Source: {self.source}"]
+        return [f"{indent}Source: {self.source.sql()}"]
 
 
 class Write(Step):
@@ -196,35 +205,21 @@ class Write(Step):
 
 class Join(Step):
     @classmethod
-    def from_expression(cls, expression, scope, name=None):
-        joins = expression.args.get("joins")
-
-        if not joins:
-            return None
-
-        step = Join(name)
+    def from_expression(cls, joins, scope):
+        step = Join()
 
         for join in joins:
-            source = join.this
-            alias = source.alias
-
-            step.joins[alias] = {
+            step.joins[join.this.alias] = {
                 "kind": join.args["kind"],
                 "on": join.args["on"],
             }
 
-            step.add_dependency(
-                Step.from_expression(
-                    source.this,
-                    scope,
-                    alias,
-                )
-            )
+            step.add_dependency(Scan.from_expression(join.this, scope))
 
         return step
 
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self):
+        super().__init__()
         self.joins = {}
 
     def _to_s(self, indent):
@@ -240,8 +235,8 @@ class Join(Step):
 
 
 class Aggregate(Step):
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self):
+        super().__init__()
         self.aggregations = []
         self.group = []
 
@@ -260,6 +255,6 @@ class Aggregate(Step):
 
 
 class Sort(Step):
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self):
+        super().__init__()
         self.key = None

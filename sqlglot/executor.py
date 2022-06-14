@@ -52,7 +52,6 @@ def execute(sql, schema, read=None):
     expression = optimize(expression, schema)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = planner.Plan(expression)
-    print(plan.root)
     logger.debug("Logical Plan: %s", plan)
     now = time.time()
     result = execute_plan(plan)
@@ -64,7 +63,7 @@ def execute_plan(plan, env=None):
     env = env or ENV.copy()
 
     running = set()
-    queue = deque(leaf for leaf in plan.leaves)
+    queue = deque(plan.leaves)
     contexts = {}
 
     while queue:
@@ -92,7 +91,8 @@ def execute_plan(plan, env=None):
             if dep not in running and all(d in contexts for d in dep.dependencies):
                 queue.append(dep)
 
-    return context.data_tables["root"]
+    root = plan.root
+    return contexts[root].data_tables[root.name]
 
 
 def generate(expression):
@@ -144,7 +144,15 @@ def scan_csv(table):
 
 
 def join(step, context):
-    print(step)
+    source = step.name
+
+    print(context.data_tables["region"])
+    for name, join in step.joins.items():
+        print(name, join["on"].sql())
+        raise
+        context.sort(name, lambda c: tuple(c.eval(code) for code in projections))
+
+    print(context.data_tables["partsupp"])
     raise
     return context
 

@@ -28,7 +28,6 @@ def qualify_tables(expression, db=None, catalog=None):
                     source.set("catalog", exp.to_identifier(catalog))
 
                 if not isinstance(source.parent, exp.Alias):
-                    node = exp.alias_(source.copy(), source.this)
-                    source.replace(node)
+                    source.replace(exp.alias_(source.copy(), source.this, table=True))
 
     return expression

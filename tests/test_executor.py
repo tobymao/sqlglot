@@ -47,7 +47,7 @@ class TestExecutor(unittest.TestCase):
             assert_frame_equal(a, b)
 
     def test_execute_tpch(self):
-        for sql, _ in self.sqls[0:1]:
+        for sql, _ in self.sqls[1:2]:
             a = self.cached_execute(sql)
             b = pd.DataFrame(execute(sql, TPCH_SCHEMA).table)
             assert_frame_equal(a, b, check_dtype=False)

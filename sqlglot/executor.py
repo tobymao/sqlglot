@@ -2,12 +2,19 @@ import ast
 import csv
 import datetime
 import gzip
+import logging
 import statistics
+import time
 from collections import deque
 
 import sqlglot.expressions as exp
+from sqlglot import parse_one
+from sqlglot.optimizer import optimize
 from sqlglot import planner
 from sqlglot.dialects import Dialect
+
+
+logger = logging.getLogger("sqlglot")
 
 
 ENV = {
@@ -22,6 +29,18 @@ ENV = {
     "MAX": max,
     "POW": pow,
 }
+
+
+def execute(sql, schema, read=None):
+    expression = parse_one(sql, read=read)
+    expression = optimize(expression, schema)
+    logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
+    plan = planner.Plan(expression)
+    logger.debug("Logical Plan: %s", plan)
+    now = time.time()
+    result = execute_plan(plan)
+    logger.debug("Query finished: %f", time.time() - now)
+    return result
 
 
 class DataTable:
@@ -155,7 +174,7 @@ class RowReader:
         return self.row[self.columns[column]]
 
 
-def execute(plan, env=None):
+def execute_plan(plan, env=None):
     env = env or ENV.copy()
 
     running = set()

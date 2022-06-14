@@ -1,4 +1,3 @@
-# pylint: disable=too-many-statements
 import os
 import unittest
 from unittest import mock

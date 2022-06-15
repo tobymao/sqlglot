@@ -2,14 +2,12 @@ import itertools
 
 import sqlglot.expressions as exp
 from sqlglot.errors import UnsupportedError
-from sqlglot.optimizer.scope import traverse_scope
 
 
 class Plan:
     def __init__(self, expression):
-        self.scope = traverse_scope(expression)[-1]
-        self.expression = self.scope.expression
-        self.root = Step.from_expression(self.expression, self.scope)
+        self.expression = expression
+        self.root = Step.from_expression(self.expression)
         self._dag = {}
 
     @property
@@ -35,22 +33,24 @@ class Plan:
 
 class Step:
     @classmethod
-    def from_expression(cls, expression, scope):
+    def from_expression(cls, expression):
         from_ = expression.args.get("from")
 
         if from_:
             from_ = from_.args["expressions"]
             if len(from_) > 1:
-                raise UnsupportedError("Multi-from statements are unsupported. Run it through the optimizer")
+                raise UnsupportedError(
+                    "Multi-from statements are unsupported. Run it through the optimizer"
+                )
 
-            step = Scan.from_expression(from_[0], scope)
+            step = Scan.from_expression(from_[0])
         else:
             raise UnsupportedError("Static selects are unsupported.")
 
         joins = expression.args.get("joins")
 
         if joins:
-            join = Join.from_expression(joins, scope)
+            join = Join.from_joins(joins)
             join.name = step.name
             join.add_dependency(step)
             step = join
@@ -66,8 +66,6 @@ class Step:
             if agg:
                 aggregations.append(e)
                 for operand in agg.unnest_operands():
-                    if isinstance(operand, exp.Star):
-                        continue
                     alias = f"_a_{next(sequence)}"
                     temporary.add(alias)
                     operand.replace(exp.column(alias, step.name))
@@ -135,7 +133,7 @@ class Step:
         return self.to_s()
 
     def to_s(self, level=0):
-        indent = "".join(["  "] * level)
+        indent = "  " * level
         nested = f"{indent}    "
 
         context = self._to_s(f"{nested}  ")
@@ -168,12 +166,14 @@ class Step:
 
 class Scan(Step):
     @classmethod
-    def from_expression(cls, expression, scope):
+    def from_expression(cls, expression):
         alias = expression.alias
         source = expression.this
 
         if not alias:
-            raise UnsupportedError("Tables/Subqueries must be aliased. Run it through the optimizer")
+            raise UnsupportedError(
+                "Tables/Subqueries must be aliased. Run it through the optimizer"
+            )
 
         step = Scan()
         step.name = alias
@@ -181,13 +181,7 @@ class Scan(Step):
 
         if isinstance(expression, exp.Subquery):
             step.source = expression.args.get("alias")
-            step.add_dependency(Step.from_expression(source, scope.selected_sources[alias][-1]))
-
-        step.projections = [
-            column
-            for column in scope.columns
-            if alias == column.text("table")
-        ]
+            step.add_dependency(Step.from_expression(source))
 
         return step
 
@@ -205,7 +199,7 @@ class Write(Step):
 
 class Join(Step):
     @classmethod
-    def from_expression(cls, joins, scope):
+    def from_joins(cls, joins):
         step = Join()
 
         for join in joins:
@@ -214,7 +208,7 @@ class Join(Step):
                 "on": join.args["on"],
             }
 
-            step.add_dependency(Scan.from_expression(join.this, scope))
+            step.add_dependency(Scan.from_expression(join.this))
 
         return step
 

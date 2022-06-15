@@ -25,7 +25,7 @@ ENV = {
     "str": str,
     "SUM": sum,
     "AVG": statistics.fmean if hasattr(statistics, "fmean") else statistics.mean,
-    "COUNT": len,
+    "COUNT": lambda acc: sum(1 for e in acc if e is not None),
     "MAX": max,
     "POW": pow,
 }
@@ -46,7 +46,7 @@ def execute(sql, schema, read=None):
         read (str): the SQL dialect to apply during parsing
             (eg. "spark", "hive", "presto", "mysql").
     Returns:
-        sqlglot.executor.DataTable: optimized expression
+        sqlglot.executor.DataTable: Simple columnar data structure.
     """
     expression = parse_one(sql, read=read)
     expression = optimize(expression, schema)
@@ -103,16 +103,28 @@ def generate(expression):
 
 def scan(step, _context):
     table = step.source.name
-    sink = DataTable(expression.alias_or_name for expression in step.projections)
 
+    sink = None
     filter_code = generate(step.filter) if step.filter else None
     projections = tuple(generate(expression) for expression in step.projections)
 
     for csv_context in scan_csv(table):
+        if not sink:
+            if step.projections:
+                sink = DataTable(
+                    expression.alias_or_name for expression in step.projections
+                )
+            else:
+                sink = DataTable(list(csv_context[table].columns))
+
         if filter_code and not csv_context.eval(filter_code):
             continue
 
-        sink.add(tuple(csv_context.eval(code) for code in projections))
+        if projections:
+            sink.add(tuple(csv_context.eval(code) for code in projections))
+        else:
+            sink.add(csv_context[table].tuple())
+
         if step.limit and sink.length >= step.limit:
             break
     return Context({step.name: sink})
@@ -143,17 +155,11 @@ def scan_csv(table):
             yield context
 
 
-def join(step, context):
-    source = step.name
+def join(_step, context):
+    # source = step.name
+    # for name, join in step.joins.items():
+    #     context.sort(name, lambda c: tuple(c.eval(code) for code in projections))
 
-    print(context.data_tables["region"])
-    for name, join in step.joins.items():
-        print(name, join["on"].sql())
-        raise
-        context.sort(name, lambda c: tuple(c.eval(code) for code in projections))
-
-    print(context.data_tables["partsupp"])
-    raise
     return context
 
 
@@ -332,6 +338,9 @@ class ColumnarReader:
         self.columns = columns
         self.row = None
 
+    def tuple(self):
+        return tuple(self[column] for column in self.columns)
+
     def __getitem__(self, column):
         return self.columns[column][self.row]
 
@@ -340,6 +349,9 @@ class RowReader:
     def __init__(self, columns):
         self.columns = {column: i for i, column in enumerate(columns)}
         self.row = None
+
+    def tuple(self):
+        return tuple(self.row)
 
     def __getitem__(self, column):
         return self.row[self.columns[column]]
@@ -372,7 +384,7 @@ class Python(Dialect):
         exp.Cast: _cast_py,
         exp.Column: _column_py,
         exp.Interval: _interval_py,
-        exp.Star: lambda *_: "scope['root']",
+        exp.Star: lambda *_: "1",
     }
 
 

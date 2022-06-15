@@ -41,8 +41,13 @@ class TestExecutor(unittest.TestCase):
 
     def test_optimizer_tpch(self):
         for sql, optimized in self.sqls:
+            import time
+            now = time.time()
             a = self.cached_execute(sql)
+            print(time.time() - now)
+            now = time.time()
             b = self.conn.execute(optimized).fetchdf()
+            print("op", time.time() - now)
             self.rename_anonymous(b, a)
             assert_frame_equal(a, b)
 

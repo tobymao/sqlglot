@@ -122,11 +122,7 @@ def _expand_stars(scope, schema):
                 raise OptimizeError(f"Unknown table: {table}")
             columns = _get_source_columns(table, scope.sources, schema)
             for column in columns:
-                new_columns.append(
-                    exp.Column(
-                        this=exp.to_identifier(column), table=exp.to_identifier(table)
-                    )
-                )
+                new_columns.append(exp.column(column, table))
 
         expression.replace(*new_columns)
 

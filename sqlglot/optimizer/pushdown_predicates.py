@@ -25,35 +25,35 @@ def pushdown_predicates(expression):
     for scope in reversed(traverse_scope(expression)):
         select = scope.expression
         where = select.args.get("where")
-        conditions = [(where.this, scope.selected_sources)] if where else []
+        if where:
+            pushdown(where.this, scope.selected_sources)
 
         # joins should only pushdown into itself, not to other joins
         # so we limit the selected sources to only itself
         for join in select.args.get("joins") or []:
             name = join.this.alias_or_name
-            conditions.append(
-                (join.args.get("on"), {name: scope.selected_sources[name]})
-            )
-
-        for condition, sources in conditions:
-            if not condition:
-                continue
-
-            condition = condition.unnest()
-            cnf_like = normalized(condition) or not normalized(condition, dnf=True)
-
-            predicates = list(
-                condition.flatten()
-                if isinstance(condition, exp.And if cnf_like else exp.Or)
-                else [condition]
-            )
-
-            if cnf_like:
-                pushdown_cnf(predicates, sources)
-            else:
-                pushdown_dnf(predicates, sources)
+            pushdown(join.args.get("on"), {name: scope.selected_sources[name]})
 
     return expression
+
+
+def pushdown(condition, sources):
+    if not condition:
+        return
+
+    condition = condition.unnest()
+    cnf_like = normalized(condition) or not normalized(condition, dnf=True)
+
+    predicates = list(
+        condition.flatten()
+        if isinstance(condition, exp.And if cnf_like else exp.Or)
+        else [condition]
+    )
+
+    if cnf_like:
+        pushdown_cnf(predicates, sources)
+    else:
+        pushdown_dnf(predicates, sources)
 
 
 def pushdown_cnf(predicates, scope):
@@ -135,15 +135,21 @@ def pushdown_dnf(predicates, scope):
 def nodes_for_predicate(predicate, sources):
     nodes = {}
     tables = exp.column_table_names(predicate)
+    where_condition = isinstance(
+        predicate.find_ancestor(exp.Join, exp.Where), exp.Where
+    )
+
     for table in tables:
         node, source = sources.get(table) or (None, None)
 
-        if isinstance(node, exp.Table):
+        # if the predicate is in a where statement we can try to push it down
+        # we want to find the root join or from statement
+        if node and where_condition:
             node = node.find_ancestor(exp.Join, exp.From)
 
-            # a node can reference a CTE which should be push down
-            if isinstance(node, exp.From) and not isinstance(source, exp.Table):
-                node = source.expression
+        # a node can reference a CTE which should be push down
+        if isinstance(node, exp.From) and not isinstance(source, exp.Table):
+            node = source.expression
 
         if isinstance(node, exp.Join):
             nodes[table] = node
@@ -168,4 +174,4 @@ def replace_aliases(source, predicate):
             return aliases[column.name]
         return column
 
-    return predicate.transform(_replace_alias, copy=False)
+    return predicate.transform(_replace_alias)

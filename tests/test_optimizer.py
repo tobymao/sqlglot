@@ -45,6 +45,12 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("optimizer", optimizer.optimize, pretty=True, schema=schema)
 
+    def test_isolate_table_selects(self):
+        self.check_file(
+            "isolate_table_selects",
+            optimizer.isolate_table_selects.isolate_table_selects,
+        )
+
     def test_qualify_tables(self):
         self.check_file(
             "qualify_tables",

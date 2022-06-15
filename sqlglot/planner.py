@@ -33,7 +33,17 @@ class Plan:
 
 class Step:
     @classmethod
-    def from_expression(cls, expression):
+    def from_expression(cls, expression, ctes=None):
+        ctes = ctes or {}
+        with_ = expression.args.get("with")
+
+        if with_:
+            ctes = ctes.copy()
+            for cte in with_.args["expressions"]:
+                step = Step.from_expression(cte.this, ctes)
+                step.name = cte.alias
+                ctes[step.name] = step
+
         from_ = expression.args.get("from")
 
         if from_:
@@ -43,14 +53,14 @@ class Step:
                     "Multi-from statements are unsupported. Run it through the optimizer"
                 )
 
-            step = Scan.from_expression(from_[0])
+            step = Scan.from_expression(from_[0], ctes)
         else:
             raise UnsupportedError("Static selects are unsupported.")
 
         joins = expression.args.get("joins")
 
         if joins:
-            join = Join.from_joins(joins)
+            join = Join.from_joins(joins, ctes)
             join.name = step.name
             join.add_dependency(step)
             step = join
@@ -166,7 +176,7 @@ class Step:
 
 class Scan(Step):
     @classmethod
-    def from_expression(cls, expression):
+    def from_expression(cls, expression, ctes=None):
         alias = expression.alias
         source = expression.this
 
@@ -181,7 +191,9 @@ class Scan(Step):
 
         if isinstance(expression, exp.Subquery):
             step.source = expression.args.get("alias")
-            step.add_dependency(Step.from_expression(source))
+            step.add_dependency(Step.from_expression(source, ctes))
+        elif source.name in ctes:
+            step.add_dependency(ctes[source.name])
 
         return step
 
@@ -199,16 +211,16 @@ class Write(Step):
 
 class Join(Step):
     @classmethod
-    def from_joins(cls, joins):
+    def from_joins(cls, joins, ctes=None):
         step = Join()
 
         for join in joins:
             step.joins[join.this.alias] = {
-                "kind": join.args["kind"],
+                "kind": join.args["kind"] or "INNER",
                 "on": join.args["on"],
             }
 
-            step.add_dependency(Scan.from_expression(join.this))
+            step.add_dependency(Scan.from_expression(join.this, ctes))
 
         return step
 
@@ -219,12 +231,9 @@ class Join(Step):
     def _to_s(self, indent):
         lines = []
         for name, join in self.joins.items():
-            lines.extend(
-                [
-                    f"{indent}{name}: {join['kind'] or 'INNER'}",
-                    f"{indent}On: {join['on'].sql()}",
-                ]
-            )
+            lines.append(f"{indent}{name}: {join['kind']}")
+            if join["on"]:
+                lines.append(f"{indent}On: {join['on'].sql()}")
         return lines
 
 

@@ -3,6 +3,7 @@ import csv
 import datetime
 import gzip
 import logging
+import re
 import statistics
 import time
 from collections import deque
@@ -20,6 +21,7 @@ logger = logging.getLogger("sqlglot")
 ENV = {
     "__builtins__": {},
     "datetime": datetime,
+    "re": re,
     "float": float,
     "int": int,
     "str": str,
@@ -27,6 +29,7 @@ ENV = {
     "AVG": statistics.fmean if hasattr(statistics, "fmean") else statistics.mean,
     "COUNT": lambda acc: sum(1 for e in acc if e is not None),
     "MAX": max,
+    "MIN": min,
     "POW": pow,
 }
 
@@ -52,6 +55,7 @@ def execute(sql, schema, read=None):
     expression = optimize(expression, schema)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = planner.Plan(expression)
+    #print(plan.root)
     logger.debug("Logical Plan: %s", plan)
     now = time.time()
     result = execute_plan(plan)
@@ -101,29 +105,30 @@ def generate(expression):
     return compile(sql, sql, "eval", optimize=2)
 
 
-def scan(step, _context):
+def scan(step, context):
     table = step.source.name
 
     sink = None
     filter_code = generate(step.filter) if step.filter else None
     projections = tuple(generate(expression) for expression in step.projections)
 
-    for csv_context in scan_csv(table):
-        if not sink:
-            if step.projections:
-                sink = DataTable(
-                    expression.alias_or_name for expression in step.projections
-                )
-            else:
-                sink = DataTable(list(csv_context[table].columns))
+    if not projections:
+        return Context({step.name: context.data_tables[table]})
 
-        if filter_code and not csv_context.eval(filter_code):
+    if table in context:
+        table_iter = context.iter_table(table)
+    else:
+        table_iter = scan_csv(table)
+
+    sink = DataTable(
+        expression.alias_or_name for expression in step.projections
+    )
+
+    for ctx in table_iter:
+        if filter_code and not ctx.eval(filter_code):
             continue
 
-        if projections:
-            sink.add(tuple(csv_context.eval(code) for code in projections))
-        else:
-            sink.add(csv_context[table].tuple())
+        sink.add(tuple(ctx.eval(code) for code in projections))
 
         if step.limit and sink.length >= step.limit:
             break
@@ -155,12 +160,64 @@ def scan_csv(table):
             yield context
 
 
-def join(_step, context):
-    # source = step.name
-    # for name, join in step.joins.items():
-    #     context.sort(name, lambda c: tuple(c.eval(code) for code in projections))
+def join(step, context):
+    print(step)
+    source = step.name
 
-    return context
+    join_context = Context({source: context.data_tables[source]})
+
+    for name, join in step.joins.items():
+        join_context = Context({**join_context.data_tables, name: context.data_tables[name]})
+
+        kind = join["kind"]
+        if kind == "CROSS":
+            sink = cross_join(join, source, name, join_context)
+        else:
+            sort_join(join, source, name, join_context)
+
+        join_context = Context({name: sink for name in join_context.data_tables})
+
+    return join_context
+
+
+def cross_join(join, a, b, context):
+    sink = DataTable(
+        list(context.data_tables[a].table) + list(context.data_tables[b].table)
+    )
+    for _ in context.iter_table(a):
+        for ctx in context.iter_table(b):
+            sink.add(ctx[a].tuple() + ctx[b].tuple())
+
+    return sink
+
+
+def sort_join(join, a, b, context):
+    on = join["on"]
+    on = on.flatten() if isinstance(on, exp.And) else [on]
+
+    a_key = []
+    b_key = []
+
+    for condition in on:
+        for column in condition.find_all(exp.Column):
+            if b == column.text("table"):
+                b_key.append(generate(column))
+            else:
+                a_key.append(generate(column))
+
+    print(a_key)
+    print(b_key)
+    context.sort(a, lambda c: tuple(c.eval(code) for code in a_key))
+    context.sort(b, lambda c: tuple(c.eval(code) for code in a_key))
+    print(context.data_tables["partsupp"])
+    print(context.data_tables["region"])
+    print(context.data_tables["nation"])
+    raise
+    sink = DataTable(
+        list(context.data_tables[a].table) + list(context.data_tables[b].table)
+    )
+            #context.sort(name, lambda c: tuple(c.eval(code) for code in projections))
+    return sink
 
 
 def aggregate(step, context):
@@ -177,8 +234,6 @@ def aggregate(step, context):
         columns.append(expression.alias_or_name)
         aggregations.append(generate(expression))
 
-    sink = DataTable(columns)
-
     table = step.name
     context.sort(table, lambda c: tuple(c.eval(code) for code in projections))
 
@@ -186,6 +241,7 @@ def aggregate(step, context):
     start = 0
     end = 1
     length = context.data_tables[table].length
+    sink = DataTable(columns)
 
     for i in range(length):
         context.set_row(table, i)
@@ -297,6 +353,11 @@ class Context:
         # pylint: disable=eval-used
         return eval(code, ENV, self.env)
 
+    def iter_table(self, table):
+        for i in range(self.data_tables[table].length):
+            self.set_row(table, i)
+            yield self
+
     def sort(self, table, key):
         def _sort(i):
             self.set_row(table, i)
@@ -319,6 +380,9 @@ class Context:
 
     def __getitem__(self, table):
         return self.env["scope"][table]
+
+    def __contains__(self, table):
+        return table in self.data_tables
 
 
 class RangeReader:
@@ -379,11 +443,20 @@ class Python(Dialect):
             return f"datetime.timedelta(days=float({this}))"
         raise NotImplementedError
 
+    def _like_py(self, expression):
+        this = self.sql(expression, "this")
+        expression = self.sql(expression, "expression")
+        return f"""re.match({expression}.replace("_", ".").replace("%", ".*"), {this})"""
+
     transforms = {
         exp.Alias: lambda self, e: self.sql(e.this),
+        exp.And: lambda self, e: self.binary(e, "and"),
         exp.Cast: _cast_py,
         exp.Column: _column_py,
+        exp.EQ: lambda self, e: self.binary(e, "=="),
         exp.Interval: _interval_py,
+        exp.Like: _like_py,
+        exp.Or: lambda self, e: self.binary(e, "or"),
         exp.Star: lambda *_: "1",
     }
 

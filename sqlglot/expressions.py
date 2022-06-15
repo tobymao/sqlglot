@@ -53,7 +53,7 @@ class Expression:
         field = self.args.get(key)
         if isinstance(field, str):
             return field
-        if isinstance(field, (Identifier, Literal)):
+        if isinstance(field, (Identifier, Literal, Var)):
             return field.this
         return ""
 
@@ -213,7 +213,7 @@ class Expression:
         """
         Returns unnested operands as a list.
         """
-        return [arg.unnest() for arg in self.args.values()]
+        return [arg.unnest() for arg in self.args.values() if arg]
 
     def flatten(self):
         """
@@ -2283,6 +2283,18 @@ def subquery(expression, alias=None, dialect=None, **opts):
 
     expression = _maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
     return Select().from_(expression, dialect=dialect, **opts)
+
+
+def column(col, table=None):
+    """
+    Build a Column.
+    Args:
+        col (str or Expression): column name
+        table (str or Expression): table name
+    Returns:
+        Column: column instance
+    """
+    return Column(this=to_identifier(col), table=to_identifier(table))
 
 
 def replace_children(expression, fun):

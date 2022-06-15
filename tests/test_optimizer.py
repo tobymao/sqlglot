@@ -45,10 +45,10 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("optimizer", optimizer.optimize, pretty=True, schema=schema)
 
-    def test_expand_ambiguous_tables(self):
+    def test_isolate_table_selects(self):
         self.check_file(
-            "expand_ambiguous_tables",
-            optimizer.expand_ambiguous_tables.expand_ambiguous_tables,
+            "isolate_table_selects",
+            optimizer.isolate_table_selects.isolate_table_selects,
         )
 
     def test_qualify_tables(self):

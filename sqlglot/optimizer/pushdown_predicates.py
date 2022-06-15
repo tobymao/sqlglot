@@ -32,9 +32,10 @@ def pushdown_predicates(expression):
         # so we limit the selected sources to only itself
         for join in select.args.get("joins") or []:
             name = join.this.alias_or_name
-            pushdown(join.args.get("on"),{name: scope.selected_sources[name]})
+            pushdown(join.args.get("on"), {name: scope.selected_sources[name]})
 
     return expression
+
 
 def pushdown(condition, sources):
     if not condition:
@@ -134,7 +135,9 @@ def pushdown_dnf(predicates, scope):
 def nodes_for_predicate(predicate, sources):
     nodes = {}
     tables = exp.column_table_names(predicate)
-    where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
+    where_condition = isinstance(
+        predicate.find_ancestor(exp.Join, exp.Where), exp.Where
+    )
 
     for table in tables:
         node, source = sources.get(table) or (None, None)

@@ -1,7 +1,7 @@
 from sqlglot.optimizer.normalize import normalize
 from sqlglot.optimizer.decorrelate_subqueries import decorrelate_subqueries
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
-from sqlglot.optimizer.expand_ambiguous_tables import expand_ambiguous_tables
+from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
@@ -30,7 +30,7 @@ def optimize(expression, schema=None, db=None, catalog=None):
     """
     expression = expression.copy()
     expression = qualify_tables(expression, db=db, catalog=catalog)
-    expression = expand_ambiguous_tables(expression)
+    expression = isolate_table_selects(expression)
     expression = qualify_columns(expression, schema)
     expression = pushdown_projections(expression)
     expression = normalize(expression)

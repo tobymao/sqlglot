@@ -114,11 +114,14 @@ class Step:
             if having:
                 step.filter = having.this
 
-        # order = expression.args.get("order")
+        order = expression.args.get("order")
 
-        # if order:
-        #    sort = Sort(name)
-        #    step = sort
+        if order:
+            sort = Sort()
+            sort.name = step.name
+            sort.key = order.args["expressions"]
+            sort.add_dependency(step)
+            step = sort
 
         limit = expression.args.get("limit")
 
@@ -185,14 +188,16 @@ class Scan(Step):
                 "Tables/Subqueries must be aliased. Run it through the optimizer"
             )
 
+        if isinstance(expression, exp.Subquery):
+            step = Step.from_expression(source, ctes)
+            step.name = alias
+            return step
+
         step = Scan()
         step.name = alias
         step.source = source
 
-        if isinstance(expression, exp.Subquery):
-            step.source = expression.args.get("alias")
-            step.add_dependency(Step.from_expression(source, ctes))
-        elif source.name in ctes:
+        if source.name in ctes:
             step.add_dependency(ctes[source.name])
 
         return step

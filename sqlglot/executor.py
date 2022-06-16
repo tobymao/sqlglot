@@ -18,6 +18,17 @@ from sqlglot.dialects import Dialect
 logger = logging.getLogger("sqlglot")
 
 
+class reverse_key:
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __eq__(self, other):
+        return other.obj == self.obj
+
+    def __lt__(self, other):
+        return other.obj < self.obj
+
+
 ENV = {
     "__builtins__": {},
     "datetime": datetime,
@@ -25,6 +36,7 @@ ENV = {
     "float": float,
     "int": int,
     "str": str,
+    "desc": reverse_key,
     "SUM": sum,
     "AVG": statistics.fmean if hasattr(statistics, "fmean") else statistics.mean,
     "COUNT": lambda acc: sum(1 for e in acc if e is not None),
@@ -55,7 +67,6 @@ def execute(sql, schema, read=None):
     expression = optimize(expression, schema)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = planner.Plan(expression)
-    #print(plan.root)
     logger.debug("Logical Plan: %s", plan)
     now = time.time()
     result = execute_plan(plan)
@@ -88,6 +99,8 @@ def execute_plan(plan, env=None):
             contexts[node] = aggregate(node, context)
         elif isinstance(node, planner.Join):
             contexts[node] = join(node, context)
+        elif isinstance(node, planner.Sort):
+            contexts[node] = sort(node, context)
         else:
             raise NotImplementedError
 
@@ -161,26 +174,32 @@ def scan_csv(table):
 
 
 def join(step, context):
-    print(step)
     source = step.name
 
     join_context = Context({source: context.data_tables[source]})
 
     for name, join in step.joins.items():
         join_context = Context({**join_context.data_tables, name: context.data_tables[name]})
-
         kind = join["kind"]
+
         if kind == "CROSS":
-            sink = cross_join(join, source, name, join_context)
+            sink = nested_loop_join(join, source, name, join_context)
         else:
-            sort_join(join, source, name, join_context)
+            sink = sort_merge_join(join, source, name, join_context)
 
         join_context = Context({name: sink for name in join_context.data_tables})
 
-    return join_context
+    projections = tuple(generate(expression) for expression in step.projections)
+
+    sink = DataTable(
+        expression.alias_or_name for expression in step.projections
+    )
+    for ctx in join_context.iter_table(source):
+        sink.add(tuple(ctx.eval(code) for code in projections))
+    return Context({source: sink})
 
 
-def cross_join(join, a, b, context):
+def nested_loop_join(join, a, b, context):
     sink = DataTable(
         list(context.data_tables[a].table) + list(context.data_tables[b].table)
     )
@@ -191,7 +210,7 @@ def cross_join(join, a, b, context):
     return sink
 
 
-def sort_join(join, a, b, context):
+def sort_merge_join(join, a, b, context):
     on = join["on"]
     on = on.flatten() if isinstance(on, exp.And) else [on]
 
@@ -203,20 +222,43 @@ def sort_join(join, a, b, context):
             if b == column.text("table"):
                 b_key.append(generate(column))
             else:
-                a_key.append(generate(column))
+                a_key.append(generate(exp.column(column.name, a)))
 
-    print(a_key)
-    print(b_key)
     context.sort(a, lambda c: tuple(c.eval(code) for code in a_key))
-    context.sort(b, lambda c: tuple(c.eval(code) for code in a_key))
-    print(context.data_tables["partsupp"])
-    print(context.data_tables["region"])
-    print(context.data_tables["nation"])
-    raise
+    context.sort(b, lambda c: tuple(c.eval(code) for code in b_key))
+
+    a_i = 0
+    b_i = 0
+    a_n = context.data_tables[a].length
+    b_n = context.data_tables[b].length
+
     sink = DataTable(
         list(context.data_tables[a].table) + list(context.data_tables[b].table)
     )
-            #context.sort(name, lambda c: tuple(c.eval(code) for code in projections))
+
+    def get_key(table, key, i):
+        context.set_row(table, i)
+        return tuple(context.eval(code) for code in key)
+
+    while a_i < a_n and b_i < b_n:
+        key = min(get_key(a, a_key, a_i), get_key(b, b_key, b_i))
+
+        a_group = []
+
+        while a_i < a_n and key == get_key(a, a_key, a_i):
+            a_group.append(context[a].tuple())
+            a_i += 1
+
+        b_group = []
+
+        while b_i < b_n and key == get_key(b, b_key, b_i):
+            b_group.append(context[b].tuple())
+            b_i += 1
+
+        for a_row in a_group:
+            for b_row in b_group:
+                sink.add(a_row + b_row)
+
     return sink
 
 
@@ -234,7 +276,7 @@ def aggregate(step, context):
         columns.append(expression.alias_or_name)
         aggregations.append(generate(expression))
 
-    table = step.name
+    table = list(context.data_tables)[0]
     context.sort(table, lambda c: tuple(c.eval(code) for code in projections))
 
     group = None
@@ -261,6 +303,13 @@ def aggregate(step, context):
         start = end - 2
 
     return Context({step.name: sink})
+
+
+def sort(step, context):
+    keys = tuple(generate(k) for k in step.key)
+    print(context.data_tables)
+    table = list(context.data_tables)[0]
+    context.sort(table, lambda c: tuple(c.eval(code) for code in keys))
 
 
 class DataTable:
@@ -448,6 +497,11 @@ class Python(Dialect):
         expression = self.sql(expression, "expression")
         return f"""re.match({expression}.replace("_", ".").replace("%", ".*"), {this})"""
 
+    def _ordered_py(self, expression):
+        this = self.sql(expression, "this")
+        desc = expression.args.get("desc")
+        return f"desc({this})" if desc else this
+
     transforms = {
         exp.Alias: lambda self, e: self.sql(e.this),
         exp.And: lambda self, e: self.binary(e, "and"),
@@ -457,6 +511,7 @@ class Python(Dialect):
         exp.Interval: _interval_py,
         exp.Like: _like_py,
         exp.Or: lambda self, e: self.binary(e, "or"),
+        exp.Ordered: _ordered_py,
         exp.Star: lambda *_: "1",
     }
 

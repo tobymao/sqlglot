@@ -66,7 +66,7 @@ class Step:
             step = join
 
         projections = []
-        temporary = set()
+        agg_operands = {}
         aggregations = []
         sequence = itertools.count()
 
@@ -74,16 +74,17 @@ class Step:
             agg = e.find(exp.AggFunc)
 
             if agg:
+                projections.append(exp.column(e.alias_or_name, step.name))
                 aggregations.append(e)
                 for operand in agg.unnest_operands():
-                    alias = f"_a_{next(sequence)}"
-                    temporary.add(alias)
+                    if isinstance(operand, exp.Column):
+                        continue
+                    if operand not in agg_operands:
+                        agg_operands[operand] = f"_a_{next(sequence)}"
+                    alias = agg_operands[operand]
                     operand.replace(exp.column(alias, step.name))
-                    projections.append(exp.alias_(operand, alias))
             else:
                 projections.append(e)
-
-        step.projections = projections
 
         where = expression.args.get("where")
 
@@ -95,15 +96,11 @@ class Step:
         if group:
             aggregate = Aggregate()
             aggregate.name = step.name
+            aggregate.operands = list(exp.alias_(operand, alias) for operand, alias in agg_operands.items())
             aggregate.aggregations = aggregations
             aggregate.group = [
                 exp.column(e.alias_or_name, step.name)
                 for e in group.args["expressions"]
-            ]
-            aggregate.projections = [
-                exp.column(e.alias_or_name, step.name)
-                for e in projections
-                if e.alias_or_name not in temporary
             ]
 
             aggregate.add_dependency(step)
@@ -122,6 +119,8 @@ class Step:
             sort.key = order.args["expressions"]
             sort.add_dependency(step)
             step = sort
+
+        step.projections = projections
 
         limit = expression.args.get("limit")
 
@@ -246,6 +245,7 @@ class Aggregate(Step):
     def __init__(self):
         super().__init__()
         self.aggregations = []
+        self.operands = []
         self.group = []
 
     def _to_s(self, indent):
@@ -256,8 +256,12 @@ class Aggregate(Step):
 
         if self.group:
             lines.append(f"{indent}Group:")
-        for expression in self.group:
-            lines.append(f"{indent}  - {expression.sql()}")
+            for expression in self.group:
+                lines.append(f"{indent}  - {expression.sql()}")
+        if self.operands:
+            lines.append(f"{indent}Operands:")
+            for expression in self.operands:
+                lines.append(f"{indent}  - {expression.sql()}")
 
         return lines
 

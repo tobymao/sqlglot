@@ -67,6 +67,7 @@ def execute(sql, schema, read=None):
     expression = optimize(expression, schema)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = planner.Plan(expression)
+    print(plan.root)
     logger.debug("Logical Plan: %s", plan)
     now = time.time()
     result = execute_plan(plan)
@@ -125,23 +126,32 @@ def scan(step, context):
     filter_code = generate(step.filter) if step.filter else None
     projections = tuple(generate(expression) for expression in step.projections)
 
-    if not projections:
-        return Context({step.name: context.data_tables[table]})
-
     if table in context:
+        if not projections:
+            return Context({step.name: context.data_tables[table]})
+
         table_iter = context.iter_table(table)
     else:
         table_iter = scan_csv(table)
 
-    sink = DataTable(
-        expression.alias_or_name for expression in step.projections
-    )
+    sink = None
+
+    if step.projections:
+        sink = DataTable(
+            expression.alias_or_name for expression in step.projections
+        )
 
     for ctx in table_iter:
         if filter_code and not ctx.eval(filter_code):
             continue
 
-        sink.add(tuple(ctx.eval(code) for code in projections))
+        if not sink and not projections:
+            sink = DataTable(list(ctx[table].columns))
+
+        if projections:
+            sink.add(tuple(ctx.eval(code) for code in projections))
+        else:
+            sink.add(ctx[table].tuple())
 
         if step.limit and sink.length >= step.limit:
             break
@@ -191,12 +201,14 @@ def join(step, context):
 
     projections = tuple(generate(expression) for expression in step.projections)
 
-    sink = DataTable(
-        expression.alias_or_name for expression in step.projections
-    )
-    for ctx in join_context.iter_table(source):
-        sink.add(tuple(ctx.eval(code) for code in projections))
-    return Context({source: sink})
+    if projections:
+        sink = DataTable(
+            expression.alias_or_name for expression in step.projections
+        )
+        for ctx in join_context.iter_table(source):
+            sink.add(tuple(ctx.eval(code) for code in projections))
+        return Context({source: sink})
+    return join_context
 
 
 def nested_loop_join(join, a, b, context):
@@ -266,8 +278,8 @@ def aggregate(step, context):
     group = []
     projections = []
     aggregations = []
-
     columns = []
+    operands = []
 
     for expression in step.group:
         columns.append(expression.alias_or_name)
@@ -275,9 +287,20 @@ def aggregate(step, context):
     for expression in step.aggregations:
         columns.append(expression.alias_or_name)
         aggregations.append(generate(expression))
+    for expression in step.operands:
+        columns.append(expression.alias_or_name)
+        operands.append(generate(expression))
 
     table = list(context.data_tables)[0]
     context.sort(table, lambda c: tuple(c.eval(code) for code in projections))
+
+    operand_dt = DataTable(operand.alias_or_name for operand in step.operands)
+    for ctx in context.iter_table(table):
+        operand_dt.add(tuple(ctx.eval(operand) for operand in operands))
+
+    context = Context({table: DataTable({**context.data_tables[table].table, **operand_dt.table})})
+    print(context.data_tables)
+    raise
 
     group = None
     start = 0
@@ -307,14 +330,28 @@ def aggregate(step, context):
 
 def sort(step, context):
     keys = tuple(generate(k) for k in step.key)
-    print(context.data_tables)
     table = list(context.data_tables)[0]
     context.sort(table, lambda c: tuple(c.eval(code) for code in keys))
 
+    sink = DataTable(
+        expression.alias_or_name for expression in step.projections
+    )
+    projections = tuple(generate(expression) for expression in step.projections)
+
+    for ctx in context.iter_table(table):
+        sink.add(tuple(ctx.eval(code) for code in projections))
+
+        if step.limit and sink.length >= step.limit:
+            break
+    return Context({step.name: sink})
+
 
 class DataTable:
-    def __init__(self, columns):
-        self.table = {column: [] for column in columns}
+    def __init__(self, columns_or_table):
+        if isinstance(columns_or_table, dict):
+            self.table = columns_or_table
+        else:
+            self.table = {column: [] for column in columns_or_table}
         self.columns = dict(enumerate(self.table))
         self.width = len(self.columns)
         self.length = 0

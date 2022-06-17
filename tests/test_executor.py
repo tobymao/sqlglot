@@ -48,13 +48,14 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_tpch(self):
         import time
-        for sql, _ in self.sqls[0:1]:
+
+        for sql, _ in self.sqls[0:2]:
             now = time.time()
             a = self.cached_execute(sql)
-            #print(a)
-            print(time.time() - now)
+            print(a)
+            # print(time.time() - now)
             now = time.time()
-            b = pd.DataFrame(execute(sql, TPCH_SCHEMA).table)
-            #print(b)
-            print(time.time() - now)
+            b = pd.DataFrame(execute(sql, TPCH_SCHEMA).data)
+            print(b)
+            # print(time.time() - now)
             assert_frame_equal(a, b, check_dtype=False)

@@ -1,4 +1,5 @@
 import itertools
+import math
 
 import sqlglot.expressions as exp
 from sqlglot.errors import UnsupportedError
@@ -34,9 +35,30 @@ class Plan:
 class Step:
     @classmethod
     def from_expression(cls, expression, ctes=None):
+        """
+        Build a DAG of Steps from a SQL expression.
+
+        Giving an expression like:
+
+        SELECT x.a, SUM(x.b)
+        FROM x
+        JOIN y
+            ON x.a = y.a
+        GROUP BY x.a
+
+        Transform it into a DAG of the form:
+
+        Aggregate(x.a, SUM(x.b))
+          Join(y)
+            Scan(x)
+            Scan(y)
+
+        This can then more easily be executed on by an engine.
+        """
         ctes = ctes or {}
         with_ = expression.args.get("with")
 
+        # CTEs break the mold of scope and introduce themselves to all in the context.
         if with_:
             ctes = ctes.copy()
             for cte in with_.args["expressions"]:
@@ -65,51 +87,51 @@ class Step:
             join.add_dependency(step)
             step = join
 
-        projections = []
-        agg_operands = {}
+        projections = []  # final selects in this chain of steps representing a select
+        operands = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
         aggregations = []
         sequence = itertools.count()
 
         for e in expression.args["expressions"]:
-            agg = e.find(exp.AggFunc)
+            aggregation = e.find(exp.AggFunc)
 
-            if agg:
+            if aggregation:
                 projections.append(exp.column(e.alias_or_name, step.name))
                 aggregations.append(e)
-                for operand in agg.unnest_operands():
+                for operand in aggregation.unnest_operands():
                     if isinstance(operand, exp.Column):
                         continue
-                    if operand not in agg_operands:
-                        agg_operands[operand] = f"_a_{next(sequence)}"
-                    alias = agg_operands[operand]
-                    operand.replace(exp.column(alias, step.name))
+                    if operand not in operands:
+                        operands[operand] = f"_a_{next(sequence)}"
+                    operand.replace(exp.column(operands[operand], step.name))
             else:
                 projections.append(e)
 
         where = expression.args.get("where")
 
         if where:
-            step.filter = where.this
+            step.condition = where.this
 
         group = expression.args.get("group")
 
         if group:
             aggregate = Aggregate()
             aggregate.name = step.name
-            aggregate.operands = list(exp.alias_(operand, alias) for operand, alias in agg_operands.items())
+            aggregate.operands = tuple(
+                exp.alias_(operand, alias) for operand, alias in operands.items()
+            )
             aggregate.aggregations = aggregations
             aggregate.group = [
                 exp.column(e.alias_or_name, step.name)
                 for e in group.args["expressions"]
             ]
-
             aggregate.add_dependency(step)
             step = aggregate
 
             having = expression.args.get("having")
 
             if having:
-                step.filter = having.this
+                step.condition = having.this
 
         order = expression.args.get("order")
 
@@ -134,8 +156,8 @@ class Step:
         self.dependencies = set()
         self.dependents = set()
         self.projections = []
-        self.limit = None
-        self.filter = None
+        self.limit = math.inf
+        self.condition = None
 
     def add_dependency(self, dependency):
         self.dependencies.add(dependency)
@@ -162,8 +184,8 @@ class Step:
         for expression in self.projections:
             lines.append(f"{nested}  - {expression.sql()}")
 
-        if self.filter:
-            lines.append(f"{nested}Filter: {self.filter.sql()}")
+        if self.condition:
+            lines.append(f"{nested}Condition: {self.condition.sql()}")
 
         if self.dependencies:
             lines.append(f"{nested}Dependencies:")

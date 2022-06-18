@@ -28,7 +28,9 @@ def execute(sql, schema, read=None):
         sqlglot.executor.Table: Simple columnar data structure.
     """
     expression = parse_one(sql, read=read)
+    now = time.time()
     expression = optimize(expression, schema)
+    logger.debug("Optimization finished: %f", time.time() - now)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = Plan(expression)
     logger.debug("Logical Plan: %s", plan)

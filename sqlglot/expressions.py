@@ -71,6 +71,9 @@ class Expression:
     def alias_or_name(self):
         return self.alias or self.name
 
+    def __deepcopy__(self, memo):
+        return self.__class__(**deepcopy(self.args))
+
     def copy(self):
         new = deepcopy(self)
         for item, parent, _ in new.bfs():

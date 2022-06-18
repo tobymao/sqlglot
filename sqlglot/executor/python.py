@@ -170,7 +170,7 @@ class PythonExecutor:
 
         return merge_context(join_context, context.tables[source])
 
-    def nested_loop_join(self, join, a, b, context):
+    def nested_loop_join(self, _join, a, b, context):
         table = Table(*(context.tables[a].columns + context.tables[b].columns))
 
         for _ in context.table_iter(a):

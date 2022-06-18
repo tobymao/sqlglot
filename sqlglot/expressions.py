@@ -512,9 +512,8 @@ class Identifier(Expression):
     arg_types = {"this": True, "quoted": False}
 
     def __eq__(self, other):
-        return (
-            isinstance(other, self.__class__)
-            and (self.this or "").upper() == (other.this or "").upper()
+        return isinstance(other, self.__class__) and _norm_arg(self.this) == _norm_arg(
+            other.this
         )
 
     def __hash__(self):
@@ -555,11 +554,11 @@ class Literal(Condition):
         return (
             isinstance(other, Literal)
             and self.this == other.this
-            and self.args.get("is_string") == other.args.get("is_string")
+            and self.args["is_string"] == other.args["is_string"]
         )
 
     def __hash__(self):
-        return hash((self.key, self.this, self.args.get("is_string")))
+        return hash((self.key, self.this, self.args["is_string"]))
 
     @classmethod
     def number(cls, number):
@@ -798,14 +797,7 @@ class Values(Expression):
 
 
 class Var(Expression):
-    def __eq__(self, other):
-        return (
-            isinstance(other, self.__class__)
-            and (self.this or "").upper() == (other.this or "").upper()
-        )
-
-    def __hash__(self):
-        return hash((self.key, self.this.upper()))
+    pass
 
 
 class Schema(Expression):
@@ -1926,13 +1918,12 @@ class Year(Func):
 
 def _norm_args(expression):
     return {
-        k: _norm_arg(arg) if not isinstance(arg, list) else [_norm_arg(a) for a in arg]
+        k: [_norm_arg(a) for a in arg] if isinstance(arg, list) else _norm_arg(arg)
         for k, arg in expression.args.items()
     }
 
 
 def _norm_arg(arg):
-    arg = arg or ""
     return arg.upper() if isinstance(arg, str) else arg
 
 

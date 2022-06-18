@@ -52,10 +52,10 @@ class TestExecutor(unittest.TestCase):
         for sql, _ in self.sqls[0:2]:
             now = time.time()
             a = self.cached_execute(sql)
-            print(a)
+            # print(a)
             print(time.time() - now)
             now = time.time()
             b = pd.DataFrame(execute(sql, TPCH_SCHEMA).data)
-            print(b)
+            # print(b)
             print(time.time() - now)
             assert_frame_equal(a, b, check_dtype=False)

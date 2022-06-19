@@ -52,6 +52,7 @@ class Scope:
         self.scope_type = scope_type
         self.subquery_scopes = []
         self.union = None
+        self._selected_sources = None
 
     def branch(self, expression, scope_type, add_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
@@ -158,27 +159,29 @@ class Scope:
         Returns:
             dict[str, (exp.Table|exp.Subquery, exp.Table|Scope)]: selected sources and nodes
         """
-        referenced_names = []
+        if self._selected_sources is None:
+            referenced_names = []
 
-        for table in self.tables:
-            referenced_names.append(
-                (
-                    table.parent.alias
-                    if isinstance(table.parent, exp.Alias)
-                    else table.name,
-                    table,
+            for table in self.tables:
+                referenced_names.append(
+                    (
+                        table.parent.alias
+                        if isinstance(table.parent, exp.Alias)
+                        else table.name,
+                        table,
+                    )
                 )
-            )
-        for derived_table in self.derived_tables:
-            referenced_names.append((derived_table.alias, derived_table.this))
+            for derived_table in self.derived_tables:
+                referenced_names.append((derived_table.alias, derived_table.this))
 
-        result = {}
+            result = {}
 
-        for name, node in referenced_names:
-            if name in self.sources:
-                result[name] = (node, self.sources[name])
+            for name, node in referenced_names:
+                if name in self.sources:
+                    result[name] = (node, self.sources[name])
 
-        return result
+            self._selected_sources = result
+        return self._selected_sources
 
     @property
     def selects(self):

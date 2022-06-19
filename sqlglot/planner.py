@@ -3,6 +3,7 @@ import math
 
 import sqlglot.expressions as exp
 from sqlglot.errors import UnsupportedError
+from sqlglot.optimizer.simplify import simplify
 
 
 class Plan:
@@ -96,14 +97,16 @@ class Step:
             aggregation = e.find(exp.AggFunc)
 
             if aggregation:
-                projections.append(exp.column(e.alias_or_name, step.name))
+                projections.append(exp.column(e.alias_or_name, step.name, quoted=True))
                 aggregations.append(e)
                 for operand in aggregation.unnest_operands():
                     if isinstance(operand, exp.Column):
                         continue
                     if operand not in operands:
                         operands[operand] = f"_a_{next(sequence)}"
-                    operand.replace(exp.column(operands[operand], step.name))
+                    operand.replace(
+                        exp.column(operands[operand], step.name, quoted=True)
+                    )
             else:
                 projections.append(e)
 
@@ -122,7 +125,7 @@ class Step:
             )
             aggregate.aggregations = aggregations
             aggregate.group = [
-                exp.column(e.alias_or_name, step.name)
+                exp.column(e.alias_or_name, step.name, quoted=True)
                 for e in group.args["expressions"]
             ]
             aggregate.add_dependency(step)
@@ -141,6 +144,9 @@ class Step:
             sort.key = order.args["expressions"]
             sort.add_dependency(step)
             step = sort
+            for k in sort.key + projections:
+                for column in k.find_all(exp.Column):
+                    column.set("table", exp.to_identifier(step.name, quoted=True))
 
         step.projections = projections
 
@@ -241,9 +247,40 @@ class Join(Step):
         step = Join()
 
         for join in joins:
-            step.joins[join.this.alias] = {
-                "kind": join.args["kind"] or "INNER",
-                "on": join.args["on"],
+            name = join.this.alias
+            on = join.args.get("on") or exp.TRUE
+            source_key = []
+            join_key = []
+
+            # find the join keys
+            # SELECT
+            # FROM x
+            # JOIN y
+            #   ON x.a = y.b AND y.b > 1
+            #
+            # should pull y.b as the join key and x.a as the source key
+            for condition in on.flatten() if isinstance(on, exp.And) else [on]:
+                if isinstance(condition, exp.EQ):
+                    left, right = condition.unnest_operands()
+                    left_tables = exp.column_table_names(left)
+                    right_tables = exp.column_table_names(right)
+
+                    if name in left_tables and name not in right_tables:
+                        join_key.append(left)
+                        source_key.append(right)
+                        condition.replace(exp.TRUE)
+                    elif name in right_tables and name not in left_tables:
+                        join_key.append(right)
+                        source_key.append(left)
+                        condition.replace(exp.TRUE)
+
+            on = simplify(on)
+
+            step.joins[name] = {
+                "side": join.args.get("side"),
+                "join_key": join_key,
+                "source_key": source_key,
+                "condition": None if on == exp.TRUE else on,
             }
 
             step.add_dependency(Scan.from_expression(join.this, ctes))
@@ -257,9 +294,9 @@ class Join(Step):
     def _to_s(self, indent):
         lines = []
         for name, join in self.joins.items():
-            lines.append(f"{indent}{name}: {join['kind']}")
-            if join["on"]:
-                lines.append(f"{indent}On: {join['on'].sql()}")
+            lines.append(f"{indent}{name}: {join['side']}")
+            if join.get("condition"):
+                lines.append(f"{indent}On: {join['condition'].sql()}")
         return lines
 
 
@@ -292,3 +329,11 @@ class Sort(Step):
     def __init__(self):
         super().__init__()
         self.key = None
+
+    def _to_s(self, indent):
+        lines = [f"{indent}Key:"]
+
+        for expression in self.key:
+            lines.append(f"{indent}  - {expression.sql()}")
+
+        return lines

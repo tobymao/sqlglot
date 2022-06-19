@@ -47,8 +47,8 @@ def pushdown_projections(expression):
             # Group columns by source name
             selects = defaultdict(set)
             for col in scope.columns:
-                table_name = col.text("table")
-                col_name = col.text("this")
+                table_name = col.table
+                col_name = col.name
                 selects[table_name].add(col_name)
 
             # Push the selected columns down to the next scope

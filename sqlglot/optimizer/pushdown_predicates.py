@@ -105,7 +105,7 @@ def pushdown_dnf(predicates, scope):
             predicate_condition = None
 
             for column in predicate.find_all(exp.Column):
-                if column.text("table") == table:
+                if column.table == table:
                     condition = column.find_ancestor(exp.Condition)
                     predicate_condition = (
                         exp.and_(predicate_condition, condition)

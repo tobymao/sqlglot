@@ -242,9 +242,7 @@ class TestOptimizer(unittest.TestCase):
 
         self.assertEqual(set(scopes[4].sources), {"q", "r", "s"})
         self.assertEqual(len(scopes[4].columns), 6)
-        self.assertEqual(set(c.text("table") for c in scopes[4].columns), {"r", "s"})
+        self.assertEqual(set(c.table for c in scopes[4].columns), {"r", "s"})
         self.assertEqual(scopes[4].source_columns("q"), [])
         self.assertEqual(len(scopes[4].source_columns("r")), 2)
-        self.assertEqual(
-            set(c.text("table") for c in scopes[4].source_columns("r")), {"r"}
-        )
+        self.assertEqual(set(c.table for c in scopes[4].source_columns("r")), {"r"})

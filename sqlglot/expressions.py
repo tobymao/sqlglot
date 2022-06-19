@@ -464,7 +464,7 @@ class Column(Condition):
 
     @property
     def table(self):
-        return self.args.get("table")
+        return self.text("table")
 
 
 class ColumnDef(Expression):
@@ -2375,9 +2375,7 @@ def column_table_names(expression):
     Returns:
         list: A list of unique names
     """
-    return list(
-        dict.fromkeys(column.text("table") for column in expression.find_all(Column))
-    )
+    return list(dict.fromkeys(column.table for column in expression.find_all(Column)))
 
 
 TRUE = Boolean(this=True)

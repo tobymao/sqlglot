@@ -134,13 +134,11 @@ def _qualify_outputs(scope):
         itertools.zip_longest(scope.selects, scope.outer_column_list)
     ):
         if isinstance(selection, exp.Column):
-            selection_name = selection.text("this")
-            new_selection = exp.alias_(selection.copy(), selection_name)
+            new_selection = exp.alias_(selection.copy(), selection.name)
             selection.replace(new_selection)
             selection = new_selection
         elif not isinstance(selection, exp.Alias):
-            selection_name = f"_col_{i}"
-            new_selection = exp.alias_(selection.copy(), selection_name)
+            new_selection = exp.alias_(selection.copy(), f"_col_{i}")
             selection.replace(new_selection)
             selection = new_selection
 

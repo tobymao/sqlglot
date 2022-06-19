@@ -188,7 +188,7 @@ LIMIT 100;
 select
         l_orderkey,
         sum(l_extendedprice * (1 - l_discount)) as revenue,
-        o_orderdate,
+        CAST(o_orderdate AS STRING) AS o_orderdate,
         o_shippriority
 from
         customer,
@@ -198,8 +198,8 @@ where
         c_mktsegment = 'BUILDING'
         and c_custkey = o_custkey
         and l_orderkey = o_orderkey
-        and o_orderdate < date '1995-03-15'
-        and l_shipdate > date '1995-03-15'
+        and o_orderdate < '1995-03-15'
+        and l_shipdate > '1995-03-15'
 group by
         l_orderkey,
         o_orderdate,
@@ -212,7 +212,7 @@ limit
 SELECT
   "lineitem"."l_orderkey" AS "l_orderkey",
   SUM("lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount")) AS "revenue",
-  "orders"."o_orderdate" AS "o_orderdate",
+  CAST("orders"."o_orderdate" AS TEXT) AS "o_orderdate",
   "orders"."o_shippriority" AS "o_shippriority"
 FROM (
     SELECT
@@ -230,7 +230,7 @@ JOIN (
       "orders"."o_shippriority" AS "o_shippriority"
     FROM "orders" AS "orders"
     WHERE
-      "orders"."o_orderdate" < CAST('1995-03-15' AS DATE)
+      "orders"."o_orderdate" < '1995-03-15'
 ) AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
 JOIN (
@@ -241,16 +241,16 @@ JOIN (
       "lineitem"."l_shipdate" AS "l_shipdate"
     FROM "lineitem" AS "lineitem"
     WHERE
-      "lineitem"."l_shipdate" > CAST('1995-03-15' AS DATE)
+      "lineitem"."l_shipdate" > '1995-03-15'
 ) AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
 GROUP BY
   "lineitem"."l_orderkey",
-  "orders"."o_orderdate",
+  "o_orderdate",
   "orders"."o_shippriority"
 ORDER BY
   "revenue" DESC,
-  "orders"."o_orderdate"
+  "o_orderdate"
 LIMIT 10;
 
 --------------------------------------

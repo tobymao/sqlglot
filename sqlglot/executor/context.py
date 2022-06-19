@@ -13,6 +13,11 @@ class Context:
     """
 
     def __init__(self, tables, env=None):
+        """
+        Args
+            tables (dict): table_name -> Table, representing the scope of the current execution context
+            env (Optional[dict]): dictionary of functions within the execution context
+        """
         self.tables = tables
         self.range_readers = {
             name: table.range_reader for name, table in self.tables.items()

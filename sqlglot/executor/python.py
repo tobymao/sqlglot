@@ -151,12 +151,11 @@ class PythonExecutor:
             join_context = self.context(
                 {**join_context.tables, name: context.tables[name]}
             )
-            kind = join["kind"]
 
-            if kind == "CROSS":
-                table = self.nested_loop_join(join, source, name, join_context)
-            else:
+            if join.get("source_key"):
                 table = self.sort_merge_join(join, source, name, join_context)
+            else:
+                table = self.nested_loop_join(join, source, name, join_context)
 
             join_context = merge_context(join_context, table)
 
@@ -180,18 +179,8 @@ class PythonExecutor:
         return table
 
     def sort_merge_join(self, join, a, b, context):
-        on = join["on"]
-        on = on.flatten() if isinstance(on, exp.And) else [on]
-
-        a_key = []
-        b_key = []
-
-        for condition in on:
-            for column in condition.find_all(exp.Column):
-                if b == column.text("table"):
-                    b_key.append(self.generate(column))
-                else:
-                    a_key.append(self.generate(exp.column(column.name, a)))
+        a_key = self.generate_tuple(join["source_key"])
+        b_key = self.generate_tuple(join["join_key"])
 
         context.sort(a, lambda c: c.eval_tuple(a_key))
         context.sort(b, lambda c: c.eval_tuple(b_key))
@@ -285,6 +274,8 @@ class Python(Dialect):
 
         if to == exp.DataType.Type.DATE:
             return f"datetime.date.fromisoformat({this})"
+        if to == exp.DataType.Type.TEXT:
+            return f"str({this})"
         raise NotImplementedError
 
     def _column_py(self, expression):

@@ -2323,7 +2323,7 @@ def subquery(expression, alias=None, dialect=None, **opts):
     return Select().from_(expression, dialect=dialect, **opts)
 
 
-def column(col, table=None):
+def column(col, table=None, quoted=None):
     """
     Build a Column.
     Args:
@@ -2332,7 +2332,10 @@ def column(col, table=None):
     Returns:
         Column: column instance
     """
-    return Column(this=to_identifier(col), table=to_identifier(table))
+    return Column(
+        this=to_identifier(col, quoted=quoted),
+        table=to_identifier(table, quoted=quoted),
+    )
 
 
 def replace_children(expression, fun):

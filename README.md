@@ -213,7 +213,7 @@ import sqlglot.expressions as exp
 expression_tree = sqlglot.parse_one("SELECT a FROM x")
 
 def transformer(node):
-    if isinstance(node, exp.Column) and node.text("this") == "a":
+    if isinstance(node, exp.Column) and node.name == "a":
         return sqlglot.parse_one("FUN(a)")
     return node
 
@@ -238,14 +238,14 @@ FROM users
 
 ### SQL Optimizer
 
-SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standaradize queries or provide the foundations for implementing an actual engine. 
+SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standaradize queries or provide the foundations for implementing an actual engine.
 
 ```python
 import sqlglot
 from sqlglot.optimizer import optimize
 
 >>> optimize(
-        sqlglot.parse_one("SELECT A OR (B OR (C AND D)) FROM x"), 
+        sqlglot.parse_one("SELECT A OR (B OR (C AND D)) FROM x"),
         schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT"}}
     ).sql()
 

@@ -209,7 +209,7 @@ class Scope:
             list[exp.Column]: Column instances that don't reference
                 sources in the current scope.
         """
-        return [c for c in self.columns if c.text("table") not in self.selected_sources]
+        return [c for c in self.columns if c.table not in self.selected_sources]
 
     def source_columns(self, source_name):
         """
@@ -220,9 +220,7 @@ class Scope:
         Returns:
             list[exp.Column]: Column instances that reference `source_name`
         """
-        return [
-            column for column in self.columns if column.text("table") == source_name
-        ]
+        return [column for column in self.columns if column.table == source_name]
 
     @property
     def is_subquery(self):
@@ -241,8 +239,8 @@ class Scope:
 
     def _is_reference_to_named_select(self, column):
         """Determine if column is a reference to a SELECT output column"""
-        table_name = column.text("table")
-        column_name = column.text("this")
+        table_name = column.table
+        column_name = column.name
 
         # Expression.named_selects also includes unaliased columns.
         # In this case, we want to be sure to only include selects that are aliased.
@@ -353,7 +351,7 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
 def _add_table_sources(scope):
     sources = {}
     for table in scope.tables:
-        table_name = table.text("this")
+        table_name = table.name
 
         if isinstance(table.parent, exp.Alias):
             source_name = table.parent.alias

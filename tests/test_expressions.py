@@ -345,21 +345,21 @@ class TestExpressions(unittest.TestCase):
     def test_column(self):
         dot = parse_one("a.b.c")
         column = dot.this
-        self.assertEqual(column.text("table"), "a")
-        self.assertEqual(column.text("this"), "b")
+        self.assertEqual(column.table, "a")
+        self.assertEqual(column.name, "b")
         self.assertEqual(dot.text("expression"), "c")
 
         column = parse_one("a")
-        self.assertEqual(column.text("this"), "a")
-        self.assertIsNone(column.table)
+        self.assertEqual(column.name, "a")
+        self.assertEqual(column.table, "")
 
         fields = parse_one("a.b.c.d")
         self.assertIsInstance(fields, exp.Dot)
         self.assertEqual(fields.text("expression"), "d")
         self.assertEqual(fields.this.text("expression"), "c")
         column = fields.find(exp.Column)
-        self.assertEqual(column.text("this"), "b")
-        self.assertEqual(column.text("table"), "a")
+        self.assertEqual(column.name, "b")
+        self.assertEqual(column.table, "a")
 
         column = parse_one("a[0].b")
         self.assertIsInstance(column, exp.Dot)
@@ -369,8 +369,8 @@ class TestExpressions(unittest.TestCase):
         column = parse_one("a.*")
         self.assertIsInstance(column, exp.Column)
         self.assertIsInstance(column.this, exp.Star)
-        self.assertIsInstance(column.table, exp.Identifier)
-        self.assertEqual(column.text("table"), "a")
+        self.assertIsInstance(column.args["table"], exp.Identifier)
+        self.assertEqual(column.table, "a")
 
         self.assertIsInstance(parse_one("*"), exp.Star)
 

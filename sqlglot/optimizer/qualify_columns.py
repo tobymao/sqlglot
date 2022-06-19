@@ -76,8 +76,8 @@ def _qualify_columns(scope, schema):
     unambiguous_columns = None  # lazily loaded
 
     for column in scope.columns:
-        column_table = column.text("table")
-        column_name = column.text("this")
+        column_table = column.table
+        column_name = column.name
 
         if (
             column_table
@@ -111,7 +111,7 @@ def _expand_stars(scope, schema):
         elif isinstance(expression, exp.Column) and isinstance(
             expression.this, exp.Star
         ):
-            tables = [expression.text("table")]
+            tables = [expression.table]
         else:
             continue
 

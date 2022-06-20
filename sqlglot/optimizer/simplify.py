@@ -119,13 +119,13 @@ def compare_and_prune(expression):
 
 
 def _compare_and_prune(connector, compliment, result_func):
-    args = set(connector.flatten())
+    args = {expression.sql(): expression for expression in connector.flatten()}
 
-    for a, b in itertools.combinations(args, 2):
+    for a, b in itertools.combinations(args.values(), 2):
         if is_complement(a, b):
             return compliment
 
-    return result_func(*sorted(args, key=lambda a: a.sql()))
+    return result_func(*(args[sql] for sql in sorted(args)))
 
 
 def flatten(expression):

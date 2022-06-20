@@ -230,6 +230,9 @@ class Expression:
             if not isinstance(node, self.__class__):
                 yield node
 
+    def __str__(self):
+        return self.sql()
+
     def __repr__(self):
         return self.to_s()
 

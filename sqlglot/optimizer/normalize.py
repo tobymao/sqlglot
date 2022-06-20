@@ -20,7 +20,7 @@ def normalize(expression, dnf=False, max_distance=128):
     Returns:
         sqlglot.Expression: normalized expression
     """
-    expression = simplify(expression).transform(de_morgans_law, copy=False)
+    expression = expression.transform(de_morgans_law, copy=False)
 
     expression = while_changing(
         expression, lambda e: distributive_law(e, dnf, max_distance)

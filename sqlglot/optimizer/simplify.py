@@ -27,13 +27,12 @@ def simplify(expression):
         expression = expression.transform(flatten, copy=False)
         expression = expression.transform(simplify_conjunctions, copy=False)
         expression = expression.transform(compare_and_prune, copy=False)
-        expression = expression.transform(absorb, copy=False)
-        expression = expression.transform(eliminate, copy=False)
+        expression = expression.transform(absorb_and_eliminate, copy=False)
         expression = expression.transform(simplify_parens, copy=False)
-        remove_where_true(expression)
         return expression
 
     expression = while_changing(expression, _simplify)
+    remove_where_true(expression)
     return expression
 
 
@@ -119,7 +118,10 @@ def compare_and_prune(expression):
 
 
 def _compare_and_prune(connector, compliment, result_func):
-    args = {expression.sql(): expression for expression in connector.flatten()}
+    args = {
+        expression.sql(normalize=True, identify=True): expression
+        for expression in connector.flatten()
+    }
 
     for a, b in itertools.combinations(args.values(), 2):
         if is_complement(a, b):
@@ -141,63 +143,59 @@ def flatten(expression):
     return expression
 
 
-def absorb(expression):
+def absorb_and_eliminate(expression):
     """
-    A AND (A OR B) -> A
-    A OR (A AND B) -> A
-    A AND (NOT A OR B) -> A AND B
-    A OR (NOT A AND B) -> A OR B
+    absorption:
+        A AND (A OR B) -> A
+        A OR (A AND B) -> A
+        A AND (NOT A OR B) -> A AND B
+        A OR (NOT A AND B) -> A OR B
+    elimination:
+        (A AND B) OR (A AND NOT B) -> A
+        (A OR B) AND (A OR NOT B) -> A
     """
     if isinstance(expression, exp.And):
-        return _absorb(expression, exp.Or)
+        return _absorb_and_eliminate(expression, exp.Or)
     if isinstance(expression, exp.Or):
-        return _absorb(expression, exp.And)
+        return _absorb_and_eliminate(expression, exp.And)
     return expression
 
 
-def _absorb(connector, kind):
-    for a, b in itertools.permutations(connector.unnest_operands()):
+def _absorb_and_eliminate(connector, kind):
+    for a, b in itertools.permutations(connector.flatten(), 2):
+        a = a.unnest()
+        b = b.unnest()
         if isinstance(a, kind):
-            if b in (a.left, a.right):
-                return b
-            if exp.not_(b) == a.left:
-                return connector.__class__(this=b, expression=a.right)
-            if exp.not_(b) == a.right:
-                return connector.__class__(this=b, expression=a.left)
-    return connector
+            aa, ab = a.unnest_operands()
 
+            # absorb
+            if b in (aa, ab):
+                a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
+            elif is_not(b, aa):
+                aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+            elif is_not(b, ab):
+                ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+            elif isinstance(b, kind):
+                # eliminate
+                rhs = b.unnest_operands()
+                ba, bb = rhs
 
-def eliminate(expression):
-    """
-    (A AND B) OR (A AND NOT B) -> A
-    (A OR B) AND (A OR NOT B) -> A
-    """
-    if isinstance(expression, exp.Or):
-        return _eliminate(expression, exp.And)
-    if isinstance(expression, exp.And):
-        return _eliminate(expression, exp.Or)
-    return expression
+                if aa in rhs and (is_not(ab, ba) or is_not(ab, bb)):
+                    a.replace(aa)
+                    b.replace(aa)
+                elif ab in rhs and (is_not(aa, ba) or is_not(aa, bb)):
+                    a.replace(ab)
+                    b.replace(ab)
 
-
-def _eliminate(connector, kind):
-    left, right = connector.unnest_operands()
-
-    if isinstance(left, kind) and isinstance(right, kind):
-        aa, ab = left.unnest_operands()
-        ba, bb = right.unnest_operands()
-
-        for lhs, rhs in [
-            ([(aa, ab), (ab, aa)], (ba, bb)),
-            ([(ba, bb), (bb, ba)], (aa, ab)),
-        ]:
-            for a, b in lhs:
-                if a in rhs and exp.not_(b) in rhs:
-                    return a
     return connector
 
 
 def is_complement(a, b):
-    return exp.not_(a) == b or exp.not_(b) == a
+    return is_not(a, b) or is_not(b, a)
+
+
+def is_not(a, b):
+    return isinstance(b, exp.Not) and b.this == a
 
 
 def simplify_parens(expression):

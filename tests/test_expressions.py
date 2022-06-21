@@ -196,9 +196,15 @@ class TestExpressions(unittest.TestCase):
         )
 
     def test_sql(self):
-        assert parse_one("x + y * 2").sql() == "x + y * 2"
-        assert (
-            parse_one('select "x"').sql(dialect="hive", pretty=True) == "SELECT\n  `x`"
+        self.assertEqual(parse_one("x + y * 2").sql(), "x + y * 2")
+        self.assertEqual(
+            parse_one('select "x"').sql(dialect="hive", pretty=True), "SELECT\n  `x`"
+        )
+        self.assertEqual(
+            parse_one("X + y").sql(identify=True, normalize=True), '"x" + "y"'
+        )
+        self.assertEqual(
+            parse_one("SUM(X)").sql(identify=True, normalize=True), 'SUM("x")'
         )
 
     def test_transform_with_arguments(self):

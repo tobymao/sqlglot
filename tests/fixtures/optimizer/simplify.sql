@@ -218,7 +218,7 @@ FALSE;
 TRUE;
 
 ((NOT FALSE) AND (x = x)) AND (FALSE OR 1 <> 2);
-(1 <> 2);
+1 <> 2;
 
 (('a' = 'a') AND TRUE and NOT FALSE);
 TRUE;

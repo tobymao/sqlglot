@@ -2,7 +2,11 @@ import itertools
 
 from sqlglot.helper import while_changing
 from sqlglot.expressions import FALSE, NULL, TRUE
+from sqlglot.generator import Generator
 import sqlglot.expressions as exp
+
+
+GENERATOR = Generator(normalize=True, identify=True)
 
 
 def simplify(expression):
@@ -69,6 +73,19 @@ def simplify_not(expression):
     return expression
 
 
+def flatten(expression):
+    """
+    A AND (B AND C) -> A AND B AND C
+    A OR (B OR C) -> A OR B OR C
+    """
+    if isinstance(expression, exp.Connector):
+        for node in expression.args.values():
+            child = node.unnest()
+            if isinstance(child, expression.__class__):
+                node.replace(child)
+    return expression
+
+
 def simplify_conjunctions(expression):
     if isinstance(expression, exp.Connector):
         left = expression.left
@@ -118,9 +135,10 @@ def compare_and_prune(expression):
 
 
 def _compare_and_prune(connector, compliment, result_func):
+    # deduplicate the expressions and use the sql for sorting later on
+    # don't use a set because that calls hash which is not free
     args = {
-        expression.sql(normalize=True, identify=True): expression
-        for expression in connector.flatten()
+        GENERATOR.generate(expression): expression for expression in connector.flatten()
     }
 
     for a, b in itertools.combinations(args.values(), 2):
@@ -128,19 +146,6 @@ def _compare_and_prune(connector, compliment, result_func):
             return compliment
 
     return result_func(*(args[sql] for sql in sorted(args)))
-
-
-def flatten(expression):
-    """
-    A AND (B AND C) -> A AND B AND C
-    A OR (B OR C) -> A OR B OR C
-    """
-    if isinstance(expression, exp.Connector):
-        for node in expression.args.values():
-            child = node.unnest()
-            if isinstance(child, expression.__class__):
-                node.replace(child)
-    return expression
 
 
 def absorb_and_eliminate(expression):

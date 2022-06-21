@@ -74,7 +74,7 @@ def decorrelate_subqueries(expression):
             elif predicate:
                 on = exp.and_(on, predicate)
 
-            select = select.group_by(internal)
+            select = select.group_by(internal, copy=False)
 
             scope.parent.expression.join(
                 select,

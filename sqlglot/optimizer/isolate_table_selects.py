@@ -18,10 +18,11 @@ def isolate_table_selects(expression):
                 )
 
             parent = source.parent
+
             parent.replace(
                 exp.select("*")
-                .from_(exp.alias_(source.copy(), source.name, table=True))
-                .subquery(parent.alias)
+                .from_(exp.alias_(source, source.name, table=True), copy=False)
+                .subquery(parent.alias, copy=False)
             )
 
     return expression

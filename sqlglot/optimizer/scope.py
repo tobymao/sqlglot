@@ -52,7 +52,10 @@ class Scope:
         self.scope_type = scope_type
         self.subquery_scopes = []
         self.union = None
+
         self._selected_sources = None
+        self._columns = None
+        self._external_columns = None
 
     def branch(self, expression, scope_type, add_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
@@ -132,21 +135,23 @@ class Scope:
             list[exp.Column]: Column instances in this scope, plus any
                 Columns that reference this scope from correlated subqueries.
         """
-        columns = self._find_in_scope(
-            lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
-        )
+        if self._columns is None:
+            columns = self._find_in_scope(
+                lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
+            )
 
-        external_columns = [
-            column
-            for scope in self.subquery_scopes
-            for column in scope.external_columns
-        ]
+            external_columns = [
+                column
+                for scope in self.subquery_scopes
+                for column in scope.external_columns
+            ]
 
-        return [
-            c
-            for c in columns + external_columns
-            if not self._is_reference_to_named_select(c)
-        ]
+            self._columns = [
+                c
+                for c in columns + external_columns
+                if not self._is_reference_to_named_select(c)
+            ]
+        return self._columns
 
     @property
     def selected_sources(self):
@@ -209,7 +214,11 @@ class Scope:
             list[exp.Column]: Column instances that don't reference
                 sources in the current scope.
         """
-        return [c for c in self.columns if c.table not in self.selected_sources]
+        if self._external_columns is None:
+            self._external_columns = [
+                c for c in self.columns if c.table not in self.selected_sources
+            ]
+        return self._external_columns
 
     def source_columns(self, source_name):
         """

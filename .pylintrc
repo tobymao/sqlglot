@@ -1,6 +1,7 @@
 [MESSAGES CONTROL]
 
 disable=
+    arguments-out-of-order,
     attribute-defined-outside-init,
     consider-using-ternary,
     cyclic-import,

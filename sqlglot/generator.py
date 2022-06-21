@@ -28,6 +28,7 @@ class Generator:
         identifier (str): specifies which character to use to delimit identifiers. Default: ".
         identify (bool): if set to True all identifiers will be delimited by the corresponding
             character.
+        normalize (bool): if set to True all identifiers will lower cased
         quote (str): specifies a character which should be treated as a quote (eg. to delimit
             literals). Default: '.
         escape (str): specifies an escape character. Default: '.
@@ -52,6 +53,7 @@ class Generator:
         "configured_pretty",
         "identifier",
         "identify",
+        "normalize",
         "quote",
         "escape",
         "pad",
@@ -71,6 +73,7 @@ class Generator:
         pretty=None,
         identifier=None,
         identify=False,
+        normalize=False,
         quote=None,
         escape=None,
         pad=2,
@@ -89,6 +92,7 @@ class Generator:
         self.configured_pretty = self.pretty
         self.identifier = identifier or '"'
         self.identify = identify
+        self.normalize = normalize
         self.quote = quote or "'"
         self.escape = escape or "'"
         self.pad = pad
@@ -361,7 +365,8 @@ class Generator:
         return ""
 
     def identifier_sql(self, expression):
-        value = expression.args.get("this") or ""
+        value = expression.name
+        value = value.lower() if self.normalize else value
         if expression.args.get("quoted") or self.identify:
             return f"{self.identifier}{value}{self.identifier}"
         return value

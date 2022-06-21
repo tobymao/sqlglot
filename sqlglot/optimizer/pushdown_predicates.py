@@ -20,8 +20,6 @@ def pushdown_predicates(expression):
     Returns:
         sqlglot.Expression: optimized expression
     """
-    expression = simplify(expression)
-
     for scope in reversed(traverse_scope(expression)):
         select = scope.expression
         where = select.args.get("where")
@@ -41,7 +39,10 @@ def pushdown(condition, sources):
     if not condition:
         return
 
-    condition = condition.unnest()
+    simplified = simplify(condition)
+    condition.replace(simplified)
+    condition = simplified
+
     cnf_like = normalized(condition) or not normalized(condition, dnf=True)
 
     predicates = list(

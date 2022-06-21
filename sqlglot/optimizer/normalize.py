@@ -111,23 +111,29 @@ def distributive_law(expression, dnf, max_distance):
 
     to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)
 
-    expression = expression.transform(flatten, copy=False).transform(
-        compare_and_prune, copy=False
-    )
-
     exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance))
 
+    if isinstance(expression, exp.Connector):
+        expression = expression.transform(flatten, copy=False).transform(
+            compare_and_prune, copy=False
+        )
+
     if isinstance(expression, from_exp):
-        l = expression.left.unnest()
-        r = expression.right.unnest()
+        a, b = expression.unnest_operands()
 
         from_func = exp.and_ if from_exp == exp.And else exp.or_
         to_func = exp.and_ if to_exp == exp.And else exp.or_
 
-        if isinstance(r, to_exp):
-            return _distribute(l, r, from_func, to_func)
-        if isinstance(l, to_exp):
-            return _distribute(r, l, from_func, to_func)
+        if isinstance(a, to_exp) and isinstance(b, to_exp):
+            if len(tuple(a.find_all(exp.Connector))) < len(
+                tuple(b.find_all(exp.Connector))
+            ):
+                return _distribute(a, b, from_func, to_func)
+            return _distribute(b, a, from_func, to_func)
+        if isinstance(a, to_exp):
+            return _distribute(b, a, from_func, to_func)
+        if isinstance(b, to_exp):
+            return _distribute(a, b, from_func, to_func)
 
     return expression
 

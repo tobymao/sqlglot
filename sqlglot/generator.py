@@ -554,6 +554,10 @@ class Generator:
         # pylint: disable=unused-argument
         return "*"
 
+    def placeholder_sql(self, expression):
+        # pylint: disable=unused-argument
+        return "?"
+
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""

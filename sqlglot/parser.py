@@ -1249,6 +1249,7 @@ class Parser:
             or self._parse_star()
             or self._parse_null()
             or self._parse_boolean()
+            or self._parse_placeholder()
         )
 
         if this:
@@ -1598,6 +1599,11 @@ class Parser:
     def _parse_star(self):
         if self._match(TokenType.STAR):
             return exp.Star()
+        return None
+
+    def _parse_placeholder(self):
+        if self._match(TokenType.QMARK):
+            return exp.Placeholder()
         return None
 
     def _parse_csv(self, parse):

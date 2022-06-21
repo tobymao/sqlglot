@@ -56,6 +56,8 @@ def decorrelate_subqueries(expression):
             alias = f"_d_{next(sequence)}"
             on = exp.and_(f"\"{alias}\".\"{internal.text('this')}\" = {column.sql()}")
 
+            predicate = select.find_ancestor(*exp.PREDICATES, exp.Exists)
+
             eq.replace(exp.TRUE)
             select.replace(
                 exp.Column(
@@ -63,8 +65,6 @@ def decorrelate_subqueries(expression):
                     table=exp.to_identifier(alias),
                 )
             )
-
-            predicate = select.find_ancestor(*exp.PREDICATES, exp.Exists)
 
             if predicate:
                 predicate.replace(exp.TRUE)

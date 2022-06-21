@@ -228,7 +228,7 @@ class Expression:
             prune=lambda n, p, *_: p and not isinstance(n, self.__class__)
         ):
             if not isinstance(node, self.__class__):
-                yield node
+                yield node.unnest()
 
     def __str__(self):
         return self.sql()
@@ -293,7 +293,10 @@ class Expression:
 
         if new_node is None:
             raise ValueError("A transformed node cannot be None")
-        if not isinstance(new_node, Expression) or new_node is not node:
+        if not isinstance(new_node, Expression):
+            return new_node
+        if new_node is not node:
+            new_node.parent = node.parent
             return new_node
 
         replace_children(
@@ -318,9 +321,10 @@ class Expression:
         if not self.parent:
             return
 
-        replace_children(
-            self.parent, lambda child: expressions if child is self else child
-        )
+        parent = self.parent
+        self.parent = None
+
+        replace_children(parent, lambda child: expressions if child is self else child)
 
     def assert_is(self, type_):
         """
@@ -520,7 +524,7 @@ class Identifier(Expression):
         )
 
     def __hash__(self):
-        return hash((self.key, self.this.upper()))
+        return hash((self.key, self.this.lower()))
 
 
 class Insert(Expression):
@@ -1927,7 +1931,7 @@ def _norm_args(expression):
 
 
 def _norm_arg(arg):
-    return arg.upper() if isinstance(arg, str) else arg
+    return arg.lower() if isinstance(arg, str) else arg
 
 
 def _all_functions():

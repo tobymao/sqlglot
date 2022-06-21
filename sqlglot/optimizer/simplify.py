@@ -124,7 +124,7 @@ def _compare_and_prune(connector, compliment, result_func):
     }
 
     for a, b in itertools.combinations(args.values(), 2):
-        if is_complement(a, b):
+        if is_complement(a, b) or is_complement(b, a):
             return compliment
 
     return result_func(*(args[sql] for sql in sorted(args)))
@@ -171,19 +171,19 @@ def _absorb_and_eliminate(connector, kind):
             # absorb
             if b in (aa, ab):
                 a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
-            elif is_not(b, aa):
+            elif is_complement(b, aa):
                 aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
-            elif is_not(b, ab):
+            elif is_complement(b, ab):
                 ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
             elif isinstance(b, kind):
                 # eliminate
                 rhs = b.unnest_operands()
                 ba, bb = rhs
 
-                if aa in rhs and (is_not(ab, ba) or is_not(ab, bb)):
+                if aa in rhs and (is_complement(ab, ba) or is_complement(ab, bb)):
                     a.replace(aa)
                     b.replace(aa)
-                elif ab in rhs and (is_not(aa, ba) or is_not(aa, bb)):
+                elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
                     a.replace(ab)
                     b.replace(ab)
 
@@ -191,10 +191,6 @@ def _absorb_and_eliminate(connector, kind):
 
 
 def is_complement(a, b):
-    return is_not(a, b) or is_not(b, a)
-
-
-def is_not(a, b):
     return isinstance(b, exp.Not) and b.this == a
 
 

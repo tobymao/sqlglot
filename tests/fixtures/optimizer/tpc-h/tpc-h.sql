@@ -342,10 +342,10 @@ JOIN (
       "orders"."o_orderdate" AS "o_orderdate"
     FROM "orders" AS "orders"
     WHERE
-      "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
+      "orders"."o_orderdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
+      AND "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
 ) AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "orders"."o_orderdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
 CROSS JOIN (
     SELECT
       "region"."r_regionkey" AS "r_regionkey",
@@ -448,6 +448,15 @@ order by
         supp_nation,
         cust_nation,
         l_year;
+WITH "_e_0" AS (
+    SELECT
+      "nation"."n_nationkey" AS "n_nationkey",
+      "nation"."n_name" AS "n_name"
+    FROM "nation" AS "nation"
+    WHERE
+      "nation"."n_name" = 'FRANCE'
+      OR "nation"."n_name" = 'GERMANY'
+)
 SELECT
   "shipping"."supp_nation" AS "supp_nation",
   "shipping"."cust_nation" AS "cust_nation",
@@ -491,26 +500,12 @@ FROM (
         FROM "customer" AS "customer"
     ) AS "customer"
       ON "customer"."c_custkey" = "orders"."o_custkey"
-    JOIN (
-        SELECT
-          "nation"."n_nationkey" AS "n_nationkey",
-          "nation"."n_name" AS "n_name"
-        FROM "nation" AS "nation"
-    ) AS "n1"
-      ON ("n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY')
-      AND "supplier"."s_nationkey" = "n1"."n_nationkey"
-    JOIN (
-        SELECT
-          "nation"."n_nationkey" AS "n_nationkey",
-          "nation"."n_name" AS "n_name"
-        FROM "nation" AS "nation"
-        WHERE
-          "nation"."n_name" = 'FRANCE'
-          OR "nation"."n_name" = 'GERMANY'
-    ) AS "n2"
-      ON ("n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE')
+    JOIN "_e_0" AS "n1"
+      ON "supplier"."s_nationkey" = "n1"."n_nationkey"
+    JOIN "_e_0" AS "n2"
+      ON "customer"."c_nationkey" = "n2"."n_nationkey"
+      AND ("n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE')
       AND ("n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY')
-      AND "customer"."c_nationkey" = "n2"."n_nationkey"
 ) AS "shipping"
 GROUP BY
   "shipping"."supp_nation",
@@ -807,10 +802,10 @@ JOIN (
       "orders"."o_orderdate" AS "o_orderdate"
     FROM "orders" AS "orders"
     WHERE
-      "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
+      "orders"."o_orderdate" < CAST('1993-10-01' AS DATE) + INTERVAL '3' month
+      AND "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
 ) AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "orders"."o_orderdate" < CAST('1993-10-01' AS DATE) + INTERVAL '3' month
 JOIN (
     SELECT
       "lineitem"."l_orderkey" AS "l_orderkey",
@@ -1201,11 +1196,11 @@ JOIN (
       "part"."p_size" AS "p_size"
     FROM "part" AS "part"
     WHERE
-      "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
+      "part"."p_brand" <> 'Brand#45'
+      AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
+      AND NOT "part"."p_type" LIKE 'MEDIUM POLISHED%'
 ) AS "part"
-  ON NOT "part"."p_type" LIKE 'MEDIUM POLISHED%'
-  AND "part"."p_brand" <> 'Brand#45'
-  AND "part"."p_partkey" = "partsupp"."ps_partkey"
+  ON "part"."p_partkey" = "partsupp"."ps_partkey"
 WHERE
   NOT "partsupp"."ps_suppkey" IN (
       SELECT

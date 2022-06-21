@@ -321,10 +321,10 @@ class Expression:
         if not self.parent:
             return
 
-        replace_children(
-            self.parent, lambda child: expressions if child is self else child
-        )
+        parent = self.parent
         self.parent = None
+
+        replace_children(parent, lambda child: expressions if child is self else child)
 
     def assert_is(self, type_):
         """

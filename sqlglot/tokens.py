@@ -187,6 +187,7 @@ class TokenType(AutoName):
     WITHIN_GROUP = auto()
     WITHOUT = auto()
     ZONE = auto()
+    QMARK = auto()
 
 
 class Token:
@@ -253,6 +254,7 @@ class Tokenizer:
         "/": TokenType.SLASH,
         "*": TokenType.STAR,
         "~": TokenType.TILDA,
+        "?": TokenType.QMARK,
     }
 
     KEYWORDS = {

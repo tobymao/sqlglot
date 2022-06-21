@@ -1316,6 +1316,10 @@ class Star(Expression):
         return "*"
 
 
+class Placeholder(Expression):
+    arg_types = {}
+
+
 class Null(Condition):
     arg_types = {}
 

@@ -107,6 +107,7 @@ class Parser:
         TokenType.SHOW,
         TokenType.TABLE_SAMPLE,
         TokenType.TEMPORARY,
+        TokenType.TOP,
         TokenType.TRUNCATE,
         TokenType.TRUE,
         TokenType.UNBOUNDED,
@@ -795,13 +796,22 @@ class Parser:
             )
 
         if isinstance(this, exp.Subquery) or self._match(TokenType.SELECT):
+            hint = self._parse_hint()
+            all_ = self._match(TokenType.ALL)
+            distinct = self._match(TokenType.DISTINCT)
+            if all_ and distinct:
+                self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
+
+            limit = self._parse_limit(top=True)
+            expressions = self._parse_csv(
+                lambda: self._parse_annotation(self._parse_expression())
+            )
+
             this = self.expression(
                 exp.Select,
-                hint=self._parse_hint(),
-                distinct=self._match(TokenType.DISTINCT),
-                expressions=self._parse_csv(
-                    lambda: self._parse_annotation(self._parse_expression())
-                ),
+                hint=hint,
+                distinct=distinct,
+                expressions=expressions,
                 **{
                     "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
@@ -811,7 +821,7 @@ class Parser:
                     "having": self._parse_having(),
                     "qualify": self._parse_qualify(),
                     "order": self._parse_order(),
-                    "limit": self._parse_limit(),
+                    "limit": limit or self._parse_limit(),
                     "offset": self._parse_offset(),
                 },
             )
@@ -1034,8 +1044,8 @@ class Parser:
         self._match(TokenType.ASC)
         return self.expression(exp.Ordered, this=this, desc=self._match(TokenType.DESC))
 
-    def _parse_limit(self):
-        if not self._match(TokenType.LIMIT):
+    def _parse_limit(self, top=False):
+        if not self._match(TokenType.TOP if top else TokenType.LIMIT):
             return None
         return self.expression(exp.Limit, this=self._parse_number())
 

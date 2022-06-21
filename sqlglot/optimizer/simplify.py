@@ -163,8 +163,6 @@ def absorb_and_eliminate(expression):
 
 def _absorb_and_eliminate(connector, kind):
     for a, b in itertools.permutations(connector.flatten(), 2):
-        a = a.unnest()
-        b = b.unnest()
         if isinstance(a, kind):
             aa, ab = a.unnest_operands()
 

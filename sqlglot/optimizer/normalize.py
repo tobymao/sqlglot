@@ -129,8 +129,7 @@ def distributive_law(expression, dnf, max_distance):
                 tuple(b.find_all(exp.Connector))
             ):
                 return _distribute(a, b, from_func, to_func)
-            else:
-                return _distribute(b, a, from_func, to_func)
+            return _distribute(b, a, from_func, to_func)
         if isinstance(a, to_exp):
             return _distribute(b, a, from_func, to_func)
         if isinstance(b, to_exp):

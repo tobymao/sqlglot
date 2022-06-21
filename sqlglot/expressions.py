@@ -157,7 +157,7 @@ class Expression:
         if bfs:
             yield from self.bfs()
         else:
-            yield from self.dfs(self.parent)
+            yield from self.dfs()
 
     def dfs(self, parent=None, key=None, prune=None):
         """
@@ -167,6 +167,7 @@ class Expression:
         Returns:
             the generator object.
         """
+        parent = parent or self.parent
         yield self, parent, key
         if prune and prune(self, parent, key):
             return

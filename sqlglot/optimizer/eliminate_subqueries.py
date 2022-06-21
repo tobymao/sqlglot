@@ -36,12 +36,14 @@ def eliminate_subqueries(expression):
             continue
 
         alias = f"_e_{next(sequence)}"
-        expression.with_(alias, as_=query.copy(), copy=False)
+
         for dup in duplicates:
             parent = dup.parent
             if isinstance(parent, exp.Subquery):
-                parent.replace(exp.alias_(alias, parent.alias_or_name))
+                parent.replace(exp.alias_(alias, parent.alias_or_name, table=True))
             elif isinstance(parent, exp.Union):
                 dup.replace(sqlglot.select("*").from_(alias))
+
+        expression.with_(alias, as_=query, copy=False)
 
     return expression

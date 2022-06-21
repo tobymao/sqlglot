@@ -228,7 +228,7 @@ class Expression:
             prune=lambda n, p, *_: p and not isinstance(n, self.__class__)
         ):
             if not isinstance(node, self.__class__):
-                yield node
+                yield node.unnest()
 
     def __str__(self):
         return self.sql()

@@ -22,7 +22,7 @@ class Expression:
     """
 
     arg_types = {"this": True}
-    __slots__ = ("key", "args", "parent", "arg_key")
+    __slots__ = ("key", "args", "parent", "arg_key", "sorted")
 
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
@@ -30,6 +30,7 @@ class Expression:
         self._set_parent(**args)
         self.parent = None
         self.arg_key = None
+        self.sorted = False
 
     def __eq__(self, other):
         return type(self) is type(other) and _norm_args(self) == _norm_args(other)
@@ -93,9 +94,11 @@ class Expression:
         self._set_parent(arg=value)
 
     def _set_parent(self, **kwargs):
+        self.sorted = False
         for arg_key, node in kwargs.items():
             for v in ensure_list(node):
                 if isinstance(v, Expression):
+                    v.sorted = False
                     v.parent = self
                     v.arg_key = arg_key
 
@@ -2350,6 +2353,8 @@ def replace_children(expression, fun):
     """
     Replace children of an expression with the result of a lambda fun(child) -> exp.
     """
+    expression.sorted = False
+
     for k, v in expression.args.items():
         is_list_arg = isinstance(v, list)
 
@@ -2360,6 +2365,7 @@ def replace_children(expression, fun):
             if isinstance(cn, Expression):
                 cns = ensure_list(fun(cn))
                 for child_node in cns:
+                    child_node.sorted = False
                     child_node.parent = expression
             else:
                 cns = [cn]

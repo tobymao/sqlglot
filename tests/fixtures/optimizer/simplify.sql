@@ -118,6 +118,9 @@ A OR B;
 (A OR C) AND ((A OR C) OR B);
 A OR C;
 
+(A OR C) AND (A OR B OR C);
+A OR C;
+
 --------------------------------------
 -- Elimination
 --------------------------------------
@@ -189,6 +192,9 @@ a AND b AND c AND d;
 
 (c AND (a AND b)) AND ((b AND a) AND c);
 a AND b AND c;
+
+(A AND B AND C) OR (C AND B AND A);
+A AND B AND C;
 
 --------------------------------------
 -- Where removal

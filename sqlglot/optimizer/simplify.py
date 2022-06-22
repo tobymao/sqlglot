@@ -25,15 +25,20 @@ def simplify(expression):
         sqlglot.Expression: simplified expression
     """
 
-    def _simplify(expression):
-        expression = expression.transform(simplify_equality, copy=False)
-        expression = expression.transform(simplify_not, copy=False)
-        expression = expression.transform(flatten, copy=False)
-        expression = expression.transform(simplify_conjunctions, copy=False)
-        expression = expression.transform(compare_and_prune, copy=False)
-        expression = expression.transform(absorb_and_eliminate, copy=False)
-        expression = expression.transform(simplify_parens, copy=False)
-        return expression
+    def _simplify(expression, root=True):
+        node = sort_and_dedup(expression)
+        node = absorb_and_eliminate(node)
+        exp.replace_children(node, lambda e: _simplify(e, False))
+        node = simplify_equality(node)
+        node = simplify_not(node)
+        node = flatten(node)
+        node = simplify_conjunctions(node)
+        node = remove_compliments(node)
+        node.parent = expression.parent
+        node = simplify_parens(node)
+        if root:
+            expression.replace(node)
+        return node
 
     expression = while_changing(expression, _simplify)
     remove_where_true(expression)
@@ -123,29 +128,55 @@ def simplify_conjunctions(expression):
     return expression
 
 
-def compare_and_prune(expression):
+def remove_compliments(expression):
+    """
+    Removing compliments.
+
+    A AND NOT A -> FALSE
+    A OR NOT A -> TRUE
+    """
+    if isinstance(expression, exp.Connector):
+        compliment = FALSE if isinstance(expression, exp.And) else TRUE
+
+        for a, b in itertools.combinations(expression.flatten(), 2):
+            if is_complement(a, b):
+                return compliment
+    return expression
+
+
+def sort_and_dedup(expression):
     """
     Sorts ANDs and ORs, removing duplicates and compliment expressions.
     """
     if isinstance(expression, exp.And):
-        return _compare_and_prune(expression, FALSE, exp.and_)
+        return _sort_and_dedup(expression, exp.and_)
     if isinstance(expression, exp.Or):
-        return _compare_and_prune(expression, TRUE, exp.or_)
+        return _sort_and_dedup(expression, exp.or_)
     return expression
 
 
-def _compare_and_prune(connector, compliment, result_func):
+def _sort_and_dedup(connector, result_func):
     # deduplicate the expressions and use the sql for sorting later on
     # don't use a set because that calls hash which is not free
-    args = {
-        GENERATOR.generate(expression): expression for expression in connector.flatten()
-    }
+    flattened = tuple(connector.flatten())
 
-    for a, b in itertools.combinations(args.values(), 2):
-        if is_complement(a, b) or is_complement(b, a):
-            return compliment
+    if all(expression.sorted for expression in flattened):
+        return connector
 
-    return result_func(*(args[sql] for sql in sorted(args)))
+    args = tuple(
+        {GENERATOR.generate(expression): expression for expression in flattened}.items()
+    )
+
+    for expression in flattened:
+        expression.sorted = True
+
+    for i, (sql, expression) in enumerate(args):
+        if i > 0 and sql < args[i - 1][0]:
+            return result_func(*(e for _, e in sorted(args, key=lambda t: t[0])))
+
+    if len(args) < len(flattened):
+        return result_func(*(e for _, e in args))
+    return connector
 
 
 def absorb_and_eliminate(expression):
@@ -172,7 +203,7 @@ def _absorb_and_eliminate(connector, kind):
             aa, ab = a.unnest_operands()
 
             # absorb
-            if b in (aa, ab):
+            if (set(b.flatten()) if isinstance(b, kind) else {b}) < set(a.flatten()):
                 a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
             elif is_complement(b, aa):
                 aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)

@@ -32,25 +32,30 @@ class Context:
     def eval_tuple(self, codes):
         return tuple(self.eval(code) for code in codes)
 
+    def __iter__(self):
+        return self.table_iter(list(self.tables)[0])
+
     def table_iter(self, table):
-        for i in range(self.tables[table].length):
-            self.set_row(table, i)
-            yield self
+        self.env["scope"] = self.row_readers
+
+        for reader in self.tables[table]:
+            yield reader, self
 
     def sort(self, table, key):
-        def _sort(i):
-            self.set_row(table, i)
-            return key(self)
+        table = self.tables[table]
 
-        data_table = self.tables[table]
-        index = list(range(data_table.length))
-        index.sort(key=_sort)
+        def sort_key(row):
+            table.reader.row = row
+            return self.eval_tuple(key)
 
-        for column, rows in data_table.data.items():
-            data_table.data[column] = [rows[i] for i in index]
+        table.rows.sort(key=sort_key)
 
     def set_row(self, table, row):
         self.row_readers[table].row = row
+        self.env["scope"] = self.row_readers
+
+    def set_index(self, table, index):
+        self.row_readers[table].row = self.tables[table].rows[index]
         self.env["scope"] = self.row_readers
 
     def set_range(self, table, start, end):

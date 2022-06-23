@@ -1,5 +1,6 @@
 import ast
 import csv
+import collections
 import gzip
 import itertools
 
@@ -76,7 +77,7 @@ class PythonExecutor:
         return Context(tables, env=self.env)
 
     def table(self, expressions):
-        return Table(*(expression.alias_or_name for expression in expressions))
+        return Table(expression.alias_or_name for expression in expressions)
 
     def scan(self, step, context, source=None):
         source = source or step.source.name
@@ -90,25 +91,26 @@ class PythonExecutor:
         else:
             table_iter = self.scan_csv(source)
 
-        sink = None
+        if projections:
+            sink = self.table(step.projections)
+        elif source in context:
+            sink = Table(context[source].columns)
+        else:
+            sink = None
 
-        for ctx in table_iter:
-            if not sink:
-                sink = (
-                    self.table(step.projections)
-                    if projections
-                    else Table(*ctx[source].columns)
-                )
+        for reader, ctx in table_iter:
+            if sink is None:
+                sink = Table(ctx[source].columns)
 
             if condition and not ctx.eval(condition):
                 continue
 
             if projections:
-                sink.add(ctx.eval_tuple(projections))
+                sink.append(ctx.eval_tuple(projections))
             else:
-                sink.add(ctx[source].tuple())
+                sink.append(reader.row)
 
-            if sink.length >= step.limit:
+            if len(sink) >= step.limit:
                 break
 
         return self.context({step.name: sink})
@@ -131,12 +133,12 @@ class PythonExecutor:
             f.seek(0)
             next(reader)
 
-            table = Table(*columns, _columnar=False)
+            table = Table(columns)
             context = self.context({file: table})
 
             for row in reader:
                 context.set_row(file, tuple(t(v) for t, v in zip(types, row)))
-                yield context
+                yield context[file], context
 
     def join(self, step, context):
         source = step.name
@@ -153,7 +155,7 @@ class PythonExecutor:
             )
 
             if join.get("source_key"):
-                table = self.sort_merge_join(join, source, name, join_context)
+                table = self.hash_join(join, source, name, join_context)
             else:
                 table = self.nested_loop_join(join, source, name, join_context)
 
@@ -170,11 +172,29 @@ class PythonExecutor:
         return merge_context(join_context, context.tables[source])
 
     def nested_loop_join(self, _join, a, b, context):
-        table = Table(*(context.tables[a].columns + context.tables[b].columns))
+        table = Table(context.tables[a].columns + context.tables[b].columns)
 
-        for _ in context.table_iter(a):
-            for ctx in context.table_iter(b):
-                table.add(ctx[a].tuple() + ctx[b].tuple())
+        for reader_a, _ in context.table_iter(a):
+            for reader_b, _ in context.table_iter(b):
+                table.append(reader_a.row + reader_b.row)
+
+        return table
+
+    def hash_join(self, join, a, b, context):
+        a_key = self.generate_tuple(join["source_key"])
+        b_key = self.generate_tuple(join["join_key"])
+
+        results = collections.defaultdict(lambda: ([], []))
+
+        for reader, ctx in context.table_iter(a):
+            results[ctx.eval_tuple(a_key)][0].append(reader.row)
+        for reader, ctx in context.table_iter(b):
+            results[ctx.eval_tuple(b_key)][1].append(reader.row)
+
+        table = Table(context.tables[a].columns + context.tables[b].columns)
+        for a_group, b_group in results.values():
+            for a_row, b_row in itertools.product(a_group, b_group):
+                table.append(a_row + b_row)
 
         return table
 
@@ -182,18 +202,18 @@ class PythonExecutor:
         a_key = self.generate_tuple(join["source_key"])
         b_key = self.generate_tuple(join["join_key"])
 
-        context.sort(a, lambda c: c.eval_tuple(a_key))
-        context.sort(b, lambda c: c.eval_tuple(b_key))
+        context.sort(a, a_key)
+        context.sort(b, b_key)
 
         a_i = 0
         b_i = 0
-        a_n = context.tables[a].length
-        b_n = context.tables[b].length
+        a_n = len(context.tables[a])
+        b_n = len(context.tables[b])
 
-        table = Table(*(context.tables[a].columns + context.tables[b].columns))
+        table = Table(context.tables[a].columns + context.tables[b].columns)
 
         def get_key(source, key, i):
-            context.set_row(source, i)
+            context.set_index(source, i)
             return context.eval_tuple(key)
 
         while a_i < a_n and b_i < b_n:
@@ -202,17 +222,17 @@ class PythonExecutor:
             a_group = []
 
             while a_i < a_n and key == get_key(a, a_key, a_i):
-                a_group.append(context[a].tuple())
+                a_group.append(context[a].row)
                 a_i += 1
 
             b_group = []
 
             while b_i < b_n and key == get_key(b, b_key, b_i):
-                b_group.append(context[b].tuple())
+                b_group.append(context[b].row)
                 b_i += 1
 
             for a_row, b_row in itertools.product(a_group, b_group):
-                table.add(a_row + b_row)
+                table.append(a_row + b_row)
 
         return table
 
@@ -222,26 +242,27 @@ class PythonExecutor:
         aggregations = self.generate_tuple(step.aggregations)
         operands = self.generate_tuple(step.operands)
 
-        context.sort(source, lambda ctx: ctx.eval_tuple(group_by))
+        context.sort(source, group_by)
 
         if step.operands:
-            operand_dt = self.table(step.operands)
-
-            for ctx in context.table_iter(source):
-                operand_dt.add(ctx.eval_tuple(operands))
-
-            context = self.context(
-                {source: Table(**context.tables[source].data, **operand_dt.data)}
+            source_table = context.tables[source]
+            operand_table = Table(
+                source_table.columns + self.table(step.operands).columns
             )
+
+            for reader, ctx in context:
+                operand_table.append(reader.row + ctx.eval_tuple(operands))
+
+            context = self.context({source: operand_table})
 
         group = None
         start = 0
         end = 1
-        length = context.tables[source].length
+        length = len(context.tables[source])
         table = self.table(step.group + step.aggregations)
 
         for i in range(length):
-            context.set_row(source, i)
+            context.set_index(source, i)
             key = context.eval_tuple(group_by)
             group = key if group is None else group
             end += 1
@@ -253,7 +274,7 @@ class PythonExecutor:
             else:
                 continue
 
-            table.add(group + context.eval_tuple(aggregations))
+            table.append(group + context.eval_tuple(aggregations))
             group = key
             start = end - 2
 
@@ -262,7 +283,7 @@ class PythonExecutor:
     def sort(self, step, context):
         table = list(context.tables)[0]
         key = self.generate_tuple(step.key)
-        context.sort(table, lambda ctx: ctx.eval_tuple(key))
+        context.sort(table, key)
         return self.scan(step, context, step.name)
 
 

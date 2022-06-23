@@ -219,7 +219,7 @@ class Expression:
         """
         return [arg.unnest() for arg in self.args.values() if arg]
 
-    def flatten(self):
+    def flatten(self, unnest=True):
         """
         Returns a generator which yields child nodes who's parents are the same class.
 
@@ -229,7 +229,7 @@ class Expression:
             prune=lambda n, p, *_: p and not isinstance(n, self.__class__)
         ):
             if not isinstance(node, self.__class__):
-                yield node.unnest()
+                yield node.unnest() if unnest else node
 
     def __str__(self):
         return self.sql()

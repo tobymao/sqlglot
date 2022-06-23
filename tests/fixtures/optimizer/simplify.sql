@@ -85,6 +85,9 @@ a AND b;
 --------------------------------------
 -- Absorption
 --------------------------------------
+(A OR B) AND (C OR NOT A);
+(A OR B) AND (C OR NOT A);
+
 A AND (A OR B);
 A;
 
@@ -116,6 +119,9 @@ A OR (NOT A AND B);
 A OR B;
 
 (A OR C) AND ((A OR C) OR B);
+A OR C;
+
+(A OR C) AND (A OR B OR C);
 A OR C;
 
 --------------------------------------
@@ -189,6 +195,9 @@ a AND b AND c AND d;
 
 (c AND (a AND b)) AND ((b AND a) AND c);
 a AND b AND c;
+
+(A AND B AND C) OR (C AND B AND A);
+A AND B AND C;
 
 --------------------------------------
 -- Where removal

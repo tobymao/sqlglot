@@ -85,6 +85,9 @@ a AND b;
 --------------------------------------
 -- Absorption
 --------------------------------------
+(A OR B) AND (C OR NOT A);
+(A OR B) AND (C OR NOT A);
+
 A AND (A OR B);
 A;
 

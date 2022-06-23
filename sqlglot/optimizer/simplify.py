@@ -26,7 +26,8 @@ def simplify(expression):
     """
 
     def _simplify(expression, root=True):
-        node = sort_and_dedup(expression)
+        node = expression
+        node = uniq_sort(node)
         node = absorb_and_eliminate(node)
         exp.replace_children(node, lambda e: _simplify(e, False))
         node = simplify_equality(node)
@@ -138,45 +139,36 @@ def remove_compliments(expression):
     if isinstance(expression, exp.Connector):
         compliment = FALSE if isinstance(expression, exp.And) else TRUE
 
-        for a, b in itertools.combinations(expression.flatten(), 2):
+        for a, b in itertools.permutations(expression.flatten(), 2):
             if is_complement(a, b):
                 return compliment
     return expression
 
 
-def sort_and_dedup(expression):
+def uniq_sort(expression):
     """
-    Sorts ANDs and ORs, removing duplicates and compliment expressions.
+    Uniq and sort a connector.
+
+    C AND A AND B AND B -> A AND B AND C
     """
-    if isinstance(expression, exp.And):
-        return _sort_and_dedup(expression, exp.and_)
-    if isinstance(expression, exp.Or):
-        return _sort_and_dedup(expression, exp.or_)
+    if isinstance(expression, exp.Connector):
+        result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
+        flattened = tuple(expression.flatten())
+        deduped = {GENERATOR.generate(e): e for e in flattened}
+        arr = tuple(deduped.items())
+
+        # check if the operands are already sorted, if not sort them
+        # A AND C AND B -> A AND B AND C
+        for i, (sql, e) in enumerate(arr[1:]):
+            if sql < arr[i][0]:
+                expression = result_func(*(deduped[sql] for sql in sorted(deduped)))
+                break
+        else:
+            # we didn't have to sort but maybe we need to dedup
+            if len(deduped) < len(flattened):
+                expression = result_func(*deduped.values())
+
     return expression
-
-
-def _sort_and_dedup(connector, result_func):
-    # deduplicate the expressions and use the sql for sorting later on
-    # don't use a set because that calls hash which is not free
-    flattened = tuple(connector.flatten())
-
-    if all(expression.sorted for expression in flattened):
-        return connector
-
-    args = tuple(
-        {GENERATOR.generate(expression): expression for expression in flattened}.items()
-    )
-
-    for expression in flattened:
-        expression.sorted = True
-
-    for i, (sql, expression) in enumerate(args):
-        if i > 0 and sql < args[i - 1][0]:
-            return result_func(*(e for _, e in sorted(args, key=lambda t: t[0])))
-
-    if len(args) < len(flattened):
-        return result_func(*(e for _, e in args))
-    return connector
 
 
 def absorb_and_eliminate(expression):
@@ -190,38 +182,35 @@ def absorb_and_eliminate(expression):
         (A AND B) OR (A AND NOT B) -> A
         (A OR B) AND (A OR NOT B) -> A
     """
-    if isinstance(expression, exp.And):
-        return _absorb_and_eliminate(expression, exp.Or)
-    if isinstance(expression, exp.Or):
-        return _absorb_and_eliminate(expression, exp.And)
+    if isinstance(expression, exp.Connector):
+        kind = exp.Or if isinstance(expression, exp.And) else exp.And
+
+        for a, b in itertools.permutations(expression.flatten(), 2):
+            if isinstance(a, kind):
+                aa, ab = a.unnest_operands()
+
+                # absorb
+                if is_complement(b, aa):
+                    aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+                elif is_complement(b, ab):
+                    ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+                elif (set(b.flatten()) if isinstance(b, kind) else {b}) < set(
+                    a.flatten()
+                ):
+                    a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
+                elif isinstance(b, kind):
+                    # eliminate
+                    rhs = b.unnest_operands()
+                    ba, bb = rhs
+
+                    if aa in rhs and (is_complement(ab, ba) or is_complement(ab, bb)):
+                        a.replace(aa)
+                        b.replace(aa)
+                    elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
+                        a.replace(ab)
+                        b.replace(ab)
+
     return expression
-
-
-def _absorb_and_eliminate(connector, kind):
-    for a, b in itertools.permutations(connector.flatten(), 2):
-        if isinstance(a, kind):
-            aa, ab = a.unnest_operands()
-
-            # absorb
-            if (set(b.flatten()) if isinstance(b, kind) else {b}) < set(a.flatten()):
-                a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
-            elif is_complement(b, aa):
-                aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
-            elif is_complement(b, ab):
-                ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
-            elif isinstance(b, kind):
-                # eliminate
-                rhs = b.unnest_operands()
-                ba, bb = rhs
-
-                if aa in rhs and (is_complement(ab, ba) or is_complement(ab, bb)):
-                    a.replace(aa)
-                    b.replace(aa)
-                elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
-                    a.replace(ab)
-                    b.replace(ab)
-
-    return connector
 
 
 def is_complement(a, b):

@@ -1,5 +1,5 @@
 from sqlglot.helper import while_changing
-from sqlglot.optimizer.simplify import simplify, sort_and_dedup, flatten
+from sqlglot.optimizer.simplify import simplify, uniq_sort, flatten
 import sqlglot.expressions as exp
 
 
@@ -149,7 +149,6 @@ def _distribute(a, b, from_func, to_func):
 
 
 def _simplify(node):
-    node = flatten(node)
-    node = sort_and_dedup(node)
+    node = uniq_sort(flatten(node))
     exp.replace_children(node, _simplify)
     return node

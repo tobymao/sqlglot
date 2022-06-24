@@ -154,17 +154,18 @@ class Generator:
         self.identify = original
         return result
 
-    def indent(self, sql, level=0, pad=None, skip_first=False):
+    def indent(self, sql, level=0, pad=None, skip_first=False, skip_last=False):
         if not self.pretty:
             return sql
 
         pad = self.pad if pad is None else pad
+        lines = sql.split("\n")
 
         return "\n".join(
             line
-            if skip_first and i == 0
+            if (skip_first and i == 0) or (skip_last and i == len(lines) - 1)
             else f"{' ' * (level * self._indent + pad)}{line}"
-            for i, line in enumerate(sql.split("\n"))
+            for i, line in enumerate(lines)
         )
 
     def sql(self, expression, key=None):
@@ -667,7 +668,10 @@ class Generator:
         return f"INTERVAL {self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
 
     def anonymous_sql(self, expression):
-        return f"{self.sql(expression, 'this').upper()}({self.expressions(expression, flat=True)})"
+        args = self.indent(
+            self.expressions(expression, flat=True), skip_first=True, skip_last=True
+        )
+        return f"{self.sql(expression, 'this').upper()}({args})"
 
     def paren_sql(self, expression):
         if isinstance(expression.unnest(), exp.Select):
@@ -808,7 +812,7 @@ class Generator:
             for a in arg_value:
                 args.append(self.sql(a))
 
-        args_str = ", ".join(args)
+        args_str = self.indent(", ".join(args), skip_first=True, skip_last=True)
         return f"{expression.sql_name()}({args_str})"
 
     def format_time(self, expression):

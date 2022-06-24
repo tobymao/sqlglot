@@ -170,6 +170,7 @@ class TokenType(AutoName):
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TIME = auto()
+    TOP = auto()
     THEN = auto()
     TRUE = auto()
     TRUNCATE = auto()
@@ -373,6 +374,7 @@ class Tokenizer:
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TIME": TokenType.TIME,
+        "TOP": TokenType.TOP,
         "TRUE": TokenType.TRUE,
         "TRUNCATE": TokenType.TRUNCATE,
         "TRY_CAST": TokenType.TRY_CAST,

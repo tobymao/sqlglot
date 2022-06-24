@@ -627,11 +627,11 @@ class Generator:
         ifs = []
 
         for e in expression.args["ifs"]:
-            ifs.append(f"WHEN {self.sql(e, 'this')}")
-            ifs.append(f"THEN {self.sql(e, 'true')}")
+            ifs.append(self.indent(f"WHEN {self.sql(e, 'this')}"))
+            ifs.append(self.indent(f"THEN {self.sql(e, 'true')}"))
 
         if expression.args.get("default") is not None:
-            ifs.append(f"ELSE {self.sql(expression, 'default')}")
+            ifs.append(self.indent(f"ELSE {self.sql(expression, 'default')}"))
 
         ifs = "".join(self.seg(self.indent(e, skip_first=True)) for e in ifs)
         statement = f"CASE{this}{ifs}{self.seg('END')}"

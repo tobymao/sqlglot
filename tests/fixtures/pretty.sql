@@ -62,16 +62,16 @@ WITH cte1 AS (
     SELECT
       CASE x
         AND 1 + 1 = 2
-      WHEN TRUE
-      THEN 1
-        AND 4 + 3
-        AND Z
-      WHEN x
-        AND y
-      THEN 2
-      ELSE 3
-        AND 4
-        AND g
+        WHEN TRUE
+        THEN 1
+          AND 4 + 3
+          AND Z
+        WHEN x
+          AND y
+        THEN 2
+        ELSE 3
+          AND 4
+          AND g
       END
     UNION ALL
     SELECT
@@ -91,11 +91,11 @@ WITH cte1 AS (
           AND c, d
       AND e)),
       FOO(CASE
-        WHEN a
-          AND b
-        THEN c
-          AND d
-        ELSE 3
+          WHEN a
+            AND b
+          THEN c
+            AND d
+          ELSE 3
       END)
   ) AS x
 )

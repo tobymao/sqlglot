@@ -61,7 +61,6 @@ class Generator:
         "unsupported_level",
         "unsupported_messages",
         "_indent",
-        "_level",
     )
 
     def __init__(
@@ -77,7 +76,7 @@ class Generator:
         quote=None,
         escape=None,
         pad=2,
-        indent=4,
+        indent=2,
         index_offset=0,
         unsupported_level=ErrorLevel.WARN,
     ):
@@ -100,7 +99,6 @@ class Generator:
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
         self._indent = indent
-        self._level = 0
 
     def generate(self, expression):
         """
@@ -128,17 +126,11 @@ class Generator:
     def unsupported(self, message):
         self.unsupported_messages.append(message)
 
-    def indent(self, sql, level=None, pad=0):
-        level = self._level if level is None else level
-        if self.pretty:
-            sql = f"{' ' * (level * self._indent + pad)}{sql}"
-        return sql
-
     def sep(self, sep=" "):
         return f"{sep.strip()}\n" if self.pretty else sep
 
-    def seg(self, sql, sep=" ", level=None, pad=0):
-        return f"{self.sep(sep)}{self.indent(sql, level=level, pad=pad)}"
+    def seg(self, sql, sep=" "):
+        return f"{self.sep(sep)}{sql}"
 
     def properties(self, name, expression):
         if expression.args["expressions"]:
@@ -146,21 +138,14 @@ class Generator:
         return ""
 
     def wrap(self, expression):
-        self._level += 1
         this_sql = self.indent(
             self.sql(expression)
             if isinstance(expression, exp.Select)
-            else self.sql(expression, "this")
+            else self.sql(expression, "this"),
+            level=1,
+            pad=0,
         )
-        self._level -= 1
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
-
-    def no_format(self, func):
-        original = self.pretty
-        self.pretty = False
-        result = func()
-        self.pretty = original
-        return result
 
     def no_identify(self, func):
         original = self.identify
@@ -169,12 +154,16 @@ class Generator:
         self.identify = original
         return result
 
-    def indent_newlines(self, sql, skip_first=False):
+    def indent(self, sql, level=0, pad=None, skip_first=False):
         if not self.pretty:
             return sql
 
+        pad = self.pad if pad is None else pad
+
         return "\n".join(
-            line if skip_first and i == 0 else self.indent(line, pad=self.pad)
+            line
+            if skip_first and i == 0
+            else f"{' ' * (level * self._indent + pad)}{line}"
             for i, line in enumerate(sql.split("\n"))
         )
 
@@ -299,7 +288,7 @@ class Generator:
     def prepend_ctes(self, expression, sql):
         with_ = self.sql(expression, "with")
         if with_:
-            sql = f"{with_}{self.sep()}{self.indent(sql)}"
+            sql = f"{with_}{self.sep()}{sql}"
         return sql
 
     def with_sql(self, expression):
@@ -461,7 +450,7 @@ class Generator:
         return self.op_expressions("GROUP BY", expression)
 
     def having_sql(self, expression):
-        this = self.indent_newlines(self.sql(expression, "this"))
+        this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
     def join_sql(self, expression):
@@ -471,8 +460,9 @@ class Generator:
         on_sql = self.sql(expression, "on")
 
         if on_sql:
-            on_sql = self.indent_newlines(on_sql, skip_first=True)
-            on_sql = f"{self.seg('ON', pad=self.pad)} {on_sql}"
+            on_sql = self.indent(on_sql, skip_first=True)
+            space = self.seg(" " * self.pad) if self.pretty else " "
+            on_sql = f"{space}ON {on_sql}"
 
         expression_sql = self.sql(expression, "expression")
         this_sql = self.sql(expression, "this")
@@ -562,7 +552,7 @@ class Generator:
         return f"({self.sql(expression, 'this')}){alias}"
 
     def qualify_sql(self, expression):
-        this = self.indent_newlines(self.sql(expression, "this"))
+        this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def union_sql(self, expression):
@@ -583,7 +573,7 @@ class Generator:
         return f"UNNEST({args}){ordinality}{alias}"
 
     def where_sql(self, expression):
-        this = self.indent_newlines(self.sql(expression, "this"))
+        this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('WHERE')}{self.sep()}{this}"
 
     def window_sql(self, expression):
@@ -631,25 +621,20 @@ class Generator:
         return f"{self.sql(expression, 'this')}[{expressions}]"
 
     def case_sql(self, expression):
-        pad = self.pad + 2
-
-        this = self.sql(expression, "this")
+        this = self.indent(self.sql(expression, "this"), skip_first=True)
         this = f" {this}" if this else ""
+        ifs = []
 
-        ifs = [
-            f"WHEN {self.sql(e, 'this')} THEN {self.sql(e, 'true')}"
-            for e in expression.args["ifs"]
-        ]
+        for e in expression.args["ifs"]:
+            ifs.append(f"WHEN {self.sql(e, 'this')}")
+            ifs.append(f"THEN {self.sql(e, 'true')}")
 
         if expression.args.get("default") is not None:
             ifs.append(f"ELSE {self.sql(expression, 'default')}")
 
-        original = self.pretty
-        self.pretty = self.configured_pretty
-        ifs = "".join(self.seg(e, pad=pad) for e in ifs)
-        case = f"CASE{this}{ifs}{self.seg('END', pad=self.pad)}"
-        self.pretty = original
-        return case
+        ifs = "".join(self.seg(self.indent(e, skip_first=True)) for e in ifs)
+        statement = f"CASE{this}{ifs}{self.seg('END')}"
+        return statement
 
     def decimal_sql(self, expression):
         args = ", ".join(
@@ -687,7 +672,8 @@ class Generator:
     def paren_sql(self, expression):
         if isinstance(expression.unnest(), exp.Select):
             return self.wrap(expression)
-        return self.no_format(lambda: f"({self.sql(expression, 'this')})")
+        sql = self.seg(self.indent(self.sql(expression, "this")), sep="")
+        return f"({sql}{self.seg(')', sep='')}"
 
     def neg_sql(self, expression):
         return f"-{self.sql(expression, 'this')}"
@@ -707,7 +693,13 @@ class Generator:
         return self.binary(expression, "+")
 
     def and_sql(self, expression):
-        return self.binary(expression, "AND", newline=self.pretty)
+        return self.connector_sql(expression, "AND")
+
+    def connector_sql(self, expression, op):
+        if not self.pretty:
+            return self.binary(expression, op)
+
+        return f"\n{op} ".join(self.sql(e) for e in expression.flatten(unnest=False))
 
     def bitwiseand_sql(self, expression):
         return self.binary(expression, "&")
@@ -794,7 +786,7 @@ class Generator:
         return self.binary(expression, "<>")
 
     def or_sql(self, expression):
-        return self.binary(expression, "OR", newline=self.pretty)
+        return self.connector_sql(expression, "OR")
 
     def sub_sql(self, expression):
         return self.binary(expression, "-")
@@ -804,9 +796,10 @@ class Generator:
             f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
         )
 
-    def binary(self, expression, op, newline=False):
-        sep = "\n" if newline else " "
-        return f"{self.sql(expression, 'this')}{sep}{op} {self.sql(expression, 'expression')}"
+    def binary(self, expression, op):
+        return (
+            f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
+        )
 
     def function_fallback_sql(self, expression):
         args = []
@@ -823,19 +816,14 @@ class Generator:
             self.sql(expression, "format"), self.time_mapping, self.time_trie
         )
 
-    def expressions(self, expression, flat=False, pad=0):
+    def expressions(self, expression, flat=False):
         # pylint: disable=cell-var-from-loop
         expressions = expression.args.get("expressions") or []
         if flat:
             return ", ".join(self.sql(e) for e in expressions)
 
-        return self.sep(", ").join(
-            self.indent(
-                f"{'  ' if self.pretty else ''}{self.no_format(lambda: self.sql(e))}",
-                pad=pad,
-            )
-            for e in expressions
-        )
+        expressions = self.sep(", ").join(self.sql(e) for e in expressions)
+        return self.indent(expressions, skip_first=False)
 
     def op_expressions(self, op, expression, flat=False):
         expressions_sql = self.expressions(expression, flat=flat)
@@ -846,5 +834,5 @@ class Generator:
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")
         op = self.seg(op)
-        expression = self.indent(self.sql(expression, "expression"), pad=0)
+        expression = self.sql(expression, "expression")
         return f"{this}{op}{self.sep()}{expression}"

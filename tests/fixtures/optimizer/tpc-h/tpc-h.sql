@@ -577,9 +577,9 @@ order by
 SELECT
   "all_nations"."o_year" AS "o_year",
   SUM(CASE
-    WHEN "all_nations"."nation" = 'BRAZIL'
-    THEN "all_nations"."volume"
-    ELSE 0
+      WHEN "all_nations"."nation" = 'BRAZIL'
+      THEN "all_nations"."volume"
+      ELSE 0
   END) / SUM("all_nations"."volume") AS "mkt_share"
 FROM (
   SELECT
@@ -974,16 +974,16 @@ order by
 SELECT
   "lineitem"."l_shipmode" AS "l_shipmode",
   SUM(CASE
-    WHEN "orders"."o_orderpriority" = '1-URGENT'
-      OR "orders"."o_orderpriority" = '2-HIGH'
-    THEN 1
-    ELSE 0
+      WHEN "orders"."o_orderpriority" = '1-URGENT'
+        OR "orders"."o_orderpriority" = '2-HIGH'
+      THEN 1
+      ELSE 0
   END) AS "high_line_count",
   SUM(CASE
-    WHEN "orders"."o_orderpriority" <> '1-URGENT'
-      AND "orders"."o_orderpriority" <> '2-HIGH'
-    THEN 1
-    ELSE 0
+      WHEN "orders"."o_orderpriority" <> '1-URGENT'
+        AND "orders"."o_orderpriority" <> '2-HIGH'
+      THEN 1
+      ELSE 0
   END) AS "low_line_count"
 FROM (
   SELECT
@@ -1083,11 +1083,11 @@ where
         and l_shipdate < date '1995-09-01' + interval '1' month;
 SELECT
   100.00 * SUM(CASE
-    WHEN "part"."p_type" LIKE 'PROMO%'
-    THEN "lineitem"."l_extendedprice" * (
-        1 - "lineitem"."l_discount"
-      )
-    ELSE 0
+      WHEN "part"."p_type" LIKE 'PROMO%'
+      THEN "lineitem"."l_extendedprice" * (
+          1 - "lineitem"."l_discount"
+        )
+      ELSE 0
   END) / SUM("lineitem"."l_extendedprice" * (
       1 - "lineitem"."l_discount"
   )) AS "promo_revenue"

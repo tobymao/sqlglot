@@ -28,12 +28,12 @@ SELECT
   SUM("lineitem"."l_quantity") AS "sum_qty",
   SUM("lineitem"."l_extendedprice") AS "sum_base_price",
   SUM("lineitem"."l_extendedprice" * (
-    1 - "lineitem"."l_discount"
+      1 - "lineitem"."l_discount"
   )) AS "sum_disc_price",
   SUM("lineitem"."l_extendedprice" * (
-    1 - "lineitem"."l_discount"
-  ) * (
-    1 + "lineitem"."l_tax"
+      1 - "lineitem"."l_discount"
+    ) * (
+      1 + "lineitem"."l_tax"
   )) AS "sum_charge",
   AVG("lineitem"."l_quantity") AS "avg_qty",
   AVG("lineitem"."l_extendedprice") AS "avg_price",
@@ -218,7 +218,7 @@ limit
 SELECT
   "lineitem"."l_orderkey" AS "l_orderkey",
   SUM("lineitem"."l_extendedprice" * (
-    1 - "lineitem"."l_discount"
+      1 - "lineitem"."l_discount"
   )) AS "revenue",
   CAST("orders"."o_orderdate" AS TEXT) AS "o_orderdate",
   "orders"."o_shippriority" AS "o_shippriority"
@@ -337,7 +337,7 @@ order by
 SELECT
   "nation"."n_name" AS "n_name",
   SUM("lineitem"."l_extendedprice" * (
-    1 - "lineitem"."l_discount"
+      1 - "lineitem"."l_discount"
   )) AS "revenue"
 FROM (
   SELECT
@@ -577,9 +577,9 @@ order by
 SELECT
   "all_nations"."o_year" AS "o_year",
   SUM(CASE
-  WHEN "all_nations"."nation" = 'BRAZIL'
-  THEN "all_nations"."volume"
-  ELSE 0
+    WHEN "all_nations"."nation" = 'BRAZIL'
+    THEN "all_nations"."volume"
+    ELSE 0
   END) / SUM("all_nations"."volume") AS "mkt_share"
 FROM (
   SELECT
@@ -802,7 +802,7 @@ SELECT
   "customer"."c_custkey" AS "c_custkey",
   "customer"."c_name" AS "c_name",
   SUM("lineitem"."l_extendedprice" * (
-    1 - "lineitem"."l_discount"
+      1 - "lineitem"."l_discount"
   )) AS "revenue",
   "customer"."c_acctbal" AS "c_acctbal",
   "nation"."n_name" AS "n_name",
@@ -974,16 +974,16 @@ order by
 SELECT
   "lineitem"."l_shipmode" AS "l_shipmode",
   SUM(CASE
-  WHEN "orders"."o_orderpriority" = '1-URGENT'
-    OR "orders"."o_orderpriority" = '2-HIGH'
-  THEN 1
-  ELSE 0
+    WHEN "orders"."o_orderpriority" = '1-URGENT'
+      OR "orders"."o_orderpriority" = '2-HIGH'
+    THEN 1
+    ELSE 0
   END) AS "high_line_count",
   SUM(CASE
-  WHEN "orders"."o_orderpriority" <> '1-URGENT'
-    AND "orders"."o_orderpriority" <> '2-HIGH'
-  THEN 1
-  ELSE 0
+    WHEN "orders"."o_orderpriority" <> '1-URGENT'
+      AND "orders"."o_orderpriority" <> '2-HIGH'
+    THEN 1
+    ELSE 0
   END) AS "low_line_count"
 FROM (
   SELECT
@@ -1083,13 +1083,13 @@ where
         and l_shipdate < date '1995-09-01' + interval '1' month;
 SELECT
   100.00 * SUM(CASE
-  WHEN "part"."p_type" LIKE 'PROMO%'
-  THEN "lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
-    )
-  ELSE 0
+    WHEN "part"."p_type" LIKE 'PROMO%'
+    THEN "lineitem"."l_extendedprice" * (
+        1 - "lineitem"."l_discount"
+      )
+    ELSE 0
   END) / SUM("lineitem"."l_extendedprice" * (
-    1 - "lineitem"."l_discount"
+      1 - "lineitem"."l_discount"
   )) AS "promo_revenue"
 FROM (
   SELECT
@@ -1147,7 +1147,7 @@ WITH "revenue" AS (
   SELECT
     "lineitem"."l_suppkey" AS "supplier_no",
     SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+        1 - "lineitem"."l_discount"
     )) AS "total_revenue"
   FROM "lineitem" AS "lineitem"
   WHERE
@@ -1432,7 +1432,7 @@ where
         );
 SELECT
   SUM("lineitem"."l_extendedprice" * (
-    1 - "lineitem"."l_discount"
+      1 - "lineitem"."l_discount"
   )) AS "revenue"
 FROM (
   SELECT

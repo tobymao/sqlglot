@@ -22,6 +22,8 @@ WITH cte1 AS (
         UNION ALL
         SELECT 1
         FROM (SELECT 1) AS x, y, (SELECT 2) z
+        UNION ALL
+        SELECT MAX(COALESCE(x AND y, a and b and c, d and e)), FOO(CASE WHEN a and b THEN c and d ELSE 3 END)
     ) x
 )
 SELECT a, b c FROM (
@@ -81,6 +83,20 @@ WITH cte1 AS (
       SELECT
         2
     ) AS z
+    UNION ALL
+    SELECT
+      MAX(COALESCE(x
+          AND y, a
+          AND b
+          AND c, d
+      AND e)),
+      FOO(CASE
+        WHEN a
+          AND b
+        THEN c
+          AND d
+        ELSE 3
+      END)
   ) AS x
 )
 SELECT

@@ -317,7 +317,9 @@ class Generator:
         nested = ""
         interior = self.expressions(expression, flat=True)
         if interior:
-            nested = f"<{interior}>" if expression.args["nested"] else f"({interior})"
+            nested = (
+                f"<{interior}>" if expression.args.get("nested") else f"({interior})"
+            )
         return f"{type_sql}{nested}"
 
     def delete_sql(self, expression):

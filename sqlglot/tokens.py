@@ -639,7 +639,7 @@ class Tokenizer:
             elif self._peek == "." and not decimal:
                 decimal = True
                 self._advance()
-            elif self._peek == "-" and scientific == 1:
+            elif self._peek in ("-", "+") and scientific == 1:
                 scientific += 1
                 self._advance()
             elif self._peek.upper() == "E" and not scientific:

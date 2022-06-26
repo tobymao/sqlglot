@@ -41,7 +41,7 @@ SELECT
   COUNT(*) AS "count_order"
 FROM "lineitem" AS "lineitem"
 WHERE
-  CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1998-12-01' AS DATE) - INTERVAL '90' day
+  CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1998-09-02' AS DATE)
 GROUP BY
   "lineitem"."l_returnflag",
   "lineitem"."l_linestatus"
@@ -300,7 +300,7 @@ JOIN (
 ) AS "_d_0"
   ON "_d_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE
-  "orders"."o_orderdate" < CAST('1993-07-01' AS DATE) + INTERVAL '3' month
+  "orders"."o_orderdate" < CAST('1993-10-01' AS DATE)
   AND "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
 GROUP BY
   "orders"."o_orderpriority"
@@ -352,7 +352,7 @@ JOIN (
     "orders"."o_orderdate" AS "o_orderdate"
   FROM "orders" AS "orders"
   WHERE
-    "orders"."o_orderdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
+    "orders"."o_orderdate" < CAST('1995-01-01' AS DATE)
     AND "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
 ) AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
@@ -411,9 +411,9 @@ SELECT
   SUM("lineitem"."l_extendedprice" * "lineitem"."l_discount") AS "revenue"
 FROM "lineitem" AS "lineitem"
 WHERE
-  "lineitem"."l_discount" BETWEEN 0.06 - 0.01 AND 0.06 + 0.01
+  "lineitem"."l_discount" BETWEEN 0.05 AND 0.07
   AND "lineitem"."l_quantity" < 24
-  AND "lineitem"."l_shipdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
+  AND "lineitem"."l_shipdate" < CAST('1995-01-01' AS DATE)
   AND "lineitem"."l_shipdate" >= CAST('1994-01-01' AS DATE);
 
 --------------------------------------
@@ -827,7 +827,7 @@ JOIN (
     "orders"."o_orderdate" AS "o_orderdate"
   FROM "orders" AS "orders"
   WHERE
-    "orders"."o_orderdate" < CAST('1993-10-01' AS DATE) + INTERVAL '3' month
+    "orders"."o_orderdate" < CAST('1994-01-01' AS DATE)
     AND "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
 ) AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
@@ -1001,7 +1001,7 @@ JOIN (
   FROM "lineitem" AS "lineitem"
   WHERE
     "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
-    AND "lineitem"."l_receiptdate" < CAST('1994-01-01' AS DATE) + INTERVAL '1' year
+    AND "lineitem"."l_receiptdate" < CAST('1995-01-01' AS DATE)
     AND "lineitem"."l_receiptdate" >= CAST('1994-01-01' AS DATE)
     AND "lineitem"."l_shipdate" < "lineitem"."l_commitdate"
     AND "lineitem"."l_shipmode" IN ('MAIL', 'SHIP')
@@ -1099,7 +1099,7 @@ FROM (
     "lineitem"."l_shipdate" AS "l_shipdate"
   FROM "lineitem" AS "lineitem"
   WHERE
-    "lineitem"."l_shipdate" < CAST('1995-09-01' AS DATE) + INTERVAL '1' month
+    "lineitem"."l_shipdate" < CAST('1995-10-01' AS DATE)
     AND "lineitem"."l_shipdate" >= CAST('1995-09-01' AS DATE)
 ) AS "lineitem"
 JOIN (
@@ -1151,7 +1151,7 @@ WITH "revenue" AS (
     )) AS "total_revenue"
   FROM "lineitem" AS "lineitem"
   WHERE
-    "lineitem"."l_shipdate" < CAST('1996-01-01' AS DATE) + INTERVAL '3' month
+    "lineitem"."l_shipdate" < CAST('1996-04-01' AS DATE)
     AND "lineitem"."l_shipdate" >= CAST('1996-01-01' AS DATE)
   GROUP BY
     "lineitem"."l_suppkey"
@@ -1405,7 +1405,7 @@ where
                 p_partkey = l_partkey
                 and p_brand = 'Brand#12'
                 and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
-                and l_quantity >= 1 and l_quantity <= 1 + 10
+                and l_quantity >= 1 and l_quantity <= 11
                 and p_size between 1 and 5
                 and l_shipmode in ('AIR', 'AIR REG')
                 and l_shipinstruct = 'DELIVER IN PERSON'
@@ -1415,7 +1415,7 @@ where
                 p_partkey = l_partkey
                 and p_brand = 'Brand#23'
                 and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
-                and l_quantity >= 10 and l_quantity <= 10 + 10
+                and l_quantity >= 10 and l_quantity <= 20
                 and p_size between 1 and 10
                 and l_shipmode in ('AIR', 'AIR REG')
                 and l_shipinstruct = 'DELIVER IN PERSON'
@@ -1425,7 +1425,7 @@ where
                 p_partkey = l_partkey
                 and p_brand = 'Brand#34'
                 and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
-                and l_quantity >= 20 and l_quantity <= 20 + 10
+                and l_quantity >= 20 and l_quantity <= 30
                 and p_size between 1 and 15
                 and l_shipmode in ('AIR', 'AIR REG')
                 and l_shipinstruct = 'DELIVER IN PERSON'
@@ -1472,7 +1472,7 @@ JOIN (
   )
 WHERE
   (
-    "lineitem"."l_quantity" <= 1 + 10
+    "lineitem"."l_quantity" <= 11
     AND "lineitem"."l_quantity" >= 1
     AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON'
     AND "lineitem"."l_shipmode" IN ('AIR', 'AIR REG')
@@ -1482,7 +1482,7 @@ WHERE
     AND "part"."p_size" BETWEEN 1 AND 5
   )
   OR (
-    "lineitem"."l_quantity" <= 10 + 10
+    "lineitem"."l_quantity" <= 20
     AND "lineitem"."l_quantity" >= 10
     AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON'
     AND "lineitem"."l_shipmode" IN ('AIR', 'AIR REG')
@@ -1492,7 +1492,7 @@ WHERE
     AND "part"."p_size" BETWEEN 1 AND 10
   )
   OR (
-    "lineitem"."l_quantity" <= 20 + 10
+    "lineitem"."l_quantity" <= 30
     AND "lineitem"."l_quantity" >= 20
     AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON'
     AND "lineitem"."l_shipmode" IN ('AIR', 'AIR REG')

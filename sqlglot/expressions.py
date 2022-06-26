@@ -215,9 +215,9 @@ class Expression:
 
     def unnest_operands(self):
         """
-        Returns unnested operands as a list.
+        Returns unnested operands as a tuple.
         """
-        return [arg.unnest() for arg in self.args.values() if arg]
+        return tuple(arg.unnest() for arg in self.args.values() if arg)
 
     def flatten(self, unnest=True):
         """
@@ -398,6 +398,10 @@ class Condition(Expression):
         return not_(self)
 
 
+class Predicate(Condition):
+    """Relationships like x = y, x > 1, x >= y."""
+
+
 class DerivedTable:
     @property
     def alias_column_names(self):
@@ -574,7 +578,7 @@ class Literal(Condition):
 
     @classmethod
     def string(cls, string):
-        return cls(this=string, is_string=True)
+        return cls(this=str(string), is_string=True)
 
     @property
     def is_string(self):
@@ -1329,7 +1333,7 @@ class DataType(Expression):
     arg_types = {
         "this": True,
         "expressions": False,
-        "nested": True,
+        "nested": False,
     }
 
     class Type(AutoName):
@@ -1352,6 +1356,15 @@ class DataType(Expression):
         ARRAY = auto()
         MAP = auto()
         UUID = auto()
+
+    @classmethod
+    def build(cls, dtype, **kwargs):
+        return DataType(
+            this=dtype
+            if isinstance(dtype, DataType.Type)
+            else DataType.Type[dtype.upper()],
+            **kwargs,
+        )
 
 
 # Commands to interact with the databases or engines
@@ -1424,7 +1437,7 @@ class DPipe(Binary):
     pass
 
 
-class EQ(Binary, Condition):
+class EQ(Binary, Predicate):
     pass
 
 
@@ -1432,15 +1445,15 @@ class Escape(Binary):
     pass
 
 
-class GT(Binary, Condition):
+class GT(Binary, Predicate):
     pass
 
 
-class GTE(Binary, Condition):
+class GTE(Binary, Predicate):
     pass
 
 
-class ILike(Binary, Condition):
+class ILike(Binary, Predicate):
     pass
 
 
@@ -1448,19 +1461,19 @@ class IntDiv(Binary):
     pass
 
 
-class Is(Binary, Condition):
+class Is(Binary, Predicate):
     pass
 
 
-class Like(Binary, Condition):
+class Like(Binary, Predicate):
     pass
 
 
-class LT(Binary, Condition):
+class LT(Binary, Predicate):
     pass
 
 
-class LTE(Binary, Condition):
+class LTE(Binary, Predicate):
     pass
 
 
@@ -1472,7 +1485,7 @@ class Mul(Binary):
     pass
 
 
-class NEQ(Binary, Condition):
+class NEQ(Binary, Predicate):
     pass
 
 
@@ -1515,7 +1528,7 @@ class Aliases(Expression):
         return self.args["expressions"]
 
 
-class Between(Condition):
+class Between(Predicate):
     arg_types = {"this": True, "low": True, "high": True}
 
 
@@ -1539,7 +1552,7 @@ class Extract(Expression):
     arg_types = {"this": True, "expression": True}
 
 
-class In(Condition):
+class In(Predicate):
     arg_types = {"this": True, "expressions": False, "query": False}
 
 
@@ -2389,4 +2402,3 @@ def column_table_names(expression):
 TRUE = Boolean(this=True)
 FALSE = Boolean(this=False)
 NULL = Null()
-PREDICATES = (EQ, GT, GTE, ILike, In, Is, Like, LT, LTE, NEQ)

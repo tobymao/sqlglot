@@ -1,7 +1,6 @@
 import itertools
 import datetime
 from decimal import Decimal
-from dateutil.relativedelta import relativedelta
 
 from sqlglot.helper import while_changing
 from sqlglot.expressions import FALSE, NULL, TRUE
@@ -245,14 +244,15 @@ def simplify_literals(expression):
                 return boolean
         elif isinstance(a, exp.Cast) and isinstance(b, exp.Interval):
             a, b = extract_date(a), extract_interval(b)
-            if isinstance(expression, exp.Add):
-                return date_literal(a + b)
-            if isinstance(expression, exp.Sub):
-                return date_literal(a - b)
+            if b:
+                if isinstance(expression, exp.Add):
+                    return date_literal(a + b)
+                if isinstance(expression, exp.Sub):
+                    return date_literal(a - b)
         elif isinstance(a, exp.Interval) and isinstance(b, exp.Cast):
             a, b = extract_interval(a), extract_date(b)
             # you cannot subtract a date from an interval
-            if isinstance(expression, exp.Add):
+            if a and isinstance(expression, exp.Add):
                 return date_literal(a + b)
 
     return expression
@@ -320,6 +320,11 @@ def extract_date(cast):
 
 
 def extract_interval(interval):
+    try:
+        from dateutil.relativedelta import relativedelta
+    except ModuleNotFoundError:
+        return None
+
     n = int(interval.name)
     unit = interval.text("unit").lower()
 

@@ -324,3 +324,9 @@ CAST('1999-01-01' AS DATE);
 
 interval '1' year + date '1998-01-01' + 3 * 7 * 4;
 CAST('1999-01-01' AS DATE) + 84;
+
+date '1998-12-01' - interval '90' foo;
+CAST('1998-12-01' AS DATE) - INTERVAL '90' foo;
+
+date '1998-12-01' + interval '90' foo;
+CAST('1998-12-01' AS DATE) + INTERVAL '90' foo;

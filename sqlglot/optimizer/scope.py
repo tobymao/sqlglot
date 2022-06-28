@@ -117,7 +117,9 @@ class Scope:
             list[exp.Subquery]: derived tables
         """
         if self._derived_tables is None:
-            self._derived_tables = self._find_in_scope(lambda n: isinstance(n, exp.Subquery))
+            self._derived_tables = self._find_in_scope(
+                lambda n: isinstance(n, exp.Subquery)
+            )
         return self._derived_tables
 
     @property
@@ -170,7 +172,9 @@ class Scope:
                 c
                 for c in columns + external_columns
                 if c.table
-                or not (c.find_ancestor(exp.Group, exp.Order) and c.name in aliased_outputs)
+                or not (
+                    c.find_ancestor(exp.Group, exp.Order) and c.name in aliased_outputs
+                )
             ]
         return self._columns
 

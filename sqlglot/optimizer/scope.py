@@ -53,12 +53,15 @@ class Scope:
         self.subquery_scopes = []
         self.union = None
 
-        self._selected_sources = None
-        self._columns = None
+        self._collected = False
+        self._raw_columns = None
         self._derived_tables = None
         self._tables = None
         self._ctes = None
         self._subqueries = None
+
+        self._selected_sources = None
+        self._columns = None
         self._external_columns = None
 
     def branch(self, expression, scope_type, add_sources=None, **kwargs):
@@ -74,12 +77,34 @@ class Scope:
             **kwargs,
         )
 
-    def _find_in_scope(self, predicate):
-        return [
-            node
-            for node, *_ in _bfs_until_next_scope(self.expression)
-            if node is not self.expression and predicate(node)
-        ]
+    def _collect(self):
+        self._tables = []
+        self._ctes = []
+        self._subqueries = []
+        self._derived_tables = []
+        self._raw_columns = []
+
+        for node, *_ in _bfs_until_next_scope(self.expression):
+            if node is self.expression:
+                continue
+            if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
+                self._raw_columns.append(node)
+            elif isinstance(node, exp.Table):
+                self._tables.append(node)
+            elif isinstance(node, exp.CTE):
+                self._ctes.append(node)
+            elif isinstance(node, exp.Subquery):
+                self._derived_tables.append(node)
+            elif isinstance(node, exp.Subqueryable) and not isinstance(
+                node.parent, (exp.CTE, exp.Subquery)
+            ):
+                self._subqueries.append(node)
+
+        self._collected = True
+
+    def _ensure_collected(self):
+        if not self._collected:
+            self._collect()
 
     @property
     def tables(self):
@@ -89,8 +114,7 @@ class Scope:
         Returns:
             list[exp.Table]: tables
         """
-        if self._tables is None:
-            self._tables = self._find_in_scope(lambda n: isinstance(n, exp.Table))
+        self._ensure_collected()
         return self._tables
 
     @property
@@ -101,8 +125,7 @@ class Scope:
         Returns:
             list[exp.CTE]: ctes
         """
-        if self._ctes is None:
-            self._ctes = self._find_in_scope(lambda n: isinstance(n, exp.CTE))
+        self._ensure_collected()
         return self._ctes
 
     @property
@@ -116,10 +139,7 @@ class Scope:
         Returns:
             list[exp.Subquery]: derived tables
         """
-        if self._derived_tables is None:
-            self._derived_tables = self._find_in_scope(
-                lambda n: isinstance(n, exp.Subquery)
-            )
+        self._ensure_collected()
         return self._derived_tables
 
     @property
@@ -133,11 +153,7 @@ class Scope:
         Returns:
             list[exp.Subqueryable]: subqueries
         """
-        if self._subqueries is None:
-            self._subqueries = self._find_in_scope(
-                lambda n: isinstance(n, exp.Subqueryable)
-                and not isinstance(n.parent, (exp.CTE, exp.Subquery))
-            )
+        self._ensure_collected()
         return self._subqueries
 
     @property
@@ -150,9 +166,8 @@ class Scope:
                 Columns that reference this scope from correlated subqueries.
         """
         if self._columns is None:
-            columns = self._find_in_scope(
-                lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
-            )
+            self._ensure_collected()
+            columns = self._raw_columns
 
             external_columns = [
                 column

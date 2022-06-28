@@ -90,7 +90,7 @@ class Expression:
             value: value to set the arg to.
         """
         self.args[arg] = value
-        self._set_parent(arg=value)
+        self._set_parent(**{arg: value})
 
     def _set_parent(self, **kwargs):
         for arg_key, node in kwargs.items():

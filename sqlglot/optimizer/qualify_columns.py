@@ -130,23 +130,27 @@ def _expand_stars(scope, schema):
 def _qualify_outputs(scope):
     """Ensure all output columns are aliased"""
 
+    new_selections = []
+
     for i, (selection, aliased_column) in enumerate(
         itertools.zip_longest(scope.selects, scope.outer_column_list)
     ):
         if isinstance(selection, exp.Column):
             # convoluted setter because a simple selection.replace(alias) would require a copy
-            alias = exp.alias_(exp.column(""), selection.name)
-            selection.replace(alias)
+            alias = exp.alias_(exp.column(""), alias=selection.name)
             alias.set("this", selection)
             selection = alias
         elif not isinstance(selection, exp.Alias):
             alias = exp.alias_(exp.column(""), f"_col_{i}")
-            selection.replace(alias)
             alias.set("this", selection)
             selection = alias
 
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
+
+        new_selections.append(selection)
+
+    scope.expression.set("expressions", new_selections)
 
 
 def _check_unknown_tables(scope):

@@ -56,24 +56,24 @@ sqlglot.transpile(sql, write='spark', identify=True, pretty=True)[0]
 ```
 
 ```sql
-WITH baz AS (
-    SELECT
-      `a`,
-      `c`
-    FROM `foo`
-    WHERE
-      `a` = 1
+WITH `baz` AS (
+  SELECT
+    `a`,
+    `c`
+  FROM `foo`
+  WHERE
+    `a` = 1
 )
 SELECT
   `f`.`a`,
   `b`.`b`,
   `baz`.`c`,
-  CAST(`b`.`a` AS FLOAT) AS d
-FROM `foo` AS f
-JOIN `bar` AS b ON
-  `f`.`a` = `b`.`a`
-LEFT JOIN `baz` ON
-  `f`.`a` = `baz`.`a`
+  CAST(`b`.`a` AS FLOAT) AS `d`
+FROM `foo` AS `f`
+JOIN `bar` AS `b`
+  ON `f`.`a` = `b`.`a`
+LEFT JOIN `baz`
+  ON `f`.`a` = `baz`.`a`
 ```
 
 ### Customization
@@ -244,12 +244,28 @@ SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [
 import sqlglot
 from sqlglot.optimizer import optimize
 
->>> optimize(
-        sqlglot.parse_one("SELECT A OR (B OR (C AND D)) FROM x"),
-        schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT"}}
-    ).sql()
+>>>
+optimize(
+    sqlglot.parse_one("SELECT A OR (B OR (C AND D)) FROM x WHERE Z = date '2021-01-01' + INTERVAL '1' month OR 1 = 0"),
+    schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT", "Z": "STRING"}}
+).sql(pretty=True)
 
-'SELECT ("x"."A" OR "x"."B" OR "x"."C") AND ("x"."A" OR "x"."B" OR "x"."D") AS "_col_0" FROM "x" AS "x"'
+"""
+SELECT
+  (
+    "x"."A"
+    OR "x"."B"
+    OR "x"."C"
+  )
+  AND (
+    "x"."A"
+    OR "x"."B"
+    OR "x"."D"
+  ) AS "_col_0"
+FROM "x" AS "x"
+WHERE
+  "x"."Z" = CAST('2021-02-01' AS DATE)
+"""
 ```
 
 ### Benchmarks
@@ -269,3 +285,12 @@ pip install -r requirements.txt
 ./format_code.sh
 ./run_checks.sh
 ```
+
+## Optional Dependencies
+SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify literal timedelta expressions. The optimizer will not simplify expressions like
+
+```sql
+x + interval '1' month
+```
+
+if the module cannot be found.

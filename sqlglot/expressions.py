@@ -2374,6 +2374,7 @@ def replace_children(expression, fun):
                 cns = ensure_list(fun(cn))
                 for child_node in cns:
                     child_node.parent = expression
+                    child_node.arg_key = k
             else:
                 cns = [cn]
             new_child_nodes.extend(cns)

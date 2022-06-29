@@ -27,7 +27,7 @@ class Expression:
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
         self.args = args
-        self._set_parent(**args)
+        self._set_parent(args)
         self.parent = None
         self.arg_key = None
 
@@ -90,9 +90,9 @@ class Expression:
             value: value to set the arg to.
         """
         self.args[arg] = value
-        self._set_parent(**{arg: value})
+        self._set_parent({arg: value})
 
-    def _set_parent(self, **kwargs):
+    def _set_parent(self, kwargs):
         for arg_key, node in kwargs.items():
             for v in ensure_list(node):
                 if isinstance(v, Expression):
@@ -2373,11 +2373,11 @@ def replace_children(expression, fun):
             if isinstance(cn, Expression):
                 cns = ensure_list(fun(cn))
                 for child_node in cns:
+                    new_child_nodes.append(child_node)
                     child_node.parent = expression
                     child_node.arg_key = k
             else:
-                cns = [cn]
-            new_child_nodes.extend(cns)
+                new_child_nodes.append(cn)
 
         expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
 

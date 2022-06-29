@@ -105,6 +105,8 @@ def _qualify_columns(scope, schema):
 def _expand_stars(scope, schema):
     """Expand stars to lists of column selections"""
 
+    new_selections = []
+
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
@@ -113,18 +115,17 @@ def _expand_stars(scope, schema):
         ):
             tables = [expression.table]
         else:
+            new_selections.append(expression)
             continue
-
-        new_columns = []
 
         for table in tables:
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
             columns = _get_source_columns(table, scope.sources, schema)
             for column in columns:
-                new_columns.append(exp.column(column, table))
+                new_selections.append(exp.column(column, table))
 
-        expression.replace(*new_columns)
+    scope.expression.set("expressions", new_selections)
 
 
 def _qualify_outputs(scope):

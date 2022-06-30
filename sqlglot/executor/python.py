@@ -1,15 +1,13 @@
 import ast
-import csv
 import collections
-import gzip
 import itertools
 
-import sqlglot.expressions as exp
-from sqlglot import planner
+from sqlglot import exp, planner
 from sqlglot.dialects import Dialect
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
+from sqlglot.helper import csv_reader
 
 
 class PythonExecutor:
@@ -79,8 +77,11 @@ class PythonExecutor:
     def table(self, expressions):
         return Table(expression.alias_or_name for expression in expressions)
 
-    def scan(self, step, context, source=None):
-        source = source or step.source.name
+    def scan(self, step, context):
+        if isinstance(step, planner.Scan):
+            source = step.source.this.name or step.source.alias
+        else:
+            source = step.name
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
 
@@ -89,7 +90,7 @@ class PythonExecutor:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
         else:
-            table_iter = self.scan_csv(source)
+            table_iter = self.scan_csv(step)
 
         if projections:
             sink = self.table(step.projections)
@@ -115,30 +116,26 @@ class PythonExecutor:
 
         return self.context({step.name: sink})
 
-    def scan_csv(self, file):
+    def scan_csv(self, step):
         # pylint: disable=stop-iteration-return
-        with gzip.open(f"tests/fixtures/optimizer/tpc-h/{file}.csv.gz", "rt") as f:
-            reader = csv.reader(f, delimiter="|")
-            columns = next(reader)
-            row = next(reader)
+        source = step.source
+        alias = source.alias
 
+        with csv_reader(source.this) as reader:
+            columns = next(reader)
+            table = Table(columns)
+            context = self.context({alias: table})
             types = []
 
-            for v in row:
-                try:
-                    types.append(type(ast.literal_eval(v)))
-                except (ValueError, SyntaxError):
-                    types.append(str)
-
-            f.seek(0)
-            next(reader)
-
-            table = Table(columns)
-            context = self.context({file: table})
-
             for row in reader:
-                context.set_row(file, tuple(t(v) for t, v in zip(types, row)))
-                yield context[file], context
+                if not types:
+                    for v in row:
+                        try:
+                            types.append(type(ast.literal_eval(v)))
+                        except (ValueError, SyntaxError):
+                            types.append(str)
+                context.set_row(alias, tuple(t(v) for t, v in zip(types, row)))
+                yield context[alias], context
 
     def join(self, step, context):
         source = step.name
@@ -162,7 +159,7 @@ class PythonExecutor:
             join_context = merge_context(join_context, table)
 
         # apply projections or conditions
-        context = self.scan(step, join_context, source)
+        context = self.scan(step, join_context)
 
         # use the scan context since it returns a single table
         # otherwise there are no projections so all other tables are still in scope
@@ -284,7 +281,7 @@ class PythonExecutor:
         table = list(context.tables)[0]
         key = self.generate_tuple(step.key)
         context.sort(table, key)
-        return self.scan(step, context, step.name)
+        return self.scan(step, context)
 
 
 class Python(Dialect):

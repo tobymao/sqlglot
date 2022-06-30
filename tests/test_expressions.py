@@ -1,7 +1,6 @@
 import unittest
 
-import sqlglot.expressions as exp
-from sqlglot import parse_one
+from sqlglot import alias, exp, parse_one
 
 
 class TestExpressions(unittest.TestCase):
@@ -210,15 +209,15 @@ class TestExpressions(unittest.TestCase):
     def test_transform_with_arguments(self):
         expression = parse_one("a")
 
-        def fun(node, alias=True):
-            if alias:
+        def fun(node, alias_=True):
+            if alias_:
                 return parse_one("a AS a")
             return node
 
         transformed_expression = expression.transform(fun)
         self.assertEqual(transformed_expression.sql(dialect="presto"), "a AS a")
 
-        transformed_expression_2 = expression.transform(fun, alias=False)
+        transformed_expression_2 = expression.transform(fun, alias_=False)
         self.assertEqual(transformed_expression_2.sql(dialect="presto"), "a")
 
     def test_transform_simple(self):
@@ -390,9 +389,9 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("'a'").text("this"), "a")
 
     def test_alias(self):
-        self.assertEqual(exp.alias_("foo", "bar").sql(), "foo AS bar")
-        self.assertEqual(exp.alias_("foo", "bar-1").sql(), 'foo AS "bar-1"')
-        self.assertEqual(exp.alias_("foo", "bar_1").sql(), "foo AS bar_1")
-        self.assertEqual(exp.alias_("foo * 2", "2bar").sql(), 'foo * 2 AS "2bar"')
-        self.assertEqual(exp.alias_('"foo"', "_bar").sql(), '"foo" AS "_bar"')
-        self.assertEqual(exp.alias_("foo", "bar", quoted=True).sql(), 'foo AS "bar"')
+        self.assertEqual(alias("foo", "bar").sql(), "foo AS bar")
+        self.assertEqual(alias("foo", "bar-1").sql(), 'foo AS "bar-1"')
+        self.assertEqual(alias("foo", "bar_1").sql(), "foo AS bar_1")
+        self.assertEqual(alias("foo * 2", "2bar").sql(), 'foo * 2 AS "2bar"')
+        self.assertEqual(alias('"foo"', "_bar").sql(), '"foo" AS "_bar"')
+        self.assertEqual(alias("foo", "bar", quoted=True).sql(), 'foo AS "bar"')

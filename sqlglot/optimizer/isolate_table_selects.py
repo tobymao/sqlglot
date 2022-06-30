@@ -1,4 +1,4 @@
-import sqlglot.expressions as exp
+from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.scope import traverse_scope
 
@@ -21,7 +21,10 @@ def isolate_table_selects(expression):
 
             parent.replace(
                 exp.select("*")
-                .from_(exp.alias_(source, source.name, table=True), copy=False)
+                .from_(
+                    alias(source, source.name or parent.alias, table=True),
+                    copy=False,
+                )
                 .subquery(parent.alias, copy=False)
             )
 

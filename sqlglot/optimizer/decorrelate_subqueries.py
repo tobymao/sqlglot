@@ -1,7 +1,7 @@
 import itertools
 
+from sqlglot import exp
 from sqlglot.optimizer.scope import traverse_scope
-import sqlglot.expressions as exp
 
 
 def decorrelate_subqueries(expression):

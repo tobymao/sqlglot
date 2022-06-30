@@ -82,7 +82,6 @@ A simple transform on types can be accomplished by providing a corresponding map
 ```python
 
 from sqlglot import *
-from sqlglot import expressions as exp
 
 transpile("SELECT CAST(a AS INT) FROM x", type_mapping={exp.DataType.Type.INT: "SPECIAL INT"})[0]
 ```
@@ -207,14 +206,13 @@ SELECT x FROM y, z
 There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:
 
 ```python
-import sqlglot
-import sqlglot.expressions as exp
+from sqlglot import exp, parse_one
 
-expression_tree = sqlglot.parse_one("SELECT a FROM x")
+expression_tree = parse_one("SELECT a FROM x")
 
 def transformer(node):
     if isinstance(node, exp.Column) and node.name == "a":
-        return sqlglot.parse_one("FUN(a)")
+        return parse_one("FUN(a)")
     return node
 
 transformed_tree = expression_tree.transform(transformer)
@@ -247,7 +245,7 @@ from sqlglot.optimizer import optimize
 >>>
 optimize(
     sqlglot.parse_one("""
-    SELECT A OR (B OR (C AND D)) 
+    SELECT A OR (B OR (C AND D))
     FROM x
     WHERE Z = date '2021-01-01' + INTERVAL '1' month OR 1 = 0
     """),

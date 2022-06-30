@@ -1,6 +1,6 @@
+from sqlglot import exp
 from sqlglot.helper import while_changing
 from sqlglot.optimizer.simplify import simplify, uniq_sort, flatten
-import sqlglot.expressions as exp
 
 
 def normalize(expression, dnf=False, max_distance=128):

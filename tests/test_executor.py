@@ -4,8 +4,7 @@ import duckdb
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-import sqlglot
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from sqlglot.executor import execute
 from tests.helpers import load_sql_fixture_pairs, FIXTURES_DIR, TPCH_SCHEMA
 
@@ -54,14 +53,14 @@ class TestExecutor(unittest.TestCase):
     def test_execute_tpch(self):
         def to_csv(expression):
             if isinstance(expression, exp.Table):
-                return sqlglot.parse_one(
+                return parse_one(
                     f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.name}"
                 )
             return expression
 
         for sql, _ in self.sqls[0:3]:
             a = self.cached_execute(sql)
-            sql = sqlglot.parse_one(sql).transform(to_csv).sql(pretty=True)
+            sql = parse_one(sql).transform(to_csv).sql(pretty=True)
             table = execute(sql, TPCH_SCHEMA)
             b = pd.DataFrame(table.rows, columns=table.columns)
             assert_frame_equal(a, b, check_dtype=False)

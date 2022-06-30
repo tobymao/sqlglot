@@ -113,6 +113,8 @@ class Parser:
         *TYPE_TOKENS,
     }
 
+    LAMBDA_TOKENS = ID_VAR_TOKENS | {TokenType.LEFT, TokenType.RIGHT}
+
     CASTS = {
         TokenType.CAST,
         TokenType.TRY_CAST,
@@ -278,6 +280,7 @@ class Parser:
             exp.Lateral: self._parse_lateral,
             exp.Join: self._parse_join,
             exp.Order: self._parse_order,
+            exp.Lambda: self._parse_lambda,
             exp.Limit: self._parse_limit,
             exp.Offset: self._parse_offset,
             exp.TableAlias: self._parse_table_alias,
@@ -1325,7 +1328,9 @@ class Parser:
         index = self._index
 
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(self._parse_id_var)
+            expressions = self._parse_csv(
+                lambda: self._parse_id_var(self.LAMBDA_TOKENS)
+            )
             self._match(TokenType.R_PAREN)
         else:
             expressions = [self._parse_id_var()]
@@ -1566,9 +1571,9 @@ class Parser:
 
         return this
 
-    def _parse_id_var(self):
+    def _parse_id_var(self, tokens=None):
         return self._parse_identifier() or (
-            self._match_set(self.ID_VAR_TOKENS)
+            self._match_set(tokens or self.ID_VAR_TOKENS)
             and exp.Identifier(this=self._prev.text, quoted=False)
         )
 

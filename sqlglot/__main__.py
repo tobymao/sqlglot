@@ -50,7 +50,12 @@ args = parser.parse_args()
 error_level = sqlglot.ErrorLevel[args.error_level.upper()]
 
 if args.parse:
-    sqls = sqlglot.parse(args.sql, read=args.read, error_level=error_level)
+    sqls = [
+        repr(expression)
+        for expression in sqlglot.parse(
+            args.sql, read=args.read, error_level=error_level
+        )
+    ]
 else:
     sqls = sqlglot.transpile(
         args.sql,

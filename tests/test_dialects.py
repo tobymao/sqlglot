@@ -667,6 +667,54 @@ class TestDialects(unittest.TestCase):
 
         self.validate("'\u6bdb'", "'\u6bdb'", read="presto")
 
+        self.validate(
+            "SELECT ARRAY_SORT(x)",
+            "SELECT ARRAY_SORT(x)",
+            read="presto",
+        )
+
+        self.validate(
+            "SELECT ARRAY_SORT(x)",
+            "SELECT SORT_ARRAY(x)",
+            read="presto",
+            write="hive",
+        )
+
+        self.validate(
+            "SELECT SORT_ARRAY(x)",
+            "SELECT ARRAY_SORT(x)",
+            read="hive",
+            write="presto",
+        )
+
+        self.validate(
+            "SELECT SORT_ARRAY(x, False)",
+            "SELECT ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
+            read="hive",
+            write="presto",
+        )
+
+        self.validate(
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            read="presto",
+            write="spark",
+        )
+        self.validate(
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            read="spark",
+            write="presto",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+                read="presto",
+                write="hive",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT * FROM x TABLESAMPLE(10)",
@@ -1287,6 +1335,31 @@ class TestDialects(unittest.TestCase):
             "MAP(ARRAY[1], c)",
             read="spark",
             write="presto",
+        )
+
+        self.validate(
+            "SELECT SORT_ARRAY(x, FALSE)",
+            "SELECT SORT_ARRAY(x, FALSE)",
+            read="hive",
+            write="spark",
+        )
+        self.validate(
+            "SELECT SORT_ARRAY(x, TRUE)",
+            "SELECT SORT_ARRAY(x, TRUE)",
+            read="hive",
+            write="spark",
+        )
+        self.validate(
+            "SELECT SORT_ARRAY(x, TRUE)",
+            "SELECT SORT_ARRAY(x, TRUE)",
+            read="spark",
+            write="hive",
+        )
+        self.validate(
+            "SELECT ARRAY_SORT(x)",
+            "SELECT SORT_ARRAY(x)",
+            read="spark",
+            write="hive",
         )
 
     def test_snowflake(self):

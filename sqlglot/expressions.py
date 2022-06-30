@@ -1659,6 +1659,10 @@ class ArraySize(Func):
     pass
 
 
+class ArraySort(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class Avg(AggFunc):
     pass
 
@@ -1819,6 +1823,10 @@ class Round(Func):
 
 class SetAgg(AggFunc):
     pass
+
+
+class SortArray(Func):
+    arg_types = {"this": True, "asc": False}
 
 
 class Split(Func):

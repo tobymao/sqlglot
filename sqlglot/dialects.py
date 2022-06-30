@@ -194,6 +194,15 @@ def _format_time(exp_class, dialect, default=None):
     )
 
 
+def _no_sort_array(self, expression):
+    if expression.args.get("asc") == exp.FALSE:
+        comparator = "(a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END"
+    else:
+        comparator = None
+    args = csv(self.sql(expression, "this"), comparator)
+    return f"ARRAY_SORT({args})"
+
+
 # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
 MYSQL_TIME_MAPPING = {
     "%M": "%B",
@@ -396,6 +405,11 @@ class Hive(Dialect):
         value = self.sql(expression, "value")
         return f"'{key}' = {value}"
 
+    def _array_sort(self, expression):
+        if expression.args.get("expression"):
+            self.unsupported("Hive SORT_ARRAY does not support a comparator")
+        return f"SORT_ARRAY({self.sql(expression, 'this')})"
+
     def _str_to_unix(self, expression):
         return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), Hive._time_format(self, expression))})"
 
@@ -427,6 +441,7 @@ class Hive(Dialect):
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
         exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
+        exp.ArraySort: _array_sort,
         exp.With: _no_recursive_cte_sql,
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
@@ -664,6 +679,7 @@ class Presto(Dialect):
         exp.Levenshtein: lambda self, e: f"LEVENSHTEIN_DISTANCE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.Quantile: _quantile_sql,
         exp.Schema: _schema_sql,
+        exp.SortArray: _no_sort_array,
         exp.StrPosition: _str_position_sql,
         exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
@@ -730,7 +746,7 @@ class Spark(Hive):
     }
 
     transforms = {
-        **Hive.transforms,
+        **{k: v for k, v in Hive.transforms.items() if k not in {exp.ArraySort}},
         exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.Create: _create_sql,

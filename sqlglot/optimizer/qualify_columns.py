@@ -25,13 +25,10 @@ def qualify_columns(expression, schema):
     """
     schema = ensure_schema(schema)
 
-    # We'll use this when generating alias names
-    sequence = itertools.count()
-
     for scope in traverse_scope(expression):
         _check_union_outputs(scope)
-        _qualify_derived_tables(scope.ctes, scope, sequence)
-        _qualify_derived_tables(scope.derived_tables, scope, sequence)
+        _pop_table_column_aliases(scope.ctes)
+        _pop_table_column_aliases(scope.derived_tables)
         _qualify_columns(scope, schema)
         _expand_stars(scope, schema)
         _qualify_outputs(scope)
@@ -51,24 +48,16 @@ def _check_union_outputs(scope):
         )
 
 
-def _qualify_derived_tables(derived_tables, scope, sequence):
-    """Ensure all derived tables have aliases"""
+def _pop_table_column_aliases(derived_tables):
+    """
+    Remove table column aliases.
+
+    (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
+    """
     for derived_table in derived_tables:
         table_alias = derived_table.args.get("alias")
-
-        if not table_alias:
-            table_alias = exp.TableAlias()
-            derived_table.set("alias", table_alias)
-
-        alias = table_alias.args.get("this")
-        if not alias:
-            alias = exp.to_identifier(f"_q_{next(sequence)}")
-            scope.rename_source(None, alias.name)
-            table_alias.set("this", alias)
-
-        # Remove any alias column list
-        # (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
-        table_alias.args.pop("columns", None)
+        if table_alias:
+            table_alias.args.pop("columns", None)
 
 
 def _qualify_columns(scope, schema):

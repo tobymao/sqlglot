@@ -4,8 +4,13 @@ import duckdb
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
+import sqlglot
+import sqlglot.expressions as exp
 from sqlglot.executor import execute
 from tests.helpers import load_sql_fixture_pairs, FIXTURES_DIR, TPCH_SCHEMA
+
+
+DIR = FIXTURES_DIR + "/optimizer/tpc-h/"
 
 
 class TestExecutor(unittest.TestCase):
@@ -18,7 +23,7 @@ class TestExecutor(unittest.TestCase):
                 f"""
                 CREATE VIEW {table} AS
                 SELECT *
-                FROM READ_CSV_AUTO('{FIXTURES_DIR}/optimizer/tpc-h/{table}.csv.gz')
+                FROM READ_CSV_AUTO('{DIR}{table}.csv.gz')
                 """
             )
 
@@ -47,8 +52,14 @@ class TestExecutor(unittest.TestCase):
             assert_frame_equal(a, b)
 
     def test_execute_tpch(self):
-        for sql, _ in self.sqls[0:3]:
+        def to_csv(expression):
+            if isinstance(expression, exp.Table):
+                return sqlglot.parse_one(f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.name}")
+            return expression
+
+        for sql, _ in self.sqls[1:2]:
             a = self.cached_execute(sql)
+            sql = sqlglot.parse_one(sql).transform(to_csv).sql(pretty=True)
             table = execute(sql, TPCH_SCHEMA)
             b = pd.DataFrame(table.rows, columns=table.columns)
             assert_frame_equal(a, b, check_dtype=False)

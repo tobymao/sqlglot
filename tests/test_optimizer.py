@@ -74,11 +74,12 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_columns(self):
-        self.check_file(
-            "qualify_columns",
-            optimizer.qualify_columns.qualify_columns,
-            schema=self.schema,
-        )
+        def qualify_columns(expression, **kwargs):
+            expression = optimizer.qualify_tables.qualify_tables(expression)
+            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+            return expression
+
+        self.check_file("qualify_columns", qualify_columns, schema=self.schema)
 
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
@@ -93,6 +94,7 @@ class TestOptimizer(unittest.TestCase):
 
     def test_pushdown_projection(self):
         def pushdown_projections(expression, **kwargs):
+            expression = optimizer.qualify_tables.qualify_tables(expression)
             expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
             expression = optimizer.pushdown_projections.pushdown_projections(expression)
             return expression
@@ -147,13 +149,20 @@ class TestOptimizer(unittest.TestCase):
                 }
             }
         )
-        self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])
+        self.assertEqual(
+            schema.column_names(
+                exp.table(
+                    "x",
+                )
+            ),
+            ["a"],
+        )
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x", db="db", catalog="c"))
+            schema.column_names(exp.table("x", db="db", catalog="c"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x", db="db"))
+            schema.column_names(exp.table("x", db="db"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x2"))
+            schema.column_names(exp.table("x2"))
 
         schema = ensure_schema(
             {
@@ -164,15 +173,15 @@ class TestOptimizer(unittest.TestCase):
                 }
             }
         )
-        self.assertEqual(schema.column_names(exp.Table(this="x", db="db")), ["a"])
+        self.assertEqual(schema.column_names(exp.table("x", db="db")), ["a"])
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x", db="db", catalog="c"))
+            schema.column_names(exp.table("x", db="db", catalog="c"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x"))
+            schema.column_names(exp.table("x"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x", db="db2"))
+            schema.column_names(exp.table("x", db="db2"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x2", db="db"))
+            schema.column_names(exp.table("x2", db="db"))
 
         schema = ensure_schema(
             {
@@ -186,18 +195,18 @@ class TestOptimizer(unittest.TestCase):
             }
         )
         self.assertEqual(
-            schema.column_names(exp.Table(this="x", db="db", catalog="c")), ["a"]
+            schema.column_names(exp.table("x", db="db", catalog="c")), ["a"]
         )
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x", db="db"))
+            schema.column_names(exp.table("x", db="db"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x"))
+            schema.column_names(exp.table("x"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x", db="db", catalog="c2"))
+            schema.column_names(exp.table("x", db="db", catalog="c2"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x", db="db2"))
+            schema.column_names(exp.table("x", db="db2"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.Table(this="x2", db="db"))
+            schema.column_names(exp.table("x2", db="db"))
 
         schema = ensure_schema(
             MappingSchema(
@@ -208,10 +217,29 @@ class TestOptimizer(unittest.TestCase):
                 }
             )
         )
-        self.assertEqual(schema.column_names(exp.Table(this="x")), ["a"])
+        self.assertEqual(schema.column_names(exp.table("x")), ["a"])
 
         with self.assertRaises(OptimizeError):
             ensure_schema({})
+
+    def test_file_schema(self):
+        expression = sqlglot.parse_one(
+            """
+            SELECT *
+            FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|')
+            """
+        )
+        self.assertEqual(
+            """
+SELECT
+  "_q_0"."n_nationkey" AS "n_nationkey",
+  "_q_0"."n_name" AS "n_name",
+  "_q_0"."n_regionkey" AS "n_regionkey",
+  "_q_0"."n_comment" AS "n_comment"
+FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') AS "_q_0"
+""".strip(),
+            optimizer.optimize(expression).sql(pretty=True),
+        )
 
     def test_scope(self):
         sql = """

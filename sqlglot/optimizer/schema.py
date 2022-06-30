@@ -1,6 +1,8 @@
 import abc
 
+import sqlglot.expressions as exp
 from sqlglot.errors import OptimizeError
+from sqlglot.helper import csv_reader
 
 
 class Schema(abc.ABC):
@@ -34,7 +36,9 @@ class MappingSchema(Schema):
 
         depth = _dict_depth(schema)
 
-        if depth == 2:  # {table: {col: type}}
+        if not depth:  # {}
+            self.supported_table_args = []
+        elif depth == 2:  # {table: {col: type}}
             self.supported_table_args = ("this",)
         elif depth == 3:  # {db: {table: {col: type}}}
             self.supported_table_args = ("db", "this")
@@ -43,8 +47,19 @@ class MappingSchema(Schema):
         else:
             raise OptimizeError(f"Invalid schema shape. Depth: {depth}")
 
+        self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
+
     def column_names(self, table):
-        args = _table_args(table, *self.supported_table_args)
+        if not isinstance(table.this, exp.Identifier):
+            return fs_get(table)
+
+        args = tuple(table.text(p) for p in self.supported_table_args)
+
+        for forbidden in self.forbidden_args:
+            if table.text(forbidden):
+                raise ValueError(
+                    f"Schema doesn't support {forbidden}. Received: {table.sql()}"
+                )
         return list(_nested_get(self.schema, *zip(self.supported_table_args, args)))
 
 
@@ -55,25 +70,14 @@ def ensure_schema(schema):
     return MappingSchema(schema)
 
 
-def _table_args(table, *args):
-    """
-    Extract the args of a table expression.
+def fs_get(table):
+    name = table.this.name.upper()
 
-    Args:
-        table (sqlglot.expressions.Table): table expression
-        *args (str): arg names to extract
-    Returns:
-        tuple[str]: args
-    """
-    result = tuple(table.text(p) for p in args)
+    if name.upper() == "READ_CSV":
+        with csv_reader(table) as reader:
+            return next(reader)
 
-    for forbidden in {"catalog", "db", "this"} - set(args):
-        if table.text(forbidden):
-            raise ValueError(
-                f"Schema doesn't support catalogs. Received: {table.sql()}"
-            )
-
-    return result
+    raise ValueError(f"Cannot read schema for {func}")
 
 
 def _nested_get(d, *path):

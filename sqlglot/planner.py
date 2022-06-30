@@ -207,8 +207,8 @@ class Step:
 class Scan(Step):
     @classmethod
     def from_expression(cls, expression, ctes=None):
+        table = expression.this
         alias = expression.alias
-        source = expression.this
 
         if not alias:
             raise UnsupportedError(
@@ -216,16 +216,15 @@ class Scan(Step):
             )
 
         if isinstance(expression, exp.Subquery):
-            step = Step.from_expression(source, ctes)
+            step = Step.from_expression(table, ctes)
             step.name = alias
             return step
 
         step = Scan()
         step.name = alias
-        step.source = source
-
-        if source.name in ctes:
-            step.add_dependency(ctes[source.name])
+        step.source = expression
+        if table.name in ctes:
+            step.add_dependency(ctes[table.name])
 
         return step
 

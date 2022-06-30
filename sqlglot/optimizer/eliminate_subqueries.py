@@ -40,7 +40,7 @@ def eliminate_subqueries(expression):
         for dup in duplicates:
             parent = dup.parent
             if isinstance(parent, exp.Subquery):
-                parent.replace(exp.alias_(alias, parent.alias_or_name, table=True))
+                parent.replace(exp.alias_(exp.table(alias), parent.alias_or_name, table=True))
             elif isinstance(parent, exp.Union):
                 dup.replace(sqlglot.select("*").from_(alias))
 

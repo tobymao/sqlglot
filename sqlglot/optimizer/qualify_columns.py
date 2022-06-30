@@ -1,6 +1,7 @@
 import itertools
 
-import sqlglot.expressions as exp
+import sqlglot
+from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
@@ -127,11 +128,11 @@ def _qualify_outputs(scope):
     ):
         if isinstance(selection, exp.Column):
             # convoluted setter because a simple selection.replace(alias) would require a copy
-            alias = exp.alias_(exp.column(""), alias=selection.name)
+            alias = sqlglot.alias(exp.column(""), alias=selection.name)
             alias.set("this", selection)
             selection = alias
         elif not isinstance(selection, exp.Alias):
-            alias = exp.alias_(exp.column(""), f"_col_{i}")
+            alias = sqlglot.alias(exp.column(""), f"_col_{i}")
             alias.set("this", selection)
             selection = alias
 

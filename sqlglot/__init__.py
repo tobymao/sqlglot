@@ -1,3 +1,4 @@
+from sqlglot import expressions as exp
 from sqlglot.dialects import Dialect
 from sqlglot.errors import ErrorLevel, UnsupportedError, ParseError, TokenError
 from sqlglot.expressions import (
@@ -9,6 +10,8 @@ from sqlglot.expressions import (
     not_,
     condition,
     alias_ as alias,
+    column,
+    table_ as table,
     subquery,
 )
 from sqlglot.generator import Generator

@@ -37,6 +37,6 @@ WITH _e_0 AS (
 )
 SELECT
   x.id
-FROM _e_0 AS x
-JOIN _e_0 AS y
+FROM "_e_0" AS x
+JOIN "_e_0" AS y
   ON x.id = y.id;

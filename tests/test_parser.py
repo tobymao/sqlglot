@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 
-import sqlglot.expressions as exp
-from sqlglot import ErrorLevel, Parser, ParseError, parse, parse_one
+from sqlglot import parse, parse_one, exp, Parser
+from sqlglot.errors import ErrorLevel, ParseError
 
 
 class TestParser(unittest.TestCase):

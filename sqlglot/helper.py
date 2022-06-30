@@ -49,7 +49,7 @@ def csv(*args, sep=", "):
 
 
 def apply_index_offset(expressions, offset):
-    import sqlglot.expressions as exp
+    from sqlglot import exp
 
     if not offset or len(expressions) != 1:
         return expressions
@@ -112,7 +112,7 @@ def open_file(file_name):
 
         return gzip.open(file_name, "rt", newline="")
 
-    return open(file_name, "rt", newline="")
+    return open(file_name, "rt", encoding="utf-8", newline="")
 
 
 @contextmanager
@@ -137,8 +137,8 @@ def csv_reader(table):
             delimiter = v
 
     try:
-        import csv
+        import csv as csv_
 
-        yield csv.reader(file, delimiter=delimiter)
+        yield csv_.reader(file, delimiter=delimiter)
     finally:
         file.close()

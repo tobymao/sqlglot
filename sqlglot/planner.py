@@ -1,7 +1,7 @@
 import itertools
 import math
 
-import sqlglot.expressions as exp
+from sqlglot import alias, exp
 from sqlglot.errors import UnsupportedError
 from sqlglot.optimizer.simplify import simplify
 
@@ -121,7 +121,7 @@ class Step:
             aggregate = Aggregate()
             aggregate.name = step.name
             aggregate.operands = tuple(
-                exp.alias_(operand, alias) for operand, alias in operands.items()
+                alias(operand, alias_) for operand, alias_ in operands.items()
             )
             aggregate.aggregations = aggregations
             aggregate.group = [
@@ -208,20 +208,20 @@ class Scan(Step):
     @classmethod
     def from_expression(cls, expression, ctes=None):
         table = expression.this
-        alias = expression.alias
+        alias_ = expression.alias
 
-        if not alias:
+        if not alias_:
             raise UnsupportedError(
                 "Tables/Subqueries must be aliased. Run it through the optimizer"
             )
 
         if isinstance(expression, exp.Subquery):
             step = Step.from_expression(table, ctes)
-            step.name = alias
+            step.name = alias_
             return step
 
         step = Scan()
-        step.name = alias
+        step.name = alias_
         step.source = expression
         if table.name in ctes:
             step.add_dependency(ctes[table.name])

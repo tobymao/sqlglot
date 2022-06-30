@@ -1,4 +1,4 @@
-from sqlglot import expressions as exp
+from sqlglot import exp
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import traverse_scope
 from sqlglot.optimizer.simplify import simplify

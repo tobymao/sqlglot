@@ -102,7 +102,7 @@ def tsort(dag):
 
 def open_file(file_name):
     """
-    Open a file that may or may not be compressed as gzip and return in newline mode.
+    Open a file that may be compressed as gzip and return in newline mode.
     """
     with open(file_name, "rb") as f:
         gzipped = f.read(2) == b"\x1f\x8b"

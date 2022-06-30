@@ -1,4 +1,4 @@
-import sqlglot.expressions as exp
+from sqlglot import exp
 from sqlglot.helper import tsort
 from sqlglot.optimizer.simplify import simplify
 

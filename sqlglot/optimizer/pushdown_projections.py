@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from sqlglot import expressions as exp
+from sqlglot import alias, exp
 from sqlglot.optimizer.scope import traverse_scope, Scope
 
 # Sentinel value that means an outer query selecting ALL columns
@@ -71,6 +71,6 @@ def _remove_unused_selections(scope, parent_selections):
 
     # If there are no remaining selections, just select a single constant
     if not new_selections:
-        new_selections.append(exp.alias_("1", "_"))
+        new_selections.append(alias("1", "_"))
 
     scope.expression.set("expressions", new_selections)

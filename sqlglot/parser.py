@@ -1,10 +1,9 @@
 import logging
 
-import sqlglot.constants as c
+from sqlglot import constants as c, exp
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import apply_index_offset, ensure_list, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
-import sqlglot.expressions as exp
 
 
 logger = logging.getLogger("sqlglot")

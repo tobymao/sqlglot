@@ -1,5 +1,6 @@
 import logging
 import re
+from contextlib import contextmanager
 from enum import Enum
 
 
@@ -48,7 +49,7 @@ def csv(*args, sep=", "):
 
 
 def apply_index_offset(expressions, offset):
-    import sqlglot.expressions as exp
+    from sqlglot import exp
 
     if not offset or len(expressions) != 1:
         return expressions
@@ -97,3 +98,47 @@ def tsort(dag):
         visit(node, set())
 
     return result
+
+
+def open_file(file_name):
+    """
+    Open a file that may be compressed as gzip and return in newline mode.
+    """
+    with open(file_name, "rb") as f:
+        gzipped = f.read(2) == b"\x1f\x8b"
+
+    if gzipped:
+        import gzip
+
+        return gzip.open(file_name, "rt", newline="")
+
+    return open(file_name, "rt", encoding="utf-8", newline="")
+
+
+@contextmanager
+def csv_reader(table):
+    """
+    Returns a csv reader given the expression READ_CSV(name, ['delimiter', '|', ...])
+
+    Args:
+        expression (Expression): An anonymous function READ_CSV
+
+    Returns:
+        A python csv reader.
+    """
+    file, *args = table.this.args["expressions"]
+    file = file.name
+    file = open_file(file)
+
+    delimiter = ","
+    args = iter(arg.name for arg in args)
+    for k, v in zip(args, args):
+        if k == "delimiter":
+            delimiter = v
+
+    try:
+        import csv as csv_
+
+        yield csv_.reader(file, delimiter=delimiter)
+    finally:
+        file.close()

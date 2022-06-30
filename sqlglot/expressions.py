@@ -2359,6 +2359,23 @@ def column(col, table=None, quoted=None):
     )
 
 
+def table_(table, db=None, catalog=None, quoted=None):
+    """
+    Build a Table.
+    Args:
+        table (str or Expression): column name
+        db (str or Expression): db name
+        catalog (str or Expression): catalog name
+    Returns:
+        Table: table instance
+    """
+    return Table(
+        this=to_identifier(table, quoted=quoted),
+        db=to_identifier(db, quoted=quoted),
+        catalog=to_identifier(catalog, quoted=quoted),
+    )
+
+
 def replace_children(expression, fun):
     """
     Replace children of an expression with the result of a lambda fun(child) -> exp.

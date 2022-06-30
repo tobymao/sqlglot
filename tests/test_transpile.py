@@ -2,7 +2,8 @@ import os
 import unittest
 from unittest import mock
 
-from sqlglot import ErrorLevel, ParseError, parse_one, transpile, expressions as exp
+from sqlglot import parse_one, transpile, exp
+from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import load_sql_fixtures, load_sql_fixture_pairs
 
 

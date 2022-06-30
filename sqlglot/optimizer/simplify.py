@@ -2,10 +2,10 @@ import itertools
 import datetime
 from decimal import Decimal
 
+from sqlglot import exp
 from sqlglot.helper import while_changing
 from sqlglot.expressions import FALSE, NULL, TRUE
 from sqlglot.generator import Generator
-import sqlglot.expressions as exp
 
 
 GENERATOR = Generator(normalize=True, identify=True)

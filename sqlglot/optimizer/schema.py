@@ -1,6 +1,6 @@
 import abc
 
-import sqlglot.expressions as exp
+from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import csv_reader
 
@@ -77,7 +77,7 @@ def fs_get(table):
         with csv_reader(table) as reader:
             return next(reader)
 
-    raise ValueError(f"Cannot read schema for {func}")
+    raise ValueError(f"Cannot read schema for {table}")
 
 
 def _nested_get(d, *path):

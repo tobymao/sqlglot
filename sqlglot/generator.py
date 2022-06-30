@@ -1,6 +1,6 @@
 import logging
 
-import sqlglot.expressions as exp
+from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time

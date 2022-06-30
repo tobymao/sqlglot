@@ -3,7 +3,6 @@ import unittest
 import sqlglot
 from sqlglot import optimizer
 from sqlglot.optimizer.schema import ensure_schema, MappingSchema
-from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.scope import traverse_scope
 from tests.helpers import (
@@ -151,18 +150,18 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(
             schema.column_names(
-                exp.table(
+                sqlglot.table(
                     "x",
                 )
             ),
             ["a"],
         )
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x", db="db", catalog="c"))
+            schema.column_names(sqlglot.table("x", db="db", catalog="c"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x", db="db"))
+            schema.column_names(sqlglot.table("x", db="db"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x2"))
+            schema.column_names(sqlglot.table("x2"))
 
         schema = ensure_schema(
             {
@@ -173,15 +172,15 @@ class TestOptimizer(unittest.TestCase):
                 }
             }
         )
-        self.assertEqual(schema.column_names(exp.table("x", db="db")), ["a"])
+        self.assertEqual(schema.column_names(sqlglot.table("x", db="db")), ["a"])
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x", db="db", catalog="c"))
+            schema.column_names(sqlglot.table("x", db="db", catalog="c"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x"))
+            schema.column_names(sqlglot.table("x"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x", db="db2"))
+            schema.column_names(sqlglot.table("x", db="db2"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x2", db="db"))
+            schema.column_names(sqlglot.table("x2", db="db"))
 
         schema = ensure_schema(
             {
@@ -195,18 +194,18 @@ class TestOptimizer(unittest.TestCase):
             }
         )
         self.assertEqual(
-            schema.column_names(exp.table("x", db="db", catalog="c")), ["a"]
+            schema.column_names(sqlglot.table("x", db="db", catalog="c")), ["a"]
         )
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x", db="db"))
+            schema.column_names(sqlglot.table("x", db="db"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x"))
+            schema.column_names(sqlglot.table("x"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x", db="db", catalog="c2"))
+            schema.column_names(sqlglot.table("x", db="db", catalog="c2"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x", db="db2"))
+            schema.column_names(sqlglot.table("x", db="db2"))
         with self.assertRaises(ValueError):
-            schema.column_names(exp.table("x2", db="db"))
+            schema.column_names(sqlglot.table("x2", db="db"))
 
         schema = ensure_schema(
             MappingSchema(
@@ -217,7 +216,7 @@ class TestOptimizer(unittest.TestCase):
                 }
             )
         )
-        self.assertEqual(schema.column_names(exp.table("x")), ["a"])
+        self.assertEqual(schema.column_names(sqlglot.table("x")), ["a"])
 
         with self.assertRaises(OptimizeError):
             ensure_schema({})

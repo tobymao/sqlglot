@@ -2,8 +2,7 @@ import ast
 import collections
 import itertools
 
-import sqlglot.expressions as exp
-from sqlglot import planner
+from sqlglot import exp, planner
 from sqlglot.dialects import Dialect
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
@@ -79,11 +78,13 @@ class PythonExecutor:
         return Table(expression.alias_or_name for expression in expressions)
 
     def scan(self, step, context):
-        source = step.source.alias
+        if isinstance(step, planner.Scan):
+            source = step.source.this.name or step.source.alias
+        else:
+            source = step.name
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
 
-        print(step.source.this.name)
         if source in context:
             if not projections and not condition:
                 return self.context({step.name: context.tables[source]})

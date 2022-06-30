@@ -1,6 +1,5 @@
 # pylint: disable=no-member, protected-access
-import sqlglot.constants as c
-import sqlglot.expressions as exp
+from sqlglot import constants as c, exp
 from sqlglot.generator import Generator
 from sqlglot.helper import RegisteringMeta, csv, list_get
 from sqlglot.parser import Parser

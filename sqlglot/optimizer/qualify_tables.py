@@ -1,6 +1,7 @@
 import itertools
 
-import sqlglot.expressions as exp
+import sqlglot
+from sqlglot import exp
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -44,7 +45,7 @@ def qualify_tables(expression, db=None, catalog=None):
 
                 if not isinstance(source.parent, exp.Alias):
                     source.replace(
-                        exp.alias_(
+                        sqlglot.alias(
                             source.copy(),
                             source.this if identifier else f"_q_{next(sequence)}",
                             table=True,

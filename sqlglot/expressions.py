@@ -2359,7 +2359,7 @@ def column(col, table=None, quoted=None):
     )
 
 
-def table(table, db=None, catalog=None, quoted=None):
+def table_(table, db=None, catalog=None, quoted=None):
     """
     Build a Table.
     Args:

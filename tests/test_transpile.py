@@ -133,6 +133,11 @@ class TestTranspile(unittest.TestCase):
             "'2020-01-01'::TIMESTAMP WITH TIME ZONE",
             "CAST('2020-01-01' AS TIMESTAMPTZ)",
         )
+        self.validate(
+            "timestamp with time zone '2025-11-20 00:00:00+00' AT TIME ZONE 'Africa/Cairo'",
+            "CAST('2025-11-20 00:00:00+00' AS TIMESTAMPTZ) AT TIME ZONE 'Africa/Cairo'",
+        )
+
         self.validate("DATE '2020-01-01'", "CAST('2020-01-01' AS DATE)")
         self.validate("'2020-01-01'::DATE", "CAST('2020-01-01' AS DATE)")
         self.validate("STR_TO_TIME('x', 'y')", "STRPTIME('x', 'y')", write="duckdb")

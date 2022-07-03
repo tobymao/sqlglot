@@ -79,6 +79,7 @@ class TokenType(AutoName):
     ANALYZE = auto()
     ARRAY = auto()
     ASC = auto()
+    AT_TIME_ZONE = auto()
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
@@ -283,6 +284,7 @@ class Tokenizer:
         "AND": TokenType.AND,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
+        "AT TIME ZONE": TokenType.AT_TIME_ZONE,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,

@@ -1151,7 +1151,7 @@ class Parser:
             return self.expression(exp.BitwiseNot, this=self._parse_unary())
         if self._match(TokenType.DASH):
             return self.expression(exp.Neg, this=self._parse_unary())
-        return self._parse_type()
+        return self._parse_at_time_zone(self._parse_type())
 
     def _parse_type(self):
         if self._match(TokenType.INTERVAL):
@@ -1230,6 +1230,12 @@ class Parser:
             expressions=expressions,
             nested=nested,
         )
+
+    def _parse_at_time_zone(self, this):
+        if not self._match(TokenType.AT_TIME_ZONE):
+            return this
+
+        return self.expression(exp.AtTimeZone, this=this, zone=self._parse_string())
 
     def _parse_column(self):
         this = self._parse_field()

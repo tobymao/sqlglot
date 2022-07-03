@@ -695,6 +695,11 @@ class Generator:
     def aliases_sql(self, expression):
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"
 
+    def attimezone_sql(self, expression):
+        this = self.sql(expression, "this")
+        zone = self.sql(expression, "zone")
+        return f"{this} AT TIME ZONE {zone}"
+
     def add_sql(self, expression):
         return self.binary(expression, "+")
 

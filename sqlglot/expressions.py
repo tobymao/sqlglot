@@ -1528,6 +1528,10 @@ class Aliases(Expression):
         return self.args["expressions"]
 
 
+class AtTimeZone(Expression):
+    arg_types = {"this": True, "zone": True}
+
+
 class Between(Predicate):
     arg_types = {"this": True, "low": True, "high": True}
 

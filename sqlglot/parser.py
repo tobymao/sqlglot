@@ -758,7 +758,7 @@ class Parser:
             self.raise_error("Expected AS in CTE")
 
         self._match_l_paren()
-        expression = self._parse_select()
+        expression = self._parse_with()
         self._match_r_paren()
 
         return self.expression(

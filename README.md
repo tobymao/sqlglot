@@ -76,6 +76,17 @@ LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
 
+### Metadata
+
+You can explore SQL with expression helpers to do things like find columns and tables.
+
+```python
+from sqlglot import parse_one, exp
+
+for column in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Column):
+  print(column.alias_or_name)
+```
+
 ### Customization
 #### Custom Types
 A simple transform on types can be accomplished by providing a corresponding mapping:

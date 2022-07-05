@@ -32,6 +32,12 @@ class TestTranspile(unittest.TestCase):
             transpile("1 + (2 + 3")
             transpile("select f(")
 
+    def test_some(self):
+        self.validate(
+            "SELECT * FROM x WHERE a = SOME(SELECT 1)",
+            "SELECT * FROM x WHERE a = ANY(SELECT 1)",
+        )
+
     def test_space(self):
         self.validate("SELECT MIN(3)>MIN(2)", "SELECT MIN(3) > MIN(2)")
         self.validate("SELECT MIN(3)>=MIN(2)", "SELECT MIN(3) >= MIN(2)")

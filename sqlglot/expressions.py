@@ -1554,10 +1554,6 @@ class Cast(Expression):
     arg_types = {"this": True, "to": True}
 
 
-class Decimal(Expression):
-    arg_types = {"precision": False, "scale": False}
-
-
 class Extract(Expression):
     arg_types = {"this": True, "expression": True}
 

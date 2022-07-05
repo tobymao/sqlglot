@@ -28,16 +28,8 @@ class Parser:
             Default: True
     """
 
-    def _parse_decimal(args):
-        size = len(args)
-        precision = args[0] if size > 0 else None
-        scale = args[1] if size > 1 else None
-        return exp.Decimal(precision=precision, scale=scale)
-
     FUNCTIONS = {
-        **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
-        "DECIMAL": _parse_decimal,
-        "NUMERIC": _parse_decimal,
+        name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()
     }
 
     TYPE_TOKENS = {

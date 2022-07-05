@@ -646,14 +646,6 @@ class Generator:
         statement = f"CASE{this}{ifs}{self.seg('END')}"
         return statement
 
-    def decimal_sql(self, expression):
-        args = ", ".join(
-            arg.args.get("this")
-            for arg in [expression.args.get("precision"), expression.args.get("scale")]
-            if arg
-        )
-        return f"DECIMAL({args})"
-
     def extract_sql(self, expression):
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")

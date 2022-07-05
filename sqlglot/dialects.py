@@ -747,6 +747,7 @@ class Spark(Hive):
 
     transforms = {
         **{k: v for k, v in Hive.transforms.items() if k not in {exp.ArraySort}},
+        exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
         exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.Create: _create_sql,
@@ -827,7 +828,9 @@ class Tableau(Dialect):
 
 
 class Trino(Presto):
-    pass
+    transforms = {
+        exp.ArraySum: lambda self, e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
+    }
 
 
 for d in Dialect.classes.values():

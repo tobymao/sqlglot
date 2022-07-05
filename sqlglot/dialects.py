@@ -106,6 +106,12 @@ class Dialect(metaclass=RegisteringMeta):
         )
 
 
+def _rename_func(name):
+    return (
+        lambda self, expression: f"{name}({csv(*[self.sql(e) for e in expression.args.values()])})"
+    )
+
+
 def _approx_count_distinct_sql(self, expression):
     if expression.args.get("accuracy"):
         self.unsupported("APPROX_COUNT_DISTINCT does not support accuracy")
@@ -239,18 +245,18 @@ class DuckDB(Dialect):
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
         exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
-        exp.ArraySize: lambda self, e: f"ARRAY_LENGTH({self.sql(e, 'this')})",
+        exp.ArraySize: _rename_func("ARRAY_LENGTH"),
+        exp.ArraySum: _rename_func("LIST_SUM"),
         exp.DateAdd: _date_add,
         exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
         exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
         exp.DateToDateStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.DATE_FORMAT})",
         exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
         exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS STRING), {DuckDB.DATEINT_FORMAT}) AS DATE)",
-        exp.Explode: lambda self, e: f"UNNEST({self.sql(e, 'this')})",
-        exp.Quantile: lambda self, e: f"QUANTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
-        exp.RegexpLike: lambda self, e: f"REGEXP_MATCHES({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.RegexpSplit: lambda self, e: f"STR_SPLIT_REGEX({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.Split: lambda self, e: f"STR_SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.Explode: _rename_func("UNNEST"),
+        exp.RegexpLike: _rename_func("REGEXP_MATCHES"),
+        exp.RegexpSplit: _rename_func("STR_SPLIT_REGEX"),
+        exp.Split: _rename_func("STR_SPLIT"),
         exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
         exp.TableSample: _no_tablesample_sql,
@@ -259,7 +265,7 @@ class DuckDB(Dialect):
         exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
         exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TimeToTimeStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.TIME_FORMAT})",
-        exp.TimeToUnix: lambda self, e: f"EPOCH({self.sql(e, 'this')})",
+        exp.TimeToUnix: _rename_func("EPOCH"),
         exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
         exp.TsOrDsAdd: _ts_or_ds_add,
         exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.DATE_FORMAT})",
@@ -281,7 +287,6 @@ DuckDB.functions = {
         )
     ),
     "LIST_VALUE": exp.Array.from_arg_list,
-    "QUANTILE": exp.Quantile.from_arg_list,
     "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
     "STRFTIME": _format_time(exp.TimeToStr, DuckDB),
     "STRPTIME": _format_time(exp.StrToTime, DuckDB),
@@ -426,12 +431,6 @@ class Hive(Dialect):
             return f"TO_DATE({this})"
         return f"DATE_FORMAT({this}, {time_format})"
 
-    def _time_to_unix(self, expression):
-        return f"UNIX_TIMESTAMP({self.sql(expression, 'this')})"
-
-    def _unix_to_time(self, expression):
-        return f"FROM_UNIXTIME({self.sql(expression, 'this')})"
-
     type_mapping = {
         exp.DataType.Type.TEXT: "STRING",
         exp.DataType.Type.VARCHAR: "STRING",
@@ -439,13 +438,13 @@ class Hive(Dialect):
 
     transforms = {
         exp.ApproxDistinct: _approx_count_distinct_sql,
-        exp.ArrayAgg: lambda self, e: f"COLLECT_LIST({self.sql(e, 'this')})",
-        exp.ArraySize: lambda self, e: f"SIZE({self.sql(e, 'this')})",
+        exp.ArrayAgg: _rename_func("COLLECT_LIST"),
+        exp.ArraySize: _rename_func("SIZE"),
         exp.ArraySort: _array_sort,
         exp.With: _no_recursive_cte_sql,
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
+        exp.DateStrToDate: _rename_func("TO_DATE"),
         exp.DateToDateStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Hive.DATE_FORMAT})",
         exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.DATEINT_FORMAT}) AS INT)",
         exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.DATEINT_FORMAT})",
@@ -454,33 +453,33 @@ class Hive(Dialect):
         exp.If: _if_sql,
         exp.ILike: _no_ilike_sql,
         exp.Join: _unnest_to_explode_sql,
-        exp.JSONExtract: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
-        exp.JSONExtractScalar: lambda self, e: f"GET_JSON_OBJECT({self.sql(e, 'this')}, {self.sql(e, 'path')})",
+        exp.JSONExtract: _rename_func("GET_JSON_OBJECT"),
+        exp.JSONExtractScalar: _rename_func("GET_JSON_OBJECT"),
         exp.Map: _map_sql,
         HiveMap: _map_sql,
-        exp.Quantile: lambda self, e: f"PERCENTILE({self.sql(e, 'this')}, {self.sql(e, 'quantile')})",
+        exp.Quantile: _rename_func("PERCENTILE"),
         exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
-        exp.RegexpSplit: lambda self, e: f"SPLIT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.SetAgg: lambda self, e: f"COLLECT_SET({self.sql(e, 'this')})",
+        exp.RegexpSplit: _rename_func("SPLIT"),
+        exp.SetAgg: _rename_func("COLLECT_SET"),
         exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
         exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
         exp.StrToTime: _str_to_time,
         exp.StrToUnix: _str_to_unix,
         exp.StructExtract: _struct_extract_sql,
-        exp.TimeStrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
-        exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
-        exp.TimeStrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')})",
+        exp.TimeStrToDate: _rename_func("TO_DATE"),
+        exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+        exp.TimeStrToUnix: _rename_func("UNIX_TIMESTAMP"),
         exp.TimeToStr: _time_to_str,
-        exp.TimeToTimeStr: lambda self, e: self.sql(e, "this"),
-        exp.TimeToUnix: _time_to_unix,
+        exp.TimeToTimeStr: lambda self, e: f"CAST({self.sql(e, 'this')} AS STRING)",
+        exp.TimeToUnix: _rename_func("UNIX_TIMESTAMP"),
         exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
         exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.TsOrDsToDateStr: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
-        exp.TsOrDsToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')})",
+        exp.TsOrDsToDateStr: _rename_func("TO_DATE"),
+        exp.TsOrDsToDate: _rename_func("TO_DATE"),
         exp.TryCast: _no_trycast_sql,
         exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), Hive._time_format(self, e))})",
-        exp.UnixToTime: _unix_to_time,
-        exp.UnixToTimeStr: _unix_to_time,
+        exp.UnixToTime: _rename_func("FROM_UNIXTIME"),
+        exp.UnixToTimeStr: _rename_func("FROM_UNIXTIME"),
     }
 
 
@@ -656,8 +655,8 @@ class Presto(Dialect):
     transforms = {
         exp.ApproxDistinct: _approx_distinct_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
-        exp.ArrayContains: lambda self, e: f"CONTAINS({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.ArraySize: lambda self, e: f"CARDINALITY({self.sql(e, 'this')})",
+        exp.ArrayContains: _rename_func("CONTAINS"),
+        exp.ArraySize: _rename_func("CARDINALITY"),
         exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseLeftShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.BitwiseNot: lambda self, e: f"BITWISE_NOT({self.sql(e, 'this')})",
@@ -676,7 +675,7 @@ class Presto(Dialect):
         exp.ILike: _no_ilike_sql,
         exp.Initcap: _initcap_sql,
         exp.Lateral: _explode_to_unnest_sql,
-        exp.Levenshtein: lambda self, e: f"LEVENSHTEIN_DISTANCE({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.Levenshtein: _rename_func("LEVENSHTEIN_DISTANCE"),
         exp.Quantile: _quantile_sql,
         exp.Schema: _schema_sql,
         exp.SortArray: _no_sort_array,
@@ -690,13 +689,13 @@ class Presto(Dialect):
         exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",
         exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.TimeToTimeStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Presto.TIME_FORMAT})",
-        exp.TimeToUnix: lambda self, e: f"TO_UNIXTIME({self.sql(e, 'this')})",
+        exp.TimeToUnix: _rename_func("TO_UNIXTIME"),
         exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         exp.TsOrDsAdd: _ts_or_ds_add_sql,
         exp.TsOrDsToDateStr: _ts_or_ds_to_date_str_sql,
         exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
         exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
-        exp.UnixToTime: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')})",
+        exp.UnixToTime: _rename_func("FROM_UNIXTIME"),
         exp.UnixToTimeStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {Presto.TIME_FORMAT})",
     }
 
@@ -752,6 +751,7 @@ class Spark(Hive):
         exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
         exp.Create: _create_sql,
         exp.Map: _map_sql,
+        exp.Reduce: _rename_func("AGGREGATE"),
         Hive.HiveMap: _map_sql,
     }
 
@@ -798,7 +798,7 @@ class SQLite(Dialect):
     }
 
     transforms = {
-        exp.Levenshtein: lambda self, e: f"EDITDIST3({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.Levenshtein: _rename_func("EDITDIST3"),
         exp.TableSample: _no_tablesample_sql,
         exp.TryCast: _no_trycast_sql,
     }

@@ -270,6 +270,12 @@ class TestDialects(unittest.TestCase):
             read="duckdb",
             write="presto",
         )
+        self.validate(
+            "ARRAY_SUM(ARRAY(1, 2))",
+            "LIST_SUM(LIST_VALUE(1, 2))",
+            read="spark",
+            write="duckdb",
+        )
 
     def test_mysql(self):
         self.validate(
@@ -963,6 +969,11 @@ class TestDialects(unittest.TestCase):
         self.validate("x div y", "CAST(x / y AS INTEGER)", read="hive", write="presto")
 
         self.validate(
+            "DATE_STR_TO_DATE(x)",
+            "TO_DATE(x)",
+            write="hive",
+        )
+        self.validate(
             "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd')",
             "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
             write="hive",
@@ -1085,12 +1096,12 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TIME_STR_TO_TIME(x)",
-            "x",
+            "CAST(x AS TIMESTAMP)",
             write="hive",
         )
         self.validate(
             "TIME_TO_TIME_STR(x)",
-            "x",
+            "CAST(x AS STRING)",
             write="hive",
         )
         self.validate(
@@ -1295,6 +1306,11 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "ARRAY_SUM(ARRAY(1, 2))",
             "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
+            write="spark",
+        )
+        self.validate(
+            "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+            "AGGREGATE(x, 0, (acc, x) -> acc + x, (acc) -> acc)",
             write="spark",
         )
 

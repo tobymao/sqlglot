@@ -1832,6 +1832,10 @@ class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
+class Reduce(Func):
+    arg_types = {"this": True, "initial": True, "merge": True, "finish": True}
+
+
 class RegexpLike(Func):
     arg_types = {"this": True, "expression": True}
 

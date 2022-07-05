@@ -1369,6 +1369,14 @@ class TestDialects(unittest.TestCase):
             read="snowflake",
         )
 
+    def test_bigquery(self):
+        self.validate(
+            "SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
+            "SELECT CURRENT_DATE - INTERVAL '1' DAY",
+            read="bigquery",
+            write="postgres"
+        )
+
     def test_sqlite(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",

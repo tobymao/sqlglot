@@ -459,13 +459,20 @@ class Generator:
     def join_sql(self, expression):
         side = self.sql(expression, "side").upper()
         kind = self.sql(expression, "kind").upper()
-        op_sql = self.seg(" ".join(op for op in [side, kind, "JOIN"] if op))
+        op_sql = self.seg(" ".join(op for op in (side, kind, "JOIN") if op))
         on_sql = self.sql(expression, "on")
+        using = expression.args.get("using")
+
+        if not on_sql and using:
+            on_sql = csv(*(self.sql(column) for column in using))
 
         if on_sql:
             on_sql = self.indent(on_sql, skip_first=True)
             space = self.seg(" " * self.pad) if self.pretty else " "
-            on_sql = f"{space}ON {on_sql}"
+            if using:
+                on_sql = f"{space}USING ({on_sql})"
+            else:
+                on_sql = f"{space}ON {on_sql}"
 
         expression_sql = self.sql(expression, "expression")
         this_sql = self.sql(expression, "this")

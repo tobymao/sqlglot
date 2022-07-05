@@ -181,6 +181,7 @@ class TokenType(AutoName):
     UNNEST = auto()
     UPDATE = auto()
     USE = auto()
+    USING = auto()
     VALUES = auto()
     VIEW = auto()
     WHEN = auto()
@@ -385,6 +386,7 @@ class Tokenizer:
         "UNNEST": TokenType.UNNEST,
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
+        "USING": TokenType.USING,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "WHEN": TokenType.WHEN,

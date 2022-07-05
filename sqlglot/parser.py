@@ -894,13 +894,21 @@ class Parser:
         if not self._match(TokenType.JOIN):
             return None
 
-        return self.expression(
-            exp.Join,
-            this=self._parse_table(),
-            side=side.text if side else None,
-            kind=kind.text if kind else None,
-            on=self._parse_conjunction() if self._match(TokenType.ON) else None,
-        )
+        kwargs = {"this": self._parse_table()}
+
+        if side:
+            kwargs["side"] = side.text
+        if kind:
+            kwargs["kind"] = kind.text
+
+        if self._match(TokenType.ON):
+            kwargs["on"] = self._parse_conjunction()
+        elif self._match(TokenType.USING):
+            self._match_l_paren()
+            kwargs["using"] = self._parse_csv(self._parse_id_var)
+            self._match_r_paren()
+
+        return self.expression(exp.Join, **kwargs)
 
     def _parse_table(self, schema=False):
         unnest = self._parse_unnest()

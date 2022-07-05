@@ -590,7 +590,13 @@ class Literal(Condition):
 
 
 class Join(Expression):
-    arg_types = {"this": True, "on": False, "side": False, "kind": False}
+    arg_types = {
+        "this": True,
+        "on": False,
+        "side": False,
+        "kind": False,
+        "using": False,
+    }
 
     @property
     def kind(self):

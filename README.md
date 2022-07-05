@@ -83,8 +83,18 @@ You can explore SQL with expression helpers to do things like find columns and t
 ```python
 from sqlglot import parse_one, exp
 
+# print all column references (a and b)
 for column in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Column):
   print(column.alias_or_name)
+
+# find all projections in select statements (a and c)
+for select in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Select):
+  for projection in select.args["expressions"]:
+    print(projection.alias_or_name)
+
+# find all tables (x, y, z)
+for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
+  print(table.name)
 ```
 
 ### Parser Errors

@@ -1292,6 +1292,11 @@ class TestDialects(unittest.TestCase):
             read="spark",
             write="presto",
         )
+        self.validate(
+            "ARRAY_SUM(ARRAY(1, 2))",
+            "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
+            write="spark",
+        )
 
         with self.assertRaises(UnsupportedError):
             transpile(
@@ -1426,4 +1431,11 @@ class TestDialects(unittest.TestCase):
             "COUNT(DISTINCT x)",
             "COUNTD(x)",
             write="tableau",
+        )
+
+    def test_trino(self):
+        self.validate(
+            "ARRAY_SUM(ARRAY(1, 2))",
+            "REDUCE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
+            write="trino",
         )

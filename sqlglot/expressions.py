@@ -1682,6 +1682,10 @@ class ArraySort(Func):
     arg_types = {"this": True, "expression": False}
 
 
+class ArraySum(Func):
+    pass
+
+
 class Avg(AggFunc):
     pass
 

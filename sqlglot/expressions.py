@@ -500,10 +500,6 @@ class Drop(Expression):
     arg_types = {"this": False, "kind": False, "exists": False}
 
 
-class Exists(Expression):
-    pass
-
-
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}
 
@@ -1371,6 +1367,23 @@ class DataType(Expression):
             else DataType.Type[dtype.upper()],
             **kwargs,
         )
+
+
+# WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
+class SubqueryPredicate(Predicate):
+    pass
+
+
+class All(SubqueryPredicate):
+    pass
+
+
+class Any(SubqueryPredicate):
+    pass
+
+
+class Exists(SubqueryPredicate):
+    pass
 
 
 # Commands to interact with the databases or engines

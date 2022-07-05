@@ -343,9 +343,6 @@ class Generator:
             ),
         )
 
-    def exists_sql(self, expression):
-        return f"EXISTS {self.wrap(expression)}"
-
     def filter_sql(self, expression):
         this = self.sql(expression, "this")
         where = self.sql(expression, "expression")[1:]  # where has a leading space
@@ -629,6 +626,15 @@ class Generator:
         expressions = ", ".join(self.sql(e) for e in expressions)
 
         return f"{self.sql(expression, 'this')}[{expressions}]"
+
+    def all_sql(self, expression):
+        return f"ALL{self.wrap(expression)}"
+
+    def any_sql(self, expression):
+        return f"ANY{self.wrap(expression)}"
+
+    def exists_sql(self, expression):
+        return f"EXISTS{self.wrap(expression)}"
 
     def case_sql(self, expression):
         this = self.indent(self.sql(expression, "this"), skip_first=True)

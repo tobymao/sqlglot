@@ -87,89 +87,14 @@ for column in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Column):
   print(column.alias_or_name)
 ```
 
-### Customization
-#### Custom Types
-A simple transform on types can be accomplished by providing a corresponding mapping:
-```python
-
-from sqlglot import *
-
-transpile("SELECT CAST(a AS INT) FROM x", type_mapping={exp.DataType.Type.INT: "SPECIAL INT"})[0]
-```
-
-```sql
-SELECT CAST(a AS SPECIAL INT) FROM x
-```
-
-More complicated transforms can be accomplished by using the Tokenizer, Parser, and Generator directly.
-#### Custom Functions
-In  this example, we want to parse a UDF SPECIAL_UDF and then output another version called SPECIAL_UDF_INVERSE with the arguments switched.
-
-```python
-from sqlglot import *
-from sqlglot.expressions import Func
-
-class SpecialUdf(Func):
-    arg_types = {'a': True, 'b': True}
-
-tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b) FROM x")
-```
-Here is the output of the tokenizer:
-
-```
-[
-    <Token token_type: TokenType.SELECT, text: SELECT, line: 0, col: 0>,
-    <Token token_type: TokenType.VAR, text: SPECIAL_UDF, line: 0, col: 7>,
-    <Token token_type: TokenType.L_PAREN, text: (, line: 0, col: 18>,
-    <Token token_type: TokenType.VAR, text: a, line: 0, col: 19>,
-    <Token token_type: TokenType.COMMA, text: ,, line: 0, col: 20>,
-    <Token token_type: TokenType.VAR, text: b, line: 0, col: 22>,
-    <Token token_type: TokenType.R_PAREN, text: ), line: 0, col: 23>,
-    <Token token_type: TokenType.FROM, text: FROM, line: 0, col: 25>,
-    <Token token_type: TokenType.VAR, text: x, line: 0, col: 30>,
-]
-
-```
-```python
-expression = Parser(functions={
-    **SpecialUdf.default_parser_mappings(),
-}).parse(tokens)[0]
-```
-
-The expression tree produced by the parser:
-
-```
-(SELECT distinct: False, expressions:
-  (SPECIALUDF a:
-    (COLUMN this:
-      (IDENTIFIER this: a, quoted: False)), b:
-    (COLUMN this:
-      (IDENTIFIER this: b, quoted: False))), from:
-  (FROM expressions:
-    (TABLE this:
-      (IDENTIFIER this: x, quoted: False))))
-```
-
-Finally generating the new SQL:
-
-```python
-Generator(transforms={
-    SpecialUdf: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
-}).generate(expression)
-```
-
-```sql
-SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
-```
-
 ### Parser Errors
 A syntax error will result in a parser error.
 ```python
 transpile("SELECT foo( FROM bar")
 ```
 ```
-sqlglot.errors.ParseError: Expected )
-  SELECT foo( __FROM__ bar
+sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
+  SELECT foo( FROM bar
 ```
 ### Unsupported Errors
 Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.
@@ -234,17 +159,6 @@ Which outputs:
 SELECT FUN(a) FROM x
 ```
 
-### SQL Annotations
-
-SQLGlot supports annotations in the sql expression. This is an experimental feature that is not part of any of the SQL standards but it can be useful when needing to annotate what a selected field is supposed to be. Below is an example:
-
-```sql
-SELECT
-  user #primary_key,
-  country
-FROM users
-```
-
 ### SQL Optimizer
 
 SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standaradize queries or provide the foundations for implementing an actual engine.
@@ -279,6 +193,94 @@ FROM "x" AS "x"
 WHERE
   "x"."Z" = CAST('2021-02-01' AS DATE)
 """
+```
+
+### SQL Annotations
+
+SQLGlot supports annotations in the sql expression. This is an experimental feature that is not part of any of the SQL standards but it can be useful when needing to annotate what a selected field is supposed to be. Below is an example:
+
+```sql
+SELECT
+  user #primary_key,
+  country
+FROM users
+```
+
+### Customization
+#### Custom Types
+A simple transform on types can be accomplished by providing a corresponding mapping:
+```python
+
+from sqlglot import *
+
+transpile("SELECT CAST(a AS INT) FROM x", type_mapping={exp.DataType.Type.INT: "SPECIAL INT"})[0]
+```
+
+```sql
+SELECT CAST(a AS SPECIAL INT) FROM x
+```
+
+More complicated transforms can be accomplished by using the Tokenizer, Parser, and Generator directly.
+#### Custom Functions
+In  this example, we want to parse a UDF SPECIAL_UDF and then output another version called SPECIAL_UDF_INVERSE with the arguments switched.
+
+```python
+from sqlglot import *
+from sqlglot.expressions import Func
+
+class SpecialUdf(Func):
+    arg_types = {'a': True, 'b': True}
+
+tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b) FROM x")
+```
+Here is the output of the tokenizer:
+
+```
+[
+    <Token token_type: TokenType.SELECT, text: SELECT, line: 0, col: 0>,
+    <Token token_type: TokenType.VAR, text: SPECIAL_UDF, line: 0, col: 7>,
+    <Token token_type: TokenType.L_PAREN, text: (, line: 0, col: 18>,
+    <Token token_type: TokenType.VAR, text: a, line: 0, col: 19>,
+    <Token token_type: TokenType.COMMA, text: ,, line: 0, col: 20>,
+    <Token token_type: TokenType.VAR, text: b, line: 0, col: 22>,
+    <Token token_type: TokenType.R_PAREN, text: ), line: 0, col: 23>,
+    <Token token_type: TokenType.FROM, text: FROM, line: 0, col: 25>,
+    <Token token_type: TokenType.VAR, text: x, line: 0, col: 30>,
+]
+
+```
+```python
+expression = Parser(functions={
+    **SpecialUdf.default_parser_mappings(),
+}).parse(tokens)[0]
+
+repr(expression)
+```
+
+The expression tree produced by the parser:
+
+```
+(SELECT distinct: False, expressions:
+  (SPECIALUDF a:
+    (COLUMN this:
+      (IDENTIFIER this: a, quoted: False)), b:
+    (COLUMN this:
+      (IDENTIFIER this: b, quoted: False))), from:
+  (FROM expressions:
+    (TABLE this:
+      (IDENTIFIER this: x, quoted: False))))
+```
+
+Finally generating the new SQL:
+
+```python
+Generator(transforms={
+    SpecialUdf: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
+}).generate(expression)
+```
+
+```sql
+SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
 ```
 
 ### Benchmarks

@@ -77,6 +77,7 @@ class TokenType(AutoName):
     ALL = auto()
     ALTER = auto()
     ANALYZE = auto()
+    ANY = auto()
     ARRAY = auto()
     ASC = auto()
     AT_TIME_ZONE = auto()
@@ -167,6 +168,7 @@ class TokenType(AutoName):
     SELECT = auto()
     SET = auto()
     SHOW = auto()
+    SOME = auto()
     STORED = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
@@ -283,6 +285,7 @@ class Tokenizer:
         "ALTER": TokenType.ALTER,
         "ANALYZE": TokenType.ANALYZE,
         "AND": TokenType.AND,
+        "ANY": TokenType.ANY,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
         "AT TIME ZONE": TokenType.AT_TIME_ZONE,
@@ -369,6 +372,7 @@ class Tokenizer:
         "SELECT": TokenType.SELECT,
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
+        "SOME": TokenType.SOME,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
         "TBLPROPERTIES": TokenType.PROPERTIES,

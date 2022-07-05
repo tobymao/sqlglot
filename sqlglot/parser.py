@@ -60,9 +60,15 @@ class Parser:
         TokenType.MAP,
     }
 
+    SUBQUERY_PREDICATES = {
+        TokenType.ANY: exp.Any,
+        TokenType.ALL: exp.All,
+        TokenType.EXISTS: exp.Exists,
+        TokenType.SOME: exp.Any,
+    }
+
     ID_VAR_TOKENS = {
         TokenType.VAR,
-        TokenType.ALL,
         TokenType.ASC,
         TokenType.ALTER,
         TokenType.BEGIN,
@@ -102,6 +108,7 @@ class Parser:
         TokenType.TRUNCATE,
         TokenType.TRUE,
         TokenType.UNBOUNDED,
+        *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }
 
@@ -114,7 +121,6 @@ class Parser:
 
     FUNC_TOKENS = {
         TokenType.COUNT,
-        TokenType.EXISTS,
         TokenType.EXTRACT,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
@@ -124,6 +130,7 @@ class Parser:
         TokenType.RIGHT,
         *CASTS,
         *NESTED_TYPE_TOKENS,
+        *SUBQUERY_PREDICATES,
     }
 
     CONJUNCTION = {
@@ -1308,14 +1315,15 @@ class Parser:
             self._advance()
             this = self._parse_extract()
         else:
+            subquery_predicate = self.SUBQUERY_PREDICATES.get(self._curr.token_type)
             this = self._curr.text.upper()
             self._advance(2)
 
-            if this == "EXISTS" and self._curr.token_type in (
+            if subquery_predicate and self._curr.token_type in (
                 TokenType.SELECT,
                 TokenType.WITH,
             ):
-                this = self.expression(exp.Exists, this=self._parse_with())
+                this = self.expression(subquery_predicate, this=self._parse_with())
                 self._match_r_paren()
                 return this
 

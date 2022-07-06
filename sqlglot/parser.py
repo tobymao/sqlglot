@@ -1164,7 +1164,7 @@ class Parser:
         if self._match(TokenType.INTERVAL):
             return self.expression(
                 exp.Interval,
-                this=self._parse_string() or self._parse_number(),
+                this=self._parse_term(),
                 unit=self._parse_var(),
             )
 

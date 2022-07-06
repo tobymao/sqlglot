@@ -76,7 +76,6 @@ class Parser:
         TokenType.CACHE,
         TokenType.COLLATE,
         TokenType.COMMIT,
-        TokenType.COUNT,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESC,
@@ -120,7 +119,6 @@ class Parser:
     }
 
     FUNC_TOKENS = {
-        TokenType.COUNT,
         TokenType.EXTRACT,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
@@ -1308,9 +1306,6 @@ class Parser:
             strict = self.strict_cast and self._prev.token_type == TokenType.CAST
             self._advance()
             this = self._parse_cast(strict)
-        elif self._match(TokenType.COUNT):
-            self._advance()
-            this = self._parse_count()
         elif self._match(TokenType.EXTRACT):
             self._advance()
             this = self._parse_extract()
@@ -1351,7 +1346,19 @@ class Parser:
 
         if not self._match(TokenType.LAMBDA):
             self._retreat(index)
-            return self._parse_conjunction()
+
+            distinct = self._match(TokenType.DISTINCT)
+            this = self._parse_conjunction()
+
+            if distinct:
+                this = self.expression(exp.Distinct, this=this)
+
+            if self._match(TokenType.IGNORE_NULLS):
+                this = self.expression(exp.IgnoreNulls, this=this)
+            else:
+                self._match(TokenType.RESPECT_NULLS)
+
+            return this
 
         return self.expression(
             exp.Lambda,
@@ -1472,13 +1479,6 @@ class Parser:
             self._match(TokenType.END)
             this = self.expression(exp.If, this=condition, true=true, false=false)
         return self._parse_window(this)
-
-    def _parse_count(self):
-        return self.expression(
-            exp.Count,
-            distinct=self._match(TokenType.DISTINCT),
-            this=self._parse_conjunction(),
-        )
 
     def _parse_extract(self):
         this = self._parse_var()

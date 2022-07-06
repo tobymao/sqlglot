@@ -117,6 +117,9 @@ class TestTranspile(unittest.TestCase):
             "SELECT IF(a > 1, 1) FROM foo", "SELECT CASE WHEN a > 1 THEN 1 END FROM foo"
         )
 
+    def test_ignore_nulls(self):
+        self.validate("SELECT COUNT(x RESPECT NULLS)", "SELECT COUNT(x)")
+
     def test_time(self):
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
         self.validate(

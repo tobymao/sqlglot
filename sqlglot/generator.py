@@ -741,9 +741,11 @@ class Generator:
     def command_sql(self, expression):
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 
-    def count_sql(self, expression):
-        distinct = "DISTINCT " if expression.args["distinct"] else ""
-        return f"COUNT({distinct}{self.sql(expression, 'this')})"
+    def distinct_sql(self, expression):
+        return f"DISTINCT {self.sql(expression, 'this')}"
+
+    def ignorenulls_sql(self, expression):
+        return f"{self.sql(expression, 'this')} IGNORE NULLS"
 
     def intdiv_sql(self, expression):
         return self.sql(

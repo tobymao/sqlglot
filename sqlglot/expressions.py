@@ -1567,6 +1567,10 @@ class Cast(Expression):
     arg_types = {"this": True, "to": True}
 
 
+class Distinct(Expression):
+    pass
+
+
 class Extract(Expression):
     arg_types = {"this": True, "expression": True}
 
@@ -1577,6 +1581,10 @@ class In(Predicate):
 
 class Interval(Expression):
     arg_types = {"this": True, "unit": False}
+
+
+class IgnoreNulls(Expression):
+    pass
 
 
 class TryCast(Cast):
@@ -1705,7 +1713,7 @@ class ConcatWs(Func):
 
 
 class Count(AggFunc):
-    arg_types = {"this": False, "distinct": False}
+    pass
 
 
 class DateAdd(Func):

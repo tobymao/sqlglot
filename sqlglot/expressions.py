@@ -1576,7 +1576,7 @@ class In(Predicate):
 
 
 class Interval(Expression):
-    arg_types = {"this": True, "unit": True}
+    arg_types = {"this": True, "unit": False}
 
 
 class TryCast(Cast):

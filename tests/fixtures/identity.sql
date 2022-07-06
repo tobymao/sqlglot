@@ -61,7 +61,9 @@ x ILIKE '%y%' ESCAPE '\'
 1 AS escape
 INTERVAL '1' day
 INTERVAL '1' month
+INTERVAL '1 day'
 INTERVAL 2 months
+INTERVAL 1 + 3 days
 QUANTILE(x, 0.5)
 REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))
 REGEXP_LIKE('new york', '.')

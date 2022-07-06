@@ -91,7 +91,6 @@ class TokenType(AutoName):
     CASE = auto()
     CAST = auto()
     CHARACTER_SET = auto()
-    COUNT = auto()
     COLLATE = auto()
     COMMENT = auto()
     COMMENT_END = auto()
@@ -124,6 +123,7 @@ class TokenType(AutoName):
     HAVING = auto()
     HINT = auto()
     IF = auto()
+    IGNORE_NULLS = auto()
     ILIKE = auto()
     IN = auto()
     INNER = auto()
@@ -161,6 +161,7 @@ class TokenType(AutoName):
     RANGE = auto()
     RECURSIVE = auto()
     REPLACE = auto()
+    RESPECT_NULLS = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROWS = auto()
@@ -302,7 +303,6 @@ class Tokenizer:
         "COLLATE": TokenType.COLLATE,
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
-        "COUNT": TokenType.COUNT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CURRENT ROW": TokenType.CURRENT_ROW,
@@ -330,6 +330,7 @@ class Tokenizer:
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
+        "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,
@@ -366,6 +367,7 @@ class Tokenizer:
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
         "REPLACE": TokenType.REPLACE,
+        "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROWS": TokenType.ROWS,

@@ -820,8 +820,9 @@ class Tableau(Dialect):
         return f"IFNULL({self.sql(expression, 'this')}, {self.expressions(expression)})"
 
     def _count_sql(self, expression):
-        if expression.args.get("distinct"):
-            return f"COUNTD({self.sql(expression, 'this')})"
+        this = expression.this
+        if isinstance(this, exp.Distinct):
+            return f"COUNTD({self.sql(this, 'this')})"
         return f"COUNT({self.sql(expression, 'this')})"
 
     transforms = {exp.If: _if_sql, exp.Coalesce: _coalesce_sql, exp.Count: _count_sql}

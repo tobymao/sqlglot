@@ -1116,12 +1116,10 @@ class Select(Subqueryable, Expression):
         except ParseError:
             expression = _maybe_parse(expression, into=(Join, Expression), **parse_args)
 
-        if isinstance(expression, Join):
-            join = expression
-        else:
-            if isinstance(expression, Select):
-                expression = expression.subquery()
-            join = Join(this=expression)
+        join = expression if isinstance(expression, Join) else Join(this=expression)
+
+        if isinstance(join.this, Select):
+            join.this.replace(join.this.subquery())
 
         if join_type:
             side, kind = _maybe_parse(join_type, into="JOIN_TYPE", **parse_args)

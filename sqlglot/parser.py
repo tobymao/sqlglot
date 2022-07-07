@@ -748,12 +748,12 @@ class Parser:
         )
 
     def _parse_table_alias(self):
-        explicit = self._match(TokenType.ALIAS)
-        alias = self._parse_id_var(explicit)
+        any_token = self._match(TokenType.ALIAS)
+        alias = self._parse_id_var(any_token)
         columns = None
 
         if self._match(TokenType.L_PAREN):
-            columns = self._parse_csv(lambda: self._parse_id_var(explicit))
+            columns = self._parse_csv(lambda: self._parse_id_var(any_token))
             self._match_r_paren()
 
         if not alias and not columns:
@@ -903,7 +903,7 @@ class Parser:
 
         catalog = None
         db = None
-        table = (not schema and self._parse_function()) or self._parse_id_var()
+        table = (not schema and self._parse_function()) or self._parse_id_var(False)
 
         while self._match(TokenType.DOT):
             catalog = db
@@ -933,8 +933,7 @@ class Parser:
         self._match_r_paren()
 
         ordinality = self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY)
-        self._match(TokenType.ALIAS)
-        table = self._parse_id_var()
+        table = self._parse_id_var(self._match(TokenType.ALIAS))
 
         if not self._match(TokenType.L_PAREN):
             return self.expression(
@@ -1229,7 +1228,7 @@ class Parser:
 
         while self._match_set(self.COLUMN_OPERATORS):
             colon = self._prev.token_type == TokenType.COLON
-            field = self._parse_id_var() or self._parse_star()
+            field = self._parse_star() or self._parse_id_var()
             if colon:
                 this = self.expression(
                     exp.Bracket,
@@ -1263,8 +1262,12 @@ class Parser:
 
         return None
 
-    def _parse_field(self):
-        return self._parse_primary() or self._parse_function() or self._parse_id_var()
+    def _parse_field(self, any_token=False):
+        return (
+            self._parse_primary()
+            or self._parse_function()
+            or self._parse_id_var(any_token)
+        )
 
     def _parse_function(self):
         if self._match(TokenType.CASE):
@@ -1316,10 +1319,10 @@ class Parser:
         index = self._index
 
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(lambda: self._parse_id_var(True))
+            expressions = self._parse_csv(self._parse_id_var)
             self._match(TokenType.R_PAREN)
         else:
-            expressions = [self._parse_id_var(True)]
+            expressions = [self._parse_id_var()]
 
         if not self._match(TokenType.LAMBDA):
             self._retreat(index)
@@ -1545,31 +1548,31 @@ class Parser:
         }
 
     def _parse_alias(self, this):
-        explicit = self._match(TokenType.ALIAS)
+        any_token = self._match(TokenType.ALIAS)
 
         if self._match(TokenType.L_PAREN):
             aliases = self.expression(
                 exp.Aliases,
                 this=this,
-                expressions=self._parse_csv(lambda: self._parse_id_var(explicit)),
+                expressions=self._parse_csv(lambda: self._parse_id_var(any_token)),
             )
             self._match_r_paren()
             return aliases
 
-        alias = self._parse_id_var(explicit)
+        alias = self._parse_id_var(any_token)
 
         if alias:
             return self.expression(exp.Alias, this=this, alias=alias)
 
         return this
 
-    def _parse_id_var(self, explicit=False):
+    def _parse_id_var(self, any_token=True):
         identifier = self._parse_identifier()
 
         if identifier:
             return identifier
 
-        if explicit:
+        if any_token:
             return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
 
         return self._match_set(self.ID_VAR_TOKENS) and exp.Identifier(

@@ -43,7 +43,7 @@ class TestExecutor(unittest.TestCase):
             if "_col_" in column:
                 source.rename(columns={column: target.columns[i]}, inplace=True)
 
-    def test_optimize_tpch(self):
+    def test_optimized_tpch(self):
         for sql, optimized in self.sqls:
             a = self.cached_execute(sql)
             b = self.conn.execute(optimized).fetchdf()

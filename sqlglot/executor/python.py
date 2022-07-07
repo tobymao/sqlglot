@@ -78,8 +78,11 @@ class PythonExecutor:
         return Table(expression.alias_or_name for expression in expressions)
 
     def scan(self, step, context):
-        if isinstance(step, planner.Scan):
-            source = step.source.this.name or step.source.alias
+        if hasattr(step, "source"):
+            source = step.source
+
+            if isinstance(source, exp.Expression):
+                source = source.this.name or source.alias
         else:
             source = step.name
         condition = self.generate(step.condition)
@@ -234,7 +237,7 @@ class PythonExecutor:
         return table
 
     def aggregate(self, step, context):
-        source = list(context.tables)[0]
+        source = step.source
         group_by = self.generate_tuple(step.group)
         aggregations = self.generate_tuple(step.aggregations)
         operands = self.generate_tuple(step.operands)
@@ -275,7 +278,7 @@ class PythonExecutor:
             group = key
             start = end - 2
 
-        return self.context({step.name: table})
+        return self.scan(step, self.context({source: table}))
 
     def sort(self, step, context):
         table = list(context.tables)[0]

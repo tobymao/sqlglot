@@ -43,8 +43,8 @@ class TestTranspile(unittest.TestCase):
 
     def test_some(self):
         self.validate(
-            "SELECT * FROM x WHERE a = SOME(SELECT 1)",
-            "SELECT * FROM x WHERE a = ANY(SELECT 1)",
+            "SELECT * FROM x WHERE a = SOME (SELECT 1)",
+            "SELECT * FROM x WHERE a = ANY (SELECT 1)",
         )
 
     def test_space(self):

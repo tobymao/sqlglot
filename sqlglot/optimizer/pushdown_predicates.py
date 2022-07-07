@@ -63,7 +63,7 @@ def pushdown_cnf(predicates, scope):
     """
     for predicate in predicates:
         for node in nodes_for_predicate(predicate, scope).values():
-            if isinstance(node, exp.Join):
+            if isinstance(node, exp.Join) and not node.side:
                 predicate.replace(exp.TRUE)
                 node.on(predicate, copy=False)
                 break
@@ -127,7 +127,7 @@ def pushdown_dnf(predicates, scope):
 
             predicate = conditions[name]
 
-            if isinstance(node, exp.Join):
+            if isinstance(node, exp.Join) and not node.side:
                 node.on(predicate, copy=False)
             elif isinstance(node, exp.Select):
                 node.where(replace_aliases(node, predicate), copy=False)

@@ -3,6 +3,22 @@ SELECT
   *
 FROM test;
 
+WITH a AS ((SELECT 1 AS b) UNION ALL (SELECT 2 AS b)) SELECT * FROM a;
+WITH a AS (
+  (
+    SELECT
+      1 AS b
+  )
+  UNION ALL
+  (
+    SELECT
+      2 AS b
+  )
+)
+SELECT
+  *
+FROM a;
+
 WITH cte1 AS (
     SELECT a, z and e AS b
     FROM cte

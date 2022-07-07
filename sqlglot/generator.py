@@ -454,9 +454,9 @@ class Generator:
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
     def join_sql(self, expression):
-        side = self.sql(expression, "side").upper()
-        kind = self.sql(expression, "kind").upper()
-        op_sql = self.seg(" ".join(op for op in (side, kind, "JOIN") if op))
+        op_sql = self.seg(
+            " ".join(op for op in (expression.side, expression.kind, "JOIN") if op)
+        )
         on_sql = self.sql(expression, "on")
         using = expression.args.get("using")
 
@@ -628,10 +628,10 @@ class Generator:
         return f"{self.sql(expression, 'this')}[{expressions}]"
 
     def all_sql(self, expression):
-        return f"ALL{self.wrap(expression)}"
+        return f"ALL {self.wrap(expression)}"
 
     def any_sql(self, expression):
-        return f"ANY{self.wrap(expression)}"
+        return f"ANY {self.wrap(expression)}"
 
     def exists_sql(self, expression):
         return f"EXISTS{self.wrap(expression)}"

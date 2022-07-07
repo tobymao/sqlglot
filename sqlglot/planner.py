@@ -119,6 +119,7 @@ class Step:
 
         if group:
             aggregate = Aggregate()
+            aggregate.source = step.name
             aggregate.name = step.name
             aggregate.operands = tuple(
                 alias(operand, alias_) for operand, alias_ in operands.items()
@@ -276,7 +277,7 @@ class Join(Step):
             on = simplify(on)
 
             step.joins[name] = {
-                "side": join.args.get("side"),
+                "side": join.side,
                 "join_key": join_key,
                 "source_key": source_key,
                 "condition": None if on == exp.TRUE else on,
@@ -305,6 +306,7 @@ class Aggregate(Step):
         self.aggregations = []
         self.operands = []
         self.group = []
+        self.source = None
 
     def _to_s(self, indent):
         lines = [f"{indent}Aggregations:"]

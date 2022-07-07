@@ -1129,7 +1129,7 @@ class Parser:
 
     def _parse_unary(self):
         if self._match(TokenType.NOT):
-            return self.expression(exp.Not, this=self._parse_unary())
+            return self.expression(exp.Not, this=self._parse_equality())
         if self._match(TokenType.TILDA):
             return self.expression(exp.BitwiseNot, this=self._parse_unary())
         if self._match(TokenType.DASH):

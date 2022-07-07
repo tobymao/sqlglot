@@ -104,10 +104,11 @@ class TestOptimizer(unittest.TestCase):
     def test_simplify(self):
         self.check_file("simplify", optimizer.simplify.simplify)
 
-    def test_decorrelate_subqueries(self):
+    def test_unnest_subqueries(self):
         self.check_file(
-            "decorrelate_subqueries",
-            optimizer.decorrelate_subqueries.decorrelate_subqueries,
+            "unnest_subqueries",
+            optimizer.unnest_subqueries.unnest_subqueries,
+            pretty=True,
         )
 
     def test_pushdown_predicates(self):

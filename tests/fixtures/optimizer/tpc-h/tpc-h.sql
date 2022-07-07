@@ -131,12 +131,10 @@ FROM (
     "part"."p_size" = 15
     AND "part"."p_type" LIKE '%BRASS'
 ) AS "part"
-JOIN "_e_0" AS "partsupp"
-  ON "part"."p_partkey" = "partsupp"."ps_partkey"
-JOIN (
+LEFT JOIN (
   SELECT
     MIN("partsupp"."ps_supplycost") AS "_col_0",
-    "partsupp"."ps_partkey"
+    "partsupp"."ps_partkey" AS "_u_1"
   FROM "_e_0" AS "partsupp"
   CROSS JOIN "_e_1" AS "region"
   JOIN (
@@ -156,9 +154,8 @@ JOIN (
     AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
   GROUP BY
     "partsupp"."ps_partkey"
-) AS "_d_0"
-  ON "_d_0"."ps_partkey" = "part"."p_partkey"
-  AND "partsupp"."ps_supplycost" = "_d_0"."_col_0"
+) AS "_u_0"
+  ON "part"."p_partkey" = "_u_0"."_u_1"
 CROSS JOIN "_e_1" AS "region"
 JOIN (
   SELECT
@@ -168,6 +165,9 @@ JOIN (
   FROM "nation" AS "nation"
 ) AS "nation"
   ON "nation"."n_regionkey" = "region"."r_regionkey"
+JOIN "_e_0" AS "partsupp"
+  ON "part"."p_partkey" = "partsupp"."ps_partkey"
+  AND "partsupp"."ps_supplycost" = "_u_0"."_col_0"
 JOIN (
   SELECT
     "supplier"."s_suppkey" AS "s_suppkey",
@@ -289,7 +289,7 @@ SELECT
   "orders"."o_orderpriority" AS "o_orderpriority",
   COUNT(*) AS "order_count"
 FROM "orders" AS "orders"
-JOIN (
+LEFT JOIN (
   SELECT
     "lineitem"."l_orderkey"
   FROM "lineitem" AS "lineitem"
@@ -297,11 +297,12 @@ JOIN (
     "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
   GROUP BY
     "lineitem"."l_orderkey"
-) AS "_d_0"
-  ON "_d_0"."l_orderkey" = "orders"."o_orderkey"
+) AS "_u_0"
+  ON "_u_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE
   "orders"."o_orderdate" < CAST('1993-10-01' AS DATE)
   AND "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
+  AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "orders"."o_orderpriority"
 ORDER BY
@@ -1224,6 +1225,16 @@ FROM (
     "partsupp"."ps_suppkey" AS "ps_suppkey"
   FROM "partsupp" AS "partsupp"
 ) AS "partsupp"
+LEFT JOIN (
+  SELECT
+    "supplier"."s_suppkey" AS "s_suppkey"
+  FROM "supplier" AS "supplier"
+  WHERE
+    "supplier"."s_comment" LIKE '%Customer%Complaints%'
+  GROUP BY
+    "supplier"."s_suppkey"
+) AS "_u_0"
+  ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 JOIN (
   SELECT
     "part"."p_partkey" AS "p_partkey",
@@ -1238,13 +1249,7 @@ JOIN (
 ) AS "part"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
 WHERE
-  NOT "partsupp"."ps_suppkey" IN (
-    SELECT
-      "supplier"."s_suppkey" AS "s_suppkey"
-    FROM "supplier" AS "supplier"
-    WHERE
-      "supplier"."s_comment" LIKE '%Customer%Complaints%'
-  )
+  "_u_0"."s_suppkey" IS NULL
 GROUP BY
   "part"."p_brand",
   "part"."p_type",
@@ -1295,16 +1300,17 @@ JOIN (
     AND "part"."p_container" = 'MED BOX'
 ) AS "part"
   ON "part"."p_partkey" = "lineitem"."l_partkey"
-JOIN (
+LEFT JOIN (
   SELECT
     0.2 * AVG("lineitem"."l_quantity") AS "_col_0",
-    "lineitem"."l_partkey"
+    "lineitem"."l_partkey" AS "_u_1"
   FROM "lineitem" AS "lineitem"
   GROUP BY
     "lineitem"."l_partkey"
-) AS "_d_0"
-  ON "_d_0"."l_partkey" = "part"."p_partkey"
-  AND "lineitem"."l_quantity" < "_d_0"."_col_0";
+) AS "_u_0"
+  ON "_u_0"."_u_1" = "part"."p_partkey"
+WHERE
+  "lineitem"."l_quantity" < "_u_0"."_col_0";
 
 --------------------------------------
 -- TPC-H 18
@@ -1365,6 +1371,17 @@ JOIN (
   FROM "orders" AS "orders"
 ) AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
+LEFT JOIN (
+  SELECT
+    "lineitem"."l_orderkey" AS "l_orderkey"
+  FROM "lineitem" AS "lineitem"
+  GROUP BY
+    "lineitem"."l_orderkey",
+    "lineitem"."l_orderkey"
+  HAVING
+    SUM("lineitem"."l_quantity") > 300
+) AS "_u_0"
+  ON "orders"."o_orderkey" = "_u_0"."l_orderkey"
 JOIN (
   SELECT
     "lineitem"."l_orderkey" AS "l_orderkey",
@@ -1372,15 +1389,8 @@ JOIN (
   FROM "lineitem" AS "lineitem"
 ) AS "lineitem"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
-  AND "orders"."o_orderkey" IN (
-    SELECT
-      "lineitem"."l_orderkey" AS "l_orderkey"
-    FROM "lineitem" AS "lineitem"
-    GROUP BY
-      "lineitem"."l_orderkey"
-    HAVING
-      SUM("lineitem"."l_quantity") > 300
-  )
+WHERE
+  NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "customer"."c_name",
   "customer"."c_custkey",

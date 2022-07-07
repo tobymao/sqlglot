@@ -83,7 +83,6 @@ class Parser:
         TokenType.ESCAPE,
         TokenType.EXPLAIN,
         TokenType.FALSE,
-        TokenType.FILTER,
         TokenType.FOLLOWING,
         TokenType.FUNCTION,
         TokenType.IF,
@@ -92,7 +91,6 @@ class Parser:
         TokenType.OPTIMIZE,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
-        TokenType.OVER,
         TokenType.PERCENT,
         TokenType.PRECEDING,
         TokenType.QUALIFY,
@@ -110,8 +108,6 @@ class Parser:
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }
-
-    LAMBDA_TOKENS = ID_VAR_TOKENS | {TokenType.LEFT, TokenType.RIGHT}
 
     CASTS = {
         TokenType.CAST,
@@ -197,19 +193,6 @@ class Parser:
         TokenType.COLON,
         TokenType.DOT,
     }
-
-    BODY_EXPRESSIONS = (
-        exp.Select,
-        exp.From,
-        exp.Join,
-        exp.Where,
-        exp.Group,
-        exp.Having,
-        exp.Order,
-        exp.Union,
-        exp.CTE,
-        exp.Values,
-    )
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
@@ -765,12 +748,12 @@ class Parser:
         )
 
     def _parse_table_alias(self):
-        self._match(TokenType.ALIAS)
-        alias = self._parse_id_var()
+        explicit = self._match(TokenType.ALIAS)
+        alias = self._parse_id_var(explicit)
         columns = None
 
         if self._match(TokenType.L_PAREN):
-            columns = self._parse_csv(self._parse_id_var)
+            columns = self._parse_csv(lambda: self._parse_id_var(explicit))
             self._match_r_paren()
 
         if not alias and not columns:
@@ -794,7 +777,7 @@ class Parser:
                 alias=self._parse_table_alias(),
             )
 
-        if isinstance(this, exp.Subquery) or self._match(TokenType.SELECT):
+        if self._match(TokenType.SELECT):
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
             distinct = self._match(TokenType.DISTINCT)
@@ -913,25 +896,23 @@ class Parser:
         if unnest:
             return unnest
 
-        is_body = False
+        subquery = self._parse_with()
 
-        if self._match(TokenType.L_PAREN):
-            this = self._parse_with()
-            is_body = isinstance(this, self.BODY_EXPRESSIONS)
-            self._match_r_paren()
-        else:
-            catalog = None
-            db = None
-            table = (not schema and self._parse_function()) or self._parse_id_var()
+        if subquery:
+            return subquery
 
-            while self._match(TokenType.DOT):
-                catalog = db
-                db = table
-                table = self._parse_id_var()
-                if not table:
-                    self.raise_error("Expected table name")
+        catalog = None
+        db = None
+        table = (not schema and self._parse_function()) or self._parse_id_var()
 
-            this = self.expression(exp.Table, this=table, db=db, catalog=catalog)
+        while self._match(TokenType.DOT):
+            catalog = db
+            db = table
+            table = self._parse_id_var()
+            if not table:
+                self.raise_error("Expected table name")
+
+        this = self.expression(exp.Table, this=table, db=db, catalog=catalog)
 
         if schema:
             return self._parse_schema(this=this)
@@ -939,8 +920,6 @@ class Parser:
         this = self._parse_table_sample(this)
         alias = self._parse_table_alias()
 
-        if is_body:
-            return self.expression(exp.Subquery, this=this, alias=alias)
         if alias:
             return self.expression(exp.Alias, this=this, alias=alias)
         return this
@@ -1073,14 +1052,14 @@ class Parser:
                 this=this,
                 distinct=self._match(TokenType.DISTINCT)
                 or not self._match(TokenType.ALL),
-                expression=self._parse_expression() or self._parse_select(),
+                expression=self._parse_with(),
             )
 
         return self.expression(
             exp.Except if token_type == TokenType.EXCEPT else exp.Intersect,
             this=this,
             distinct=self._match(TokenType.DISTINCT),
-            expression=self._parse_expression() or self._parse_select(),
+            expression=self._parse_with(),
         )
 
     def _parse_expression(self):
@@ -1278,7 +1257,7 @@ class Parser:
             return this
 
         if self._match(TokenType.L_PAREN):
-            this = self._parse_conjunction() or self._parse_select()
+            this = self._parse_conjunction() or self._parse_with()
             self._match_r_paren()
             return self.expression(exp.Paren, this=this)
 
@@ -1337,12 +1316,10 @@ class Parser:
         index = self._index
 
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(
-                lambda: self._parse_id_var(self.LAMBDA_TOKENS)
-            )
+            expressions = self._parse_csv(lambda: self._parse_id_var(True))
             self._match(TokenType.R_PAREN)
         else:
-            expressions = [self._parse_id_var()]
+            expressions = [self._parse_id_var(True)]
 
         if not self._match(TokenType.LAMBDA):
             self._retreat(index)
@@ -1568,27 +1545,35 @@ class Parser:
         }
 
     def _parse_alias(self, this):
-        self._match(TokenType.ALIAS)
+        explicit = self._match(TokenType.ALIAS)
 
         if self._match(TokenType.L_PAREN):
             aliases = self.expression(
                 exp.Aliases,
                 this=this,
-                expressions=self._parse_csv(self._parse_id_var),
+                expressions=self._parse_csv(lambda: self._parse_id_var(explicit)),
             )
             self._match_r_paren()
             return aliases
 
-        alias = self._parse_id_var()
+        alias = self._parse_id_var(explicit)
+
         if alias:
             return self.expression(exp.Alias, this=this, alias=alias)
 
         return this
 
-    def _parse_id_var(self, tokens=None):
-        return self._parse_identifier() or (
-            self._match_set(tokens or self.ID_VAR_TOKENS)
-            and exp.Identifier(this=self._prev.text, quoted=False)
+    def _parse_id_var(self, explicit=False):
+        identifier = self._parse_identifier()
+
+        if identifier:
+            return identifier
+
+        if explicit:
+            return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
+
+        return self._match_set(self.ID_VAR_TOKENS) and exp.Identifier(
+            this=self._prev.text, quoted=False
         )
 
     def _parse_string(self):

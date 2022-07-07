@@ -15,6 +15,15 @@ class TestTranspile(unittest.TestCase):
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
+    def test_alias(self):
+        for key in ("union", "filter", "over", "from", "join"):
+            with self.subTest(f"alias {key}"):
+                self.validate(f"SELECT x AS {key}", f"SELECT x AS {key}")
+                self.validate(f'SELECT x "{key}"', f'SELECT x AS "{key}"')
+
+                with self.assertRaises(ParseError):
+                    self.validate(f"SELECT x {key}", "")
+
     def test_asc(self):
         self.validate("SELECT x FROM y ORDER BY x ASC", "SELECT x FROM y ORDER BY x")
 

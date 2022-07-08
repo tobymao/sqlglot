@@ -1511,3 +1511,221 @@ WHERE
     AND "part"."p_partkey" = "lineitem"."l_partkey"
     AND "part"."p_size" BETWEEN 1 AND 15
   );
+
+--------------------------------------
+-- TPC-H 20
+--------------------------------------
+select
+        s_name,
+        s_address
+from
+        supplier,
+        nation
+where
+        s_suppkey in (
+                select
+                        ps_suppkey
+                from
+                        partsupp
+                where
+                        ps_partkey in (
+                                select
+                                        p_partkey
+                                from
+                                        part
+                                where
+                                        p_name like 'forest%'
+                        )
+                        and ps_availqty > (
+                                select
+                                        0.5 * sum(l_quantity)
+                                from
+                                        lineitem
+                                where
+                                        l_partkey = ps_partkey
+                                        and l_suppkey = ps_suppkey
+                                        and l_shipdate >= date '1994-01-01'
+                                        and l_shipdate < date '1994-01-01' + interval '1' year
+                        )
+        )
+        and s_nationkey = n_nationkey
+        and n_name = 'CANADA'
+order by
+        s_name;
+SELECT
+  "supplier"."s_name" AS "s_name",
+  "supplier"."s_address" AS "s_address"
+FROM (
+  SELECT
+    "supplier"."s_suppkey" AS "s_suppkey",
+    "supplier"."s_name" AS "s_name",
+    "supplier"."s_address" AS "s_address",
+    "supplier"."s_nationkey" AS "s_nationkey"
+  FROM "supplier" AS "supplier"
+) AS "supplier"
+LEFT JOIN (
+  SELECT
+    "partsupp"."ps_suppkey" AS "ps_suppkey"
+  FROM "partsupp" AS "partsupp"
+  LEFT JOIN (
+    SELECT
+      0.5 * SUM("lineitem"."l_quantity") AS "_col_0",
+      "lineitem"."l_partkey" AS "_u_1",
+      "lineitem"."l_suppkey" AS "_u_2"
+    FROM "lineitem" AS "lineitem"
+    WHERE
+      "lineitem"."l_shipdate" < CAST('1995-01-01' AS DATE)
+      AND "lineitem"."l_shipdate" >= CAST('1994-01-01' AS DATE)
+    GROUP BY
+      "lineitem"."l_partkey",
+      "lineitem"."l_suppkey"
+  ) AS "_u_0"
+    ON "_u_0"."_u_1" = "partsupp"."ps_partkey"
+    AND "_u_0"."_u_2" = "partsupp"."ps_suppkey"
+  LEFT JOIN (
+    SELECT
+      "part"."p_partkey" AS "p_partkey"
+    FROM "part" AS "part"
+    WHERE
+      "part"."p_name" LIKE 'forest%'
+    GROUP BY
+      "part"."p_partkey"
+  ) AS "_u_3"
+    ON "partsupp"."ps_partkey" = "_u_3"."p_partkey"
+  WHERE
+    "partsupp"."ps_availqty" > "_u_0"."_col_0"
+    AND NOT "_u_3"."p_partkey" IS NULL
+  GROUP BY
+    "partsupp"."ps_suppkey"
+) AS "_u_4"
+  ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
+JOIN (
+  SELECT
+    "nation"."n_nationkey" AS "n_nationkey",
+    "nation"."n_name" AS "n_name"
+  FROM "nation" AS "nation"
+  WHERE
+    "nation"."n_name" = 'CANADA'
+) AS "nation"
+  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+WHERE
+  NOT "_u_4"."ps_suppkey" IS NULL
+ORDER BY
+  "supplier"."s_name";
+
+--------------------------------------
+-- TPC-H 21
+--------------------------------------
+select
+        s_name,
+        count(*) as numwait
+from
+        supplier,
+        lineitem l1,
+        orders,
+        nation
+where
+        s_suppkey = l1.l_suppkey
+        and o_orderkey = l1.l_orderkey
+        and o_orderstatus = 'F'
+        and l1.l_receiptdate > l1.l_commitdate
+        and exists (
+                select
+                        *
+                from
+                        lineitem l2
+                where
+                        l2.l_orderkey = l1.l_orderkey
+                        and l2.l_suppkey <> l1.l_suppkey
+        )
+        and not exists (
+                select
+                        *
+                from
+                        lineitem l3
+                where
+                        l3.l_orderkey = l1.l_orderkey
+                        and l3.l_suppkey <> l1.l_suppkey
+                        and l3.l_receiptdate > l3.l_commitdate
+        )
+        and s_nationkey = n_nationkey
+        and n_name = 'SAUDI ARABIA'
+group by
+        s_name
+order by
+        numwait desc,
+        s_name
+limit
+        100;
+SELECT
+  "supplier"."s_name" AS "s_name",
+  COUNT(*) AS "numwait"
+FROM (
+  SELECT
+    "supplier"."s_suppkey" AS "s_suppkey",
+    "supplier"."s_name" AS "s_name",
+    "supplier"."s_nationkey" AS "s_nationkey"
+  FROM "supplier" AS "supplier"
+) AS "supplier"
+JOIN (
+  SELECT
+    "lineitem"."l_orderkey" AS "l_orderkey",
+    "lineitem"."l_suppkey" AS "l_suppkey",
+    "lineitem"."l_commitdate" AS "l_commitdate",
+    "lineitem"."l_receiptdate" AS "l_receiptdate"
+  FROM "lineitem" AS "lineitem"
+  WHERE
+    "lineitem"."l_receiptdate" > "lineitem"."l_commitdate"
+) AS "l1"
+  ON "supplier"."s_suppkey" = "l1"."l_suppkey"
+LEFT JOIN (
+  SELECT
+    "l2"."l_orderkey",
+    "l2"."l_suppkey"
+  FROM "lineitem" AS "l2"
+  GROUP BY
+    "l2"."l_orderkey",
+    "l2"."l_suppkey"
+) AS "_u_0"
+  ON "_u_0"."l_orderkey" = "l1"."l_orderkey"
+  AND "_u_0"."l_suppkey" <> "l1"."l_suppkey"
+LEFT JOIN (
+  SELECT
+    "l3"."l_orderkey",
+    "l3"."l_suppkey"
+  FROM "lineitem" AS "l3"
+  WHERE
+    "l3"."l_receiptdate" > "l3"."l_commitdate"
+  GROUP BY
+    "l3"."l_orderkey",
+    "l3"."l_suppkey"
+) AS "_u_1"
+  ON "_u_1"."l_orderkey" = "l1"."l_orderkey"
+  AND "_u_1"."l_suppkey" <> "l1"."l_suppkey"
+JOIN (
+  SELECT
+    "orders"."o_orderkey" AS "o_orderkey",
+    "orders"."o_orderstatus" AS "o_orderstatus"
+  FROM "orders" AS "orders"
+  WHERE
+    "orders"."o_orderstatus" = 'F'
+) AS "orders"
+  ON "orders"."o_orderkey" = "l1"."l_orderkey"
+JOIN (
+  SELECT
+    "nation"."n_nationkey" AS "n_nationkey",
+    "nation"."n_name" AS "n_name"
+  FROM "nation" AS "nation"
+  WHERE
+    "nation"."n_name" = 'SAUDI ARABIA'
+) AS "nation"
+  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+WHERE
+  "_u_1"."l_orderkey" IS NULL
+  AND NOT "_u_0"."l_orderkey" IS NULL
+GROUP BY
+  "supplier"."s_name"
+ORDER BY
+  "numwait" DESC,
+  "supplier"."s_name"
+LIMIT 100;

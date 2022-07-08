@@ -80,8 +80,6 @@ def decorrelate(select, parent_select, external_columns, sequence):
 
     value = select.selects[0]
     table_alias = _alias(sequence)
-
-    predicates = []
     keys = []
 
     for column in external_columns:
@@ -102,45 +100,71 @@ def decorrelate(select, parent_select, external_columns, sequence):
         else:
             return
 
-        predicates.append(predicate)
-        keys.append(key)
+        keys.append((key, predicate))
 
-    if not any(isinstance(predicate, exp.EQ) for predicate in predicates):
+    if not any(isinstance(predicate, exp.EQ) for _, predicate in keys):
         return
 
     projections = {s.this: s for s in select.selects}
     key_aliases = {}
-    predicate = select.find_ancestor(exp.Predicate)
+    group_by = []
 
-    for key in keys:
-        if key in key_aliases:
-            continue
-        # if the join column is not in the select, we need to add it
-        # but we can only do so if the original expression is an agg.
-        # if the original subquery was (select foo from x where bar = y.bar)
-        # adding bar would make the subquery result in more than 1 row...
-        # (select foo, bar from x group by bar).
-        # a possible optimization is to do a collect on foo and change operations to lists
+    for key, predicate in keys:
         projection = projections.get(key)
+
         if projection:
             key_aliases[key] = projection.alias
+            group_by.append(key)
         else:
-            if not value.find(exp.AggFunc):
-                return
-            alias = _alias(sequence)
-            select.select(exp.alias_(key.copy(), alias), copy=False)
-            key_aliases[key] = alias
+            if key not in key_aliases:
+                alias = _alias(sequence)
+                key_aliases[key] = alias
+            if isinstance(predicate, exp.EQ):
+                group_by.append(key)
 
-    for p in predicates:
-        p.replace(exp.TRUE)
 
-    for key in keys:
-        key.replace(exp.column(key_aliases[key], table_alias))
+    parent_predicate = select.find_ancestor(exp.Predicate)
+
+    for key, predicate in keys:
+        predicate.replace(exp.TRUE)
+        column = exp.column(key_aliases[key], table_alias)
+        if key in group_by:
+            key.replace(column)
+        elif isinstance(predicate, exp.NEQ):
+            print(predicate)
+            print(parent_predicate)
+            #key.replace(exp.condition(f"{column}"))
+
+    #for key in keys:
+    #    # if the join column is not in the select, we need to add it
+    #    # but we can only do so if the original expression is an agg.
+    #    # if the original subquery was (select foo from x where bar = y.bar)
+    #    # adding bar would make the subquery result in more than 1 row...
+    #    # (select foo, bar from x group by bar).
+    #    # a possible optimization is to do a collect on foo and change operations to lists
+    #    projection = projections.get(key)
+    #    if projection:
+    #        key_aliases[key] = projection.alias
+    #        group_by.append(key)
+    #    else:
+    #        alias = _alias(sequence)
+    #        key_aliases[key] = alias
+    #        if not any(isinstance(p, exp.EQ) for p in keys[key]):
+    #            select.select(f"ARRAY_AGG({key}) AS {alias}", copy=False)
+    #        else:
+    #            select.select(exp.alias_(key.copy(), alias), copy=False)
+    #            group_by.append(key)
+    #        #print(select)
+    #        #raise
+    #        #if not isinstance(predicate, exp.Exists):
+    #        #    if not value.find(exp.AggFunc):
+    #        #        return
+    #        #    select.select(exp.alias_(key.copy(), alias), copy=False)
 
     value = exp.column(value.alias, table_alias)
 
     if isinstance(predicate, exp.Exists):
-        select = select.select(*keys, append=False)
+        #select = select.select(*keys, append=False)
         predicate.replace(exp.condition(f"NOT {value.sql()} IS NULL"))
     else:
         if isinstance(predicate, exp.In):
@@ -150,8 +174,8 @@ def decorrelate(select, parent_select, external_columns, sequence):
             select.parent.replace(value)
 
     parent_select.join(
-        select.group_by(*key_aliases, copy=False),
-        on=predicates,
+        select.group_by(*group_by, copy=False),
+        on=[predicate for _, predicate in keys],
         join_type="LEFT",
         join_alias=table_alias,
         copy=False,

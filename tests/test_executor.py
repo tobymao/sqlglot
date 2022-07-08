@@ -44,9 +44,11 @@ class TestExecutor(unittest.TestCase):
                 source.rename(columns={column: target.columns[i]}, inplace=True)
 
     def test_optimized_tpch(self):
-        for sql, optimized in self.sqls:
+        for sql, optimized in self.sqls[20:21]:
             a = self.cached_execute(sql)
+            print(a)
             b = self.conn.execute(optimized).fetchdf()
+            print(b)
             self.rename_anonymous(b, a)
             assert_frame_equal(a, b)
 

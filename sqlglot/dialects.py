@@ -552,6 +552,19 @@ class Oracle(Dialect):
     }
 
 
+class BigQuery(Dialect):
+    functions = {
+        "DATE_SUB": lambda args: exp.TsOrDsAdd(
+            this=list_get(args, 0),
+            expression=exp.Mul(
+                this=list_get(args, 1),
+                expression=exp.Literal.number(-1),
+            ),
+            unit=exp.Literal.string("DAY"),
+        )
+    }
+
+
 class Postgres(Dialect):
     strict_cast = False
 

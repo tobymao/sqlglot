@@ -1370,6 +1370,9 @@ class TestDialects(unittest.TestCase):
         )
 
     def test_bigquery(self):
+        import ipdb
+        ipdb.set_trace()
+
         self.validate(
             "SELECT DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
             "SELECT CURRENT_DATE - INTERVAL '1' DAY",

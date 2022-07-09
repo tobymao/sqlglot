@@ -336,6 +336,35 @@ class TestDialects(unittest.TestCase):
             write="bigquery",
         )
 
+        self.validate(
+            "SELECT CAST(`a`.`b` AS DECIMAL) FROM foo",
+            "SELECT CAST(`a`.`b` AS NUMERIC) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS FLOAT) FROM foo",
+            "SELECT CAST(`a`.`b` AS FLOAT64) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
+            "SELECT CAST(`a`.`b` AS FLOAT64) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS BOOLEAN) FROM foo",
+            "SELECT CAST(`a`.`b` AS BOOL) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",

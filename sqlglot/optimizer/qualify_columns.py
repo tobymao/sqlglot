@@ -145,8 +145,7 @@ def _qualify_outputs(scope):
 
 def _check_unknown_tables(scope):
     if scope.external_columns and not scope.is_correlated_subquery:
-        raise OptimizeError(
-            f"Unknown table: {scope.external_columns[0].text('table')}")
+        raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
 
 
 def _get_unambiguous_columns(source_columns):

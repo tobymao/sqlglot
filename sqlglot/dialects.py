@@ -189,8 +189,7 @@ def _unnest_to_explode_sql(self, expression):
 
 def _struct_extract_sql(self, expression):
     this = self.sql(expression, "this")
-    struct_key = self.sql(expression, "expression").replace(
-        self.quote, self.identifier)
+    struct_key = self.sql(expression, "expression").replace(self.quote, self.identifier)
     return f"{this}.{struct_key}"
 
 
@@ -417,8 +416,7 @@ class Hive(Dialect):
             )
         if stored_as:
             properties.remove(stored_as)
-            stored_as = self.seg(
-                f"STORED AS {stored_as.text('value').upper()}")
+            stored_as = self.seg(f"STORED AS {stored_as.text('value').upper()}")
 
         return (
             f"{partitioned_by}{stored_as}{self.properties('TBLPROPERTIES', expression)}"
@@ -631,8 +629,7 @@ class Presto(Dialect):
         for schema in expression.parent.find_all(exp.Schema):
             if isinstance(schema.parent, exp.Property):
                 expression = expression.copy()
-                expression.args["expressions"].extend(
-                    schema.args["expressions"])
+                expression.args["expressions"].extend(schema.args["expressions"])
 
         return self.schema_sql(expression)
 
@@ -845,8 +842,7 @@ class Tableau(Dialect):
             return f"COUNTD({self.sql(this, 'this')})"
         return f"COUNT({self.sql(expression, 'this')})"
 
-    transforms = {exp.If: _if_sql,
-                  exp.Coalesce: _coalesce_sql, exp.Count: _count_sql}
+    transforms = {exp.If: _if_sql, exp.Coalesce: _coalesce_sql, exp.Count: _count_sql}
 
 
 class Trino(Presto):

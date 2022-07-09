@@ -561,6 +561,7 @@ class BigQuery(Dialect):
         exp.DataType.Type.FLOAT: "FLOAT64",
         exp.DataType.Type.DOUBLE: "FLOAT64",
         exp.DataType.Type.BOOLEAN: "BOOL",
+        exp.DataType.Type.TEXT: "STRING",
     }
 
 

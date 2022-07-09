@@ -552,7 +552,12 @@ class Oracle(Dialect):
 
 
 class BigQuery(Dialect):
-    type_mapping = {}
+    type_mapping = {
+        exp.DataType.Type.TINYINT: "INT64",
+        exp.DataType.Type.SMALLINT: "INT64",
+        exp.DataType.Type.INT: "INT64",
+        exp.DataType.Type.BIGINT: "INT64"
+    }
 
 
 class Postgres(Dialect):

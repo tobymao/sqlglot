@@ -315,6 +315,13 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            "SELECT CAST(`a`.`b` AS BIGINT) FROM foo",
+            read="bigquery",
+            write="duckdb",
+        )
+
+        self.validate(
             "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
             "SELECT CAST(`a`.`b` AS INT64) FROM foo",
             write="bigquery",

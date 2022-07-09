@@ -310,7 +310,28 @@ class TestDialects(unittest.TestCase):
     def test_bigquery(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS BIGINT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS TINYINT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
             read="bigquery",
             write="bigquery"
         )

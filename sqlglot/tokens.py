@@ -436,6 +436,8 @@ class Tokenizer:
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "DATE": TokenType.DATE,
         "UUID": TokenType.UUID,
+        "INT64": TokenType.BIGINT,
+        "FLOAT64": TokenType.DOUBLE,
     }
 
     WHITE_SPACE = {

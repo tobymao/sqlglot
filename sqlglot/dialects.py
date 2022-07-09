@@ -551,6 +551,10 @@ class Oracle(Dialect):
     }
 
 
+class BigQuery(Dialect):
+    type_mapping = {}
+
+
 class Postgres(Dialect):
     strict_cast = False
 

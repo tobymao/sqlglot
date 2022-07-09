@@ -557,6 +557,10 @@ class BigQuery(Dialect):
         exp.DataType.Type.SMALLINT: "INT64",
         exp.DataType.Type.INT: "INT64",
         exp.DataType.Type.BIGINT: "INT64",
+        exp.DataType.Type.DECIMAL: "NUMERIC",
+        exp.DataType.Type.FLOAT: "FLOAT64",
+        exp.DataType.Type.DOUBLE: "FLOAT64",
+        exp.DataType.Type.BOOLEAN: "BOOL",
     }
 
 

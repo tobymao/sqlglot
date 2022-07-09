@@ -44,7 +44,7 @@ def _check_union_outputs(scope):
     left, right = scope.union
     if left.expression.named_selects != right.expression.named_selects:
         raise OptimizeError(
-            f"UNION outputs not equal: {left.expression.named_selects} vs. {left.expression.named_selects}"
+            f"UNION outputs not equal: {left.expression.named_selects} vs. {right.expression.named_selects}"
         )
 
 
@@ -145,7 +145,8 @@ def _qualify_outputs(scope):
 
 def _check_unknown_tables(scope):
     if scope.external_columns and not scope.is_correlated_subquery:
-        raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
+        raise OptimizeError(
+            f"Unknown table: {scope.external_columns[0].text('table')}")
 
 
 def _get_unambiguous_columns(source_columns):

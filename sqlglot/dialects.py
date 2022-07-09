@@ -556,7 +556,7 @@ class BigQuery(Dialect):
         exp.DataType.Type.TINYINT: "INT64",
         exp.DataType.Type.SMALLINT: "INT64",
         exp.DataType.Type.INT: "INT64",
-        exp.DataType.Type.BIGINT: "INT64"
+        exp.DataType.Type.BIGINT: "INT64",
     }
 
 

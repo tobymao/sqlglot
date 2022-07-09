@@ -307,6 +307,61 @@ class TestDialects(unittest.TestCase):
             write="starrocks",
         )
 
+    def test_bigquery(self):
+        self.validate(
+            "SELECT CAST(`a`.`b` AS INT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS BIGINT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS TINYINT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS DECIMAL) FROM foo",
+            "SELECT CAST(`a`.`b` AS NUMERIC) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS FLOAT) FROM foo",
+            "SELECT CAST(`a`.`b` AS FLOAT64) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
+            "SELECT CAST(`a`.`b` AS FLOAT64) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS BOOLEAN) FROM foo",
+            "SELECT CAST(`a`.`b` AS BOOL) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT CAST(`a`.`b` AS TEXT) FROM foo",
+            "SELECT CAST(`a`.`b` AS STRING) FROM foo",
+            write="bigquery",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",

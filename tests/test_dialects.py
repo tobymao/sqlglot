@@ -307,6 +307,14 @@ class TestDialects(unittest.TestCase):
             write="starrocks",
         )
 
+    def test_bigquery(self):
+        self.validate(
+            "SELECT CAST(`a`.`b` AS INT) FROM foo",
+            "SELECT CAST(`a`.`b` AS INT) FROM foo",
+            read="bigquery",
+            write="bigquery"
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",

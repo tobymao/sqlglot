@@ -131,12 +131,10 @@ FROM (
     "part"."p_size" = 15
     AND "part"."p_type" LIKE '%BRASS'
 ) AS "part"
-JOIN "_e_0" AS "partsupp"
-  ON "part"."p_partkey" = "partsupp"."ps_partkey"
-JOIN (
+LEFT JOIN (
   SELECT
     MIN("partsupp"."ps_supplycost") AS "_col_0",
-    "partsupp"."ps_partkey"
+    "partsupp"."ps_partkey" AS "_u_1"
   FROM "_e_0" AS "partsupp"
   CROSS JOIN "_e_1" AS "region"
   JOIN (
@@ -156,9 +154,8 @@ JOIN (
     AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
   GROUP BY
     "partsupp"."ps_partkey"
-) AS "_d_0"
-  ON "_d_0"."ps_partkey" = "part"."p_partkey"
-  AND "partsupp"."ps_supplycost" = "_d_0"."_col_0"
+) AS "_u_0"
+  ON "part"."p_partkey" = "_u_0"."_u_1"
 CROSS JOIN "_e_1" AS "region"
 JOIN (
   SELECT
@@ -168,6 +165,8 @@ JOIN (
   FROM "nation" AS "nation"
 ) AS "nation"
   ON "nation"."n_regionkey" = "region"."r_regionkey"
+JOIN "_e_0" AS "partsupp"
+  ON "part"."p_partkey" = "partsupp"."ps_partkey"
 JOIN (
   SELECT
     "supplier"."s_suppkey" AS "s_suppkey",
@@ -181,6 +180,9 @@ JOIN (
 ) AS "supplier"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
   AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+WHERE
+  "partsupp"."ps_supplycost" = "_u_0"."_col_0"
+  AND NOT "_u_0"."_u_1" IS NULL
 ORDER BY
   "supplier"."s_acctbal" DESC,
   "nation"."n_name",
@@ -289,19 +291,20 @@ SELECT
   "orders"."o_orderpriority" AS "o_orderpriority",
   COUNT(*) AS "order_count"
 FROM "orders" AS "orders"
-JOIN (
+LEFT JOIN (
   SELECT
-    "lineitem"."l_orderkey"
+    "lineitem"."l_orderkey" AS "l_orderkey"
   FROM "lineitem" AS "lineitem"
   WHERE
     "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
   GROUP BY
     "lineitem"."l_orderkey"
-) AS "_d_0"
-  ON "_d_0"."l_orderkey" = "orders"."o_orderkey"
+) AS "_u_0"
+  ON "_u_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE
   "orders"."o_orderdate" < CAST('1993-10-01' AS DATE)
   AND "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
+  AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "orders"."o_orderpriority"
 ORDER BY
@@ -1224,6 +1227,16 @@ FROM (
     "partsupp"."ps_suppkey" AS "ps_suppkey"
   FROM "partsupp" AS "partsupp"
 ) AS "partsupp"
+LEFT JOIN (
+  SELECT
+    "supplier"."s_suppkey" AS "s_suppkey"
+  FROM "supplier" AS "supplier"
+  WHERE
+    "supplier"."s_comment" LIKE '%Customer%Complaints%'
+  GROUP BY
+    "supplier"."s_suppkey"
+) AS "_u_0"
+  ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 JOIN (
   SELECT
     "part"."p_partkey" AS "p_partkey",
@@ -1238,13 +1251,7 @@ JOIN (
 ) AS "part"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
 WHERE
-  NOT "partsupp"."ps_suppkey" IN (
-    SELECT
-      "supplier"."s_suppkey" AS "s_suppkey"
-    FROM "supplier" AS "supplier"
-    WHERE
-      "supplier"."s_comment" LIKE '%Customer%Complaints%'
-  )
+  "_u_0"."s_suppkey" IS NULL
 GROUP BY
   "part"."p_brand",
   "part"."p_type",
@@ -1295,16 +1302,18 @@ JOIN (
     AND "part"."p_container" = 'MED BOX'
 ) AS "part"
   ON "part"."p_partkey" = "lineitem"."l_partkey"
-JOIN (
+LEFT JOIN (
   SELECT
     0.2 * AVG("lineitem"."l_quantity") AS "_col_0",
-    "lineitem"."l_partkey"
+    "lineitem"."l_partkey" AS "_u_1"
   FROM "lineitem" AS "lineitem"
   GROUP BY
     "lineitem"."l_partkey"
-) AS "_d_0"
-  ON "_d_0"."l_partkey" = "part"."p_partkey"
-  AND "lineitem"."l_quantity" < "_d_0"."_col_0";
+) AS "_u_0"
+  ON "_u_0"."_u_1" = "part"."p_partkey"
+WHERE
+  "lineitem"."l_quantity" < "_u_0"."_col_0"
+  AND NOT "_u_0"."_u_1" IS NULL;
 
 --------------------------------------
 -- TPC-H 18
@@ -1365,6 +1374,17 @@ JOIN (
   FROM "orders" AS "orders"
 ) AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
+LEFT JOIN (
+  SELECT
+    "lineitem"."l_orderkey" AS "l_orderkey"
+  FROM "lineitem" AS "lineitem"
+  GROUP BY
+    "lineitem"."l_orderkey",
+    "lineitem"."l_orderkey"
+  HAVING
+    SUM("lineitem"."l_quantity") > 300
+) AS "_u_0"
+  ON "orders"."o_orderkey" = "_u_0"."l_orderkey"
 JOIN (
   SELECT
     "lineitem"."l_orderkey" AS "l_orderkey",
@@ -1372,15 +1392,8 @@ JOIN (
   FROM "lineitem" AS "lineitem"
 ) AS "lineitem"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
-  AND "orders"."o_orderkey" IN (
-    SELECT
-      "lineitem"."l_orderkey" AS "l_orderkey"
-    FROM "lineitem" AS "lineitem"
-    GROUP BY
-      "lineitem"."l_orderkey"
-    HAVING
-      SUM("lineitem"."l_quantity") > 300
-  )
+WHERE
+  NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "customer"."c_name",
   "customer"."c_custkey",
@@ -1501,3 +1514,297 @@ WHERE
     AND "part"."p_partkey" = "lineitem"."l_partkey"
     AND "part"."p_size" BETWEEN 1 AND 15
   );
+
+--------------------------------------
+-- TPC-H 20
+--------------------------------------
+select
+        s_name,
+        s_address
+from
+        supplier,
+        nation
+where
+        s_suppkey in (
+                select
+                        ps_suppkey
+                from
+                        partsupp
+                where
+                        ps_partkey in (
+                                select
+                                        p_partkey
+                                from
+                                        part
+                                where
+                                        p_name like 'forest%'
+                        )
+                        and ps_availqty > (
+                                select
+                                        0.5 * sum(l_quantity)
+                                from
+                                        lineitem
+                                where
+                                        l_partkey = ps_partkey
+                                        and l_suppkey = ps_suppkey
+                                        and l_shipdate >= date '1994-01-01'
+                                        and l_shipdate < date '1994-01-01' + interval '1' year
+                        )
+        )
+        and s_nationkey = n_nationkey
+        and n_name = 'CANADA'
+order by
+        s_name;
+SELECT
+  "supplier"."s_name" AS "s_name",
+  "supplier"."s_address" AS "s_address"
+FROM (
+  SELECT
+    "supplier"."s_suppkey" AS "s_suppkey",
+    "supplier"."s_name" AS "s_name",
+    "supplier"."s_address" AS "s_address",
+    "supplier"."s_nationkey" AS "s_nationkey"
+  FROM "supplier" AS "supplier"
+) AS "supplier"
+LEFT JOIN (
+  SELECT
+    "partsupp"."ps_suppkey" AS "ps_suppkey"
+  FROM "partsupp" AS "partsupp"
+  LEFT JOIN (
+    SELECT
+      0.5 * SUM("lineitem"."l_quantity") AS "_col_0",
+      "lineitem"."l_partkey" AS "_u_1",
+      "lineitem"."l_suppkey" AS "_u_2"
+    FROM "lineitem" AS "lineitem"
+    WHERE
+      "lineitem"."l_shipdate" < CAST('1995-01-01' AS DATE)
+      AND "lineitem"."l_shipdate" >= CAST('1994-01-01' AS DATE)
+    GROUP BY
+      "lineitem"."l_partkey",
+      "lineitem"."l_suppkey"
+  ) AS "_u_0"
+    ON "_u_0"."_u_1" = "partsupp"."ps_partkey"
+    AND "_u_0"."_u_2" = "partsupp"."ps_suppkey"
+  LEFT JOIN (
+    SELECT
+      "part"."p_partkey" AS "p_partkey"
+    FROM "part" AS "part"
+    WHERE
+      "part"."p_name" LIKE 'forest%'
+    GROUP BY
+      "part"."p_partkey"
+  ) AS "_u_3"
+    ON "partsupp"."ps_partkey" = "_u_3"."p_partkey"
+  WHERE
+    "partsupp"."ps_availqty" > "_u_0"."_col_0"
+    AND NOT "_u_0"."_u_1" IS NULL
+    AND NOT "_u_0"."_u_2" IS NULL
+    AND NOT "_u_3"."p_partkey" IS NULL
+  GROUP BY
+    "partsupp"."ps_suppkey"
+) AS "_u_4"
+  ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
+JOIN (
+  SELECT
+    "nation"."n_nationkey" AS "n_nationkey",
+    "nation"."n_name" AS "n_name"
+  FROM "nation" AS "nation"
+  WHERE
+    "nation"."n_name" = 'CANADA'
+) AS "nation"
+  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+WHERE
+  NOT "_u_4"."ps_suppkey" IS NULL
+ORDER BY
+  "supplier"."s_name";
+
+--------------------------------------
+-- TPC-H 21
+--------------------------------------
+select
+        s_name,
+        count(*) as numwait
+from
+        supplier,
+        lineitem l1,
+        orders,
+        nation
+where
+        s_suppkey = l1.l_suppkey
+        and o_orderkey = l1.l_orderkey
+        and o_orderstatus = 'F'
+        and l1.l_receiptdate > l1.l_commitdate
+        and exists (
+                select
+                        *
+                from
+                        lineitem l2
+                where
+                        l2.l_orderkey = l1.l_orderkey
+                        and l2.l_suppkey <> l1.l_suppkey
+        )
+        and not exists (
+                select
+                        *
+                from
+                        lineitem l3
+                where
+                        l3.l_orderkey = l1.l_orderkey
+                        and l3.l_suppkey <> l1.l_suppkey
+                        and l3.l_receiptdate > l3.l_commitdate
+        )
+        and s_nationkey = n_nationkey
+        and n_name = 'SAUDI ARABIA'
+group by
+        s_name
+order by
+        numwait desc,
+        s_name
+limit
+        100;
+SELECT
+  "supplier"."s_name" AS "s_name",
+  COUNT(*) AS "numwait"
+FROM (
+  SELECT
+    "supplier"."s_suppkey" AS "s_suppkey",
+    "supplier"."s_name" AS "s_name",
+    "supplier"."s_nationkey" AS "s_nationkey"
+  FROM "supplier" AS "supplier"
+) AS "supplier"
+JOIN (
+  SELECT
+    "lineitem"."l_orderkey" AS "l_orderkey",
+    "lineitem"."l_suppkey" AS "l_suppkey",
+    "lineitem"."l_commitdate" AS "l_commitdate",
+    "lineitem"."l_receiptdate" AS "l_receiptdate"
+  FROM "lineitem" AS "lineitem"
+  WHERE
+    "lineitem"."l_receiptdate" > "lineitem"."l_commitdate"
+) AS "l1"
+  ON "supplier"."s_suppkey" = "l1"."l_suppkey"
+LEFT JOIN (
+  SELECT
+    "l2"."l_orderkey" AS "l_orderkey",
+    ARRAY_AGG("l2"."l_suppkey") AS "_u_1"
+  FROM "lineitem" AS "l2"
+  GROUP BY
+    "l2"."l_orderkey"
+) AS "_u_0"
+  ON "_u_0"."l_orderkey" = "l1"."l_orderkey"
+LEFT JOIN (
+  SELECT
+    "l3"."l_orderkey" AS "l_orderkey",
+    ARRAY_AGG("l3"."l_suppkey") AS "_u_3"
+  FROM "lineitem" AS "l3"
+  WHERE
+    "l3"."l_receiptdate" > "l3"."l_commitdate"
+  GROUP BY
+    "l3"."l_orderkey"
+) AS "_u_2"
+  ON "_u_2"."l_orderkey" = "l1"."l_orderkey"
+JOIN (
+  SELECT
+    "orders"."o_orderkey" AS "o_orderkey",
+    "orders"."o_orderstatus" AS "o_orderstatus"
+  FROM "orders" AS "orders"
+  WHERE
+    "orders"."o_orderstatus" = 'F'
+) AS "orders"
+  ON "orders"."o_orderkey" = "l1"."l_orderkey"
+JOIN (
+  SELECT
+    "nation"."n_nationkey" AS "n_nationkey",
+    "nation"."n_name" AS "n_name"
+  FROM "nation" AS "nation"
+  WHERE
+    "nation"."n_name" = 'SAUDI ARABIA'
+) AS "nation"
+  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+WHERE
+  (
+    "_u_2"."l_orderkey" IS NULL
+    OR NOT ARRAY_ANY("_u_2"."_u_3", ("_x") -> "_x" <> "l1"."l_suppkey")
+  )
+  AND ARRAY_ANY("_u_0"."_u_1", ("_x") -> "_x" <> "l1"."l_suppkey")
+  AND NOT "_u_0"."l_orderkey" IS NULL
+GROUP BY
+  "supplier"."s_name"
+ORDER BY
+  "numwait" DESC,
+  "supplier"."s_name"
+LIMIT 100;
+
+--------------------------------------
+-- TPC-H 22
+--------------------------------------
+select
+        cntrycode,
+        count(*) as numcust,
+        sum(c_acctbal) as totacctbal
+from
+        (
+                select
+                        substring(c_phone, 1, 2) as cntrycode,
+                        c_acctbal
+                from
+                        customer
+                where
+                        substring(c_phone, 1, 2) in
+                                ('13', '31', '23', '29', '30', '18', '17')
+                        and c_acctbal > (
+                                select
+                                        avg(c_acctbal)
+                                from
+                                        customer
+                                where
+                                        c_acctbal > 0.00
+                                        and substring(c_phone, 1, 2) in
+                                                ('13', '31', '23', '29', '30', '18', '17')
+                        )
+                        and not exists (
+                                select
+                                        *
+                                from
+                                        orders
+                                where
+                                        o_custkey = c_custkey
+                        )
+        ) as custsale
+group by
+        cntrycode
+order by
+        cntrycode;
+SELECT
+  "custsale"."cntrycode" AS "cntrycode",
+  COUNT(*) AS "numcust",
+  SUM("custsale"."c_acctbal") AS "totacctbal"
+FROM (
+  SELECT
+    SUBSTRING("customer"."c_phone", 1, 2) AS "cntrycode",
+    "customer"."c_acctbal" AS "c_acctbal"
+  FROM "customer" AS "customer"
+  LEFT JOIN (
+    SELECT
+      "orders"."o_custkey" AS "_u_1"
+    FROM "orders" AS "orders"
+    GROUP BY
+      "orders"."o_custkey"
+  ) AS "_u_0"
+    ON "_u_0"."_u_1" = "customer"."c_custkey"
+  WHERE
+    "_u_0"."_u_1" IS NULL
+    AND "customer"."c_acctbal" > (
+      SELECT
+        AVG("customer"."c_acctbal") AS "_col_0"
+      FROM "customer" AS "customer"
+      WHERE
+        "customer"."c_acctbal" > 0.00
+        AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
+    )
+    AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
+) AS "custsale"
+GROUP BY
+  "custsale"."cntrycode"
+ORDER BY
+  "custsale"."cntrycode";

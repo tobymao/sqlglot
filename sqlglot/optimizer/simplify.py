@@ -49,7 +49,18 @@ def simplify(expression):
 
 
 def simplify_not(expression):
+    """
+    Demorgan's Law
+    NOT (x OR y) -> NOT x AND NOT y
+    NOT (x AND y) -> NOT x OR NOT y
+    """
     if isinstance(expression, exp.Not):
+        if isinstance(expression.this, exp.Paren):
+            condition = expression.this.unnest()
+            if isinstance(condition, exp.And):
+                return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
+            if isinstance(condition, exp.Or):
+                return exp.and_(exp.not_(condition.left), exp.not_(condition.right))
         if always_true(expression.this):
             return FALSE
         if expression.this == FALSE:
@@ -264,6 +275,7 @@ def simplify_parens(expression):
         and not isinstance(expression.this, exp.Select)
         and (
             not isinstance(expression.parent, (exp.Condition, exp.Binary))
+            or isinstance(expression.this, (exp.Is, exp.Like))
             or not isinstance(expression.this, exp.Binary)
         )
     ):

@@ -56,7 +56,6 @@ class Parser:
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
-        TokenType.DATE,
         TokenType.MAP,
     }
 
@@ -122,6 +121,9 @@ class Parser:
         TokenType.VAR,
         TokenType.LEFT,
         TokenType.RIGHT,
+        TokenType.DATE,
+        TokenType.TIMESTAMP,
+        TokenType.TIMESTAMPTZ,
         *CASTS,
         *NESTED_TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
@@ -1201,7 +1203,7 @@ class Parser:
                 self._parse_types if nested else self._parse_number
             )
 
-            if nested and not expressions:
+            if not expressions:
                 self._retreat(index)
                 return None
 

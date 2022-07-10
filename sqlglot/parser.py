@@ -135,7 +135,6 @@ class Parser:
     EQUALITY = {
         TokenType.EQ: exp.EQ,
         TokenType.NEQ: exp.NEQ,
-        TokenType.IS: exp.Is,
     }
 
     COMPARISON = {
@@ -1075,10 +1074,12 @@ class Parser:
 
     def _parse_range(self):
         this = self._parse_bitwise()
-
         negate = self._match(TokenType.NOT)
 
-        if self._match(TokenType.LIKE):
+        if self._match(TokenType.IS):
+            negate = self._match(TokenType.NOT)
+            this = self.expression(exp.Is, this=this, expression=self._parse_term())
+        elif self._match(TokenType.LIKE):
             this = self._parse_escape(
                 self.expression(exp.Like, this=this, expression=self._parse_term())
             )

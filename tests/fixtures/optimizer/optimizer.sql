@@ -38,6 +38,7 @@ FROM (
     ON "x"."a" = "y"."a"
   WHERE
     "_u_0"."_col_0" >= 0
+    AND NOT "_u_0"."_u_1" IS NULL
 ) AS "d"
 GROUP BY
   "d"."a";

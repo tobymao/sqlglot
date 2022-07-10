@@ -269,8 +269,6 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(expression.sql(), "SELECT c, b FROM x")
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
-        expression.find(exp.Column).replace(parse_one("d"), parse_one("e"))
-        self.assertEqual(expression.sql(), "SELECT d, e, b FROM y")
 
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")

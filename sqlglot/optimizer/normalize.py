@@ -20,7 +20,7 @@ def normalize(expression, dnf=False, max_distance=128):
     Returns:
         sqlglot.Expression: normalized expression
     """
-    expression = expression.transform(de_morgans_law, copy=False)
+    expression = simplify(expression)
 
     expression = while_changing(
         expression, lambda e: distributive_law(e, dnf, max_distance)
@@ -80,24 +80,6 @@ def _predicate_lengths(expression, dnf):
         ]
         return x
     return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
-
-
-def de_morgans_law(expression):
-    """
-    NOT (x OR y) -> NOT x AND NOT y
-    NOT (x AND y) -> NOT x OR NOT y
-    """
-
-    if isinstance(expression, exp.Not) and isinstance(expression.this, exp.Paren):
-        condition = expression.this.unnest()
-
-        if isinstance(condition, exp.And):
-            return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
-
-        if isinstance(condition, exp.Or):
-            return exp.and_(exp.not_(condition.left), exp.not_(condition.right))
-
-    return expression
 
 
 def distributive_law(expression, dnf, max_distance):

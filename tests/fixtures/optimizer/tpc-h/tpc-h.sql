@@ -167,7 +167,6 @@ JOIN (
   ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "_e_0" AS "partsupp"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
-  AND "partsupp"."ps_supplycost" = "_u_0"."_col_0"
 JOIN (
   SELECT
     "supplier"."s_suppkey" AS "s_suppkey",
@@ -181,6 +180,9 @@ JOIN (
 ) AS "supplier"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
   AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+WHERE
+  "partsupp"."ps_supplycost" = "_u_0"."_col_0"
+  AND NOT "_u_0"."_u_1" IS NULL
 ORDER BY
   "supplier"."s_acctbal" DESC,
   "nation"."n_name",
@@ -291,7 +293,7 @@ SELECT
 FROM "orders" AS "orders"
 LEFT JOIN (
   SELECT
-    "lineitem"."l_orderkey"
+    "lineitem"."l_orderkey" AS "l_orderkey"
   FROM "lineitem" AS "lineitem"
   WHERE
     "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
@@ -1310,7 +1312,8 @@ LEFT JOIN (
 ) AS "_u_0"
   ON "_u_0"."_u_1" = "part"."p_partkey"
 WHERE
-  "lineitem"."l_quantity" < "_u_0"."_col_0";
+  "lineitem"."l_quantity" < "_u_0"."_col_0"
+  AND NOT "_u_0"."_u_1" IS NULL;
 
 --------------------------------------
 -- TPC-H 18
@@ -1594,6 +1597,8 @@ LEFT JOIN (
     ON "partsupp"."ps_partkey" = "_u_3"."p_partkey"
   WHERE
     "partsupp"."ps_availqty" > "_u_0"."_col_0"
+    AND NOT "_u_0"."_u_1" IS NULL
+    AND NOT "_u_0"."_u_2" IS NULL
     AND NOT "_u_3"."p_partkey" IS NULL
   GROUP BY
     "partsupp"."ps_suppkey"
@@ -1680,28 +1685,24 @@ JOIN (
   ON "supplier"."s_suppkey" = "l1"."l_suppkey"
 LEFT JOIN (
   SELECT
-    "l2"."l_orderkey",
-    "l2"."l_suppkey"
+    "l2"."l_orderkey" AS "l_orderkey",
+    ARRAY_AGG("l2"."l_suppkey") AS "_u_1"
   FROM "lineitem" AS "l2"
   GROUP BY
-    "l2"."l_orderkey",
-    "l2"."l_suppkey"
+    "l2"."l_orderkey"
 ) AS "_u_0"
   ON "_u_0"."l_orderkey" = "l1"."l_orderkey"
-  AND "_u_0"."l_suppkey" <> "l1"."l_suppkey"
 LEFT JOIN (
   SELECT
-    "l3"."l_orderkey",
-    "l3"."l_suppkey"
+    "l3"."l_orderkey" AS "l_orderkey",
+    ARRAY_AGG("l3"."l_suppkey") AS "_u_3"
   FROM "lineitem" AS "l3"
   WHERE
     "l3"."l_receiptdate" > "l3"."l_commitdate"
   GROUP BY
-    "l3"."l_orderkey",
-    "l3"."l_suppkey"
-) AS "_u_1"
-  ON "_u_1"."l_orderkey" = "l1"."l_orderkey"
-  AND "_u_1"."l_suppkey" <> "l1"."l_suppkey"
+    "l3"."l_orderkey"
+) AS "_u_2"
+  ON "_u_2"."l_orderkey" = "l1"."l_orderkey"
 JOIN (
   SELECT
     "orders"."o_orderkey" AS "o_orderkey",
@@ -1721,7 +1722,11 @@ JOIN (
 ) AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 WHERE
-  "_u_1"."l_orderkey" IS NULL
+  (
+    "_u_2"."l_orderkey" IS NULL
+    OR NOT ARRAY_ANY("_u_2"."_u_3", ("_x") -> "_x" <> "l1"."l_suppkey")
+  )
+  AND ARRAY_ANY("_u_0"."_u_1", ("_x") -> "_x" <> "l1"."l_suppkey")
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "supplier"."s_name"
@@ -1729,3 +1734,77 @@ ORDER BY
   "numwait" DESC,
   "supplier"."s_name"
 LIMIT 100;
+
+--------------------------------------
+-- TPC-H 22
+--------------------------------------
+select
+        cntrycode,
+        count(*) as numcust,
+        sum(c_acctbal) as totacctbal
+from
+        (
+                select
+                        substring(c_phone, 1, 2) as cntrycode,
+                        c_acctbal
+                from
+                        customer
+                where
+                        substring(c_phone, 1, 2) in
+                                ('13', '31', '23', '29', '30', '18', '17')
+                        and c_acctbal > (
+                                select
+                                        avg(c_acctbal)
+                                from
+                                        customer
+                                where
+                                        c_acctbal > 0.00
+                                        and substring(c_phone, 1, 2) in
+                                                ('13', '31', '23', '29', '30', '18', '17')
+                        )
+                        and not exists (
+                                select
+                                        *
+                                from
+                                        orders
+                                where
+                                        o_custkey = c_custkey
+                        )
+        ) as custsale
+group by
+        cntrycode
+order by
+        cntrycode;
+SELECT
+  "custsale"."cntrycode" AS "cntrycode",
+  COUNT(*) AS "numcust",
+  SUM("custsale"."c_acctbal") AS "totacctbal"
+FROM (
+  SELECT
+    SUBSTRING("customer"."c_phone", 1, 2) AS "cntrycode",
+    "customer"."c_acctbal" AS "c_acctbal"
+  FROM "customer" AS "customer"
+  LEFT JOIN (
+    SELECT
+      "orders"."o_custkey" AS "_u_1"
+    FROM "orders" AS "orders"
+    GROUP BY
+      "orders"."o_custkey"
+  ) AS "_u_0"
+    ON "_u_0"."_u_1" = "customer"."c_custkey"
+  WHERE
+    "_u_0"."_u_1" IS NULL
+    AND "customer"."c_acctbal" > (
+      SELECT
+        AVG("customer"."c_acctbal") AS "_col_0"
+      FROM "customer" AS "customer"
+      WHERE
+        "customer"."c_acctbal" > 0.00
+        AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
+    )
+    AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
+) AS "custsale"
+GROUP BY
+  "custsale"."cntrycode"
+ORDER BY
+  "custsale"."cntrycode";

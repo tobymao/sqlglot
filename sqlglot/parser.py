@@ -794,6 +794,8 @@ class Parser:
                 distinct=distinct,
                 expressions=expressions,
                 **{
+                    "except": self._parse_except(),
+                    "replace": self._parse_replace(),
                     "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
                     "joins": self._parse_joins(),
@@ -808,6 +810,25 @@ class Parser:
             )
 
         return self._parse_set_operations(this)
+
+    def _parse_except(self):
+        index = self._index
+
+        if not self._match(TokenType.EXCEPT) or not self._match(TokenType.L_PAREN):
+            self._retreat(index)
+            return None
+
+        columns = self._parse_csv(self._parse_id_var)
+        self._match_r_paren()
+        return columns
+
+    def _parse_replace(self):
+        if not self._match(TokenType.REPLACE):
+            return None
+        self._match_l_paren()
+        columns = self._parse_csv(lambda: self._parse_alias(self._parse_id_var()))
+        self._match_r_paren()
+        return columns
 
     def _parse_annotation(self, expression):
         if self._match(TokenType.ANNOTATION):

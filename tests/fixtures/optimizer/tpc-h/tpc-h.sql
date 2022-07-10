@@ -1380,7 +1380,7 @@ LEFT JOIN (
   FROM "lineitem" AS "lineitem"
   GROUP BY
     "lineitem"."l_orderkey",
-    "lineitem"."l_orderkey"  -- fix me
+    "lineitem"."l_orderkey"
   HAVING
     SUM("lineitem"."l_quantity") > 300
 ) AS "_u_0"

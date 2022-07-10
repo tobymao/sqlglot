@@ -39,10 +39,7 @@ def pushdown(condition, sources):
     if not condition:
         return
 
-    simplified = simplify(condition)
-    condition.replace(simplified)
-    condition = simplified
-
+    condition = condition.replace(simplify(condition))
     cnf_like = normalized(condition) or not normalized(condition, dnf=True)
 
     predicates = list(
@@ -63,7 +60,7 @@ def pushdown_cnf(predicates, scope):
     """
     for predicate in predicates:
         for node in nodes_for_predicate(predicate, scope).values():
-            if isinstance(node, exp.Join) and not node.side:
+            if isinstance(node, exp.Join):
                 predicate.replace(exp.TRUE)
                 node.on(predicate, copy=False)
                 break
@@ -127,7 +124,7 @@ def pushdown_dnf(predicates, scope):
 
             predicate = conditions[name]
 
-            if isinstance(node, exp.Join) and not node.side:
+            if isinstance(node, exp.Join):
                 node.on(predicate, copy=False)
             elif isinstance(node, exp.Select):
                 node.where(replace_aliases(node, predicate), copy=False)
@@ -153,6 +150,8 @@ def nodes_for_predicate(predicate, sources):
             node = source.expression
 
         if isinstance(node, exp.Join):
+            if node.side:
+                return {}
             nodes[table] = node
         elif isinstance(node, exp.Select) and len(tables) == 1:
             if not node.args.get("group"):

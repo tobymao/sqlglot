@@ -321,7 +321,7 @@ class Expression:
         )
         return new_node
 
-    def replace(self, *expressions):
+    def replace(self, expression):
         """
         Swap out this expression with a new expression.
 
@@ -329,19 +329,24 @@ class Expression:
 
             >>> tree = Select().select("x").from_("tbl")
             >>> tree.find(Column).replace(Column(this="y"))
+            (COLUMN this: y)
             >>> tree.sql()
             'SELECT y FROM tbl'
 
         Args:
             expression (Expression): new node
+
+        Returns :
+            the new expression or expressions
         """
         if not self.parent:
-            return
+            return expression
 
         parent = self.parent
         self.parent = None
 
-        replace_children(parent, lambda child: expressions if child is self else child)
+        replace_children(parent, lambda child: expression if child is self else child)
+        return expression
 
     def assert_is(self, type_):
         """
@@ -1696,7 +1701,19 @@ class ArrayAgg(AggFunc):
     pass
 
 
+class ArrayAll(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class ArrayAny(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ArrayContains(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class ArrayFilter(Func):
     arg_types = {"this": True, "expression": True}
 
 

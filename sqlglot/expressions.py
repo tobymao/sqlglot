@@ -849,6 +849,8 @@ class Select(Subqueryable, Expression):
         "expressions": False,
         "hint": False,
         "distinct": False,
+        "except": False,
+        "replace": False,
         "from": False,
         "laterals": False,
         "joins": False,

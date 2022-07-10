@@ -46,6 +46,7 @@ a[0].b.c['d']
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1
+NOT x IS NULL
 ARRAY()
 ARRAY(1, 2)
 ARRAY_CONTAINS(x, 1)
@@ -55,6 +56,9 @@ POSEXPLODE("x") AS ("a", "b")
 POSEXPLODE("x") AS ("a", "b", "c")
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
+x LIKE SUBSTR('abc', 1, 1)
+x LIKE y
+x LIKE a.y
 x LIKE '%y%'
 x ILIKE '%y%'
 x LIKE '%y%' ESCAPE '\'

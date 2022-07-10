@@ -1,10 +1,6 @@
 --------------------------------------
 -- Unnest Subqueries
 --------------------------------------
---SELECT *
---FROM x AS x
---WHERE
---  EXISTS (SELECT y.g AS g FROM y WHERE x.a = y.g and y.i <> x.b);
 SELECT *
 FROM x AS x
 WHERE

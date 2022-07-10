@@ -39,10 +39,7 @@ def pushdown(condition, sources):
     if not condition:
         return
 
-    simplified = simplify(condition)
-    condition.replace(simplified)
-    condition = simplified
-
+    condition = condition.replace(simplify(condition))
     cnf_like = normalized(condition) or not normalized(condition, dnf=True)
 
     predicates = list(
@@ -153,6 +150,8 @@ def nodes_for_predicate(predicate, sources):
             node = source.expression
 
         if isinstance(node, exp.Join):
+            if node.side:
+                return {}
             nodes[table] = node
         elif isinstance(node, exp.Select) and len(tables) == 1:
             if not node.args.get("group"):

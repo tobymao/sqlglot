@@ -46,6 +46,7 @@ a[0].b.c['d']
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1
+NOT x IS NULL
 ARRAY()
 ARRAY(1, 2)
 ARRAY_CONTAINS(x, 1)
@@ -55,6 +56,9 @@ POSEXPLODE("x") AS ("a", "b")
 POSEXPLODE("x") AS ("a", "b", "c")
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
+x LIKE SUBSTR('abc', 1, 1)
+x LIKE y
+x LIKE a.y
 x LIKE '%y%'
 x ILIKE '%y%'
 x LIKE '%y%' ESCAPE '\'
@@ -160,8 +164,8 @@ SELECT a FROM test WHERE a > (SELECT 1 FROM x GROUP BY y)
 SELECT a FROM test WHERE EXISTS(SELECT 1)
 SELECT a FROM test WHERE EXISTS(SELECT * FROM x UNION SELECT * FROM Y) OR TRUE
 SELECT a FROM test WHERE TRUE OR NOT EXISTS(SELECT * FROM x)
-SELECT a AS any, b AS some, c AS all, d AS exists FROM test WHERE a = ANY(SELECT 1)
-SELECT a FROM test WHERE a > ALL(SELECT 1)
+SELECT a AS any, b AS some, c AS all, d AS exists FROM test WHERE a = ANY (SELECT 1)
+SELECT a FROM test WHERE a > ALL (SELECT 1)
 SELECT a FROM test ORDER BY a
 SELECT a FROM test ORDER BY a, b
 SELECT x FROM tests ORDER BY a DESC, b DESC, c

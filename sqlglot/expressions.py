@@ -114,7 +114,7 @@ class Expression:
         the specified types.
 
         Args:
-            expression_types (type): the expression type to match.
+            expression_types (type): the expression type(s) to match.
 
         Returns:
             the node which matches the criteria or None if no node matching
@@ -128,7 +128,7 @@ class Expression:
         yields those that match at least one of the specified expression types.
 
         Args:
-            expression_types (type): the expression type to match.
+            expression_types (type): the expression type(s) to match.
 
         Returns:
             the generator object.
@@ -138,10 +138,26 @@ class Expression:
                 yield expression
 
     def find_ancestor(self, *expression_types):
+        """
+        Returns a nearest parent matching expression_types.
+
+        Args:
+            expression_types (type): the expression type(s) to match.
+
+        Returns:
+            the parent node
+        """
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
         return ancestor
+
+    @property
+    def parent_select(self):
+        """
+        Returns the parent select statement.
+        """
+        return self.find_ancestor(Select)
 
     def walk(self, bfs=True):
         """
@@ -305,7 +321,7 @@ class Expression:
         )
         return new_node
 
-    def replace(self, *expressions):
+    def replace(self, expression):
         """
         Swap out this expression with a new expression.
 
@@ -313,19 +329,24 @@ class Expression:
 
             >>> tree = Select().select("x").from_("tbl")
             >>> tree.find(Column).replace(Column(this="y"))
+            (COLUMN this: y)
             >>> tree.sql()
             'SELECT y FROM tbl'
 
         Args:
             expression (Expression): new node
+
+        Returns :
+            the new expression or expressions
         """
         if not self.parent:
-            return
+            return expression
 
         parent = self.parent
         self.parent = None
 
-        replace_children(parent, lambda child: expressions if child is self else child)
+        replace_children(parent, lambda child: expression if child is self else child)
+        return expression
 
     def assert_is(self, type_):
         """
@@ -597,6 +618,10 @@ class Join(Expression):
     @property
     def kind(self):
         return self.text("kind").upper()
+
+    @property
+    def side(self):
+        return self.text("side").upper()
 
     def on(self, *expressions, append=True, dialect=None, parser_opts=None, copy=True):
         """
@@ -1676,7 +1701,19 @@ class ArrayAgg(AggFunc):
     pass
 
 
+class ArrayAll(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class ArrayAny(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ArrayContains(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class ArrayFilter(Func):
     arg_types = {"this": True, "expression": True}
 
 

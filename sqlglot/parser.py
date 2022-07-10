@@ -135,7 +135,6 @@ class Parser:
     EQUALITY = {
         TokenType.EQ: exp.EQ,
         TokenType.NEQ: exp.NEQ,
-        TokenType.IS: exp.Is,
     }
 
     COMPARISON = {
@@ -1075,20 +1074,22 @@ class Parser:
 
     def _parse_range(self):
         this = self._parse_bitwise()
-
         negate = self._match(TokenType.NOT)
 
-        if self._match(TokenType.LIKE):
+        if self._match(TokenType.IS):
+            negate = self._match(TokenType.NOT)
+            this = self.expression(exp.Is, this=this, expression=self._parse_null())
+        elif self._match(TokenType.LIKE):
             this = self._parse_escape(
-                self.expression(exp.Like, this=this, expression=self._parse_term())
+                self.expression(exp.Like, this=this, expression=self._parse_type())
             )
         elif self._match(TokenType.ILIKE):
             this = self._parse_escape(
-                self.expression(exp.ILike, this=this, expression=self._parse_term())
+                self.expression(exp.ILike, this=this, expression=self._parse_type())
             )
         elif self._match(TokenType.RLIKE):
             this = self.expression(
-                exp.RegexpLike, this=this, expression=self._parse_term()
+                exp.RegexpLike, this=this, expression=self._parse_type()
             )
         elif self._match(TokenType.IN):
             self._match_l_paren()
@@ -1129,7 +1130,7 @@ class Parser:
 
     def _parse_unary(self):
         if self._match(TokenType.NOT):
-            return self.expression(exp.Not, this=self._parse_unary())
+            return self.expression(exp.Not, this=self._parse_equality())
         if self._match(TokenType.TILDA):
             return self.expression(exp.BitwiseNot, this=self._parse_unary())
         if self._match(TokenType.DASH):

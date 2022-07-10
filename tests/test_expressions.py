@@ -83,7 +83,7 @@ class TestExpressions(unittest.TestCase):
     def test_find_ancestor(self):
         column = parse_one("select * from foo where (a + 1 > 2)").find(exp.Column)
         self.assertIsInstance(column, exp.Column)
-        self.assertIsInstance(column.find_ancestor(exp.Select), exp.Select)
+        self.assertIsInstance(column.parent_select, exp.Select)
         self.assertIsNone(column.find_ancestor(exp.Join))
 
     def test_alias_or_name(self):
@@ -269,8 +269,6 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(expression.sql(), "SELECT c, b FROM x")
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
-        expression.find(exp.Column).replace(parse_one("d"), parse_one("e"))
-        self.assertEqual(expression.sql(), "SELECT d, e, b FROM y")
 
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")

@@ -43,8 +43,8 @@ class TestTranspile(unittest.TestCase):
 
     def test_some(self):
         self.validate(
-            "SELECT * FROM x WHERE a = SOME(SELECT 1)",
-            "SELECT * FROM x WHERE a = ANY(SELECT 1)",
+            "SELECT * FROM x WHERE a = SOME (SELECT 1)",
+            "SELECT * FROM x WHERE a = ANY (SELECT 1)",
         )
 
     def test_space(self):
@@ -90,6 +90,8 @@ class TestTranspile(unittest.TestCase):
         self.validate("a NOT LIKE b", "NOT a LIKE b")
         self.validate("a NOT BETWEEN b AND c", "NOT a BETWEEN b AND c")
         self.validate("a NOT IN (1, 2)", "NOT a IN (1, 2)")
+        self.validate("a IS NOT NULL", "NOT a IS NULL")
+        self.validate("a LIKE TEXT y", "a LIKE CAST(y AS TEXT)")
 
     def test_extract(self):
         self.validate(

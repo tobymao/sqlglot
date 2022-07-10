@@ -333,6 +333,36 @@ class TestDialects(unittest.TestCase):
             write="bigquery",
         )
 
+        self.validate(
+            "[1, 2, 3]",
+            "[1, 2, 3]",
+            write="bigquery",
+        )
+        self.validate(
+            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
+            "SELECT [1, 2, 3] AS y FROM foo",
+            read="spark",
+            write="bigquery",
+        )
+        self.validate(
+            "SELECT [1, 2, 3] AS y FROM foo",
+            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
+            read="bigquery",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM UNNEST(['7', '14']) AS x",
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            read="bigquery",
+            write="presto",
+        )
+        self.validate(
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            "SELECT * FROM UNNEST(['7', '14']) AS x",
+            read="presto",
+            write="bigquery",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",

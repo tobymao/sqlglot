@@ -221,6 +221,24 @@ MYSQL_TIME_MAPPING = {
 }
 
 
+class BigQuery(Dialect):
+    identifier = "`"
+
+    type_mapping = {
+        exp.DataType.Type.TINYINT: "INT64",
+        exp.DataType.Type.SMALLINT: "INT64",
+        exp.DataType.Type.INT: "INT64",
+        exp.DataType.Type.BIGINT: "INT64",
+        exp.DataType.Type.DECIMAL: "NUMERIC",
+        exp.DataType.Type.FLOAT: "FLOAT64",
+        exp.DataType.Type.DOUBLE: "FLOAT64",
+        exp.DataType.Type.BOOLEAN: "BOOL",
+        exp.DataType.Type.TEXT: "STRING",
+    }
+
+    transforms = {exp.Array: lambda self, e: f"[{self.expressions(e)}]"}
+
+
 class DuckDB(Dialect):
     # https://duckdb.org/docs/sql/functions/dateformat
     DATE_FORMAT = "'%Y-%m-%d'"
@@ -548,22 +566,6 @@ class Oracle(Dialect):
         exp.DataType.Type.BIGINT: "NUMBER",
         exp.DataType.Type.DECIMAL: "NUMBER",
         exp.DataType.Type.VARCHAR: "VARCHAR2",
-    }
-
-
-class BigQuery(Dialect):
-    identifier = "`"
-
-    type_mapping = {
-        exp.DataType.Type.TINYINT: "INT64",
-        exp.DataType.Type.SMALLINT: "INT64",
-        exp.DataType.Type.INT: "INT64",
-        exp.DataType.Type.BIGINT: "INT64",
-        exp.DataType.Type.DECIMAL: "NUMERIC",
-        exp.DataType.Type.FLOAT: "FLOAT64",
-        exp.DataType.Type.DOUBLE: "FLOAT64",
-        exp.DataType.Type.BOOLEAN: "BOOL",
-        exp.DataType.Type.TEXT: "STRING",
     }
 
 

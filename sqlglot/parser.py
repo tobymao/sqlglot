@@ -952,7 +952,7 @@ class Parser:
             return None
 
         self._match_l_paren()
-        expressions = self._parse_csv(self._parse_table)
+        expressions = self._parse_csv(self._parse_column)
         self._match_r_paren()
 
         ordinality = self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY)
@@ -1437,7 +1437,7 @@ class Parser:
 
         expressions = self._parse_csv(self._parse_conjunction)
 
-        if this.text("this").upper() == "ARRAY":
+        if not this or this.text("this").upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:
             expressions = apply_index_offset(expressions, -self.index_offset)

@@ -115,6 +115,7 @@ class Parser:
 
     FUNC_TOKENS = {
         TokenType.EXTRACT,
+        TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
         TokenType.UNNEST,

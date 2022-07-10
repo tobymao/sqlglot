@@ -309,27 +309,27 @@ class TestDialects(unittest.TestCase):
 
     def test_bigquery(self):
         self.validate(
-            "SELECT CAST(`a`.`b` AS INT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            "SELECT CAST(a AS INT) FROM foo",
+            "SELECT CAST(a AS INT64) FROM foo",
             write="bigquery",
         )
 
         self.validate(
-            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
-            "SELECT CAST(`a`.`b` AS BIGINT) FROM foo",
+            "SELECT CAST(a AS INT64) FROM foo",
+            "SELECT CAST(a AS BIGINT) FROM foo",
             read="bigquery",
             write="duckdb",
         )
 
         self.validate(
-            "SELECT CAST(`a`.`b` AS DECIMAL) FROM foo",
-            "SELECT CAST(`a`.`b` AS NUMERIC) FROM foo",
+            "SELECT CAST(a AS DECIMAL) FROM foo",
+            "SELECT CAST(a AS NUMERIC) FROM foo",
             write="bigquery",
         )
 
         self.validate(
-            "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
-            "SELECT CAST(`a`.`b` AS FLOAT64) FROM foo",
+            'SELECT CAST("a" AS DOUBLE) FROM foo',
+            "SELECT CAST(`a` AS FLOAT64) FROM foo",
             write="bigquery",
         )
 

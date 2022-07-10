@@ -552,6 +552,8 @@ class Oracle(Dialect):
 
 
 class BigQuery(Dialect):
+    identifier = "`"
+
     type_mapping = {
         exp.DataType.Type.TINYINT: "INT64",
         exp.DataType.Type.SMALLINT: "INT64",

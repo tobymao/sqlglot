@@ -20,9 +20,9 @@ def unnest_subqueries(expression):
  AS "_u_0" ON x.a = "_u_0".a WHERE ("_u_0".a = 1 AND NOT "_u_0".a IS NULL)'
 
     Args:
-        expression (sqlglot.Expression): expression to decorrelated
+        expression (sqlglot.Expression): expression to unnest
     Returns:
-        sqlglot.Expression: qualified expression
+        sqlglot.Expression: unnested expression
     """
     sequence = itertools.count()
 
@@ -47,25 +47,20 @@ def unnest(select, parent_select, sequence):
         return
 
     if isinstance(predicate, exp.Any):
-        side = predicate.arg_key == "expression"
         predicate = predicate.find_ancestor(exp.EQ)
 
         if not predicate or parent_select is not predicate.parent_select:
             return
 
-        column = predicate.left if side else predicate.right
-    else:
-        column = predicate.this
-
+    column = _other_operand(predicate)
     value = select.selects[0]
     alias = _alias(sequence)
 
     on = exp.condition(f'{column} = "{alias}"."{value.alias}"')
-    predicate.replace(exp.condition(f"NOT {on.right.sql()} IS NULL"))
-    select.group_by(value.this, copy=False)
+    _replace(predicate, f"NOT {on.right} IS NULL")
 
     parent_select.join(
-        select,
+        select.group_by(value.this, copy=False),
         on=on,
         join_type="LEFT",
         join_alias=alias,

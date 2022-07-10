@@ -275,8 +275,8 @@ def simplify_parens(expression):
         and not isinstance(expression.this, exp.Select)
         and (
             not isinstance(expression.parent, (exp.Condition, exp.Binary))
-            or not isinstance(expression.this, exp.Binary)
             or isinstance(expression.this, (exp.Is, exp.Like))
+            or not isinstance(expression.this, exp.Binary)
         )
     ):
         return expression.this

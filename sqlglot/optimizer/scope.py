@@ -84,7 +84,7 @@ class Scope:
         self._derived_tables = []
         self._raw_columns = []
 
-        for node, *_ in _dfs_until_next_scope(self.expression):
+        for node, *_ in _walk_next_scope(self.expression):
             if node is self.expression:
                 continue
             if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
@@ -410,7 +410,7 @@ def _traverse_subqueries(scope):
         scope.subquery_scopes.append(top)
 
 
-def _dfs_until_next_scope(expression):
+def _walk_next_scope(expression):
     """
     Walk the expression tree in DFS order yielding all nodes until a Select or Union instance is found.
 

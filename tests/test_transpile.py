@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest import mock
 
-from sqlglot import parse_one, transpile, exp
+from sqlglot import parse_one, transpile
 from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import load_sql_fixtures, load_sql_fixture_pairs
 
@@ -26,15 +26,6 @@ class TestTranspile(unittest.TestCase):
 
     def test_asc(self):
         self.validate("SELECT x FROM y ORDER BY x ASC", "SELECT x FROM y ORDER BY x")
-
-    def test_custom_transform(self):
-        self.assertEqual(
-            transpile(
-                "SELECT CAST(a AS INT) FROM x",
-                type_mapping={exp.DataType.Type.INT: "SPECIAL INT"},
-            )[0],
-            "SELECT CAST(a AS SPECIAL INT) FROM x",
-        )
 
     def test_paren(self):
         with self.assertRaises(ParseError):

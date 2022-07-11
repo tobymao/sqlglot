@@ -1765,6 +1765,10 @@ class DateStrToDate(Func):
     pass
 
 
+class DateSub(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
 class DateToDateStr(Func):
     pass
 

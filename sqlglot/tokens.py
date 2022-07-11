@@ -234,7 +234,14 @@ def new_ambiguous(keywords, single_tokens):
     )
 
 
-class Tokenizer:
+class _Tokenizer(type):
+    def __new__(cls, clsname, bases, attrs):
+        klass = super().__new__(cls, clsname, bases, attrs)
+        klass.AMBIGUOUS = new_ambiguous(klass.KEYWORDS, klass.SINGLE_TOKENS)
+        return klass
+
+
+class Tokenizer(metaclass=_Tokenizer):
     SINGLE_TOKENS = {
         "(": TokenType.L_PAREN,
         ")": TokenType.R_PAREN,
@@ -362,7 +369,6 @@ class Tokenizer:
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
-        "QUALIFY": TokenType.QUALIFY,
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
@@ -435,9 +441,6 @@ class Tokenizer:
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "DATE": TokenType.DATE,
-        "UUID": TokenType.UUID,
-        "INT64": TokenType.BIGINT,
-        "FLOAT64": TokenType.DOUBLE,
     }
 
     WHITE_SPACE = {
@@ -462,9 +465,8 @@ class Tokenizer:
         TokenType.USE,
     }
 
+    AMBIGUOUS = None  # autofilled
     ESCAPE_CODE = "__sqlglot_escape__"
-
-    AMBIGUOUS = new_ambiguous(KEYWORDS, SINGLE_TOKENS)
     COMMENTS = ["--"]
     COMMENT_START = "/*"
     COMMENT_END = "*/"

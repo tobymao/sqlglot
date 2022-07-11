@@ -15,12 +15,6 @@ class Generator:
     Generator interprets the given syntax tree and produces a SQL string as an output.
 
     Args
-        transforms (dict): the dictionary of custom transformations in which key
-            represents the expression type and the value is a function which defines
-            how the given expression type should be rendered.
-        type_mapping (dict): the dictionary of custom type mappings in which the key
-            represents the data type (:class:`~sqlglot.expressions.DataType.Type`) and
-            the value is its SQL string representation.
         time_mapping (dict): the dictionary of custom time mappings in which the key
             represents a python time format and the output the target time format
         time_trie (trie): a trie of the time_mapping keys
@@ -44,9 +38,9 @@ class Generator:
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
+    TYPE_MAPPING = {}
+
     __slots__ = (
-        "transforms",
-        "type_mapping",
         "time_mapping",
         "time_trie",
         "pretty",
@@ -65,8 +59,6 @@ class Generator:
 
     def __init__(
         self,
-        transforms=None,
-        type_mapping=None,
         time_mapping=None,
         time_trie=None,
         pretty=None,
@@ -83,8 +75,6 @@ class Generator:
         # pylint: disable=too-many-arguments
         import sqlglot
 
-        self.transforms = {**self.TRANSFORMS, **(transforms or {})}
-        self.type_mapping = type_mapping or {}
         self.time_mapping = time_mapping or {}
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
@@ -178,7 +168,7 @@ class Generator:
         if key:
             return self.sql(expression.args.get(key))
 
-        transform = self.transforms.get(expression.__class__)
+        transform = self.TRANSFORMS.get(expression.__class__)
 
         if callable(transform):
             return transform(self, expression)
@@ -313,7 +303,7 @@ class Generator:
 
     def datatype_sql(self, expression):
         type_value = expression.this
-        type_sql = self.type_mapping.get(type_value, type_value.value)
+        type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
         nested = ""
         interior = self.expressions(expression, flat=True)
         if interior:

@@ -43,7 +43,7 @@ sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read='duckdb', write='hive'
 SELECT DATE_FORMAT(x, 'yy-M-ss')"
 ```
 
-### Formatting and Transpiling
+## Formatting and Transpiling
 Read in a SQL statement with a CTE and CASTING to a REAL and then transpiling to Spark.
 
 Spark uses backticks as identifiers and the REAL type is transpiled to FLOAT.
@@ -76,7 +76,7 @@ LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
 
-### Metadata
+## Metadata
 
 You can explore SQL with expression helpers to do things like find columns and tables.
 
@@ -97,7 +97,7 @@ for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
   print(table.name)
 ```
 
-### Parser Errors
+## Parser Errors
 A syntax error will result in a parser error.
 ```python
 transpile("SELECT foo( FROM bar")
@@ -106,7 +106,7 @@ transpile("SELECT foo( FROM bar")
 sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
   SELECT foo( FROM bar
 ```
-### Unsupported Errors
+## Unsupported Errors
 Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.
 
 ```python
@@ -123,7 +123,7 @@ WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
 SELECT APPROX_COUNT_DISTINCT(a) FROM foo
 ```
 
-### Build and Modify SQL
+## Build and Modify SQL
 SQLGlot supports incrementally building sql expressions.
 
 ```python
@@ -169,7 +169,7 @@ Which outputs:
 SELECT FUN(a) FROM x
 ```
 
-### SQL Optimizer
+## SQL Optimizer
 
 SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standaradize queries or provide the foundations for implementing an actual engine.
 
@@ -205,7 +205,7 @@ WHERE
 """
 ```
 
-### SQL Annotations
+## SQL Annotations
 
 SQLGlot supports annotations in the sql expression. This is an experimental feature that is not part of any of the SQL standards but it can be useful when needing to annotate what a selected field is supposed to be. Below is an example:
 
@@ -216,84 +216,65 @@ SELECT
 FROM users
 ```
 
-### Customization
-#### Custom Types
-A simple transform on types can be accomplished by providing a corresponding mapping:
-```python
+## AST Introspection
 
-from sqlglot import *
-
-transpile("SELECT CAST(a AS INT) FROM x", type_mapping={exp.DataType.Type.INT: "SPECIAL INT"})[0]
-```
-
-```sql
-SELECT CAST(a AS SPECIAL INT) FROM x
-```
-
-More complicated transforms can be accomplished by using the Tokenizer, Parser, and Generator directly.
-#### Custom Functions
-In  this example, we want to parse a UDF SPECIAL_UDF and then output another version called SPECIAL_UDF_INVERSE with the arguments switched.
+You can see the AST version of the sql by calling repr.
 
 ```python
-from sqlglot import *
-from sqlglot.expressions import Func
+from sqlglot import parse_one
+repr(parse_one("SELECT a + 1 AS z"))
 
-class SpecialUdf(Func):
-    arg_types = {'a': True, 'b': True}
-
-tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b) FROM x")
-```
-Here is the output of the tokenizer:
-
-```
-[
-    <Token token_type: TokenType.SELECT, text: SELECT, line: 0, col: 0>,
-    <Token token_type: TokenType.VAR, text: SPECIAL_UDF, line: 0, col: 7>,
-    <Token token_type: TokenType.L_PAREN, text: (, line: 0, col: 18>,
-    <Token token_type: TokenType.VAR, text: a, line: 0, col: 19>,
-    <Token token_type: TokenType.COMMA, text: ,, line: 0, col: 20>,
-    <Token token_type: TokenType.VAR, text: b, line: 0, col: 22>,
-    <Token token_type: TokenType.R_PAREN, text: ), line: 0, col: 23>,
-    <Token token_type: TokenType.FROM, text: FROM, line: 0, col: 25>,
-    <Token token_type: TokenType.VAR, text: x, line: 0, col: 30>,
-]
-
-```
-```python
-expression = Parser(functions={
-    **SpecialUdf.default_parser_mappings(),
-}).parse(tokens)[0]
-
-repr(expression)
+(SELECT expressions:
+  (ALIAS this:
+    (ADD this:
+      (COLUMN this:
+        (IDENTIFIER this: a, quoted: False)), expression:
+      (LITERAL this: 1, is_string: False)), alias:
+    (IDENTIFIER this: z, quoted: False)))
 ```
 
-The expression tree produced by the parser:
+## Custom Dialects
 
-```
-(SELECT distinct: False, expressions:
-  (SPECIALUDF a:
-    (COLUMN this:
-      (IDENTIFIER this: a, quoted: False)), b:
-    (COLUMN this:
-      (IDENTIFIER this: b, quoted: False))), from:
-  (FROM expressions:
-    (TABLE this:
-      (IDENTIFIER this: x, quoted: False))))
-```
-
-Finally generating the new SQL:
+[Dialects](sqlglot/dialects) can be added by subclassing Dialect.
 
 ```python
-Generator(transforms={
-    SpecialUdf: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
-}).generate(expression)
+from sqlglot import exp
+from sqlglot.dialects.dialect import Dialect
+from sqlglot.generator import Generator
+from sqlglot.tokens import Tokenizer, TokenType
+
+
+class Custom(Dialect):
+    identifier = "`"
+    quotes = {"'", '"'}
+
+    class Tokenizer(Tokenizer):
+        KEYWORDS = {
+            **Tokenizer.KEYWORDS,
+            "INT64": TokenType.BIGINT,
+            "FLOAT64": TokenType.DOUBLE,
+        }
+
+    class Generator(Generator):
+        TRANSFORMS = {exp.Array: lambda self, e: f"[{self.expressions(e)}]"}
+
+        TYPE_MAPPING = {
+            exp.DataType.Type.TINYINT: "INT64",
+            exp.DataType.Type.SMALLINT: "INT64",
+            exp.DataType.Type.INT: "INT64",
+            exp.DataType.Type.BIGINT: "INT64",
+            exp.DataType.Type.DECIMAL: "NUMERIC",
+            exp.DataType.Type.FLOAT: "FLOAT64",
+            exp.DataType.Type.DOUBLE: "FLOAT64",
+            exp.DataType.Type.BOOLEAN: "BOOL",
+            exp.DataType.Type.TEXT: "STRING",
+        }
+
+
+Dialects["custom"]
 ```
 
-```sql
-SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
-```
-
-### Benchmarks
+## Benchmarks
 
 [Benchmarks](benchmarks) run on Python 3.9.6 in seconds.
 

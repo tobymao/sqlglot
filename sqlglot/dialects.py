@@ -223,6 +223,7 @@ MYSQL_TIME_MAPPING = {
 
 class BigQuery(Dialect):
     identifier = "`"
+    quotes = {"'", '"', '"""'}
 
     type_mapping = {
         exp.DataType.Type.TINYINT: "INT64",

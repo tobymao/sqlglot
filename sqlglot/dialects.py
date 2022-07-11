@@ -237,6 +237,8 @@ class Bigquery(Dialect):
         exp.DataType.Type.TEXT: "STRING",
     }
 
+    transforms = {exp.Array: lambda self, e: f"[{self.expressions(e)}]"}
+
 
 class DuckDB(Dialect):
     # https://duckdb.org/docs/sql/functions/dateformat

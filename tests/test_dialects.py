@@ -309,56 +309,57 @@ class TestDialects(unittest.TestCase):
 
     def test_bigquery(self):
         self.validate(
-            "SELECT CAST(`a`.`b` AS INT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            "SELECT CAST(a AS INT) FROM foo",
+            "SELECT CAST(a AS INT64) FROM foo",
             write="bigquery",
         )
 
         self.validate(
-            "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            "SELECT CAST(a AS INT64) FROM foo",
+            "SELECT CAST(a AS BIGINT) FROM foo",
+            read="bigquery",
+            write="duckdb",
+        )
+
+        self.validate(
+            "SELECT CAST(a AS DECIMAL) FROM foo",
+            "SELECT CAST(a AS NUMERIC) FROM foo",
             write="bigquery",
         )
 
         self.validate(
-            "SELECT CAST(`a`.`b` AS BIGINT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            'SELECT CAST("a" AS DOUBLE) FROM foo',
+            "SELECT CAST(`a` AS FLOAT64) FROM foo",
             write="bigquery",
         )
 
         self.validate(
-            "SELECT CAST(`a`.`b` AS TINYINT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT64) FROM foo",
+            "[1, 2, 3]",
+            "[1, 2, 3]",
             write="bigquery",
         )
-
         self.validate(
-            "SELECT CAST(`a`.`b` AS DECIMAL) FROM foo",
-            "SELECT CAST(`a`.`b` AS NUMERIC) FROM foo",
+            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
+            "SELECT [1, 2, 3] AS y FROM foo",
+            read="spark",
             write="bigquery",
         )
-
         self.validate(
-            "SELECT CAST(`a`.`b` AS FLOAT) FROM foo",
-            "SELECT CAST(`a`.`b` AS FLOAT64) FROM foo",
-            write="bigquery",
+            "SELECT [1, 2, 3] AS y FROM foo",
+            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
+            read="bigquery",
+            write="spark",
         )
-
         self.validate(
-            "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
-            "SELECT CAST(`a`.`b` AS FLOAT64) FROM foo",
-            write="bigquery",
+            "SELECT * FROM UNNEST(['7', '14']) AS x",
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            read="bigquery",
+            write="presto",
         )
-
         self.validate(
-            "SELECT CAST(`a`.`b` AS BOOLEAN) FROM foo",
-            "SELECT CAST(`a`.`b` AS BOOL) FROM foo",
-            write="bigquery",
-        )
-
-        self.validate(
-            "SELECT CAST(`a`.`b` AS TEXT) FROM foo",
-            "SELECT CAST(`a`.`b` AS STRING) FROM foo",
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            "SELECT * FROM UNNEST(['7', '14']) AS x",
+            read="presto",
             write="bigquery",
         )
 

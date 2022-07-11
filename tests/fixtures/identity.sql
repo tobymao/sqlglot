@@ -46,6 +46,7 @@ a[0].b.c['d']
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1
+NOT x IS NULL
 ARRAY()
 ARRAY(1, 2)
 ARRAY_CONTAINS(x, 1)
@@ -55,6 +56,11 @@ POSEXPLODE("x") AS ("a", "b")
 POSEXPLODE("x") AS ("a", "b", "c")
 STR_POSITION(x, 'a')
 STR_POSITION(x, 'a', 3)
+SPLIT(SPLIT(referrer, 'utm_source=')[OFFSET(1)], "&")[OFFSET(0)]
+x[ORDINAL(1)][SAFE_OFFSET(2)]
+x LIKE SUBSTR('abc', 1, 1)
+x LIKE y
+x LIKE a.y
 x LIKE '%y%'
 x ILIKE '%y%'
 x LIKE '%y%' ESCAPE '\'
@@ -72,6 +78,10 @@ REGEXP_SPLIT('new york', '.')
 SPLIT('new york', '.')
 REPLACE(1)
 DATE(x) = DATE(y)
+TIMESTAMP(DATE(x))
+TIMESTAMP_TRUNC(COALESCE(time_field, CURRENT_TIMESTAMP()), DAY)
+TIMESTAMP_TRUNC(COALESCE(time_field, CURRENT_TIMESTAMP()), DAY)
+COUNT(DISTINCT CASE WHEN DATE_TRUNC(DATE(time_field), isoweek) = DATE_TRUNC(DATE(time_field2), isoweek) THEN report_id ELSE NULL END)
 x[y - 1]
 CASE WHEN SUM(x) > 3 THEN 1 END OVER(PARTITION BY x)
 SUM(ROW() OVER(PARTITION BY x))
@@ -112,6 +122,8 @@ SELECT 1 AS number FROM test
 SELECT t.count
 SELECT DISTINCT x FROM test
 SELECT DISTINCT x, y FROM test
+SELECT DISTINCT TIMESTAMP_TRUNC(time_field, MONTH) AS time_value FROM "table"
+SELECT TIMESTAMP(DATE_TRUNC(DATE(time_field), MONTH)) AS time_value FROM "table"
 SELECT GREATEST((3 + 1), LEAST(3, 4))
 SELECT TRANSFORM(a, b -> b) AS x
 SELECT AGGREGATE(a, (a, b) -> a + b) AS x
@@ -160,8 +172,8 @@ SELECT a FROM test WHERE a > (SELECT 1 FROM x GROUP BY y)
 SELECT a FROM test WHERE EXISTS(SELECT 1)
 SELECT a FROM test WHERE EXISTS(SELECT * FROM x UNION SELECT * FROM Y) OR TRUE
 SELECT a FROM test WHERE TRUE OR NOT EXISTS(SELECT * FROM x)
-SELECT a AS any, b AS some, c AS all, d AS exists FROM test WHERE a = ANY(SELECT 1)
-SELECT a FROM test WHERE a > ALL(SELECT 1)
+SELECT a AS any, b AS some, c AS all, d AS exists FROM test WHERE a = ANY (SELECT 1)
+SELECT a FROM test WHERE a > ALL (SELECT 1)
 SELECT a FROM test ORDER BY a
 SELECT a FROM test ORDER BY a, b
 SELECT x FROM tests ORDER BY a DESC, b DESC, c
@@ -263,6 +275,9 @@ SELECT * FROM (SELECT 1 UNION ALL SELECT 2)
 SELECT * FROM ((SELECT 1) AS a UNION ALL (SELECT 2) AS b)
 SELECT * FROM ((SELECT 1) AS a(b))
 SELECT * FROM x AS y(a, b)
+SELECT * EXCEPT (a, b)
+SELECT * REPLACE (a AS b, b AS C)
+SELECT * EXCEPT (a, b) REPLACE (a AS b, b AS C)
 SELECT zoo, animals FROM (VALUES ('oakland', ARRAY('a', 'b')), ('sf', ARRAY('b', 'c'))) AS t(zoo, animals)
 WITH a AS (SELECT 1) SELECT 1 UNION ALL SELECT 2
 WITH a AS (SELECT 1) SELECT 1 UNION SELECT 2

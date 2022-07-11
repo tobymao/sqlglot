@@ -454,9 +454,9 @@ class Generator:
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
     def join_sql(self, expression):
-        side = self.sql(expression, "side").upper()
-        kind = self.sql(expression, "kind").upper()
-        op_sql = self.seg(" ".join(op for op in (side, kind, "JOIN") if op))
+        op_sql = self.seg(
+            " ".join(op for op in (expression.side, expression.kind, "JOIN") if op)
+        )
         on_sql = self.sql(expression, "on")
         using = expression.args.get("using")
 
@@ -522,11 +522,25 @@ class Generator:
     def select_sql(self, expression):
         hint = self.sql(expression, "hint")
         distinct = " DISTINCT" if expression.args.get("distinct") else ""
+        except_ = expression.args.get("except")
+        except_ = (
+            f"{self.seg('EXCEPT')} ({csv(*(self.sql(e) for e in except_))})"
+            if except_
+            else ""
+        )
+        replace = expression.args.get("replace")
+        replace = (
+            f"{self.seg('REPLACE')} ({csv(*(self.sql(e) for e in replace))})"
+            if replace
+            else ""
+        )
         expressions = self.expressions(expression)
         select = "SELECT" if expressions else ""
         sep = self.sep() if expressions else ""
         sql = csv(
             f"{select}{hint}{distinct}{sep}{expressions}",
+            except_,
+            replace,
             self.sql(expression, "from"),
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
@@ -628,10 +642,10 @@ class Generator:
         return f"{self.sql(expression, 'this')}[{expressions}]"
 
     def all_sql(self, expression):
-        return f"ALL{self.wrap(expression)}"
+        return f"ALL {self.wrap(expression)}"
 
     def any_sql(self, expression):
-        return f"ANY{self.wrap(expression)}"
+        return f"ANY {self.wrap(expression)}"
 
     def exists_sql(self, expression):
         return f"EXISTS{self.wrap(expression)}"

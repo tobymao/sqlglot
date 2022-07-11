@@ -56,7 +56,6 @@ class Parser:
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
-        TokenType.DATE,
         TokenType.MAP,
     }
 
@@ -116,12 +115,16 @@ class Parser:
 
     FUNC_TOKENS = {
         TokenType.EXTRACT,
+        TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,
         TokenType.RIGHT,
+        TokenType.DATE,
+        TokenType.TIMESTAMP,
+        TokenType.TIMESTAMPTZ,
         *CASTS,
         *NESTED_TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
@@ -135,7 +138,6 @@ class Parser:
     EQUALITY = {
         TokenType.EQ: exp.EQ,
         TokenType.NEQ: exp.NEQ,
-        TokenType.IS: exp.Is,
     }
 
     COMPARISON = {
@@ -795,6 +797,8 @@ class Parser:
                 distinct=distinct,
                 expressions=expressions,
                 **{
+                    "except": self._parse_except(),
+                    "replace": self._parse_replace(),
                     "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
                     "joins": self._parse_joins(),
@@ -809,6 +813,25 @@ class Parser:
             )
 
         return self._parse_set_operations(this)
+
+    def _parse_except(self):
+        index = self._index
+
+        if not self._match(TokenType.EXCEPT) or not self._match(TokenType.L_PAREN):
+            self._retreat(index)
+            return None
+
+        columns = self._parse_csv(self._parse_id_var)
+        self._match_r_paren()
+        return columns
+
+    def _parse_replace(self):
+        if not self._match(TokenType.REPLACE):
+            return None
+        self._match_l_paren()
+        columns = self._parse_csv(lambda: self._parse_alias(self._parse_id_var()))
+        self._match_r_paren()
+        return columns
 
     def _parse_annotation(self, expression):
         if self._match(TokenType.ANNOTATION):
@@ -929,7 +952,7 @@ class Parser:
             return None
 
         self._match_l_paren()
-        expressions = self._parse_csv(self._parse_table)
+        expressions = self._parse_csv(self._parse_column)
         self._match_r_paren()
 
         ordinality = self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY)
@@ -1075,20 +1098,22 @@ class Parser:
 
     def _parse_range(self):
         this = self._parse_bitwise()
-
         negate = self._match(TokenType.NOT)
 
-        if self._match(TokenType.LIKE):
+        if self._match(TokenType.IS):
+            negate = self._match(TokenType.NOT)
+            this = self.expression(exp.Is, this=this, expression=self._parse_null())
+        elif self._match(TokenType.LIKE):
             this = self._parse_escape(
-                self.expression(exp.Like, this=this, expression=self._parse_term())
+                self.expression(exp.Like, this=this, expression=self._parse_type())
             )
         elif self._match(TokenType.ILIKE):
             this = self._parse_escape(
-                self.expression(exp.ILike, this=this, expression=self._parse_term())
+                self.expression(exp.ILike, this=this, expression=self._parse_type())
             )
         elif self._match(TokenType.RLIKE):
             this = self.expression(
-                exp.RegexpLike, this=this, expression=self._parse_term()
+                exp.RegexpLike, this=this, expression=self._parse_type()
             )
         elif self._match(TokenType.IN):
             self._match_l_paren()
@@ -1129,7 +1154,7 @@ class Parser:
 
     def _parse_unary(self):
         if self._match(TokenType.NOT):
-            return self.expression(exp.Not, this=self._parse_unary())
+            return self.expression(exp.Not, this=self._parse_equality())
         if self._match(TokenType.TILDA):
             return self.expression(exp.BitwiseNot, this=self._parse_unary())
         if self._match(TokenType.DASH):
@@ -1179,7 +1204,7 @@ class Parser:
                 self._parse_types if nested else self._parse_number
             )
 
-            if nested and not expressions:
+            if not expressions:
                 self._retreat(index)
                 return None
 
@@ -1412,7 +1437,7 @@ class Parser:
 
         expressions = self._parse_csv(self._parse_conjunction)
 
-        if this.text("this").upper() == "ARRAY":
+        if not this or this.text("this").upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:
             expressions = apply_index_offset(expressions, -self.index_offset)

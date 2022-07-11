@@ -43,8 +43,8 @@ class TestExecutor(unittest.TestCase):
             if "_col_" in column:
                 source.rename(columns={column: target.columns[i]}, inplace=True)
 
-    def test_optimize_tpch(self):
-        for sql, optimized in self.sqls:
+    def test_optimized_tpch(self):
+        for sql, optimized in self.sqls[0:20]:
             a = self.cached_execute(sql)
             b = self.conn.execute(optimized).fetchdf()
             self.rename_anonymous(b, a)

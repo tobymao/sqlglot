@@ -308,25 +308,29 @@ class TestDialects(unittest.TestCase):
         )
 
     def test_bigquery(self):
+        # self.validate(
+        #    '"""x"""',
+        #    "'x'",
+        #    read="bigquery",
+        #    write="presto",
+        # )
+
         self.validate(
             "SELECT CAST(a AS INT) FROM foo",
             "SELECT CAST(a AS INT64) FROM foo",
             write="bigquery",
         )
-
         self.validate(
             "SELECT CAST(a AS INT64) FROM foo",
             "SELECT CAST(a AS BIGINT) FROM foo",
             read="bigquery",
             write="duckdb",
         )
-
         self.validate(
             "SELECT CAST(a AS DECIMAL) FROM foo",
             "SELECT CAST(a AS NUMERIC) FROM foo",
             write="bigquery",
         )
-
         self.validate(
             'SELECT CAST("a" AS DOUBLE) FROM foo',
             "SELECT CAST(`a` AS FLOAT64) FROM foo",
@@ -373,6 +377,13 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "CREATE TABLE x (a BYTEA)",
             "CREATE TABLE x (a BINARY)",
+            read="postgres",
+            write="hive",
+        )
+
+        self.validate(
+            "CREATE TABLE x (a UUID)",
+            "CREATE TABLE x (a UUID)",
             read="postgres",
             write="hive",
         )
@@ -1446,6 +1457,17 @@ class TestDialects(unittest.TestCase):
             read="snowflake",
         )
 
+        self.validate(
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
+            read="snowflake",
+        )
+
     def test_sqlite(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
@@ -1508,6 +1530,6 @@ class TestDialects(unittest.TestCase):
     def test_trino(self):
         self.validate(
             "ARRAY_SUM(ARRAY(1, 2))",
-            "REDUCE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
+            "REDUCE(ARRAY[1, 2], 0, (acc, x) -> acc + x, acc -> acc)",
             write="trino",
         )

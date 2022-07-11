@@ -276,6 +276,7 @@ SELECT * FROM x AS y(a, b)
 SELECT * EXCEPT (a, b)
 SELECT * REPLACE (a AS b, b AS C)
 SELECT * EXCEPT (a, b) REPLACE (a AS b, b AS C)
+SELECT a.* EXCEPT (a, b), b.* REPLACE (a AS b, b AS C)
 SELECT zoo, animals FROM (VALUES ('oakland', ARRAY('a', 'b')), ('sf', ARRAY('b', 'c'))) AS t(zoo, animals)
 WITH a AS (SELECT 1) SELECT 1 UNION ALL SELECT 2
 WITH a AS (SELECT 1) SELECT 1 UNION SELECT 2

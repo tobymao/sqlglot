@@ -849,8 +849,6 @@ class Select(Subqueryable, Expression):
         "expressions": False,
         "hint": False,
         "distinct": False,
-        "except": False,
-        "replace": False,
         "from": False,
         "laterals": False,
         "joins": False,
@@ -1346,6 +1344,14 @@ class Star(Expression):
     @property
     def name(self):
         return "*"
+
+
+class StarExcept(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
+class StarReplace(Expression):
+    arg_types = {"this": True, "expressions": True}
 
 
 class Null(Condition):

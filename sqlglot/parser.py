@@ -15,9 +15,6 @@ class Parser:
     and produces a parsed syntax tree.
 
     Args
-        functions (dict): the dictionary of additional functions in which the key
-            represents a function's SQL name and the value is a function which constructs
-            the function instance from a list of arguments.
         error_level (ErrorLevel): the desired error level. Default: ErrorLevel.RAISE.
         error_message_context (int): determines the amount of context to capture from
             a query string when displaying the error message (in number of characters).
@@ -191,15 +188,11 @@ class Parser:
         TokenType.CROSS,
     }
 
-    COLUMN_OPERATORS = {
-        TokenType.COLON,
-        TokenType.DOT,
-    }
+    COLUMN_OPERATORS = {TokenType.DOT}
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     __slots__ = (
-        "functions",
         "error_level",
         "error_message_context",
         "sql",
@@ -216,13 +209,11 @@ class Parser:
 
     def __init__(
         self,
-        functions=None,
         error_level=None,
         error_message_context=100,
         index_offset=0,
         strict_cast=True,
     ):
-        self.functions = {**self.FUNCTIONS, **(functions or {})}
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
@@ -1329,7 +1320,7 @@ class Parser:
                 self._match_r_paren()
                 return this
 
-            function = self.functions.get(this)
+            function = self.FUNCTIONS.get(this)
             args = self._parse_csv(self._parse_lambda)
 
             if not callable(function):

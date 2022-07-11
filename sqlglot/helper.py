@@ -14,23 +14,6 @@ class AutoName(Enum):
         return name
 
 
-class RegisteringMeta(type):
-    classes = {}
-
-    @classmethod
-    def __getitem__(cls, key):
-        return cls.classes[key]
-
-    @classmethod
-    def get(cls, key, default):
-        return cls.classes.get(key, default)
-
-    def __new__(cls, clsname, bases, attrs):
-        clazz = super().__new__(cls, clsname, bases, attrs)
-        cls.classes[clsname.lower()] = clazz
-        return clazz
-
-
 def list_get(arr, index):
     try:
         return arr[index]

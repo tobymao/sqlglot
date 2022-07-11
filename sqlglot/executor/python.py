@@ -7,6 +7,7 @@ from sqlglot.dialects import Dialect
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
+from sqlglot.generator import Generator
 from sqlglot.helper import csv_reader
 
 
@@ -287,54 +288,58 @@ class PythonExecutor:
         return self.scan(step, context)
 
 
+# pylint: disable=no-member
+def _cast_py(self, expression):
+    to = expression.args["to"].this
+    this = self.sql(expression, "this")
+
+    if to == exp.DataType.Type.DATE:
+        return f"datetime.date.fromisoformat({this})"
+    if to == exp.DataType.Type.TEXT:
+        return f"str({this})"
+    raise NotImplementedError
+
+
+def _column_py(self, expression):
+    table = self.sql(expression, "table")
+    this = self.sql(expression, "this")
+    return f"scope[{table}][{this}]"
+
+
+def _interval_py(self, expression):
+    this = self.sql(expression, "this")
+    unit = expression.text("unit").upper()
+    if unit == "DAY":
+        return f"datetime.timedelta(days=float({this}))"
+    raise NotImplementedError
+
+
+def _like_py(self, expression):
+    this = self.sql(expression, "this")
+    expression = self.sql(expression, "expression")
+    return f"""re.match({expression}.replace("_", ".").replace("%", ".*"), {this})"""
+
+
+def _ordered_py(self, expression):
+    this = self.sql(expression, "this")
+    desc = expression.args.get("desc")
+    return f"desc({this})" if desc else this
+
+
 class Python(Dialect):
-    # pylint: disable=no-member
-    def _cast_py(self, expression):
-        to = expression.args["to"].this
-        this = self.sql(expression, "this")
-
-        if to == exp.DataType.Type.DATE:
-            return f"datetime.date.fromisoformat({this})"
-        if to == exp.DataType.Type.TEXT:
-            return f"str({this})"
-        raise NotImplementedError
-
-    def _column_py(self, expression):
-        table = self.sql(expression, "table")
-        this = self.sql(expression, "this")
-        return f"scope[{table}][{this}]"
-
-    def _interval_py(self, expression):
-        this = self.sql(expression, "this")
-        unit = expression.text("unit").upper()
-        if unit == "DAY":
-            return f"datetime.timedelta(days=float({this}))"
-        raise NotImplementedError
-
-    def _like_py(self, expression):
-        this = self.sql(expression, "this")
-        expression = self.sql(expression, "expression")
-        return (
-            f"""re.match({expression}.replace("_", ".").replace("%", ".*"), {this})"""
-        )
-
-    def _ordered_py(self, expression):
-        this = self.sql(expression, "this")
-        desc = expression.args.get("desc")
-        return f"desc({this})" if desc else this
-
-    transforms = {
-        exp.Alias: lambda self, e: self.sql(e.this),
-        exp.And: lambda self, e: self.binary(e, "and"),
-        exp.Cast: _cast_py,
-        exp.Column: _column_py,
-        exp.EQ: lambda self, e: self.binary(e, "=="),
-        exp.Interval: _interval_py,
-        exp.Is: lambda self, e: self.binary(e, "is"),
-        exp.Like: _like_py,
-        exp.Not: lambda self, e: f"not {self.sql(e.this)}",
-        exp.Null: lambda *_: "None",
-        exp.Or: lambda self, e: self.binary(e, "or"),
-        exp.Ordered: _ordered_py,
-        exp.Star: lambda *_: "1",
-    }
+    class Generator(Generator):
+        TRANSFORMS = {
+            exp.Alias: lambda self, e: self.sql(e.this),
+            exp.And: lambda self, e: self.binary(e, "and"),
+            exp.Cast: _cast_py,
+            exp.Column: _column_py,
+            exp.EQ: lambda self, e: self.binary(e, "=="),
+            exp.Interval: _interval_py,
+            exp.Is: lambda self, e: self.binary(e, "is"),
+            exp.Like: _like_py,
+            exp.Not: lambda self, e: f"not {self.sql(e.this)}",
+            exp.Null: lambda *_: "None",
+            exp.Or: lambda self, e: self.binary(e, "or"),
+            exp.Ordered: _ordered_py,
+            exp.Star: lambda *_: "1",
+        }

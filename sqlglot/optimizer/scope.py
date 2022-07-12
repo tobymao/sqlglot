@@ -87,7 +87,11 @@ class Scope:
         for node, *_ in _walk_next_scope(self.expression):
             if node is self.expression:
                 continue
-            if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
+            if (
+                isinstance(node, exp.Column)
+                and not isinstance(node.this, exp.Star)
+                and not isinstance(node.this, exp.StarExcept)
+            ):
                 self._raw_columns.append(node)
             elif isinstance(node, exp.Table):
                 self._tables.append(node)

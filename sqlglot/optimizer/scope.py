@@ -1,7 +1,7 @@
 from copy import copy
 from enum import Enum, auto
 
-from sqlglot import expressions as exp
+from sqlglot import exp
 from sqlglot.errors import OptimizeError
 
 
@@ -52,7 +52,17 @@ class Scope:
         self.scope_type = scope_type
         self.subquery_scopes = []
         self.union = None
+
+        self._collected = False
+        self._raw_columns = None
+        self._derived_tables = None
+        self._tables = None
+        self._ctes = None
+        self._subqueries = None
+
         self._selected_sources = None
+        self._columns = None
+        self._external_columns = None
 
     def branch(self, expression, scope_type, add_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
@@ -67,12 +77,34 @@ class Scope:
             **kwargs,
         )
 
-    def _find_in_scope(self, predicate):
-        return [
-            node
-            for node, *_ in _bfs_until_next_scope(self.expression)
-            if node is not self.expression and predicate(node)
-        ]
+    def _collect(self):
+        self._tables = []
+        self._ctes = []
+        self._subqueries = []
+        self._derived_tables = []
+        self._raw_columns = []
+
+        for node, *_ in _walk_next_scope(self.expression):
+            if node is self.expression:
+                continue
+            if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
+                self._raw_columns.append(node)
+            elif isinstance(node, exp.Table):
+                self._tables.append(node)
+            elif isinstance(node, exp.CTE):
+                self._ctes.append(node)
+            elif isinstance(node, exp.Subquery):
+                self._derived_tables.append(node)
+            elif isinstance(node, exp.Subqueryable) and not isinstance(
+                node.parent, (exp.CTE, exp.Subquery)
+            ):
+                self._subqueries.append(node)
+
+        self._collected = True
+
+    def _ensure_collected(self):
+        if not self._collected:
+            self._collect()
 
     @property
     def tables(self):
@@ -82,7 +114,8 @@ class Scope:
         Returns:
             list[exp.Table]: tables
         """
-        return self._find_in_scope(lambda n: isinstance(n, exp.Table))
+        self._ensure_collected()
+        return self._tables
 
     @property
     def ctes(self):
@@ -92,7 +125,8 @@ class Scope:
         Returns:
             list[exp.CTE]: ctes
         """
-        return self._find_in_scope(lambda n: isinstance(n, exp.CTE))
+        self._ensure_collected()
+        return self._ctes
 
     @property
     def derived_tables(self):
@@ -105,7 +139,8 @@ class Scope:
         Returns:
             list[exp.Subquery]: derived tables
         """
-        return self._find_in_scope(lambda n: isinstance(n, exp.Subquery))
+        self._ensure_collected()
+        return self._derived_tables
 
     @property
     def subqueries(self):
@@ -118,10 +153,8 @@ class Scope:
         Returns:
             list[exp.Subqueryable]: subqueries
         """
-        return self._find_in_scope(
-            lambda n: isinstance(n, exp.Subqueryable)
-            and not isinstance(n.parent, (exp.CTE, exp.Subquery))
-        )
+        self._ensure_collected()
+        return self._subqueries
 
     @property
     def columns(self):
@@ -132,21 +165,33 @@ class Scope:
             list[exp.Column]: Column instances in this scope, plus any
                 Columns that reference this scope from correlated subqueries.
         """
-        columns = self._find_in_scope(
-            lambda n: isinstance(n, exp.Column) and not isinstance(n.this, exp.Star)
-        )
+        if self._columns is None:
+            self._ensure_collected()
+            columns = self._raw_columns
 
-        external_columns = [
-            column
-            for scope in self.subquery_scopes
-            for column in scope.external_columns
-        ]
+            external_columns = [
+                column
+                for scope in self.subquery_scopes
+                for column in scope.external_columns
+            ]
 
-        return [
-            c
-            for c in columns + external_columns
-            if not self._is_reference_to_named_select(c)
-        ]
+            # Expression.named_selects also includes unaliased columns.
+            # In this case, we want to be sure to only include selects that are aliased.
+            aliased_outputs = {
+                e.alias
+                for e in self.expression.args.get("expressions", [])
+                if isinstance(e, exp.Alias)
+            }
+
+            self._columns = [
+                c
+                for c in columns + external_columns
+                if c.table
+                or not (
+                    c.find_ancestor(exp.Group, exp.Order) and c.name in aliased_outputs
+                )
+            ]
+        return self._columns
 
     @property
     def selected_sources(self):
@@ -209,7 +254,11 @@ class Scope:
             list[exp.Column]: Column instances that don't reference
                 sources in the current scope.
         """
-        return [c for c in self.columns if c.table not in self.selected_sources]
+        if self._external_columns is None:
+            self._external_columns = [
+                c for c in self.columns if c.table not in self.selected_sources
+            ]
+        return self._external_columns
 
     def source_columns(self, source_name):
         """
@@ -236,25 +285,6 @@ class Scope:
         """Rename a source in this scope"""
         columns = self.sources.pop(old_name or "", [])
         self.sources[new_name] = columns
-
-    def _is_reference_to_named_select(self, column):
-        """Determine if column is a reference to a SELECT output column"""
-        table_name = column.table
-        column_name = column.name
-
-        # Expression.named_selects also includes unaliased columns.
-        # In this case, we want to be sure to only include selects that are aliased.
-        aliased_outputs = {
-            e.alias
-            for e in self.expression.args.get("expressions", [])
-            if isinstance(e, exp.Alias)
-        }
-
-        return (
-            not table_name
-            and column.find_ancestor(exp.Group, exp.Order)
-            and column_name in aliased_outputs
-        )
 
 
 def traverse_scope(expression):
@@ -380,12 +410,12 @@ def _traverse_subqueries(scope):
         scope.subquery_scopes.append(top)
 
 
-def _bfs_until_next_scope(expression):
+def _walk_next_scope(expression):
     """
-    Walk the expression tree in BFS order yielding all nodes until a Select or Union instance is found.
+    Walk the expression tree in DFS order yielding all nodes until a Select or Union instance is found.
 
     This will yield the Select or Union node itself, but it won't recurse any further.
     """
-    yield from expression.bfs(
+    yield from expression.dfs(
         prune=lambda n, *_: isinstance(n, exp.Subqueryable) and n is not expression
     )

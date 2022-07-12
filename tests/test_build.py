@@ -1,7 +1,6 @@
 import unittest
 
-from sqlglot import parse_one, select, from_, and_, or_, condition, not_
-from sqlglot import expressions as exp
+from sqlglot import parse_one, select, from_, and_, or_, condition, not_, exp
 
 
 class TestBuild(unittest.TestCase):

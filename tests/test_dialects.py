@@ -270,6 +270,19 @@ class TestDialects(unittest.TestCase):
             read="duckdb",
             write="presto",
         )
+        self.validate(
+            "ARRAY_SUM(ARRAY(1, 2))",
+            "LIST_SUM(LIST_VALUE(1, 2))",
+            read="spark",
+            write="duckdb",
+        )
+
+        self.validate(
+            "SAFE_DIVIDE(x, y)",
+            "IF(y <> 0, x / y, NULL)",
+            read="bigquery",
+            write="duckdb",
+        )
 
     def test_mysql(self):
         self.validate(
@@ -301,6 +314,73 @@ class TestDialects(unittest.TestCase):
             write="starrocks",
         )
 
+    def test_bigquery(self):
+        self.validate(
+            '"""x"""',
+            "'x'",
+            read="bigquery",
+            write="presto",
+        )
+
+        self.validate(
+            '"""x\'"""',
+            "'x'''",
+            read="bigquery",
+            write="presto",
+        )
+
+        self.validate(
+            "SELECT CAST(a AS INT) FROM foo",
+            "SELECT CAST(a AS INT64) FROM foo",
+            write="bigquery",
+        )
+        self.validate(
+            "SELECT CAST(a AS INT64) FROM foo",
+            "SELECT CAST(a AS BIGINT) FROM foo",
+            read="bigquery",
+            write="duckdb",
+        )
+        self.validate(
+            "SELECT CAST(a AS DECIMAL) FROM foo",
+            "SELECT CAST(a AS NUMERIC) FROM foo",
+            write="bigquery",
+        )
+        self.validate(
+            'SELECT CAST("a" AS DOUBLE) FROM foo',
+            "SELECT CAST(`a` AS FLOAT64) FROM foo",
+            write="bigquery",
+        )
+
+        self.validate(
+            "[1, 2, 3]",
+            "[1, 2, 3]",
+            write="bigquery",
+        )
+        self.validate(
+            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
+            "SELECT [1, 2, 3] AS y FROM foo",
+            read="spark",
+            write="bigquery",
+        )
+        self.validate(
+            "SELECT [1, 2, 3] AS y FROM foo",
+            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
+            read="bigquery",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM UNNEST(['7', '14']) AS x",
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            read="bigquery",
+            write="presto",
+        )
+        self.validate(
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            "SELECT * FROM UNNEST(['7', '14']) AS x",
+            read="presto",
+            write="bigquery",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
@@ -314,6 +394,34 @@ class TestDialects(unittest.TestCase):
             read="postgres",
             write="hive",
         )
+
+        self.validate(
+            "CREATE TABLE x (a UUID)",
+            "CREATE TABLE x (a UUID)",
+            read="postgres",
+            write="hive",
+        )
+
+        self.validate(
+            "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
+            "CURRENT_DATE - INTERVAL '1' DAY",
+            read="bigquery",
+            write="postgres",
+        )
+
+        self.validate(
+            "DATE_ADD(CURRENT_DATE(), INTERVAL 1 + 3 DAY)",
+            "CURRENT_DATE + INTERVAL '4' DAY",
+            read="bigquery",
+            write="postgres",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "DATE_ADD(x, y, 'day')",
+                write="postgres",
+                unsupported_level=ErrorLevel.RAISE,
+            )
 
     def test_presto(self):
         self.validate(
@@ -667,6 +775,54 @@ class TestDialects(unittest.TestCase):
 
         self.validate("'\u6bdb'", "'\u6bdb'", read="presto")
 
+        self.validate(
+            "SELECT ARRAY_SORT(x)",
+            "SELECT ARRAY_SORT(x)",
+            read="presto",
+        )
+
+        self.validate(
+            "SELECT ARRAY_SORT(x)",
+            "SELECT SORT_ARRAY(x)",
+            read="presto",
+            write="hive",
+        )
+
+        self.validate(
+            "SELECT SORT_ARRAY(x)",
+            "SELECT ARRAY_SORT(x)",
+            read="hive",
+            write="presto",
+        )
+
+        self.validate(
+            "SELECT SORT_ARRAY(x, False)",
+            "SELECT ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
+            read="hive",
+            write="presto",
+        )
+
+        self.validate(
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            read="presto",
+            write="spark",
+        )
+        self.validate(
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+            read="spark",
+            write="presto",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+                read="presto",
+                write="hive",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT * FROM x TABLESAMPLE(10)",
@@ -915,6 +1071,11 @@ class TestDialects(unittest.TestCase):
         self.validate("x div y", "CAST(x / y AS INTEGER)", read="hive", write="presto")
 
         self.validate(
+            "DATE_STR_TO_DATE(x)",
+            "TO_DATE(x)",
+            write="hive",
+        )
+        self.validate(
             "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd')",
             "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
             write="hive",
@@ -1037,12 +1198,12 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TIME_STR_TO_TIME(x)",
-            "x",
+            "CAST(x AS TIMESTAMP)",
             write="hive",
         )
         self.validate(
             "TIME_TO_TIME_STR(x)",
-            "x",
+            "CAST(x AS STRING)",
             write="hive",
         )
         self.validate(
@@ -1244,6 +1405,16 @@ class TestDialects(unittest.TestCase):
             read="spark",
             write="presto",
         )
+        self.validate(
+            "ARRAY_SUM(ARRAY(1, 2))",
+            "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
+            write="spark",
+        )
+        self.validate(
+            "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+            "AGGREGATE(x, 0, (acc, x) -> acc + x, (acc) -> acc)",
+            write="spark",
+        )
 
         with self.assertRaises(UnsupportedError):
             transpile(
@@ -1289,10 +1460,46 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "SELECT SORT_ARRAY(x, FALSE)",
+            "SELECT SORT_ARRAY(x, FALSE)",
+            read="hive",
+            write="spark",
+        )
+        self.validate(
+            "SELECT SORT_ARRAY(x, TRUE)",
+            "SELECT SORT_ARRAY(x, TRUE)",
+            read="hive",
+            write="spark",
+        )
+        self.validate(
+            "SELECT SORT_ARRAY(x, TRUE)",
+            "SELECT SORT_ARRAY(x, TRUE)",
+            read="spark",
+            write="hive",
+        )
+        self.validate(
+            "SELECT ARRAY_SORT(x)",
+            "SELECT SORT_ARRAY(x)",
+            read="spark",
+            write="hive",
+        )
+
     def test_snowflake(self):
         self.validate(
             'x:a:"b c"',
             "x['a']['b c']",
+            read="snowflake",
+        )
+
+        self.validate(
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
             read="snowflake",
         )
 
@@ -1353,4 +1560,11 @@ class TestDialects(unittest.TestCase):
             "COUNT(DISTINCT x)",
             "COUNTD(x)",
             write="tableau",
+        )
+
+    def test_trino(self):
+        self.validate(
+            "ARRAY_SUM(ARRAY(1, 2))",
+            "REDUCE(ARRAY[1, 2], 0, (acc, x) -> acc + x, acc -> acc)",
+            write="trino",
         )

@@ -17,7 +17,7 @@ class Expression:
         arg_types (dict): determines arguments supported by this expression.
             The key in a dictionary defines a unique key of an argument using
             which the argument's value can be retrieved. The value is a boolean
-            flag which indiciates whether the argument's value is required (True)
+            flag which indicates whether the argument's value is required (True)
             or optional (False).
     """
 
@@ -27,7 +27,7 @@ class Expression:
     def __init__(self, **args):
         self.key = self.__class__.__name__.lower()
         self.args = args
-        self._set_parent(**args)
+        self._set_parent(args)
         self.parent = None
         self.arg_key = None
 
@@ -90,9 +90,9 @@ class Expression:
             value: value to set the arg to.
         """
         self.args[arg] = value
-        self._set_parent(arg=value)
+        self._set_parent({arg: value})
 
-    def _set_parent(self, **kwargs):
+    def _set_parent(self, kwargs):
         for arg_key, node in kwargs.items():
             for v in ensure_list(node):
                 if isinstance(v, Expression):
@@ -114,7 +114,7 @@ class Expression:
         the specified types.
 
         Args:
-            expression_types (type): the expression type to match.
+            expression_types (type): the expression type(s) to match.
 
         Returns:
             the node which matches the criteria or None if no node matching
@@ -128,7 +128,7 @@ class Expression:
         yields those that match at least one of the specified expression types.
 
         Args:
-            expression_types (type): the expression type to match.
+            expression_types (type): the expression type(s) to match.
 
         Returns:
             the generator object.
@@ -138,10 +138,26 @@ class Expression:
                 yield expression
 
     def find_ancestor(self, *expression_types):
+        """
+        Returns a nearest parent matching expression_types.
+
+        Args:
+            expression_types (type): the expression type(s) to match.
+
+        Returns:
+            the parent node
+        """
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
         return ancestor
+
+    @property
+    def parent_select(self):
+        """
+        Returns the parent select statement.
+        """
+        return self.find_ancestor(Select)
 
     def walk(self, bfs=True):
         """
@@ -157,7 +173,7 @@ class Expression:
         if bfs:
             yield from self.bfs()
         else:
-            yield from self.dfs(self.parent)
+            yield from self.dfs()
 
     def dfs(self, parent=None, key=None, prune=None):
         """
@@ -167,6 +183,7 @@ class Expression:
         Returns:
             the generator object.
         """
+        parent = parent or self.parent
         yield self, parent, key
         if prune and prune(self, parent, key):
             return
@@ -214,11 +231,11 @@ class Expression:
 
     def unnest_operands(self):
         """
-        Returns unnested operands as a list.
+        Returns unnested operands as a tuple.
         """
-        return [arg.unnest() for arg in self.args.values() if arg]
+        return tuple(arg.unnest() for arg in self.args.values() if arg)
 
-    def flatten(self):
+    def flatten(self, unnest=True):
         """
         Returns a generator which yields child nodes who's parents are the same class.
 
@@ -228,7 +245,7 @@ class Expression:
             prune=lambda n, p, *_: p and not isinstance(n, self.__class__)
         ):
             if not isinstance(node, self.__class__):
-                yield node.unnest()
+                yield node.unnest() if unnest else node
 
     def __str__(self):
         return self.sql()
@@ -304,7 +321,7 @@ class Expression:
         )
         return new_node
 
-    def replace(self, *expressions):
+    def replace(self, expression):
         """
         Swap out this expression with a new expression.
 
@@ -312,19 +329,24 @@ class Expression:
 
             >>> tree = Select().select("x").from_("tbl")
             >>> tree.find(Column).replace(Column(this="y"))
+            (COLUMN this: y)
             >>> tree.sql()
             'SELECT y FROM tbl'
 
         Args:
             expression (Expression): new node
+
+        Returns :
+            the new expression or expressions
         """
         if not self.parent:
-            return
+            return expression
 
         parent = self.parent
         self.parent = None
 
-        replace_children(parent, lambda child: expressions if child is self else child)
+        replace_children(parent, lambda child: expression if child is self else child)
+        return expression
 
     def assert_is(self, type_):
         """
@@ -395,6 +417,10 @@ class Condition(Expression):
             Not: the new condition.
         """
         return not_(self)
+
+
+class Predicate(Condition):
+    """Relationships like x = y, x > 1, x >= y."""
 
 
 class DerivedTable:
@@ -495,10 +521,6 @@ class Drop(Expression):
     arg_types = {"this": False, "kind": False, "exists": False}
 
 
-class Exists(Expression):
-    pass
-
-
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}
 
@@ -573,7 +595,7 @@ class Literal(Condition):
 
     @classmethod
     def string(cls, string):
-        return cls(this=string, is_string=True)
+        return cls(this=str(string), is_string=True)
 
     @property
     def is_string(self):
@@ -585,11 +607,21 @@ class Literal(Condition):
 
 
 class Join(Expression):
-    arg_types = {"this": True, "on": False, "side": False, "kind": False}
+    arg_types = {
+        "this": True,
+        "on": False,
+        "side": False,
+        "kind": False,
+        "using": False,
+    }
 
     @property
     def kind(self):
         return self.text("kind").upper()
+
+    @property
+    def side(self):
+        return self.text("side").upper()
 
     def on(self, *expressions, append=True, dialect=None, parser_opts=None, copy=True):
         """
@@ -1109,12 +1141,10 @@ class Select(Subqueryable, Expression):
         except ParseError:
             expression = _maybe_parse(expression, into=(Join, Expression), **parse_args)
 
-        if isinstance(expression, Join):
-            join = expression
-        else:
-            if isinstance(expression, Select):
-                expression = expression.subquery()
-            join = Join(this=expression)
+        join = expression if isinstance(expression, Join) else Join(this=expression)
+
+        if isinstance(join.this, Select):
+            join.this.replace(join.this.subquery())
 
         if join_type:
             side, kind = _maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
@@ -1318,6 +1348,14 @@ class Star(Expression):
 
 class Placeholder(Expression):
     arg_types = {}
+    
+
+class StarExcept(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
+class StarReplace(Expression):
+    arg_types = {"this": True, "expressions": True}
 
 
 class Null(Condition):
@@ -1332,7 +1370,7 @@ class DataType(Expression):
     arg_types = {
         "this": True,
         "expressions": False,
-        "nested": True,
+        "nested": False,
     }
 
     class Type(AutoName):
@@ -1355,6 +1393,32 @@ class DataType(Expression):
         ARRAY = auto()
         MAP = auto()
         UUID = auto()
+
+    @classmethod
+    def build(cls, dtype, **kwargs):
+        return DataType(
+            this=dtype
+            if isinstance(dtype, DataType.Type)
+            else DataType.Type[dtype.upper()],
+            **kwargs,
+        )
+
+
+# WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
+class SubqueryPredicate(Predicate):
+    pass
+
+
+class All(SubqueryPredicate):
+    pass
+
+
+class Any(SubqueryPredicate):
+    pass
+
+
+class Exists(SubqueryPredicate):
+    pass
 
 
 # Commands to interact with the databases or engines
@@ -1427,7 +1491,7 @@ class DPipe(Binary):
     pass
 
 
-class EQ(Binary, Condition):
+class EQ(Binary, Predicate):
     pass
 
 
@@ -1435,15 +1499,15 @@ class Escape(Binary):
     pass
 
 
-class GT(Binary, Condition):
+class GT(Binary, Predicate):
     pass
 
 
-class GTE(Binary, Condition):
+class GTE(Binary, Predicate):
     pass
 
 
-class ILike(Binary, Condition):
+class ILike(Binary, Predicate):
     pass
 
 
@@ -1451,19 +1515,19 @@ class IntDiv(Binary):
     pass
 
 
-class Is(Binary, Condition):
+class Is(Binary, Predicate):
     pass
 
 
-class Like(Binary, Condition):
+class Like(Binary, Predicate):
     pass
 
 
-class LT(Binary, Condition):
+class LT(Binary, Predicate):
     pass
 
 
-class LTE(Binary, Condition):
+class LTE(Binary, Predicate):
     pass
 
 
@@ -1475,7 +1539,7 @@ class Mul(Binary):
     pass
 
 
-class NEQ(Binary, Condition):
+class NEQ(Binary, Predicate):
     pass
 
 
@@ -1518,7 +1582,11 @@ class Aliases(Expression):
         return self.args["expressions"]
 
 
-class Between(Condition):
+class AtTimeZone(Expression):
+    arg_types = {"this": True, "zone": True}
+
+
+class Between(Predicate):
     arg_types = {"this": True, "low": True, "high": True}
 
 
@@ -1534,20 +1602,24 @@ class Cast(Expression):
     arg_types = {"this": True, "to": True}
 
 
-class Decimal(Expression):
-    arg_types = {"precision": False, "scale": False}
+class Distinct(Expression):
+    pass
 
 
 class Extract(Expression):
     arg_types = {"this": True, "expression": True}
 
 
-class In(Condition):
+class In(Predicate):
     arg_types = {"this": True, "expressions": False, "query": False}
 
 
 class Interval(Expression):
-    arg_types = {"this": True, "unit": True}
+    arg_types = {"this": True, "unit": False}
+
+
+class IgnoreNulls(Expression):
+    pass
 
 
 class TryCast(Cast):
@@ -1641,11 +1713,31 @@ class ArrayAgg(AggFunc):
     pass
 
 
+class ArrayAll(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class ArrayAny(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ArrayContains(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class ArrayFilter(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ArraySize(Func):
+    pass
+
+
+class ArraySort(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArraySum(Func):
     pass
 
 
@@ -1668,7 +1760,11 @@ class ConcatWs(Func):
 
 
 class Count(AggFunc):
-    arg_types = {"this": False, "distinct": False}
+    pass
+
+
+class CurrentDate(Func):
+    arg_types = {"this": False}
 
 
 class DateAdd(Func):
@@ -1681,6 +1777,10 @@ class DateDiff(Func):
 
 class DateStrToDate(Func):
     pass
+
+
+class DateSub(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DateToDateStr(Func):
@@ -1795,6 +1895,10 @@ class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
+class Reduce(Func):
+    arg_types = {"this": True, "initial": True, "merge": True, "finish": True}
+
+
 class RegexpLike(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -1807,8 +1911,16 @@ class Round(Func):
     arg_types = {"this": True, "decimals": False}
 
 
+class SafeDivide(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class SetAgg(AggFunc):
     pass
+
+
+class SortArray(Func):
+    arg_types = {"this": True, "asc": False}
 
 
 class Split(Func):
@@ -2293,7 +2405,7 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
         expression (str or Expression): the SQL code strings to parse.
             If an Expression instance is passed, this is used as-is.
         alias (str or Identifier): the alias name to use. If the name has
-            special charachters it is quoted.
+            special characters it is quoted.
         table (boolean): create a table alias, default false
         dialect (str): the dialect used to parse the input expression.
         **opts: other options to use to parse the input expressions.
@@ -2349,6 +2461,23 @@ def column(col, table=None, quoted=None):
     )
 
 
+def table_(table, db=None, catalog=None, quoted=None):
+    """
+    Build a Table.
+    Args:
+        table (str or Expression): column name
+        db (str or Expression): db name
+        catalog (str or Expression): catalog name
+    Returns:
+        Table: table instance
+    """
+    return Table(
+        this=to_identifier(table, quoted=quoted),
+        db=to_identifier(db, quoted=quoted),
+        catalog=to_identifier(catalog, quoted=quoted),
+    )
+
+
 def replace_children(expression, fun):
     """
     Replace children of an expression with the result of a lambda fun(child) -> exp.
@@ -2363,10 +2492,11 @@ def replace_children(expression, fun):
             if isinstance(cn, Expression):
                 cns = ensure_list(fun(cn))
                 for child_node in cns:
+                    new_child_nodes.append(child_node)
                     child_node.parent = expression
+                    child_node.arg_key = k
             else:
-                cns = [cn]
-            new_child_nodes.extend(cns)
+                new_child_nodes.append(cn)
 
         expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
 
@@ -2392,4 +2522,3 @@ def column_table_names(expression):
 TRUE = Boolean(this=True)
 FALSE = Boolean(this=False)
 NULL = Null()
-PREDICATES = (EQ, GT, GTE, ILike, In, Is, Like, LT, LTE, NEQ)

@@ -2,7 +2,8 @@ import os
 import unittest
 from unittest import mock
 
-from sqlglot import ErrorLevel, ParseError, parse_one, transpile, expressions as exp
+from sqlglot import parse_one, transpile
+from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import load_sql_fixtures, load_sql_fixture_pairs
 
 
@@ -14,22 +15,28 @@ class TestTranspile(unittest.TestCase):
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
+    def test_alias(self):
+        for key in ("union", "filter", "over", "from", "join"):
+            with self.subTest(f"alias {key}"):
+                self.validate(f"SELECT x AS {key}", f"SELECT x AS {key}")
+                self.validate(f'SELECT x "{key}"', f'SELECT x AS "{key}"')
+
+                with self.assertRaises(ParseError):
+                    self.validate(f"SELECT x {key}", "")
+
     def test_asc(self):
         self.validate("SELECT x FROM y ORDER BY x ASC", "SELECT x FROM y ORDER BY x")
-
-    def test_custom_transform(self):
-        self.assertEqual(
-            transpile(
-                "SELECT CAST(a AS INT) FROM x",
-                type_mapping={exp.DataType.Type.INT: "SPECIAL INT"},
-            )[0],
-            "SELECT CAST(a AS SPECIAL INT) FROM x",
-        )
 
     def test_paren(self):
         with self.assertRaises(ParseError):
             transpile("1 + (2 + 3")
             transpile("select f(")
+
+    def test_some(self):
+        self.validate(
+            "SELECT * FROM x WHERE a = SOME (SELECT 1)",
+            "SELECT * FROM x WHERE a = ANY (SELECT 1)",
+        )
 
     def test_space(self):
         self.validate("SELECT MIN(3)>MIN(2)", "SELECT MIN(3) > MIN(2)")
@@ -74,6 +81,8 @@ class TestTranspile(unittest.TestCase):
         self.validate("a NOT LIKE b", "NOT a LIKE b")
         self.validate("a NOT BETWEEN b AND c", "NOT a BETWEEN b AND c")
         self.validate("a NOT IN (1, 2)", "NOT a IN (1, 2)")
+        self.validate("a IS NOT NULL", "NOT a IS NULL")
+        self.validate("a LIKE TEXT y", "a LIKE CAST(y AS TEXT)")
 
     def test_extract(self):
         self.validate(
@@ -110,6 +119,9 @@ class TestTranspile(unittest.TestCase):
             "SELECT IF(a > 1, 1) FROM foo", "SELECT CASE WHEN a > 1 THEN 1 END FROM foo"
         )
 
+    def test_ignore_nulls(self):
+        self.validate("SELECT COUNT(x RESPECT NULLS)", "SELECT COUNT(x)")
+
     def test_time(self):
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
         self.validate(
@@ -132,6 +144,11 @@ class TestTranspile(unittest.TestCase):
             "'2020-01-01'::TIMESTAMP WITH TIME ZONE",
             "CAST('2020-01-01' AS TIMESTAMPTZ)",
         )
+        self.validate(
+            "timestamp with time zone '2025-11-20 00:00:00+00' AT TIME ZONE 'Africa/Cairo'",
+            "CAST('2025-11-20 00:00:00+00' AS TIMESTAMPTZ) AT TIME ZONE 'Africa/Cairo'",
+        )
+
         self.validate("DATE '2020-01-01'", "CAST('2020-01-01' AS DATE)")
         self.validate("'2020-01-01'::DATE", "CAST('2020-01-01' AS DATE)")
         self.validate("STR_TO_TIME('x', 'y')", "STRPTIME('x', 'y')", write="duckdb")

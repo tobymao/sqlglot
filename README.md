@@ -43,7 +43,7 @@ sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read='duckdb', write='hive'
 SELECT DATE_FORMAT(x, 'yy-M-ss')"
 ```
 
-### Formatting and Transpiling
+## Formatting and Transpiling
 Read in a SQL statement with a CTE and CASTING to a REAL and then transpiling to Spark.
 
 Spark uses backticks as identifiers and the REAL type is transpiled to FLOAT.
@@ -56,112 +56,57 @@ sqlglot.transpile(sql, write='spark', identify=True, pretty=True)[0]
 ```
 
 ```sql
-WITH baz AS (
-    SELECT
-      `a`,
-      `c`
-    FROM `foo`
-    WHERE
-      `a` = 1
+WITH `baz` AS (
+  SELECT
+    `a`,
+    `c`
+  FROM `foo`
+  WHERE
+    `a` = 1
 )
 SELECT
   `f`.`a`,
   `b`.`b`,
   `baz`.`c`,
-  CAST(`b`.`a` AS FLOAT) AS d
-FROM `foo` AS f
-JOIN `bar` AS b ON
-  `f`.`a` = `b`.`a`
-LEFT JOIN `baz` ON
-  `f`.`a` = `baz`.`a`
+  CAST(`b`.`a` AS FLOAT) AS `d`
+FROM `foo` AS `f`
+JOIN `bar` AS `b`
+  ON `f`.`a` = `b`.`a`
+LEFT JOIN `baz`
+  ON `f`.`a` = `baz`.`a`
 ```
 
-### Customization
-#### Custom Types
-A simple transform on types can be accomplished by providing a corresponding mapping:
-```python
+## Metadata
 
-from sqlglot import *
-from sqlglot import expressions as exp
-
-transpile("SELECT CAST(a AS INT) FROM x", type_mapping={exp.DataType.Type.INT: "SPECIAL INT"})[0]
-```
-
-```sql
-SELECT CAST(a AS SPECIAL INT) FROM x
-```
-
-More complicated transforms can be accomplished by using the Tokenizer, Parser, and Generator directly.
-#### Custom Functions
-In  this example, we want to parse a UDF SPECIAL_UDF and then output another version called SPECIAL_UDF_INVERSE with the arguments switched.
+You can explore SQL with expression helpers to do things like find columns and tables.
 
 ```python
-from sqlglot import *
-from sqlglot.expressions import Func
+from sqlglot import parse_one, exp
 
-class SpecialUdf(Func):
-    arg_types = {'a': True, 'b': True}
+# print all column references (a and b)
+for column in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Column):
+  print(column.alias_or_name)
 
-tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b) FROM x")
-```
-Here is the output of the tokenizer:
+# find all projections in select statements (a and c)
+for select in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Select):
+  for projection in select.args["expressions"]:
+    print(projection.alias_or_name)
 
-```
-[
-    <Token token_type: TokenType.SELECT, text: SELECT, line: 0, col: 0>,
-    <Token token_type: TokenType.VAR, text: SPECIAL_UDF, line: 0, col: 7>,
-    <Token token_type: TokenType.L_PAREN, text: (, line: 0, col: 18>,
-    <Token token_type: TokenType.VAR, text: a, line: 0, col: 19>,
-    <Token token_type: TokenType.COMMA, text: ,, line: 0, col: 20>,
-    <Token token_type: TokenType.VAR, text: b, line: 0, col: 22>,
-    <Token token_type: TokenType.R_PAREN, text: ), line: 0, col: 23>,
-    <Token token_type: TokenType.FROM, text: FROM, line: 0, col: 25>,
-    <Token token_type: TokenType.VAR, text: x, line: 0, col: 30>,
-]
-
-```
-```python
-expression = Parser(functions={
-    **SpecialUdf.default_parser_mappings(),
-}).parse(tokens)[0]
+# find all tables (x, y, z)
+for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
+  print(table.name)
 ```
 
-The expression tree produced by the parser:
-
-```
-(SELECT distinct: False, expressions:
-  (SPECIALUDF a:
-    (COLUMN this:
-      (IDENTIFIER this: a, quoted: False)), b:
-    (COLUMN this:
-      (IDENTIFIER this: b, quoted: False))), from:
-  (FROM expressions:
-    (TABLE this:
-      (IDENTIFIER this: x, quoted: False))))
-```
-
-Finally generating the new SQL:
-
-```python
-Generator(transforms={
-    SpecialUdf: lambda self, e: f"SPECIAL_UDF_INVERSE({self.sql(e, 'b')}, {self.sql(e, 'a')})"
-}).generate(expression)
-```
-
-```sql
-SELECT SPECIAL_UDF_INVERSE(b, a) FROM x
-```
-
-### Parser Errors
+## Parser Errors
 A syntax error will result in a parser error.
 ```python
 transpile("SELECT foo( FROM bar")
 ```
 ```
-sqlglot.errors.ParseError: Expected )
-  SELECT foo( __FROM__ bar
+sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
+  SELECT foo( FROM bar
 ```
-### Unsupported Errors
+## Unsupported Errors
 Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.
 
 ```python
@@ -178,7 +123,7 @@ WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
 SELECT APPROX_COUNT_DISTINCT(a) FROM foo
 ```
 
-### Build and Modify SQL
+## Build and Modify SQL
 SQLGlot supports incrementally building sql expressions.
 
 ```python
@@ -207,14 +152,13 @@ SELECT x FROM y, z
 There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:
 
 ```python
-import sqlglot
-import sqlglot.expressions as exp
+from sqlglot import exp, parse_one
 
-expression_tree = sqlglot.parse_one("SELECT a FROM x")
+expression_tree = parse_one("SELECT a FROM x")
 
 def transformer(node):
     if isinstance(node, exp.Column) and node.name == "a":
-        return sqlglot.parse_one("FUN(a)")
+        return parse_one("FUN(a)")
     return node
 
 transformed_tree = expression_tree.transform(transformer)
@@ -225,7 +169,43 @@ Which outputs:
 SELECT FUN(a) FROM x
 ```
 
-### SQL Annotations
+## SQL Optimizer
+
+SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standaradize queries or provide the foundations for implementing an actual engine.
+
+```python
+import sqlglot
+from sqlglot.optimizer import optimize
+
+>>>
+optimize(
+    sqlglot.parse_one("""
+    SELECT A OR (B OR (C AND D))
+    FROM x
+    WHERE Z = date '2021-01-01' + INTERVAL '1' month OR 1 = 0
+    """),
+    schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT", "Z": "STRING"}}
+).sql(pretty=True)
+
+"""
+SELECT
+  (
+    "x"."A"
+    OR "x"."B"
+    OR "x"."C"
+  )
+  AND (
+    "x"."A"
+    OR "x"."B"
+    OR "x"."D"
+  ) AS "_col_0"
+FROM "x" AS "x"
+WHERE
+  "x"."Z" = CAST('2021-02-01' AS DATE)
+"""
+```
+
+## SQL Annotations
 
 SQLGlot supports annotations in the sql expression. This is an experimental feature that is not part of any of the SQL standards but it can be useful when needing to annotate what a selected field is supposed to be. Below is an example:
 
@@ -236,31 +216,74 @@ SELECT
 FROM users
 ```
 
-### SQL Optimizer
+## AST Introspection
 
-SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standaradize queries or provide the foundations for implementing an actual engine.
+You can see the AST version of the sql by calling repr.
 
 ```python
-import sqlglot
-from sqlglot.optimizer import optimize
+from sqlglot import parse_one
+repr(parse_one("SELECT a + 1 AS z"))
 
->>> optimize(
-        sqlglot.parse_one("SELECT A OR (B OR (C AND D)) FROM x"),
-        schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT"}}
-    ).sql()
-
-'SELECT ("x"."A" OR "x"."B" OR "x"."C") AND ("x"."A" OR "x"."B" OR "x"."D") AS "_col_0" FROM "x" AS "x"'
+(SELECT expressions:
+  (ALIAS this:
+    (ADD this:
+      (COLUMN this:
+        (IDENTIFIER this: a, quoted: False)), expression:
+      (LITERAL this: 1, is_string: False)), alias:
+    (IDENTIFIER this: z, quoted: False)))
 ```
 
-### Benchmarks
+## Custom Dialects
 
-[Benchmarks](benchmarks) run on Python 3.9.6 in seconds.
+[Dialects](sqlglot/dialects) can be added by subclassing Dialect.
+
+```python
+from sqlglot import exp
+from sqlglot.dialects.dialect import Dialect
+from sqlglot.generator import Generator
+from sqlglot.tokens import Tokenizer, TokenType
+
+
+class Custom(Dialect):
+    identifier = "`"
+
+    class Tokenizer(Tokenizer):
+        QUOTES = ["'", '"']
+
+        KEYWORDS = {
+            **Tokenizer.KEYWORDS,
+            "INT64": TokenType.BIGINT,
+            "FLOAT64": TokenType.DOUBLE,
+        }
+
+    class Generator(Generator):
+        TRANSFORMS = {exp.Array: lambda self, e: f"[{self.expressions(e)}]"}
+
+        TYPE_MAPPING = {
+            exp.DataType.Type.TINYINT: "INT64",
+            exp.DataType.Type.SMALLINT: "INT64",
+            exp.DataType.Type.INT: "INT64",
+            exp.DataType.Type.BIGINT: "INT64",
+            exp.DataType.Type.DECIMAL: "NUMERIC",
+            exp.DataType.Type.FLOAT: "FLOAT64",
+            exp.DataType.Type.DOUBLE: "FLOAT64",
+            exp.DataType.Type.BOOLEAN: "BOOL",
+            exp.DataType.Type.TEXT: "STRING",
+        }
+
+
+Dialects["custom"]
+```
+
+## Benchmarks
+
+[Benchmarks](benchmarks) run on Python 3.10.5 in seconds.
 
 | Query            | sqlglot          | [sqlparse](https://github.com/andialbrecht/sqlparse)         | [moz\_sql\_parser](https://github.com/klahnakoski/mo-sql-parsing) | [sqloxide](https://github.com/wseaton/sqloxide/) |
 | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- |
-| short            | 0.00038          | 0.00104          | 0.00174          | 0.000060
-| long             | 0.00508          | 0.01522          | 0.02162          | 0.000597
-| crazy            | 0.01871          | 3.49415          | 0.35346          | 0.003104
+| short            | 0.00033          | 0.00099          | 0.00160          | 0.000063
+| long             | 0.00426          | 0.01396          | 0.02023          | 0.000595
+| crazy            | 0.01363          | 3.69641          | 0.34818          | 0.003121
 
 
 ## Run Tests and Lint
@@ -269,3 +292,12 @@ pip install -r requirements.txt
 ./format_code.sh
 ./run_checks.sh
 ```
+
+## Optional Dependencies
+SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify literal timedelta expressions. The optimizer will not simplify expressions like
+
+```sql
+x + interval '1' month
+```
+
+if the module cannot be found.

@@ -1,4 +1,6 @@
-import sqlglot.expressions as exp
+import itertools
+
+from sqlglot import alias, exp
 from sqlglot.optimizer.scope import traverse_scope
 
 
@@ -19,15 +21,34 @@ def qualify_tables(expression, db=None, catalog=None):
     Returns:
         sqlglot.Expression: qualified expression
     """
+    sequence = itertools.count()
+
     for scope in traverse_scope(expression):
+        for derived_table in scope.ctes + scope.derived_tables:
+            if not derived_table.args.get("alias"):
+                alias_ = f"_q_{next(sequence)}"
+                derived_table.set(
+                    "alias", exp.TableAlias(this=exp.to_identifier(alias_))
+                )
+                scope.rename_source(None, alias_)
+
         for source in scope.sources.values():
             if isinstance(source, exp.Table):
-                if not source.args.get("db"):
-                    source.set("db", exp.to_identifier(db))
-                if not source.args.get("catalog"):
-                    source.set("catalog", exp.to_identifier(catalog))
+                identifier = isinstance(source.this, exp.Identifier)
+
+                if identifier:
+                    if not source.args.get("db"):
+                        source.set("db", exp.to_identifier(db))
+                    if not source.args.get("catalog"):
+                        source.set("catalog", exp.to_identifier(catalog))
 
                 if not isinstance(source.parent, exp.Alias):
-                    source.replace(exp.alias_(source.copy(), source.this, table=True))
+                    source.replace(
+                        alias(
+                            source.copy(),
+                            source.this if identifier else f"_q_{next(sequence)}",
+                            table=True,
+                        )
+                    )
 
     return expression

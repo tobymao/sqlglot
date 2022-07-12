@@ -1,8 +1,14 @@
 import itertools
+import datetime
+from decimal import Decimal
 
+from sqlglot import exp
 from sqlglot.helper import while_changing
 from sqlglot.expressions import FALSE, NULL, TRUE
-import sqlglot.expressions as exp
+from sqlglot.generator import Generator
+
+
+GENERATOR = Generator(normalize=True, identify=True)
 
 
 def simplify(expression):
@@ -21,43 +27,40 @@ def simplify(expression):
         sqlglot.Expression: simplified expression
     """
 
-    def _simplify(expression):
-        expression = expression.transform(simplify_equality, copy=False)
-        expression = expression.transform(simplify_not, copy=False)
-        expression = expression.transform(flatten, copy=False)
-        expression = expression.transform(simplify_conjunctions, copy=False)
-        expression = expression.transform(compare_and_prune, copy=False)
-        expression = expression.transform(absorb_and_eliminate, copy=False)
-        expression = expression.transform(simplify_parens, copy=False)
-        return expression
+    def _simplify(expression, root=True):
+        node = expression
+        node = uniq_sort(node)
+        node = absorb_and_eliminate(node)
+        exp.replace_children(node, lambda e: _simplify(e, False))
+        node = simplify_not(node)
+        node = flatten(node)
+        node = simplify_connectors(node)
+        node = remove_compliments(node)
+        node.parent = expression.parent
+        node = simplify_literals(node)
+        node = simplify_parens(node)
+        if root:
+            expression.replace(node)
+        return node
 
     expression = while_changing(expression, _simplify)
     remove_where_true(expression)
     return expression
 
 
-def simplify_equality(expression):
-    if isinstance(expression, exp.EQ):
-        left = expression.left
-        right = expression.right
-
-        if NULL in (left, right):
-            return NULL
-        if left == right:
-            return TRUE
-        if (
-            isinstance(left, exp.Literal)
-            and isinstance(right, exp.Literal)
-            and left.is_string
-            and right.is_string
-            and left != right
-        ):
-            return FALSE
-    return expression
-
-
 def simplify_not(expression):
+    """
+    Demorgan's Law
+    NOT (x OR y) -> NOT x AND NOT y
+    NOT (x AND y) -> NOT x OR NOT y
+    """
     if isinstance(expression, exp.Not):
+        if isinstance(expression.this, exp.Paren):
+            condition = expression.this.unnest()
+            if isinstance(condition, exp.And):
+                return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
+            if isinstance(condition, exp.Or):
+                return exp.and_(exp.not_(condition.left), exp.not_(condition.right))
         if always_true(expression.this):
             return FALSE
         if expression.this == FALSE:
@@ -69,7 +72,20 @@ def simplify_not(expression):
     return expression
 
 
-def simplify_conjunctions(expression):
+def flatten(expression):
+    """
+    A AND (B AND C) -> A AND B AND C
+    A OR (B OR C) -> A OR B OR C
+    """
+    if isinstance(expression, exp.Connector):
+        for node in expression.args.values():
+            child = node.unnest()
+            if isinstance(child, expression.__class__):
+                node.replace(child)
+    return expression
+
+
+def simplify_connectors(expression):
     if isinstance(expression, exp.Connector):
         left = expression.left
         right = expression.right
@@ -106,40 +122,45 @@ def simplify_conjunctions(expression):
     return expression
 
 
-def compare_and_prune(expression):
+def remove_compliments(expression):
     """
-    Sorts ANDs and ORs, removing duplicates and compliment expressions.
+    Removing compliments.
+
+    A AND NOT A -> FALSE
+    A OR NOT A -> TRUE
     """
-    if isinstance(expression, exp.And):
-        return _compare_and_prune(expression, FALSE, exp.and_)
-    if isinstance(expression, exp.Or):
-        return _compare_and_prune(expression, TRUE, exp.or_)
+    if isinstance(expression, exp.Connector):
+        compliment = FALSE if isinstance(expression, exp.And) else TRUE
+
+        for a, b in itertools.permutations(expression.flatten(), 2):
+            if is_complement(a, b):
+                return compliment
     return expression
 
 
-def _compare_and_prune(connector, compliment, result_func):
-    args = {
-        expression.sql(normalize=True, identify=True): expression
-        for expression in connector.flatten()
-    }
-
-    for a, b in itertools.combinations(args.values(), 2):
-        if is_complement(a, b) or is_complement(b, a):
-            return compliment
-
-    return result_func(*(args[sql] for sql in sorted(args)))
-
-
-def flatten(expression):
+def uniq_sort(expression):
     """
-    A AND (B AND C) -> A AND B AND C
-    A OR (B OR C) -> A OR B OR C
+    Uniq and sort a connector.
+
+    C AND A AND B AND B -> A AND B AND C
     """
     if isinstance(expression, exp.Connector):
-        for node in expression.args.values():
-            child = node.unnest()
-            if isinstance(child, expression.__class__):
-                node.replace(child)
+        result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
+        flattened = tuple(expression.flatten())
+        deduped = {GENERATOR.generate(e): e for e in flattened}
+        arr = tuple(deduped.items())
+
+        # check if the operands are already sorted, if not sort them
+        # A AND C AND B -> A AND B AND C
+        for i, (sql, e) in enumerate(arr[1:]):
+            if sql < arr[i][0]:
+                expression = result_func(*(deduped[sql] for sql in sorted(deduped)))
+                break
+        else:
+            # we didn't have to sort but maybe we need to dedup
+            if len(deduped) < len(flattened):
+                expression = result_func(*deduped.values())
+
     return expression
 
 
@@ -154,42 +175,98 @@ def absorb_and_eliminate(expression):
         (A AND B) OR (A AND NOT B) -> A
         (A OR B) AND (A OR NOT B) -> A
     """
-    if isinstance(expression, exp.And):
-        return _absorb_and_eliminate(expression, exp.Or)
-    if isinstance(expression, exp.Or):
-        return _absorb_and_eliminate(expression, exp.And)
+    if isinstance(expression, exp.Connector):
+        kind = exp.Or if isinstance(expression, exp.And) else exp.And
+
+        for a, b in itertools.permutations(expression.flatten(), 2):
+            if isinstance(a, kind):
+                aa, ab = a.unnest_operands()
+
+                # absorb
+                if is_complement(b, aa):
+                    aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+                elif is_complement(b, ab):
+                    ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+                elif (set(b.flatten()) if isinstance(b, kind) else {b}) < set(
+                    a.flatten()
+                ):
+                    a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
+                elif isinstance(b, kind):
+                    # eliminate
+                    rhs = b.unnest_operands()
+                    ba, bb = rhs
+
+                    if aa in rhs and (is_complement(ab, ba) or is_complement(ab, bb)):
+                        a.replace(aa)
+                        b.replace(aa)
+                    elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
+                        a.replace(ab)
+                        b.replace(ab)
+
     return expression
 
 
-def _absorb_and_eliminate(connector, kind):
-    for a, b in itertools.permutations(connector.flatten(), 2):
-        if isinstance(a, kind):
-            aa, ab = a.unnest_operands()
+def simplify_literals(expression):
+    if isinstance(expression, exp.Binary):
+        a, b = expression.unnest_operands()
 
-            # absorb
-            if b in (aa, ab):
-                a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
-            elif is_complement(b, aa):
-                aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
-            elif is_complement(b, ab):
-                ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
-            elif isinstance(b, kind):
-                # eliminate
-                rhs = b.unnest_operands()
-                ba, bb = rhs
+        if isinstance(expression, exp.Is):
+            if isinstance(b, exp.Not):
+                c = b.this
+                not_ = True
+            else:
+                c = b
+                not_ = False
 
-                if aa in rhs and (is_complement(ab, ba) or is_complement(ab, bb)):
-                    a.replace(aa)
-                    b.replace(aa)
-                elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
-                    a.replace(ab)
-                    b.replace(ab)
+            if c == NULL:
+                if isinstance(a, exp.Literal):
+                    return TRUE if not_ else FALSE
+                if a == NULL:
+                    return FALSE if not_ else TRUE
+        elif NULL in (a, b):
+            return NULL
 
-    return connector
+        if isinstance(expression, exp.EQ) and a == b:
+            return TRUE
 
+        if is_number(a) and is_number(b):
+            a = int(a.name) if a.is_int else Decimal(a.name)
+            b = int(b.name) if b.is_int else Decimal(b.name)
 
-def is_complement(a, b):
-    return isinstance(b, exp.Not) and b.this == a
+            if isinstance(expression, exp.Add):
+                return exp.Literal.number(a + b)
+            if isinstance(expression, exp.Sub):
+                return exp.Literal.number(a - b)
+            if isinstance(expression, exp.Mul):
+                return exp.Literal.number(a * b)
+            if isinstance(expression, exp.Div):
+                if isinstance(a, int) and isinstance(b, int):
+                    return exp.Literal.number(a // b)
+                return exp.Literal.number(a / b)
+
+            boolean = eval_boolean(expression, a, b)
+
+            if boolean:
+                return boolean
+        elif is_string(a) and is_string(b):
+            boolean = eval_boolean(expression, a, b)
+
+            if boolean:
+                return boolean
+        elif isinstance(a, exp.Cast) and isinstance(b, exp.Interval):
+            a, b = extract_date(a), extract_interval(b)
+            if b:
+                if isinstance(expression, exp.Add):
+                    return date_literal(a + b)
+                if isinstance(expression, exp.Sub):
+                    return date_literal(a - b)
+        elif isinstance(a, exp.Interval) and isinstance(b, exp.Cast):
+            a, b = extract_interval(a), extract_date(b)
+            # you cannot subtract a date from an interval
+            if a and isinstance(expression, exp.Add):
+                return date_literal(a + b)
+
+    return expression
 
 
 def simplify_parens(expression):
@@ -198,6 +275,7 @@ def simplify_parens(expression):
         and not isinstance(expression.this, exp.Select)
         and (
             not isinstance(expression.parent, (exp.Condition, exp.Binary))
+            or isinstance(expression.this, (exp.Is, exp.Like))
             or not isinstance(expression.this, exp.Binary)
         )
     ):
@@ -217,3 +295,65 @@ def remove_where_true(expression):
 
 def always_true(expression):
     return expression == TRUE or isinstance(expression, exp.Literal)
+
+
+def is_complement(a, b):
+    return isinstance(b, exp.Not) and b.this == a
+
+
+def is_number(expression):
+    return isinstance(expression, exp.Literal) and not expression.is_string
+
+
+def is_string(expression):
+    return isinstance(expression, exp.Literal) and expression.is_string
+
+
+def eval_boolean(expression, a, b):
+    if isinstance(expression, (exp.EQ, exp.Is)):
+        return boolean_literal(a == b)
+    if isinstance(expression, exp.NEQ):
+        return boolean_literal(a != b)
+    if isinstance(expression, exp.GT):
+        return boolean_literal(a > b)
+    if isinstance(expression, exp.GTE):
+        return boolean_literal(a >= b)
+    if isinstance(expression, exp.LT):
+        return boolean_literal(a < b)
+    if isinstance(expression, exp.LTE):
+        return boolean_literal(a <= b)
+    return None
+
+
+def extract_date(cast):
+    if cast.args["to"].this == exp.DataType.Type.DATE:
+        return datetime.date.fromisoformat(cast.name)
+    return None
+
+
+def extract_interval(interval):
+    try:
+        from dateutil.relativedelta import relativedelta
+    except ModuleNotFoundError:
+        return None
+
+    n = int(interval.name)
+    unit = interval.text("unit").lower()
+
+    if unit == "year":
+        return relativedelta(years=n)
+    if unit == "month":
+        return relativedelta(months=n)
+    if unit == "week":
+        return relativedelta(weeks=n)
+    if unit == "day":
+        return relativedelta(days=n)
+    return None
+
+
+def date_literal(date):
+    return exp.Cast(this=exp.Literal.string(date), to=exp.DataType.build("DATE"))
+
+
+def boolean_literal(condition):
+    return TRUE if condition else FALSE

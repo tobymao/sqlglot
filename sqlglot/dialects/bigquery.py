@@ -32,7 +32,7 @@ class BigQuery(Dialect):
     identifier = "`"
 
     class Tokenizer(Tokenizer):
-        QUOTES = ["'", '"', '"""']
+        QUOTES = ["'", '"']
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,

@@ -100,7 +100,7 @@ def _expand_stars(scope, schema):
     """Expand stars to lists of column selections"""
 
     new_selections = []
-    table_columns_excepts = []
+    excepted_columns = []
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
@@ -114,7 +114,7 @@ def _expand_stars(scope, schema):
         ):
             tables = [expression.table]
             for projection in expression.this.args["expressions"]:
-                table_columns_excepts.append(projection.alias_or_name)
+                excepted_columns.append(projection.alias_or_name)
         else:
             new_selections.append(expression)
             continue
@@ -124,7 +124,7 @@ def _expand_stars(scope, schema):
                 raise OptimizeError(f"Unknown table: {table}")
             columns = _get_source_columns(table, scope.sources, schema)
             for column in columns:
-                if not column in table_columns_excepts:
+                if not column in excepted_columns:
                     new_selections.append(exp.column(column, table))
 
     scope.expression.set("expressions", new_selections)

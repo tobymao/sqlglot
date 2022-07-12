@@ -1354,6 +1354,10 @@ class StarReplace(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
+class Placeholder(Expression):
+    arg_types = {}
+
+
 class Null(Condition):
     arg_types = {}
 

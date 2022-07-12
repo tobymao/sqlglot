@@ -8,6 +8,7 @@ import moz_sql_parser
 import sqlglot
 import sqlparse
 import sqloxide
+import sqltree
 
 
 long = """
@@ -63,6 +64,10 @@ def sqlglot_parse(sql):
     sqlglot.parse(sql, error_level=sqlglot.ErrorLevel.IGNORE)
 
 
+def sqltree_parse(sql):
+    sqltree.api.sqltree(sql.replace('"', '`').replace("''", '"'))
+
+
 def sqlparse_parse(sql):
     sqlparse.parse(sql)
 
@@ -77,6 +82,7 @@ def sqloxide_parse(sql):
 
 for lib in [
     "sqlglot_parse",
+    "sqltree_parse",
     "sqlparse_parse",
     "moz_sql_parser_parse",
     "sqloxide_parse",

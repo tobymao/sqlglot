@@ -1,14 +1,15 @@
 from sqlglot import exp, constants as c
 from sqlglot.dialects.dialect import (
     Dialect,
-    format_time_lambda,
     approx_count_distinct_sql,
-    rename_func,
-    no_recursive_cte_sql,
+    format_time_lambda,
     if_sql,
     no_ilike_sql,
-    struct_extract_sql,
+    no_safe_divide_sql,
+    no_recursive_cte_sql,
     no_trycast_sql,
+    rename_func,
+    struct_extract_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import csv, list_get
@@ -253,6 +254,7 @@ class Hive(Dialect):
             exp.Quantile: rename_func("PERCENTILE"),
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),
+            exp.SafeDivide: no_safe_divide_sql,
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
             exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",

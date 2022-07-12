@@ -1907,6 +1907,10 @@ class Round(Func):
     arg_types = {"this": True, "decimals": False}
 
 
+class SafeDivide(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class SetAgg(AggFunc):
     pass
 

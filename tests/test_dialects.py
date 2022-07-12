@@ -277,6 +277,13 @@ class TestDialects(unittest.TestCase):
             write="duckdb",
         )
 
+        self.validate(
+            "SAFE_DIVIDE(x, y)",
+            "IF(y <> 0, x / y, NULL)",
+            read="bigquery",
+            write="duckdb",
+        )
+
     def test_mysql(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",

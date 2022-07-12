@@ -100,52 +100,32 @@ def _expand_stars(scope, schema):
     """Expand stars to lists of column selections"""
 
     new_selections = []
-    table_excepts = []
+    table_columns_excepts = []
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
-            print("tables", table_excepts)
-
         elif isinstance(expression, exp.Column) and isinstance(
             expression.this, exp.Star
         ):
-            print("expression column star", repr(expression))
             tables = [expression.table]
-            print("tables column star", tables)
         elif isinstance(expression, exp.Column) and isinstance(
             expression.this, exp.StarExcept
         ):
-            print("expression StarExcept", repr(expression))
-            print("expression StarExcept this", repr(expression.this))
             tables = [expression.table]
-            print("table_excepts", table_excepts)
-
-            table_excepts = expression.this.this.named_selects
-            print("table_excepts", table_excepts)
-            # new_selections.append(expression)
-
+            for projection in expression.this.args["expressions"]:
+                table_columns_excepts.append(projection.alias_or_name)
         else:
             new_selections.append(expression)
             continue
-
-        print("tables end", tables)
 
         for table in tables:
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
             columns = _get_source_columns(table, scope.sources, schema)
             for column in columns:
-                new_selections.append(exp.column(column, table))
-
-        for table in table_excepts:
-            if table not in scope.sources:
-                raise OptimizeError(f"Unknown table: {table}")
-            columns = _get_source_columns(table, scope.sources, schema)
-            for column in columns:
-                new_selections.append(exp.column(column, table))
-
-    print("new_selections", new_selections)
+                if not column in table_columns_excepts:
+                    new_selections.append(exp.column(column, table))
 
     scope.expression.set("expressions", new_selections)
 

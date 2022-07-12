@@ -36,6 +36,7 @@ class BigQuery(Dialect):
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "CURRENT_DATE": TokenType.CURRENT_DATE,
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
         }
@@ -46,12 +47,14 @@ class BigQuery(Dialect):
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
         }
+        NO_PAREN_FUNCTIONS = {TokenType.CURRENT_DATE: exp.CurrentDate}
 
     class Generator(Generator):
         TRANSFORMS = {
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
+            exp.CurrentDate: lambda *_: "CURRENT_DATE",
         }
 
         TYPE_MAPPING = {

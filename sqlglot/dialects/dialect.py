@@ -159,6 +159,11 @@ def no_ilike_sql(self, expression):
     )
 
 
+def no_paren_current_date_sql(self, expression):
+    zone = self.sql(expression, "this")
+    return f"CURRENT_DATE AT TIME ZONE {zone}" if zone else "CURRENT_DATE"
+
+
 def no_recursive_cte_sql(self, expression):
     if expression.args.get("recursive"):
         self.unsupported("Recursive CTEs are unsupported")

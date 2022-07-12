@@ -38,6 +38,7 @@ class BigQuery(Dialect):
             **Tokenizer.KEYWORDS,
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
+            "UNKNOWN": TokenType.NULL,
         }
 
     class Parser(Parser):

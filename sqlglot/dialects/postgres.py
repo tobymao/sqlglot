@@ -1,5 +1,10 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect, no_tablesample_sql, no_trycast_sql
+from sqlglot.dialects.dialect import (
+    Dialect,
+    no_paren_current_date_sql,
+    no_tablesample_sql,
+    no_trycast_sql,
+)
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
@@ -30,13 +35,11 @@ class Postgres(Dialect):
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
-            "CURRENT_DATE": TokenType.CURRENT_DATE,
             "UUID": TokenType.UUID,
         }
 
     class Parser(Parser):
         FUNCTIONS = {**Parser.FUNCTIONS, "TO_TIMESTAMP": exp.StrToTime.from_arg_list}
-        NO_PAREN_FUNCTIONS = {TokenType.CURRENT_DATE: exp.CurrentDate}
 
     class Generator(Generator):
         TYPE_MAPPING = {
@@ -48,7 +51,7 @@ class Postgres(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            exp.CurrentDate: lambda *_: "CURRENT_DATE",
+            exp.CurrentDate: no_paren_current_date_sql,
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",

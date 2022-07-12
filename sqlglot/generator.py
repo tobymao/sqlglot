@@ -738,6 +738,10 @@ class Generator:
     def cast_sql(self, expression):
         return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
+    def currentdate_sql(self, expression):
+        zone = self.sql(expression, "this")
+        return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
+
     def command_sql(self, expression):
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 

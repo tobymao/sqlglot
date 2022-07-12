@@ -21,8 +21,6 @@ class Parser:
             Default: 50.
         index_offset (int): Index offset for arrays eg ARRAY[0] vs ARRAY[1] as the head of a list
             Default: 0
-        strict_cast (boolean): if true, cast is expected to raise an error on failure
-            Default: True
     """
 
     FUNCTIONS = {
@@ -195,13 +193,14 @@ class Parser:
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
+    STRICT_CAST = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
         "sql",
         "errors",
         "index_offset",
-        "strict_cast",
         "_tokens",
         "_chunks",
         "_index",
@@ -215,12 +214,10 @@ class Parser:
         error_level=None,
         error_message_context=100,
         index_offset=0,
-        strict_cast=True,
     ):
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
-        self.strict_cast = strict_cast
         self.reset()
 
     def reset(self):
@@ -1294,7 +1291,7 @@ class Parser:
             return None
 
         if self._match_set(self.CASTS):
-            strict = self.strict_cast and token_type == TokenType.CAST
+            strict = self.STRICT_CAST and token_type == TokenType.CAST
             self._advance()
             this = self._parse_cast(strict)
         elif self._match(TokenType.EXTRACT):

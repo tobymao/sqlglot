@@ -473,17 +473,19 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.USE,
     }
 
-    AMBIGUOUS = None  # autofilled
+    # handle numeric literals like in hive (3L = BIGINT)
+    NUMERIC_LITERALS = {}
+    ENCODE = None
+
     ESCAPE_CODE = "__sqlglot_escape__"
     COMMENTS = {"--"}
     COMMENT_START = "/*"
     COMMENT_END = "*/"
+    AMBIGUOUS = None  # autofilled
 
     __slots__ = (
         "identifier",
         "escape",
-        "encode",
-        "numeric_literals",
         "sql",
         "size",
         "tokens",
@@ -501,8 +503,6 @@ class Tokenizer(metaclass=_Tokenizer):
         self,
         identifier=None,
         escape=None,
-        encode=None,
-        numeric_literals=None,
     ):
         """
         Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
@@ -510,13 +510,9 @@ class Tokenizer(metaclass=_Tokenizer):
         Args
             identifier (str): the identifier character
             escape (str): the escape code character
-            encode (str): if passed in, encode string literals and then decode
-            numeric_literals (dict): if passed in, handle numeric literals like in hive (3L = BIGINT)
         """
         self.identifier = identifier or '"'
         self.escape = escape or "'"
-        self.encode = encode
-        self.numeric_literals = numeric_literals or {}
         self.reset()
 
     def reset(self):
@@ -672,7 +668,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     literal.append(self._peek.upper())
                     self._advance()
                 literal = "".join(literal)
-                token_type = self.KEYWORDS.get(self.numeric_literals.get(literal))
+                token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal))
                 if token_type:
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
@@ -712,7 +708,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._advance()
 
         text = "".join(text[size:-size])
-        text = text.encode(self.encode).decode(self.encode) if self.encode else text
+        text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
         text = text.replace("\\\\", "\\") if self.escape == "\\" else text
         self._add(TokenType.STRING, text)
         return True

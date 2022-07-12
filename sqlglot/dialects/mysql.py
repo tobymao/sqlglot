@@ -7,11 +7,11 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
 )
 from sqlglot.generator import Generator
+from sqlglot.parser import Parser
 
 
 class MySQL(Dialect):
     identifier = "`"
-    strict_cast = False
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     time_mapping = {
@@ -23,6 +23,9 @@ class MySQL(Dialect):
         "%s": "%S",
         "%S": "%S",
     }
+
+    class Parser(Parser):
+        STRICT_CAST = False
 
     class Generator(Generator):
         TRANSFORMS = {

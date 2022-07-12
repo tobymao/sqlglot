@@ -133,17 +133,6 @@ class HiveMap(exp.Map):
 class Hive(Dialect):
     identifier = "`"
     escape = "\\"
-    encode = "utf-8"
-    strict_cast = False
-
-    numeric_literals = {
-        "L": "BIGINT",
-        "S": "SMALLINT",
-        "Y": "TINYINT",
-        "D": "DOUBLE",
-        "F": "FLOAT",
-        "BD": "DECIMAL",
-    }
 
     time_mapping = {
         "y": "%Y",
@@ -176,7 +165,20 @@ class Hive(Dialect):
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"']
 
+        ENCODE = "utf-8"
+
+        NUMERIC_LITERALS = {
+            "L": "BIGINT",
+            "S": "SMALLINT",
+            "Y": "TINYINT",
+            "D": "DOUBLE",
+            "F": "FLOAT",
+            "BD": "DECIMAL",
+        }
+
     class Parser(Parser):
+        STRICT_CAST = False
+
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,

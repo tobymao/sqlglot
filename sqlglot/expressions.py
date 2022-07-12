@@ -1404,6 +1404,27 @@ class DataType(Expression):
         )
 
 
+class DatePart(Expression):
+    arg_types = {"this": True}
+
+    class Part(AutoName):
+        DAY = auto()
+        MONTH = auto()
+        YEAR = auto()
+        HOUR = auto()
+        MINUTE = auto()
+        SECOND = auto()
+
+    @classmethod
+    def build(cls, dpart, **kwargs):
+        return DatePart(
+            this=dpart
+            if isinstance(dpart, DatePart.Part)
+            else DatePart.Part[dpart.upper()],
+            **kwargs,
+        )
+
+
 # WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
 class SubqueryPredicate(Predicate):
     pass

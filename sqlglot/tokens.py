@@ -71,6 +71,14 @@ class TokenType(AutoName):
     DATE = auto()
     UUID = auto()
 
+    # datetime part
+    YEAR = auto()
+    MONTH = auto()
+    DAY = auto()
+    HOUR = auto()
+    MINUTE = auto()
+    SECOND = auto()
+
     # keywords
     ADD_FILE = auto()
     ALIAS = auto()

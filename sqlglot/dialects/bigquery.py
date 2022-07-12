@@ -46,6 +46,11 @@ class BigQuery(Dialect):
             **Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
+            "DATE_DIFF": lambda args: exp.DateDiff(
+                this=list_get(args, 0),
+                expression=list_get(args, 1),
+                unit=exp.DatePart.build(str(list_get(args, 2))),
+            ),
         }
 
     class Generator(Generator):
@@ -53,6 +58,7 @@ class BigQuery(Dialect):
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
+            exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'expression')}, {self.sql(e, 'this')}, {exp.DatePart.build(str(self.sql(e, 'unit')))})""",
         }
 
         TYPE_MAPPING = {

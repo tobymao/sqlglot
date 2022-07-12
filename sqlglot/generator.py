@@ -498,6 +498,10 @@ class Generator:
         # pylint: disable=unused-argument
         return "NULL"
 
+    def datepart_sql(self, expression):
+        dpart_sql = expression.this.value
+        return f"{dpart_sql}"
+
     def boolean_sql(self, expression):
         return "TRUE" if expression.this else "FALSE"
 

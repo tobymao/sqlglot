@@ -33,8 +33,6 @@ class _Dialect(type):
         klass.tokenizer = klass.tokenizer_class(
             identifier=klass.identifier,
             escape=klass.escape,
-            encode=klass.encode,
-            numeric_literals=klass.numeric_literals,
         )
         return klass
 
@@ -42,10 +40,7 @@ class _Dialect(type):
 class Dialect(metaclass=_Dialect):
     identifier = None
     escape = "'"
-    encode = None
     index_offset = 0
-    strict_cast = True
-    numeric_literals = None
 
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
@@ -109,7 +104,6 @@ class Dialect(metaclass=_Dialect):
         return self.parser_class(
             **{
                 "index_offset": self.index_offset,
-                "strict_cast": self.strict_cast,
                 **opts,
             },
         )

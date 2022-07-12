@@ -1,4 +1,4 @@
-import sqlglot.expressions as exp
+from sqlglot import exp
 from sqlglot.helper import tsort
 from sqlglot.optimizer.simplify import simplify
 
@@ -7,8 +7,6 @@ def optimize_joins(expression):
     """
     Removes cross joins if possible and reorder joins based on predicate dependencies.
     """
-    expression = simplify(expression)
-
     for select in expression.find_all(exp.Select):
         references = {}
         cross_joins = []
@@ -25,7 +23,9 @@ def optimize_joins(expression):
 
         for name, join in cross_joins:
             for dep in references.get(name, []):
-                on = dep.args["on"].unnest()
+                on = dep.args["on"]
+                on = on.replace(simplify(on))
+
                 if isinstance(on, exp.Connector):
                     for predicate in on.flatten():
                         if name in exp.column_table_names(predicate):

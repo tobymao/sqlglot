@@ -1,6 +1,6 @@
+from sqlglot import exp
 from sqlglot.helper import while_changing
-from sqlglot.optimizer.simplify import simplify, compare_and_prune, flatten
-import sqlglot.expressions as exp
+from sqlglot.optimizer.simplify import simplify, uniq_sort, flatten
 
 
 def normalize(expression, dnf=False, max_distance=128):
@@ -20,7 +20,7 @@ def normalize(expression, dnf=False, max_distance=128):
     Returns:
         sqlglot.Expression: normalized expression
     """
-    expression = expression.transform(de_morgans_law, copy=False)
+    expression = simplify(expression)
 
     expression = while_changing(
         expression, lambda e: distributive_law(e, dnf, max_distance)
@@ -82,24 +82,6 @@ def _predicate_lengths(expression, dnf):
     return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
 
 
-def de_morgans_law(expression):
-    """
-    NOT (x OR y) -> NOT x AND NOT y
-    NOT (x AND y) -> NOT x OR NOT y
-    """
-
-    if isinstance(expression, exp.Not) and isinstance(expression.this, exp.Paren):
-        condition = expression.this.unnest()
-
-        if isinstance(condition, exp.And):
-            return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
-
-        if isinstance(condition, exp.Or):
-            return exp.and_(exp.not_(condition.left), exp.not_(condition.right))
-
-    return expression
-
-
 def distributive_law(expression, dnf, max_distance):
     """
     x OR (y AND z) -> (x OR y) AND (x OR z)
@@ -113,11 +95,6 @@ def distributive_law(expression, dnf, max_distance):
 
     exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance))
 
-    if isinstance(expression, exp.Connector):
-        expression = expression.transform(flatten, copy=False).transform(
-            compare_and_prune, copy=False
-        )
-
     if isinstance(expression, from_exp):
         a, b = expression.unnest_operands()
 
@@ -125,7 +102,7 @@ def distributive_law(expression, dnf, max_distance):
         to_func = exp.and_ if to_exp == exp.And else exp.or_
 
         if isinstance(a, to_exp) and isinstance(b, to_exp):
-            if len(tuple(a.find_all(exp.Connector))) < len(
+            if len(tuple(a.find_all(exp.Connector))) > len(
                 tuple(b.find_all(exp.Connector))
             ):
                 return _distribute(a, b, from_func, to_func)
@@ -150,4 +127,10 @@ def _distribute(a, b, from_func, to_func):
     else:
         a = to_func(from_func(a, b.left), from_func(a, b.right))
 
-    return a
+    return _simplify(a)
+
+
+def _simplify(node):
+    node = uniq_sort(flatten(node))
+    exp.replace_children(node, _simplify)
+    return node

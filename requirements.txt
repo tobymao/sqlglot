@@ -2,3 +2,4 @@ black
 duckdb
 pandas
 pylint
+python-dateutil

@@ -1,6 +1,6 @@
 import itertools
 
-import sqlglot.expressions as exp
+from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
@@ -25,13 +25,10 @@ def qualify_columns(expression, schema):
     """
     schema = ensure_schema(schema)
 
-    # We'll use this when generating alias names
-    sequence = itertools.count()
-
     for scope in traverse_scope(expression):
         _check_union_outputs(scope)
-        _qualify_derived_tables(scope.ctes, scope, sequence)
-        _qualify_derived_tables(scope.derived_tables, scope, sequence)
+        _pop_table_column_aliases(scope.ctes)
+        _pop_table_column_aliases(scope.derived_tables)
         _qualify_columns(scope, schema)
         _expand_stars(scope, schema)
         _qualify_outputs(scope)
@@ -51,24 +48,16 @@ def _check_union_outputs(scope):
         )
 
 
-def _qualify_derived_tables(derived_tables, scope, sequence):
-    """Ensure all derived tables have aliases"""
+def _pop_table_column_aliases(derived_tables):
+    """
+    Remove table column aliases.
+
+    (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
+    """
     for derived_table in derived_tables:
         table_alias = derived_table.args.get("alias")
-
-        if not table_alias:
-            table_alias = exp.TableAlias()
-            derived_table.set("alias", table_alias)
-
-        alias = table_alias.args.get("this")
-        if not alias:
-            alias = exp.to_identifier(f"_q_{next(sequence)}")
-            scope.rename_source(None, alias.name)
-            table_alias.set("this", alias)
-
-        # Remove any alias column list
-        # (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
-        table_alias.args.pop("columns", None)
+        if table_alias:
+            table_alias.args.pop("columns", None)
 
 
 def _qualify_columns(scope, schema):
@@ -105,6 +94,8 @@ def _qualify_columns(scope, schema):
 def _expand_stars(scope, schema):
     """Expand stars to lists of column selections"""
 
+    new_selections = []
+
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
@@ -113,37 +104,43 @@ def _expand_stars(scope, schema):
         ):
             tables = [expression.table]
         else:
+            new_selections.append(expression)
             continue
-
-        new_columns = []
 
         for table in tables:
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
             columns = _get_source_columns(table, scope.sources, schema)
             for column in columns:
-                new_columns.append(exp.column(column, table))
+                new_selections.append(exp.column(column, table))
 
-        expression.replace(*new_columns)
+    scope.expression.set("expressions", new_selections)
 
 
 def _qualify_outputs(scope):
     """Ensure all output columns are aliased"""
 
+    new_selections = []
+
     for i, (selection, aliased_column) in enumerate(
         itertools.zip_longest(scope.selects, scope.outer_column_list)
     ):
         if isinstance(selection, exp.Column):
-            new_selection = exp.alias_(selection.copy(), selection.name)
-            selection.replace(new_selection)
-            selection = new_selection
+            # convoluted setter because a simple selection.replace(alias) would require a copy
+            alias_ = alias(exp.column(""), alias=selection.name)
+            alias_.set("this", selection)
+            selection = alias_
         elif not isinstance(selection, exp.Alias):
-            new_selection = exp.alias_(selection.copy(), f"_col_{i}")
-            selection.replace(new_selection)
-            selection = new_selection
+            alias_ = alias(exp.column(""), f"_col_{i}")
+            alias_.set("this", selection)
+            selection = alias_
 
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
+
+        new_selections.append(selection)
+
+    scope.expression.set("expressions", new_selections)
 
 
 def _check_unknown_tables(scope):

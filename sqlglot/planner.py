@@ -1,7 +1,7 @@
 import itertools
 import math
 
-import sqlglot.expressions as exp
+from sqlglot import alias, exp
 from sqlglot.errors import UnsupportedError
 from sqlglot.optimizer.simplify import simplify
 
@@ -119,9 +119,10 @@ class Step:
 
         if group:
             aggregate = Aggregate()
+            aggregate.source = step.name
             aggregate.name = step.name
             aggregate.operands = tuple(
-                exp.alias_(operand, alias) for operand, alias in operands.items()
+                alias(operand, alias_) for operand, alias_ in operands.items()
             )
             aggregate.aggregations = aggregations
             aggregate.group = [
@@ -207,25 +208,24 @@ class Step:
 class Scan(Step):
     @classmethod
     def from_expression(cls, expression, ctes=None):
-        alias = expression.alias
-        source = expression.this
+        table = expression.this
+        alias_ = expression.alias
 
-        if not alias:
+        if not alias_:
             raise UnsupportedError(
                 "Tables/Subqueries must be aliased. Run it through the optimizer"
             )
 
         if isinstance(expression, exp.Subquery):
-            step = Step.from_expression(source, ctes)
-            step.name = alias
+            step = Step.from_expression(table, ctes)
+            step.name = alias_
             return step
 
         step = Scan()
-        step.name = alias
-        step.source = source
-
-        if source.name in ctes:
-            step.add_dependency(ctes[source.name])
+        step.name = alias_
+        step.source = expression
+        if table.name in ctes:
+            step.add_dependency(ctes[table.name])
 
         return step
 
@@ -277,7 +277,7 @@ class Join(Step):
             on = simplify(on)
 
             step.joins[name] = {
-                "side": join.args.get("side"),
+                "side": join.side,
                 "join_key": join_key,
                 "source_key": source_key,
                 "condition": None if on == exp.TRUE else on,
@@ -306,6 +306,7 @@ class Aggregate(Step):
         self.aggregations = []
         self.operands = []
         self.group = []
+        self.source = None
 
     def _to_s(self, indent):
         lines = [f"{indent}Aggregations:"]

@@ -41,7 +41,7 @@ x = y;
 TRUE;
 
 1.0 = 1;
-1.0 = 1;
+TRUE;
 
 'x' = 'y';
 FALSE;
@@ -85,6 +85,9 @@ a AND b;
 --------------------------------------
 -- Absorption
 --------------------------------------
+(A OR B) AND (C OR NOT A);
+(A OR B) AND (C OR NOT A);
+
 A AND (A OR B);
 A;
 
@@ -116,6 +119,9 @@ A OR (NOT A AND B);
 A OR B;
 
 (A OR C) AND ((A OR C) OR B);
+A OR C;
+
+(A OR C) AND (A OR B OR C);
 A OR C;
 
 --------------------------------------
@@ -190,6 +196,9 @@ a AND b AND c AND d;
 (c AND (a AND b)) AND ((b AND a) AND c);
 a AND b AND c;
 
+(A AND B AND C) OR (C AND B AND A);
+A AND B AND C;
+
 --------------------------------------
 -- Where removal
 --------------------------------------
@@ -218,7 +227,106 @@ FALSE;
 TRUE;
 
 ((NOT FALSE) AND (x = x)) AND (FALSE OR 1 <> 2);
-1 <> 2;
+TRUE;
 
 (('a' = 'a') AND TRUE and NOT FALSE);
 TRUE;
+
+--------------------------------------
+-- Literals
+--------------------------------------
+1 + 1;
+2;
+
+0.06 + 0.01;
+0.07;
+
+0.06 + 1;
+1.06;
+
+1.2E+1 + 15E-3;
+12.015;
+
+1.2E1 + 15E-3;
+12.015;
+
+1 - 2;
+-1;
+
+0.06 - 0.01;
+0.05;
+
+3 * 4;
+12;
+
+3.0 * 9;
+27.0;
+
+0.03 * 0.73;
+0.0219;
+
+1 / 3;
+0;
+
+20.0 / 6;
+3.333333333333333333333333333;
+
+10 / 5;
+2;
+
+(1.0 * 3) * 4 - 2 * (5 / 2);
+8.0;
+
+1 < 2;
+TRUE;
+
+2 <= 2;
+TRUE;
+
+2 >= 2;
+TRUE;
+
+2 > 1;
+TRUE;
+
+2 > 2.5;
+FALSE;
+
+3 > 2.5;
+TRUE;
+
+1 > NULL;
+NULL;
+
+1 <= NULL;
+NULL;
+
+1 IS NULL;
+FALSE;
+
+NULL IS NULL;
+TRUE;
+
+NULL IS NOT NULL;
+FALSE;
+
+1 IS NOT NULL;
+TRUE;
+
+date '1998-12-01' - interval '90' day;
+CAST('1998-09-02' AS DATE);
+
+date '1998-12-01' + interval '1' week;
+CAST('1998-12-08' AS DATE);
+
+interval '1' year + date '1998-01-01';
+CAST('1999-01-01' AS DATE);
+
+interval '1' year + date '1998-01-01' + 3 * 7 * 4;
+CAST('1999-01-01' AS DATE) + 84;
+
+date '1998-12-01' - interval '90' foo;
+CAST('1998-12-01' AS DATE) - INTERVAL '90' foo;
+
+date '1998-12-01' + interval '90' foo;
+CAST('1998-12-01' AS DATE) + INTERVAL '90' foo;

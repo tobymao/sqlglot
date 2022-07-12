@@ -1,14 +1,14 @@
 import ast
-import csv
-import gzip
+import collections
 import itertools
 
-import sqlglot.expressions as exp
-from sqlglot import planner
+from sqlglot import exp, planner
 from sqlglot.dialects import Dialect
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
+from sqlglot.generator import Generator
+from sqlglot.helper import csv_reader
 
 
 class PythonExecutor:
@@ -76,10 +76,16 @@ class PythonExecutor:
         return Context(tables, env=self.env)
 
     def table(self, expressions):
-        return Table(*(expression.alias_or_name for expression in expressions))
+        return Table(expression.alias_or_name for expression in expressions)
 
-    def scan(self, step, context, source=None):
-        source = source or step.source.name
+    def scan(self, step, context):
+        if hasattr(step, "source"):
+            source = step.source
+
+            if isinstance(source, exp.Expression):
+                source = source.this.name or source.alias
+        else:
+            source = step.name
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
 
@@ -88,55 +94,52 @@ class PythonExecutor:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
         else:
-            table_iter = self.scan_csv(source)
+            table_iter = self.scan_csv(step)
 
-        sink = None
+        if projections:
+            sink = self.table(step.projections)
+        elif source in context:
+            sink = Table(context[source].columns)
+        else:
+            sink = None
 
-        for ctx in table_iter:
-            if not sink:
-                sink = (
-                    self.table(step.projections)
-                    if projections
-                    else Table(*ctx[source].columns)
-                )
+        for reader, ctx in table_iter:
+            if sink is None:
+                sink = Table(ctx[source].columns)
 
             if condition and not ctx.eval(condition):
                 continue
 
             if projections:
-                sink.add(ctx.eval_tuple(projections))
+                sink.append(ctx.eval_tuple(projections))
             else:
-                sink.add(ctx[source].tuple())
+                sink.append(reader.row)
 
-            if sink.length >= step.limit:
+            if len(sink) >= step.limit:
                 break
 
         return self.context({step.name: sink})
 
-    def scan_csv(self, file):
+    def scan_csv(self, step):
         # pylint: disable=stop-iteration-return
-        with gzip.open(f"tests/fixtures/optimizer/tpc-h/{file}.csv.gz", "rt") as f:
-            reader = csv.reader(f, delimiter="|")
-            columns = next(reader)
-            row = next(reader)
+        source = step.source
+        alias = source.alias
 
+        with csv_reader(source.this) as reader:
+            columns = next(reader)
+            table = Table(columns)
+            context = self.context({alias: table})
             types = []
 
-            for v in row:
-                try:
-                    types.append(type(ast.literal_eval(v)))
-                except (ValueError, SyntaxError):
-                    types.append(str)
-
-            f.seek(0)
-            next(reader)
-
-            table = Table(*columns, _columnar=False)
-            context = self.context({file: table})
-
             for row in reader:
-                context.set_row(file, tuple(t(v) for t, v in zip(types, row)))
-                yield context
+                if not types:
+                    for v in row:
+                        try:
+                            types.append(type(ast.literal_eval(v)))
+                        except (ValueError, SyntaxError):
+                            types.append(str)
+                context.set_row(alias, tuple(t(v) for t, v in zip(types, row)))
+                yield context[alias], context
 
     def join(self, step, context):
         source = step.name
@@ -153,14 +156,14 @@ class PythonExecutor:
             )
 
             if join.get("source_key"):
-                table = self.sort_merge_join(join, source, name, join_context)
+                table = self.hash_join(join, source, name, join_context)
             else:
                 table = self.nested_loop_join(join, source, name, join_context)
 
             join_context = merge_context(join_context, table)
 
         # apply projections or conditions
-        context = self.scan(step, join_context, source)
+        context = self.scan(step, join_context)
 
         # use the scan context since it returns a single table
         # otherwise there are no projections so all other tables are still in scope
@@ -170,11 +173,29 @@ class PythonExecutor:
         return merge_context(join_context, context.tables[source])
 
     def nested_loop_join(self, _join, a, b, context):
-        table = Table(*(context.tables[a].columns + context.tables[b].columns))
+        table = Table(context.tables[a].columns + context.tables[b].columns)
 
-        for _ in context.table_iter(a):
-            for ctx in context.table_iter(b):
-                table.add(ctx[a].tuple() + ctx[b].tuple())
+        for reader_a, _ in context.table_iter(a):
+            for reader_b, _ in context.table_iter(b):
+                table.append(reader_a.row + reader_b.row)
+
+        return table
+
+    def hash_join(self, join, a, b, context):
+        a_key = self.generate_tuple(join["source_key"])
+        b_key = self.generate_tuple(join["join_key"])
+
+        results = collections.defaultdict(lambda: ([], []))
+
+        for reader, ctx in context.table_iter(a):
+            results[ctx.eval_tuple(a_key)][0].append(reader.row)
+        for reader, ctx in context.table_iter(b):
+            results[ctx.eval_tuple(b_key)][1].append(reader.row)
+
+        table = Table(context.tables[a].columns + context.tables[b].columns)
+        for a_group, b_group in results.values():
+            for a_row, b_row in itertools.product(a_group, b_group):
+                table.append(a_row + b_row)
 
         return table
 
@@ -182,18 +203,18 @@ class PythonExecutor:
         a_key = self.generate_tuple(join["source_key"])
         b_key = self.generate_tuple(join["join_key"])
 
-        context.sort(a, lambda c: c.eval_tuple(a_key))
-        context.sort(b, lambda c: c.eval_tuple(b_key))
+        context.sort(a, a_key)
+        context.sort(b, b_key)
 
         a_i = 0
         b_i = 0
-        a_n = context.tables[a].length
-        b_n = context.tables[b].length
+        a_n = len(context.tables[a])
+        b_n = len(context.tables[b])
 
-        table = Table(*(context.tables[a].columns + context.tables[b].columns))
+        table = Table(context.tables[a].columns + context.tables[b].columns)
 
         def get_key(source, key, i):
-            context.set_row(source, i)
+            context.set_index(source, i)
             return context.eval_tuple(key)
 
         while a_i < a_n and b_i < b_n:
@@ -202,46 +223,47 @@ class PythonExecutor:
             a_group = []
 
             while a_i < a_n and key == get_key(a, a_key, a_i):
-                a_group.append(context[a].tuple())
+                a_group.append(context[a].row)
                 a_i += 1
 
             b_group = []
 
             while b_i < b_n and key == get_key(b, b_key, b_i):
-                b_group.append(context[b].tuple())
+                b_group.append(context[b].row)
                 b_i += 1
 
             for a_row, b_row in itertools.product(a_group, b_group):
-                table.add(a_row + b_row)
+                table.append(a_row + b_row)
 
         return table
 
     def aggregate(self, step, context):
-        source = list(context.tables)[0]
+        source = step.source
         group_by = self.generate_tuple(step.group)
         aggregations = self.generate_tuple(step.aggregations)
         operands = self.generate_tuple(step.operands)
 
-        context.sort(source, lambda ctx: ctx.eval_tuple(group_by))
+        context.sort(source, group_by)
 
         if step.operands:
-            operand_dt = self.table(step.operands)
-
-            for ctx in context.table_iter(source):
-                operand_dt.add(ctx.eval_tuple(operands))
-
-            context = self.context(
-                {source: Table(**context.tables[source].data, **operand_dt.data)}
+            source_table = context.tables[source]
+            operand_table = Table(
+                source_table.columns + self.table(step.operands).columns
             )
+
+            for reader, ctx in context:
+                operand_table.append(reader.row + ctx.eval_tuple(operands))
+
+            context = self.context({source: operand_table})
 
         group = None
         start = 0
         end = 1
-        length = context.tables[source].length
+        length = len(context.tables[source])
         table = self.table(step.group + step.aggregations)
 
         for i in range(length):
-            context.set_row(source, i)
+            context.set_index(source, i)
             key = context.eval_tuple(group_by)
             group = key if group is None else group
             end += 1
@@ -253,64 +275,71 @@ class PythonExecutor:
             else:
                 continue
 
-            table.add(group + context.eval_tuple(aggregations))
+            table.append(group + context.eval_tuple(aggregations))
             group = key
             start = end - 2
 
-        return self.context({step.name: table})
+        return self.scan(step, self.context({source: table}))
 
     def sort(self, step, context):
         table = list(context.tables)[0]
         key = self.generate_tuple(step.key)
-        context.sort(table, lambda ctx: ctx.eval_tuple(key))
-        return self.scan(step, context, step.name)
+        context.sort(table, key)
+        return self.scan(step, context)
+
+
+# pylint: disable=no-member
+def _cast_py(self, expression):
+    to = expression.args["to"].this
+    this = self.sql(expression, "this")
+
+    if to == exp.DataType.Type.DATE:
+        return f"datetime.date.fromisoformat({this})"
+    if to == exp.DataType.Type.TEXT:
+        return f"str({this})"
+    raise NotImplementedError
+
+
+def _column_py(self, expression):
+    table = self.sql(expression, "table")
+    this = self.sql(expression, "this")
+    return f"scope[{table}][{this}]"
+
+
+def _interval_py(self, expression):
+    this = self.sql(expression, "this")
+    unit = expression.text("unit").upper()
+    if unit == "DAY":
+        return f"datetime.timedelta(days=float({this}))"
+    raise NotImplementedError
+
+
+def _like_py(self, expression):
+    this = self.sql(expression, "this")
+    expression = self.sql(expression, "expression")
+    return f"""re.match({expression}.replace("_", ".").replace("%", ".*"), {this})"""
+
+
+def _ordered_py(self, expression):
+    this = self.sql(expression, "this")
+    desc = expression.args.get("desc")
+    return f"desc({this})" if desc else this
 
 
 class Python(Dialect):
-    # pylint: disable=no-member
-    def _cast_py(self, expression):
-        to = expression.args["to"].this
-        this = self.sql(expression, "this")
-
-        if to == exp.DataType.Type.DATE:
-            return f"datetime.date.fromisoformat({this})"
-        if to == exp.DataType.Type.TEXT:
-            return f"str({this})"
-        raise NotImplementedError
-
-    def _column_py(self, expression):
-        table = self.sql(expression, "table")
-        this = self.sql(expression, "this")
-        return f"scope[{table}][{this}]"
-
-    def _interval_py(self, expression):
-        this = self.sql(expression, "this")
-        unit = expression.text("unit").upper()
-        if unit == "DAY":
-            return f"datetime.timedelta(days=float({this}))"
-        raise NotImplementedError
-
-    def _like_py(self, expression):
-        this = self.sql(expression, "this")
-        expression = self.sql(expression, "expression")
-        return (
-            f"""re.match({expression}.replace("_", ".").replace("%", ".*"), {this})"""
-        )
-
-    def _ordered_py(self, expression):
-        this = self.sql(expression, "this")
-        desc = expression.args.get("desc")
-        return f"desc({this})" if desc else this
-
-    transforms = {
-        exp.Alias: lambda self, e: self.sql(e.this),
-        exp.And: lambda self, e: self.binary(e, "and"),
-        exp.Cast: _cast_py,
-        exp.Column: _column_py,
-        exp.EQ: lambda self, e: self.binary(e, "=="),
-        exp.Interval: _interval_py,
-        exp.Like: _like_py,
-        exp.Or: lambda self, e: self.binary(e, "or"),
-        exp.Ordered: _ordered_py,
-        exp.Star: lambda *_: "1",
-    }
+    class Generator(Generator):
+        TRANSFORMS = {
+            exp.Alias: lambda self, e: self.sql(e.this),
+            exp.And: lambda self, e: self.binary(e, "and"),
+            exp.Cast: _cast_py,
+            exp.Column: _column_py,
+            exp.EQ: lambda self, e: self.binary(e, "=="),
+            exp.Interval: _interval_py,
+            exp.Is: lambda self, e: self.binary(e, "is"),
+            exp.Like: _like_py,
+            exp.Not: lambda self, e: f"not {self.sql(e.this)}",
+            exp.Null: lambda *_: "None",
+            exp.Or: lambda self, e: self.binary(e, "or"),
+            exp.Ordered: _ordered_py,
+            exp.Star: lambda *_: "1",
+        }

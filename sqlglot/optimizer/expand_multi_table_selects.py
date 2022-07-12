@@ -1,4 +1,4 @@
-import sqlglot.expressions as exp
+from sqlglot import exp
 
 
 def expand_multi_table_selects(expression):

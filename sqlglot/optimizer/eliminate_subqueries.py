@@ -1,7 +1,6 @@
 import itertools
 
-import sqlglot
-import sqlglot.expressions as exp
+from sqlglot import alias, exp, select, table
 from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.scope import traverse_scope
 
@@ -35,13 +34,15 @@ def eliminate_subqueries(expression):
         if len(duplicates) == 1:
             continue
 
-        alias = f"_e_{next(sequence)}"
-        expression.with_(alias, as_=query.copy(), copy=False)
+        alias_ = f"_e_{next(sequence)}"
+
         for dup in duplicates:
             parent = dup.parent
             if isinstance(parent, exp.Subquery):
-                parent.replace(exp.alias_(alias, parent.alias_or_name))
+                parent.replace(alias(table(alias_), parent.alias_or_name, table=True))
             elif isinstance(parent, exp.Union):
-                dup.replace(sqlglot.select("*").from_(alias))
+                dup.replace(select("*").from_(alias_))
+
+        expression.with_(alias_, as_=query, copy=False)
 
     return expression

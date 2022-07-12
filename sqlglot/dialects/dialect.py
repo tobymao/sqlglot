@@ -32,7 +32,6 @@ class _Dialect(type):
 
         klass.tokenizer = klass.tokenizer_class(
             identifier=klass.identifier,
-            quotes=klass.quotes,
             escape=klass.escape,
             encode=klass.encode,
             numeric_literals=klass.numeric_literals,
@@ -42,8 +41,7 @@ class _Dialect(type):
 
 class Dialect(metaclass=_Dialect):
     identifier = None
-    quotes = None
-    escape = None
+    escape = "'"
     encode = None
     index_offset = 0
     strict_cast = True
@@ -120,6 +118,7 @@ class Dialect(metaclass=_Dialect):
         # pylint: disable=not-callable
         return self.generator_class(
             **{
+                "quote": self.tokenizer_class.QUOTES[0],
                 "identifier": self.identifier,
                 "escape": self.escape,
                 "index_offset": self.index_offset,

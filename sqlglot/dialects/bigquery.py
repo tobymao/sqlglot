@@ -6,9 +6,10 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 class BigQuery(Dialect):
     identifier = "`"
-    quotes = {"'", '"', '"""'}
 
     class Tokenizer(Tokenizer):
+        QUOTES = ["'", '"', '"""']
+
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "INT64": TokenType.BIGINT,

@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import csv, list_get
 from sqlglot.parser import Parser
+from sqlglot.tokens import Tokenizer
 
 
 def _parse_map(args):
@@ -130,7 +131,6 @@ class HiveMap(exp.Map):
 
 class Hive(Dialect):
     identifier = "`"
-    quotes = {"'", '"'}
     escape = "\\"
     encode = "utf-8"
     strict_cast = False
@@ -171,6 +171,9 @@ class Hive(Dialect):
     date_format = "'yyyy-MM-dd'"
     dateint_format = "'yyyyMMdd'"
     time_format = "'yyyy-MM-dd HH:mm:ss'"
+
+    class Tokenizer(Tokenizer):
+        QUOTES = ["'", '"']
 
     class Parser(Parser):
         FUNCTIONS = {

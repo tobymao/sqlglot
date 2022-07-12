@@ -308,12 +308,19 @@ class TestDialects(unittest.TestCase):
         )
 
     def test_bigquery(self):
-        # self.validate(
-        #    '"""x"""',
-        #    "'x'",
-        #    read="bigquery",
-        #    write="presto",
-        # )
+        self.validate(
+            '"""x"""',
+            "'x'",
+            read="bigquery",
+            write="presto",
+        )
+
+        self.validate(
+            '"""x\'"""',
+            "'x'''",
+            read="bigquery",
+            write="presto",
+        )
 
         self.validate(
             "SELECT CAST(a AS INT) FROM foo",

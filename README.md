@@ -246,9 +246,10 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 class Custom(Dialect):
     identifier = "`"
-    quotes = {"'", '"'}
 
     class Tokenizer(Tokenizer):
+        QUOTES = ["'", '"']
+
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "INT64": TokenType.BIGINT,
@@ -276,13 +277,13 @@ Dialects["custom"]
 
 ## Benchmarks
 
-[Benchmarks](benchmarks) run on Python 3.9.6 in seconds.
+[Benchmarks](benchmarks) run on Python 3.10.5 in seconds.
 
 | Query            | sqlglot          | [sqlparse](https://github.com/andialbrecht/sqlparse)         | [moz\_sql\_parser](https://github.com/klahnakoski/mo-sql-parsing) | [sqloxide](https://github.com/wseaton/sqloxide/) |
 | ---------------- | ---------------- | ---------------- | ---------------- | ---------------- |
-| short            | 0.00038          | 0.00104          | 0.00174          | 0.000060
-| long             | 0.00508          | 0.01522          | 0.02162          | 0.000597
-| crazy            | 0.01871          | 3.49415          | 0.35346          | 0.003104
+| short            | 0.00033          | 0.00099          | 0.00160          | 0.000063
+| long             | 0.00426          | 0.01396          | 0.02023          | 0.000595
+| crazy            | 0.01363          | 3.69641          | 0.34818          | 0.003121
 
 
 ## Run Tests and Lint

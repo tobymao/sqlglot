@@ -849,8 +849,6 @@ class Select(Subqueryable, Expression):
         "expressions": False,
         "hint": False,
         "distinct": False,
-        "except": False,
-        "replace": False,
         "from": False,
         "laterals": False,
         "joins": False,
@@ -1348,6 +1346,14 @@ class Star(Expression):
         return "*"
 
 
+class StarExcept(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
+class StarReplace(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
 class Null(Condition):
     arg_types = {}
 
@@ -1753,6 +1759,10 @@ class Count(AggFunc):
     pass
 
 
+class CurrentDate(Func):
+    arg_types = {"this": False}
+
+
 class DateAdd(Func):
     arg_types = {"this": True, "expression": True, "unit": False}
 
@@ -1763,6 +1773,10 @@ class DateDiff(Func):
 
 class DateStrToDate(Func):
     pass
+
+
+class DateSub(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DateToDateStr(Func):
@@ -1891,6 +1905,10 @@ class RegexpSplit(Func):
 
 class Round(Func):
     arg_types = {"this": True, "decimals": False}
+
+
+class SafeDivide(Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class SetAgg(AggFunc):

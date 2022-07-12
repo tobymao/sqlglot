@@ -15,9 +15,6 @@ class Parser:
     and produces a parsed syntax tree.
 
     Args
-        functions (dict): the dictionary of additional functions in which the key
-            represents a function's SQL name and the value is a function which constructs
-            the function instance from a list of arguments.
         error_level (ErrorLevel): the desired error level. Default: ErrorLevel.RAISE.
         error_message_context (int): determines the amount of context to capture from
             a query string when displaying the error message (in number of characters).
@@ -31,6 +28,8 @@ class Parser:
     FUNCTIONS = {
         name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()
     }
+
+    NO_PAREN_FUNCTIONS = {}
 
     TYPE_TOKENS = {
         TokenType.BOOLEAN,
@@ -191,15 +190,11 @@ class Parser:
         TokenType.CROSS,
     }
 
-    COLUMN_OPERATORS = {
-        TokenType.COLON,
-        TokenType.DOT,
-    }
+    COLUMN_OPERATORS = {TokenType.DOT}
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     __slots__ = (
-        "functions",
         "error_level",
         "error_message_context",
         "sql",
@@ -216,13 +211,11 @@ class Parser:
 
     def __init__(
         self,
-        functions=None,
         error_level=None,
         error_message_context=100,
         index_offset=0,
         strict_cast=True,
     ):
-        self.functions = {**self.FUNCTIONS, **(functions or {})}
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
@@ -797,8 +790,6 @@ class Parser:
                 distinct=distinct,
                 expressions=expressions,
                 **{
-                    "except": self._parse_except(),
-                    "replace": self._parse_replace(),
                     "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
                     "joins": self._parse_joins(),
@@ -813,25 +804,6 @@ class Parser:
             )
 
         return self._parse_set_operations(this)
-
-    def _parse_except(self):
-        index = self._index
-
-        if not self._match(TokenType.EXCEPT) or not self._match(TokenType.L_PAREN):
-            self._retreat(index)
-            return None
-
-        columns = self._parse_csv(self._parse_id_var)
-        self._match_r_paren()
-        return columns
-
-    def _parse_replace(self):
-        if not self._match(TokenType.REPLACE):
-            return None
-        self._match_l_paren()
-        columns = self._parse_csv(lambda: self._parse_alias(self._parse_id_var()))
-        self._match_r_paren()
-        return columns
 
     def _parse_annotation(self, expression):
         if self._match(TokenType.ANNOTATION):
@@ -1301,23 +1273,30 @@ class Parser:
         if self._match(TokenType.IF):
             return self._parse_if()
 
-        if (
-            not self._curr
-            or self._curr.token_type not in self.FUNC_TOKENS
-            or not self._next
-            or self._next.token_type != TokenType.L_PAREN
-        ):
+        if not self._curr:
+            return None
+
+        token_type = self._curr.token_type
+
+        if not self._next or self._next.token_type != TokenType.L_PAREN:
+            if token_type in self.NO_PAREN_FUNCTIONS:
+                return self.expression(
+                    self._advance() or self.NO_PAREN_FUNCTIONS[token_type]
+                )
+            return None
+
+        if token_type not in self.FUNC_TOKENS:
             return None
 
         if self._match_set(self.CASTS):
-            strict = self.strict_cast and self._prev.token_type == TokenType.CAST
+            strict = self.strict_cast and token_type == TokenType.CAST
             self._advance()
             this = self._parse_cast(strict)
         elif self._match(TokenType.EXTRACT):
             self._advance()
             this = self._parse_extract()
         else:
-            subquery_predicate = self.SUBQUERY_PREDICATES.get(self._curr.token_type)
+            subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
             this = self._curr.text.upper()
             self._advance(2)
 
@@ -1329,7 +1308,7 @@ class Parser:
                 self._match_r_paren()
                 return this
 
-            function = self.functions.get(this)
+            function = self.FUNCTIONS.get(this)
             args = self._parse_csv(self._parse_lambda)
 
             if not callable(function):
@@ -1638,8 +1617,26 @@ class Parser:
 
     def _parse_star(self):
         if self._match(TokenType.STAR):
-            return exp.Star()
+            return self._parse_replace(self._parse_except(exp.Star()))
         return None
+
+    def _parse_except(self, this):
+        if not self._match(TokenType.EXCEPT):
+            return this
+
+        self._match_l_paren()
+        columns = self._parse_csv(self._parse_id_var)
+        self._match_r_paren()
+        return self.expression(exp.StarExcept, this=this, expressions=columns)
+
+    def _parse_replace(self, this):
+        if not self._match(TokenType.REPLACE):
+            return this
+
+        self._match_l_paren()
+        columns = self._parse_csv(lambda: self._parse_alias(self._parse_id_var()))
+        self._match_r_paren()
+        return self.expression(exp.StarReplace, this=this, expressions=columns)
 
     def _parse_csv(self, parse):
         parse_result = parse()

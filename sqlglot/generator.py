@@ -15,12 +15,6 @@ class Generator:
     Generator interprets the given syntax tree and produces a SQL string as an output.
 
     Args
-        transforms (dict): the dictionary of custom transformations in which key
-            represents the expression type and the value is a function which defines
-            how the given expression type should be rendered.
-        type_mapping (dict): the dictionary of custom type mappings in which the key
-            represents the data type (:class:`~sqlglot.expressions.DataType.Type`) and
-            the value is its SQL string representation.
         time_mapping (dict): the dictionary of custom time mappings in which the key
             represents a python time format and the output the target time format
         time_trie (trie): a trie of the time_mapping keys
@@ -44,9 +38,9 @@ class Generator:
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
+    TYPE_MAPPING = {}
+
     __slots__ = (
-        "transforms",
-        "type_mapping",
         "time_mapping",
         "time_trie",
         "pretty",
@@ -65,8 +59,6 @@ class Generator:
 
     def __init__(
         self,
-        transforms=None,
-        type_mapping=None,
         time_mapping=None,
         time_trie=None,
         pretty=None,
@@ -83,8 +75,6 @@ class Generator:
         # pylint: disable=too-many-arguments
         import sqlglot
 
-        self.transforms = {**self.TRANSFORMS, **(transforms or {})}
-        self.type_mapping = type_mapping or {}
         self.time_mapping = time_mapping or {}
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
@@ -178,7 +168,7 @@ class Generator:
         if key:
             return self.sql(expression.args.get(key))
 
-        transform = self.transforms.get(expression.__class__)
+        transform = self.TRANSFORMS.get(expression.__class__)
 
         if callable(transform):
             return transform(self, expression)
@@ -313,7 +303,7 @@ class Generator:
 
     def datatype_sql(self, expression):
         type_value = expression.this
-        type_sql = self.type_mapping.get(type_value, type_value.value)
+        type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
         nested = ""
         interior = self.expressions(expression, flat=True)
         if interior:
@@ -522,25 +512,11 @@ class Generator:
     def select_sql(self, expression):
         hint = self.sql(expression, "hint")
         distinct = " DISTINCT" if expression.args.get("distinct") else ""
-        except_ = expression.args.get("except")
-        except_ = (
-            f"{self.seg('EXCEPT')} ({csv(*(self.sql(e) for e in except_))})"
-            if except_
-            else ""
-        )
-        replace = expression.args.get("replace")
-        replace = (
-            f"{self.seg('REPLACE')} ({csv(*(self.sql(e) for e in replace))})"
-            if replace
-            else ""
-        )
         expressions = self.expressions(expression)
         select = "SELECT" if expressions else ""
         sep = self.sep() if expressions else ""
         sql = csv(
             f"{select}{hint}{distinct}{sep}{expressions}",
-            except_,
-            replace,
             self.sql(expression, "from"),
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
@@ -564,6 +540,16 @@ class Generator:
     def star_sql(self, expression):
         # pylint: disable=unused-argument
         return "*"
+
+    def starexcept_sql(self, expression):
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        return f"{this}{self.seg('EXCEPT')} ({expressions})"
+
+    def starreplace_sql(self, expression):
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        return f"{this}{self.seg('REPLACE')} ({expressions})"
 
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")

@@ -1,9 +1,14 @@
+import collections.abc
+# moz_sql_parser 3.10 compatibility
+collections.Iterable = collections.abc.Iterable
 import timeit
+
 import numpy as np
 import moz_sql_parser
 import sqlglot
 import sqlparse
 import sqloxide
+
 
 long = """
 SELECT

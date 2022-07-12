@@ -1,6 +1,6 @@
 from enum import auto
 
-from sqlglot.helper import AutoName, ensure_list, list_get
+from sqlglot.helper import AutoName, list_get
 from sqlglot.trie import in_trie, new_trie
 
 
@@ -98,6 +98,7 @@ class TokenType(AutoName):
     COMMIT = auto()
     CREATE = auto()
     CROSS = auto()
+    CURRENT_DATE = auto()
     CURRENT_ROW = auto()
     DIV = auto()
     DEFAULT = auto()
@@ -158,6 +159,7 @@ class TokenType(AutoName):
     PRIMARY_KEY = auto()
     PROPERTIES = auto()
     QUALIFY = auto()
+    QUOTE = auto()
     RANGE = auto()
     RECURSIVE = auto()
     REPLACE = auto()
@@ -225,16 +227,24 @@ class Token:
         return f"<Token {attributes}>"
 
 
-def new_ambiguous(keywords, single_tokens):
-    return new_trie(
-        key
-        for key, value in keywords.items()
-        if value not in (TokenType.COMMENT, TokenType.COMMENT_START)
-        and (" " in key or any(single in key for single in single_tokens))
-    )
+class _Tokenizer(type):
+    def __new__(cls, clsname, bases, attrs):
+        klass = super().__new__(cls, clsname, bases, attrs)
+
+        quotes = {quote: TokenType.QUOTE for quote in klass.QUOTES}
+
+        klass.AMBIGUOUS = new_trie(
+            key
+            for key, value in {**klass.KEYWORDS, **quotes}.items()
+            if value in (TokenType.COMMENT, TokenType.COMMENT_START, TokenType.QUOTE)
+            or " " in key
+            or any(single in key for single in klass.SINGLE_TOKENS)
+        )
+
+        return klass
 
 
-class Tokenizer:
+class Tokenizer(metaclass=_Tokenizer):
     SINGLE_TOKENS = {
         "(": TokenType.L_PAREN,
         ")": TokenType.R_PAREN,
@@ -260,6 +270,8 @@ class Tokenizer:
         "*": TokenType.STAR,
         "~": TokenType.TILDA,
     }
+
+    QUOTES = ["'"]
 
     KEYWORDS = {
         "/*+": TokenType.HINT,
@@ -362,7 +374,6 @@ class Tokenizer:
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
-        "QUALIFY": TokenType.QUALIFY,
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
@@ -435,9 +446,6 @@ class Tokenizer:
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "DATE": TokenType.DATE,
-        "UUID": TokenType.UUID,
-        "INT64": TokenType.BIGINT,
-        "FLOAT64": TokenType.DOUBLE,
     }
 
     WHITE_SPACE = {
@@ -462,15 +470,13 @@ class Tokenizer:
         TokenType.USE,
     }
 
+    AMBIGUOUS = None  # autofilled
     ESCAPE_CODE = "__sqlglot_escape__"
-
-    AMBIGUOUS = new_ambiguous(KEYWORDS, SINGLE_TOKENS)
-    COMMENTS = ["--"]
+    COMMENTS = {"--"}
     COMMENT_START = "/*"
     COMMENT_END = "*/"
 
     __slots__ = (
-        "quotes",
         "identifier",
         "escape",
         "encode",
@@ -490,7 +496,6 @@ class Tokenizer:
 
     def __init__(
         self,
-        quotes=None,
         identifier=None,
         escape=None,
         encode=None,
@@ -500,13 +505,11 @@ class Tokenizer:
         Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
 
         Args
-            quotes (str | list): character to identify string literals
             identifier (str): the identifier character
             escape (str): the escape code character
             encode (str): if passed in, encode string literals and then decode
             numeric_literals (dict): if passed in, handle numeric literals like in hive (3L = BIGINT)
         """
-        self.quotes = set(ensure_list(quotes) or ["'"])
         self.identifier = identifier or '"'
         self.escape = escape or "'"
         self.encode = encode
@@ -540,8 +543,6 @@ class Tokenizer:
                 break
             if self._scan_ambiguous():
                 pass
-            elif self._scan_comments():
-                pass
             elif self._char in self.SINGLE_TOKENS:
                 self._add(self.SINGLE_TOKENS[self._char])
             elif self._char in self.WHITE_SPACE:
@@ -551,8 +552,6 @@ class Tokenizer:
                     self._line += 1
             elif self._char.isdigit():
                 self._scan_number()
-            elif self._char in self.quotes:
-                self._scan_string()
             elif self._char == self.identifier:
                 self._scan_identifier()
             elif self._char == "#":
@@ -562,10 +561,12 @@ class Tokenizer:
         return self.tokens
 
     def _chars(self, size):
+        if size == 1:
+            return self._char
         start = self._current - 1
         end = start + size
         if end <= self.size:
-            return self.sql[start:end].upper()
+            return self.sql[start:end]
         return ""
 
     def _advance(self, i=1):
@@ -601,7 +602,7 @@ class Tokenizer:
         chars = self._chars(size)
 
         while chars:
-            result = in_trie(self.AMBIGUOUS, chars)
+            result = in_trie(self.AMBIGUOUS, chars.upper())
 
             if result == 0:
                 break
@@ -610,28 +611,32 @@ class Tokenizer:
             size += 1
             chars = self._chars(size)
 
-        if word:
-            self._advance(len(word) - 1)
-            self._add(self.KEYWORDS[word])
+        if not word:
+            return False
+
+        if self._scan_comment(word):
             return True
-        return False
 
-    def _scan_comments(self):
-        for comment in self.COMMENTS:
-            if self._chars(len(comment)) == comment:
-                while (
-                    not self._end
-                    and self.WHITE_SPACE.get(self._char) != TokenType.BREAK
-                ):
-                    self._advance()
-                return True
+        if self._scan_string(word):
+            return True
 
-        if self._chars(len(self.COMMENT_START)) == self.COMMENT_START:
+        self._advance(len(word) - 1)
+        self._add(self.KEYWORDS[word])
+        return True
+
+    def _scan_comment(self, comment):
+        if comment in self.COMMENTS:
+            while not self._end and self.WHITE_SPACE.get(self._char) != TokenType.BREAK:
+                self._advance()
+            return True
+
+        if comment == self.COMMENT_START:
             comment_end_size = len(self.COMMENT_END)
             while not self._end and self._chars(comment_end_size) != self.COMMENT_END:
                 self._advance()
             self._advance(comment_end_size - 1)
             return True
+
         return False
 
     def _scan_annotation(self):
@@ -672,29 +677,42 @@ class Tokenizer:
             else:
                 return self._add(TokenType.NUMBER)
 
-    def _scan_string(self):
-        text = []
-        quote = self._char
+    def _scan_string(self, quote):
+        if quote not in self.QUOTES:
+            return False
+
+        size = len(quote)
+        text = list(self._chars(size))
+        self._advance(size)
 
         while True:
-            if self._end:
-                raise RuntimeError(f"Missing {quote} from {self._line}:{self._start}")
-            text.append(self._char)
-            self._advance()
-
             if self._char == self.escape and self._peek == quote:
-                text.append(self.ESCAPE_CODE)
-                self._advance()
-            elif self._char == quote:
-                break
-            elif self._char == "'":
-                text.append(self.ESCAPE_CODE)
+                text.extend((self.ESCAPE_CODE, self._char))
+                self._advance(2)
+            else:
+                chars = self._chars(size)
 
-        text.append(self._char)
-        text = "".join(text[1:-1])
+                if chars == quote:
+                    text.extend(chars)
+                    self._advance(size - 1)
+                    break
+
+                if self._char == "'":
+                    text.extend((self.ESCAPE_CODE, self._char))
+                    self._advance()
+                else:
+                    if self._end:
+                        raise RuntimeError(
+                            f"Missing {quote} from {self._line}:{self._start}"
+                        )
+                    text.append(self._char)
+                    self._advance()
+
+        text = "".join(text[size:-size])
         text = text.encode(self.encode).decode(self.encode) if self.encode else text
         text = text.replace("\\\\", "\\") if self.escape == "\\" else text
         self._add(TokenType.STRING, text)
+        return True
 
     def _scan_identifier(self):
         while self._peek != self.identifier:

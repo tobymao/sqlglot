@@ -277,6 +277,13 @@ class TestDialects(unittest.TestCase):
             write="duckdb",
         )
 
+        self.validate(
+            "SAFE_DIVIDE(x, y)",
+            "IF(y <> 0, x / y, NULL)",
+            read="bigquery",
+            write="duckdb",
+        )
+
     def test_mysql(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",
@@ -309,24 +316,35 @@ class TestDialects(unittest.TestCase):
 
     def test_bigquery(self):
         self.validate(
+            '"""x"""',
+            "'x'",
+            read="bigquery",
+            write="presto",
+        )
+
+        self.validate(
+            '"""x\'"""',
+            "'x'''",
+            read="bigquery",
+            write="presto",
+        )
+
+        self.validate(
             "SELECT CAST(a AS INT) FROM foo",
             "SELECT CAST(a AS INT64) FROM foo",
             write="bigquery",
         )
-
         self.validate(
             "SELECT CAST(a AS INT64) FROM foo",
             "SELECT CAST(a AS BIGINT) FROM foo",
             read="bigquery",
             write="duckdb",
         )
-
         self.validate(
             "SELECT CAST(a AS DECIMAL) FROM foo",
             "SELECT CAST(a AS NUMERIC) FROM foo",
             write="bigquery",
         )
-
         self.validate(
             'SELECT CAST("a" AS DOUBLE) FROM foo',
             "SELECT CAST(`a` AS FLOAT64) FROM foo",
@@ -376,6 +394,34 @@ class TestDialects(unittest.TestCase):
             read="postgres",
             write="hive",
         )
+
+        self.validate(
+            "CREATE TABLE x (a UUID)",
+            "CREATE TABLE x (a UUID)",
+            read="postgres",
+            write="hive",
+        )
+
+        self.validate(
+            "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
+            "CURRENT_DATE - INTERVAL '1' DAY",
+            read="bigquery",
+            write="postgres",
+        )
+
+        self.validate(
+            "DATE_ADD(CURRENT_DATE(), INTERVAL 1 + 3 DAY)",
+            "CURRENT_DATE + INTERVAL '4' DAY",
+            read="bigquery",
+            write="postgres",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "DATE_ADD(x, y, 'day')",
+                write="postgres",
+                unsupported_level=ErrorLevel.RAISE,
+            )
 
     def test_presto(self):
         self.validate(
@@ -1446,6 +1492,17 @@ class TestDialects(unittest.TestCase):
             read="snowflake",
         )
 
+        self.validate(
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
+            read="snowflake",
+        )
+
     def test_sqlite(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
@@ -1508,6 +1565,6 @@ class TestDialects(unittest.TestCase):
     def test_trino(self):
         self.validate(
             "ARRAY_SUM(ARRAY(1, 2))",
-            "REDUCE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
+            "REDUCE(ARRAY[1, 2], 0, (acc, x) -> acc + x, acc -> acc)",
             write="trino",
         )

@@ -166,6 +166,12 @@ def no_recursive_cte_sql(self, expression):
     return self.with_sql(expression)
 
 
+def no_safe_divide_sql(self, expression):
+    n = self.sql(expression, "this")
+    d = self.sql(expression, "expression")
+    return f"IF({d} <> 0, {n} / {d}, NULL)"
+
+
 def no_tablesample_sql(self, expression):
     self.unsupported("TABLESAMPLE unsupported")
     return self.sql(expression.this)

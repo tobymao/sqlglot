@@ -3,8 +3,9 @@ from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,
     approx_count_distinct_sql,
-    rename_func,
+    no_safe_divide_sql,
     no_tablesample_sql,
+    rename_func,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
@@ -71,6 +72,7 @@ class DuckDB(Dialect):
             exp.Explode: rename_func("UNNEST"),
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
+            exp.SafeDivide: no_safe_divide_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",

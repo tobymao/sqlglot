@@ -2,11 +2,12 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,
-    rename_func,
     if_sql,
     no_ilike_sql,
-    struct_extract_sql,
+    no_safe_divide_sql,
     no_tablesample_sql,
+    rename_func,
+    struct_extract_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import Generator
@@ -178,6 +179,7 @@ class Presto(Dialect):
             exp.Lateral: _explode_to_unnest_sql,
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
             exp.Quantile: _quantile_sql,
+            exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.SortArray: _no_sort_array,
             exp.StrPosition: _str_position_sql,

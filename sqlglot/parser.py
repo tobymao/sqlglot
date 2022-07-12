@@ -29,7 +29,7 @@ class Parser:
         name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()
     }
 
-    NO_PAREN_FUNCTIONS = {}
+    NO_PAREN_FUNCTIONS = {TokenType.CURRENT_DATE: exp.CurrentDate}
 
     TYPE_TOKENS = {
         TokenType.BOOLEAN,
@@ -113,6 +113,7 @@ class Parser:
     }
 
     FUNC_TOKENS = {
+        TokenType.CURRENT_DATE,
         TokenType.EXTRACT,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
@@ -1077,9 +1078,7 @@ class Parser:
             this = self.expression(
                 exp.Is,
                 this=this,
-                expression=self._parse_unknown()
-                or self._parse_null()
-                or self._parse_boolean(),
+                expression=self._parse_null() or self._parse_boolean(),
             )
         elif self._match(TokenType.LIKE):
             this = self._parse_escape(
@@ -1607,11 +1606,6 @@ class Parser:
     def _parse_var(self):
         if self._match(TokenType.VAR):
             return exp.Var(this=self._prev.text)
-        return None
-
-    def _parse_unknown(self):
-        if self._match(TokenType.UNKNOWN):
-            return exp.Unknown()
         return None
 
     def _parse_null(self):

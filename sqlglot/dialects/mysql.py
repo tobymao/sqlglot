@@ -2,6 +2,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
     no_ilike_sql,
+    no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
 )
@@ -26,6 +27,7 @@ class MySQL(Dialect):
     class Generator(Generator):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.CurrentDate: no_paren_current_date_sql,
             exp.ILike: no_ilike_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,

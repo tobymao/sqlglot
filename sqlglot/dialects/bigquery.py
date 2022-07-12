@@ -38,7 +38,7 @@ class BigQuery(Dialect):
             **Tokenizer.KEYWORDS,
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
-            "CURRENT_DATE": TokenType.CURRENT_DATE,
+            "UNKNOWN": TokenType.NULL,
         }
 
     class Parser(Parser):
@@ -47,10 +47,14 @@ class BigQuery(Dialect):
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
         }
-        NO_PAREN_FUNCTIONS = {TokenType.CURRENT_DATE: exp.CurrentDate}
-        FUNC_TOKENS = Parser.FUNC_TOKENS | {TokenType.CURRENT_DATE}
 
     class Generator(Generator):
+        TRANSFORMS = {
+            exp.Array: lambda self, e: f"[{self.expressions(e)}]",
+            exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateSub: _date_add_sql("SUB"),
+        }
+
         TYPE_MAPPING = {
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.SMALLINT: "INT64",
@@ -61,10 +65,4 @@ class BigQuery(Dialect):
             exp.DataType.Type.DOUBLE: "FLOAT64",
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.TEXT: "STRING",
-        }
-
-        TRANSFORMS = {
-            exp.Array: lambda self, e: f"[{self.expressions(e)}]",
-            exp.DateAdd: _date_add_sql("ADD"),
-            exp.DateSub: _date_add_sql("SUB"),
         }

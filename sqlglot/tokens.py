@@ -318,6 +318,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMIT": TokenType.COMMIT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
+        "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "DIV": TokenType.DIV,
         "DEFAULT": TokenType.DEFAULT,

@@ -64,14 +64,9 @@ def _qualify_columns(scope, schema):
     """Disambiguate columns, ensuring each column specifies a source"""
     unambiguous_columns = None  # lazily loaded
 
-    print("scope.columns", repr(scope.columns))
-
     for column in scope.columns:
-        print("column", repr(column))
         column_table = column.table
         column_name = column.name
-        print("column_table", repr(column_table))
-        print("column_name", repr(column_name))
 
         if (
             column_table
@@ -100,7 +95,7 @@ def _expand_stars(scope, schema):
     """Expand stars to lists of column selections"""
 
     new_selections = []
-    excepted_columns = []
+    excepted_columns = {}
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
@@ -114,7 +109,10 @@ def _expand_stars(scope, schema):
         ):
             tables = [expression.table]
             for projection in expression.this.args["expressions"]:
-                excepted_columns.append(projection.alias_or_name)
+                if not expression.table in excepted_columns:
+                    excepted_columns[expression.table] = []
+
+                excepted_columns[expression.table].append(projection.alias_or_name)
         else:
             new_selections.append(expression)
             continue
@@ -124,7 +122,10 @@ def _expand_stars(scope, schema):
                 raise OptimizeError(f"Unknown table: {table}")
             columns = _get_source_columns(table, scope.sources, schema)
             for column in columns:
-                if not column in excepted_columns:
+                if (
+                    not table in excepted_columns
+                    or not column in excepted_columns[table]
+                ):
                     new_selections.append(exp.column(column, table))
 
     scope.expression.set("expressions", new_selections)

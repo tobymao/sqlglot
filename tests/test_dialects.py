@@ -380,6 +380,12 @@ class TestDialects(unittest.TestCase):
             read="presto",
             write="bigquery",
         )
+        self.validate(
+            "x IS unknown",
+            "x IS NULL",
+            read="bigquery",
+            write="duckdb",
+        )
 
     def test_postgres(self):
         self.validate(
@@ -412,6 +418,13 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "DATE_ADD(CURRENT_DATE(), INTERVAL 1 + 3 DAY)",
             "CURRENT_DATE + INTERVAL '4' DAY",
+            read="bigquery",
+            write="postgres",
+        )
+
+        self.validate(
+            "CURRENT_DATE('UTC')",
+            "CURRENT_DATE AT TIME ZONE 'UTC'",
             read="bigquery",
             write="postgres",
         )

@@ -1346,16 +1346,16 @@ class Star(Expression):
         return "*"
 
 
-class Placeholder(Expression):
-    arg_types = {}
-    
-
 class StarExcept(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
 class StarReplace(Expression):
     arg_types = {"this": True, "expressions": True}
+
+
+class Placeholder(Expression):
+    arg_types = {}
 
 
 class Null(Condition):

@@ -1242,8 +1242,8 @@ class Parser:
 
     def _parse_primary(self):
         this = (
-            self._parse_string()
-            or self._parse_number()
+            self._parse_string(False)
+            or self._parse_number(False)
             or self._parse_star()
             or self._parse_null()
             or self._parse_boolean()
@@ -1584,25 +1584,25 @@ class Parser:
             this=self._prev.text, quoted=False
         )
 
-    def _parse_string(self):
+    def _parse_string(self, placeholder=True):
         if self._match(TokenType.STRING):
             return exp.Literal.string(self._prev.text)
-        return None
+        return self._parse_placeholder() if placeholder else None
 
-    def _parse_number(self):
+    def _parse_number(self, placeholder=True):
         if self._match(TokenType.NUMBER):
             return exp.Literal.number(self._prev.text)
-        return None
+        return self._parse_placeholder() if placeholder else None
 
-    def _parse_identifier(self):
+    def _parse_identifier(self, placeholder=True):
         if self._match(TokenType.IDENTIFIER):
             return exp.Identifier(this=self._prev.text, quoted=True)
-        return None
+        return self._parse_placeholder() if placeholder else None
 
-    def _parse_var(self):
+    def _parse_var(self, placeholder=True):
         if self._match(TokenType.VAR):
             return exp.Var(this=self._prev.text)
-        return None
+        return self._parse_placeholder() if placeholder else None
 
     def _parse_null(self):
         if self._match(TokenType.NULL):
@@ -1622,7 +1622,7 @@ class Parser:
         return None
 
     def _parse_placeholder(self):
-        if self._match(TokenType.QMARK):
+        if self._match(TokenType.PLACEHOLDER):
             return exp.Placeholder()
         return None
 

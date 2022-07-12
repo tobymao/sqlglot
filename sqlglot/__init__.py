@@ -19,7 +19,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.parser import Parser
 
 
-__version__ = "3.1.2"
+__version__ = "4.0.0"
 
 pretty = False
 

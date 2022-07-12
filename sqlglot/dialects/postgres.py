@@ -30,8 +30,6 @@ def _date_add_sql(kind):
 
 
 class Postgres(Dialect):
-    strict_cast = False
-
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
@@ -39,6 +37,7 @@ class Postgres(Dialect):
         }
 
     class Parser(Parser):
+        STRICT_CAST = False
         FUNCTIONS = {**Parser.FUNCTIONS, "TO_TIMESTAMP": exp.StrToTime.from_arg_list}
 
     class Generator(Generator):

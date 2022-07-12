@@ -395,6 +395,27 @@ class TestDialects(unittest.TestCase):
             write="hive",
         )
 
+        self.validate(
+            "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
+            "CURRENT_DATE - INTERVAL '1' DAY",
+            read="bigquery",
+            write="postgres",
+        )
+
+        self.validate(
+            "DATE_ADD(CURRENT_DATE(), INTERVAL 1 + 3 DAY)",
+            "CURRENT_DATE + INTERVAL '4' DAY",
+            read="bigquery",
+            write="postgres",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "DATE_ADD(x, y, 'day')",
+                write="postgres",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
     def test_presto(self):
         self.validate(
             'SELECT "a"."b" FROM foo',

@@ -98,6 +98,7 @@ class TokenType(AutoName):
     COMMIT = auto()
     CREATE = auto()
     CROSS = auto()
+    CURRENT_DATE = auto()
     CURRENT_ROW = auto()
     DIV = auto()
     DEFAULT = auto()

@@ -155,6 +155,7 @@ class TokenType(AutoName):
     OVERWRITE = auto()
     PARTITION = auto()
     PERCENT = auto()
+    PLACEHOLDER = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
     PROPERTIES = auto()
@@ -195,7 +196,6 @@ class TokenType(AutoName):
     WITHIN_GROUP = auto()
     WITHOUT = auto()
     ZONE = auto()
-    QMARK = auto()
 
 
 class Token:
@@ -270,7 +270,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "/": TokenType.SLASH,
         "*": TokenType.STAR,
         "~": TokenType.TILDA,
-        "?": TokenType.QMARK,
+        "?": TokenType.PLACEHOLDER,
     }
 
     QUOTES = ["'"]

@@ -29,6 +29,8 @@ class Parser:
         name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()
     }
 
+    NO_PAREN_FUNCTIONS = {}
+
     TYPE_TOKENS = {
         TokenType.BOOLEAN,
         TokenType.TINYINT,
@@ -1271,23 +1273,30 @@ class Parser:
         if self._match(TokenType.IF):
             return self._parse_if()
 
-        if (
-            not self._curr
-            or self._curr.token_type not in self.FUNC_TOKENS
-            or not self._next
-            or self._next.token_type != TokenType.L_PAREN
-        ):
+        if not self._curr:
+            return None
+
+        token_type = self._curr.token_type
+
+        if not self._next or self._next.token_type != TokenType.L_PAREN:
+            if token_type in self.NO_PAREN_FUNCTIONS:
+                return self.expression(
+                    self._advance() or self.NO_PAREN_FUNCTIONS[token_type]
+                )
+            return None
+
+        if token_type not in self.FUNC_TOKENS:
             return None
 
         if self._match_set(self.CASTS):
-            strict = self.strict_cast and self._prev.token_type == TokenType.CAST
+            strict = self.strict_cast and token_type == TokenType.CAST
             self._advance()
             this = self._parse_cast(strict)
         elif self._match(TokenType.EXTRACT):
             self._advance()
             this = self._parse_extract()
         else:
-            subquery_predicate = self.SUBQUERY_PREDICATES.get(self._curr.token_type)
+            subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
             this = self._curr.text.upper()
             self._advance(2)
 

@@ -1,7 +1,31 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
+from sqlglot.helper import list_get
 from sqlglot.generator import Generator
+from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
+
+
+def _date_add(expression_class):
+    def func(args):
+        interval = list_get(args, 1)
+        return expression_class(
+            this=list_get(args, 0),
+            expression=interval.this,
+            unit=interval.args.get("unit"),
+        )
+
+    return func
+
+
+def _date_add_sql(kind):
+    def func(self, expression):
+        this = self.sql(expression, "this")
+        unit = self.sql(expression, "unit")
+        expression = self.sql(expression, "expression")
+        return f"DATE_{kind}({this}, INTERVAL {expression} {unit})"
+
+    return func
 
 
 class BigQuery(Dialect):
@@ -16,8 +40,19 @@ class BigQuery(Dialect):
             "FLOAT64": TokenType.DOUBLE,
         }
 
+    class Parser(Parser):
+        FUNCTIONS = {
+            **Parser.FUNCTIONS,
+            "DATE_ADD": _date_add(exp.DateAdd),
+            "DATE_SUB": _date_add(exp.DateSub),
+        }
+
     class Generator(Generator):
-        TRANSFORMS = {exp.Array: lambda self, e: f"[{self.expressions(e)}]"}
+        TRANSFORMS = {
+            exp.Array: lambda self, e: f"[{self.expressions(e)}]",
+            exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateSub: _date_add_sql("SUB"),
+        }
 
         TYPE_MAPPING = {
             exp.DataType.Type.TINYINT: "INT64",

@@ -1369,10 +1369,6 @@ class Null(Condition):
     arg_types = {}
 
 
-class Unknown(Condition):
-    arg_types = {}
-
-
 class Boolean(Condition):
     pass
 

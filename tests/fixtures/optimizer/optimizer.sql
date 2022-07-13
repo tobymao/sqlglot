@@ -1,3 +1,39 @@
+WITH cte AS (
+    (
+        SELECT
+            a
+            FROM
+            x
+    )
+    UNION ALL
+    (
+        SELECT
+            a
+        FROM
+            y
+    )
+)
+SELECT
+    *
+FROM
+    cte;
+WITH "cte" AS (
+  (
+    SELECT
+      "x"."a" AS "a"
+    FROM "x" AS "x"
+  ) AS "_q_0"
+  UNION ALL
+  (
+    SELECT
+      "y"."a" AS "a"
+    FROM "y" AS "y"
+  ) AS "_q_1"
+)
+SELECT
+  "cte"."a" AS "a"
+FROM "cte";
+
 WITH cte1 AS (
     SELECT a
     FROM x

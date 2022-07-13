@@ -580,7 +580,7 @@ class Lambda(Expression):
 
 
 class Limit(Expression):
-    pass
+    arg_types = {"this": False, "expression": True}
 
 
 class Literal(Condition):
@@ -673,11 +673,11 @@ class Lateral(Expression):
 
 
 class Offset(Expression):
-    pass
+    arg_types = {"this": False, "expression": True}
 
 
 class Order(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"this": False, "expressions": True}
 
 
 class Ordered(Expression):

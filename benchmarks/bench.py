@@ -187,7 +187,7 @@ def diff(row, column):
     column = row[column]
     if isinstance(column, str):
         return " (N/A)"
-    return f" ({str(column / row['sqlglot'])[0:4]})"
+    return f" ({str(column / row['sqlglot'])[0:5]})"
 
 
 libs = [

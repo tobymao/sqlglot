@@ -54,7 +54,7 @@ class BigQuery(Dialect):
             "DATETIME_DIFF": lambda args: exp.DateTimeDiff(
                 this=list_get(args, 0),
                 expression=list_get(args, 1),
-                unit=exp.DateTimePart.build("WEEK(MONDAY)"),
+                unit=exp.DateTimePart.build(str(list_get(args, 2))),
             ),
         }
 

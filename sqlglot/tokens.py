@@ -1,6 +1,6 @@
 from enum import auto
 
-from sqlglot.helper import AutoName, list_get
+from sqlglot.helper import AutoName
 from sqlglot.trie import in_trie, new_trie
 
 
@@ -496,7 +496,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "_char",
         "_end",
         "_peek",
-        "__text",
     )
 
     def __init__(
@@ -527,14 +526,13 @@ class Tokenizer(metaclass=_Tokenizer):
         self._char = None
         self._end = None
         self._peek = None
-        self.__text = None
 
     def tokenize(self, sql):
         self.reset()
         self.sql = sql
         self.size = len(sql)
 
-        while not self._end:
+        while self.size and not self._end:
             self._start = self._current
             self._advance()
 
@@ -571,16 +569,13 @@ class Tokenizer(metaclass=_Tokenizer):
     def _advance(self, i=1):
         self._col += i
         self._current += i
-        self._char = list_get(self.sql, self._current - 1)
-        self._peek = list_get(self.sql, self._current) or ""
         self._end = self._current >= self.size
-        self.__text = None
+        self._char = self.sql[self._current - 1]
+        self._peek = self.sql[self._current] if self._current < self.size else ""
 
     @property
     def _text(self):
-        if self.__text is None:
-            self.__text = self.sql[self._start : self._current]
-        return self.__text
+        return self.sql[self._start : self._current]
 
     def _add(self, token_type, text=None):
         text = self._text if text is None else text
@@ -598,7 +593,7 @@ class Tokenizer(metaclass=_Tokenizer):
     def _scan_ambiguous(self):
         size = 1
         word = None
-        chars = self._chars(size)
+        chars = self._text
 
         while chars:
             result = in_trie(self.AMBIGUOUS, chars.upper())

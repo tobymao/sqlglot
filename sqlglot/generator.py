@@ -498,9 +498,13 @@ class Generator:
         # pylint: disable=unused-argument
         return "NULL"
 
-    def datepart_sql(self, expression):
-        dpart_sql = expression.this.value
-        return f"{dpart_sql}"
+    def datetimepart_sql(self, expression):
+        dtpart_sql = expression.this.value
+        if dtpart_sql.startswith("WEEK_"):
+            split = dtpart_sql.split("_")
+            dtpart_sql = split[0] + "(" + split[1] + ")"
+
+        return f"{dtpart_sql}"
 
     def boolean_sql(self, expression):
         return "TRUE" if expression.this else "FALSE"

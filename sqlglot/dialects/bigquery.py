@@ -49,7 +49,12 @@ class BigQuery(Dialect):
             "DATE_DIFF": lambda args: exp.DateDiff(
                 this=list_get(args, 0),
                 expression=list_get(args, 1),
-                unit=exp.DatePart.build(str(list_get(args, 2))),
+                unit=exp.DateTimePart.build(str(list_get(args, 2))),
+            ),
+            "DATETIME_DIFF": lambda args: exp.DateTimeDiff(
+                this=list_get(args, 0),
+                expression=list_get(args, 1),
+                unit=exp.DateTimePart.build("WEEK(MONDAY)"),
             ),
         }
 
@@ -58,7 +63,8 @@ class BigQuery(Dialect):
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
-            exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'expression')}, {self.sql(e, 'this')}, {exp.DatePart.build(str(self.sql(e, 'unit')))})""",
+            exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'expression')}, {self.sql(e, 'this')}, {exp.DateTimePart.build(str(self.sql(e, 'unit')))})""",
+            exp.DateTimeDiff: lambda self, e: f"""DATETIME_DIFF({self.sql(e, 'expression')}, {self.sql(e, 'this')}, {exp.DateTimePart.build(str(self.sql(e, 'unit')))})""",
         }
 
         TYPE_MAPPING = {

@@ -71,13 +71,28 @@ class TokenType(AutoName):
     DATE = auto()
     UUID = auto()
 
-    # datetime part
-    YEAR = auto()
-    MONTH = auto()
+    # date part
     DAY = auto()
-    HOUR = auto()
-    MINUTE = auto()
+    WEEK = auto()
+    WEEK_SUNDAY = auto()
+    WEEK_MONDAY = auto()
+    WEEK_TUESDAY = auto()
+    WEEK_WEDNESDAY = auto()
+    WEEK_THURSDAY = auto()
+    WEEK_FRIDAY = auto()
+    WEEK_SATURDAY = auto()
+    ISOWEEK = auto()
+    MONTH = auto()
+    QUARTER = auto()
+    YEAR = auto()
+    ISOYEAR = auto()
+
+    # time part
+    MICROSECOND = auto()
+    MILLISECOND = auto()
     SECOND = auto()
+    MINUTE = auto()
+    HOUR = auto()
 
     # keywords
     ADD_FILE = auto()

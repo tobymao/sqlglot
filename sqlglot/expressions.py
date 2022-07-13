@@ -1404,23 +1404,45 @@ class DataType(Expression):
         )
 
 
-class DatePart(Expression):
+class DateTimePart(Expression):
     arg_types = {"this": True}
 
     class Part(AutoName):
-        DAY = auto()
-        MONTH = auto()
-        YEAR = auto()
-        HOUR = auto()
-        MINUTE = auto()
+        MICROSECOND = auto()
+        MILLISECOND = auto()
         SECOND = auto()
+        MINUTE = auto()
+        HOUR = auto()
+        DAY = auto()
+        WEEK = auto()
+        WEEK_SUNDAY = auto()
+        WEEK_MONDAY = auto()
+        WEEK_TUESDAY = auto()
+        WEEK_WEDNESDAY = auto()
+        WEEK_THURSDAY = auto()
+        WEEK_FRIDAY = auto()
+        WEEK_SATURDAY = auto()
+        ISOWEEK = auto()
+        MONTH = auto()
+        QUARTER = auto()
+        YEAR = auto()
+        ISOYEAR = auto()
 
     @classmethod
-    def build(cls, dpart, **kwargs):
-        return DatePart(
-            this=dpart
-            if isinstance(dpart, DatePart.Part)
-            else DatePart.Part[dpart.upper()],
+    def build(cls, dtpart, **kwargs):
+
+        if isinstance(dtpart, DateTimePart.Part):
+            return DateTimePart(
+                this=dtpart,
+                **kwargs,
+            )
+
+        dtpart = dtpart.upper()
+        if dtpart.startswith("WEEK("):
+            dtpart = dtpart.replace("(", "_").replace(")", "").replace(" ", "_")
+
+        return DateTimePart(
+            this=DateTimePart.Part[dtpart],
             **kwargs,
         )
 
@@ -1793,6 +1815,10 @@ class DateAdd(Func):
 
 
 class DateDiff(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class DateTimeDiff(Func):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 

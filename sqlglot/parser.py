@@ -1620,7 +1620,9 @@ class Parser:
 
     def _parse_star(self):
         if self._match(TokenType.STAR):
-            return self._parse_replace(self._parse_except(exp.Star()))
+            return exp.Star(
+                **{"except": self._parse_except(), "replace": self._parse_replace()}
+            )
         return None
 
     def _parse_placeholder(self):
@@ -1628,23 +1630,23 @@ class Parser:
             return exp.Placeholder()
         return None
 
-    def _parse_except(self, this):
+    def _parse_except(self):
         if not self._match(TokenType.EXCEPT):
-            return this
+            return None
 
         self._match_l_paren()
         columns = self._parse_csv(self._parse_id_var)
         self._match_r_paren()
-        return self.expression(exp.StarExcept, this=this, expressions=columns)
+        return columns
 
-    def _parse_replace(self, this):
+    def _parse_replace(self):
         if not self._match(TokenType.REPLACE):
-            return this
+            return None
 
         self._match_l_paren()
         columns = self._parse_csv(lambda: self._parse_alias(self._parse_id_var()))
         self._match_r_paren()
-        return self.expression(exp.StarReplace, this=this, expressions=columns)
+        return columns
 
     def _parse_csv(self, parse):
         parse_result = parse()

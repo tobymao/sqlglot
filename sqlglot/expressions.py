@@ -1356,19 +1356,11 @@ class Where(Expression):
 
 
 class Star(Expression):
-    arg_types = {}
+    arg_types = {"except": False, "replace": False}
 
     @property
     def name(self):
         return "*"
-
-
-class StarExcept(Expression):
-    arg_types = {"this": True, "expressions": True}
-
-
-class StarReplace(Expression):
-    arg_types = {"this": True, "expressions": True}
 
 
 class Placeholder(Expression):

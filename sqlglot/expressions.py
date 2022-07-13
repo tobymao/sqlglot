@@ -1829,6 +1829,26 @@ class DateTimeDiff(Func):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
+class TimestampDiff(Func):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class TimestampTrunc(Func):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class DateTrunc(Func):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class DateTimeTrunc(Func):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class TimeTrunc(Func):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
 class DateStrToDate(Func):
     pass
 

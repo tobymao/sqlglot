@@ -28,6 +28,50 @@ def _date_add_sql(kind):
     return func
 
 
+def _datetime_trunc(expression_class):
+    def func(args):
+        return expression_class(
+            this=list_get(args, 0),
+            unit=exp.DateTimePart.build(str(list_get(args, 1))),
+            zone=list_get(args, 2),
+        )
+
+    return func
+
+
+def _datetime_trunc_sql(kind):
+    def func(self, expression):
+        this = self.sql(expression, "this")
+        unit = exp.DateTimePart.build(str(self.sql(expression, "unit")))
+        zone = self.sql(expression, "zone")
+        zone = ", " + zone if zone else ""
+        return f"{kind}_TRUNC({this}, {unit}{zone})"
+
+    return func
+
+
+def _datetime_diff(expression_class):
+    def func(args):
+        return expression_class(
+            this=list_get(args, 0),
+            expression=list_get(args, 1),
+            unit=exp.DateTimePart.build(str(list_get(args, 2))),
+        )
+
+    return func
+
+
+def _datetime_diff_sql(kind):
+    def func(self, expression):
+        this = self.sql(expression, "this")
+        e = self.sql(expression, "expression")
+        unit = self.sql(expression, "unit")
+        unit = exp.DateTimePart.build(str(unit))
+        return f"{kind}_DIFF({this}, {e}, {unit})"
+
+    return func
+
+
 class BigQuery(Dialect):
     identifier = "`"
 
@@ -46,16 +90,13 @@ class BigQuery(Dialect):
             **Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
-            "DATE_DIFF": lambda args: exp.DateDiff(
-                this=list_get(args, 0),
-                expression=list_get(args, 1),
-                unit=exp.DateTimePart.build(str(list_get(args, 2))),
-            ),
-            "DATETIME_DIFF": lambda args: exp.DateTimeDiff(
-                this=list_get(args, 0),
-                expression=list_get(args, 1),
-                unit=exp.DateTimePart.build(str(list_get(args, 2))),
-            ),
+            "DATE_DIFF": _datetime_diff(exp.DateDiff),
+            "DATETIME_DIFF": _datetime_diff(exp.DateTimeDiff),
+            "TIMESTAMP_DIFF": _datetime_diff(exp.TimestampDiff),
+            "TIMESTAMP_TRUNC": _datetime_trunc(exp.TimestampTrunc),
+            "DATE_TRUNC": _datetime_trunc(exp.DateTrunc),
+            "DATETIME_TRUNC": _datetime_trunc(exp.DateTimeTrunc),
+            "TIME_TRUNC": _datetime_trunc(exp.TimeTrunc),
         }
 
     class Generator(Generator):
@@ -63,8 +104,13 @@ class BigQuery(Dialect):
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
-            exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'expression')}, {self.sql(e, 'this')}, {exp.DateTimePart.build(str(self.sql(e, 'unit')))})""",
-            exp.DateTimeDiff: lambda self, e: f"""DATETIME_DIFF({self.sql(e, 'expression')}, {self.sql(e, 'this')}, {exp.DateTimePart.build(str(self.sql(e, 'unit')))})""",
+            exp.DateDiff: _datetime_diff_sql("DATE"),
+            exp.DateTimeDiff: _datetime_diff_sql("DATETIME"),
+            exp.TimestampDiff: _datetime_diff_sql("TIMESTAMP"),
+            exp.TimestampTrunc: _datetime_trunc_sql("TIMESTAMP"),
+            exp.DateTrunc: _datetime_trunc_sql("DATE"),
+            exp.DateTimeTrunc: _datetime_trunc_sql("DATETIME"),
+            exp.TimeTrunc: _datetime_trunc_sql("TIME"),
         }
 
         TYPE_MAPPING = {

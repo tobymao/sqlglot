@@ -798,7 +798,8 @@ class Union(Subqueryable, Expression):
     @property
     def named_selects(self):
         named_selects = (
-            self.args["this"].named_selects + self.args["expression"].named_selects
+            self.args["this"].unnest().named_selects
+            + self.args["expression"].unnest().named_selects
         )
         return sorted(set(named_selects), key=named_selects.index)
 
@@ -1313,6 +1314,15 @@ class Select(Subqueryable, Expression):
 
 class Subquery(Expression, DerivedTable):
     arg_types = {"this": True, "alias": False}
+
+    def unnest(self):
+        """
+        Returns the first non subquery.
+        """
+        expression = self
+        while isinstance(expression, Subquery):
+            expression = expression.this
+        return expression
 
 
 class TableSample(Expression):

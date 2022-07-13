@@ -70,7 +70,7 @@ class Scope:
         if add_sources:
             sources.update(add_sources)
         return Scope(
-            expression=expression,
+            expression=expression.unnest(),
             sources=sources,
             parent=self,
             scope_type=scope_type,
@@ -217,7 +217,7 @@ class Scope:
                     )
                 )
             for derived_table in self.derived_tables:
-                referenced_names.append((derived_table.alias, derived_table.this))
+                referenced_names.append((derived_table.alias, derived_table.unnest()))
 
             result = {}
 

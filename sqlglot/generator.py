@@ -509,10 +509,6 @@ class Generator:
     def boolean_sql(self, expression):
         return "TRUE" if expression.this else "FALSE"
 
-    def unknown_sql(self, expression):
-        # pylint: disable=unused-argument
-        return "UNKNOWN"
-
     def order_sql(self, expression, flat=False):
         return self.op_expressions("ORDER BY", expression, flat=flat)
 

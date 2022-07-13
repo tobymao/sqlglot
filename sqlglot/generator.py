@@ -481,10 +481,12 @@ class Generator:
         return f"{op_sql}{self.sep()}{this} {alias}{columns}"
 
     def limit_sql(self, expression):
-        return f"{self.seg('LIMIT')} {self.sql(expression, 'this')}"
+        this = self.sql(expression, "this")
+        return f"{this}{self.seg('LIMIT')} {self.sql(expression, 'expression')}"
 
     def offset_sql(self, expression):
-        return f"{self.seg('OFFSET')} {self.sql(expression, 'this')}"
+        this = self.sql(expression, "this")
+        return f"{this}{self.seg('OFFSET')} {self.sql(expression, 'expression')}"
 
     def literal_sql(self, expression):
         text = expression.this or ""
@@ -502,7 +504,9 @@ class Generator:
         return "TRUE" if expression.this else "FALSE"
 
     def order_sql(self, expression, flat=False):
-        return self.op_expressions("ORDER BY", expression, flat=flat)
+        this = self.sql(expression, "this")
+        this = f"{this} " if this else this
+        return self.op_expressions(f"{this}ORDER BY", expression, flat=this or flat)
 
     def ordered_sql(self, expression):
         desc = expression.args.get("desc")

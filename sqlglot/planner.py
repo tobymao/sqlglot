@@ -154,7 +154,7 @@ class Step:
         limit = expression.args.get("limit")
 
         if limit:
-            step.limit = int(limit.name)
+            step.limit = int(limit.text("expression"))
 
         return step
 

@@ -1009,12 +1009,12 @@ class Parser:
             return None
         return self.expression(exp.Qualify, this=self._parse_conjunction())
 
-    def _parse_order(self):
+    def _parse_order(self, this=None):
         if not self._match_by(TokenType.ORDER):
-            return None
+            return this
 
         return self.expression(
-            exp.Order, expressions=self._parse_csv(self._parse_ordered)
+            exp.Order, this=this, expressions=self._parse_csv(self._parse_ordered)
         )
 
     def _parse_ordered(self):
@@ -1022,15 +1022,15 @@ class Parser:
         self._match(TokenType.ASC)
         return self.expression(exp.Ordered, this=this, desc=self._match(TokenType.DESC))
 
-    def _parse_limit(self, top=False):
+    def _parse_limit(self, this=None, top=False):
         if not self._match(TokenType.TOP if top else TokenType.LIMIT):
-            return None
-        return self.expression(exp.Limit, this=self._parse_number())
+            return this
+        return self.expression(exp.Limit, this=this, expression=self._parse_number())
 
-    def _parse_offset(self):
+    def _parse_offset(self, this=None):
         if not self._match(TokenType.OFFSET):
-            return None
-        return self.expression(exp.Offset, this=self._parse_number())
+            return this
+        return self.expression(exp.Offset, this=this, expression=self._parse_number())
 
     def _parse_set_operations(self, this):
         if not self._match_set(self.SET_OPERATIONS):
@@ -1314,11 +1314,11 @@ class Parser:
             function = self.FUNCTIONS.get(this)
             args = self._parse_csv(self._parse_lambda)
 
-            if not callable(function):
-                this = self.expression(exp.Anonymous, this=this, expressions=args)
-            else:
+            if function:
                 this = function(args)
                 self.validate_expression(this, args)
+            else:
+                this = self.expression(exp.Anonymous, this=this, expressions=args)
         self._match_r_paren()
         return self._parse_window(this)
 
@@ -1345,7 +1345,7 @@ class Parser:
             else:
                 self._match(TokenType.RESPECT_NULLS)
 
-            return this
+            return self._parse_alias(self._parse_limit(self._parse_order(this)))
 
         return self.expression(
             exp.Lambda,

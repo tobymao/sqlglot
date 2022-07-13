@@ -1,6 +1,7 @@
 import collections.abc
 # moz_sql_parser 3.10 compatibility
 collections.Iterable = collections.abc.Iterable
+import gc
 import timeit
 
 import numpy as np
@@ -8,6 +9,7 @@ import moz_sql_parser
 import sqlglot
 import sqlparse
 import sqloxide
+import sqltree
 
 
 long = """
@@ -58,9 +60,108 @@ crazy += " AS a, 2*"
 crazy += "*".join(str(i) for i in range(500))
 crazy += " AS b FROM x"
 
+tpch = """
+WITH "_e_0" AS (
+  SELECT
+    "partsupp"."ps_partkey" AS "ps_partkey",
+    "partsupp"."ps_suppkey" AS "ps_suppkey",
+    "partsupp"."ps_supplycost" AS "ps_supplycost"
+  FROM "partsupp" AS "partsupp"
+), "_e_1" AS (
+  SELECT
+    "region"."r_regionkey" AS "r_regionkey",
+    "region"."r_name" AS "r_name"
+  FROM "region" AS "region"
+  WHERE
+    "region"."r_name" = 'EUROPE'
+)
+SELECT
+  "supplier"."s_acctbal" AS "s_acctbal",
+  "supplier"."s_name" AS "s_name",
+  "nation"."n_name" AS "n_name",
+  "part"."p_partkey" AS "p_partkey",
+  "part"."p_mfgr" AS "p_mfgr",
+  "supplier"."s_address" AS "s_address",
+  "supplier"."s_phone" AS "s_phone",
+  "supplier"."s_comment" AS "s_comment"
+FROM (
+  SELECT
+    "part"."p_partkey" AS "p_partkey",
+    "part"."p_mfgr" AS "p_mfgr",
+    "part"."p_type" AS "p_type",
+    "part"."p_size" AS "p_size"
+  FROM "part" AS "part"
+  WHERE
+    "part"."p_size" = 15
+    AND "part"."p_type" LIKE '%BRASS'
+) AS "part"
+LEFT JOIN (
+  SELECT
+    MIN("partsupp"."ps_supplycost") AS "_col_0",
+    "partsupp"."ps_partkey" AS "_u_1"
+  FROM "_e_0" AS "partsupp"
+  CROSS JOIN "_e_1" AS "region"
+  JOIN (
+    SELECT
+      "nation"."n_nationkey" AS "n_nationkey",
+      "nation"."n_regionkey" AS "n_regionkey"
+    FROM "nation" AS "nation"
+  ) AS "nation"
+    ON "nation"."n_regionkey" = "region"."r_regionkey"
+  JOIN (
+    SELECT
+      "supplier"."s_suppkey" AS "s_suppkey",
+      "supplier"."s_nationkey" AS "s_nationkey"
+    FROM "supplier" AS "supplier"
+  ) AS "supplier"
+    ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+    AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+  GROUP BY
+    "partsupp"."ps_partkey"
+) AS "_u_0"
+  ON "part"."p_partkey" = "_u_0"."_u_1"
+CROSS JOIN "_e_1" AS "region"
+JOIN (
+  SELECT
+    "nation"."n_nationkey" AS "n_nationkey",
+    "nation"."n_name" AS "n_name",
+    "nation"."n_regionkey" AS "n_regionkey"
+  FROM "nation" AS "nation"
+) AS "nation"
+  ON "nation"."n_regionkey" = "region"."r_regionkey"
+JOIN "_e_0" AS "partsupp"
+  ON "part"."p_partkey" = "partsupp"."ps_partkey"
+JOIN (
+  SELECT
+    "supplier"."s_suppkey" AS "s_suppkey",
+    "supplier"."s_name" AS "s_name",
+    "supplier"."s_address" AS "s_address",
+    "supplier"."s_nationkey" AS "s_nationkey",
+    "supplier"."s_phone" AS "s_phone",
+    "supplier"."s_acctbal" AS "s_acctbal",
+    "supplier"."s_comment" AS "s_comment"
+  FROM "supplier" AS "supplier"
+) AS "supplier"
+  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+  AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+WHERE
+  "partsupp"."ps_supplycost" = "_u_0"."_col_0"
+  AND NOT "_u_0"."_u_1" IS NULL
+ORDER BY
+  "supplier"."s_acctbal" DESC,
+  "nation"."n_name",
+  "supplier"."s_name",
+  "part"."p_partkey"
+LIMIT 100
+"""
+
 
 def sqlglot_parse(sql):
     sqlglot.parse(sql, error_level=sqlglot.ErrorLevel.IGNORE)
+
+
+def sqltree_parse(sql):
+    sqltree.api.sqltree(sql.replace('"', '`').replace("''", '"'))
 
 
 def sqlparse_parse(sql):
@@ -75,14 +176,49 @@ def sqloxide_parse(sql):
     sqloxide.parse_sql(sql, dialect="ansi")
 
 
-for lib in [
-    "sqlglot_parse",
-    "sqlparse_parse",
-    "moz_sql_parser_parse",
-    "sqloxide_parse",
-]:
-    for name, sql in {"short": short, "long": long, "crazy": crazy}.items():
-        print(
-            f"{lib} {name}",
-            np.mean(timeit.repeat(lambda: globals()[lib](sql), number=1)),
-        )
+def border(columns):
+    columns = " | ".join(columns)
+    return f"| {columns} |"
+
+
+def diff(row, column):
+    if column == "Query":
+        return ""
+    column = row[column]
+    if isinstance(column, str):
+        return " (N/A)"
+    return f" ({str(column / row['sqlglot'])[0:5]})"
+
+
+libs = [
+    "sqlglot",
+    "sqltree",
+    "sqlparse",
+    "moz_sql_parser",
+    "sqloxide",
+]
+table = []
+
+for name, sql in {"tpch": tpch, "short": short, "long": long, "crazy": crazy}.items():
+    row = {"Query": name}
+    table.append(row)
+    for lib in libs:
+        try:
+            row[lib] = np.mean(timeit.repeat(lambda: globals()[lib + "_parse"](sql), number=3))
+        except:
+            row[lib] = "error"
+
+columns = ["Query"] + libs
+widths = {column: max(len(column), 15) for column in columns}
+
+lines = [border(column.rjust(width) for column, width in widths.items())]
+lines.append(border(str("_" * width) for width in widths.values()))
+
+for i, row in enumerate(table):
+    lines.append(border(
+        (str(row[column])[0:7] + diff(row, column)).rjust(width)[0 : width]
+        for column, width in widths.items()
+    ))
+
+for line in lines:
+    print(line)

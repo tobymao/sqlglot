@@ -553,6 +553,9 @@ class Generator:
         # pylint: disable=unused-argument
         return "*"
 
+    def placeholder_sql(self, _expression):
+        return "?"
+
     def starexcept_sql(self, expression):
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)

@@ -9,7 +9,14 @@ from sqlglot.errors import ParseError
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
 
 
-class Expression:
+class _Expression(type):
+    def __new__(cls, clsname, bases, attrs):
+        klass = super().__new__(cls, clsname, bases, attrs)
+        klass.key = clsname.lower()
+        return klass
+
+
+class Expression(metaclass=_Expression):
     """
     The base class for all expressions in a syntax tree.
 
@@ -21,11 +28,11 @@ class Expression:
             or optional (False).
     """
 
+    key = None
     arg_types = {"this": True}
-    __slots__ = ("key", "args", "parent", "arg_key")
+    __slots__ = ("args", "parent", "arg_key")
 
     def __init__(self, **args):
-        self.key = self.__class__.__name__.lower()
         self.args = args
         self._set_parent(args)
         self.parent = None
@@ -1352,6 +1359,10 @@ class StarExcept(Expression):
 
 class StarReplace(Expression):
     arg_types = {"this": True, "expressions": True}
+
+
+class Placeholder(Expression):
+    arg_types = {}
 
 
 class Null(Condition):

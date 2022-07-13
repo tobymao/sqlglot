@@ -335,11 +335,7 @@ def _traverse_select(scope):
 
 
 def _traverse_union(scope):
-    ctes = scope.ctes
-    if ctes:
-        yield from _traverse_derived_tables(
-            ctes, scope, scope_type=ScopeType.DERIVED_TABLE
-        )
+    yield from _traverse_derived_tables(scope.ctes, scope, scope_type=ScopeType.CTE)
 
     # The last scope to be yield should be the top most scope
     left = None

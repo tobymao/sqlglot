@@ -207,7 +207,6 @@ class TokenType(AutoName):
     TRY_CAST = auto()
     UNBOUNDED = auto()
     UNION = auto()
-    UNKNOWN = auto()
     UNNEST = auto()
     UPDATE = auto()
     USE = auto()
@@ -429,7 +428,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "UNION": TokenType.UNION,
         "UNNEST": TokenType.UNNEST,
         "UPDATE": TokenType.UPDATE,
-        "UNKNOWN": TokenType.UNKNOWN,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
         "VALUES": TokenType.VALUES,

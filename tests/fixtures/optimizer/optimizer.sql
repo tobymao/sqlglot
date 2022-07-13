@@ -1,3 +1,34 @@
+WITH cte1 AS (
+    SELECT a
+    FROM x
+), cte2 AS (
+    SELECT a + 1 AS a
+    FROM cte1
+)
+SELECT
+    a
+FROM cte1
+UNION ALL
+SELECT
+    a
+FROM cte2;
+WITH "cte1" AS (
+  SELECT
+    "x"."a" AS "a"
+  FROM "x" AS "x"
+), "cte2" AS (
+  SELECT
+    "cte1"."a" + 1 AS "a"
+  FROM "cte1"
+)
+SELECT
+  "cte1"."a" AS "a"
+FROM "cte1"
+UNION ALL
+SELECT
+  "cte2"."a" AS "a"
+FROM "cte2";
+
 SELECT a, SUM(b)
 FROM (
     SELECT x.a, y.b

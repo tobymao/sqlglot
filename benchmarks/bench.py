@@ -204,7 +204,7 @@ for name, sql in {"tpch": tpch, "short": short, "long": long, "crazy": crazy}.it
     table.append(row)
     for lib in libs:
         try:
-            row[lib] = np.mean(timeit.repeat(lambda: globals()[lib + "_parse"](sql), number=3))
+            row[lib] = np.mean(timeit.repeat(lambda: globals()[lib + "_parse"](sql), number=5))
         except:
             row[lib] = "error"
 

@@ -2,7 +2,7 @@
 
 SQLGlot is a no dependency Python SQL parser, transpiler, and optimizer. It can be used to format SQL or translate between different dialects like Presto, Spark, and Hive. It aims to read a wide variety of SQL inputs and output syntatically correct SQL in the targeted dialects.
 
-It is currently the [fastest](#benchmarks) pure-Python SQL parser.
+It is one of the [fastest](#benchmarks) pure-Python SQL parsers.
 
 You can easily customize the parser to support UDF's across dialects as well through the transform API.
 
@@ -279,11 +279,12 @@ Dialects["custom"]
 
 [Benchmarks](benchmarks) run on Python 3.10.5 in seconds.
 
-| Query            | sqlglot          | [sqlparse](https://github.com/andialbrecht/sqlparse)         | [moz\_sql\_parser](https://github.com/klahnakoski/mo-sql-parsing) | [sqloxide](https://github.com/wseaton/sqloxide/) |
-| ---------------- | ---------------- | ---------------- | ---------------- | ---------------- |
-| short            | 0.00033          | 0.00099          | 0.00160          | 0.000063
-| long             | 0.00426          | 0.01396          | 0.02023          | 0.000595
-| crazy            | 0.01363          | 3.69641          | 0.34818          | 0.003121
+| Query           | sqlglot         | [sqltree](https://github.com/JelleZijlstra/sqltree) | [sqlparse](https://github.com/andialbrecht/sqlparse)         | [moz\_sql\_parser](https://github.com/klahnakoski/mo-sql-parsing) | [sqloxide](https://github.com/wseaton/sqloxide/) |
+| _______________ | _______________ | _______________ | _______________ | _______________ | _______________ |
+|            tpch |   0.02191 (1.0) | 0.01958 (0.893) | 0.08510 (3.882) | 0.11959 (5.456) | 0.00181 (0.082) |
+|           short |   0.00165 (1.0) | 0.00151 (0.915) | 0.00488 (2.956) | 0.00840 (5.084) | 0.00011 (0.068) |
+|            long |   0.01980 (1.0) | 0.01742 (0.880) | 0.07088 (3.579) | 0.10710 (5.409) | 0.00165 (0.083) |
+|           crazy |   0.06838 (1.0) | 0.05799 (0.848) | 18.5755 (271.6) | 1.69229 (24.74) | 0.00882 (0.129) |
 
 
 ## Run Tests and Lint

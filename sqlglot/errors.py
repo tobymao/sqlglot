@@ -27,3 +27,7 @@ class TokenError(SqlglotError):
 
 class OptimizeError(SqlglotError):
     pass
+
+
+class DiffError(Exception):
+    pass

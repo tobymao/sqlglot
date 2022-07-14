@@ -1623,7 +1623,21 @@ class In(Predicate):
     arg_types = {"this": True, "expressions": False, "query": False}
 
 
-class Interval(Expression):
+class TimeUnit(Expression):
+    """Automatically converts unit arg into a var."""
+
+    arg_types = {"unit": False}
+
+    def __init__(self, **args):
+        unit = args.get("unit")
+        if isinstance(unit, Column):
+            args["unit"] = Var(this=unit.name)
+        elif isinstance(unit, Week):
+            unit.set("this", Var(this=unit.this.name))
+        super().__init__(**args)
+
+
+class Interval(TimeUnit):
     arg_types = {"this": True, "unit": False}
 
 
@@ -1776,19 +1790,47 @@ class CurrentDate(Func):
     arg_types = {"this": False}
 
 
-class DateAdd(Func):
+class CurrentTimestamp(Func):
+    arg_types = {}
+
+
+class DateAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DateDiff(Func):
+class DateDiff(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class DatetimeDiff(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class TimestampDiff(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class TimestampTrunc(Func, TimeUnit):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class DateTrunc(Func, TimeUnit):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class DatetimeTrunc(Func, TimeUnit):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class TimeTrunc(Func, TimeUnit):
+    arg_types = {"this": True, "unit": True, "zone": False}
 
 
 class DateStrToDate(Func):
     pass
 
 
-class DateSub(Func):
+class DateSub(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
@@ -2000,7 +2042,7 @@ class TimeStrToUnix(Func):
     pass
 
 
-class TsOrDsAdd(Func):
+class TsOrDsAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
@@ -2041,6 +2083,10 @@ class VariancePop(AggFunc):
 
 
 class VarianceSamp(AggFunc):
+    pass
+
+
+class Week(Func):
     pass
 
 

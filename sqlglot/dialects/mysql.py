@@ -31,6 +31,7 @@ class MySQL(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.CurrentDate: no_paren_current_date_sql,
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ILike: no_ilike_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,

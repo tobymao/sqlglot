@@ -76,6 +76,8 @@ INTERVAL '1' month
 INTERVAL '1 day'
 INTERVAL 2 months
 INTERVAL 1 + 3 days
+TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), 1, DAY)
+DATETIME_DIFF(CURRENT_DATE(), 1, DAY)
 QUANTILE(x, 0.5)
 REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))
 REGEXP_LIKE('new york', '.')
@@ -84,7 +86,6 @@ SPLIT('new york', '.')
 REPLACE(1)
 DATE(x) = DATE(y)
 TIMESTAMP(DATE(x))
-TIMESTAMP_TRUNC(COALESCE(time_field, CURRENT_TIMESTAMP()), DAY)
 TIMESTAMP_TRUNC(COALESCE(time_field, CURRENT_TIMESTAMP()), DAY)
 COUNT(DISTINCT CASE WHEN DATE_TRUNC(DATE(time_field), isoweek) = DATE_TRUNC(DATE(time_field2), isoweek) THEN report_id ELSE NULL END)
 x[y - 1]

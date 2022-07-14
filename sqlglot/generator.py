@@ -317,7 +317,7 @@ class Generator:
 
     def drop_sql(self, expression):
         this = self.sql(expression, "this")
-        kind = expression.args["kind"].upper()
+        kind = expression.args["kind"]
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         return f"DROP {kind}{exists_sql}{this}"
 
@@ -670,7 +670,7 @@ class Generator:
         args = self.indent(
             self.expressions(expression, flat=True), skip_first=True, skip_last=True
         )
-        return f"{self.sql(expression, 'this').upper()}({args})"
+        return f"{self.sql(expression, 'this')}({args})"
 
     def paren_sql(self, expression):
         if isinstance(expression.unnest(), exp.Select):

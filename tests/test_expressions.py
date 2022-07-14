@@ -393,3 +393,9 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(alias("foo * 2", "2bar").sql(), 'foo * 2 AS "2bar"')
         self.assertEqual(alias('"foo"', "_bar").sql(), '"foo" AS "_bar"')
         self.assertEqual(alias("foo", "bar", quoted=True).sql(), 'foo AS "bar"')
+
+    def test_unit(self):
+        unit = parse_one("timestamp_trunc(current_timestamp, week(thursday))")
+        self.assertIsNotNone(unit.find(exp.CurrentTimestamp))
+        week = unit.find(exp.Week)
+        self.assertEqual(week.this, exp.Var(this="thursday"))

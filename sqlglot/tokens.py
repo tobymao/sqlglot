@@ -100,6 +100,7 @@ class TokenType(AutoName):
     CROSS = auto()
     CURRENT_DATE = auto()
     CURRENT_ROW = auto()
+    CURRENT_TIMESTAMP = auto()
     DIV = auto()
     DEFAULT = auto()
     DELETE = auto()
@@ -321,6 +322,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CROSS": TokenType.CROSS,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
+        "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
         "DIV": TokenType.DIV,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,

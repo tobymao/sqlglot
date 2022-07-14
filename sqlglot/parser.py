@@ -27,7 +27,10 @@ class Parser:
         name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()
     }
 
-    NO_PAREN_FUNCTIONS = {TokenType.CURRENT_DATE: exp.CurrentDate}
+    NO_PAREN_FUNCTIONS = {
+        TokenType.CURRENT_DATE: exp.CurrentDate,
+        TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
+    }
 
     TYPE_TOKENS = {
         TokenType.BOOLEAN,
@@ -112,6 +115,7 @@ class Parser:
 
     FUNC_TOKENS = {
         TokenType.CURRENT_DATE,
+        TokenType.CURRENT_TIMESTAMP,
         TokenType.EXTRACT,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
@@ -415,9 +419,9 @@ class Parser:
 
     def _parse_drop(self):
         if self._match(TokenType.TABLE):
-            kind = "table"
+            kind = "TABLE"
         elif self._match(TokenType.VIEW):
-            kind = "view"
+            kind = "VIEW"
         else:
             self.raise_error("Expected TABLE or View")
 

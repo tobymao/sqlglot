@@ -51,6 +51,7 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.CurrentDate: no_paren_current_date_sql,
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",

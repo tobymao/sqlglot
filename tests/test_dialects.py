@@ -429,6 +429,13 @@ class TestDialects(unittest.TestCase):
             write="postgres",
         )
 
+        self.validate(
+            "CURRENT_TIMESTAMP()",
+            "CURRENT_TIMESTAMP",
+            read="bigquery",
+            write="postgres",
+        )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "DATE_ADD(x, y, 'day')",

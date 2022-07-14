@@ -678,33 +678,31 @@ class Tokenizer(metaclass=_Tokenizer):
             return False
 
         size = len(quote)
-        text = list(self._chars(size))
+        text = ""
         self._advance(size)
 
         while True:
             if self._char == self.escape and self._peek == quote:
-                text.extend((self.ESCAPE_CODE, self._char))
+                text += f"{self.ESCAPE_CODE}{self._char}"
                 self._advance(2)
             else:
                 chars = self._chars(size)
 
                 if chars == quote:
-                    text.extend(chars)
                     self._advance(size - 1)
                     break
 
                 if self._char == "'":
-                    text.extend((self.ESCAPE_CODE, self._char))
+                    text += f"{self.ESCAPE_CODE}{self._char}"
                     self._advance()
                 else:
                     if self._end:
                         raise RuntimeError(
                             f"Missing {quote} from {self._line}:{self._start}"
                         )
-                    text.append(self._char)
+                    text += self._char
                     self._advance()
 
-        text = "".join(text[size:-size])
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
         text = text.replace("\\\\", "\\") if self.escape == "\\" else text
         self._add(TokenType.STRING, text)

@@ -95,14 +95,20 @@ def _expand_stars(scope, schema):
     """Expand stars to lists of column selections"""
 
     new_selections = []
+    except_columns = {}
+    replace_columns = {}
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
+            _add_except_columns(expression, tables, except_columns)
+            _add_replace_columns(expression, tables, replace_columns)
         elif isinstance(expression, exp.Column) and isinstance(
             expression.this, exp.Star
         ):
             tables = [expression.table]
+            _add_except_columns(expression.this, tables, except_columns)
+            _add_replace_columns(expression.this, tables, replace_columns)
         else:
             new_selections.append(expression)
             continue
@@ -111,10 +117,40 @@ def _expand_stars(scope, schema):
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
             columns = _get_source_columns(table, scope.sources, schema)
-            for column in columns:
-                new_selections.append(exp.column(column, table))
+            table_id = id(table)
+            for name in columns:
+                if name not in except_columns.get(table_id, set()):
+                    alias_ = replace_columns.get(table_id, {}).get(name, name)
+                    column = exp.column(name, table)
+                    new_selections.append(
+                        alias(column, alias_) if alias_ != name else column
+                    )
 
     scope.expression.set("expressions", new_selections)
+
+
+def _add_except_columns(expression, tables, except_columns):
+    except_ = expression.args.get("except")
+
+    if not except_:
+        return
+
+    columns = {e.name for e in except_}
+
+    for table in tables:
+        except_columns[id(table)] = columns
+
+
+def _add_replace_columns(expression, tables, replace_columns):
+    replace = expression.args.get("replace")
+
+    if not replace:
+        return
+
+    columns = {e.this.name: e.alias for e in replace}
+
+    for table in tables:
+        replace_columns[id(table)] = columns
 
 
 def _qualify_outputs(scope):

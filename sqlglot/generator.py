@@ -283,7 +283,7 @@ class Generator:
         return sql
 
     def with_sql(self, expression):
-        sql = ", ".join(self.sql(e) for e in expression.args["expressions"])
+        sql = self.expressions(expression, flat=True)
         recursive = "RECURSIVE " if expression.args.get("recursive") else ""
 
         return f"WITH {recursive}{sql}"
@@ -294,12 +294,9 @@ class Generator:
 
     def tablealias_sql(self, expression):
         alias = self.sql(expression, "this")
-        columns_str = ""
-        columns = expression.args.get("columns")
-        if columns:
-            columns_str = ", ".join(self.sql(e) for e in columns)
-            columns_str = f"({columns_str})"
-        return f"{alias}{columns_str}"
+        columns = self.expressions(expression, key="columns", flat=True)
+        columns = f"({columns})" if columns else ""
+        return f"{alias}{columns}"
 
     def datatype_sql(self, expression):
         type_value = expression.this
@@ -433,7 +430,7 @@ class Generator:
         return self.sql(expression, "this")
 
     def from_sql(self, expression):
-        expressions = ", ".join(self.sql(e) for e in expression.args["expressions"])
+        expressions = self.expressions(expression, flat=True)
         return f"{self.seg('FROM')} {expressions}"
 
     def group_sql(self, expression):
@@ -476,7 +473,7 @@ class Generator:
             f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}"
         )
         alias = self.sql(expression, "table")
-        columns = ", ".join(self.sql(e) for e in expression.args.get("columns") or [])
+        columns = self.expressions(expression, key="columns", flat=True)
         columns = f" AS {columns}" if columns else ""
         return f"{op_sql}{self.sep()}{this} {alias}{columns}"
 
@@ -496,8 +493,7 @@ class Generator:
             return f"{self.quote}{text}{self.quote}"
         return text
 
-    def null_sql(self, expression):
-        # pylint: disable=unused-argument
+    def null_sql(self, *_):
         return "NULL"
 
     def boolean_sql(self, expression):
@@ -542,21 +538,14 @@ class Generator:
         return f"{this}{sql}"
 
     def star_sql(self, expression):
-        # pylint: disable=unused-argument
-        return "*"
+        except_ = self.expressions(expression, key="except", flat=True)
+        except_ = f"{self.seg('EXCEPT')} ({except_})" if except_ else ""
+        replace = self.expressions(expression, key="replace", flat=True)
+        replace = f"{self.seg('REPLACE')} ({replace})" if replace else ""
+        return f"*{except_}{replace}"
 
-    def placeholder_sql(self, _expression):
+    def placeholder_sql(self, *_):
         return "?"
-
-    def starexcept_sql(self, expression):
-        this = self.sql(expression, "this")
-        expressions = self.expressions(expression, flat=True)
-        return f"{this}{self.seg('EXCEPT')} ({expressions})"
-
-    def starreplace_sql(self, expression):
-        this = self.sql(expression, "this")
-        expressions = self.expressions(expression, flat=True)
-        return f"{this}{self.seg('REPLACE')} ({expressions})"
 
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")
@@ -581,7 +570,7 @@ class Generator:
         args = self.expressions(expression, flat=True)
         table = self.sql(expression, "table")
         ordinality = " WITH ORDINALITY" if expression.args.get("ordinality") else ""
-        columns = ", ".join(self.sql(e) for e in expression.args.get("columns", []))
+        columns = self.expressions(expression, key="columns", flat=True)
         alias = f" AS {table}" if table else ""
         alias = f"{alias} ({columns})" if columns else alias
         return f"UNNEST({args}){ordinality}{alias}"
@@ -592,12 +581,8 @@ class Generator:
 
     def window_sql(self, expression):
         this_sql = self.sql(expression, "this")
-        partition = expression.args.get("partition_by")
-        partition = (
-            "PARTITION BY " + ", ".join(self.sql(by) for by in partition)
-            if partition
-            else ""
-        )
+        partition = self.expressions(expression, key="partition_by", flat=True)
+        partition = f"PARTITION BY {partition}" if partition else ""
         order = expression.args.get("order")
         order_sql = self.order_sql(order, flat=True) if order else ""
         partition_sql = partition + " " if partition and order else partition
@@ -845,9 +830,13 @@ class Generator:
             self.sql(expression, "format"), self.time_mapping, self.time_trie
         )
 
-    def expressions(self, expression, flat=False):
+    def expressions(self, expression, key=None, flat=False):
         # pylint: disable=cell-var-from-loop
-        expressions = expression.args.get("expressions") or []
+        expressions = expression.args.get(key or "expressions")
+
+        if not expressions:
+            return ""
+
         if flat:
             return ", ".join(self.sql(e) for e in expressions)
 

@@ -164,6 +164,21 @@ WITH z AS (SELECT * FROM x), q AS (SELECT b FROM z) SELECT b FROM q;
 WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x), q AS (SELECT z.b AS b FROM z) SELECT q.b AS b FROM q;
 
 --------------------------------------
+-- Except and Replace
+--------------------------------------
+SELECT * REPLACE(a AS d) FROM x;
+SELECT x.a AS d, x.b AS b FROM x AS x;
+
+SELECT * EXCEPT(b) REPLACE(a AS d) FROM x;
+SELECT x.a AS d FROM x AS x;
+
+SELECT x.* EXCEPT(a), y.* FROM x, y;
+SELECT x.b AS b, y.b AS b, y.c AS c FROM x AS x, y AS y;
+
+SELECT * EXCEPT(a) FROM x;
+SELECT x.b AS b FROM x AS x;
+
+--------------------------------------
 -- TODO: Laterals
 --------------------------------------
 

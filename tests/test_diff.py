@@ -93,8 +93,16 @@ class TestDiff(unittest.TestCase):
 
         self._validate_delta_only(
             diff(
-                parse_one("SELECT a FROM t WHERE b AND c"),
-                parse_one("SELECT a FROM t WHERE c AND b"),
+                parse_one("SELECT a FROM t WHERE b AND c AND d"),
+                parse_one("SELECT a FROM t WHERE d AND b AND c"),
+            ),
+            [],
+        )
+
+        self._validate_delta_only(
+            diff(
+                parse_one("SELECT a FROM t WHERE b OR c OR d"),
+                parse_one("SELECT a FROM t WHERE d OR b OR c"),
             ),
             [],
         )

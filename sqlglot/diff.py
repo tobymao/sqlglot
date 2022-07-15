@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import reduce
 from sqlglot.expressions import (
     Anonymous,
     Column,
@@ -20,21 +21,21 @@ from sqlglot.helper import ensure_list
 
 @dataclass
 class Insert:
-    expr: Expression
+    expression: Expression
 
 
 @dataclass
 class Remove:
-    expr: Expression
+    expression: Expression
 
 
 @dataclass
 class Keep:
-    expr_src: Expression
-    expr_tgt: Expression
+    source: Expression
+    target: Expression
 
 
-def diff(expr_src, expr_tgt):
+def diff(source, target):
     """
     Returns changes between the source and the target expressions.
 
@@ -46,33 +47,33 @@ def diff(expr_src, expr_tgt):
         >>> diff(parse_one("a + b"), parse_one("a + c"))
         [
             Keep(
-                expr_src=(ADD this: ...),
-                expr_tgt=(ADD this: ...)
+                source=(ADD this: ...),
+                target=(ADD this: ...)
             ),
             Keep(
-                expr_src=(COLUMN this: (IDENTIFIER this: a, quoted: False)),
-                expr_tgt=(COLUMN this: (IDENTIFIER this: a, quoted: False))
+                source=(COLUMN this: (IDENTIFIER this: a, quoted: False)),
+                target=(COLUMN this: (IDENTIFIER this: a, quoted: False))
             ),
-            Remove(expr=(COLUMN this: (IDENTIFIER this: b, quoted: False))),
-            Insert(expr=(COLUMN this: (IDENTIFIER this: c, quoted: False)))
+            Remove(expression=(COLUMN this: (IDENTIFIER this: b, quoted: False))),
+            Insert(expression=(COLUMN this: (IDENTIFIER this: c, quoted: False)))
         ]
 
     Args:
-        expr_src (sqlglot.Expression): the source expression.
-        expr_tgt (sqlglot.Expression): the target expression against which the diff should be calculated.
+        source (sqlglot.Expression): the source expression.
+        target (sqlglot.Expression): the target expression against which the diff should be calculated.
     Returns:
         the list of Insert, Remove and Keep objects for each node in the source and the target expression trees.
         This list represents a sequence of steps needed to transform the source expression tree into the target one.
     """
-    expr_list_src = _expr_to_list(expr_src)
-    expr_list_tgt = _expr_to_list(expr_tgt)
-    return _myers_diff(expr_list_src, expr_list_tgt)
+    source_expression_list = _expression_to_list(source)
+    target_expression_list = _expression_to_list(target)
+    return _myers_diff(source_expression_list, target_expression_list)
 
 
-def _myers_diff(expr_list_src, expr_list_tgt):
+def _myers_diff(source, target):
     front = {1: (0, [])}
 
-    for d in range(0, len(expr_list_src) + len(expr_list_tgt) + 1):
+    for d in range(0, len(source) + len(target) + 1):
         for k in range(-d, d + 1, 2):
             go_down = k == -d or (k != d and front[k - 1][0] < front[k + 1][0])
 
@@ -86,21 +87,21 @@ def _myers_diff(expr_list_src, expr_list_tgt):
 
             history = history[:]
 
-            if 1 <= y <= len(expr_list_tgt) and go_down:
-                history.append(Insert(expr_list_tgt[y - 1]))
-            elif 1 <= x <= len(expr_list_src):
-                history.append(Remove(expr_list_src[x - 1]))
+            if 1 <= y <= len(target) and go_down:
+                history.append(Insert(target[y - 1]))
+            elif 1 <= x <= len(source):
+                history.append(Remove(source[x - 1]))
 
             while (
-                x < len(expr_list_src)
-                and y < len(expr_list_tgt)
-                and _is_expr_unchanged(expr_list_src[x], expr_list_tgt[y])
+                x < len(source)
+                and y < len(target)
+                and _is_expression_unchanged(source[x], target[y])
             ):
-                history.append(Keep(expr_list_src[x], expr_list_tgt[y]))
+                history.append(Keep(source[x], target[y]))
                 x += 1
                 y += 1
 
-            if x >= len(expr_list_src) and y >= len(expr_list_tgt):
+            if x >= len(source) and y >= len(target):
                 return history
 
             front[k] = x, history
@@ -108,52 +109,57 @@ def _myers_diff(expr_list_src, expr_list_tgt):
     raise DiffError("Unexpected state")
 
 
-def _is_expr_unchanged(expr_src, expr_tgt):
-    equals_exprs = [Literal, Column, Table, TableAlias]
-    this_equals_exprs = [DataType, Anonymous]
-
-    if any(_all_same_type(t, expr_src, expr_tgt) for t in equals_exprs):
-        return expr_src == expr_tgt
-
-    if any(_all_same_type(t, expr_src, expr_tgt) for t in this_equals_exprs):
-        return expr_src.this == expr_tgt.this
-
-    return type(expr_src) is type(expr_tgt)
+EQUALS_EXPRESSIONS = [Literal, Column, Table, TableAlias]
+THIS_EQUALS_EXPRESSIONS = [DataType, Anonymous]
 
 
-EXCLUDED_EXPR_TYPES = (Identifier,)
+def _is_expression_unchanged(source, target):
+
+    if any(_all_same_type(t, source, target) for t in EQUALS_EXPRESSIONS):
+        return source == target
+
+    if any(_all_same_type(t, source, target) for t in THIS_EQUALS_EXPRESSIONS):
+        return source.this == target.this
+
+    return type(source) is type(target)
 
 
-def _expr_to_list(expr):
+EXCLUDED_EXPRESSION_TYPES = (Identifier,)
+
+
+def _expression_to_list(expression):
     return [
         n[0]
-        for n in _normalize_args_order(expr.copy()).walk()
-        if not isinstance(n[0], EXCLUDED_EXPR_TYPES)
+        for n in _normalize_args_order(expression.copy()).bfs()
+        if not isinstance(n[0], EXCLUDED_EXPRESSION_TYPES)
     ]
 
 
-def _normalize_args_order(expr):
-    for arg in _expression_only_args(expr):
+def _normalize_args_order(expression):
+    for arg in _expression_only_args(expression):
         _normalize_args_order(arg)
 
-    if isinstance(expr, (Group, In, Select, With)):
-        for k, a in expr.args.items():
+    if isinstance(expression, (Group, In, Select, With)):
+        for k, a in expression.args.items():
             if isinstance(a, list) and all(
                 isinstance(a_item, Expression) for a_item in a
             ):
-                expr.args[k] = sorted(a, key=Expression.sql)
-    elif isinstance(expr, Connector):
-        args = [expr.this, expr.args.get("expression")]
-        args = sorted(args, key=Expression.sql)
-        expr.args["this"], expr.args["expression"] = args
+                expression.args[k] = sorted(a, key=Expression.sql)
+    elif isinstance(expression, Connector):
+        unfolded_args = sorted(expression.flatten(), key=Expression.sql)
+        folded_args = reduce(
+            lambda l, r: type(expression)(this=l, expression=r), unfolded_args[:-1]
+        )
+        expression.set("this", folded_args)
+        expression.set("expression", unfolded_args[-1])
 
-    return expr
+    return expression
 
 
-def _expression_only_args(expr):
+def _expression_only_args(expression):
     args = []
-    if expr:
-        for a in expr.args.values():
+    if expression:
+        for a in expression.args.values():
             args.extend(ensure_list(a))
     return [a for a in args if isinstance(a, Expression)]
 

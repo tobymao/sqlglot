@@ -1529,6 +1529,12 @@ class TestDialects(unittest.TestCase):
             read="snowflake",
         )
         self.validate(
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
+            read="bigquery",
+            write="snowflake",
+        )
+        self.validate(
             "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
             "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
             read="snowflake",

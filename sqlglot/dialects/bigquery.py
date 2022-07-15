@@ -39,6 +39,7 @@ class BigQuery(Dialect):
             **Tokenizer.KEYWORDS,
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
+            "QUALIFY": TokenType.QUALIFY,
             "UNKNOWN": TokenType.NULL,
         }
 

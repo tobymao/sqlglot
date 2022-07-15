@@ -202,12 +202,14 @@ def _get_unambiguous_columns(source_columns):
     unambiguous_columns = {
         col: first_table for col in _find_unique_columns(first_columns)
     }
+    all_columns = set(unambiguous_columns)
 
     for table, columns in source_columns[1:]:
         unique = _find_unique_columns(columns)
-        ambiguous = set(unambiguous_columns).intersection(unique)
+        ambiguous = set(all_columns).intersection(unique)
+        all_columns.update(columns)
         for column in ambiguous:
-            unambiguous_columns.pop(column)
+            unambiguous_columns.pop(column, None)
         for column in unique.difference(ambiguous):
             unambiguous_columns[column] = table
 

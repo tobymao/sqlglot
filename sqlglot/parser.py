@@ -1197,10 +1197,8 @@ class Parser:
                 self.raise_error("Expecting >")
 
         if type_token in self.TIMESTAMPS:
-            tz = self._match(TokenType.WITH)
-            self._match(TokenType.WITHOUT)
-            self._match(TokenType.TIME)
-            self._match(TokenType.ZONE)
+            tz = self._match(TokenType.WITH_TIME_ZONE)
+            self._match(TokenType.WITHOUT_TIME_ZONE)
             if tz:
                 return exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPTZ,

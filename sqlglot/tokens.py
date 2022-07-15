@@ -545,12 +545,10 @@ class Tokenizer(metaclass=_Tokenizer):
 
             if not self._char:
                 break
-            if self._scan_ambiguous():
-                pass
-            elif self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char])
-            elif self._char in self.WHITE_SPACE:
-                white_space = self.WHITE_SPACE[self._char]
+
+            white_space = self.WHITE_SPACE.get(self._char)
+
+            if white_space:
                 if white_space == TokenType.BREAK:
                     self._col = 1
                     self._line += 1
@@ -560,6 +558,10 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._scan_identifier()
             elif self._char == "#":
                 self._scan_annotation()
+            elif self._scan_ambiguous():
+                pass
+            elif self._char in self.SINGLE_TOKENS:
+                self._add(self.SINGLE_TOKENS[self._char])
             else:
                 self._scan_var()
         return self.tokens

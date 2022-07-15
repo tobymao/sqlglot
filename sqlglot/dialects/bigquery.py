@@ -30,6 +30,7 @@ def _date_add_sql(kind):
 
 class BigQuery(Dialect):
     identifier = "`"
+    escape = "\\"
 
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"', '"""']

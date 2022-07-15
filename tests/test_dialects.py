@@ -321,12 +321,23 @@ class TestDialects(unittest.TestCase):
             read="bigquery",
             write="presto",
         )
-
         self.validate(
             '"""x\'"""',
             "'x'''",
             read="bigquery",
             write="presto",
+        )
+        self.validate(
+            r'r"""/\*.*\*/"""',
+            r"'/\*.*\*/'",
+            read="bigquery",
+            write="presto",
+        )
+        self.validate(
+            r'r"/\*.*\*/"',
+            r"'/\\*.*\\*/'",
+            read="bigquery",
+            write="hive",
         )
 
         self.validate(

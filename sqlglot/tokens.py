@@ -194,9 +194,9 @@ class TokenType(AutoName):
     WHEN = auto()
     WHERE = auto()
     WITH = auto()
+    WITH_TIME_ZONE = auto()
     WITHIN_GROUP = auto()
-    WITHOUT = auto()
-    ZONE = auto()
+    WITHOUT_TIME_ZONE = auto()
 
 
 class Token:
@@ -403,7 +403,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
-        "TIME": TokenType.TIME,
         "TOP": TokenType.TOP,
         "TRUE": TokenType.TRUE,
         "TRUNCATE": TokenType.TRUNCATE,
@@ -419,9 +418,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "WHEN": TokenType.WHEN,
         "WHERE": TokenType.WHERE,
         "WITH": TokenType.WITH,
+        "WITH TIME ZONE": TokenType.WITH_TIME_ZONE,
         "WITHIN GROUP": TokenType.WITHIN_GROUP,
-        "WITHOUT": TokenType.WITHOUT,
-        "ZONE": TokenType.ZONE,
+        "WITHOUT TIME ZONE": TokenType.WITHOUT_TIME_ZONE,
         "ARRAY": TokenType.ARRAY,
         "BOOL": TokenType.BOOLEAN,
         "BOOLEAN": TokenType.BOOLEAN,
@@ -624,7 +623,7 @@ class Tokenizer(metaclass=_Tokenizer):
             return True
 
         self._advance(len(word) - 1)
-        self._add(self.KEYWORDS[word])
+        self._add(self.KEYWORDS[word.upper()])
         return True
 
     def _scan_comment(self, comment):

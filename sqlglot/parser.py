@@ -1147,13 +1147,15 @@ class Parser:
                 unit=self._parse_var(),
             )
 
+        index = self._index
         type_token = self._parse_types()
         this = self._parse_column()
 
         if type_token:
             if this:
                 return self.expression(exp.Cast, this=this, to=type_token)
-            return type_token
+            self._retreat(index)
+            return self._parse_column()
 
         if self._match(TokenType.DCOLON):
             type_token = self._parse_types()

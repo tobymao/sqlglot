@@ -18,6 +18,8 @@ class TestParser(unittest.TestCase):
         )
         assert len(list(columns)) == 1
 
+        self.assertIsNotNone(parse_one("date").find(exp.Column))
+
     def test_table(self):
         tables = [
             t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)

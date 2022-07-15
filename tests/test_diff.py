@@ -1,8 +1,8 @@
 import unittest
 
-from sqlglot import parse_one
+from sqlglot import parse_one, table
 from sqlglot.diff import diff, Insert, Remove, Keep
-from sqlglot.expressions import Identifier, Table
+from sqlglot.expressions import Join
 
 
 class TestDiff(unittest.TestCase):
@@ -16,14 +16,14 @@ class TestDiff(unittest.TestCase):
         )
 
         self._validate_delta_only(
-            diff(parse_one("SELECT a, b, c"), parse_one("SELECT c, a")),
+            diff(parse_one("SELECT a, b, c"), parse_one("SELECT a, c")),
             [
                 Remove(parse_one("b")),
             ],
         )
 
         self._validate_delta_only(
-            diff(parse_one("SELECT a, b"), parse_one("SELECT c, b, a")),
+            diff(parse_one("SELECT a, b"), parse_one("SELECT a, b, c")),
             [
                 Insert(parse_one("c")),
             ],
@@ -35,20 +35,8 @@ class TestDiff(unittest.TestCase):
                 parse_one("SELECT a FROM table_two"),
             ),
             [
-                Remove(
-                    Table(
-                        this=Identifier(this="table_one", quoted=False),
-                        db=None,
-                        catalog=None,
-                    )
-                ),
-                Insert(
-                    Table(
-                        this=Identifier(this="table_two", quoted=False),
-                        db=None,
-                        catalog=None,
-                    )
-                ),
+                Remove(table("table_one")),
+                Insert(table("table_two")),
             ],
         )
 
@@ -78,11 +66,19 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
-    def test_no_delta(self):
-        self._validate_delta_only(
-            diff(parse_one("SELECT a, b, c"), parse_one("SELECT c, b, a")), []
-        )
+    def test_join(self):
+        expr_src = "SELECT a, b FROM t1 LEFT JOIN t2 ON t1.key = t2.key"
+        expr_tgt = "SELECT a, b FROM t1 RIGHT JOIN t2 ON t1.key = t2.key"
 
+        changes = diff(parse_one(expr_src), parse_one(expr_tgt))
+        changes = _delta_only(changes)
+
+        self.assertEqual(len(changes), 2)
+        self.assertTrue(isinstance(changes[0], Remove))
+        self.assertTrue(isinstance(changes[1], Insert))
+        self.assertTrue(all(isinstance(c.expression, Join) for c in changes))
+
+    def test_no_delta(self):
         self._validate_delta_only(
             diff(
                 parse_one("SELECT a FROM t WHERE b IN (1, 2, 3)"),
@@ -108,5 +104,9 @@ class TestDiff(unittest.TestCase):
         )
 
     def _validate_delta_only(self, actual_diff, expected_delta):
-        actual_delta = [d for d in actual_diff if not isinstance(d, Keep)]
+        actual_delta = _delta_only(actual_diff)
         self.assertEqual(actual_delta, expected_delta)
+
+
+def _delta_only(changes):
+    return [d for d in changes if not isinstance(d, Keep)]

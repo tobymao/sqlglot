@@ -233,11 +233,16 @@ class _Tokenizer(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        quotes = {quote: TokenType.QUOTE for quote in klass.QUOTES}
+        klass.QUOTES = [
+            prefix + quote for prefix in ["", "r"] for quote in klass.QUOTES
+        ]
 
         klass.AMBIGUOUS = new_trie(
-            key
-            for key, value in {**klass.KEYWORDS, **quotes}.items()
+            key.upper()
+            for key, value in {
+                **klass.KEYWORDS,
+                **{quote: TokenType.QUOTE for quote in klass.QUOTES},
+            }.items()
             if value in (TokenType.COMMENT, TokenType.COMMENT_START, TokenType.QUOTE)
             or " " in key
             or any(single in key for single in klass.SINGLE_TOKENS)
@@ -681,25 +686,28 @@ class Tokenizer(metaclass=_Tokenizer):
         text = ""
         self._advance(size)
 
+        if quote.startswith("r"):
+            quote = quote[1:]
+            size = len(quote)
+
         while True:
             if self._char == self.escape and self._peek == quote:
                 text += f"{self.ESCAPE_CODE}{self._char}"
                 self._advance(2)
             else:
-                chars = self._chars(size)
-
-                if chars == quote:
-                    self._advance(size - 1)
+                if self._chars(size) == quote:
+                    if size > 1:
+                        self._advance(size - 1)
                     break
 
                 if self._char == "'":
                     text += f"{self.ESCAPE_CODE}{self._char}"
                     self._advance()
+                elif self._end:
+                    raise RuntimeError(
+                        f"Missing {quote} from {self._line}:{self._start}"
+                    )
                 else:
-                    if self._end:
-                        raise RuntimeError(
-                            f"Missing {quote} from {self._line}:{self._start}"
-                        )
                     text += self._char
                     self._advance()
 

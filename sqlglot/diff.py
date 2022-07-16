@@ -1,10 +1,15 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from sqlglot.expressions import (
+    Boolean,
+    DataType,
     Expression,
     Identifier,
     Join,
     Literal,
+    Placeholder,
+    Null,
+    Star,
 )
 from sqlglot.helper import ensure_list
 
@@ -76,7 +81,15 @@ def diff(source, target):
     return ChangeDistiller().diff(source, target)
 
 
-LEAF_EXPRESSION_TYPES = (Identifier, Literal)
+LEAF_EXPRESSION_TYPES = (
+    Boolean,
+    DataType,
+    Identifier,
+    Literal,
+    Null,
+    Placeholder,
+    Star,
+)
 
 
 class ChangeDistiller:

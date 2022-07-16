@@ -195,6 +195,23 @@ class Parser:
 
     COLUMN_OPERATORS = {TokenType.DOT}
 
+    EXPRESSION_PARSERS = {
+        exp.DataType: "_parse_types",
+        exp.From: "_parse_from",
+        exp.Group: "_parse_group",
+        exp.Lateral: "_parse_lateral",
+        exp.Join: "_parse_join",
+        exp.Order: "_parse_order",
+        exp.Lambda: "_parse_lambda",
+        exp.Limit: "_parse_limit",
+        exp.Offset: "_parse_offset",
+        exp.TableAlias: "_parse_table_alias",
+        exp.Table: "_parse_table",
+        exp.Condition: "_parse_conjunction",
+        exp.Expression: "_parse_statement",
+        "JOIN_TYPE": "_parse_join_side_and_kind",
+    }
+
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     STRICT_CAST = True
@@ -251,27 +268,12 @@ class Parser:
         )
 
     def parse_into(self, expression_types, raw_tokens, sql=None):
-        methods = {
-            exp.From: self._parse_from,
-            exp.Group: self._parse_group,
-            exp.Lateral: self._parse_lateral,
-            exp.Join: self._parse_join,
-            exp.Order: self._parse_order,
-            exp.Lambda: self._parse_lambda,
-            exp.Limit: self._parse_limit,
-            exp.Offset: self._parse_offset,
-            exp.TableAlias: self._parse_table_alias,
-            exp.Table: self._parse_table,
-            exp.Condition: self._parse_conjunction,
-            exp.Expression: self._parse_statement,
-            "JOIN_TYPE": self._parse_join_side_and_kind,
-        }
-        error = None
         for expression_type in ensure_list(expression_types):
-            if expression_type not in methods:
+            parser = self.EXPRESSION_PARSERS.get(expression_type)
+            if not parser:
                 raise TypeError(f"No parser registered for {expression_type}")
             try:
-                return self._parse(methods[expression_type], raw_tokens, sql)
+                return self._parse(getattr(self, parser), raw_tokens, sql)
             except ParseError as e:
                 error = e
         raise ParseError(f"Failed to parse into {expression_types}") from error
@@ -1154,8 +1156,10 @@ class Parser:
         if type_token:
             if this:
                 return self.expression(exp.Cast, this=this, to=type_token)
-            self._retreat(index)
-            return self._parse_column()
+            if not type_token.args.get("nested"):
+                self._retreat(index)
+                return self._parse_column()
+            return type_token
 
         if self._match(TokenType.DCOLON):
             type_token = self._parse_types()

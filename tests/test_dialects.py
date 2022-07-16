@@ -1571,6 +1571,11 @@ class TestDialects(unittest.TestCase):
             read="sqlite",
             write="oracle",
         )
+        self.validate(
+            "SELECT TOP 10 x FROM y",
+            "SELECT x FROM y LIMIT 10",
+            read="oracle",
+        )
 
     def test_tableau(self):
         self.validate(

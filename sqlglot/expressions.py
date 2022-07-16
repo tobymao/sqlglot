@@ -1790,6 +1790,10 @@ class CurrentDate(Func):
     arg_types = {"this": False}
 
 
+class CurrentDatetime(Func):
+    arg_types = {"this": False}
+
+
 class CurrentTimestamp(Func):
     arg_types = {}
 

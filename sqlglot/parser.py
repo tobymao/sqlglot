@@ -29,6 +29,7 @@ class Parser:
 
     NO_PAREN_FUNCTIONS = {
         TokenType.CURRENT_DATE: exp.CurrentDate,
+        TokenType.CURRENT_DATETIME: exp.CurrentDate,
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
     }
 

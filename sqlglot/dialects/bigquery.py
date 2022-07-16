@@ -37,6 +37,7 @@ class BigQuery(Dialect):
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
             "QUALIFY": TokenType.QUALIFY,
@@ -48,6 +49,11 @@ class BigQuery(Dialect):
             **Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
+        }
+
+        NO_PAREN_FUNCTIONS = {
+            **Parser.NO_PAREN_FUNCTIONS,
+            TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
         }
 
     class Generator(Generator):

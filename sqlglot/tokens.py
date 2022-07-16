@@ -99,6 +99,7 @@ class TokenType(AutoName):
     CREATE = auto()
     CROSS = auto()
     CURRENT_DATE = auto()
+    CURRENT_DATETIME = auto()
     CURRENT_ROW = auto()
     CURRENT_TIMESTAMP = auto()
     DIV = auto()

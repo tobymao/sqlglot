@@ -397,6 +397,11 @@ class TestDialects(unittest.TestCase):
             read="bigquery",
             write="duckdb",
         )
+        self.validate(
+            "current_datetime",
+            "CURRENT_DATETIME()",
+            read="bigquery",
+        )
 
     def test_postgres(self):
         self.validate(

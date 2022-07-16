@@ -62,7 +62,7 @@ class Step:
         # CTEs break the mold of scope and introduce themselves to all in the context.
         if with_:
             ctes = ctes.copy()
-            for cte in with_.args["expressions"]:
+            for cte in with_.expressions:
                 step = Step.from_expression(cte.this, ctes)
                 step.name = cte.alias
                 ctes[step.name] = step
@@ -70,7 +70,7 @@ class Step:
         from_ = expression.args.get("from")
 
         if from_:
-            from_ = from_.args["expressions"]
+            from_ = from_.expressions
             if len(from_) > 1:
                 raise UnsupportedError(
                     "Multi-from statements are unsupported. Run it through the optimizer"
@@ -93,7 +93,7 @@ class Step:
         aggregations = []
         sequence = itertools.count()
 
-        for e in expression.args["expressions"]:
+        for e in expression.expressions:
             aggregation = e.find(exp.AggFunc)
 
             if aggregation:
@@ -127,7 +127,7 @@ class Step:
             aggregate.aggregations = aggregations
             aggregate.group = [
                 exp.column(e.alias_or_name, step.name, quoted=True)
-                for e in group.args["expressions"]
+                for e in group.expressions
             ]
             aggregate.add_dependency(step)
             step = aggregate
@@ -142,7 +142,7 @@ class Step:
         if order:
             sort = Sort()
             sort.name = step.name
-            sort.key = order.args["expressions"]
+            sort.key = order.expressions
             sort.add_dependency(step)
             step = sort
             for k in sort.key + projections:

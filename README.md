@@ -89,7 +89,7 @@ for column in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Column):
 
 # find all projections in select statements (a and c)
 for select in parse_one("SELECT a, b + 1 AS c FROM d").find_all(exp.Select):
-  for projection in select.args["expressions"]:
+  for projection in select.expressions:
     print(projection.alias_or_name)
 
 # find all tables (x, y, z)

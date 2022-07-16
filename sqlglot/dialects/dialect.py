@@ -41,6 +41,7 @@ class Dialect(metaclass=_Dialect):
     identifier = None
     escape = "'"
     index_offset = 0
+    unnest_column_only = False
 
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
@@ -104,6 +105,7 @@ class Dialect(metaclass=_Dialect):
         return self.parser_class(
             **{
                 "index_offset": self.index_offset,
+                "unnest_column_only": self.unnest_column_only,
                 **opts,
             },
         )
@@ -118,6 +120,7 @@ class Dialect(metaclass=_Dialect):
                 "index_offset": self.index_offset,
                 "time_mapping": self.inverse_time_mapping,
                 "time_trie": self.inverse_time_trie,
+                "unnest_column_only": self.unnest_column_only,
                 **opts,
             }
         )

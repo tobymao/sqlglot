@@ -109,7 +109,7 @@ def csv_reader(table):
     Returns:
         A python csv reader.
     """
-    file, *args = table.this.args["expressions"]
+    file, *args = table.this.expressions
     file = file.name
     file = open_file(file)
 

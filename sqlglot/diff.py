@@ -1,63 +1,60 @@
+from collections import defaultdict
 from dataclasses import dataclass
-from functools import reduce
 from sqlglot.expressions import (
-    Anonymous,
-    Column,
-    Connector,
-    DataType,
     Expression,
-    Group,
     Identifier,
     Join,
-    In,
     Literal,
-    Table,
-    TableAlias,
-    With,
 )
-from sqlglot.errors import DiffError
 from sqlglot.helper import ensure_list
 
 
-EXCLUDED_EXPRESSION_TYPES = {Identifier}
-SORT_ARGS_EXPRESSION_TYPES = {Connector, Group, In, With}
-
-
-@dataclass
+@dataclass(frozen=True)
 class Insert:
+    """Indicates that a new node has been inserted"""
+
     expression: Expression
 
 
-@dataclass
+@dataclass(frozen=True)
 class Remove:
+    """Indicates that an existing node has been removed"""
+
     expression: Expression
 
 
-@dataclass
-class Keep:
+@dataclass(frozen=True)
+class Move:
+    """Indicates that an existing node's position within the tree has changed"""
+
+    expression: Expression
+
+
+@dataclass(frozen=True)
+class Update:
+    """Indicates that an existing node has been updated"""
+
     source: Expression
     target: Expression
 
 
-def diff(
-    source,
-    target,
-    excluded_expression_types=None,
-    sort_args_expression_types=None,
-):
+@dataclass(frozen=True)
+class Keep:
+    """Indicates that an existing node hasn't been changed"""
+
+    source: Expression
+    target: Expression
+
+
+def diff(source, target):
     """
-    Returns changes between the source and the target expressions.
-
-    The underlying logic relies on a variance of the Myers diff algorithm with a custom heuristics for checking
-    equality between nodes. Provided the Myers algorithm operates on lists, the source and the target expressions
-    are first unfolded into their list representations using the topological order.
-
-    NOTE: this functionality is largely based on heuristics. It does a pretty good job at estimating which AST nodes have
-    been impacted but neither accuracy nor optimality of this estimate are guaranteed. Use it at your own risk.
+    Returns the list of changes between the source and the target expressions.
 
     Examples:
         >>> diff(parse_one("a + b"), parse_one("a + c"))
         [
+            Remove(expression=(COLUMN this: (IDENTIFIER this: b, quoted: False))),
+            Insert(expression=(COLUMN this: (IDENTIFIER this: c, quoted: False))),
             Keep(
                 source=(ADD this: ...),
                 target=(ADD this: ...)
@@ -66,124 +63,183 @@ def diff(
                 source=(COLUMN this: (IDENTIFIER this: a, quoted: False)),
                 target=(COLUMN this: (IDENTIFIER this: a, quoted: False))
             ),
-            Remove(expression=(COLUMN this: (IDENTIFIER this: b, quoted: False))),
-            Insert(expression=(COLUMN this: (IDENTIFIER this: c, quoted: False)))
         ]
 
     Args:
         source (sqlglot.Expression): the source expression.
-        target (sqlglot.Exexcluded_expression_typespression): the target expression against which the diff should be calculated.
-        excluded_expression_types (optional): the set of AST node types which should be excluded from the comparison.
-        sort_args_expression_types (optional): the set of AST node types for which arguments should be sorted. This parameter
-            can be used to tweak the accuracy of the algorithm. For example if a calling code expects the two ASTs to be mostly
-            the same and the position of a majority of nodes is expected to remain unchanged, it may make sense to omit sorting
-            for some nodes.
+        target (sqlglot.Expression): the target expression against which the diff should be calculated.
+
     Returns:
-        the list of Insert, Remove and Keep objects for each node in the source and the target expression trees.
+        the list of Insert, Remove, Move, Update and Keep objects for each node in the source and the target expression trees.
         This list represents a sequence of steps needed to transform the source expression tree into the target one.
     """
-    if excluded_expression_types is None:
-        excluded_expression_types = EXCLUDED_EXPRESSION_TYPES
-    if sort_args_expression_types is None:
-        sort_args_expression_types = SORT_ARGS_EXPRESSION_TYPES
-
-    source_expression_list = _expression_to_list(
-        source, excluded_expression_types, sort_args_expression_types
-    )
-    target_expression_list = _expression_to_list(
-        target, excluded_expression_types, sort_args_expression_types
-    )
-    return _myers_diff(source_expression_list, target_expression_list)
+    return ChangeDistiller().diff(source, target)
 
 
-def _myers_diff(source, target):
-    front = {1: (0, [])}
+LEAF_EXPRESSION_TYPES = (Identifier, Literal)
 
-    for d in range(0, len(source) + len(target) + 1):
-        for k in range(-d, d + 1, 2):
-            go_down = k == -d or (k != d and front[k - 1][0] < front[k + 1][0])
 
-            if go_down:
-                old_x, history = front[k + 1]
-                x = old_x
-            else:
-                old_x, history = front[k - 1]
-                x = old_x + 1
-            y = x - k
+class ChangeDistiller:
+    """
+    The implementation of the Change Distiller algorithm described by Beat Fluri and Martin Pinzger in
+    their paper https://ieeexplore.ieee.org/document/4339230, which in turn is based on the algorithm by
+    Chawathe et al. described in http://ilpubs.stanford.edu:8090/115/1/1995-46.pdf.
+    """
 
-            history = history[:]
+    def __init__(self, f=0.6, t=0.6):
+        self.f = f
+        self.t = t
 
-            if 1 <= y <= len(target) and go_down:
-                history.append(Insert(target[y - 1]))
-            elif 1 <= x <= len(source):
-                history.append(Remove(source[x - 1]))
+    def diff(self, source, target):
+        self._source = source
+        self._target = target
+        self._source_index = {id(n[0]): n[0] for n in source.bfs()}
+        self._target_index = {id(n[0]): n[0] for n in target.bfs()}
+        self._unmatched_source_nodes = set(self._source_index.keys())
+        self._unmatched_target_nodes = set(self._target_index.keys())
 
-            while (
-                x < len(source)
-                and y < len(target)
-                and _is_expression_unchanged(source[x], target[y])
+        matching_set = self._compute_matching_set()
+        return self._generate_edit_script(matching_set)
+
+    def _generate_edit_script(self, matching_set):
+        edit_script = []
+        for removed_node_id in self._unmatched_source_nodes:
+            edit_script.append(Remove(self._source_index[removed_node_id]))
+        for inserted_node_id in self._unmatched_target_nodes:
+            edit_script.append(Insert(self._target_index[inserted_node_id]))
+        for kept_source_node_id, kept_target_node_id in matching_set:
+            source_node = self._source_index[kept_source_node_id]
+            target_node = self._target_index[kept_target_node_id]
+            if (
+                not isinstance(source_node, LEAF_EXPRESSION_TYPES)
+                or source_node == target_node
             ):
-                history.append(Keep(source[x], target[y]))
-                x += 1
-                y += 1
+                edit_script.extend(
+                    self._generate_move_edits(source_node, target_node, matching_set)
+                )
+                edit_script.append(Keep(source_node, target_node))
+            else:
+                edit_script.append(Update(source_node, target_node))
 
-            if x >= len(source) and y >= len(target):
-                return history
+        return edit_script
 
-            front[k] = x, history
+    def _generate_move_edits(self, source, target, matching_set):
+        source_args = [id(e) for e in _expression_only_args(source)]
+        target_args = [id(e) for e in _expression_only_args(target)]
 
-    raise DiffError("Unexpected state")
+        args_lcs = set(
+            _lcs(source_args, target_args, lambda l, r: (l, r) in matching_set)
+        )
+
+        move_edits = []
+        for a in source_args:
+            if a not in args_lcs and a not in self._unmatched_source_nodes:
+                move_edits.append(Move(self._source_index[a]))
+
+        return move_edits
+
+    def _compute_matching_set(self):
+        leaves_matching_set = self._compute_leaf_matching_set()
+        matching_set = leaves_matching_set.copy()
+
+        for source_node_id in self._unmatched_source_nodes.copy():
+            for target_node_id in self._unmatched_target_nodes:
+                source_node = self._source_index[source_node_id]
+                target_node = self._target_index[target_node_id]
+                if _is_same_label(source_node, target_node):
+                    similarity_score = _dice_coefficient(
+                        source_node.sql(), target_node.sql()
+                    )
+
+                    source_leaf_ids = {id(l) for l in _get_leaves(source_node)}
+                    target_leaf_ids = {id(l) for l in _get_leaves(target_node)}
+                    common_leaves_num = sum(
+                        1 if s in source_leaf_ids and t in target_leaf_ids else 0
+                        for s, t in leaves_matching_set
+                    )
+                    leaf_similarity_score = common_leaves_num / max(
+                        len(source_leaf_ids), len(target_leaf_ids)
+                    )
+
+                    adjusted_t = (
+                        self.t
+                        if min(len(source_leaf_ids), len(target_leaf_ids)) > 4
+                        else 0.4
+                    )
+
+                    if (
+                        similarity_score >= self.f
+                        and leaf_similarity_score >= adjusted_t
+                    ) or leaf_similarity_score >= 0.8:
+                        matching_set.add((source_node_id, target_node_id))
+                        self._unmatched_source_nodes.remove(source_node_id)
+                        self._unmatched_target_nodes.remove(target_node_id)
+                        break
+
+        return matching_set
+
+    def _compute_leaf_matching_set(self):
+        leaf_matchings = []
+        for source_leaf in _get_leaves(self._source):
+            for target_leaf in _get_leaves(self._target):
+                if _is_same_label(source_leaf, target_leaf):
+                    similarity_score = _dice_coefficient(
+                        source_leaf.sql(), target_leaf.sql()
+                    )
+                    if similarity_score and similarity_score >= self.f:
+                        leaf_matchings.append(
+                            (source_leaf, target_leaf, similarity_score)
+                        )
+
+        # Pick best matchings based on the highest score
+        matching_set = set()
+        leaf_matchings = sorted(leaf_matchings, key=lambda x: -x[2])
+        for source_leaf, target_leaf, _ in leaf_matchings:
+            if (
+                id(source_leaf) in self._unmatched_source_nodes
+                and id(target_leaf) in self._unmatched_target_nodes
+            ):
+                matching_set.add((id(source_leaf), id(target_leaf)))
+                self._unmatched_source_nodes.remove(id(source_leaf))
+                self._unmatched_target_nodes.remove(id(target_leaf))
+
+        return matching_set
 
 
-EQUALS_EXPRESSIONS = [Literal, Column, Table, TableAlias]
-THIS_EQUALS_EXPRESSIONS = [DataType, Anonymous]
+def _get_leaves(expression):
+    return expression.find_all(*LEAF_EXPRESSION_TYPES)
 
 
-def _is_expression_unchanged(source, target):
-
-    if any(_all_same_type(t, source, target) for t in EQUALS_EXPRESSIONS):
-        return source == target
-
-    if any(_all_same_type(t, source, target) for t in THIS_EQUALS_EXPRESSIONS):
-        return source.this == target.this
-
+def _is_same_label(source, target):
     if _all_same_type(Join, source, target):
         return source.args.get("side") == target.args.get("side")
 
     return type(source) is type(target)
 
 
-def _expression_to_list(
-    expression, excluded_expression_types, sort_args_expression_types
-):
-    return [
-        n[0]
-        for n in _normalize_args_order(
-            expression.copy(), sort_args_expression_types
-        ).bfs()
-        if not isinstance(n[0], tuple(excluded_expression_types))
-    ]
+def _dice_coefficient(string_a, string_b, n=2):
+    n_grams_a = _n_grams(string_a.lower(), n)
+    n_grams_b = _n_grams(string_b.lower(), n)
+
+    total_grams = len(n_grams_a) + len(n_grams_b)
+    if total_grams == 0:
+        return 1.0 if string_a == string_b else 0.0
+
+    overlap_len = 0
+    grams_histo = defaultdict(int)
+    for g in n_grams_a:
+        grams_histo[g] += 1
+    for g in n_grams_b:
+        if grams_histo[g] > 0:
+            overlap_len += 1
+        grams_histo[g] -= 1
+
+    return 2 * overlap_len / total_grams
 
 
-def _normalize_args_order(expression, sort_args_expression_types):
-    for arg in _expression_only_args(expression):
-        _normalize_args_order(arg, sort_args_expression_types)
-
-    if isinstance(expression, Connector) and Connector in sort_args_expression_types:
-        unfolded_args = sorted(expression.flatten(), key=Expression.sql)
-        folded_args = reduce(
-            lambda l, r: type(expression)(this=l, expression=r), unfolded_args[:-1]
-        )
-        expression.set("this", folded_args)
-        expression.set("expression", unfolded_args[-1])
-    elif isinstance(expression, tuple(sort_args_expression_types)):
-        for k, a in expression.args.items():
-            if isinstance(a, list) and all(
-                isinstance(a_item, Expression) for a_item in a
-            ):
-                expression.args[k] = sorted(a, key=Expression.sql)
-
-    return expression
+def _n_grams(sequence, n):
+    count = max(0, len(sequence) - n + 1)
+    return [sequence[i : i + n] for i in range(count)]
 
 
 def _expression_only_args(expression):
@@ -196,3 +252,24 @@ def _expression_only_args(expression):
 
 def _all_same_type(tpe, *args):
     return all(isinstance(a, tpe) for a in args)
+
+
+def _lcs(seq_a, seq_b, equal):
+    len_a = len(seq_a)
+    len_b = len(seq_b)
+    lcs_result = [[None] * (len_b + 1) for i in range(len_a + 1)]
+
+    for i in range(len_a + 1):
+        for j in range(len_b + 1):
+            if i == 0 or j == 0:
+                lcs_result[i][j] = []
+            elif equal(seq_a[i - 1], seq_b[j - 1]):
+                lcs_result[i][j] = lcs_result[i - 1][j - 1] + [seq_a[i - 1]]
+            else:
+                lcs_result[i][j] = (
+                    lcs_result[i - 1][j]
+                    if len(lcs_result[i - 1][j]) > len(lcs_result[i][j - 1])
+                    else lcs_result[i][j - 1]
+                )
+
+    return lcs_result[len_a][len_b]

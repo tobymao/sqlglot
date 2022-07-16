@@ -403,7 +403,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
-        "TOP": TokenType.TOP,
         "TRUE": TokenType.TRUE,
         "TRUNCATE": TokenType.TRUNCATE,
         "TRY_CAST": TokenType.TRY_CAST,

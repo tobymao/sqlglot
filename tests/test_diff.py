@@ -1,8 +1,8 @@
 import unittest
 
-from sqlglot import parse_one, table
-from sqlglot.diff import diff, Insert, Remove, Keep
-from sqlglot.expressions import Join
+from sqlglot import parse_one
+from sqlglot.diff import diff, Insert, Keep, Move, Remove, Update
+from sqlglot.expressions import Join, to_identifier
 
 
 class TestDiff(unittest.TestCase):
@@ -10,22 +10,24 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff(parse_one("SELECT a + b"), parse_one("SELECT a - b")),
             [
-                Remove(parse_one("a + b")),
-                Insert(parse_one("a - b")),
+                Remove(parse_one("a + b")),  # the Add node
+                Insert(parse_one("a - b")),  # the Sub node
             ],
         )
 
         self._validate_delta_only(
             diff(parse_one("SELECT a, b, c"), parse_one("SELECT a, c")),
             [
-                Remove(parse_one("b")),
+                Remove(to_identifier("b", quoted=False)),  # the Identifier node
+                Remove(parse_one("b")),  # the Column node
             ],
         )
 
         self._validate_delta_only(
             diff(parse_one("SELECT a, b"), parse_one("SELECT a, b, c")),
             [
-                Insert(parse_one("c")),
+                Insert(to_identifier("c", quoted=False)),  # the Identifier node
+                Insert(parse_one("c")),  # the Column node
             ],
         )
 
@@ -35,8 +37,32 @@ class TestDiff(unittest.TestCase):
                 parse_one("SELECT a FROM table_two"),
             ),
             [
-                Remove(table("table_one")),
-                Insert(table("table_two")),
+                Update(
+                    to_identifier("table_one", quoted=False),
+                    to_identifier("table_two", quoted=False),
+                ),  # the Identifier node
+            ],
+        )
+
+    def test_node_position_changed(self):
+        self._validate_delta_only(
+            diff(parse_one("SELECT a, b, c"), parse_one("SELECT c, a, b")),
+            [
+                Move(parse_one("c")),  # the Column node
+            ],
+        )
+
+        self._validate_delta_only(
+            diff(parse_one("SELECT a + b"), parse_one("SELECT b + a")),
+            [
+                Move(parse_one("a")),  # the Column node
+            ],
+        )
+
+        self._validate_delta_only(
+            diff(parse_one("SELECT aaaa AND bbbb"), parse_one("SELECT bbbb AND aaaa")),
+            [
+                Move(parse_one("aaaa")),  # the Column node
             ],
         )
 
@@ -49,20 +75,21 @@ class TestDiff(unittest.TestCase):
         """
         expr_tgt = """
             WITH
-                cte2 AS (SELECT d, e, f FROM table_two),
-                cte1 AS (SELECT a, b, c FROM table_one WHERE d = 'different_filter')
+                cte1 AS (SELECT a, b, c FROM table_one WHERE d = 'different_filter'),
+                cte2 AS (SELECT d, e, f FROM table_two)
             SELECT a, b, d, e FROM cte1 JOIN cte2 ON f = c
         """
 
         self._validate_delta_only(
             diff(parse_one(expr_src), parse_one(expr_tgt)),
             [
-                Remove(parse_one("LOWER(c) AS c")),
-                Insert(parse_one("c")),
-                Remove(parse_one("LOWER(c)")),
-                Remove(parse_one("c")),
-                Remove(parse_one("'filter'")),
-                Insert(parse_one("'different_filter'")),
+                Remove(parse_one("c")),  # the Column node
+                Remove(parse_one("LOWER(c) AS c")),  # the Alias node
+                Remove(to_identifier("c", quoted=False)),  # the Identifier node
+                Remove(parse_one("LOWER(c)")),  # the Lower node
+                Remove(parse_one("'filter'")),  # the Literal node
+                Insert(parse_one("'different_filter'")),  # the Literal node
+                Insert(parse_one("c")),  # the Column node
             ],
         )
 
@@ -78,34 +105,9 @@ class TestDiff(unittest.TestCase):
         self.assertTrue(isinstance(changes[1], Insert))
         self.assertTrue(all(isinstance(c.expression, Join) for c in changes))
 
-    def test_no_delta(self):
-        self._validate_delta_only(
-            diff(
-                parse_one("SELECT a FROM t WHERE b IN (1, 2, 3)"),
-                parse_one("SELECT a FROM t WHERE b IN (3, 2, 1)"),
-            ),
-            [],
-        )
-
-        self._validate_delta_only(
-            diff(
-                parse_one("SELECT a FROM t WHERE b AND c AND d"),
-                parse_one("SELECT a FROM t WHERE d AND b AND c"),
-            ),
-            [],
-        )
-
-        self._validate_delta_only(
-            diff(
-                parse_one("SELECT a FROM t WHERE b OR c OR d"),
-                parse_one("SELECT a FROM t WHERE d OR b OR c"),
-            ),
-            [],
-        )
-
     def _validate_delta_only(self, actual_diff, expected_delta):
         actual_delta = _delta_only(actual_diff)
-        self.assertEqual(actual_delta, expected_delta)
+        self.assertEqual(set(actual_delta), set(expected_delta))
 
 
 def _delta_only(changes):

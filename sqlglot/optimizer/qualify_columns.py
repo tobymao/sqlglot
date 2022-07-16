@@ -6,6 +6,9 @@ from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 
 
+SKIP_QUALIFY = (exp.Unnest, exp.Lateral)
+
+
 def qualify_columns(expression, schema):
     """
     Rewrite sqlglot AST to have fully qualified columns.
@@ -30,8 +33,9 @@ def qualify_columns(expression, schema):
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         _qualify_columns(scope, schema)
-        _expand_stars(scope, schema)
-        _qualify_outputs(scope)
+        if not isinstance(scope.expression, SKIP_QUALIFY):
+            _expand_stars(scope, schema)
+            _qualify_outputs(scope)
         _check_unknown_tables(scope)
 
     return expression
@@ -55,6 +59,8 @@ def _pop_table_column_aliases(derived_tables):
     (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
     """
     for derived_table in derived_tables:
+        if isinstance(derived_table, SKIP_QUALIFY):
+            continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
             table_alias.args.pop("columns", None)
@@ -155,7 +161,6 @@ def _add_replace_columns(expression, tables, replace_columns):
 
 def _qualify_outputs(scope):
     """Ensure all output columns are aliased"""
-
     new_selections = []
 
     for i, (selection, aliased_column) in enumerate(

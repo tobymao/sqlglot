@@ -42,7 +42,7 @@ def reorder_joins(expression):
     Reorder joins by topological sort order based on predicate references.
     """
     for from_ in expression.find_all(exp.From):
-        head = from_.args["expressions"][0]
+        head = from_.expressions[0]
         parent = from_.parent
         joins = {join.this.alias_or_name: join for join in parent.args.get("joins", [])}
         dag = {head.alias_or_name: []}

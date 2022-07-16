@@ -43,12 +43,12 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        assert expression.args["expressions"][0].text("this") == "a"
-        assert expression.args["expressions"][1].text("this") == "b"
-        assert expression.args["expressions"][2].text("alias") == "c"
-        assert expression.args["expressions"][3].text("alias") == "D"
-        assert expression.args["expressions"][4].text("alias") == "y|z'"
-        table = expression.args["from"].args["expressions"][0]
+        assert expression.expressions[0].text("this") == "a"
+        assert expression.expressions[1].text("this") == "b"
+        assert expression.expressions[2].text("alias") == "c"
+        assert expression.expressions[3].text("alias") == "D"
+        assert expression.expressions[4].text("alias") == "y|z'"
+        table = expression.args["from"].expressions[0]
         assert table.args["this"].args["this"] == "z"
         assert table.args["db"].args["this"] == "y"
 
@@ -61,12 +61,10 @@ class TestParser(unittest.TestCase):
 
         assert len(expressions) == 2
         assert (
-            expressions[0].args["from"].args["expressions"][0].args["this"].args["this"]
-            == "a"
+            expressions[0].args["from"].expressions[0].args["this"].args["this"] == "a"
         )
         assert (
-            expressions[1].args["from"].args["expressions"][0].args["this"].args["this"]
-            == "b"
+            expressions[1].args["from"].expressions[0].args["this"].args["this"] == "b"
         )
 
     def test_expression(self):
@@ -119,12 +117,12 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        assert expression.args["expressions"][0].text("this") == "annotation1"
-        assert expression.args["expressions"][1].text("this") == "annotation2:testing"
-        assert expression.args["expressions"][2].text("this") == "test#annotation"
-        assert expression.args["expressions"][3].text("this") == "c#annotation3"
-        assert expression.args["expressions"][4].text("this") == "annotation4"
-        assert expression.args["expressions"][5].text("this") == ""
+        assert expression.expressions[0].text("this") == "annotation1"
+        assert expression.expressions[1].text("this") == "annotation2:testing"
+        assert expression.expressions[2].text("this") == "test#annotation"
+        assert expression.expressions[3].text("this") == "c#annotation3"
+        assert expression.expressions[4].text("this") == "annotation4"
+        assert expression.expressions[5].text("this") == ""
 
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")

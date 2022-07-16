@@ -91,11 +91,11 @@ class TestExpressions(unittest.TestCase):
             "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"
         )
         self.assertEqual(
-            [e.alias_or_name for e in expression.args["expressions"]],
+            [e.alias_or_name for e in expression.expressions],
             ["a", "B", "e", "*", "zz", "z"],
         )
         self.assertEqual(
-            [e.alias_or_name for e in expression.args["from"].args["expressions"]],
+            [e.alias_or_name for e in expression.args["from"].expressions],
             ["bar", "baz"],
         )
 
@@ -108,12 +108,12 @@ class TestExpressions(unittest.TestCase):
         )
 
         self.assertEqual(
-            [e.alias_or_name for e in expression.args["with"].args["expressions"]],
+            [e.alias_or_name for e in expression.args["with"].expressions],
             ["first", "second"],
         )
 
         self.assertEqual(
-            [e.alias_or_name for e in expression.args["from"].args["expressions"]],
+            [e.alias_or_name for e in expression.args["from"].expressions],
             ["first", "second", "third"],
         )
 

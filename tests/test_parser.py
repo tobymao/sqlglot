@@ -11,6 +11,8 @@ class TestParser(unittest.TestCase):
 
     def test_parse_into(self):
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
+        self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
+        self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
 
     def test_column(self):
         columns = parse_one("select a, ARRAY[1] b, case when 1 then 1 end").find_all(

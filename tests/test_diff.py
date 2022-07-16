@@ -66,6 +66,17 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
+        self._validate_delta_only(
+            diff(
+                parse_one("SELECT aaaa OR bbbb OR cccc"),
+                parse_one("SELECT cccc OR bbbb OR aaaa"),
+            ),
+            [
+                Move(parse_one("aaaa")),  # the Column node
+                Move(parse_one("cccc")),  # the Column node
+            ],
+        )
+
     def test_cte(self):
         expr_src = """
             WITH

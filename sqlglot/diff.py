@@ -142,8 +142,19 @@ class ChangeDistiller:
         leaves_matching_set = self._compute_leaf_matching_set()
         matching_set = leaves_matching_set.copy()
 
-        for source_node_id in self._unmatched_source_nodes.copy():
-            for target_node_id in self._unmatched_target_nodes:
+        ordered_unmatched_source_nodes = {
+            id(n[0]): None
+            for n in self._source.bfs()
+            if id(n[0]) in self._unmatched_source_nodes
+        }
+        ordered_unmatched_target_nodes = {
+            id(n[0]): None
+            for n in self._target.bfs()
+            if id(n[0]) in self._unmatched_target_nodes
+        }
+
+        for source_node_id in ordered_unmatched_source_nodes.keys():
+            for target_node_id in ordered_unmatched_target_nodes.keys():
                 source_node = self._source_index[source_node_id]
                 target_node = self._target_index[target_node_id]
                 if _is_same_label(source_node, target_node):
@@ -174,6 +185,7 @@ class ChangeDistiller:
                         matching_set.add((source_node_id, target_node_id))
                         self._unmatched_source_nodes.remove(source_node_id)
                         self._unmatched_target_nodes.remove(target_node_id)
+                        ordered_unmatched_target_nodes.pop(target_node_id, None)
                         break
 
         return matching_set

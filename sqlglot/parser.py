@@ -768,7 +768,7 @@ class Parser:
         this = self._parse_values()
 
         if self._match(TokenType.L_PAREN):
-            this = self._parse_with()
+            this = self._parse_table()
             self._match_r_paren()
             this = self.expression(
                 exp.Subquery,

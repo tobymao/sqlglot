@@ -48,6 +48,7 @@ class Parser:
         TokenType.JSON,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
+        TokenType.DATETIME,
         TokenType.DATE,
         TokenType.ARRAY,
         TokenType.DECIMAL,

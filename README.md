@@ -233,6 +233,32 @@ repr(parse_one("SELECT a + 1 AS z"))
     (IDENTIFIER this: z, quoted: False)))
 ```
 
+## AST Diff
+
+SQLGlot can calculate the difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one.
+
+```python
+from sqlglot import diff, parse_one
+diff(parse_one("SELECT a + b, c, d"), parse_one("SELECT c, a - b, d"))
+
+[
+  Remove(expression=(ADD this:
+    (COLUMN this:
+      (IDENTIFIER this: a, quoted: False)), expression:
+    (COLUMN this:
+      (IDENTIFIER this: b, quoted: False)))),
+  Insert(expression=(SUB this:
+    (COLUMN this:
+      (IDENTIFIER this: a, quoted: False)), expression:
+    (COLUMN this:
+      (IDENTIFIER this: b, quoted: False)))),
+  Move(expression=(COLUMN this:
+    (IDENTIFIER this: c, quoted: False))),
+  Keep(source=(IDENTIFIER this: b, quoted: False), target=(IDENTIFIER this: b, quoted: False)),
+  ...
+]
+```
+
 ## Custom Dialects
 
 [Dialects](sqlglot/dialects) can be added by subclassing Dialect.

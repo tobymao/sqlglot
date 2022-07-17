@@ -1,17 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from sqlglot import Dialect
-from sqlglot.expressions import (
-    Boolean,
-    DataType,
-    Expression,
-    Identifier,
-    Join,
-    Literal,
-    Placeholder,
-    Null,
-    Star,
-)
+from sqlglot import expressions as exp
 from sqlglot.helper import ensure_list
 
 
@@ -19,37 +9,37 @@ from sqlglot.helper import ensure_list
 class Insert:
     """Indicates that a new node has been inserted"""
 
-    expression: Expression
+    expression: exp.Expression
 
 
 @dataclass(frozen=True)
 class Remove:
     """Indicates that an existing node has been removed"""
 
-    expression: Expression
+    expression: exp.Expression
 
 
 @dataclass(frozen=True)
 class Move:
     """Indicates that an existing node's position within the tree has changed"""
 
-    expression: Expression
+    expression: exp.Expression
 
 
 @dataclass(frozen=True)
 class Update:
     """Indicates that an existing node has been updated"""
 
-    source: Expression
-    target: Expression
+    source: exp.Expression
+    target: exp.Expression
 
 
 @dataclass(frozen=True)
 class Keep:
     """Indicates that an existing node hasn't been changed"""
 
-    source: Expression
-    target: Expression
+    source: exp.Expression
+    target: exp.Expression
 
 
 def diff(source, target):
@@ -83,13 +73,13 @@ def diff(source, target):
 
 
 LEAF_EXPRESSION_TYPES = (
-    Boolean,
-    DataType,
-    Identifier,
-    Literal,
-    Null,
-    Placeholder,
-    Star,
+    exp.Boolean,
+    exp.DataType,
+    exp.Identifier,
+    exp.Literal,
+    exp.Null,
+    exp.Placeholder,
+    exp.Star,
 )
 
 
@@ -266,7 +256,7 @@ def _get_leaves(expression):
 
 
 def _is_same_type(source, target):
-    if _all_same_type(Join, source, target):
+    if _all_same_type(exp.Join, source, target):
         return source.args.get("side") == target.args.get("side")
 
     return type(source) is type(target)
@@ -277,7 +267,7 @@ def _expression_only_args(expression):
     if expression:
         for a in expression.args.values():
             args.extend(ensure_list(a))
-    return [a for a in args if isinstance(a, Expression)]
+    return [a for a in args if isinstance(a, exp.Expression)]
 
 
 def _all_same_type(tpe, *args):

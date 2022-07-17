@@ -68,6 +68,7 @@ class TokenType(AutoName):
     JSON = auto()
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
+    DATETIME = auto()
     DATE = auto()
     UUID = auto()
 
@@ -455,6 +456,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "DATE": TokenType.DATE,
+        "DATETIME": TokenType.DATETIME,
     }
 
     WHITE_SPACE = {

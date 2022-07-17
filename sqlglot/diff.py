@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
+from sqlglot import Dialect
 from sqlglot.expressions import (
     Boolean,
     DataType,
@@ -102,14 +103,16 @@ class ChangeDistiller:
     def __init__(self, f=0.6, t=0.6):
         self.f = f
         self.t = t
+        self._sql_generator = Dialect().generator()
 
     def diff(self, source, target):
         self._source = source
         self._target = target
         self._source_index = {id(n[0]): n[0] for n in source.bfs()}
         self._target_index = {id(n[0]): n[0] for n in target.bfs()}
-        self._unmatched_source_nodes = set(self._source_index.keys())
-        self._unmatched_target_nodes = set(self._target_index.keys())
+        self._unmatched_source_nodes = set(self._source_index)
+        self._unmatched_target_nodes = set(self._target_index)
+        self._bigrams_cache = {}
 
         matching_set = self._compute_matching_set()
         return self._generate_edit_script(matching_set)
@@ -166,14 +169,12 @@ class ChangeDistiller:
             if id(n[0]) in self._unmatched_target_nodes
         }
 
-        for source_node_id in ordered_unmatched_source_nodes.keys():
-            for target_node_id in ordered_unmatched_target_nodes.keys():
+        for source_node_id in ordered_unmatched_source_nodes:
+            for target_node_id in ordered_unmatched_target_nodes:
                 source_node = self._source_index[source_node_id]
                 target_node = self._target_index[target_node_id]
-                if _is_same_label(source_node, target_node):
-                    similarity_score = _dice_coefficient(
-                        source_node.sql(), target_node.sql()
-                    )
+                if _is_same_type(source_node, target_node):
+                    similarity_score = self._dice_coefficient(source_node, target_node)
 
                     source_leaf_ids = {id(l) for l in _get_leaves(source_node)}
                     target_leaf_ids = {id(l) for l in _get_leaves(target_node)}
@@ -205,12 +206,12 @@ class ChangeDistiller:
 
     def _compute_leaf_matching_set(self):
         leaf_matchings = []
-        for source_leaf in _get_leaves(self._source):
-            for target_leaf in _get_leaves(self._target):
-                if _is_same_label(source_leaf, target_leaf):
-                    similarity_score = _dice_coefficient(
-                        source_leaf.sql(), target_leaf.sql()
-                    )
+        source_leaves = list(_get_leaves(self._source))
+        target_leaves = list(_get_leaves(self._target))
+        for source_leaf in source_leaves:
+            for target_leaf in target_leaves:
+                if type(source_leaf) is type(target_leaf):
+                    similarity_score = self._dice_coefficient(source_leaf, target_leaf)
                     if similarity_score and similarity_score >= self.f:
                         leaf_matchings.append(
                             (source_leaf, target_leaf, similarity_score)
@@ -230,41 +231,45 @@ class ChangeDistiller:
 
         return matching_set
 
+    def _dice_coefficient(self, source, target):
+        bigrams_source = self._bigrams(source)
+        bigrams_target = self._bigrams(target)
+
+        total_grams = len(bigrams_source) + len(bigrams_target)
+        if not total_grams:
+            return 1.0 if source == target else 0.0
+
+        overlap_len = 0
+        grams_histo = defaultdict(int)
+        for g in bigrams_source:
+            grams_histo[g] += 1
+        for g in bigrams_target:
+            if grams_histo[g] > 0:
+                overlap_len += 1
+            grams_histo[g] -= 1
+
+        return 2 * overlap_len / total_grams
+
+    def _bigrams(self, expression):
+        if id(expression) in self._bigrams_cache:
+            return self._bigrams_cache[id(expression)]
+
+        expression_str = self._sql_generator.generate(expression)
+        count = max(0, len(expression_str) - 1)
+        bigrams = [expression_str[i : i + 2] for i in range(count)]
+        self._bigrams_cache[id(expression)] = bigrams
+        return bigrams
+
 
 def _get_leaves(expression):
     return expression.find_all(*LEAF_EXPRESSION_TYPES)
 
 
-def _is_same_label(source, target):
+def _is_same_type(source, target):
     if _all_same_type(Join, source, target):
         return source.args.get("side") == target.args.get("side")
 
     return type(source) is type(target)
-
-
-def _dice_coefficient(string_a, string_b, n=2):
-    n_grams_a = _n_grams(string_a.lower(), n)
-    n_grams_b = _n_grams(string_b.lower(), n)
-
-    total_grams = len(n_grams_a) + len(n_grams_b)
-    if total_grams == 0:
-        return 1.0 if string_a == string_b else 0.0
-
-    overlap_len = 0
-    grams_histo = defaultdict(int)
-    for g in n_grams_a:
-        grams_histo[g] += 1
-    for g in n_grams_b:
-        if grams_histo[g] > 0:
-            overlap_len += 1
-        grams_histo[g] -= 1
-
-    return 2 * overlap_len / total_grams
-
-
-def _n_grams(sequence, n):
-    count = max(0, len(sequence) - n + 1)
-    return [sequence[i : i + n] for i in range(count)]
 
 
 def _expression_only_args(expression):
@@ -280,6 +285,8 @@ def _all_same_type(tpe, *args):
 
 
 def _lcs(seq_a, seq_b, equal):
+    """Calculates the longest common subsequence"""
+
     len_a = len(seq_a)
     len_b = len(seq_b)
     lcs_result = [[None] * (len_b + 1) for i in range(len_a + 1)]

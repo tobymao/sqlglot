@@ -31,6 +31,7 @@ def _date_add_sql(kind):
 class BigQuery(Dialect):
     identifier = "`"
     escape = "\\"
+    unnest_column_only = True
 
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"', '"""']

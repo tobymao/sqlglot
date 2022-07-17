@@ -1,3 +1,20 @@
+SELECT a, m FROM z LATERAL VIEW EXPLODE([1, 2]) q AS m;
+SELECT
+  "z"."a" AS "a",
+  "q"."m" AS "m"
+FROM (
+  SELECT
+    "z"."a" AS "a"
+  FROM "z" AS "z"
+) AS "z"
+LATERAL VIEW
+EXPLODE(ARRAY(1, 2)) q AS "m";
+
+SELECT x FROM UNNEST([1, 2]) AS q(x, y);
+SELECT
+  "q"."x" AS "x"
+FROM UNNEST(ARRAY(1, 2)) AS "q"("x", "y");
+
 WITH cte AS (
     (
         SELECT

@@ -93,7 +93,7 @@ class Scope:
                 self._tables.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
-            elif isinstance(node, exp.Subquery):
+            elif isinstance(node, (exp.Subquery, exp.Unnest, exp.Lateral)):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.Subqueryable) and not isinstance(
                 node.parent, (exp.CTE, exp.Subquery)
@@ -178,9 +178,7 @@ class Scope:
             # Expression.named_selects also includes unaliased columns.
             # In this case, we want to be sure to only include selects that are aliased.
             aliased_outputs = {
-                e.alias
-                for e in self.expression.args.get("expressions", [])
-                if isinstance(e, exp.Alias)
+                e.alias for e in self.expression.expressions if isinstance(e, exp.Alias)
             }
 
             self._columns = [
@@ -320,6 +318,8 @@ def _traverse_scope(scope):
         yield from _traverse_select(scope)
     elif isinstance(scope.expression, exp.Union):
         yield from _traverse_union(scope)
+    elif isinstance(scope.expression, (exp.Lateral, exp.Unnest)):
+        pass
     else:
         raise OptimizeError(f"Unexpected expression type: {scope.expression}")
     yield scope
@@ -359,7 +359,9 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
     for derived_table in derived_tables:
         for child_scope in _traverse_scope(
             scope.branch(
-                derived_table.this,
+                derived_table
+                if isinstance(derived_table, (exp.Unnest, exp.Lateral))
+                else derived_table.this,
                 add_sources=sources if chain else None,
                 outer_column_list=derived_table.alias_column_names,
                 scope_type=scope_type,

@@ -56,6 +56,10 @@ class Expression(metaclass=_Expression):
     def this(self):
         return self.args.get("this")
 
+    @property
+    def expressions(self):
+        return self.args.get("expressions") or []
+
     def text(self, key):
         field = self.args.get(key)
         if isinstance(field, str):
@@ -430,7 +434,7 @@ class Predicate(Condition):
     """Relationships like x = y, x > 1, x >= y."""
 
 
-class DerivedTable:
+class DerivedTable(Expression):
     @property
     def alias_column_names(self):
         table_alias = self.args.get("alias")  # pylint: disable=no-member
@@ -438,6 +442,18 @@ class DerivedTable:
             return []
         column_list = table_alias.assert_is(TableAlias).args.get("columns") or []
         return [c.name for c in column_list]
+
+    @property
+    def selects(self):
+        alias = self.args.get("alias")
+
+        if alias:
+            return alias.columns
+        return []
+
+    @property
+    def named_selects(self):
+        return [select.alias_or_name for select in self.selects]
 
 
 class Annotation(Expression):
@@ -491,12 +507,16 @@ class WithinGroup(Expression):
     arg_types = {"this": True, "expression": False}
 
 
-class CTE(Expression, DerivedTable):
+class CTE(DerivedTable):
     arg_types = {"this": True, "alias": True}
 
 
 class TableAlias(Expression):
-    arg_types = {"this": True, "columns": False}
+    arg_types = {"this": False, "columns": False}
+
+    @property
+    def columns(self):
+        return self.args.get("columns") or []
 
 
 class Column(Condition):
@@ -668,8 +688,8 @@ class Join(Expression):
         return join
 
 
-class Lateral(Expression):
-    arg_types = {"this": True, "outer": False, "table": False, "columns": False}
+class Lateral(DerivedTable):
+    arg_types = {"this": True, "outer": False, "alias": False}
 
 
 class Offset(Expression):
@@ -732,7 +752,7 @@ class Subqueryable:
         with_ = self.args.get("with")  # pylint: disable=no-member
         if not with_:
             return []
-        return with_.args.get("expressions", [])
+        return with_.expressions
 
     def with_(
         self,
@@ -820,12 +840,11 @@ class Intersect(Union):
     pass
 
 
-class Unnest(Expression):
+class Unnest(DerivedTable):
     arg_types = {
         "expressions": True,
         "ordinality": False,
-        "table": False,
-        "columns": False,
+        "alias": False,
     }
 
 
@@ -1305,14 +1324,14 @@ class Select(Subqueryable, Expression):
 
     @property
     def named_selects(self):
-        return [e.alias_or_name for e in self.args["expressions"] if e.alias_or_name]
+        return [e.alias_or_name for e in self.expressions if e.alias_or_name]
 
     @property
     def selects(self):
-        return self.args.get("expressions", [])
+        return self.expressions
 
 
-class Subquery(Expression, DerivedTable):
+class Subquery(DerivedTable):
     arg_types = {"this": True, "alias": False}
 
     def unnest(self):
@@ -1588,7 +1607,7 @@ class Aliases(Expression):
 
     @property
     def aliases(self):
-        return self.args["expressions"]
+        return self.expressions
 
 
 class AtTimeZone(Expression):
@@ -2199,11 +2218,11 @@ def _apply_child_list_builder(
             prefix=prefix,
             parser_opts=parser_opts,
         )
-        parsed.extend(expression.args["expressions"])
+        parsed.extend(expression.expressions)
 
     existing = instance.args.get(arg)
     if append and existing:
-        parsed = ensure_list(existing.args.get("expressions")) + parsed
+        parsed = existing.expressions + parsed
 
     child = into(expressions=parsed)
     for k, v in kwargs.items():

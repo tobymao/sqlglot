@@ -103,6 +103,7 @@ class ChangeDistiller:
         self._unmatched_source_nodes = set(self._source_index)
         self._unmatched_target_nodes = set(self._target_index)
         self._bigrams_cache = {}
+        self._bigrams_histo_cache = {}
 
         matching_set = self._compute_matching_set()
         return self._generate_edit_script(matching_set)
@@ -222,33 +223,33 @@ class ChangeDistiller:
         return matching_set
 
     def _dice_coefficient(self, source, target):
-        bigrams_source = self._bigrams(source)
-        bigrams_target = self._bigrams(target)
+        source_histo = self._bigrams_histo(source)
+        target_histo = self._bigrams_histo(target)
 
-        total_grams = len(bigrams_source) + len(bigrams_target)
+        total_grams = sum(source_histo.values()) + sum(target_histo.values())
         if not total_grams:
             return 1.0 if source == target else 0.0
 
         overlap_len = 0
-        grams_histo = defaultdict(int)
-        for g in bigrams_source:
-            grams_histo[g] += 1
-        for g in bigrams_target:
-            if grams_histo[g] > 0:
-                overlap_len += 1
-            grams_histo[g] -= 1
+        overlapping_grams = set(source_histo) & set(target_histo)
+        for g in overlapping_grams:
+            overlap_len += min(source_histo[g], target_histo[g])
 
         return 2 * overlap_len / total_grams
 
-    def _bigrams(self, expression):
-        if id(expression) in self._bigrams_cache:
-            return self._bigrams_cache[id(expression)]
+    def _bigrams_histo(self, expression):
+        if id(expression) in self._bigrams_histo_cache:
+            return self._bigrams_histo_cache[id(expression)]
 
         expression_str = self._sql_generator.generate(expression)
         count = max(0, len(expression_str) - 1)
         bigrams = [expression_str[i : i + 2] for i in range(count)]
-        self._bigrams_cache[id(expression)] = bigrams
-        return bigrams
+        bigrams_histo = defaultdict(int)
+        for g in bigrams:
+            bigrams_histo[g] += 1
+
+        self._bigrams_histo_cache[id(expression)] = bigrams_histo
+        return bigrams_histo
 
 
 def _get_leaves(expression):

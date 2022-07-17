@@ -1,7 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from sqlglot import Dialect
-from sqlglot import expressions as exp
+from sqlglot import Dialect, expressions as exp
 from sqlglot.helper import ensure_list
 
 
@@ -102,7 +101,6 @@ class ChangeDistiller:
         self._target_index = {id(n[0]): n[0] for n in target.bfs()}
         self._unmatched_source_nodes = set(self._source_index)
         self._unmatched_target_nodes = set(self._target_index)
-        self._bigrams_cache = {}
         self._bigrams_histo_cache = {}
 
         matching_set = self._compute_matching_set()

@@ -127,6 +127,7 @@ class Parser:
         TokenType.LEFT,
         TokenType.RIGHT,
         TokenType.DATE,
+        TokenType.DATETIME,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         *CASTS,

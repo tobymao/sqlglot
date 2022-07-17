@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot import ErrorLevel, UnsupportedError, transpile
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, transpile
 
 
 class TestDialects(unittest.TestCase):
@@ -381,16 +381,26 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "SELECT * FROM UNNEST(['7', '14']) AS x",
-            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS (x)",
             read="bigquery",
             write="presto",
         )
         self.validate(
             "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
-            "SELECT * FROM UNNEST(['7', '14']) AS x",
+            "SELECT * FROM UNNEST(['7', '14'])",
             read="presto",
             write="bigquery",
         )
+        self.validate(
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x(y)",
+            "SELECT * FROM UNNEST(['7', '14']) AS y",
+            read="presto",
+            write="bigquery",
+        )
+
+        with self.assertRaises(ParseError):
+            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
+
         self.validate(
             "x IS unknown",
             "x IS NULL",
@@ -897,17 +907,17 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) u AS b",
-            "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t (a) CROSS JOIN UNNEST(z) AS u (b)",
+            "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a) CROSS JOIN UNNEST(z) AS u(b)",
             write="presto",
         )
         self.validate(
             "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
-            "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
+            "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
             write="presto",
         )
         self.validate(
             "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
-            "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
+            "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t(a)",
             write="presto",
         )
 
@@ -919,7 +929,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
-            "SELECT a FROM x CROSS JOIN UNNEST(ARRAY[y]) AS t (a)",
+            "SELECT a FROM x CROSS JOIN UNNEST(ARRAY[y]) AS t(a)",
             read="hive",
             write="presto",
         )

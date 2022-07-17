@@ -223,6 +223,7 @@ class Parser:
         "sql",
         "errors",
         "index_offset",
+        "unnest_column_only",
         "_tokens",
         "_chunks",
         "_index",
@@ -236,10 +237,12 @@ class Parser:
         error_level=None,
         error_message_context=100,
         index_offset=0,
+        unnest_column_only=False,
     ):
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
+        self.unnest_column_only = unnest_column_only
         self.reset()
 
     def reset(self):
@@ -526,15 +529,15 @@ class Parser:
             value = self._parse_schema() or self._parse_bracket(self._parse_field())
 
             if schema and not isinstance(value, exp.Schema):
-                columns = {v.text("this").upper() for v in value.args["expressions"]}
+                columns = {v.text("this").upper() for v in value.expressions}
                 partitions = [
                     expression
-                    for expression in schema.args["expressions"]
+                    for expression in schema.expressions
                     if expression.this.text("this").upper() in columns
                 ]
                 schema.set(
                     "expressions",
-                    [e for e in schema.args["expressions"] if e not in partitions],
+                    [e for e in schema.expressions if e not in partitions],
                 )
                 value = self.expression(exp.Schema, expressions=partitions)
         else:
@@ -843,20 +846,20 @@ class Parser:
             self.raise_error("Expected VIEW after LATERAL")
 
         outer = self._match(TokenType.OUTER)
-        this = self._parse_function()
-        table = self._parse_id_var()
-        columns = (
-            self._parse_csv(self._parse_id_var)
-            if self._match(TokenType.ALIAS)
-            else None
-        )
 
         return self.expression(
             exp.Lateral,
-            this=this,
+            this=self._parse_function(),
             outer=outer,
-            table=self.expression(exp.Table, this=table),
-            columns=columns,
+            alias=self.expression(
+                exp.TableAlias,
+                this=self._parse_id_var(any_token=False),
+                columns=(
+                    self._parse_csv(self._parse_id_var)
+                    if self._match(TokenType.ALIAS)
+                    else None
+                ),
+            ),
         )
 
     def _parse_joins(self):
@@ -932,25 +935,24 @@ class Parser:
         expressions = self._parse_csv(self._parse_column)
         self._match_r_paren()
 
-        ordinality = self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY)
-        table = self._parse_id_var(self._match(TokenType.ALIAS))
+        ordinality = bool(
+            self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY)
+        )
 
-        if not self._match(TokenType.L_PAREN):
-            return self.expression(
-                exp.Unnest, expressions=expressions, ordinality=ordinality, table=table
-            )
+        alias = self._parse_table_alias()
 
-        columns = self._parse_csv(self._parse_id_var)
-        unnest = self.expression(
+        if alias and self.unnest_column_only:
+            if alias.args.get("columns"):
+                self.raise_error("Unexpected extra column alias in unnest.")
+            alias.set("columns", [alias.this])
+            alias.set("this", None)
+
+        return self.expression(
             exp.Unnest,
             expressions=expressions,
-            ordinality=bool(ordinality),
-            table=table,
-            columns=columns,
+            ordinality=ordinality,
+            alias=alias,
         )
-        self._match_r_paren()
-
-        return unnest
 
     def _parse_table_sample(self, this):
         if not self._match(TokenType.TABLE_SAMPLE):

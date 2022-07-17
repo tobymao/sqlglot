@@ -28,6 +28,7 @@ class Generator:
         escape (str): specifies an escape character. Default: '.
         pad (int): determines padding in a formatted string. Default: 2.
         indent (int): determines the size of indentation in a formatted string. Default: 4.
+        unnest_column_only (bool): if true unnest table aliases are considered only as column aliases
         unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
             unsupported expressions. Default ErrorLevel.WARN.
     """
@@ -52,6 +53,7 @@ class Generator:
         "escape",
         "pad",
         "index_offset",
+        "unnest_column_only",
         "unsupported_level",
         "unsupported_messages",
         "_indent",
@@ -70,6 +72,7 @@ class Generator:
         pad=2,
         indent=2,
         index_offset=0,
+        unnest_column_only=False,
         unsupported_level=ErrorLevel.WARN,
     ):
         # pylint: disable=too-many-arguments
@@ -86,6 +89,7 @@ class Generator:
         self.escape = escape or "'"
         self.pad = pad
         self.index_offset = index_offset
+        self.unnest_column_only = unnest_column_only
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
         self._indent = indent
@@ -123,7 +127,7 @@ class Generator:
         return f"{self.sep(sep)}{sql}"
 
     def properties(self, name, expression):
-        if expression.args["expressions"]:
+        if expression.expressions:
             return f"{self.seg(name)} ({self.sep('')}{self.expressions(expression)}{self.sep('')})"
         return ""
 
@@ -472,10 +476,12 @@ class Generator:
         op_sql = self.seg(
             f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}"
         )
-        alias = self.sql(expression, "table")
-        columns = self.expressions(expression, key="columns", flat=True)
+        alias = expression.args["alias"]
+        table = alias.name
+        table = f" {table}" if table else table
+        columns = self.expressions(alias, key="columns", flat=True)
         columns = f" AS {columns}" if columns else ""
-        return f"{op_sql}{self.sep()}{this} {alias}{columns}"
+        return f"{op_sql}{self.sep()}{this}{table}{columns}"
 
     def limit_sql(self, expression):
         this = self.sql(expression, "this")
@@ -568,11 +574,14 @@ class Generator:
 
     def unnest_sql(self, expression):
         args = self.expressions(expression, flat=True)
-        table = self.sql(expression, "table")
+        alias = expression.args.get("alias")
+        if alias and self.unnest_column_only:
+            columns = alias.columns
+            alias = self.sql(columns[0]) if columns else ""
+        else:
+            alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else alias
         ordinality = " WITH ORDINALITY" if expression.args.get("ordinality") else ""
-        columns = self.expressions(expression, key="columns", flat=True)
-        alias = f" AS {table}" if table else ""
-        alias = f"{alias} ({columns})" if columns else alias
         return f"UNNEST({args}){ordinality}{alias}"
 
     def where_sql(self, expression):
@@ -612,9 +621,7 @@ class Generator:
         return f"{this} BETWEEN {low} AND {high}"
 
     def bracket_sql(self, expression):
-        expressions = apply_index_offset(
-            expression.args["expressions"], self.index_offset
-        )
+        expressions = apply_index_offset(expression.expressions, self.index_offset)
         expressions = ", ".join(self.sql(e) for e in expressions)
 
         return f"{self.sql(expression, 'this')}[{expressions}]"

@@ -22,7 +22,7 @@ def _approx_distinct_sql(self, expression):
 
 
 def _concat_ws_sql(self, expression):
-    sep, *args = expression.args["expressions"]
+    sep, *args = expression.expressions
     sep = self.sql(sep)
     if len(args) > 1:
         return f"ARRAY_JOIN(ARRAY[{csv(*(self.sql(e) for e in args))}], {sep})"
@@ -46,8 +46,7 @@ def _explode_to_unnest_sql(self, expression):
             exp.Join(
                 this=exp.Unnest(
                     expressions=[expression.this.this],
-                    table=expression.args.get("table"),
-                    columns=expression.args.get("columns"),
+                    alias=expression.args.get("alias"),
                     ordinality=isinstance(expression.this, exp.Posexplode),
                 ),
                 kind="cross",
@@ -72,15 +71,13 @@ def _no_sort_array(self, expression):
 
 def _schema_sql(self, expression):
     if isinstance(expression.parent, exp.Property):
-        columns = ", ".join(
-            f"'{c.text('this')}'" for c in expression.args["expressions"]
-        )
+        columns = ", ".join(f"'{c.text('this')}'" for c in expression.expressions)
         return f"ARRAY[{columns}]"
 
     for schema in expression.parent.find_all(exp.Schema):
         if isinstance(schema.parent, exp.Property):
             expression = expression.copy()
-            expression.args["expressions"].extend(schema.args["expressions"])
+            expression.expressions.extend(schema.expressions)
 
     return self.schema_sql(expression)
 

@@ -38,7 +38,7 @@ def _map_sql(self, expression):
         return f"MAP({self.sql(keys)}, {self.sql(values)})"
 
     args = []
-    for key, value in zip(keys.args["expressions"], values.args["expressions"]):
+    for key, value in zip(keys.expressions, values.expressions):
         args.append(self.sql(key))
         args.append(self.sql(value))
     return f"MAP({csv(*args)})"
@@ -52,7 +52,7 @@ def _array_sort(self, expression):
 
 def _properties_sql(self, expression):
     expression = expression.copy()
-    properties = expression.args["expressions"]
+    properties = expression.expressions
 
     stored_as = ""
     partitioned_by = ""
@@ -108,19 +108,19 @@ def _time_to_str(self, expression):
 
 
 def _unnest_to_explode_sql(self, expression):
-    if isinstance(expression.this, exp.Unnest):
-        unnest = expression.this
+    unnest = expression.this
+    if isinstance(unnest, exp.Unnest):
+        alias = unnest.args.get("alias")
         udtf = exp.Posexplode if unnest.args.get("ordinality") else exp.Explode
         return "".join(
             self.sql(
                 exp.Lateral(
                     this=udtf(this=expression),
-                    table=unnest.args.get("table"),
-                    columns=[column],
+                    alias=exp.TableAlias(this=alias.this, columns=[column]),
                 )
             )
             for expression, column in zip(
-                unnest.args["expressions"], unnest.args.get("columns", [])
+                unnest.expressions, alias.columns if alias else []
             )
         )
     return self.join_sql(expression)

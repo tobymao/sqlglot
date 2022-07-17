@@ -343,16 +343,18 @@ SELECT MAP(ARRAY(1), ARRAY(2)) FROM x
 SELECT MAX(ARRAY(1, 2, 3)) FROM x
 SELECT ARRAY(ARRAY(0))[0][0] FROM x
 SELECT MAP[ARRAY('x'), ARRAY(0)]['x'] FROM x
+SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores)
+SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) AS score
 SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) t AS score
 SELECT student, score FROM tests LATERAL VIEW EXPLODE(scores) t AS score, name
 SELECT student, score FROM tests LATERAL VIEW OUTER EXPLODE(scores) t AS score, name
 SELECT tf.* FROM (SELECT 0) AS t LATERAL VIEW STACK(1, 2) tf
 SELECT tf.* FROM (SELECT 0) AS t LATERAL VIEW STACK(1, 2) tf AS col0, col1, col2
-SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (score)
-SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t (a, b)
-SELECT student, score FROM tests CROSS JOIN UNNEST(scores) WITH ORDINALITY AS t (a, b)
-SELECT student, score FROM tests CROSS JOIN UNNEST(x.scores) AS t (score)
-SELECT student, score FROM tests CROSS JOIN UNNEST(ARRAY(x.scores)) AS t (score)
+SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t(score)
+SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t(a, b)
+SELECT student, score FROM tests CROSS JOIN UNNEST(scores) WITH ORDINALITY AS t(a, b)
+SELECT student, score FROM tests CROSS JOIN UNNEST(x.scores) AS t(score)
+SELECT student, score FROM tests CROSS JOIN UNNEST(ARRAY(x.scores)) AS t(score)
 CREATE TABLE a.b AS SELECT 1
 CREATE TABLE a.b AS SELECT a FROM a.c
 CREATE TABLE IF NOT EXISTS x AS SELECT a FROM d

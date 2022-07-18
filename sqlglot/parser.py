@@ -1114,9 +1114,9 @@ class Parser:
 
             self._match_r_paren()
         elif self._match(TokenType.BETWEEN):
-            low = self._parse_term()
+            low = self._parse_bitwise()
             self._match(TokenType.AND)
-            high = self._parse_term()
+            high = self._parse_bitwise()
             this = self.expression(exp.Between, this=this, low=low, high=high)
 
         if negate:

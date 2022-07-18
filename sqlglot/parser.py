@@ -100,6 +100,7 @@ class Parser:
         TokenType.SCHEMA_COMMENT,
         TokenType.SET,
         TokenType.SHOW,
+        TokenType.TABLE,
         TokenType.TABLE_SAMPLE,
         TokenType.TEMPORARY,
         TokenType.TOP,

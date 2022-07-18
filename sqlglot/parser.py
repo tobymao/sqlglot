@@ -233,6 +233,7 @@ class Parser:
         "_curr",
         "_next",
         "_prev",
+        "_return_subquery",
     )
 
     def __init__(
@@ -257,6 +258,7 @@ class Parser:
         self._curr = None
         self._next = None
         self._prev = None
+        self._return_subquery = False
 
     def parse(self, raw_tokens, sql=None):
         """
@@ -422,8 +424,13 @@ class Parser:
                 expression=self._parse_string(),
             )
 
+        # the initial expression may be a subquery so we want to override the default
+        # behavior of returning a Paren object.
+        self._return_subquery = True
+        expression = self._parse_expression()
+        self._return_subquery = False
         return (
-            self._parse_set_operations(self._parse_expression()) or self._parse_with()
+            self._parse_set_operations(expression) if expression else self._parse_with()
         )
 
     def _parse_drop(self):
@@ -777,11 +784,7 @@ class Parser:
         if self._match(TokenType.L_PAREN):
             this = self._parse_table()
             self._match_r_paren()
-            this = self.expression(
-                exp.Subquery,
-                this=this,
-                alias=self._parse_table_alias(),
-            )
+            this = self._parse_subquery(this)
 
         if self._match(TokenType.SELECT):
             hint = self._parse_hint()
@@ -815,6 +818,16 @@ class Parser:
             )
 
         return self._parse_set_operations(this)
+
+    def _parse_subquery(self, this):
+        return self.expression(
+            exp.Subquery,
+            this=this,
+            alias=self._parse_table_alias(),
+            order=self._parse_order(),
+            limit=self._parse_limit(),
+            offset=self._parse_offset(),
+        )
 
     def _parse_annotation(self, expression):
         if self._match(TokenType.ANNOTATION):
@@ -1030,7 +1043,7 @@ class Parser:
         )
 
     def _parse_ordered(self):
-        this = self._parse_bitwise()
+        this = self._parse_conjunction()
         self._match(TokenType.ASC)
         return self.expression(exp.Ordered, this=this, desc=self._match(TokenType.DESC))
 
@@ -1272,6 +1285,8 @@ class Parser:
         if self._match(TokenType.L_PAREN):
             this = self._parse_conjunction() or self._parse_with()
             self._match_r_paren()
+            if self._return_subquery and isinstance(this, exp.Subqueryable):
+                return self._parse_subquery(this)
             return self.expression(exp.Paren, this=this)
 
         return None

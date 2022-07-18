@@ -32,6 +32,7 @@ def qualify_columns(expression, schema):
         _check_union_outputs(scope)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
+        _expand_using(scope, schema)
         _qualify_columns(scope, schema)
         if not isinstance(scope.expression, SKIP_QUALIFY):
             _expand_stars(scope, schema)
@@ -64,6 +65,45 @@ def _pop_table_column_aliases(derived_tables):
         table_alias = derived_table.args.get("alias")
         if table_alias:
             table_alias.args.pop("columns", None)
+
+
+def _expand_using(scope, schema):
+    for join in scope.expression.find_all(exp.Join):
+        using = join.args.get("using")
+
+        if not using:
+            continue
+
+        join_table = join.this.alias_or_name
+
+        source_columns = {
+            k: _get_source_columns(k, scope.sources, schema)
+            for k in scope.selected_sources
+            if join_table != k
+        }
+        join_columns = _get_source_columns(join_table, scope.sources, schema)
+
+        columns = _get_unambiguous_columns(source_columns)
+        conditions = []
+
+        for identifier in using:
+            identifier = identifier.name
+            table = columns.get(identifier)
+
+            if not table or identifier not in join_columns:
+                raise OptimizeError(f"Cannot automatically join: {identifier}")
+
+            conditions.append(
+                exp.condition(
+                    exp.EQ(
+                        this=exp.column(identifier, table=table),
+                        expression=exp.column(identifier, table=join_table),
+                    )
+                )
+            )
+
+        join.args.pop("using")
+        join.set("on", exp.and_(*conditions))
 
 
 def _qualify_columns(scope, schema):

@@ -1418,6 +1418,7 @@ class DataType(Expression):
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         DATE = auto()
+        DATETIME = auto()
         ARRAY = auto()
         MAP = auto()
         UUID = auto()

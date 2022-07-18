@@ -817,11 +817,7 @@ class Union(Subqueryable, Expression):
 
     @property
     def named_selects(self):
-        named_selects = (
-            self.args["this"].unnest().named_selects
-            + self.args["expression"].unnest().named_selects
-        )
-        return sorted(set(named_selects), key=named_selects.index)
+        return self.args["this"].unnest().named_selects
 
     @property
     def left(self):

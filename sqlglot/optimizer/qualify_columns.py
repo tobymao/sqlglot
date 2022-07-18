@@ -29,7 +29,6 @@ def qualify_columns(expression, schema):
     schema = ensure_schema(schema)
 
     for scope in traverse_scope(expression):
-        _check_union_outputs(scope)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         _expand_using(scope, schema)
@@ -40,17 +39,6 @@ def qualify_columns(expression, schema):
         _check_unknown_tables(scope)
 
     return expression
-
-
-def _check_union_outputs(scope):
-    """Assert that the outputs of both sides of a UNION are the same"""
-    if not isinstance(scope.expression, exp.Union):
-        return
-    left, right = scope.union
-    if left.expression.named_selects != right.expression.named_selects:
-        raise OptimizeError(
-            f"UNION outputs not equal: {left.expression.named_selects} vs. {right.expression.named_selects}"
-        )
 
 
 def _pop_table_column_aliases(derived_tables):

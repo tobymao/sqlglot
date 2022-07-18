@@ -138,7 +138,7 @@ class TestExpressions(unittest.TestCase):
             UNION ALL SELECT foo, bazz FROM third
         """
         )
-        self.assertEqual(expression.named_selects, ["foo", "bar", "bazz"])
+        self.assertEqual(expression.named_selects, ["foo", "bar"])
 
     def test_selects(self):
         expression = parse_one("SELECT FROM x")

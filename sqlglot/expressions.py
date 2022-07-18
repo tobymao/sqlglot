@@ -1328,7 +1328,13 @@ class Select(Subqueryable, Expression):
 
 
 class Subquery(DerivedTable):
-    arg_types = {"this": True, "alias": False}
+    arg_types = {
+        "this": True,
+        "alias": False,
+        "order": False,
+        "limit": False,
+        "offset": False,
+    }
 
     def unnest(self):
         """

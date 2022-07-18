@@ -43,13 +43,13 @@ def qualify_columns(expression, schema):
 
 
 def _check_union_outputs(scope):
-    """Assert that the outputs of both sides of a UNION are the same"""
+    """Assert that the number of columns of both sides of a UNION are the same"""
     if not isinstance(scope.expression, exp.Union):
         return
     left, right = scope.union
-    if left.expression.named_selects != right.expression.named_selects:
+    if len(left.expression.named_selects) != len(right.expression.named_selects):
         raise OptimizeError(
-            f"UNION outputs not equal: {left.expression.named_selects} vs. {right.expression.named_selects}"
+            f"UNION outputs not equal: {len(left.expression.named_selects)} columns vs. {len(right.expression.named_selects)} columns"
         )
 
 

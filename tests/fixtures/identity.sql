@@ -46,6 +46,7 @@ a[0].b.c['d']
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1
+x BETWEEN 'a' || b AND 'c' || d
 NOT x IS NULL
 x IS TRUE
 x IS FALSE

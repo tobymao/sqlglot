@@ -179,6 +179,13 @@ SELECT * EXCEPT(a) FROM x;
 SELECT x.b AS b FROM x AS x;
 
 --------------------------------------
+-- Using
+--------------------------------------
+
+SELECT x.b FROM x JOIN y USING (b);
+SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+--------------------------------------
 -- TODO: Laterals
 --------------------------------------
 

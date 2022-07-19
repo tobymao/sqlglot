@@ -525,9 +525,9 @@ class Generator:
             f"{select}{hint}{distinct}{sep}{expressions}",
             self.sql(expression, "from"),
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
-            self.sql(expression, "window"),
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
             self.sql(expression, "where"),
+            self.sql(expression, "window"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
             self.sql(expression, "qualify"),
@@ -606,6 +606,10 @@ class Generator:
             this = this = f"{self.seg('WINDOW')} {this} AS"
         else:
             this = f"{this} OVER"
+
+        if not partition and not order and not spec and alias:
+            return f"{this} {alias}"
+
         return f"{this} ({alias}{partition_sql}{order_sql}{spec_sql})"
 
     def window_spec_sql(self, expression):

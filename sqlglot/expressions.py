@@ -874,6 +874,7 @@ class Select(Subqueryable, Expression):
         "distinct": False,
         "from": False,
         "laterals": False,
+        "window": False,
         "joins": False,
         "where": False,
         "group": False,
@@ -1359,7 +1360,13 @@ class TableSample(Expression):
 
 
 class Window(Expression):
-    arg_types = {"this": True, "partition_by": False, "order": False, "spec": False}
+    arg_types = {
+        "this": True,
+        "partition_by": False,
+        "order": False,
+        "spec": False,
+        "alias": False,
+    }
 
 
 class WindowSpec(Expression):

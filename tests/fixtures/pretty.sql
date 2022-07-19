@@ -24,7 +24,7 @@ WITH cte1 AS (
     FROM cte
     WHERE x IN (1, 2, 3) AND z < -1 OR z > 1 AND w = 'AND'
 ), cte2 AS (
-    SELECT RANK() OVER(PARTITION BY a, b ORDER BY x DESC) a, b
+    SELECT RANK() OVER (PARTITION BY a, b ORDER BY x DESC) a, b
     FROM cte
     CROSS JOIN (
         SELECT 1
@@ -65,7 +65,7 @@ WITH cte1 AS (
     AND w = 'AND'
 ), cte2 AS (
   SELECT
-    RANK() OVER(PARTITION BY a, b ORDER BY x DESC) AS a,
+    RANK() OVER (PARTITION BY a, b ORDER BY x DESC) AS a,
     b
   FROM cte
   CROSS JOIN (

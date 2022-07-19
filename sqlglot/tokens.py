@@ -195,6 +195,7 @@ class TokenType(AutoName):
     VIEW = auto()
     WHEN = auto()
     WHERE = auto()
+    WINDOW = auto()
     WITH = auto()
     WITH_TIME_ZONE = auto()
     WITHIN_GROUP = auto()

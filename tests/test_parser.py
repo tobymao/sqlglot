@@ -98,7 +98,7 @@ class TestParser(unittest.TestCase):
             parse_one(
                 "SELECT ROW() OVER(PARTITION  BY x) FROM x GROUP  BY y", ""
             ).sql(),
-            "SELECT ROW() OVER(PARTITION BY x) FROM x GROUP BY y",
+            "SELECT ROW() OVER (PARTITION BY x) FROM x GROUP BY y",
         )
 
     def test_missing_by(self):

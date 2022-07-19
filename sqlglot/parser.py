@@ -815,6 +815,8 @@ class Parser:
                 **{
                     "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
+                    "window": self._match(TokenType.WINDOW)
+                    and self._parse_window(self._parse_id_var(), alias=True),
                     "joins": self._parse_joins(),
                     "where": self._parse_where(),
                     "group": self._parse_group(),
@@ -1526,7 +1528,7 @@ class Parser:
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
-    def _parse_window(self, this):
+    def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):
             self._match_l_paren()
             this = self.expression(
@@ -1544,11 +1546,16 @@ class Parser:
             self._match_r_paren()
             return this
 
-        if not self._match(TokenType.OVER):
+        # bigquery select from window x AS (partition by ...)
+        if alias:
+            self._match(TokenType.ALIAS)
+        elif not self._match(TokenType.OVER):
             return this
 
         self._match_l_paren()
         partition = None
+
+        alias = self._parse_id_var(False)
 
         if self._match_by(TokenType.PARTITION):
             partition = self._parse_csv(self._parse_type)
@@ -1576,7 +1583,12 @@ class Parser:
         self._match_r_paren()
 
         return self.expression(
-            exp.Window, this=this, partition_by=partition, order=order, spec=spec
+            exp.Window,
+            this=this,
+            partition_by=partition,
+            order=order,
+            spec=spec,
+            alias=alias,
         )
 
     def _parse_window_spec(self):

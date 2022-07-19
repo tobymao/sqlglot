@@ -94,13 +94,11 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff(parse_one(expr_src), parse_one(expr_tgt)),
             [
-                Remove(parse_one("c")),  # the Column node
                 Remove(parse_one("LOWER(c) AS c")),  # the Alias node
                 Remove(to_identifier("c", quoted=False)),  # the Identifier node
                 Remove(parse_one("LOWER(c)")),  # the Lower node
                 Remove(parse_one("'filter'")),  # the Literal node
                 Insert(parse_one("'different_filter'")),  # the Literal node
-                Insert(parse_one("c")),  # the Column node
             ],
         )
 
@@ -115,6 +113,20 @@ class TestDiff(unittest.TestCase):
         self.assertTrue(isinstance(changes[0], Remove))
         self.assertTrue(isinstance(changes[1], Insert))
         self.assertTrue(all(isinstance(c.expression, Join) for c in changes))
+
+    def test_window_functions(self):
+        expr_src = parse_one("SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b)")
+        expr_tgt = parse_one("SELECT RANK() OVER (PARTITION BY a ORDER BY b)")
+
+        self._validate_delta_only(diff(expr_src, expr_src), [])
+
+        self._validate_delta_only(
+            diff(expr_src, expr_tgt),
+            [
+                Remove(parse_one("ROW_NUMBER()")),  # the Anonymous node
+                Insert(parse_one("RANK()")),  # the Anonymous node
+            ],
+        )
 
     def _validate_delta_only(self, actual_diff, expected_delta):
         actual_delta = _delta_only(actual_diff)

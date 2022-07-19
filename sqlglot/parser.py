@@ -815,10 +815,10 @@ class Parser:
                 **{
                     "from": this or self._parse_from(),
                     "laterals": self._parse_laterals(),
-                    "window": self._match(TokenType.WINDOW)
-                    and self._parse_window(self._parse_id_var(), alias=True),
                     "joins": self._parse_joins(),
                     "where": self._parse_where(),
+                    "window": self._match(TokenType.WINDOW)
+                    and self._parse_window(self._parse_id_var(), alias=True),
                     "group": self._parse_group(),
                     "having": self._parse_having(),
                     "qualify": self._parse_qualify(),
@@ -1552,7 +1552,15 @@ class Parser:
         elif not self._match(TokenType.OVER):
             return this
 
-        self._match_l_paren()
+        if not self._match(TokenType.L_PAREN):
+            alias = self._parse_id_var(False)
+
+            return self.expression(
+                exp.Window,
+                this=this,
+                alias=alias,
+            )
+
         partition = None
 
         alias = self._parse_id_var(False)

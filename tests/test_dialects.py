@@ -413,6 +413,12 @@ class TestDialects(unittest.TestCase):
             read="bigquery",
         )
 
+        self.validate(
+            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)",
+            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)",
+            read="bigquery",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
@@ -1557,8 +1563,8 @@ class TestDialects(unittest.TestCase):
             write="snowflake",
         )
         self.validate(
-            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
-            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER(PARTITION BY a ORDER BY Z) = 1",
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z) = 1",
+            "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z) = 1",
             read="snowflake",
         )
 

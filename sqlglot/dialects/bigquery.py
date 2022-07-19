@@ -43,6 +43,7 @@ class BigQuery(Dialect):
             "FLOAT64": TokenType.DOUBLE,
             "QUALIFY": TokenType.QUALIFY,
             "UNKNOWN": TokenType.NULL,
+            "WINDOW": TokenType.WINDOW,
         }
 
     class Parser(Parser):

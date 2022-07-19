@@ -76,9 +76,6 @@ LEAF_EXPRESSION_TYPES = (
     exp.DataType,
     exp.Identifier,
     exp.Literal,
-    exp.Null,
-    exp.Placeholder,
-    exp.Star,
 )
 
 
@@ -199,7 +196,7 @@ class ChangeDistiller:
         target_leaves = list(_get_leaves(self._target))
         for source_leaf in source_leaves:
             for target_leaf in target_leaves:
-                if type(source_leaf) is type(target_leaf):
+                if _is_same_type(source_leaf, target_leaf):
                     similarity_score = self._dice_coefficient(source_leaf, target_leaf)
                     if similarity_score and similarity_score >= self.f:
                         leaf_matchings.append(
@@ -251,14 +248,30 @@ class ChangeDistiller:
 
 
 def _get_leaves(expression):
-    return expression.find_all(*LEAF_EXPRESSION_TYPES)
+    has_child_exprs = False
+
+    for a in expression.args.values():
+        nodes = ensure_list(a)
+        for node in nodes:
+            if isinstance(node, exp.Expression):
+                has_child_exprs = True
+                yield from _get_leaves(node)
+
+    if not has_child_exprs:
+        yield expression
 
 
 def _is_same_type(source, target):
-    if _all_same_type(exp.Join, source, target):
-        return source.args.get("side") == target.args.get("side")
+    if type(source) is type(target):
+        if isinstance(source, exp.Join):
+            return source.args.get("side") == target.args.get("side")
 
-    return type(source) is type(target)
+        if isinstance(source, exp.Anonymous):
+            return source.this == target.this
+
+        return True
+
+    return False
 
 
 def _expression_only_args(expression):
@@ -267,10 +280,6 @@ def _expression_only_args(expression):
         for a in expression.args.values():
             args.extend(ensure_list(a))
     return [a for a in args if isinstance(a, exp.Expression)]
-
-
-def _all_same_type(tpe, *args):
-    return all(isinstance(a, tpe) for a in args)
 
 
 def _lcs(seq_a, seq_b, equal):

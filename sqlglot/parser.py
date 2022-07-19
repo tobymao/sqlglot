@@ -567,6 +567,15 @@ class Parser:
             properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
             self._match_r_paren()
         else:
+            if self._match(TokenType.USING):
+                properties.append(
+                    self.expression(
+                        exp.Property,
+                        this=exp.Literal.string(c.TABLE_FORMAT),
+                        value=exp.Literal.string(self._parse_var().name),
+                    )
+                )
+
             if self._match_by(TokenType.PARTITION):
                 properties.append(
                     self.expression(
@@ -581,7 +590,7 @@ class Parser:
                 properties.append(
                     self.expression(
                         exp.Property,
-                        this=exp.Literal.string(c.FORMAT),
+                        this=exp.Literal.string(c.FILE_FORMAT),
                         value=exp.Literal.string(self._parse_var().text("this")),
                     )
                 )

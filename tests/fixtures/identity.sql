@@ -384,6 +384,8 @@ CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8
 CREATE TABLE z (a INT DEFAULT NULL, PRIMARY KEY(a)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'
 CREATE TABLE z WITH (format = 'parquet') AS SELECT 1
 CREATE TABLE z WITH (format = 'ORC', x = '2') AS SELECT 1
+CREATE TABLE z WITH (table_format = 'iceberg', format = 'parquet') AS SELECT 1
+CREATE TABLE z WITH (table_format = 'iceberg', format = 'ORC', x = '2') AS SELECT 1
 CREATE TABLE z (z INT) WITH (partitioned_by = (x INT, y INT))
 CREATE TABLE z (z INT) WITH (partitioned_by = (x INT)) AS SELECT 1
 CREATE TABLE z AS (WITH cte AS (SELECT 1) SELECT * FROM cte)

@@ -54,13 +54,16 @@ def _properties_sql(self, expression):
     expression = expression.copy()
     properties = expression.expressions
 
+    using = ""
     stored_as = ""
     partitioned_by = ""
 
     for p in properties:
-        if p.text("this").upper() == c.FORMAT:
+        if p.name.upper() == c.TABLE_FORMAT:
+            using = p
+        elif p.name.upper() == c.FILE_FORMAT:
             stored_as = p
-        if isinstance(p.args["value"], exp.Schema):
+        elif isinstance(p.args["value"], exp.Schema):
             partitioned_by = p
 
     if partitioned_by:
@@ -68,11 +71,14 @@ def _properties_sql(self, expression):
         partitioned_by = self.seg(
             f"PARTITIONED BY {self.sql(partitioned_by.args['value'])}"
         )
+    if using:
+        properties.remove(using)
+        using = self.seg(f"USING {using.text('value').upper()}")
     if stored_as:
         properties.remove(stored_as)
         stored_as = self.seg(f"STORED AS {stored_as.text('value').upper()}")
 
-    return f"{partitioned_by}{stored_as}{self.properties('TBLPROPERTIES', expression)}"
+    return f"{using}{partitioned_by}{stored_as}{self.properties('TBLPROPERTIES', expression)}"
 
 
 def _property_sql(self, expression):

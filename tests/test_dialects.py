@@ -419,6 +419,12 @@ class TestDialects(unittest.TestCase):
             read="bigquery",
         )
 
+        self.validate(
+            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
+            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
+            read="bigquery",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",

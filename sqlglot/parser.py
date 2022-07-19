@@ -1265,7 +1265,14 @@ class Parser:
 
         while self._match_set(self.COLUMN_OPERATORS):
             colon = self._prev.token_type == TokenType.COLON
-            field = self._parse_star() or self._parse_id_var()
+            field = self._parse_star() or self._parse_function() or self._parse_id_var()
+
+            if isinstance(field, exp.Func):
+                # bigquery allows function calls like x.y.count(...)
+                # SAFE.SUBSTR(...)
+                # https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#function_call_rules
+                this = self._replace_columns_with_dots(this)
+
             if colon:
                 this = self.expression(
                     exp.Bracket,
@@ -1764,3 +1771,18 @@ class Parser:
                 self.raise_error("Expecting BY")
             return True
         return False
+
+    def _replace_columns_with_dots(self, this):
+        if isinstance(this, exp.Dot):
+            exp.replace_children(this, self._replace_columns_with_dots)
+        elif isinstance(this, exp.Column):
+            exp.replace_children(this, self._replace_columns_with_dots)
+            table = this.args.get("table")
+            this = (
+                self.expression(exp.Dot, this=table, expression=this.this)
+                if table
+                else self.expression(exp.Var, this=this.name)
+            )
+        elif isinstance(this, exp.Identifier):
+            this = self.expression(exp.Var, this=this.name)
+        return this

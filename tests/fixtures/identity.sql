@@ -43,6 +43,10 @@ a.b.c.d.e[0].f
 a[0][0].b.c[1].d.e.f[1][1]
 a[0].b[1]
 a[0].b.c['d']
+a.b.C()
+a['x'].b.C()
+a.B()
+a['x'].C()
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1

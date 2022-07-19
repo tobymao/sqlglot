@@ -1,5 +1,5 @@
-SELECT a FROM z;
-SELECT * FROM z;
+SELECT a FROM zz;
+SELECT * FROM zz;
 SELECT z.a FROM x;
 SELECT z.* FROM x;
 SELECT x FROM x;

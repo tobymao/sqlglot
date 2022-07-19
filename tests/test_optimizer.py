@@ -24,6 +24,10 @@ class TestOptimizer(unittest.TestCase):
                 "b": "INT",
                 "c": "INT",
             },
+            "z": {
+                "b": "INT",
+                "c": "INT",
+            },
         }
 
     def check_file(self, file, func, pretty=False, **kwargs):

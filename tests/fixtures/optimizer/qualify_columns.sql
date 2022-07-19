@@ -181,9 +181,11 @@ SELECT x.b AS b FROM x AS x;
 --------------------------------------
 -- Using
 --------------------------------------
-
 SELECT x.b FROM x JOIN y USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT x.b FROM x JOIN y USING (b) JOIN z USING (b);
+SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
 
 --------------------------------------
 -- TODO: Laterals

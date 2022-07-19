@@ -56,7 +56,11 @@ def _pop_table_column_aliases(derived_tables):
 
 
 def _expand_using(scope, schema):
-    for join in scope.expression.find_all(exp.Join):
+    joins = list(scope.expression.find_all(exp.Join))
+    names = {join.this.alias for join in joins}
+    ordered = [key for key in scope.selected_sources if key not in names]
+
+    for join in joins:
         using = join.args.get("using")
 
         if not using:
@@ -64,14 +68,16 @@ def _expand_using(scope, schema):
 
         join_table = join.this.alias_or_name
 
-        source_columns = {
-            k: _get_source_columns(k, scope.sources, schema)
-            for k in scope.selected_sources
-            if join_table != k
-        }
-        join_columns = _get_source_columns(join_table, scope.sources, schema)
+        columns = {}
 
-        columns = _get_unambiguous_columns(source_columns)
+        for k in scope.selected_sources:
+            if k in ordered:
+                for column in _get_source_columns(k, scope.sources, schema):
+                    if column not in columns:
+                        columns[column] = k
+
+        ordered.append(join_table)
+        join_columns = _get_source_columns(join_table, scope.sources, schema)
         conditions = []
 
         for identifier in using:

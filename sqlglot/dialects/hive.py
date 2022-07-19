@@ -59,11 +59,11 @@ def _properties_sql(self, expression):
     partitioned_by = ""
 
     for p in properties:
-        if p.text("this").upper() == c.TABLE_FORMAT:
+        if p.name.upper() == c.TABLE_FORMAT:
             using = p
-        if p.text("this").upper() == c.FILE_FORMAT:
+        elif p.name.upper() == c.FILE_FORMAT:
             stored_as = p
-        if isinstance(p.args["value"], exp.Schema):
+        elif isinstance(p.args["value"], exp.Schema):
             partitioned_by = p
 
     if partitioned_by:

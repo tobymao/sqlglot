@@ -565,7 +565,7 @@ class Parser:
                     self.expression(
                         exp.Property,
                         this=exp.Literal.string(c.TABLE_FORMAT),
-                        value=exp.Literal.string(self._parse_var().text("this")),
+                        value=exp.Literal.string(self._parse_var().name),
                     )
                 )
 

@@ -1401,6 +1401,13 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "CREATE TABLE test USING ICEBERG STORED AS PARQUET AS SELECT 1",
+            "CREATE TABLE test WITH (TABLE_FORMAT = 'ICEBERG', FORMAT = 'PARQUET') AS SELECT 1",
+            read="spark",
+            write="presto",
+        )
+
         self.validate("ARRAY(0, 1, 2)", "ARRAY[0, 1, 2]", read="spark", write="presto")
         self.validate(
             "ARRAY(0, 1, 2)", "LIST_VALUE(0, 1, 2)", read="spark", write="duckdb"

@@ -816,11 +816,11 @@ class Parser:
                     "laterals": self._parse_laterals(),
                     "joins": self._parse_joins(),
                     "where": self._parse_where(),
+                    "group": self._parse_group(),
+                    "having": self._parse_having(),
                     "qualify": self._parse_qualify(),
                     "window": self._match(TokenType.WINDOW)
                     and self._parse_window(self._parse_id_var(), alias=True),
-                    "group": self._parse_group(),
-                    "having": self._parse_having(),
                     "order": self._parse_order(),
                     "limit": limit or self._parse_limit(),
                     "offset": self._parse_offset(),

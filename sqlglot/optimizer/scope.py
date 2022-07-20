@@ -52,14 +52,15 @@ class Scope:
         self.scope_type = scope_type
         self.subquery_scopes = []
         self.union = None
+        self._clear_cache()
 
+    def _clear_cache(self):
         self._collected = False
         self._raw_columns = None
         self._derived_tables = None
         self._tables = None
         self._ctes = None
         self._subqueries = None
-
         self._selected_sources = None
         self._columns = None
         self._external_columns = None
@@ -105,6 +106,19 @@ class Scope:
     def _ensure_collected(self):
         if not self._collected:
             self._collect()
+
+    def replace(self, old, new):
+        """
+        Replace `old` with `new`.
+
+        This can be used instead of `exp.Expression.replace` to ensure the `Scope` is kept up-to-date.
+
+        Args:
+            old (exp.Expression): old node
+            new (exp.Expression): new node
+        """
+        old.replace(new)
+        self._clear_cache()
 
     @property
     def tables(self):

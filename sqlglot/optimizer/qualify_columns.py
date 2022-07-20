@@ -60,11 +60,9 @@ def _expand_using(scope, schema):
     names = {join.this.alias for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
-    # If a column is referenced in USING, it doesn't need to be qualified.
-    # e.g. SELECT b FROM x JOIN y USING (b)
-    # However, because we expand USING, we need to qualify these columns.
-    # `unambiguous` is a mapping of column names to source names.
-    unambiguous = {}
+    # Mapping of column names to source names.
+    # This is used to COALESCE unqualified columns that appear in the USING clause.
+    column_tables = {}
 
     for join in joins:
         using = join.args.get("using")
@@ -102,14 +100,27 @@ def _expand_using(scope, schema):
                 )
             )
 
-            unambiguous[identifier] = table
+            tables = column_tables.setdefault(identifier, set())
+            tables.add(table)
+            tables.add(join_table)
 
         join.args.pop("using")
         join.set("on", exp.and_(*conditions))
 
+    if column_tables:
         for column in scope.columns:
-            if not column.table and column.name in unambiguous:
-                column.set("table", exp.to_identifier(unambiguous.get(column.name)))
+            if not column.table and column.name in column_tables:
+                tables = column_tables[column.name]
+                coalesce = [
+                    exp.column(column.name, table=table) for table in sorted(tables)
+                ]
+                replacement = exp.Coalesce(this=coalesce[0], expressions=coalesce[1:])
+
+                # Ensure selects keep their output name
+                if isinstance(column.parent, exp.Select):
+                    replacement = exp.alias_(replacement, alias=column.name)
+
+                scope.replace(column, replacement)
 
 
 def _qualify_columns(scope, schema):

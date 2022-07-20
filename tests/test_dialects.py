@@ -1569,6 +1569,12 @@ class TestDialects(unittest.TestCase):
             write="snowflake",
         )
         self.validate(
+            "SELECT a FROM test QUALIFY z ORDER BY a LIMIT 10",
+            "SELECT a FROM test QUALIFY z ORDER BY a LIMIT 10",
+            read="bigquery",
+            write="snowflake",
+        )
+        self.validate(
             "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z) = 1",
             "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z) = 1",
             read="snowflake",

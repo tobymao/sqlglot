@@ -94,7 +94,6 @@ class Parser:
         TokenType.ORDINALITY,
         TokenType.PERCENT,
         TokenType.PRECEDING,
-        TokenType.QUALIFY,
         TokenType.RANGE,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,

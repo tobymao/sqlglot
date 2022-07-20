@@ -60,8 +60,7 @@ def _expand_using(scope, schema):
     names = {join.this.alias for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
-    # Mapping of column names to source names.
-    # This is used to COALESCE unqualified columns that appear in the USING clause.
+    # Mapping of automatically joined column names to source names
     column_tables = {}
 
     for join in joins:

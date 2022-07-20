@@ -186,7 +186,9 @@ class Scope:
                 for c in columns + external_columns
                 if c.table
                 or not (
-                    c.find_ancestor(exp.Group, exp.Order) and c.name in aliased_outputs
+                    # In some dialects, these clauses can reference output columns
+                    c.find_ancestor(exp.Group, exp.Order, exp.Qualify)
+                    and c.name in aliased_outputs
                 )
             ]
         return self._columns

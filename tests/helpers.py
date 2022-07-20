@@ -10,6 +10,18 @@ def _filter_comments(s):
     )
 
 
+def _extract_meta(sql):
+    meta = {}
+    sql_lines = sql.split("\n")
+    i = 0
+    while sql_lines[i].startswith("#"):
+        key, val = sql_lines[i].split(":", maxsplit=1)
+        meta[key.lstrip("#").strip()] = val.strip()
+        i += 1
+    sql = "\n".join(sql_lines[i:])
+    return sql, meta
+
+
 def load_sql_fixtures(filename):
     with open(os.path.join(FIXTURES_DIR, filename), encoding="utf-8") as f:
         for sql in _filter_comments(f.read()).splitlines():
@@ -25,8 +37,9 @@ def load_sql_fixture_pairs(filename):
         for i in range(0, size, 2):
             if i + 1 < size:
                 sql = statements[i].strip()
+                sql, meta = _extract_meta(sql)
                 expected = statements[i + 1].strip()
-                yield sql, expected
+                yield meta, sql, expected
 
 
 TPCH_SCHEMA = {

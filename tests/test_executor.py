@@ -27,7 +27,10 @@ class TestExecutor(unittest.TestCase):
             )
 
         cls.cache = {}
-        cls.sqls = list(load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql"))
+        cls.sqls = [
+            (sql, expected)
+            for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")
+        ]
 
     @classmethod
     def tearDownClass(cls):

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
+from heapq import heappush, heappop
 from sqlglot import Dialect, expressions as exp
 from sqlglot.helper import ensure_list
 
@@ -98,7 +99,7 @@ class ChangeDistiller:
         self._target_index = {id(n[0]): n[0] for n in target.bfs()}
         self._unmatched_source_nodes = set(self._source_index)
         self._unmatched_target_nodes = set(self._target_index)
-        self._bigrams_histo_cache = {}
+        self._bigram_histo_cache = {}
 
         matching_set = self._compute_matching_set()
         return self._generate_edit_script(matching_set)
@@ -160,17 +161,18 @@ class ChangeDistiller:
                 source_node = self._source_index[source_node_id]
                 target_node = self._target_index[target_node_id]
                 if _is_same_type(source_node, target_node):
-                    similarity_score = self._dice_coefficient(source_node, target_node)
-
                     source_leaf_ids = {id(l) for l in _get_leaves(source_node)}
                     target_leaf_ids = {id(l) for l in _get_leaves(target_node)}
-                    common_leaves_num = sum(
-                        1 if s in source_leaf_ids and t in target_leaf_ids else 0
-                        for s, t in leaves_matching_set
-                    )
-                    leaf_similarity_score = common_leaves_num / max(
-                        len(source_leaf_ids), len(target_leaf_ids)
-                    )
+
+                    max_leaves_num = max(len(source_leaf_ids), len(target_leaf_ids))
+                    if max_leaves_num:
+                        common_leaves_num = sum(
+                            1 if s in source_leaf_ids and t in target_leaf_ids else 0
+                            for s, t in leaves_matching_set
+                        )
+                        leaf_similarity_score = common_leaves_num / max_leaves_num
+                    else:
+                        leaf_similarity_score = 0.0
 
                     adjusted_t = (
                         self.t
@@ -178,10 +180,10 @@ class ChangeDistiller:
                         else 0.4
                     )
 
-                    if (
-                        similarity_score >= self.f
-                        and leaf_similarity_score >= adjusted_t
-                    ) or leaf_similarity_score >= 0.8:
+                    if leaf_similarity_score >= 0.8 or (
+                        leaf_similarity_score >= adjusted_t
+                        and self._dice_coefficient(source_node, target_node) >= self.f
+                    ):
                         matching_set.add((source_node_id, target_node_id))
                         self._unmatched_source_nodes.remove(source_node_id)
                         self._unmatched_target_nodes.remove(target_node_id)
@@ -191,22 +193,28 @@ class ChangeDistiller:
         return matching_set
 
     def _compute_leaf_matching_set(self):
-        leaf_matchings = []
+        candidate_matchings = []
         source_leaves = list(_get_leaves(self._source))
         target_leaves = list(_get_leaves(self._target))
         for source_leaf in source_leaves:
             for target_leaf in target_leaves:
                 if _is_same_type(source_leaf, target_leaf):
                     similarity_score = self._dice_coefficient(source_leaf, target_leaf)
-                    if similarity_score and similarity_score >= self.f:
-                        leaf_matchings.append(
-                            (source_leaf, target_leaf, similarity_score)
+                    if similarity_score >= self.f:
+                        heappush(
+                            candidate_matchings,
+                            (
+                                -similarity_score,
+                                len(candidate_matchings),
+                                source_leaf,
+                                target_leaf,
+                            ),
                         )
 
         # Pick best matchings based on the highest score
         matching_set = set()
-        leaf_matchings = sorted(leaf_matchings, key=lambda x: -x[2])
-        for source_leaf, target_leaf, _ in leaf_matchings:
+        while candidate_matchings:
+            _, _, source_leaf, target_leaf = heappop(candidate_matchings)
             if (
                 id(source_leaf) in self._unmatched_source_nodes
                 and id(target_leaf) in self._unmatched_target_nodes
@@ -218,8 +226,8 @@ class ChangeDistiller:
         return matching_set
 
     def _dice_coefficient(self, source, target):
-        source_histo = self._bigrams_histo(source)
-        target_histo = self._bigrams_histo(target)
+        source_histo = self._bigram_histo(source)
+        target_histo = self._bigram_histo(target)
 
         total_grams = sum(source_histo.values()) + sum(target_histo.values())
         if not total_grams:
@@ -232,19 +240,18 @@ class ChangeDistiller:
 
         return 2 * overlap_len / total_grams
 
-    def _bigrams_histo(self, expression):
-        if id(expression) in self._bigrams_histo_cache:
-            return self._bigrams_histo_cache[id(expression)]
+    def _bigram_histo(self, expression):
+        if id(expression) in self._bigram_histo_cache:
+            return self._bigram_histo_cache[id(expression)]
 
         expression_str = self._sql_generator.generate(expression)
         count = max(0, len(expression_str) - 1)
-        bigrams = [expression_str[i : i + 2] for i in range(count)]
-        bigrams_histo = defaultdict(int)
-        for g in bigrams:
-            bigrams_histo[g] += 1
+        bigram_histo = defaultdict(int)
+        for i in range(count):
+            bigram_histo[expression_str[i : i + 2]] += 1
 
-        self._bigrams_histo_cache[id(expression)] = bigrams_histo
-        return bigrams_histo
+        self._bigram_histo_cache[id(expression)] = bigram_histo
+        return bigram_histo
 
 
 def _get_leaves(expression):

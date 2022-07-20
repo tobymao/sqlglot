@@ -43,6 +43,11 @@ SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
 SELECT a, b FROM x ORDER BY a;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a;
 
+# dialect: bigquery
+SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY row_num = 1;
+SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x QUALIFY row_num = 1;
+
+
 --------------------------------------
 -- Derived tables
 --------------------------------------
@@ -186,11 +191,3 @@ SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
 SELECT x.b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
-
---------------------------------------
--- TODO: Laterals
---------------------------------------
-
---------------------------------------
--- TODO: Recursive CTEs
---------------------------------------

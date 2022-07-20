@@ -279,7 +279,7 @@ class TestTranspile(unittest.TestCase):
                 )
 
     def test_pretty(self):
-        for sql, pretty in load_sql_fixture_pairs("pretty.sql"):
+        for _, sql, pretty in load_sql_fixture_pairs("pretty.sql"):
             with self.subTest(sql[:100]):
                 generated = transpile(sql, pretty=True)[0]
                 self.assertEqual(generated, pretty)

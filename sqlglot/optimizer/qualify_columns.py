@@ -99,9 +99,11 @@ def _expand_using(scope, schema):
                 )
             )
 
-            tables = column_tables.setdefault(identifier, set())
-            tables.add(table)
-            tables.add(join_table)
+            tables = column_tables.setdefault(identifier, [])
+            if table not in tables:
+                tables.append(table)
+            if join_table not in tables:
+                tables.append(join_table)
 
         join.args.pop("using")
         join.set("on", exp.and_(*conditions))
@@ -110,9 +112,7 @@ def _expand_using(scope, schema):
         for column in scope.columns:
             if not column.table and column.name in column_tables:
                 tables = column_tables[column.name]
-                coalesce = [
-                    exp.column(column.name, table=table) for table in sorted(tables)
-                ]
+                coalesce = [exp.column(column.name, table=table) for table in tables]
                 replacement = exp.Coalesce(this=coalesce[0], expressions=coalesce[1:])
 
                 # Ensure selects keep their output name

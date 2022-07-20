@@ -60,6 +60,12 @@ def _expand_using(scope, schema):
     names = {join.this.alias for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
+    # If a column is referenced in USING, it doesn't need to be qualified.
+    # e.g. SELECT b FROM x JOIN y USING (b)
+    # However, because we expand USING, we need to qualify these columns.
+    # `unambiguous` is a mapping of column names to source names.
+    unambiguous = {}
+
     for join in joins:
         using = join.args.get("using")
 
@@ -96,8 +102,14 @@ def _expand_using(scope, schema):
                 )
             )
 
+            unambiguous[identifier] = table
+
         join.args.pop("using")
         join.set("on", exp.and_(*conditions))
+
+        for column in scope.columns:
+            if not column.table and column.name in unambiguous:
+                column.set("table", exp.to_identifier(unambiguous.get(column.name)))
 
 
 def _qualify_columns(scope, schema):

@@ -191,3 +191,9 @@ SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
 SELECT x.b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
+
+SELECT b FROM x AS x2 JOIN y AS y2 USING (b);
+SELECT x2.b AS b FROM x AS x2 JOIN y AS y2 ON x2.b = y2.b;
+
+SELECT b FROM x JOIN y USING (b) WHERE b = 1 and y.b = 2;
+SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b WHERE x.b = 1 AND y.b = 2;

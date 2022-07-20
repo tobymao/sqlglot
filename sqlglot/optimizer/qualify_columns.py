@@ -60,6 +60,9 @@ def _expand_using(scope, schema):
     names = {join.this.alias for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
+    # Mapping of automatically joined column names to source names
+    column_tables = {}
+
     for join in joins:
         using = join.args.get("using")
 
@@ -96,8 +99,27 @@ def _expand_using(scope, schema):
                 )
             )
 
+            tables = column_tables.setdefault(identifier, [])
+            if table not in tables:
+                tables.append(table)
+            if join_table not in tables:
+                tables.append(join_table)
+
         join.args.pop("using")
         join.set("on", exp.and_(*conditions))
+
+    if column_tables:
+        for column in scope.columns:
+            if not column.table and column.name in column_tables:
+                tables = column_tables[column.name]
+                coalesce = [exp.column(column.name, table=table) for table in tables]
+                replacement = exp.Coalesce(this=coalesce[0], expressions=coalesce[1:])
+
+                # Ensure selects keep their output name
+                if isinstance(column.parent, exp.Select):
+                    replacement = exp.alias_(replacement, alias=column.name)
+
+                scope.replace(column, replacement)
 
 
 def _qualify_columns(scope, schema):

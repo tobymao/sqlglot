@@ -2,9 +2,9 @@
 
 SQLGlot is a no dependency Python SQL parser, transpiler, and optimizer. It can be used to format SQL or translate between different dialects like [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), and [Hive](https://hive.apache.org/). It aims to read a wide variety of SQL inputs and output syntatically correct SQL in the targeted dialects.
 
-It is currently the [fastest](#benchmarks) pure-Python SQL parser.
+It is the most comprehensive and one of the [fastest](#benchmarks) pure-Python SQL parsers.
 
-You can easily customize the parser to support UDF's across dialects as well through the transform API.
+You can easily customize the parser, analyze and traverse expression trees, and programatically build SQL.
 
 Syntax errors are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 
@@ -306,11 +306,11 @@ Dialects["custom"]
 [Benchmarks](benchmarks) run on Python 3.10.5 in seconds.
 
 |           Query |         sqlglot |         sqltree |        sqlparse |  moz_sql_parser |        sqloxide |
-| _______________ | _______________ | _______________ | _______________ | _______________ | _______________
-|            tpch |   0.01394 (1.0) | 0.01261 (0.905) | 0.05349 (3.836) | 0.07728 (5.543) | 0.00107 (0.077)
-|           short |   0.00099 (1.0) | 0.00092 (0.936) | 0.00322 (3.244) | 0.00485 (4.895) | 0.00006 (0.064)
-|            long |   0.01199 (1.0) | 0.01040 (0.867) | 0.04486 (3.739) | 0.06869 (5.725) | 0.00099 (0.082)
-|           crazy |   0.04344 (1.0) | 0.03611 (0.831) | 11.4964 (264.6) | 1.13651 (26.15) | 0.00555 (0.127)
+| --------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
+|            tpch |   0.01226 (1.0) | 0.01158 (0.944) | 0.04706 (3.837) | 0.07054 (5.751) | 0.00098 (0.080) |
+|           short |   0.00085 (1.0) | 0.00079 (0.932) | 0.00281 (3.293) | 0.00449 (5.259) | 0.00006 (0.074) |
+|            long |   0.01148 (1.0) | 0.00978 (0.851) | 0.04170 (3.629) | 0.06012 (5.233) | 0.00089 (0.077) |
+|           crazy |   0.03945 (1.0) | 0.03439 (0.871) | 11.9834 (303.7) | 1.06398 (26.96) | 0.00564 (0.143) |
 
 
 ## Run Tests and Lint

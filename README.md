@@ -4,7 +4,7 @@ SQLGlot is a no dependency Python SQL parser, transpiler, and optimizer. It can 
 
 It is a very comprehensive generic SQL parser with a robust [test suite](tests). It is also quite [performant](#benchmarks) while being written purely in Python. 
 
-You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql)) SQL.
+You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL.
 
 Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 

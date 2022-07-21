@@ -102,10 +102,10 @@ A syntax error will result in a parser error.
 ```python
 transpile("SELECT foo( FROM bar")
 ```
-```
+
 sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
   select foo( <u>FROM</u> bar
-```
+
 ## Unsupported Errors
 Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.
 

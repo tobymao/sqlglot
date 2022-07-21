@@ -104,7 +104,7 @@ transpile("SELECT foo( FROM bar")
 ```
 
 sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
-  select foo( <u>FROM</u> bar
+  select foo( __FROM__ bar
 
 ## Unsupported Errors
 Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.

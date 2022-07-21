@@ -240,7 +240,7 @@ class _Tokenizer(type):
             prefix + quote for prefix in ["", "r"] for quote in klass.QUOTES
         ]
 
-        klass.AMBIGUOUS = new_trie(
+        klass.KEYWORD_TRIE = new_trie(
             key.upper()
             for key, value in {
                 **klass.KEYWORDS,
@@ -490,7 +490,7 @@ class Tokenizer(metaclass=_Tokenizer):
     COMMENTS = {"--"}
     COMMENT_START = "/*"
     COMMENT_END = "*/"
-    AMBIGUOUS = None  # autofilled
+    KEYWORD_TRIE = None  # autofilled
 
     __slots__ = (
         "identifier",
@@ -560,12 +560,8 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._scan_identifier()
             elif self._char == "#":
                 self._scan_annotation()
-            elif self._scan_ambiguous():
-                pass
-            elif self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char])
             else:
-                self._scan_var()
+                self._scan_keywords()
         return self.tokens
 
     def _chars(self, size):
@@ -601,13 +597,13 @@ class Tokenizer(metaclass=_Tokenizer):
             if self._start < self._current:
                 self._add(TokenType.STRING)
 
-    def _scan_ambiguous(self):
+    def _scan_keywords(self):
         size = 1
         word = None
         chars = self._text
 
         while chars:
-            result = in_trie(self.AMBIGUOUS, chars.upper())
+            result = in_trie(self.KEYWORD_TRIE, chars.upper())
 
             if result == 0:
                 break
@@ -617,17 +613,18 @@ class Tokenizer(metaclass=_Tokenizer):
             chars = self._chars(size)
 
         if not word:
-            return False
-
+            if self._char in self.SINGLE_TOKENS:
+                self._add(self.SINGLE_TOKENS[self._char])
+            else:
+                self._scan_var()
+            return
         if self._scan_comment(word):
-            return True
-
+            return
         if self._scan_string(word):
-            return True
+            return
 
         self._advance(len(word) - 1)
         self._add(self.KEYWORDS[word.upper()])
-        return True
 
     def _scan_comment(self, comment):
         if comment in self.COMMENTS:

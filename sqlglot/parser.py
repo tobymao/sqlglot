@@ -215,6 +215,16 @@ class Parser:
         "JOIN_TYPE": "_parse_join_side_and_kind",
     }
 
+    STATEMENT_PARSERS = {
+        TokenType.CREATE: "_parse_create",
+        TokenType.DROP: "_parse_drop",
+        TokenType.INSERT: "_parse_insert",
+        TokenType.UPDATE: "_parse_update",
+        TokenType.DELETE: "_parse_delete",
+        TokenType.CACHE: "_parse_cache",
+        TokenType.UNCACHE: "_parse_uncache",
+    }
+
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     STRICT_CAST = True
@@ -395,26 +405,8 @@ class Parser:
         if self._curr is None:
             return None
 
-        if self._match(TokenType.CREATE):
-            return self._parse_create()
-
-        if self._match(TokenType.DROP):
-            return self._parse_drop()
-
-        if self._match(TokenType.INSERT):
-            return self._parse_insert()
-
-        if self._match(TokenType.UPDATE):
-            return self._parse_update()
-
-        if self._match(TokenType.DELETE):
-            return self._parse_delete()
-
-        if self._match(TokenType.CACHE):
-            return self._parse_cache()
-
-        if self._match(TokenType.UNCACHE):
-            return self._parse_uncache()
+        if self._match_set(self.STATEMENT_PARSERS):
+            return getattr(self, self.STATEMENT_PARSERS[self._prev.token_type])()
 
         if self._match_set(Tokenizer.COMMANDS):
             return self.expression(

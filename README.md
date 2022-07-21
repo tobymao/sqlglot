@@ -6,7 +6,7 @@ It is a very comprehensive generic SQL parser with a robust [test suite](tests).
 
 You can easily customize the parser, analyze queries, traverse expression trees, and programmatically build SQL.
 
-Syntax errors are highlighted and dialect incompatibilities can warn or raise depending on configurations.
+Syntax [errors](#Parse Errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 
 ## Install
 From PyPI
@@ -104,7 +104,7 @@ transpile("SELECT foo( FROM bar")
 ```
 ```
 sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
-  SELECT foo( FROM bar
+  select foo( <u>FROM</u> bar
 ```
 ## Unsupported Errors
 Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.

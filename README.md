@@ -6,7 +6,7 @@ It is a very comprehensive generic SQL parser with a robust [test suite](tests).
 
 You can easily customize the parser, analyze queries, traverse expression trees, and programmatically build SQL.
 
-Syntax [errors](#ParseErrors) are highlighted and dialect incompatibilities can warn or raise depending on configurations.
+Syntax [errors](#Parseerrors) are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 
 ## Install
 From PyPI

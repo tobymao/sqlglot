@@ -125,6 +125,7 @@ def _expand_using(scope, schema):
 def _qualify_columns(scope, schema):
     """Disambiguate columns, ensuring each column specifies a source"""
     unambiguous_columns = None  # lazily loaded
+    scope_all_schema_columns = None  # lazily loaded
 
     for column in scope.columns:
         column_table = column.table
@@ -139,13 +140,22 @@ def _qualify_columns(scope, schema):
             raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:
-            if unambiguous_columns is None:
+            if unambiguous_columns is None or scope_all_schema_columns is None:
                 source_columns = {
                     k: _get_source_columns(k, scope.sources, schema)
                     for k in scope.selected_sources
                 }
 
+                scope_all_schema_columns = [
+                    key
+                    for nested_dict_value in source_columns.values()
+                    for key in nested_dict_value.keys()
+                ]
+
                 unambiguous_columns = _get_unambiguous_columns(source_columns)
+
+            if column_name not in scope_all_schema_columns:
+                raise OptimizeError(f"Unknown column: {column_name}")
 
             column_table = unambiguous_columns.get(column_name)
             if not column_table and not scope.is_subquery:

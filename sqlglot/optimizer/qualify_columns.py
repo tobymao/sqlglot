@@ -146,15 +146,11 @@ def _qualify_columns(scope, schema):
                     for k in scope.selected_sources
                 }
 
-                scope_all_schema_columns = [
-                    key
-                    for nested_dict_value in source_columns.values()
-                    for key in nested_dict_value.keys()
-                ]
+                scope_all_schema_columns = _get_scope_schema_columns(source_columns)
 
                 unambiguous_columns = _get_unambiguous_columns(source_columns)
 
-            if column_name not in scope_all_schema_columns:
+            if column_name not in scope_all_schema_columns and not scope.is_subquery:
                 raise OptimizeError(f"Unknown column: {column_name}")
 
             column_table = unambiguous_columns.get(column_name)
@@ -285,6 +281,27 @@ def _get_unambiguous_columns(source_columns):
             unambiguous_columns[column] = table
 
     return unambiguous_columns
+
+
+def _get_scope_schema_columns(source_columns):
+    """
+    Get all the schema columns from sources.
+
+    Args:
+        source_columns (dict): Mapping of names to source columns
+    Returns:
+        list: all columns from schema
+    """
+    if not source_columns:
+        return []
+
+    columns = [
+        value
+        for nested_list_value in list(source_columns.values())
+        for value in nested_list_value
+    ]
+
+    return columns
 
 
 def _find_unique_columns(columns):

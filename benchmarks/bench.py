@@ -212,7 +212,7 @@ columns = ["Query"] + libs
 widths = {column: max(len(column), 15) for column in columns}
 
 lines = [border(column.rjust(width) for column, width in widths.items())]
-lines.append(border(str("_" * width) for width in widths.values()))
+lines.append(border(str("-" * width) for width in widths.values()))
 
 for i, row in enumerate(table):
     lines.append(border(

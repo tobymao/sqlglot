@@ -2,7 +2,7 @@
 
 SQLGlot is a no dependency Python SQL parser, transpiler, and optimizer. It can be used to format SQL or translate between different dialects like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntatically correct SQL in the targeted dialects.
 
-It is the most comprehensive and one of the [fastest](#benchmarks) pure-Python SQL parsers.
+It is the most comprehensive Python SQL parser and also very [fast](#benchmarks).
 
 You can easily customize the parser, analyze and traverse expression trees, and programatically build SQL.
 

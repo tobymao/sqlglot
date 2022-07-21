@@ -125,6 +125,7 @@ def _expand_using(scope, schema):
 def _qualify_columns(scope, schema):
     """Disambiguate columns, ensuring each column specifies a source"""
     unambiguous_columns = None  # lazily loaded
+    scope_all_schema_columns = None  # lazily loaded
 
     for column in scope.columns:
         column_table = column.table
@@ -139,13 +140,18 @@ def _qualify_columns(scope, schema):
             raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:
-            if unambiguous_columns is None:
+            if unambiguous_columns is None or scope_all_schema_columns is None:
                 source_columns = {
                     k: _get_source_columns(k, scope.sources, schema)
                     for k in scope.selected_sources
                 }
 
+                scope_all_schema_columns = _get_scope_schema_columns(source_columns)
+
                 unambiguous_columns = _get_unambiguous_columns(source_columns)
+
+            if column_name not in scope_all_schema_columns and not scope.is_subquery:
+                raise OptimizeError(f"Unknown column: {column_name}")
 
             column_table = unambiguous_columns.get(column_name)
             if not column_table and not scope.is_subquery:
@@ -275,6 +281,27 @@ def _get_unambiguous_columns(source_columns):
             unambiguous_columns[column] = table
 
     return unambiguous_columns
+
+
+def _get_scope_schema_columns(source_columns):
+    """
+    Get all the schema columns from sources.
+
+    Args:
+        source_columns (dict): Mapping of names to source columns
+    Returns:
+        list: all columns from schema
+    """
+    if not source_columns:
+        return []
+
+    columns = [
+        value
+        for nested_list_value in list(source_columns.values())
+        for value in nested_list_value
+    ]
+
+    return columns
 
 
 def _find_unique_columns(columns):

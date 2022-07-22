@@ -520,7 +520,7 @@ class TableAlias(Expression):
 
 
 class Column(Condition):
-    arg_types = {"this": False, "table": False}
+    arg_types = {"this": True, "table": False}
 
     @property
     def table(self):

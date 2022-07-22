@@ -96,9 +96,7 @@ class Scope:
                 self._ctes.append(node)
             elif isinstance(node, (exp.Subquery, exp.Unnest, exp.Lateral)):
                 self._derived_tables.append(node)
-            elif isinstance(node, exp.Subqueryable) and not isinstance(
-                node.parent, (exp.CTE, exp.Subquery)
-            ):
+            elif isinstance(node, exp.Subqueryable):
                 self._subqueries.append(node)
 
         self._collected = True
@@ -333,7 +331,7 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, (exp.Lateral, exp.Unnest)):
         pass
     else:
-        raise OptimizeError(f"Unexpected expression type: {scope.expression}")
+        raise OptimizeError(f"Unexpected expression type: {type(scope.expression)}")
     yield scope
 
 
@@ -427,5 +425,6 @@ def _walk_next_scope(expression):
     This will yield the Select or Union node itself, but it won't recurse any further.
     """
     yield from expression.dfs(
-        prune=lambda n, *_: isinstance(n, exp.Subqueryable) and n is not expression
+        prune=lambda n, *_: isinstance(n, (exp.Subqueryable, exp.Subquery, exp.CTE))
+        and n is not expression
     )

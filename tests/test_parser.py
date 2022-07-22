@@ -103,7 +103,7 @@ class TestParser(unittest.TestCase):
 
     def test_missing_by(self):
         with self.assertRaises(ParseError):
-            parse_one("SELECT FROM x GROUP BY")
+            parse_one("SELECT FROM x ORDER BY")
 
     def test_annotations(self):
         expression = parse_one(

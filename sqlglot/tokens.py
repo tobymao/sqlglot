@@ -99,6 +99,7 @@ class TokenType(AutoName):
     COMMIT = auto()
     CREATE = auto()
     CROSS = auto()
+    CUBE = auto()
     CURRENT_DATE = auto()
     CURRENT_DATETIME = auto()
     CURRENT_ROW = auto()
@@ -124,6 +125,7 @@ class TokenType(AutoName):
     FUNCTION = auto()
     FROM = auto()
     GROUP = auto()
+    GROUPING_SETS = auto()
     HAVING = auto()
     HINT = auto()
     IF = auto()
@@ -170,6 +172,7 @@ class TokenType(AutoName):
     RESPECT_NULLS = auto()
     RIGHT = auto()
     RLIKE = auto()
+    ROLLUP = auto()
     ROWS = auto()
     SCHEMA_COMMENT = auto()
     SELECT = auto()
@@ -328,6 +331,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMIT": TokenType.COMMIT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
+        "CUBE": TokenType.CUBE,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
@@ -352,6 +356,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FOLLOWING": TokenType.FOLLOWING,
         "FROM": TokenType.FROM,
         "GROUP": TokenType.GROUP,
+        "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
@@ -394,6 +399,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
+        "ROLLUP": TokenType.ROLLUP,
         "ROWS": TokenType.ROWS,
         "SELECT": TokenType.SELECT,
         "SET": TokenType.SET,

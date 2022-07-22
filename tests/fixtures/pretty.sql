@@ -40,6 +40,7 @@ WITH cte1 AS (
         FROM (SELECT 1) AS x, y, (SELECT 2) z
         UNION ALL
         SELECT MAX(COALESCE(x AND y, a and b and c, d and e)), FOO(CASE WHEN a and b THEN c and d ELSE 3 END)
+        GROUP BY x, GROUPING SETS (a, (b, c)) CUBE(y, z)
     ) x
 )
 SELECT a, b c FROM (
@@ -113,6 +114,16 @@ WITH cte1 AS (
             AND d
           ELSE 3
       END)
+    GROUP BY
+      x
+    GROUPING SETS (
+      a,
+      (b, c)
+    )
+    CUBE (
+      y,
+      z
+    )
   ) AS x
 )
 SELECT

@@ -592,7 +592,12 @@ class Partition(Expression):
 
 
 class Group(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {
+        "expressions": False,
+        "grouping_sets": False,
+        "cube": False,
+        "rollup": False,
+    }
 
 
 class Lambda(Expression):
@@ -721,7 +726,7 @@ class Table(Expression):
 
 
 class Tuple(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": False}
 
 
 class Subqueryable:

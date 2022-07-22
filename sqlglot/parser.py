@@ -68,6 +68,8 @@ class Parser:
         TokenType.SOME: exp.Any,
     }
 
+    SINGLE_TOKENS = set(Tokenizer.SINGLE_TOKENS.values())
+
     ID_VAR_TOKENS = {
         TokenType.VAR,
         TokenType.ASC,
@@ -905,9 +907,7 @@ class Parser:
         if self._match(TokenType.ON):
             kwargs["on"] = self._parse_conjunction()
         elif self._match(TokenType.USING):
-            self._match_l_paren()
-            kwargs["using"] = self._parse_csv(self._parse_id_var)
-            self._match_r_paren()
+            kwargs["using"] = self._parse_wrapped_id_vars()
 
         return self.expression(exp.Join, **kwargs)
 
@@ -1023,8 +1023,28 @@ class Parser:
         if not self._match_by(TokenType.GROUP):
             return None
         return self.expression(
-            exp.Group, expressions=self._parse_csv(self._parse_conjunction)
+            exp.Group,
+            expressions=self._parse_csv(self._parse_conjunction),
+            grouping_sets=self._parse_grouping_sets(),
+            cube=self._match(TokenType.CUBE) and self._parse_wrapped_id_vars(),
+            rollup=self._match(TokenType.ROLLUP) and self._parse_wrapped_id_vars(),
         )
+
+    def _parse_grouping_sets(self):
+        if not self._match(TokenType.GROUPING_SETS):
+            return None
+
+        self._match_l_paren()
+        grouping_sets = self._parse_csv(self._parse_grouping_set)
+        self._match_r_paren()
+        return grouping_sets
+
+    def _parse_grouping_set(self):
+        if self._match(TokenType.L_PAREN):
+            grouping_set = self._parse_csv(self._parse_id_var)
+            self._match_r_paren()
+            return self.expression(exp.Tuple, expressions=grouping_set)
+        return self._parse_id_var()
 
     def _parse_having(self):
         if not self._match(TokenType.HAVING):
@@ -1635,7 +1655,7 @@ class Parser:
         if identifier:
             return identifier
 
-        if any_token:
+        if any_token and self._curr.token_type not in self.SINGLE_TOKENS:
             return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
 
         return self._match_set(self.ID_VAR_TOKENS) and exp.Identifier(
@@ -1690,10 +1710,7 @@ class Parser:
         if not self._match(TokenType.EXCEPT):
             return None
 
-        self._match_l_paren()
-        columns = self._parse_csv(self._parse_id_var)
-        self._match_r_paren()
-        return columns
+        return self._parse_wrapped_id_vars()
 
     def _parse_replace(self):
         if not self._match(TokenType.REPLACE):
@@ -1727,6 +1744,12 @@ class Parser:
 
     def _parse_all(self, parse):
         return list(iter(parse, None))
+
+    def _parse_wrapped_id_vars(self):
+        self._match_l_paren()
+        expressions = self._parse_csv(self._parse_id_var)
+        self._match_r_paren()
+        return expressions
 
     def _match(self, token_type):
         if not self._curr:

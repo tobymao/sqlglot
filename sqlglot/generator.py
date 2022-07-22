@@ -438,7 +438,18 @@ class Generator:
         return f"{self.seg('FROM')} {expressions}"
 
     def group_sql(self, expression):
-        return self.op_expressions("GROUP BY", expression)
+        group_by = self.op_expressions("GROUP BY", expression)
+        grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
+        grouping_sets = (
+            f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}"
+            if grouping_sets
+            else ""
+        )
+        cube = self.expressions(expression, key="cube", indent=False)
+        cube = f"{self.seg('CUBE')} {self.wrap(cube)}" if cube else ""
+        rollup = self.expressions(expression, key="rollup", indent=False)
+        rollup = f"{self.seg('ROLLUP')} {self.wrap(rollup)}" if rollup else ""
+        return f"{group_by}{grouping_sets}{cube}{rollup}"
 
     def having_sql(self, expression):
         this = self.indent(self.sql(expression, "this"))
@@ -850,7 +861,7 @@ class Generator:
             self.sql(expression, "format"), self.time_mapping, self.time_trie
         )
 
-    def expressions(self, expression, key=None, flat=False):
+    def expressions(self, expression, key=None, flat=False, indent=True):
         # pylint: disable=cell-var-from-loop
         expressions = expression.args.get(key or "expressions")
 
@@ -861,13 +872,15 @@ class Generator:
             return ", ".join(self.sql(e) for e in expressions)
 
         expressions = self.sep(", ").join(self.sql(e) for e in expressions)
-        return self.indent(expressions, skip_first=False)
+        if indent:
+            return self.indent(expressions, skip_first=False)
+        return expressions
 
     def op_expressions(self, op, expression, flat=False):
         expressions_sql = self.expressions(expression, flat=flat)
         if flat:
             return f"{op} {expressions_sql}"
-        return f"{self.seg(op)}{self.sep()}{expressions_sql}"
+        return f"{self.seg(op)}{self.sep() if expressions_sql else ''}{expressions_sql}"
 
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")

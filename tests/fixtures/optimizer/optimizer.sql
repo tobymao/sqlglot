@@ -125,4 +125,4 @@ FROM (
     AND NOT "_u_0"."_u_1" IS NULL
 ) AS "d"
 GROUP BY
-  "d"."a";
+  "a";

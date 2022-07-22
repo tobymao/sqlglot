@@ -43,11 +43,11 @@ FROM "lineitem" AS "lineitem"
 WHERE
   CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1998-09-02' AS DATE)
 GROUP BY
-  "lineitem"."l_returnflag",
-  "lineitem"."l_linestatus"
+  "l_returnflag",
+  "l_linestatus"
 ORDER BY
-  "lineitem"."l_returnflag",
-  "lineitem"."l_linestatus";
+  "l_returnflag",
+  "l_linestatus";
 
 --------------------------------------
 -- TPC-H 2
@@ -184,10 +184,10 @@ WHERE
   "partsupp"."ps_supplycost" = "_u_0"."_col_0"
   AND NOT "_u_0"."_u_1" IS NULL
 ORDER BY
-  "supplier"."s_acctbal" DESC,
-  "nation"."n_name",
-  "supplier"."s_name",
-  "part"."p_partkey"
+  "s_acctbal" DESC,
+  "n_name",
+  "s_name",
+  "p_partkey"
 LIMIT 100;
 
 --------------------------------------
@@ -255,9 +255,9 @@ JOIN (
 ) AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
 GROUP BY
-  "lineitem"."l_orderkey",
+  "l_orderkey",
   "o_orderdate",
-  "orders"."o_shippriority"
+  "o_shippriority"
 ORDER BY
   "revenue" DESC,
   "o_orderdate"
@@ -306,9 +306,9 @@ WHERE
   AND "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
-  "orders"."o_orderpriority"
+  "o_orderpriority"
 ORDER BY
-  "orders"."o_orderpriority";
+  "o_orderpriority";
 
 --------------------------------------
 -- TPC-H 5
@@ -394,7 +394,7 @@ JOIN (
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "lineitem"."l_suppkey" = "supplier"."s_suppkey"
 GROUP BY
-  "nation"."n_name"
+  "n_name"
 ORDER BY
   "revenue" DESC;
 
@@ -529,13 +529,13 @@ FROM (
     )
 ) AS "shipping"
 GROUP BY
-  "shipping"."supp_nation",
-  "shipping"."cust_nation",
-  "shipping"."l_year"
+  "supp_nation",
+  "cust_nation",
+  "l_year"
 ORDER BY
-  "shipping"."supp_nation",
-  "shipping"."cust_nation",
-  "shipping"."l_year";
+  "supp_nation",
+  "cust_nation",
+  "l_year";
 
 --------------------------------------
 -- TPC-H 8
@@ -658,9 +658,9 @@ FROM (
     ON "supplier"."s_nationkey" = "n2"."n_nationkey"
 ) AS "all_nations"
 GROUP BY
-  "all_nations"."o_year"
+  "o_year"
 ORDER BY
-  "all_nations"."o_year";
+  "o_year";
 
 --------------------------------------
 -- TPC-H 9
@@ -759,11 +759,11 @@ FROM (
     ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 ) AS "profit"
 GROUP BY
-  "profit"."nation",
-  "profit"."o_year"
+  "nation",
+  "o_year"
 ORDER BY
-  "profit"."nation",
-  "profit"."o_year" DESC;
+  "nation",
+  "o_year" DESC;
 
 --------------------------------------
 -- TPC-H 10
@@ -853,13 +853,13 @@ JOIN (
 ) AS "nation"
   ON "customer"."c_nationkey" = "nation"."n_nationkey"
 GROUP BY
-  "customer"."c_custkey",
-  "customer"."c_name",
-  "customer"."c_acctbal",
-  "customer"."c_phone",
-  "nation"."n_name",
-  "customer"."c_address",
-  "customer"."c_comment"
+  "c_custkey",
+  "c_name",
+  "c_acctbal",
+  "c_phone",
+  "n_name",
+  "c_address",
+  "c_comment"
 ORDER BY
   "revenue" DESC
 LIMIT 20;
@@ -923,7 +923,7 @@ JOIN "_e_0" AS "supplier"
 JOIN "_e_1" AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 GROUP BY
-  "partsupp"."ps_partkey"
+  "ps_partkey"
 HAVING
   SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") > (
     SELECT
@@ -1011,9 +1011,9 @@ JOIN (
 ) AS "lineitem"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 GROUP BY
-  "lineitem"."l_shipmode"
+  "l_shipmode"
 ORDER BY
-  "lineitem"."l_shipmode";
+  "l_shipmode";
 
 --------------------------------------
 -- TPC-H 13
@@ -1060,13 +1060,13 @@ FROM (
   ) AS "orders"
     ON "customer"."c_custkey" = "orders"."o_custkey"
   GROUP BY
-    "customer"."c_custkey"
+    "c_custkey"
 ) AS "c_orders"
 GROUP BY
-  "c_orders"."c_count"
+  "c_count"
 ORDER BY
   "custdist" DESC,
-  "c_orders"."c_count" DESC;
+  "c_count" DESC;
 
 --------------------------------------
 -- TPC-H 14
@@ -1157,7 +1157,7 @@ WITH "revenue" AS (
     "lineitem"."l_shipdate" < CAST('1996-04-01' AS DATE)
     AND "lineitem"."l_shipdate" >= CAST('1996-01-01' AS DATE)
   GROUP BY
-    "lineitem"."l_suppkey"
+    "l_suppkey"
 )
 SELECT
   "supplier"."s_suppkey" AS "s_suppkey",
@@ -1181,7 +1181,7 @@ JOIN "revenue"
   )
   AND "supplier"."s_suppkey" = "revenue"."supplier_no"
 ORDER BY
-  "supplier"."s_suppkey";
+  "s_suppkey";
 
 --------------------------------------
 -- TPC-H 16
@@ -1253,14 +1253,14 @@ JOIN (
 WHERE
   "_u_0"."s_suppkey" IS NULL
 GROUP BY
-  "part"."p_brand",
-  "part"."p_type",
-  "part"."p_size"
+  "p_brand",
+  "p_type",
+  "p_size"
 ORDER BY
   "supplier_cnt" DESC,
-  "part"."p_brand",
-  "part"."p_type",
-  "part"."p_size";
+  "p_brand",
+  "p_type",
+  "p_size";
 
 --------------------------------------
 -- TPC-H 17
@@ -1379,7 +1379,7 @@ LEFT JOIN (
     "lineitem"."l_orderkey" AS "l_orderkey"
   FROM "lineitem" AS "lineitem"
   GROUP BY
-    "lineitem"."l_orderkey",
+    "l_orderkey",
     "lineitem"."l_orderkey"
   HAVING
     SUM("lineitem"."l_quantity") > 300
@@ -1395,14 +1395,14 @@ JOIN (
 WHERE
   NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
-  "customer"."c_name",
-  "customer"."c_custkey",
-  "orders"."o_orderkey",
-  "orders"."o_orderdate",
-  "orders"."o_totalprice"
+  "c_name",
+  "c_custkey",
+  "o_orderkey",
+  "o_orderdate",
+  "o_totalprice"
 ORDER BY
-  "orders"."o_totalprice" DESC,
-  "orders"."o_orderdate"
+  "o_totalprice" DESC,
+  "o_orderdate"
 LIMIT 100;
 
 --------------------------------------
@@ -1616,7 +1616,7 @@ JOIN (
 WHERE
   NOT "_u_4"."ps_suppkey" IS NULL
 ORDER BY
-  "supplier"."s_name";
+  "s_name";
 
 --------------------------------------
 -- TPC-H 21
@@ -1729,10 +1729,10 @@ WHERE
   AND ARRAY_ANY("_u_0"."_u_1", ("_x") -> "_x" <> "l1"."l_suppkey")
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
-  "supplier"."s_name"
+  "s_name"
 ORDER BY
   "numwait" DESC,
-  "supplier"."s_name"
+  "s_name"
 LIMIT 100;
 
 --------------------------------------
@@ -1805,6 +1805,6 @@ FROM (
     AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
 ) AS "custsale"
 GROUP BY
-  "custsale"."cntrycode"
+  "cntrycode"
 ORDER BY
-  "custsale"."cntrycode";
+  "cntrycode";

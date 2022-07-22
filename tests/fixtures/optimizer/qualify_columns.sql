@@ -29,7 +29,7 @@ SELECT a + b FROM x;
 SELECT x.a + x.b AS "_col_0" FROM x AS x;
 
 SELECT a, SUM(b) FROM x WHERE a > 1 AND b > 1 GROUP BY a;
-SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
+SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY a;
 
 SELECT a AS j, b FROM x ORDER BY j;
 SELECT x.a AS j, x.b AS b FROM x AS x ORDER BY j;
@@ -41,12 +41,18 @@ SELECT a AS a, b FROM x ORDER BY a;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
 
 SELECT a, b FROM x ORDER BY a;
-SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a;
+SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
+
+SELECT a FROM x ORDER BY b;
+SELECT x.a AS a FROM x AS x ORDER BY x.b;
 
 # dialect: bigquery
 SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY row_num = 1;
 SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x QUALIFY row_num = 1;
 
+# dialect: bigquery
+SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY b ORDER BY a DESC) = 1;
+SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY b ORDER BY a DESC) = 1;
 
 --------------------------------------
 -- Derived tables

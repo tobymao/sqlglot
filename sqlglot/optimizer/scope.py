@@ -189,11 +189,8 @@ class Scope:
                 for column in scope.external_columns
             ]
 
-            # Expression.named_selects also includes unaliased columns.
-            # In this case, we want to be sure to only include selects that are aliased.
-            aliased_outputs = {
-                e.alias for e in self.expression.expressions if isinstance(e, exp.Alias)
-            }
+            named_outputs = {e.alias_or_name for e in self.expression.expressions}
+            named_outputs = {o for o in named_outputs if o}
 
             self._columns = [
                 c
@@ -202,7 +199,7 @@ class Scope:
                 or not (
                     # In some dialects, these clauses can reference output columns
                     c.find_ancestor(exp.Group, exp.Order, exp.Qualify)
-                    and c.name in aliased_outputs
+                    and c.name in named_outputs
                 )
             ]
         return self._columns

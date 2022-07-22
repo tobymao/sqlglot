@@ -189,9 +189,7 @@ class Scope:
                 for column in scope.external_columns
             ]
 
-            named_outputs = {
-                e.alias_or_name for e in self.expression.expressions if e.alias_or_name
-            }
+            named_outputs = {e.alias_or_name for e in self.expression.expressions}
 
             self._columns = [
                 c

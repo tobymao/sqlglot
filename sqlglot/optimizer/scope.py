@@ -191,9 +191,8 @@ class Scope:
 
             # Expression.named_selects also includes unaliased columns.
             # In this case, we want to be sure to only include selects that are aliased.
-            aliased_outputs = {
-                e.alias for e in self.expression.expressions if isinstance(e, exp.Alias)
-            }
+            aliased_outputs = {e.alias_or_name for e in self.expression.expressions}
+            aliased_outputs = {o for o in aliased_outputs if o}
 
             self._columns = [
                 c

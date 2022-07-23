@@ -23,9 +23,7 @@ def _map_sql(self, expression):
 class Spark(Hive):
     class Tokenizer(Hive.Tokenizer):
         KEYWORDS = {
-            k: v
-            for k, v in Hive.Tokenizer.KEYWORDS.items()
-            if v != TokenType.FILTER
+            k: v for k, v in Hive.Tokenizer.KEYWORDS.items() if v != TokenType.FILTER
         }
 
     class Parser(Hive.Parser):

@@ -1550,6 +1550,12 @@ class TestDialects(unittest.TestCase):
             write="hive",
         )
 
+        self.validate(
+            "ARRAY_FILTER(the_array, x -> x > 0)",
+            "FILTER(the_array, x -> x > 0)",
+            write="spark",
+        )
+
     def test_snowflake(self):
         self.validate(
             'x:a:"b c"',

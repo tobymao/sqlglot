@@ -121,9 +121,7 @@ class Presto(Dialect):
 
     class Tokenizer(Tokenizer):
         KEYWORDS = {
-            k: v
-            for k, v in Tokenizer.KEYWORDS.items()
-            if v != TokenType.FILTER
+            k: v for k, v in Tokenizer.KEYWORDS.items() if v != TokenType.FILTER
         }
 
     class Parser(Parser):

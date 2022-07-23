@@ -13,6 +13,7 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import Generator
 from sqlglot.helper import csv, list_get
 from sqlglot.parser import Parser
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 def _approx_distinct_sql(self, expression):
@@ -118,6 +119,13 @@ class Presto(Dialect):
     time_format = "'%Y-%m-%d %H:%i:%S'"
     time_mapping = MySQL.time_mapping
 
+    class Tokenizer(Tokenizer):
+        KEYWORDS = {
+            k: v
+            for k, v in Tokenizer.KEYWORDS.items()
+            if v != TokenType.FILTER
+        }
+
     class Parser(Parser):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
@@ -136,6 +144,7 @@ class Presto(Dialect):
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
+            "FILTER": exp.ArrayFilter.from_arg_list,
             "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
             "STRPOS": exp.StrPosition.from_arg_list,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
@@ -155,6 +164,7 @@ class Presto(Dialect):
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
             exp.ArrayContains: rename_func("CONTAINS"),
+            exp.ArrayFilter: rename_func("FILTER"),
             exp.ArraySize: rename_func("CARDINALITY"),
             exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.BitwiseLeftShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",

@@ -2,6 +2,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.hive import Hive, HiveMap
 from sqlglot.helper import list_get
+from sqlglot.tokens import TokenType
 
 
 def _create_sql(self, e):
@@ -20,9 +21,17 @@ def _map_sql(self, expression):
 
 
 class Spark(Hive):
+    class Tokenizer(Hive.Tokenizer):
+        KEYWORDS = {
+            k: v
+            for k, v in Hive.Tokenizer.KEYWORDS.items()
+            if v != TokenType.FILTER
+        }
+
     class Parser(Hive.Parser):
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,
+            "FILTER": exp.ArrayFilter.from_arg_list,
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "LEFT": lambda args: exp.Substring(
@@ -57,12 +66,12 @@ class Spark(Hive):
                 for k, v in Hive.Generator.TRANSFORMS.items()
                 if k not in {exp.ArraySort}
             },
+            exp.ArrayFilter: rename_func("FILTER"),
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Create: _create_sql,
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),
-            exp.ArrayFilter: rename_func("FILTER"),
             HiveMap: _map_sql,
         }

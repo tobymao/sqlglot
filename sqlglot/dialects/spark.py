@@ -63,5 +63,6 @@ class Spark(Hive):
             exp.Create: _create_sql,
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),
+            exp.ArrayFilter: rename_func("FILTER"),
             HiveMap: _map_sql,
         }

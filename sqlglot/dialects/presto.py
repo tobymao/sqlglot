@@ -118,12 +118,6 @@ class Presto(Dialect):
     index_offset = 1
     time_format = "'%Y-%m-%d %H:%i:%S'"
     time_mapping = MySQL.time_mapping
-
-    class Tokenizer(Tokenizer):
-        KEYWORDS = {
-            k: v for k, v in Tokenizer.KEYWORDS.items() if v != TokenType.FILTER
-        }
-
     class Parser(Parser):
         FUNCTIONS = {
             **Parser.FUNCTIONS,

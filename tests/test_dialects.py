@@ -1033,7 +1033,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "FILTER(the_array, x -> x > 0)",
-            "ARRAY_FILTER(the_array, x -> x > 0)",
+            "FILTER(the_array, x -> x > 0)",
             read="presto",
             identity=False,
         )
@@ -1571,9 +1571,9 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "FILTER(the_array, x -> x > 0)",
-            "ARRAY_FILTER(the_array, x -> x > 0)",
+            "FILTER(the_array, x -> x > 0)",
             read="spark",
-            identity=False,
+            write="presto",
         )
 
     def test_snowflake(self):

@@ -119,6 +119,7 @@ class Parser:
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_TIMESTAMP,
         TokenType.EXTRACT,
+        TokenType.FILTER,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,

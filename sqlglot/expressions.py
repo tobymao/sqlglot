@@ -1779,6 +1779,7 @@ class ArrayContains(Func):
 
 class ArrayFilter(Func):
     arg_types = {"this": True, "expression": True}
+    _sql_names = ["FILTER", "ARRAY_FILTER"]
 
 
 class ArraySize(Func):

@@ -1025,6 +1025,19 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "ARRAY_FILTER(the_array, x -> x > 0)",
+            "FILTER(the_array, x -> x > 0)",
+            write="presto",
+        )
+
+        self.validate(
+            "FILTER(the_array, x -> x > 0)",
+            "FILTER(the_array, x -> x > 0)",
+            read="presto",
+            identity=False,
+        )
+
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
@@ -1548,6 +1561,19 @@ class TestDialects(unittest.TestCase):
             "SELECT SORT_ARRAY(x)",
             read="spark",
             write="hive",
+        )
+
+        self.validate(
+            "ARRAY_FILTER(the_array, x -> x > 0)",
+            "FILTER(the_array, x -> x > 0)",
+            write="spark",
+        )
+
+        self.validate(
+            "FILTER(the_array, x -> x > 0)",
+            "FILTER(the_array, x -> x > 0)",
+            read="spark",
+            write="presto",
         )
 
     def test_snowflake(self):

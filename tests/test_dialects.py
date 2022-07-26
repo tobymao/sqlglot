@@ -102,7 +102,7 @@ class TestDialects(unittest.TestCase):
 
         self.validate(
             "DATEDIFF(a, b)",
-            "CAST(a AS DATE) - CAST(b AS DATE)",
+            "DATE_DIFF('day', CAST(b AS DATE), CAST(a AS DATE))",
             read="hive",
             write="duckdb",
         )
@@ -686,6 +686,19 @@ class TestDialects(unittest.TestCase):
             "DATE_DIFF(a, b)",
             "DATE_DIFF('day', b, a)",
             write="presto",
+            identity=False,
+        )
+        self.validate(
+            "DATE_DIFF(a, b)",
+            "DATE_DIFF('day', b, a)",
+            write="duckdb",
+            identity=False,
+        )
+        self.validate(
+            "DATE_DIFF('month', b, a)",
+            "DATE_DIFF('month', b, a)",
+            read="presto",
+            write="duckdb",
             identity=False,
         )
         self.validate(

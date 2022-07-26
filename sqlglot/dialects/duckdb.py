@@ -64,7 +64,7 @@ class DuckDB(Dialect):
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.DateAdd: _date_add,
-            exp.DateDiff: lambda self, e: f"{self.sql(e, 'this')} - {self.sql(e, 'expression')}",
+            exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
             exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.DateToDateStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {DuckDB.date_format})",
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",

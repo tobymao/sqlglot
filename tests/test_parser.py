@@ -28,6 +28,11 @@ class TestParser(unittest.TestCase):
         ]
         self.assertEqual(tables, ["a", "b.c", "d"])
 
+    def test_select(self):
+        self.assertIsNotNone(
+            parse_one("select * from (select 1) x order by x.y").args["order"]
+        )
+
     def test_command(self):
         expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1")
         self.assertEqual(len(expressions), 3)

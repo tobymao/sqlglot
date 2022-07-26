@@ -1337,6 +1337,7 @@ class Subquery(DerivedTable):
     arg_types = {
         "this": True,
         "alias": False,
+        "joins": False,
         "order": False,
         "limit": False,
         "offset": False,

@@ -978,6 +978,7 @@ class Parser:
         if not self._match(TokenType.TABLE_SAMPLE):
             return this
 
+        method = self._parse_var()
         bucket_numerator = None
         bucket_denominator = None
         bucket_field = None
@@ -1008,6 +1009,7 @@ class Parser:
         return self.expression(
             exp.TableSample,
             this=this,
+            method=method,
             bucket_numerator=bucket_numerator,
             bucket_denominator=bucket_denominator,
             bucket_field=bucket_field,

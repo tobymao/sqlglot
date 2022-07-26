@@ -404,6 +404,8 @@ class Generator:
 
     def tablesample_sql(self, expression):
         this = self.sql(expression, "this")
+        method = self.sql(expression, "method")
+        method = f" {method.upper()} " if method else ""
         numerator = self.sql(expression, "bucket_numerator")
         denominator = self.sql(expression, "bucket_denominator")
         field = self.sql(expression, "bucket_field")
@@ -414,7 +416,7 @@ class Generator:
         rows = self.sql(expression, "rows")
         rows = f"{rows} ROWS" if rows else ""
         size = self.sql(expression, "size")
-        return f"{this} TABLESAMPLE({bucket}{percent}{rows}{size})"
+        return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size})"
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"

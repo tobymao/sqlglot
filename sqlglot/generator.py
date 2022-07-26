@@ -567,13 +567,16 @@ class Generator:
 
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")
-        alias = f" AS {alias}" if alias else ""
-        order = self.sql(expression, "order")
-        limit = self.sql(expression, "limit")
-        offset = self.sql(expression, "offset")
-        if self.pretty:
-            return f"{self.wrap(expression)}{alias}{order}{limit}{offset}"
-        return f"({self.sql(expression, 'this')}){alias}{order}{limit}{offset}"
+
+        return csv(
+            self.wrap(expression),
+            f" AS {alias}" if alias else "",
+            *[self.sql(sql) for sql in expression.args.get("joins", [])],
+            self.sql(expression, "order"),
+            self.sql(expression, "limit"),
+            self.sql(expression, "offset"),
+            sep="",
+        )
 
     def qualify_sql(self, expression):
         this = self.indent(self.sql(expression, "this"))

@@ -692,14 +692,6 @@ class Parser:
             this=values,
         )
 
-    def _parse_values(self):
-        if not self._match(TokenType.VALUES):
-            return None
-
-        return self.expression(
-            exp.Values, expressions=self._parse_csv(self._parse_value)
-        )
-
     def _parse_value(self):
         self._match_l_paren()
         expressions = self._parse_csv(self._parse_conjunction)
@@ -782,13 +774,6 @@ class Parser:
         )
 
     def _parse_select(self):
-        this = self._parse_values()
-
-        if self._match(TokenType.L_PAREN):
-            this = self._parse_table()
-            self._match_r_paren()
-            this = self._parse_subquery(this)
-
         if self._match(TokenType.SELECT):
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
@@ -807,7 +792,7 @@ class Parser:
                 distinct=distinct,
                 expressions=expressions,
                 **{
-                    "from": this or self._parse_from(),
+                    "from": self._parse_from(),
                     "laterals": self._parse_laterals(),
                     "joins": self._parse_joins(),
                     "where": self._parse_where(),
@@ -821,14 +806,30 @@ class Parser:
                     "offset": self._parse_offset(),
                 },
             )
+        elif self._match(TokenType.L_PAREN):
+            this = self._parse_table()
+            if isinstance(this, exp.Subquery):
+                joins = self._parse_joins()
+                this.set("joins", joins)
+            self._match_r_paren()
+            this = self._parse_subquery(this)
+        elif self._match(TokenType.VALUES):
+            this = self.expression(
+                exp.Values, expressions=self._parse_csv(self._parse_value)
+            )
+        else:
+            this = None
 
         return self._parse_set_operations(this)
 
     def _parse_subquery(self, this):
+        alias = self._parse_table_alias()
+        if isinstance(this, exp.Select):
+            return self.expression(exp.Subquery, this=this, alias=alias)
         return self.expression(
             exp.Subquery,
             this=this,
-            alias=self._parse_table_alias(),
+            alias=alias,
             order=self._parse_order(),
             limit=self._parse_limit(),
             offset=self._parse_offset(),

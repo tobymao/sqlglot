@@ -32,6 +32,9 @@ class TestParser(unittest.TestCase):
         self.assertIsNotNone(
             parse_one("select * from (select 1) x order by x.y").args["order"]
         )
+        self.assertEqual(
+            len(parse_one("select * from (select 1) x cross join y").args["joins"]), 1
+        )
 
     def test_command(self):
         expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1")

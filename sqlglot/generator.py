@@ -540,7 +540,8 @@ class Generator:
 
     def select_sql(self, expression):
         hint = self.sql(expression, "hint")
-        distinct = " DISTINCT" if expression.args.get("distinct") else ""
+        distinct = self.sql(expression, "distinct")
+        distinct = f" {distinct}" if distinct else ""
         expressions = self.expressions(expression)
         select = "SELECT" if expressions else ""
         sep = self.sep() if expressions else ""
@@ -784,7 +785,12 @@ class Generator:
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 
     def distinct_sql(self, expression):
-        return f"DISTINCT {self.sql(expression, 'this')}"
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+
+        on = self.sql(expression, "on")
+        on = f" ON {on}" if on else ""
+        return f"DISTINCT{this}{on}"
 
     def ignorenulls_sql(self, expression):
         return f"{self.sql(expression, 'this')} IGNORE NULLS"

@@ -1280,7 +1280,7 @@ class Select(Subqueryable, Expression):
             Select: the modified expression.
         """
         instance = _maybe_copy(self, copy)
-        instance.set("distinct", distinct)
+        instance.set("distinct", Distinct() if distinct else None)
         return instance
 
     def ctas(self, table, properties=None, dialect=None, parser_opts=None, copy=True):
@@ -1648,7 +1648,7 @@ class Cast(Expression):
 
 
 class Distinct(Expression):
-    pass
+    arg_types = {"this": False, "on": False}
 
 
 class Extract(Expression):

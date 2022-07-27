@@ -88,7 +88,7 @@ class TokenType(AutoName):
     BUCKET = auto()
     BY = auto()
     CACHE = auto()
-    UNCACHE = auto()
+    CALL = auto()
     CASE = auto()
     CAST = auto()
     CHARACTER_SET = auto()
@@ -189,6 +189,7 @@ class TokenType(AutoName):
     TRUNCATE = auto()
     TRY_CAST = auto()
     UNBOUNDED = auto()
+    UNCACHE = auto()
     UNION = auto()
     UNNEST = auto()
     UPDATE = auto()
@@ -321,6 +322,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "BETWEEN": TokenType.BETWEEN,
         "BUCKET": TokenType.BUCKET,
         "BY": TokenType.BY,
+        "CALL": TokenType.CALL,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
@@ -479,6 +481,7 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.ADD_FILE,
         TokenType.ANALYZE,
         TokenType.BEGIN,
+        TokenType.CALL,
         TokenType.COMMIT,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,

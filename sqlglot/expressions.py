@@ -1355,7 +1355,7 @@ class Subquery(DerivedTable):
 
 class TableSample(Expression):
     arg_types = {
-        "this": True,
+        "this": False,
         "method": False,
         "bucket_numerator": False,
         "bucket_denominator": False,

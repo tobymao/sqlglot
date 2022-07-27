@@ -543,10 +543,9 @@ class Generator:
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
         expressions = self.expressions(expression)
-        select = "SELECT" if expressions else ""
         sep = self.sep() if expressions else ""
         sql = csv(
-            f"{select}{hint}{distinct}{sep}{expressions}",
+            f"SELECT{hint}{distinct}{sep}{expressions}",
             self.sql(expression, "from"),
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],

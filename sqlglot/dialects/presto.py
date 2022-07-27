@@ -5,7 +5,6 @@ from sqlglot.dialects.dialect import (
     if_sql,
     no_ilike_sql,
     no_safe_divide_sql,
-    no_tablesample_sql,
     rename_func,
     struct_extract_sql,
 )
@@ -183,7 +182,6 @@ class Presto(Dialect):
             exp.StrToTime: lambda self, e: f"DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.StructExtract: struct_extract_sql,
-            exp.TableSample: no_tablesample_sql,
             exp.TimeStrToDate: _date_parse_sql,
             exp.TimeStrToTime: _date_parse_sql,
             exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.time_format}))",

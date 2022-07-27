@@ -837,11 +837,10 @@ class TestDialects(unittest.TestCase):
             )
 
         self.validate(
-            "SELECT * FROM x TABLESAMPLE(10)",
-            "SELECT * FROM x",
+            "SELECT * FROM x TABLESAMPLE(10) y",
+            "SELECT * FROM x AS y TABLESAMPLE(10)",
             read="hive",
             write="presto",
-            unsupported_level=ErrorLevel.IGNORE,
         )
 
         self.validate("'\u6bdb'", "'\u6bdb'", read="presto")
@@ -891,14 +890,6 @@ class TestDialects(unittest.TestCase):
                 "SELECT ARRAY_SORT(x, (left, right) -> -1)",
                 read="presto",
                 write="hive",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM x TABLESAMPLE(10)",
-                read="hive",
-                write="presto",
                 unsupported_level=ErrorLevel.RAISE,
             )
 
@@ -1403,6 +1394,19 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "TS_OR_DI_TO_DI(x)",
             "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            read="hive",
+            write="presto",
+        )
+
+        self.validate(
+            "SELECT * FROM x TABLESAMPLE(1) foo",
+            "SELECT * FROM x TABLESAMPLE(1) AS foo",
+            read="hive",
+            write="hive",
+        )
+        self.validate(
+            "SELECT * FROM x TABLESAMPLE(1) foo",
+            "SELECT * FROM x AS foo TABLESAMPLE(1)",
             read="hive",
             write="presto",
         )

@@ -139,6 +139,7 @@ class HiveMap(exp.Map):
 class Hive(Dialect):
     identifier = "`"
     escape = "\\"
+    alias_post_tablesample = True
 
     time_mapping = {
         "y": "%Y",

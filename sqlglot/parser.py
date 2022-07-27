@@ -21,6 +21,8 @@ class Parser:
             Default: 50.
         index_offset (int): Index offset for arrays eg ARRAY[0] vs ARRAY[1] as the head of a list
             Default: 0
+        alias_post_tablesample (bool): If the table alias comes after tablesample
+            Default: False
     """
 
     FUNCTIONS = {
@@ -102,7 +104,6 @@ class Parser:
         TokenType.SET,
         TokenType.SHOW,
         TokenType.TABLE,
-        TokenType.TABLE_SAMPLE,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRUNCATE,
@@ -239,6 +240,7 @@ class Parser:
         "errors",
         "index_offset",
         "unnest_column_only",
+        "alias_post_tablesample",
         "_tokens",
         "_chunks",
         "_index",
@@ -254,11 +256,13 @@ class Parser:
         error_message_context=100,
         index_offset=0,
         unnest_column_only=False,
+        alias_post_tablesample=False,
     ):
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
         self.unnest_column_only = unnest_column_only
+        self.alias_post_tablesample = alias_post_tablesample
         self.reset()
 
     def reset(self):
@@ -940,11 +944,21 @@ class Parser:
         if schema:
             return self._parse_schema(this=this)
 
-        this = self._parse_table_sample(this)
+        if self.alias_post_tablesample:
+            table_sample = self._parse_table_sample()
+
         alias = self._parse_table_alias()
 
         if alias:
-            return self.expression(exp.Alias, this=this, alias=alias)
+            this = self.expression(exp.Alias, this=this, alias=alias)
+
+        if not self.alias_post_tablesample:
+            table_sample = self._parse_table_sample()
+
+        if table_sample:
+            table_sample.set("this", this)
+            this = table_sample
+
         return this
 
     def _parse_unnest(self):
@@ -974,9 +988,9 @@ class Parser:
             alias=alias,
         )
 
-    def _parse_table_sample(self, this):
+    def _parse_table_sample(self):
         if not self._match(TokenType.TABLE_SAMPLE):
-            return this
+            return None
 
         method = self._parse_var()
         bucket_numerator = None
@@ -1008,7 +1022,6 @@ class Parser:
 
         return self.expression(
             exp.TableSample,
-            this=this,
             method=method,
             bucket_numerator=bucket_numerator,
             bucket_denominator=bucket_denominator,

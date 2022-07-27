@@ -29,6 +29,8 @@ class Generator:
         pad (int): determines padding in a formatted string. Default: 2.
         indent (int): determines the size of indentation in a formatted string. Default: 4.
         unnest_column_only (bool): if true unnest table aliases are considered only as column aliases
+        alias_post_tablesample (bool): If the table alias comes after tablesample
+            Default: False
         unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
             unsupported expressions. Default ErrorLevel.WARN.
     """
@@ -54,6 +56,7 @@ class Generator:
         "pad",
         "index_offset",
         "unnest_column_only",
+        "alias_post_tablesample",
         "unsupported_level",
         "unsupported_messages",
         "_indent",
@@ -73,6 +76,7 @@ class Generator:
         indent=2,
         index_offset=0,
         unnest_column_only=False,
+        alias_post_tablesample=False,
         unsupported_level=ErrorLevel.WARN,
     ):
         # pylint: disable=too-many-arguments
@@ -90,6 +94,7 @@ class Generator:
         self.pad = pad
         self.index_offset = index_offset
         self.unnest_column_only = unnest_column_only
+        self.alias_post_tablesample = alias_post_tablesample
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
         self._indent = indent
@@ -403,7 +408,12 @@ class Generator:
         )
 
     def tablesample_sql(self, expression):
-        this = self.sql(expression, "this")
+        if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):
+            this = self.sql(expression.this, "this")
+            alias = f" AS {self.sql(expression.this, 'alias')}"
+        else:
+            this = self.sql(expression, "this")
+            alias = ""
         method = self.sql(expression, "method")
         method = f" {method.upper()} " if method else ""
         numerator = self.sql(expression, "bucket_numerator")
@@ -416,7 +426,7 @@ class Generator:
         rows = self.sql(expression, "rows")
         rows = f"{rows} ROWS" if rows else ""
         size = self.sql(expression, "size")
-        return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size})"
+        return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size}){alias}"
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"

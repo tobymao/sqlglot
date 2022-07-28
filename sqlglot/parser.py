@@ -229,6 +229,18 @@ class Parser:
         TokenType.UNCACHE: "_parse_uncache",
     }
 
+    PRIMARY_PARSERS = {
+        TokenType.STRING: lambda _, token: exp.Literal.string(token.text),
+        TokenType.NUMBER: lambda _, token: exp.Literal.number(token.text),
+        TokenType.STAR: lambda self, _: exp.Star(
+            **{"except": self._parse_except(), "replace": self._parse_replace()}
+        ),
+        TokenType.NULL: lambda *_: exp.Null(),
+        TokenType.TRUE: lambda *_: exp.Boolean(this=True),
+        TokenType.FALSE: lambda *_: exp.Boolean(this=False),
+        TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
+    }
+
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     STRICT_CAST = True
@@ -1323,17 +1335,8 @@ class Parser:
         return this
 
     def _parse_primary(self):
-        this = (
-            self._parse_string(False)
-            or self._parse_number(False)
-            or self._parse_star()
-            or self._parse_null()
-            or self._parse_boolean()
-            or self._parse_placeholder()
-        )
-
-        if this:
-            return this
+        if self._match_set(self.PRIMARY_PARSERS):
+            return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
 
         if self._match(TokenType.L_PAREN):
             this = self._parse_conjunction() or self._parse_with()
@@ -1686,25 +1689,25 @@ class Parser:
             this=self._prev.text, quoted=False
         )
 
-    def _parse_string(self, placeholder=True):
+    def _parse_string(self):
         if self._match(TokenType.STRING):
             return exp.Literal.string(self._prev.text)
-        return self._parse_placeholder() if placeholder else None
+        return self._parse_placeholder()
 
-    def _parse_number(self, placeholder=True):
+    def _parse_number(self):
         if self._match(TokenType.NUMBER):
             return exp.Literal.number(self._prev.text)
-        return self._parse_placeholder() if placeholder else None
+        return self._parse_placeholder()
 
-    def _parse_identifier(self, placeholder=True):
+    def _parse_identifier(self):
         if self._match(TokenType.IDENTIFIER):
             return exp.Identifier(this=self._prev.text, quoted=True)
-        return self._parse_placeholder() if placeholder else None
+        return self._parse_placeholder()
 
-    def _parse_var(self, placeholder=True):
+    def _parse_var(self):
         if self._match(TokenType.VAR):
             return exp.Var(this=self._prev.text)
-        return self._parse_placeholder() if placeholder else None
+        return self._parse_placeholder()
 
     def _parse_null(self):
         if self._match(TokenType.NULL):

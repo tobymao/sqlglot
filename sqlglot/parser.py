@@ -1438,10 +1438,9 @@ class Parser:
         )
 
     def _parse_schema(self, this=None):
-        if (
-            not self._match(TokenType.L_PAREN)
-            or self._curr.token_type == TokenType.SELECT
-        ):
+        index = self._index
+        if not self._match(TokenType.L_PAREN) or self._match(TokenType.SELECT):
+            self._retreat(index)
             return this
 
         args = self._parse_csv(lambda: self._parse_column_def(self._parse_field()))

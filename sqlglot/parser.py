@@ -70,7 +70,7 @@ class Parser:
         TokenType.SOME: exp.Any,
     }
 
-    SINGLE_TOKENS = set(Tokenizer.SINGLE_TOKENS.values())
+    RESERVED_KEYWORDS = {*Tokenizer.SINGLE_TOKENS.values(), TokenType.SELECT}
 
     ID_VAR_TOKENS = {
         TokenType.VAR,
@@ -625,7 +625,6 @@ class Parser:
         overwrite = self._match(TokenType.OVERWRITE)
         self._match(TokenType.INTO)
         self._match(TokenType.TABLE)
-
         return self.expression(
             exp.Insert,
             this=self._parse_table(schema=True),
@@ -1439,7 +1438,10 @@ class Parser:
         )
 
     def _parse_schema(self, this=None):
-        if not self._match(TokenType.L_PAREN):
+        if (
+            not self._match(TokenType.L_PAREN)
+            or self._curr.token_type == TokenType.SELECT
+        ):
             return this
 
         args = self._parse_csv(lambda: self._parse_column_def(self._parse_field()))
@@ -1682,7 +1684,7 @@ class Parser:
         if identifier:
             return identifier
 
-        if any_token and self._curr.token_type not in self.SINGLE_TOKENS:
+        if any_token and self._curr.token_type not in self.RESERVED_KEYWORDS:
             return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
 
         return self._match_set(self.ID_VAR_TOKENS) and exp.Identifier(

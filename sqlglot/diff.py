@@ -69,7 +69,7 @@ def diff(source, target):
         the list of Insert, Remove, Move, Update and Keep objects for each node in the source and the target expression trees.
         This list represents a sequence of steps needed to transform the source expression tree into the target one.
     """
-    return ChangeDistiller().diff(source, target)
+    return ChangeDistiller().diff(source.copy(), target.copy())
 
 
 LEAF_EXPRESSION_TYPES = (

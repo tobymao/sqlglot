@@ -52,14 +52,6 @@ After the naïve approach was proven to be infeasible, the next question I asked
 
 Therefore, I had this “brilliant” (actually not) idea to transform trees into sequences by traversing them in topological order, and then applying the Myers algorithm on resulting sequences while using a custom heuristics when checking the equality of two nodes. Unsurprisingly, comparing sequences of strings is quite different from comparing hierarchical tree structures, and by flattening trees into sequences, we lose a lot of relevant context. This resulted in a terrible performance of this algorithm on ASTs. It often matched completely unrelated nodes, even when the two trees were mostly the same, and produced extremely inaccurate lists of changes overall. After playing around with it a little and tweaking my equality heuristics to improve accuracy, I ultimately scrapped the whole implementation and went back to the drawing board.
 
-### Notable Mentions
-
-This section is dedicated to solutions that I’ve investigated, but haven’t tried.
-
-First, this section wouldn’t be complete without Tristan Hume’s [blog post](https://thume.ca/2017/06/17/tree-diffing/). Tristan’s solution has a lot in common with the Myers algorithm plus heuristics that is much more clever than what I came up with. The implementation relies on a combination of [dynamic programming](https://en.wikipedia.org/wiki/Dynamic_programming) and [A* search algorithm](https://en.wikipedia.org/wiki/A*_search_algorithm) to explore the space of possible matchings and pick the best ones. It seemed to have worked well for Tistan’s specific use case, but after my negative experience with the Myers algorithm, I decided to try something different.
-
-Another notable approach is the Gumtree algorithm by Falleri et al. [2]. I discovered this paper after I’d already implemented the algorithm that is the main focus of this post. In sections 5.2 and 5.3 of their paper, the authors compare the two algorithms side by side and claim that Gumtree is significantly better in terms of both runtime performance and accuracy when evaluated on 12 792 pairs of Java source files. This doesn’t surprise me, as the algorithm takes the height of subtrees into account. In my tests, I definitely saw scenarios in which this would have helped. I hope to try this algorithm out at some point, and there is a good chance you see me writing about it in my future posts.
-
 ## Change Distiller
 
 The algorithm I settled on at the end was Change Distiller, created by Fluri et al. [3], which in turn is an improvement over the core idea described by Chawathe et al. [4].
@@ -360,7 +352,7 @@ The implementation works especially well when coupled with the SQLGlot’s query
 
 ### Optimizations
 
-The worst case runtime complexity of this algorithm is not exactly stellar: O(n^2 * log n^2). This is because of the leaf matching process, which involves ranking a cartesian product between all leaf nodes of compared trees. Unsurprisingly, the algorithm takes a considerable time to finish for bigger queries. That’s where the Gumtree’s promise of O(n^2) in the worst case looks particularly tempting.
+The worst case runtime complexity of this algorithm is not exactly stellar: O(n^2 * log n^2). This is because of the leaf matching process, which involves ranking a cartesian product between all leaf nodes of compared trees. Unsurprisingly, the algorithm takes a considerable time to finish for bigger queries.
 
 There are still a few basic things we can do in our implementation to help improve performance:
 
@@ -369,6 +361,14 @@ There are still a few basic things we can do in our implementation to help impro
 * Compute the canonical SQL string representation for each tree once while caching string representations of all inner nodes. This prevents redundant tree traversals when bigrams are computed.
 
 At the time of writing only the first two optimizations have been implemented, so there is an opportunity to contribute for anyone who’s interested.
+
+## Alternative Solutions
+
+This section is dedicated to solutions that I’ve investigated, but haven’t tried.
+
+First, this section wouldn’t be complete without Tristan Hume’s [blog post](https://thume.ca/2017/06/17/tree-diffing/). Tristan’s solution has a lot in common with the Myers algorithm plus heuristics that is much more clever than what I came up with. The implementation relies on a combination of [dynamic programming](https://en.wikipedia.org/wiki/Dynamic_programming) and [A* search algorithm](https://en.wikipedia.org/wiki/A*_search_algorithm) to explore the space of possible matchings and pick the best ones. It seemed to have worked well for Tistan’s specific use case, but after my negative experience with the Myers algorithm, I decided to try something different.
+
+Another notable approach is the Gumtree algorithm by Falleri et al. [2]. I discovered this paper after I’d already implemented the algorithm that is the main focus of this post. In sections 5.2 and 5.3 of their paper, the authors compare the two algorithms side by side and claim that Gumtree is significantly better in terms of both runtime performance and accuracy when evaluated on 12 792 pairs of Java source files. This doesn’t surprise me, as the algorithm takes the height of subtrees into account. In my tests, I definitely saw scenarios in which this context would have helped. On top of that, the authors promise O(n^2) runtime complexity in the worst case which, given the Change Distiller's O(n^2 * log n^2), looks particularly tempting. I hope to try this algorithm out at some point, and there is a good chance you see me writing about it in my future posts.
 
 ## Conclusion
 

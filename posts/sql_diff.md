@@ -54,7 +54,7 @@ Therefore, I had this “brilliant” (actually not) idea to transform trees int
 
 ## Change Distiller
 
-The algorithm I settled on at the end was Change Distiller, created by Fluri et al. [3], which in turn is an improvement over the core idea described by Chawathe et al. [4].
+The algorithm I settled on at the end was Change Distiller, created by Fluri et al. [2], which in turn is an improvement over the core idea described by Chawathe et al. [3].
 
 The algorithm consists of two high-level steps:
 
@@ -75,7 +75,7 @@ Using the example provided at the beginning of the post, the process of building
 
 First, let’s analyze the similarity score. Then, we’ll discuss matching criteria.
 
-The similarity score proposed by Fluri et al. [3] is a [dice coefficient ](https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient)applied to [bigrams](https://en.wikipedia.org/wiki/Bigram) of respective node values. A bigram is a sequence of two adjacent elements from a string computed in a sliding window fashion:
+The similarity score proposed by Fluri et al. [2] is a [dice coefficient ](https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient)applied to [bigrams](https://en.wikipedia.org/wiki/Bigram) of respective node values. A bigram is a sequence of two adjacent elements from a string computed in a sliding window fashion:
 
 ```python
 def bigram(string):
@@ -123,7 +123,7 @@ def dice_coefficient(source, target):
 
 To compute a bigram given a tree node, we first transform the node into its canonical SQL representation,so that the `Literal(123)` node becomes just “123” and the `Identifier(“a”)` node becomes just “a”. We also handle a scenario when strings are too short to derive bigrams. In this case, we fallback to checking the two nodes for equality.
 
-Now when we know how to compute the similarity score, we can take care of the matching criteria for leaf nodes. In the original paper [3], the matching criteria is formalized as follows:
+Now when we know how to compute the similarity score, we can take care of the matching criteria for leaf nodes. In the original paper [2], the matching criteria is formalized as follows:
 
 ![Matching criteria for leaf nodes](sql_diff_images/matching_criteria_1.png)
 
@@ -275,7 +275,7 @@ for source_node, target_node in matching_set:
         edit_script.append(Update(source_node, target_node))
 ```
 
-If a matching pair represents a pair of leaf nodes, we check if they are the same to decide whether an update took place. For inner node pairs, we also need to compare the positions of their respective children to detect node movements. Chawathe et al. [4] suggest applying the [longest common subsequence ](https://en.wikipedia.org/wiki/Longest_common_subsequence_problem)(LCS) algorithm which, no surprise here, was described by Myers himself [1]. There is a small catch, however: instead of checking the equality of two children nodes, we need to check whether the two nodes form a pair that is a part of our matching set.
+If a matching pair represents a pair of leaf nodes, we check if they are the same to decide whether an update took place. For inner node pairs, we also need to compare the positions of their respective children to detect node movements. Chawathe et al. [3] suggest applying the [longest common subsequence ](https://en.wikipedia.org/wiki/Longest_common_subsequence_problem)(LCS) algorithm which, no surprise here, was described by Myers himself [1]. There is a small catch, however: instead of checking the equality of two children nodes, we need to check whether the two nodes form a pair that is a part of our matching set.
 
 Now with this knowledge, the implementation becomes straightforward:
 
@@ -368,13 +368,13 @@ This section is dedicated to solutions that I’ve investigated, but haven’t t
 
 First, this section wouldn’t be complete without Tristan Hume’s [blog post](https://thume.ca/2017/06/17/tree-diffing/). Tristan’s solution has a lot in common with the Myers algorithm plus heuristics that is much more clever than what I came up with. The implementation relies on a combination of [dynamic programming](https://en.wikipedia.org/wiki/Dynamic_programming) and [A* search algorithm](https://en.wikipedia.org/wiki/A*_search_algorithm) to explore the space of possible matchings and pick the best ones. It seemed to have worked well for Tistan’s specific use case, but after my negative experience with the Myers algorithm, I decided to try something different.
 
-Another notable approach is the Gumtree algorithm by Falleri et al. [2]. I discovered this paper after I’d already implemented the algorithm that is the main focus of this post. In sections 5.2 and 5.3 of their paper, the authors compare the two algorithms side by side and claim that Gumtree is significantly better in terms of both runtime performance and accuracy when evaluated on 12 792 pairs of Java source files. This doesn’t surprise me, as the algorithm takes the height of subtrees into account. In my tests, I definitely saw scenarios in which this context would have helped. On top of that, the authors promise O(n^2) runtime complexity in the worst case which, given the Change Distiller's O(n^2 * log n^2), looks particularly tempting. I hope to try this algorithm out at some point, and there is a good chance you see me writing about it in my future posts.
+Another notable approach is the Gumtree algorithm by Falleri et al. [4]. I discovered this paper after I’d already implemented the algorithm that is the main focus of this post. In sections 5.2 and 5.3 of their paper, the authors compare the two algorithms side by side and claim that Gumtree is significantly better in terms of both runtime performance and accuracy when evaluated on 12 792 pairs of Java source files. This doesn’t surprise me, as the algorithm takes the height of subtrees into account. In my tests, I definitely saw scenarios in which this context would have helped. On top of that, the authors promise O(n^2) runtime complexity in the worst case which, given the Change Distiller's O(n^2 * log n^2), looks particularly tempting. I hope to try this algorithm out at some point, and there is a good chance you see me writing about it in my future posts.
 
 ## Conclusion
 
 The Change Distiller algorithm yielded quite satisfactory results in most of my tests. The scenarios in which it fell short mostly concerned identical (or very similar) subtrees located in different parts of the AST. In those cases, node mismatches were frequent and, as a result, edit scripts were somewhat suboptimal.
 
-Additionally, the runtime performance of the algorithm leaves a lot to be desired. On trees with 1000 leaf nodes each, the algorithm takes a little under 2 seconds to complete. My implementation still has room for improvement, but this should give you a rough idea of what to expect. It appears that the Gumtree algorithm [2] can help address both of these points. I hope to find bandwidth to work on it soon and then compare the two algorithms side-by-side to find out which one performs better on SQL specifically. In the meantime, Change Distiller definitely gets the job done, and I can now proceed with applying it to some of the use cases I mentioned at the beginning of this post.
+Additionally, the runtime performance of the algorithm leaves a lot to be desired. On trees with 1000 leaf nodes each, the algorithm takes a little under 2 seconds to complete. My implementation still has room for improvement, but this should give you a rough idea of what to expect. It appears that the Gumtree algorithm [4] can help address both of these points. I hope to find bandwidth to work on it soon and then compare the two algorithms side-by-side to find out which one performs better on SQL specifically. In the meantime, Change Distiller definitely gets the job done, and I can now proceed with applying it to some of the use cases I mentioned at the beginning of this post.
 
 I’m also curious to learn whether other folks in the industry faced a similar problem, and how they approached it. If you did something similar, I’m interested to hear about your experience.
 
@@ -382,8 +382,8 @@ I’m also curious to learn whether other folks in the industry faced a similar 
 
 [1] Eugene W. Myers. [An O(ND) Difference Algorithm and Its Variations](http://www.xmailserver.org/diff2.pdf). Algorithmica 1(2): 251-266 (1986)
 
-[2] Jean-Rémy Falleri, Floréal Morandat, Xavier Blanc, Matias Martinez, Martin Monperrus. [Fine-grained and Accurate Source Code Differencing](https://hal.archives-ouvertes.fr/hal-01054552/document). Proceedings of the International Conference on Automated Software Engineering, 2014, Västeras, Sweden. pp.313-324, 10.1145/2642937.2642982. hal-01054552
+[2] B. Fluri, M. Wursch, M. Pinzger, and H. Gall. [Change Distilling: Tree differencing for fine-grained source code change extraction](https://www.researchgate.net/publication/3189787_Change_DistillingTree_Differencing_for_Fine-Grained_Source_Code_Change_Extraction). IEEE Trans. Software Eng., 33(11):725–743, 2007.
 
-[3] B. Fluri, M. Wursch, M. Pinzger, and H. Gall. [Change Distilling: Tree differencing for fine-grained source code change extraction](https://www.researchgate.net/publication/3189787_Change_DistillingTree_Differencing_for_Fine-Grained_Source_Code_Change_Extraction). IEEE Trans. Software Eng., 33(11):725–743, 2007.
+[3] S.S. Chawathe, A. Rajaraman, H. Garcia-Molina, and J. Widom. [Change Detection in Hierarchically Structured Information](http://ilpubs.stanford.edu:8090/115/1/1995-46.pdf). Proc. ACM Sigmod Int’l Conf. Management of Data, pp. 493-504, June 1996
 
-[4] S.S. Chawathe, A. Rajaraman, H. Garcia-Molina, and J. Widom. [Change Detection in Hierarchically Structured Information](http://ilpubs.stanford.edu:8090/115/1/1995-46.pdf). Proc. ACM Sigmod Int’l Conf. Management of Data, pp. 493-504, June 1996
+[4] Jean-Rémy Falleri, Floréal Morandat, Xavier Blanc, Matias Martinez, Martin Monperrus. [Fine-grained and Accurate Source Code Differencing](https://hal.archives-ouvertes.fr/hal-01054552/document). Proceedings of the International Conference on Automated Software Engineering, 2014, Västeras, Sweden. pp.313-324, 10.1145/2642937.2642982. hal-01054552

@@ -11,6 +11,7 @@ class ScopeType(Enum):
     DERIVED_TABLE = auto()
     CTE = auto()
     UNION = auto()
+    UNNEST = auto()
 
 
 class Scope:
@@ -285,6 +286,11 @@ class Scope:
         return self.scope_type == ScopeType.SUBQUERY
 
     @property
+    def is_unnest(self):
+        """Determine if this scope is an unnest"""
+        return self.scope_type == ScopeType.UNNEST
+
+    @property
     def is_correlated_subquery(self):
         """Determine if this scope is a correlated subquery"""
         return bool(self.is_subquery and self.external_columns)
@@ -365,16 +371,18 @@ def _traverse_union(scope):
 
 def _traverse_derived_tables(derived_tables, scope, scope_type):
     sources = {}
-    chain = scope_type == ScopeType.CTE
+
     for derived_table in derived_tables:
         for child_scope in _traverse_scope(
             scope.branch(
                 derived_table
                 if isinstance(derived_table, (exp.Unnest, exp.Lateral))
                 else derived_table.this,
-                add_sources=sources if chain else None,
+                add_sources=sources if scope_type == ScopeType.CTE else None,
                 outer_column_list=derived_table.alias_column_names,
-                scope_type=scope_type,
+                scope_type=ScopeType.UNNEST
+                if isinstance(derived_table, exp.Unnest)
+                else scope_type,
             )
         ):
             yield child_scope

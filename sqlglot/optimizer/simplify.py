@@ -1,5 +1,7 @@
-import itertools
 import datetime
+import functools
+import itertools
+from collections import deque
 from decimal import Decimal
 
 from sqlglot import exp
@@ -208,65 +210,89 @@ def absorb_and_eliminate(expression):
 
 def simplify_literals(expression):
     if isinstance(expression, exp.Binary):
-        a, b = expression.unnest_operands()
+        operands = []
+        queue = deque(expression.flatten(unnest=False))
+        size = len(queue)
 
-        if isinstance(expression, exp.Is):
-            if isinstance(b, exp.Not):
-                c = b.this
-                not_ = True
+        while queue:
+            a = queue.popleft()
+
+            for b in queue:
+                result = _simplify_binary(expression, a, b)
+
+                if result:
+                    queue.remove(b)
+                    queue.append(result)
+                    break
             else:
-                c = b
-                not_ = False
+                operands.append(a)
 
-            if c == NULL:
-                if isinstance(a, exp.Literal):
-                    return TRUE if not_ else FALSE
-                if a == NULL:
-                    return FALSE if not_ else TRUE
-        elif NULL in (a, b):
-            return NULL
-
-        if isinstance(expression, exp.EQ) and a == b:
-            return TRUE
-
-        if is_number(a) and is_number(b):
-            a = int(a.name) if a.is_int else Decimal(a.name)
-            b = int(b.name) if b.is_int else Decimal(b.name)
-
-            if isinstance(expression, exp.Add):
-                return exp.Literal.number(a + b)
-            if isinstance(expression, exp.Sub):
-                return exp.Literal.number(a - b)
-            if isinstance(expression, exp.Mul):
-                return exp.Literal.number(a * b)
-            if isinstance(expression, exp.Div):
-                if isinstance(a, int) and isinstance(b, int):
-                    return exp.Literal.number(a // b)
-                return exp.Literal.number(a / b)
-
-            boolean = eval_boolean(expression, a, b)
-
-            if boolean:
-                return boolean
-        elif is_string(a) and is_string(b):
-            boolean = eval_boolean(expression, a, b)
-
-            if boolean:
-                return boolean
-        elif isinstance(a, exp.Cast) and isinstance(b, exp.Interval):
-            a, b = extract_date(a), extract_interval(b)
-            if b:
-                if isinstance(expression, exp.Add):
-                    return date_literal(a + b)
-                if isinstance(expression, exp.Sub):
-                    return date_literal(a - b)
-        elif isinstance(a, exp.Interval) and isinstance(b, exp.Cast):
-            a, b = extract_interval(a), extract_date(b)
-            # you cannot subtract a date from an interval
-            if a and isinstance(expression, exp.Add):
-                return date_literal(a + b)
+        if len(operands) < size:
+            return functools.reduce(
+                lambda a, b: expression.__class__(this=a, expression=b), operands
+            )
 
     return expression
+
+
+def _simplify_binary(expression, a, b):
+    if isinstance(expression, exp.Is):
+        if isinstance(b, exp.Not):
+            c = b.this
+            not_ = True
+        else:
+            c = b
+            not_ = False
+
+        if c == NULL:
+            if isinstance(a, exp.Literal):
+                return TRUE if not_ else FALSE
+            if a == NULL:
+                return FALSE if not_ else TRUE
+    elif NULL in (a, b):
+        return NULL
+
+    if isinstance(expression, exp.EQ) and a == b:
+        return TRUE
+
+    if is_number(a) and is_number(b):
+        a = int(a.name) if a.is_int else Decimal(a.name)
+        b = int(b.name) if b.is_int else Decimal(b.name)
+
+        if isinstance(expression, exp.Add):
+            return exp.Literal.number(a + b)
+        if isinstance(expression, exp.Sub):
+            return exp.Literal.number(a - b)
+        if isinstance(expression, exp.Mul):
+            return exp.Literal.number(a * b)
+        if isinstance(expression, exp.Div):
+            if isinstance(a, int) and isinstance(b, int):
+                return exp.Literal.number(a // b)
+            return exp.Literal.number(a / b)
+
+        boolean = eval_boolean(expression, a, b)
+
+        if boolean:
+            return boolean
+    elif is_string(a) and is_string(b):
+        boolean = eval_boolean(expression, a, b)
+
+        if boolean:
+            return boolean
+    elif isinstance(a, exp.Cast) and isinstance(b, exp.Interval):
+        a, b = extract_date(a), extract_interval(b)
+        if b:
+            if isinstance(expression, exp.Add):
+                return date_literal(a + b)
+            if isinstance(expression, exp.Sub):
+                return date_literal(a - b)
+    elif isinstance(a, exp.Interval) and isinstance(b, exp.Cast):
+        a, b = extract_interval(a), extract_date(b)
+        # you cannot subtract a date from an interval
+        if a and isinstance(expression, exp.Add):
+            return date_literal(a + b)
+
+    return None
 
 
 def simplify_parens(expression):

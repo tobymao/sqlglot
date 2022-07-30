@@ -126,6 +126,13 @@ SELECT x.a AS a FROM x AS x WHERE x.b IN (SELECT x.b AS b FROM y AS x);
 SELECT a FROM x AS i WHERE b IN (SELECT b FROM y AS j WHERE j.b IN (SELECT c FROM y AS k WHERE k.b = j.b));
 SELECT i.a AS a FROM x AS i WHERE i.b IN (SELECT j.b AS b FROM y AS j WHERE j.b IN (SELECT k.c AS c FROM y AS k WHERE k.b = j.b));
 
+# dialect: bigquery
+SELECT aa FROM x, UNNEST(a) AS aa;
+SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
+
+SELECT aa FROM x, UNNEST(a) AS t(aa);
+SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
+
 --------------------------------------
 -- Expand *
 --------------------------------------

@@ -154,14 +154,16 @@ def _qualify_columns(scope, schema):
 
             column_table = unambiguous_columns.get(column_name)
 
-            if not scope.is_subquery:
+            if not scope.is_subquery and not scope.is_unnest:
                 if column_name not in all_columns:
                     raise OptimizeError(f"Unknown column: {column_name}")
 
-                if not column_table:
+                if column_table is None:
                     raise OptimizeError(f"Ambiguous column: {column_name}")
 
-            column.set("table", exp.to_identifier(column_table))
+            # column_table can be a '' because bigquery unnest has no table alias
+            if column_table:
+                column.set("table", exp.to_identifier(column_table))
 
 
 def _expand_stars(scope, schema):
@@ -252,7 +254,11 @@ def _qualify_outputs(scope):
 
 
 def _check_unknown_tables(scope):
-    if scope.external_columns and not scope.is_correlated_subquery:
+    if (
+        scope.external_columns
+        and not scope.is_unnest
+        and not scope.is_correlated_subquery
+    ):
         raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
 
 

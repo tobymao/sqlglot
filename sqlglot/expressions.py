@@ -57,6 +57,10 @@ class Expression(metaclass=_Expression):
         return self.args.get("this")
 
     @property
+    def expression(self):
+        return self.args.get("expression")
+
+    @property
     def expressions(self):
         return self.args.get("expressions") or []
 
@@ -830,7 +834,7 @@ class Union(Subqueryable, Expression):
 
     @property
     def right(self):
-        return self.args.get("expression")
+        return self.expression
 
 
 class Except(Union):
@@ -1485,7 +1489,7 @@ class Binary(Expression):
 
     @property
     def right(self):
-        return self.args.get("expression")
+        return self.expression
 
 
 class Add(Binary):

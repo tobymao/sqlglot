@@ -31,6 +31,10 @@ class SQLite(Dialect):
             exp.DataType.Type.BINARY: "BLOB",
         }
 
+        TOKEN_MAPPING = {
+            TokenType.AUTO_INCREMENT: "AUTOINCREMENT",
+        }
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.Levenshtein: rename_func("EDITDIST3"),

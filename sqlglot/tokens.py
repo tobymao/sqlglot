@@ -204,6 +204,7 @@ class TokenType(AutoName):
     WITH_TIME_ZONE = auto()
     WITHIN_GROUP = auto()
     WITHOUT_TIME_ZONE = auto()
+    UNIQUE = auto()
 
 
 class Token:
@@ -466,6 +467,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
+        "UNIQUE": TokenType.UNIQUE,
     }
 
     WHITE_SPACE = {

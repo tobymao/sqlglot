@@ -541,6 +541,7 @@ class ColumnDef(Expression):
         "default": False,
         "not_null": False,
         "primary": False,
+        "unique": False,
     }
 
 

@@ -109,6 +109,7 @@ class Parser:
         TokenType.TRUNCATE,
         TokenType.TRUE,
         TokenType.UNBOUNDED,
+        TokenType.UNIQUE,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }
@@ -1460,6 +1461,7 @@ class Parser:
             "comment": None,
             "default": None,
             "primary": None,
+            "unique": None,
             "parsed": True,
         }
 
@@ -1495,6 +1497,7 @@ class Parser:
                 "primary",
                 lambda: self._match(TokenType.PRIMARY_KEY),
             )
+            parse_option("unique", lambda: self._match(TokenType.UNIQUE))
 
         options.pop("parsed")
         return self.expression(exp.ColumnDef, this=this, kind=kind, **options)

@@ -109,6 +109,7 @@ class Parser:
         TokenType.TRUNCATE,
         TokenType.TRUE,
         TokenType.UNBOUNDED,
+        TokenType.UNIQUE,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }

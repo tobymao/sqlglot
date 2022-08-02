@@ -1641,6 +1641,20 @@ class TestDialects(unittest.TestCase):
             "LEVENSHTEIN(col1, col2)", "EDITDIST3(col1, col2)", write="sqlite"
         )
 
+        self.validate(
+            "CREATE TABLE z (a INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT)",
+            "CREATE TABLE z (a INT UNIQUE PRIMARY KEY AUTO_INCREMENT)",
+            read="sqlite",
+            write="mysql",
+        )
+
+        self.validate(
+            "CREATE TABLE z (a INT UNIQUE PRIMARY KEY AUTO_INCREMENT)",
+            "CREATE TABLE z (a INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT)",
+            read="mysql",
+            write="sqlite",
+        )
+
     def test_oracle(self):
         self.validate(
             "CREATE TABLE z (n1 NUMBER, n2 NUMBER(10), n3 NUMBER(10, 8))",

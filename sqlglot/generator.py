@@ -4,7 +4,7 @@ from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import TokenType, Tokenizer
 
 
 logger = logging.getLogger("sqlglot")
@@ -42,6 +42,8 @@ class Generator:
     }
 
     TYPE_MAPPING = {}
+
+    TOKEN_MAPPING = {}
 
     __slots__ = (
         "time_mapping",
@@ -242,14 +244,17 @@ class Generator:
         default = self.sql(expression, "default")
         default = f" DEFAULT {default}" if default else ""
         auto_increment = (
-            " AUTO_INCREMENT" if expression.args.get("auto_increment") else ""
+            " " + self.TOKEN_MAPPING.get(TokenType.AUTO_INCREMENT, "AUTO_INCREMENT")
+            if expression.args.get("auto_increment")
+            else ""
         )
         collate = self.sql(expression, "collate")
         collate = f" COLLATE {collate}" if collate else ""
         comment = self.sql(expression, "comment")
         comment = f" COMMENT {comment}" if comment else ""
         primary = " PRIMARY KEY" if expression.args.get("primary") else ""
-        return f"{column} {kind}{not_null}{default}{collate}{auto_increment}{comment}{primary}"
+        unique = " UNIQUE" if expression.args.get("unique") else ""
+        return f"{column} {kind}{not_null}{default}{collate}{comment}{unique}{primary}{auto_increment}"
 
     def create_sql(self, expression):
         this = self.sql(expression, "this")

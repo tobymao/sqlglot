@@ -63,6 +63,8 @@ CURRENT_DATE AT TIME ZONE 'UTC'
 ARRAY()
 ARRAY(1, 2)
 ARRAY_CONTAINS(x, 1)
+EXTRACT(x FROM y)
+EXTRACT(DATE FROM y)
 CONCAT_WS('-', 'a', 'b')
 CONCAT_WS('-', 'a', 'b', 'c')
 POSEXPLODE("x") AS ("a", "b")

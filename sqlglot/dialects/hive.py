@@ -45,7 +45,7 @@ def _map_sql(self, expression):
 
 
 def _array_sort(self, expression):
-    if expression.args.get("expression"):
+    if expression.expression:
         self.unsupported("Hive SORT_ARRAY does not support a comparator")
     return f"SORT_ARRAY({self.sql(expression, 'this')})"
 

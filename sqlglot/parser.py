@@ -1554,7 +1554,7 @@ class Parser:
         return self._parse_window(this)
 
     def _parse_extract(self):
-        this = self._parse_var()
+        this = self._parse_var() or self._parse_type()
 
         if not self._match(TokenType.FROM):
             self.raise_error("Expected FROM after EXTRACT", self._prev)

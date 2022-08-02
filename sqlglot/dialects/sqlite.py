@@ -1,14 +1,21 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
-    rename_func,
     no_tablesample_sql,
     no_trycast_sql,
+    rename_func,
 )
 from sqlglot.generator import Generator
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 class SQLite(Dialect):
+    class Tokenizer(Tokenizer):
+        KEYWORDS = {
+            **Tokenizer.KEYWORDS,
+            "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
+        }
+
     class Generator(Generator):
         TYPE_MAPPING = {
             exp.DataType.Type.BOOLEAN: "INTEGER",

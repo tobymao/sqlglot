@@ -1599,6 +1599,11 @@ class TestDialects(unittest.TestCase):
             "x['a']['b c']",
             read="snowflake",
         )
+        self.validate(
+            "CAST(x AS DOUBLE PRECISION)",
+            "CAST(x AS DOUBLE)",
+            read="snowflake",
+        )
 
         self.validate(
             "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",

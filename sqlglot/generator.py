@@ -244,7 +244,7 @@ class Generator:
         default = self.sql(expression, "default")
         default = f" DEFAULT {default}" if default else ""
         auto_increment = (
-            " " + self.TOKEN_MAPPING.get(TokenType.AUTO_INCREMENT, "AUTO_INCREMENT")
+            " " + self.token_sql(TokenType.AUTO_INCREMENT)
             if expression.args.get("auto_increment")
             else ""
         )
@@ -912,3 +912,6 @@ class Generator:
         op = self.seg(op)
         expression = self.sql(expression, "expression")
         return f"{this}{op}{self.sep()}{expression}"
+
+    def token_sql(self, token_type):
+        return self.TOKEN_MAPPING.get(token_type, token_type.name)

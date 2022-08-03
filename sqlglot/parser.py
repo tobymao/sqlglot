@@ -1174,14 +1174,14 @@ class Parser:
             )
         elif self._match(TokenType.IN):
             self._match_l_paren()
-            query = self._parse_with()
+            expressions = self._parse_csv(
+                lambda: self._parse_expression() or self._parse_with()
+            )
 
-            if query:
-                this = self.expression(exp.In, this=this, query=query)
+            if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
+                this = self.expression(exp.In, this=this, query=expressions[0])
             else:
-                this = self.expression(
-                    exp.In, this=this, expressions=self._parse_csv(self._parse_term)
-                )
+                this = self.expression(exp.In, this=this, expressions=expressions)
 
             self._match_r_paren()
         elif self._match(TokenType.BETWEEN):

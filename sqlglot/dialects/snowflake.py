@@ -11,4 +11,5 @@ class Snowflake(Dialect):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
+            "DOUBLE PRECISION": TokenType.DOUBLE,
         }

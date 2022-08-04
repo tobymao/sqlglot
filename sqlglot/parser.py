@@ -94,6 +94,7 @@ class Parser:
         TokenType.IF,
         TokenType.INTERVAL,
         TokenType.LAZY,
+        TokenType.LOCATION,
         TokenType.NEXT,
         TokenType.ONLY,
         TokenType.OPTIMIZE,
@@ -106,6 +107,7 @@ class Parser:
         TokenType.SCHEMA_COMMENT,
         TokenType.SET,
         TokenType.SHOW,
+        TokenType.STORED,
         TokenType.TABLE,
         TokenType.TEMPORARY,
         TokenType.TOP,
@@ -113,6 +115,7 @@ class Parser:
         TokenType.TRUE,
         TokenType.UNBOUNDED,
         TokenType.UNIQUE,
+        TokenType.PROPERTIES,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }
@@ -608,6 +611,14 @@ class Parser:
                         exp.Property,
                         this=exp.Literal.string(c.FILE_FORMAT),
                         value=exp.Literal.string(self._parse_var().text("this")),
+                    )
+                )
+            if self._match(TokenType.LOCATION):
+                properties.append(
+                    self.expression(
+                        exp.Property,
+                        this=exp.Literal.string(c.LOCATION),
+                        value=self._parse_string(),
                     )
                 )
 

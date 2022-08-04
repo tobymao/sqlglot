@@ -2,7 +2,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.dataframe.column import Column
-from sqlglot.dataframe.util import ensure_strings
+from sqlglot.dataframe.util import ensure_strings, ensure_sqlglot_column
 
 
 def col(column_name: str):
@@ -28,5 +28,5 @@ def countDistinct(col):
 
 
 def min(col):
-    col = ensure_strings([col])[0]
+    col = ensure_sqlglot_column(col)
     return Column(exp.Min(this=col))

@@ -596,6 +596,10 @@ class Partition(Expression):
     pass
 
 
+class Fetch(Expression):
+    arg_types = {"direction": False, "count": True}
+
+
 class Group(Expression):
     arg_types = {
         "expressions": False,

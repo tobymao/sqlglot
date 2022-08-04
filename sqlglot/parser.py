@@ -1364,10 +1364,16 @@ class Parser:
             return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
 
         if self._match(TokenType.L_PAREN):
-            this = self._parse_conjunction() or self._parse_with()
+            expressions = self._parse_csv(self._parse_conjunction) or [
+                self._parse_with()
+            ]
+            this = list_get(expressions, 0)
+
             self._match_r_paren()
             if self._return_subquery and isinstance(this, exp.Subqueryable):
                 return self._parse_subquery(this)
+            if len(expressions) > 1:
+                return self.expression(exp.Tuple, expressions=expressions)
             return self.expression(exp.Paren, this=this)
 
         return None

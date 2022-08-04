@@ -119,7 +119,9 @@ class TokenType(AutoName):
     EXPLAIN = auto()
     EXTRACT = auto()
     FALSE = auto()
+    FETCH = auto()
     FILTER = auto()
+    FIRST = auto()
     FOLLOWING = auto()
     FULL = auto()
     FUNCTION = auto()
@@ -146,9 +148,11 @@ class TokenType(AutoName):
     LIMIT = auto()
     MAP = auto()
     MOD = auto()
+    NEXT = auto()
     NULL = auto()
     OFFSET = auto()
     ON = auto()
+    ONLY = auto()
     OPTIMIZE = auto()
     OPTIONS = auto()
     ORDER = auto()
@@ -353,7 +357,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "EXPLAIN": TokenType.EXPLAIN,
         "EXTRACT": TokenType.EXTRACT,
         "FALSE": TokenType.FALSE,
+        "FETCH": TokenType.FETCH,
         "FILTER": TokenType.FILTER,
+        "FIRST": TokenType.FIRST,
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
@@ -377,10 +383,12 @@ class Tokenizer(metaclass=_Tokenizer):
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
+        "NEXT": TokenType.NEXT,
         "NOT": TokenType.NOT,
         "NULL": TokenType.NULL,
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
+        "ONLY": TokenType.ONLY,
         "OPTIMIZE": TokenType.OPTIMIZE,
         "OPTIONS": TokenType.OPTIONS,
         "OR": TokenType.OR,
@@ -403,6 +411,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROLLUP": TokenType.ROLLUP,
+        "ROW": TokenType.ROWS,
         "ROWS": TokenType.ROWS,
         "SELECT": TokenType.SELECT,
         "SET": TokenType.SET,

@@ -146,6 +146,7 @@ class TokenType(AutoName):
     LEFT = auto()
     LIKE = auto()
     LIMIT = auto()
+    LOCATION = auto()
     MAP = auto()
     MOD = auto()
     NEXT = auto()
@@ -383,6 +384,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
+        "LOCATION": TokenType.LOCATION,
         "NEXT": TokenType.NEXT,
         "NOT": TokenType.NOT,
         "NULL": TokenType.NULL,

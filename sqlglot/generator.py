@@ -344,6 +344,13 @@ class Generator:
             ),
         )
 
+    def fetch_sql(self, expression):
+        direction = expression.args.get("direction")
+        direction = f" {direction.upper()}" if direction else ""
+        count = expression.args.get("count")
+        count = f" {count}" if count else ""
+        return f"{self.seg('FETCH')}{direction}{count} ROWS ONLY"
+
     def filter_sql(self, expression):
         this = self.sql(expression, "this")
         where = self.sql(expression, "expression")[1:]  # where has a leading space

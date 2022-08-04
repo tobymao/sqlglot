@@ -88,11 +88,14 @@ class Parser:
         TokenType.ESCAPE,
         TokenType.EXPLAIN,
         TokenType.FALSE,
+        TokenType.FIRST,
         TokenType.FOLLOWING,
         TokenType.FUNCTION,
         TokenType.IF,
         TokenType.INTERVAL,
         TokenType.LAZY,
+        TokenType.NEXT,
+        TokenType.ONLY,
         TokenType.OPTIMIZE,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
@@ -124,9 +127,11 @@ class Parser:
         TokenType.CURRENT_TIMESTAMP,
         TokenType.EXTRACT,
         TokenType.FILTER,
+        TokenType.FIRST,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
+        TokenType.ROWS,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,
@@ -1106,9 +1111,18 @@ class Parser:
         return self.expression(exp.Ordered, this=this, desc=self._match(TokenType.DESC))
 
     def _parse_limit(self, this=None, top=False):
-        if not self._match(TokenType.TOP if top else TokenType.LIMIT):
-            return this
-        return self.expression(exp.Limit, this=this, expression=self._parse_number())
+        if self._match(TokenType.TOP if top else TokenType.LIMIT):
+            return self.expression(
+                exp.Limit, this=this, expression=self._parse_number()
+            )
+        if self._match(TokenType.FETCH):
+            direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
+            direction = self._prev.text if direction else "FIRST"
+            count = self._parse_number()
+            self._match(TokenType.ROWS)
+            self._match(TokenType.ONLY)
+            return self.expression(exp.Fetch, direction=direction, count=count)
+        return this
 
     def _parse_offset(self, this=None):
         if not self._match(TokenType.OFFSET):

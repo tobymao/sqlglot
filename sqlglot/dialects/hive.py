@@ -57,12 +57,16 @@ def _properties_sql(self, expression):
     using = ""
     stored_as = ""
     partitioned_by = ""
+    location = ""
 
     for p in properties:
-        if p.name.upper() == c.TABLE_FORMAT:
+        name = p.name.upper()
+        if name == c.TABLE_FORMAT:
             using = p
-        elif p.name.upper() == c.FILE_FORMAT:
+        elif name == c.FILE_FORMAT:
             stored_as = p
+        elif name == c.LOCATION:
+            location = p
         elif isinstance(p.args["value"], exp.Schema):
             partitioned_by = p
 
@@ -77,6 +81,9 @@ def _properties_sql(self, expression):
     if stored_as:
         properties.remove(stored_as)
         stored_as = self.seg(f"STORED AS {stored_as.text('value').upper()}")
+    if location:
+        properties.remove(location)
+        stored_as = self.seg(f"LOCATION {self.sql(location, 'value')}")
 
     return f"{using}{partitioned_by}{stored_as}{self.properties('TBLPROPERTIES', expression)}"
 

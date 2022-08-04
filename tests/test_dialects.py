@@ -1437,6 +1437,12 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
         self.validate(
+            "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
+            "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
+            read="spark",
+            write="spark",
+        )
+        self.validate(
             "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
             read="spark",

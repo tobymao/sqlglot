@@ -503,7 +503,7 @@ class Generator:
 
     def lambda_sql(self, expression):
         args = self.expressions(expression, flat=True)
-        args = f"({args})" if len(args) > 1 else args
+        args = f"({args})" if len(args.split(",")) > 1 else args
         return self.no_identify(lambda: f"{args} -> {self.sql(expression, 'this')}")
 
     def lateral_sql(self, expression):

@@ -1513,7 +1513,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
-            "AGGREGATE(x, 0, (acc, x) -> acc + x, (acc) -> acc)",
+            "AGGREGATE(x, 0, (acc, x) -> acc + x, acc -> acc)",
             write="spark",
         )
 

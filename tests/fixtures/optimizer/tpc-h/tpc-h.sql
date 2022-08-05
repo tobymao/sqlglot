@@ -1724,9 +1724,9 @@ JOIN (
 WHERE
   (
     "_u_2"."l_orderkey" IS NULL
-    OR NOT ARRAY_ANY("_u_2"."_u_3", ("_x") -> "_x" <> "l1"."l_suppkey")
+    OR NOT ARRAY_ANY("_u_2"."_u_3", "_x" -> "_x" <> "l1"."l_suppkey")
   )
-  AND ARRAY_ANY("_u_0"."_u_1", ("_x") -> "_x" <> "l1"."l_suppkey")
+  AND ARRAY_ANY("_u_0"."_u_1", "_x" -> "_x" <> "l1"."l_suppkey")
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "s_name"

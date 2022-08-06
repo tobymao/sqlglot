@@ -50,6 +50,10 @@ class Postgres(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.JSONExtract: lambda self, e: f"{self.sql(e, 'this')}->{self.sql(e, 'path')}",
+            exp.JSONExtractScalar: lambda self, e: f"{self.sql(e, 'this')}->>{self.sql(e, 'path')}",
+            exp.JSONBExtract: lambda self, e: f"{self.sql(e, 'this')}#>{self.sql(e, 'path')}",
+            exp.JSONBExtractScalar: lambda self, e: f"{self.sql(e, 'this')}#>>{self.sql(e, 'path')}",
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),

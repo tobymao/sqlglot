@@ -474,6 +474,16 @@ class TestDialects(unittest.TestCase):
             write="postgres",
         )
 
+        for read, write in [(None, "postgres")]:
+            for a, b in [
+                ("JSON_EXTRACT(x, 'y')", "x->'y'"),
+                ("JSON_EXTRACT_SCALAR(x, 'y')", "x->>'y'"),
+                ("JSONB_EXTRACT(x, 'y')", "x#>'y'"),
+                ("JSONB_EXTRACT_SCALAR(x, 'y')", "x#>>'y'"),
+            ]:
+                self.validate(a, b, read=read, write=write, identity=False)
+                self.validate(b, a, read=write, write=read, identity=False)
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "DATE_ADD(x, y, 'day')",

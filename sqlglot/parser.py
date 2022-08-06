@@ -209,7 +209,34 @@ class Parser:
         TokenType.CROSS,
     }
 
-    COLUMN_OPERATORS = {TokenType.DOT}
+    COLUMN_OPERATORS = {
+        TokenType.DOT: None,
+        TokenType.COLON: lambda self, this, path: self.expression(
+            exp.Bracket,
+            this=this,
+            expressions=[path],
+        ),
+        TokenType.ARROW: lambda self, this, path: self.expression(
+            exp.JSONExtract,
+            this=this,
+            path=path,
+        ),
+        TokenType.DARROW: lambda self, this, path: self.expression(
+            exp.JSONExtractScalar,
+            this=this,
+            path=path,
+        ),
+        TokenType.HASH_ARROW: lambda self, this, path: self.expression(
+            exp.JSONBExtract,
+            this=this,
+            path=path,
+        ),
+        TokenType.DHASH_ARROW: lambda self, this, path: self.expression(
+            exp.JSONBExtractScalar,
+            this=this,
+            path=path,
+        ),
+    }
 
     EXPRESSION_PARSERS = {
         exp.DataType: "_parse_types",
@@ -1336,7 +1363,7 @@ class Parser:
         this = self._parse_bracket(this)
 
         while self._match_set(self.COLUMN_OPERATORS):
-            colon = self._prev.token_type == TokenType.COLON
+            op = self.COLUMN_OPERATORS.get(self._prev.token_type)
             field = self._parse_star() or self._parse_function() or self._parse_id_var()
 
             if isinstance(field, exp.Func):
@@ -1345,12 +1372,8 @@ class Parser:
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#function_call_rules
                 this = self._replace_columns_with_dots(this)
 
-            if colon:
-                this = self.expression(
-                    exp.Bracket,
-                    this=this,
-                    expressions=[exp.Literal.string(field.this)],
-                )
+            if op:
+                this = op(self, this, exp.Literal.string(field.name))
             elif isinstance(this, exp.Column) and not this.table:
                 this = self.expression(exp.Column, this=field, table=this.this)
             else:
@@ -1447,7 +1470,7 @@ class Parser:
         else:
             expressions = [self._parse_id_var()]
 
-        if not self._match(TokenType.LAMBDA):
+        if not self._match(TokenType.ARROW):
             self._retreat(index)
 
             distinct = self._match(TokenType.DISTINCT)

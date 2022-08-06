@@ -1,8 +1,10 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
-    format_time_lambda,
     approx_count_distinct_sql,
+    arrow_json_extract_sql,
+    arrow_json_extract_scalar_sql,
+    format_time_lambda,
     no_safe_divide_sql,
     no_tablesample_sql,
     rename_func,
@@ -70,6 +72,10 @@ class DuckDB(Dialect):
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS STRING), {DuckDB.dateint_format}) AS DATE)",
             exp.Explode: rename_func("UNNEST"),
+            exp.JSONExtract: arrow_json_extract_sql,
+            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONBExtract: arrow_json_extract_sql,
+            exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,

@@ -484,6 +484,19 @@ class TestDialects(unittest.TestCase):
                 self.validate(a, b, read=read, write=write, identity=False)
                 self.validate(b, a, read=write, write=read, identity=False)
 
+        self.validate(
+            "x->'1'",
+            "x->'1'",
+            read="postgres",
+            write="sqlite",
+        )
+        self.validate(
+            "x#>'1'",
+            "x->'1'",
+            read="postgres",
+            write="sqlite",
+        )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "DATE_ADD(x, y, 'day')",

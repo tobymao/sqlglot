@@ -1,6 +1,8 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
+    arrow_json_extract_sql,
+    arrow_json_extract_scalar_sql,
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
@@ -37,6 +39,10 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.JSONExtract: arrow_json_extract_sql,
+            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONBExtract: arrow_json_extract_sql,
+            exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,

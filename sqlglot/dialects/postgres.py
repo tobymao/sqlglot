@@ -35,6 +35,7 @@ class Postgres(Dialect):
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "SERIAL": TokenType.AUTO_INCREMENT,
             "UUID": TokenType.UUID,
         }
 
@@ -48,6 +49,10 @@ class Postgres(Dialect):
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
             exp.DataType.Type.BINARY: "BYTEA",
+        }
+
+        TOKEN_MAPPING = {
+            TokenType.AUTO_INCREMENT: "SERIAL",
         }
 
         TRANSFORMS = {

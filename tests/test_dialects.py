@@ -447,6 +447,19 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
+            "CREATE TABLE x (a INT SERIAL)",
+            "CREATE TABLE x (a INTEGER AUTOINCREMENT)",
+            read="postgres",
+            write="sqlite",
+        )
+        self.validate(
+            "CREATE TABLE x (a INTEGER AUTOINCREMENT)",
+            "CREATE TABLE x (a INT SERIAL)",
+            read="sqlite",
+            write="postgres",
+        )
+
+        self.validate(
             "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
             "CURRENT_DATE - INTERVAL '1' DAY",
             read="bigquery",

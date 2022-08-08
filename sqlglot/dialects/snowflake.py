@@ -82,7 +82,6 @@ class Snowflake(Dialect):
         "ff": "%f",
         "FF6": "%f",
         "ff6": "%f"
-        # TODO: Snowflake also supports variable precisions FF0...FF9, but unclear how to support in Python
     }
 
     class Parser(Parser):

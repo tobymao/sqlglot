@@ -545,6 +545,10 @@ class ColumnDef(Expression):
     }
 
 
+class Constraint(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
 class Delete(Expression):
     arg_types = {"with": False, "this": True, "where": False}
 
@@ -555,6 +559,15 @@ class Drop(Expression):
 
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}
+
+
+class ForeignKey(Expression):
+    arg_types = {
+        "expressions": True,
+        "reference": False,
+        "delete": False,
+        "update": False,
+    }
 
 
 class From(Expression):
@@ -728,6 +741,10 @@ class Property(Expression):
 
 class Qualify(Expression):
     pass
+
+
+class Reference(Expression):
+    arg_types = {"this": True, "expressions": True}
 
 
 class Table(Expression):

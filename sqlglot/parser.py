@@ -81,6 +81,7 @@ class Parser:
         TokenType.CACHE,
         TokenType.COLLATE,
         TokenType.COMMIT,
+        TokenType.CONSTRAINT,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESC,
@@ -103,6 +104,7 @@ class Parser:
         TokenType.PERCENT,
         TokenType.PRECEDING,
         TokenType.RANGE,
+        TokenType.REFERENCES,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
         TokenType.SET,
@@ -1498,7 +1500,10 @@ class Parser:
             self._retreat(index)
             return this
 
-        args = self._parse_csv(lambda: self._parse_column_def(self._parse_field()))
+        args = self._parse_csv(
+            lambda: self._parse_constraint()
+            or self._parse_column_def(self._parse_field())
+        )
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
 
@@ -1555,6 +1560,55 @@ class Parser:
 
         options.pop("parsed")
         return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
+
+    def _parse_constraint(self):
+        if not self._match(TokenType.CONSTRAINT):
+            return self._parse_foreign_key()
+
+        this = self._parse_id_var()
+        expressions = []
+
+        while True:
+            constraint = self._parse_foreign_key() or self._parse_function()
+            if not constraint:
+                break
+            expressions.append(constraint)
+
+        return self.expression(exp.Constraint, this=this, expressions=expressions)
+
+    def _parse_foreign_key(self):
+        if not self._match(TokenType.FOREIGN_KEY):
+            return None
+
+        expressions = self._parse_wrapped_id_vars()
+        reference = self._match(TokenType.REFERENCES) and self.expression(
+            exp.Reference,
+            this=self._parse_id_var(),
+            expressions=self._parse_wrapped_id_vars(),
+        )
+        options = {}
+
+        while self._match(TokenType.ON):
+            if not self._match_set((TokenType.DELETE, TokenType.UPDATE)):
+                self.raise_error("Expected DELETE or UPDATE")
+            kind = self._prev.text.lower()
+
+            if self._match(TokenType.NO_ACTION):
+                action = "NO ACTION"
+            elif self._match(TokenType.SET):
+                self._match_set((TokenType.NULL, TokenType.DEFAULT))
+                action = "SET " + self._prev.text.upper()
+            else:
+                self._advance()
+                action = self._prev.text.upper()
+            options[kind] = action
+
+        return self.expression(
+            exp.ForeignKey,
+            expressions=expressions,
+            reference=reference,
+            **options,
+        )
 
     def _parse_bracket(self, this):
         if not self._match(TokenType.L_BRACKET):

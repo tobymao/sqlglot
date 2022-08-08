@@ -1,6 +1,8 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
+    arrow_json_extract_sql,
+    arrow_json_extract_scalar_sql,
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
@@ -33,6 +35,7 @@ class Postgres(Dialect):
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "SERIAL": TokenType.AUTO_INCREMENT,
             "UUID": TokenType.UUID,
         }
 
@@ -48,8 +51,16 @@ class Postgres(Dialect):
             exp.DataType.Type.BINARY: "BYTEA",
         }
 
+        TOKEN_MAPPING = {
+            TokenType.AUTO_INCREMENT: "SERIAL",
+        }
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.JSONExtract: arrow_json_extract_sql,
+            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONBExtract: lambda self, e: f"{self.sql(e, 'this')}#>{self.sql(e, 'path')}",
+            exp.JSONBExtractScalar: lambda self, e: f"{self.sql(e, 'this')}#>>{self.sql(e, 'path')}",
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),

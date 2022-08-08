@@ -36,7 +36,10 @@ class TokenType(AutoName):
     TILDA = auto()
     LSHIFT = auto()
     RSHIFT = auto()
-    LAMBDA = auto()
+    ARROW = auto()
+    DARROW = auto()
+    HASH_ARROW = auto()
+    DHASH_ARROW = auto()
     ANNOTATION = auto()
 
     SPACE = auto()
@@ -290,6 +293,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "*": TokenType.STAR,
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
+        "#": TokenType.ANNOTATION,
     }
 
     QUOTES = ["'"]
@@ -308,7 +312,10 @@ class Tokenizer(metaclass=_Tokenizer):
         "!=": TokenType.NEQ,
         "<<": TokenType.LSHIFT,
         ">>": TokenType.RSHIFT,
-        "->": TokenType.LAMBDA,
+        "->": TokenType.ARROW,
+        "->>": TokenType.DARROW,
+        "#>": TokenType.HASH_ARROW,
+        "#>>": TokenType.DHASH_ARROW,
         "ADD ARCHIVE": TokenType.ADD_FILE,
         "ADD ARCHIVES": TokenType.ADD_FILE,
         "ADD FILE": TokenType.ADD_FILE,
@@ -580,8 +587,6 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._scan_number()
             elif self._char == self.identifier:
                 self._scan_identifier()
-            elif self._char == "#":
-                self._scan_annotation()
             else:
                 self._scan_keywords()
         return self.tokens
@@ -636,10 +641,15 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char])
-            else:
-                self._scan_var()
+                token = self.SINGLE_TOKENS[self._char]
+                if token == TokenType.ANNOTATION:
+                    self._scan_annotation()
+                    return
+                self._add(token)
+                return
+            self._scan_var()
             return
+
         if self._scan_comment(word):
             return
         if self._scan_string(word):

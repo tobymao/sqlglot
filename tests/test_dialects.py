@@ -447,6 +447,19 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
+            "CREATE TABLE x (a INT SERIAL)",
+            "CREATE TABLE x (a INTEGER AUTOINCREMENT)",
+            read="postgres",
+            write="sqlite",
+        )
+        self.validate(
+            "CREATE TABLE x (a INTEGER AUTOINCREMENT)",
+            "CREATE TABLE x (a INT SERIAL)",
+            read="sqlite",
+            write="postgres",
+        )
+
+        self.validate(
             "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
             "CURRENT_DATE - INTERVAL '1' DAY",
             read="bigquery",
@@ -472,6 +485,29 @@ class TestDialects(unittest.TestCase):
             "CURRENT_TIMESTAMP",
             read="bigquery",
             write="postgres",
+        )
+
+        for read, write in [(None, "postgres")]:
+            for a, b in [
+                ("JSON_EXTRACT(x, 'y')", "x->'y'"),
+                ("JSON_EXTRACT_SCALAR(x, 'y')", "x->>'y'"),
+                ("JSONB_EXTRACT(x, 'y')", "x#>'y'"),
+                ("JSONB_EXTRACT_SCALAR(x, 'y')", "x#>>'y'"),
+            ]:
+                self.validate(a, b, read=read, write=write, identity=False)
+                self.validate(b, a, read=write, write=read, identity=False)
+
+        self.validate(
+            "x->'1'",
+            "x->'1'",
+            read="postgres",
+            write="sqlite",
+        )
+        self.validate(
+            "x#>'1'",
+            "x->'1'",
+            read="postgres",
+            write="sqlite",
         )
 
         with self.assertRaises(UnsupportedError):
@@ -1663,6 +1699,12 @@ class TestDialects(unittest.TestCase):
             "CREATE TABLE z (a INT UNIQUE PRIMARY KEY AUTO_INCREMENT)",
             "CREATE TABLE z (a INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT)",
             read="mysql",
+            write="sqlite",
+        )
+        self.validate(
+            """CREATE TABLE "x" ("Name" NVARCHAR(200) NOT NULL)""",
+            """CREATE TABLE "x" ("Name" TEXT(200) NOT NULL)""",
+            read="sqlite",
             write="sqlite",
         )
 

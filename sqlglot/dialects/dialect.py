@@ -150,6 +150,14 @@ def if_sql(self, expression):
     return f"IF({expressions})"
 
 
+def arrow_json_extract_sql(self, expression):
+    return f"{self.sql(expression, 'this')}->{self.sql(expression, 'path')}"
+
+
+def arrow_json_extract_scalar_sql(self, expression):
+    return f"{self.sql(expression, 'this')}->>{self.sql(expression, 'path')}"
+
+
 def no_ilike_sql(self, expression):
     return self.like_sql(
         exp.Like(

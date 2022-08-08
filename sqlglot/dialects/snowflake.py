@@ -51,6 +51,7 @@ def _snowflake_to_timestamp(args):
 class Snowflake(Dialect):
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
 
+    # pylint: disable=duplicate-code
     time_mapping = {
         "YYYY": "%Y",
         "yyyy": "%Y",
@@ -80,6 +81,7 @@ class Snowflake(Dialect):
         "FF6": "%f",
         "ff6": "%f",
     }
+    # pylint: enable=duplicate-code
 
     class Parser(Parser):
         FUNCTIONS = {

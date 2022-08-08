@@ -1750,8 +1750,8 @@ class TestDialects(unittest.TestCase):
             read="oracle",
         )
         self.validate(
-            "SELECT a, b AS b, 3 FROM x GROUP BY a, b, 3",
-            "SELECT a, b AS b, 3 FROM x GROUP BY a, 2, 3",
+            "SELECT a, b AS b, c AS c, 4 FROM x GROUP BY a, b, x.c, 4",
+            "SELECT a, b AS b, c AS c, 4 FROM x GROUP BY a, 2, x.c, 4",
             write="oracle",
         )
 

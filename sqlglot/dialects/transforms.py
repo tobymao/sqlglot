@@ -1,7 +1,7 @@
 from sqlglot import expressions as exp
 
 
-def unaliased_group_sql(self, expression):
+def _unaliased_group_sql(self, expression):
     """
     Generate SQL for a GROUP BY expression that removes references to aliased selects.
 
@@ -31,3 +31,6 @@ def unaliased_group_sql(self, expression):
                 col.replace(exp.Literal.number(alias_index))
 
     return super(self.__class__, self).group_sql(expression)
+
+
+UNALIASED_GROUP = {exp.Group: _unaliased_group_sql}

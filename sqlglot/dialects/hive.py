@@ -1,4 +1,5 @@
 from sqlglot import exp, constants as c
+from sqlglot import transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
@@ -247,6 +248,7 @@ class Hive(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            **transforms.UNALIAS_GROUP,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArraySize: rename_func("SIZE"),

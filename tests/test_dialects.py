@@ -1694,6 +1694,11 @@ class TestDialects(unittest.TestCase):
             "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss')",
             read="snowflake",
         )
+        self.validate(
+            "SELECT IFF(TRUE, 'true', 'false')",
+            "SELECT IFF(TRUE, 'true', 'false')",
+            read="snowflake",
+        )
 
     def test_sqlite(self):
         self.validate(

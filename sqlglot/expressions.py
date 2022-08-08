@@ -1447,6 +1447,7 @@ class DataType(Expression):
         ARRAY = auto()
         MAP = auto()
         UUID = auto()
+        STRUCT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):

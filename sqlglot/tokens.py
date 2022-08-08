@@ -188,6 +188,7 @@ class TokenType(AutoName):
     SHOW = auto()
     SOME = auto()
     STORED = auto()
+    STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TIME = auto()
@@ -486,6 +487,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
         "UNIQUE": TokenType.UNIQUE,
+        "STRUCT": TokenType.STRUCT,
     }
 
     WHITE_SPACE = {

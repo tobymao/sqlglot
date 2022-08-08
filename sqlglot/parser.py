@@ -56,11 +56,13 @@ class Parser:
         TokenType.DECIMAL,
         TokenType.MAP,
         TokenType.UUID,
+        TokenType.STRUCT,
     }
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
         TokenType.MAP,
+        TokenType.STRUCT,
     }
 
     SUBQUERY_PREDICATES = {
@@ -1300,9 +1302,14 @@ class Parser:
 
     def _parse_types(self):
         index = self._index
+        name = None
 
         if not self._match_set(self.TYPE_TOKENS):
-            return None
+            if self._prev is not None and self._next is not None and self._next.token_type == TokenType.COLON:
+                name = self._parse_id_var()
+                self._advance(2)
+            else:
+                return None
 
         type_token = self._prev.token_type
         nested = type_token in self.NESTED_TYPE_TOKENS
@@ -1337,17 +1344,20 @@ class Parser:
                     this=exp.DataType.Type.TIMESTAMPTZ,
                     expressions=expressions,
                     nested=nested,
+                    name=name,
                 )
             return exp.DataType(
                 this=exp.DataType.Type.TIMESTAMP,
                 expressions=expressions,
                 nested=nested,
+                name=name,
             )
 
         return exp.DataType(
             this=exp.DataType.Type[type_token.value.upper()],
             expressions=expressions,
             nested=nested,
+            name=name,
         )
 
     def _parse_at_time_zone(self, this):

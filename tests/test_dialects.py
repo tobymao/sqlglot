@@ -1635,6 +1635,55 @@ class TestDialects(unittest.TestCase):
             write="presto",
         )
 
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a:INT, struct_col_b:STRING>)",
+            read="spark",
+            write="spark",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a:INT, struct_col_b:STRUCT<nested_col_a:STRING, nested_col_b:STRING>>)",
+            read="spark",
+            write="spark",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a array<int>)",
+            "CREATE TABLE db.example_table (col_a ARRAY<INT>)",
+            read="spark",
+            write="spark",
+        )
+
+        self.validate(
+            "SELECT 4 << 1",
+            "SELECT SHIFTLEFT(4, 1)",
+            read="hive",
+            write="spark",
+        )
+
+        self.validate(
+            "SELECT 4 >> 1",
+            "SELECT SHIFTRIGHT(4, 1)",
+            read="hive",
+            write="spark",
+        )
+
+        self.validate(
+            "SELECT SHIFTRIGHT(4, 1)",
+            "SELECT 4 >> 1",
+            read="spark",
+            write="hive",
+        )
+
+        self.validate(
+            "SELECT SHIFTLEFT(4, 1)",
+            "SELECT 4 << 1",
+            read="spark",
+            write="hive",
+        )
+
     def test_snowflake(self):
         self.validate(
             'x:a:"b c"',

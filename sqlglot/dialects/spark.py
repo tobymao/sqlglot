@@ -2,6 +2,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.hive import Hive, HiveMap
 from sqlglot.helper import list_get
+from sqlglot.tokens import TokenType
 
 
 def _create_sql(self, e):
@@ -20,6 +21,14 @@ def _map_sql(self, expression):
 
 
 class Spark(Hive):
+    class Tokenizer(Hive.Tokenizer):
+        KEYWORDS = {
+            k: v
+            for k, v in
+            Hive.Tokenizer.KEYWORDS.items()
+            if v not in (TokenType.RSHIFT, TokenType.LSHIFT)
+        }
+
     class Parser(Hive.Parser):
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,
@@ -39,6 +48,14 @@ class Spark(Hive):
                     ),
                 ),
                 length=list_get(args, 1),
+            ),
+            "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
+                this=list_get(args, 0),
+                expression=list_get(args, 1)
+            ),
+            "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
+                this=list_get(args, 0),
+                expression=list_get(args, 1)
             ),
         }
 
@@ -63,5 +80,8 @@ class Spark(Hive):
             exp.Create: _create_sql,
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),
+            exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
+            exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
             HiveMap: _map_sql,
+
         }

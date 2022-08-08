@@ -315,6 +315,9 @@ class Generator:
     def datatype_sql(self, expression):
         type_value = expression.this
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
+        name = expression.args.get("name")
+        if name:
+            type_sql = f"{name}:{type_sql}"
         nested = ""
         interior = self.expressions(expression, flat=True)
         if interior:

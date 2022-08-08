@@ -1749,6 +1749,11 @@ class TestDialects(unittest.TestCase):
             "SELECT x FROM y LIMIT 10",
             read="oracle",
         )
+        self.validate(
+            "SELECT a, b AS b, 3 FROM x GROUP BY a, b, 3",
+            "SELECT a, b AS b, 3 FROM x GROUP BY a, 2, 3",
+            write="oracle",
+        )
 
     def test_tableau(self):
         self.validate(

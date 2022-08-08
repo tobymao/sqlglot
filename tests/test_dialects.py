@@ -1701,6 +1701,12 @@ class TestDialects(unittest.TestCase):
             read="mysql",
             write="sqlite",
         )
+        self.validate(
+            """CREATE TABLE "x" ("Name" NVARCHAR(200) NOT NULL)""",
+            """CREATE TABLE "x" ("Name" TEXT(200) NOT NULL)""",
+            read="sqlite",
+            write="sqlite",
+        )
 
     def test_oracle(self):
         self.validate(

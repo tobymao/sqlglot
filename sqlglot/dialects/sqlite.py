@@ -16,6 +16,7 @@ class SQLite(Dialect):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
+            "NVARCHAR": TokenType.VARCHAR,
         }
 
     class Generator(Generator):

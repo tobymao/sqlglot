@@ -15,10 +15,8 @@ def _check_int(s):
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
 def _snowflake_to_timestamp(args):
-    args_num = len(args)
-    if args_num == 2:
-        first_arg = list_get(args, 0)
-        second_arg = list_get(args, 1)
+    if len(args) == 2:
+        first_arg, second_arg = args
         if first_arg.is_string:
             # case: <string_expr> [ , <format> ]
             return format_time_lambda(exp.StrToTime, "snowflake")
@@ -39,13 +37,13 @@ def _snowflake_to_timestamp(args):
 
         return _convert_time_scale_and_run
 
-    arg = list_get(args, 0)
-    if not isinstance(arg, Literal):
+    first_arg = list_get(args, 0)
+    if not isinstance(first_arg, Literal):
         # case: <variant_expr>
         return format_time_lambda(exp.StrToTime, "snowflake", default=True)
 
-    if arg.is_string:
-        if _check_int(arg.this):
+    if first_arg.is_string:
+        if _check_int(first_arg.this):
             # case: <integer>
             return exp.UnixToTime.from_arg_list
 

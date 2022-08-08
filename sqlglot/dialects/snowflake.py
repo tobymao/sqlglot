@@ -19,7 +19,7 @@ def _snowflake_to_timestamp(args):
         first_arg, second_arg = args
         if first_arg.is_string:
             # case: <string_expr> [ , <format> ]
-            return format_time_lambda(exp.StrToTime, "snowflake")
+            return format_time_lambda(exp.StrToTime, "snowflake")(args)
 
         # case: <numeric_expr> [ , <scale> ]
         if second_arg.this not in ["0", "3", "9"]:
@@ -27,31 +27,26 @@ def _snowflake_to_timestamp(args):
                 f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
             )
 
-        def _convert_time_scale_and_run(args):
-            timestamp = int(first_arg.name)
-            scale = int(second_arg.name)
-            retval = int(timestamp / (10**scale))
-            conv_args = [str(retval)]
-            args[:] = args[:1]
-            return exp.UnixToTime.from_arg_list(conv_args)
-
-        return _convert_time_scale_and_run
+        timestamp = int(first_arg.name)
+        scale = int(second_arg.name)
+        args[:] = args[:1]
+        return exp.UnixToTime(this=str(int(int(timestamp) / (10 ** int(scale)))))
 
     first_arg = list_get(args, 0)
     if not isinstance(first_arg, Literal):
         # case: <variant_expr>
-        return format_time_lambda(exp.StrToTime, "snowflake", default=True)
+        return format_time_lambda(exp.StrToTime, "snowflake", default=True)(args)
 
     if first_arg.is_string:
         if _check_int(first_arg.this):
             # case: <integer>
-            return exp.UnixToTime.from_arg_list
+            return exp.UnixToTime.from_arg_list(args)
 
         # case: <date_expr>
-        return format_time_lambda(exp.StrToTime, "snowflake", default=True)
+        return format_time_lambda(exp.StrToTime, "snowflake", default=True)(args)
 
     # case: <numeric_expr>
-    return exp.UnixToTime.from_arg_list
+    return exp.UnixToTime.from_arg_list(args)
 
 
 class Snowflake(Dialect):
@@ -91,7 +86,7 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFF": exp.If.from_arg_list,
-            "TO_TIMESTAMP": lambda args: _snowflake_to_timestamp(args)(args),
+            "TO_TIMESTAMP": _snowflake_to_timestamp,
         }
 
     class Tokenizer(Tokenizer):

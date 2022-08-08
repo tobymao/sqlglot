@@ -1,4 +1,5 @@
 from sqlglot import exp
+from sqlglot import transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,
@@ -151,6 +152,7 @@ class Presto(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            **transforms.UNALIAS_GROUP,
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
             exp.ArrayContains: rename_func("CONTAINS"),

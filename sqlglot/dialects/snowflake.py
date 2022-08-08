@@ -52,7 +52,7 @@ def _snowflake_to_timestamp(args):
     return exp.UnixToTime.from_arg_list
 
 class Snowflake(Dialect):
-    time_format = "'%Y-%m-%d %H:%I:%S.%f'"
+    time_format = "'yyyy-mm-dd hh24:mi:ss'"
 
     time_mapping = {
         "YYYY": "%Y",
@@ -64,7 +64,7 @@ class Snowflake(Dialect):
         "MON": "%b",
         "mon": "%b",
         "MM": "%m",
-        "%mm": "%m",
+        "mm": "%m",
         "DD": "%d",
         "dd": "%d",
         "d": "%-d",
@@ -102,6 +102,6 @@ class Snowflake(Dialect):
     class Generator(Generator):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            exp.StrToTime: rename_func("TO_TIMESTAMP"),
+            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
         }

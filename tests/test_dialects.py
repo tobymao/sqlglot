@@ -1079,6 +1079,11 @@ class TestDialects(unittest.TestCase):
             read="presto",
             identity=False,
         )
+        self.validate(
+            "SELECT a AS b FROM x GROUP BY b",
+            "SELECT a AS b FROM x GROUP BY 1",
+            write="presto",
+        )
 
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
@@ -1448,6 +1453,11 @@ class TestDialects(unittest.TestCase):
             read="hive",
             write="presto",
         )
+        self.validate(
+            "SELECT a AS b FROM x GROUP BY b",
+            "SELECT a AS b FROM x GROUP BY 1",
+            write="hive",
+        )
 
     def test_spark(self):
         self.validate(
@@ -1748,6 +1758,11 @@ class TestDialects(unittest.TestCase):
             "SELECT TOP 10 x FROM y",
             "SELECT x FROM y LIMIT 10",
             read="oracle",
+        )
+        self.validate(
+            "SELECT a AS b FROM x GROUP BY b",
+            "SELECT a AS b FROM x GROUP BY 1",
+            write="oracle",
         )
 
     def test_tableau(self):

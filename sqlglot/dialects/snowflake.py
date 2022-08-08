@@ -6,10 +6,12 @@ from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.generator import Generator
 
+
 def _check_int(s):
-    if s[0] in ('-', '+'):
+    if s[0] in ("-", "+"):
         return s[1:].isdigit()
     return s.isdigit()
+
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
 def _snowflake_to_timestamp(args):
@@ -22,13 +24,15 @@ def _snowflake_to_timestamp(args):
             return format_time_lambda(exp.StrToTime, "snowflake")
 
         # case: <numeric_expr> [ , <scale> ]
-        if second_arg.this not in ['0', '3', '9']:
-            raise ValueError(f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9")
+        if second_arg.this not in ["0", "3", "9"]:
+            raise ValueError(
+                f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
+            )
 
         def _convert_time_scale_and_run(args):
             conv_args = []
             exponent = int(list_get(args, 1).this)
-            retval = int(int(list_get(args, 0).this) / (10 ** exponent))
+            retval = int(int(list_get(args, 0).this) / (10**exponent))
             conv_args.append(str(retval))
             args[:] = args[:1]
             return exp.UnixToTime.from_arg_list(conv_args)
@@ -50,6 +54,7 @@ def _snowflake_to_timestamp(args):
 
     # case: <numeric_expr>
     return exp.UnixToTime.from_arg_list
+
 
 class Snowflake(Dialect):
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
@@ -81,14 +86,14 @@ class Snowflake(Dialect):
         "FF": "%f",
         "ff": "%f",
         "FF6": "%f",
-        "ff6": "%f"
+        "ff6": "%f",
     }
 
     class Parser(Parser):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFF": exp.If.from_arg_list,
-            "TO_TIMESTAMP": lambda args: _snowflake_to_timestamp(args)(args)
+            "TO_TIMESTAMP": lambda args: _snowflake_to_timestamp(args)(args),
         }
 
     class Tokenizer(Tokenizer):

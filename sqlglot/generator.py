@@ -702,10 +702,25 @@ class Generator:
         statement = f"CASE{this}{ifs}{self.seg('END')}"
         return statement
 
+    def constraint_sql(self, expression):
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        return f"CONSTRAINT {this} {expressions}"
+
     def extract_sql(self, expression):
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")
         return f"EXTRACT({this} FROM {expression_sql})"
+
+    def foreignkey_sql(self, expression):
+        expressions = self.expressions(expression, flat=True)
+        reference = self.sql(expression, "reference")
+        reference = f" {reference}" if reference else ""
+        delete = self.sql(expression, "delete")
+        delete = f" ON DELETE {delete}" if delete else ""
+        update = self.sql(expression, "update")
+        update = f" ON UPDATE {update}" if update else ""
+        return f"FOREIGN KEY ({expressions}){reference}{delete}{update}"
 
     def if_sql(self, expression):
         return self.case_sql(
@@ -723,6 +738,11 @@ class Generator:
 
     def interval_sql(self, expression):
         return f"INTERVAL {self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
+
+    def reference_sql(self, expression):
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        return f"REFERENCES({this}) ({expressions})"
 
     def anonymous_sql(self, expression):
         args = self.indent(

@@ -4,6 +4,8 @@ from sqlglot import ErrorLevel, ParseError, UnsupportedError, transpile
 
 
 class TestDialects(unittest.TestCase):
+    maxDiff = None
+
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
@@ -1671,6 +1673,27 @@ class TestDialects(unittest.TestCase):
         )
 
     def test_sqlite(self):
+        self.validate(
+            """
+            CREATE TABLE "Track"
+            (
+                CONSTRAINT "PK_Track" FOREIGN KEY ("TrackId"),
+                FOREIGN KEY ("AlbumId") REFERENCES "Album" ("AlbumId")
+                    ON DELETE NO ACTION ON UPDATE NO ACTION,
+                FOREIGN KEY ("AlbumId") ON DELETE CASCADE ON UPDATE RESTRICT,
+                FOREIGN KEY ("AlbumId") ON DELETE SET NULL ON UPDATE SET DEFAULT
+            )
+            """,
+            """CREATE TABLE "Track" (
+  CONSTRAINT "PK_Track" FOREIGN KEY ("TrackId"),
+  FOREIGN KEY ("AlbumId") REFERENCES("Album") ("AlbumId") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  FOREIGN KEY ("AlbumId") ON DELETE CASCADE ON UPDATE RESTRICT,
+  FOREIGN KEY ("AlbumId") ON DELETE SET NULL ON UPDATE SET DEFAULT
+)""",
+            read="sqlite",
+            write="sqlite",
+            pretty=True,
+        )
         self.validate(
             "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
             "SELECT CAST(`a`.`b` AS INTEGER) FROM foo",

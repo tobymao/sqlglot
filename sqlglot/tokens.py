@@ -100,6 +100,7 @@ class TokenType(AutoName):
     COMMENT_END = auto()
     COMMENT_START = auto()
     COMMIT = auto()
+    CONSTRAINT = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
@@ -126,6 +127,7 @@ class TokenType(AutoName):
     FILTER = auto()
     FIRST = auto()
     FOLLOWING = auto()
+    FOREIGN_KEY = auto()
     FULL = auto()
     FUNCTION = auto()
     FROM = auto()
@@ -153,6 +155,7 @@ class TokenType(AutoName):
     MAP = auto()
     MOD = auto()
     NEXT = auto()
+    NO_ACTION = auto()
     NULL = auto()
     OFFSET = auto()
     ON = auto()
@@ -178,6 +181,7 @@ class TokenType(AutoName):
     RECURSIVE = auto()
     REPLACE = auto()
     RESPECT_NULLS = auto()
+    REFERENCES = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROLLUP = auto()
@@ -344,6 +348,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COLLATE": TokenType.COLLATE,
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
+        "CONSTRAINT": TokenType.CONSTRAINT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,
@@ -371,6 +376,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
+        "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FROM": TokenType.FROM,
         "GROUP": TokenType.GROUP,
         "GROUPING SETS": TokenType.GROUPING_SETS,
@@ -393,6 +399,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIMIT": TokenType.LIMIT,
         "LOCATION": TokenType.LOCATION,
         "NEXT": TokenType.NEXT,
+        "NO ACTION": TokenType.NO_ACTION,
         "NOT": TokenType.NOT,
         "NULL": TokenType.NULL,
         "OFFSET": TokenType.OFFSET,
@@ -417,6 +424,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "REGEXP": TokenType.RLIKE,
         "REPLACE": TokenType.REPLACE,
         "RESPECT NULLS": TokenType.RESPECT_NULLS,
+        "REFERENCES": TokenType.REFERENCES,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROLLUP": TokenType.ROLLUP,

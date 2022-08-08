@@ -29,7 +29,6 @@ def _snowflake_to_timestamp(args):
 
         timestamp = int(first_arg.name)
         scale = int(second_arg.name)
-        args[:] = args[:1]
         return exp.UnixToTime(this=str(int(int(timestamp) / (10 ** int(scale)))))
 
     first_arg = list_get(args, 0)

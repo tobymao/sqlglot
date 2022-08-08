@@ -2121,7 +2121,7 @@ class UnixToStr(Func):
 
 
 class UnixToTime(Func):
-    pass
+    arg_types = {"this": True, "scale": False}
 
 
 class UnixToTimeStr(Func):

@@ -85,8 +85,6 @@ class Snowflake(Dialect):
     }
 
     class Parser(Parser):
-        COLUMN_OPERATORS = Parser.COLUMN_OPERATORS | {TokenType.COLON}
-
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFF": exp.If.from_arg_list,

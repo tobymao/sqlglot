@@ -1934,6 +1934,14 @@ class JSONExtractScalar(JSONExtract):
     _sql_names = ["JSON_EXTRACT_SCALAR"]
 
 
+class JSONBExtract(JSONExtract):
+    _sql_names = ["JSONB_EXTRACT"]
+
+
+class JSONBExtractScalar(JSONExtract):
+    _sql_names = ["JSONB_EXTRACT_SCALAR"]
+
+
 class Least(Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True

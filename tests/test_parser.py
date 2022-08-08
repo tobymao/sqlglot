@@ -128,7 +128,7 @@ class TestParser(unittest.TestCase):
         assert expression.expressions[0].text("this") == "annotation1"
         assert expression.expressions[1].text("this") == "annotation2:testing"
         assert expression.expressions[2].text("this") == "test#annotation"
-        assert expression.expressions[3].text("this") == "c#annotation3"
+        assert expression.expressions[3].text("this") == "annotation3"
         assert expression.expressions[4].text("this") == "annotation4"
         assert expression.expressions[5].text("this") == ""
 

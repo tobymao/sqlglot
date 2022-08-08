@@ -27,7 +27,7 @@ def _snowflake_to_timestamp(args):
         def _convert_time_scale_and_run(args):
             conv_args = []
             exponent = int(list_get(args, 1).this)
-            retval = int(list_get(args, 0).this) / (10 ** exponent)
+            retval = int(int(list_get(args, 0).this) / (10 ** exponent))
             conv_args.append(str(retval))
             args[:] = args[:1]
             return exp.UnixToTime.from_arg_list(conv_args)

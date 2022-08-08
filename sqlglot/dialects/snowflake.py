@@ -1,9 +1,10 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect, format_time_lambda
+from sqlglot.dialects.dialect import Dialect, format_time_lambda, rename_func
 from sqlglot.expressions import Literal
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.generator import Generator
 
 def _check_int(s):
     if s[0] in ('-', '+'):
@@ -96,4 +97,11 @@ class Snowflake(Dialect):
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
+        }
+
+    class Generator(Generator):
+        TRANSFORMS = {
+            **Generator.TRANSFORMS,
+            exp.StrToTime: rename_func("TO_TIMESTAMP"),
+            exp.UnixToTime: rename_func("TO_TIMESTAMP"),
         }

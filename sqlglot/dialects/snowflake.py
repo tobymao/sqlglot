@@ -90,6 +90,15 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP": _snowflake_to_timestamp,
         }
 
+        COLUMN_OPERATORS = {
+            **Parser.COLUMN_OPERATORS,
+            TokenType.COLON: lambda self, this, path: self.expression(
+                exp.Bracket,
+                this=this,
+                expressions=[path],
+            ),
+        }
+
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,

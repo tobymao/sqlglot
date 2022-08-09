@@ -34,8 +34,6 @@ class TokenType(AutoName):
     PIPE = auto()
     CARET = auto()
     TILDA = auto()
-    LSHIFT = auto()
-    RSHIFT = auto()
     ARROW = auto()
     DARROW = auto()
     HASH_ARROW = auto()
@@ -185,6 +183,7 @@ class TokenType(AutoName):
     RIGHT = auto()
     RLIKE = auto()
     ROLLUP = auto()
+    ROW = auto()
     ROWS = auto()
     SCHEMA_COMMENT = auto()
     SELECT = auto()
@@ -192,6 +191,7 @@ class TokenType(AutoName):
     SHOW = auto()
     SOME = auto()
     STORED = auto()
+    STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TIME = auto()
@@ -314,8 +314,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "<=": TokenType.LTE,
         "<>": TokenType.NEQ,
         "!=": TokenType.NEQ,
-        "<<": TokenType.LSHIFT,
-        ">>": TokenType.RSHIFT,
         "->": TokenType.ARROW,
         "->>": TokenType.DARROW,
         "#>": TokenType.HASH_ARROW,
@@ -428,7 +426,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROLLUP": TokenType.ROLLUP,
-        "ROW": TokenType.ROWS,
+        "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,
         "SELECT": TokenType.SELECT,
         "SET": TokenType.SET,
@@ -494,6 +492,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
         "UNIQUE": TokenType.UNIQUE,
+        "STRUCT": TokenType.STRUCT,
     }
 
     WHITE_SPACE = {

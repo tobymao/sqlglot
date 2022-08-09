@@ -47,6 +47,8 @@ a.b.C()
 a['x'].b.C()
 a.B()
 a['x'].C()
+int.x
+map.x
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x BETWEEN -1 AND 1

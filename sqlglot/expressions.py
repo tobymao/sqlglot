@@ -1938,6 +1938,7 @@ class TimeTrunc(Func, TimeUnit):
 class DateStrToDate(Func):
     pass
 
+
 class DateToDateStr(Func):
     pass
 

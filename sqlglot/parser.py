@@ -60,6 +60,7 @@ class Parser:
         TokenType.DATE,
         TokenType.DECIMAL,
         TokenType.UUID,
+        TokenType.GEOGRAPHY,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -129,7 +130,9 @@ class Parser:
 
     FUNC_TOKENS = {
         TokenType.CURRENT_DATE,
+        TokenType.CURRENT_DATETIME,
         TokenType.CURRENT_TIMESTAMP,
+        TokenType.CURRENT_TIME,
         TokenType.EXTRACT,
         TokenType.FILTER,
         TokenType.FIRST,

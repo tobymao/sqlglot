@@ -416,6 +416,18 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
+            "current_time",
+            "CURRENT_TIME()",
+            read="bigquery",
+        )
+
+        self.validate(
+            "current_timestamp",
+            "CURRENT_TIMESTAMP()",
+            read="bigquery",
+        )
+
+        self.validate(
             "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)",
             "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)",
             read="bigquery",

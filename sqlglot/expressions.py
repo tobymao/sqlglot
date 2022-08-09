@@ -1464,6 +1464,7 @@ class DataType(Expression):
         ARRAY = auto()
         MAP = auto()
         UUID = auto()
+        GEOGRAPHY = auto()
         STRUCT = auto()
 
     @classmethod
@@ -1862,11 +1863,19 @@ class CurrentDatetime(Func):
     arg_types = {"this": False}
 
 
+class CurrentTime(Func):
+    arg_types = {"this": False}
+
+
 class CurrentTimestamp(Func):
-    arg_types = {}
+    arg_types = {"this": False}
 
 
 class DateAdd(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class DateSub(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
@@ -1874,7 +1883,31 @@ class DateDiff(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
+class DateTrunc(Func, TimeUnit):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class DateTimeAdd(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class DateTimeSub(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
 class DatetimeDiff(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class DatetimeTrunc(Func, TimeUnit):
+    arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class TimestampAdd(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class TimestampSub(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
@@ -1886,12 +1919,16 @@ class TimestampTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
-class DateTrunc(Func, TimeUnit):
-    arg_types = {"this": True, "unit": True, "zone": False}
+class TimeAdd(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DatetimeTrunc(Func, TimeUnit):
-    arg_types = {"this": True, "unit": True, "zone": False}
+class TimeSub(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
+class TimeDiff(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TimeTrunc(Func, TimeUnit):
@@ -1900,10 +1937,6 @@ class TimeTrunc(Func, TimeUnit):
 
 class DateStrToDate(Func):
     pass
-
-
-class DateSub(Func, TimeUnit):
-    arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DateToDateStr(Func):

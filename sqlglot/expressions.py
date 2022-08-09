@@ -1887,11 +1887,11 @@ class DateTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
-class DateTimeAdd(Func, TimeUnit):
+class DatetimeAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DateTimeSub(Func, TimeUnit):
+class DatetimeSub(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 

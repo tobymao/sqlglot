@@ -14,7 +14,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import csv, list_get
 from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 def _parse_map(args):
@@ -147,6 +147,8 @@ class Hive(Dialect):
     identifier = "`"
     escape = "\\"
     alias_post_tablesample = True
+    struct_type_name_type_seperator_token = TokenType.COLON
+    struct_type_name_type_seperator_char = ":"
 
     time_mapping = {
         "y": "%Y",

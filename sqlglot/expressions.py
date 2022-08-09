@@ -1423,7 +1423,9 @@ class DataType(Expression):
     arg_types = {
         "this": True,
         "expressions": False,
-        "nested": False,
+        "is_unnamed_nested": False,
+        "is_named_nested": False,
+        "name": None,
     }
 
     class Type(AutoName):

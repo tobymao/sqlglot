@@ -61,6 +61,8 @@ class Generator:
         "alias_post_tablesample",
         "unsupported_level",
         "unsupported_messages",
+        "struct_type_name_type_seperator_char",
+        "struct_start_end_chars",
         "_indent",
     )
 
@@ -80,6 +82,8 @@ class Generator:
         unnest_column_only=False,
         alias_post_tablesample=False,
         unsupported_level=ErrorLevel.WARN,
+        struct_type_name_type_seperator_char=None,
+        struct_start_end_chars=(TokenType.LT, TokenType.GT),
     ):
         # pylint: disable=too-many-arguments
         import sqlglot
@@ -98,6 +102,8 @@ class Generator:
         self.unnest_column_only = unnest_column_only
         self.alias_post_tablesample = alias_post_tablesample
         self.unsupported_level = unsupported_level
+        self.struct_type_name_type_seperator_char = struct_type_name_type_seperator_char
+        self.struct_start_end_chars = struct_start_end_chars
         self.unsupported_messages = []
         self._indent = indent
 
@@ -317,13 +323,16 @@ class Generator:
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
         name = expression.args.get("name")
         if name:
-            type_sql = f"{name}:{type_sql}"
+            type_sql = f"{name}{self.struct_type_name_type_seperator_char or ' '}{type_sql}"
         nested = ""
         interior = self.expressions(expression, flat=True)
         if interior:
-            nested = (
-                f"<{interior}>" if expression.args.get("nested") else f"({interior})"
-            )
+            if expression.args.get("is_named_nested"):
+                nested = f"{self.struct_start_end_chars[0]}{interior}{self.struct_start_end_chars[1]}"
+            elif expression.args.get("is_unnamed_nested"):
+                nested = f"<{interior}>"
+            else:
+                nested = f"({interior})"
         return f"{type_sql}{nested}"
 
     def delete_sql(self, expression):

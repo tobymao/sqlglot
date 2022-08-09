@@ -12,6 +12,7 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import Generator
 from sqlglot.helper import csv, list_get
 from sqlglot.parser import Parser
+from sqlglot.tokens import TokenType
 
 
 def _approx_distinct_sql(self, expression):
@@ -116,8 +117,12 @@ class Presto(Dialect):
     index_offset = 1
     time_format = "'%Y-%m-%d %H:%i:%S'"
     time_mapping = MySQL.time_mapping
+    struct_start_end_tokens = (TokenType.L_PAREN, TokenType.R_PAREN)
+    struct_start_end_chars = ("(", ")")
 
     class Parser(Parser):
+        TYPE_TOKENS = {v for v in Parser.TYPE_TOKENS}.union({TokenType.ROWS})
+
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
@@ -147,6 +152,7 @@ class Presto(Dialect):
             exp.DataType.Type.BINARY: "VARBINARY",
             exp.DataType.Type.TEXT: "VARCHAR",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.STRUCT: "ROW",
         }
 
         TRANSFORMS = {

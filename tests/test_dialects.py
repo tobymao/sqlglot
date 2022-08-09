@@ -425,6 +425,36 @@ class TestDialects(unittest.TestCase):
             read="bigquery",
         )
 
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRING>)",
+            read="spark",
+            write="bigquery",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+            read="spark",
+            write="bigquery",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a int64, struct_col_b string>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRING>)",
+            read="bigquery",
+            write="bigquery",
+        )
+
+        # Known bug
+        # self.validate(
+        #     "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+        #     "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+        #     read="bigquery",
+        #     write="bigquery",
+        # )
+
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
@@ -1077,6 +1107,34 @@ class TestDialects(unittest.TestCase):
             read="presto",
             identity=False,
         )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
+            read="spark",
+            write="presto",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
+            read="spark",
+            write="presto",
+        )
+
+        # self.validate(
+        #     "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
+        #     "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
+        #     read="presto",
+        #     write="presto",
+        # )
+        #
+        # self.validate(
+        #     "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
+        #     "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INTEGER, struct_col_b STRUCT<nested_col_a VARCHAR, nested_col_b VARCHAR>>)",
+        #     read="presto",
+        #     write="presto",
+        # )
 
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]

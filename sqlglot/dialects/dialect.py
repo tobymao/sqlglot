@@ -3,7 +3,7 @@ from sqlglot.generator import Generator
 from sqlglot.helper import csv, list_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
 
@@ -43,6 +43,10 @@ class Dialect(metaclass=_Dialect):
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False
+    struct_type_name_type_seperator_token = None
+    struct_type_name_type_seperator_char = None
+    struct_start_end_tokens = (TokenType.LT, TokenType.GT)
+    struct_start_end_chars = ("<", ">")
 
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
@@ -108,6 +112,8 @@ class Dialect(metaclass=_Dialect):
                 "index_offset": self.index_offset,
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
+                "struct_start_end_tokens": self.struct_start_end_tokens,
+                "struct_type_name_type_seperator_token": self.struct_type_name_type_seperator_token,
                 **opts,
             },
         )
@@ -124,6 +130,8 @@ class Dialect(metaclass=_Dialect):
                 "time_trie": self.inverse_time_trie,
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
+                "struct_start_end_chars": self.struct_start_end_chars,
+                "struct_type_name_type_seperator_char": self.struct_type_name_type_seperator_char,
                 **opts,
             }
         )

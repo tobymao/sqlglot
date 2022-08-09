@@ -1,3 +1,4 @@
+import copy
 import logging
 
 from sqlglot import constants as c, exp
@@ -59,9 +60,12 @@ class Parser:
         TokenType.STRUCT,
     }
 
-    NESTED_TYPE_TOKENS = {
+    UNNAMED_NESTED_TOKENS = {
         TokenType.ARRAY,
         TokenType.MAP,
+    }
+
+    NAMED_NESTED_TOKENS = {
         TokenType.STRUCT,
     }
 
@@ -146,7 +150,7 @@ class Parser:
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         *CASTS,
-        *NESTED_TYPE_TOKENS,
+        *UNNAMED_NESTED_TOKENS,
         *SUBQUERY_PREDICATES,
     }
 
@@ -291,6 +295,8 @@ class Parser:
         "index_offset",
         "unnest_column_only",
         "alias_post_tablesample",
+        "struct_type_name_type_seperator_token",
+        "struct_start_end_tokens",
         "_tokens",
         "_chunks",
         "_index",
@@ -307,12 +313,16 @@ class Parser:
         index_offset=0,
         unnest_column_only=False,
         alias_post_tablesample=False,
+        struct_type_name_type_seperator_token=None,
+        struct_start_end_tokens=(TokenType.LT, TokenType.GT),
     ):
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
         self.unnest_column_only = unnest_column_only
         self.alias_post_tablesample = alias_post_tablesample
+        self.struct_type_name_type_seperator_token = struct_type_name_type_seperator_token
+        self.struct_start_end_tokens = struct_start_end_tokens
         self.reset()
 
     def reset(self):
@@ -352,6 +362,11 @@ class Parser:
             except ParseError as e:
                 error = e
         raise ParseError(f"Failed to parse into {expression_types}") from error
+
+    def _peak_ahead_token_type(self, times=1, ignore_token=None):
+        future_token = copy.copy(self)
+        future_token._advance(times=times, ignore_token=ignore_token)
+        return future_token._curr.token_type if future_token._curr else None
 
     def _parse(self, parse_method, raw_tokens, sql=None):
         self.reset()
@@ -447,13 +462,20 @@ class Parser:
 
         return index
 
-    def _advance(self, times=1):
+    def _advance(self, times=1, ignore_token=None):
+        def find_unignored(starting_index, amount_to_add):
+            final_index = starting_index
+            current_item = copy.copy(list_get(self._tokens, final_index))
+            while ignore_token and current_item is not None and current_item.token_type == ignore_token:
+                final_index += amount_to_add
+                current_item = list_get(self._tokens, final_index)
+            return current_item, final_index
+
         self._index += times
-        self._curr = list_get(self._tokens, self._index)
-        self._next = list_get(self._tokens, self._index + 1)
-        self._prev = (
-            list_get(self._tokens, self._index - 1) if self._index > 0 else None
-        )
+        start_index = self._index
+        self._curr, self._index = find_unignored(start_index, 1)
+        self._next, _ = find_unignored(self._index + 1, 1)
+        self._prev, _ = find_unignored(start_index - 1, -1)
 
     def _retreat(self, index):
         self._advance(index - self._index)
@@ -1287,7 +1309,7 @@ class Parser:
         if type_token:
             if this:
                 return self.expression(exp.Cast, this=this, to=type_token)
-            if not type_token.args.get("nested"):
+            if not type_token.args.get("is_unnamed_nested"):
                 self._retreat(index)
                 return self._parse_column()
             return type_token
@@ -1305,14 +1327,23 @@ class Parser:
         name = None
 
         if not self._match_set(self.TYPE_TOKENS):
-            if self._prev is not None and self._next is not None and self._next.token_type == TokenType.COLON:
+            # Check if current token is a var and next token is a type and if so suggests
+            # we have a named type like in a struct
+            if (
+                self._curr is not None
+                and self._curr.token_type == TokenType.VAR
+                and self._peak_ahead_token_type(ignore_token=self.struct_type_name_type_seperator_token) in self.TYPE_TOKENS
+            ):
+                target_data_type = self._peak_ahead_token_type(ignore_token=self.struct_type_name_type_seperator_token)
                 name = self._parse_id_var()
-                self._advance(2)
+                while self._prev.token_type != target_data_type:
+                    self._advance(ignore_token=self.struct_type_name_type_seperator_token)
             else:
                 return None
 
         type_token = self._prev.token_type
-        nested = type_token in self.NESTED_TYPE_TOKENS
+        is_unnamed_nested = type_token in self.UNNAMED_NESTED_TOKENS
+        is_named_nested = type_token == TokenType.STRUCT
         expressions = None
 
         if self._match(TokenType.L_BRACKET):
@@ -1321,7 +1352,7 @@ class Parser:
 
         if self._match(TokenType.L_PAREN):
             expressions = self._parse_csv(
-                self._parse_types if nested else self._parse_number
+                self._parse_types if is_unnamed_nested else self._parse_number
             )
 
             if not expressions:
@@ -1330,7 +1361,12 @@ class Parser:
 
             self._match_r_paren()
 
-        if nested and self._match(TokenType.LT):
+        if is_named_nested and self._match(self.struct_start_end_tokens[0]):
+            expressions = self._parse_csv(self._parse_types)
+
+            if not self._match(self.struct_start_end_tokens[1]):
+                self.raise_error(f"Expecting {self.struct_start_end_tokens[1]}")
+        elif is_unnamed_nested and self._match(TokenType.LT):
             expressions = self._parse_csv(self._parse_types)
 
             if not self._match(TokenType.GT):
@@ -1343,20 +1379,23 @@ class Parser:
                 return exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPTZ,
                     expressions=expressions,
-                    nested=nested,
+                    is_unnamed_nested=is_unnamed_nested,
+                    is_named_nested=is_named_nested,
                     name=name,
                 )
             return exp.DataType(
                 this=exp.DataType.Type.TIMESTAMP,
                 expressions=expressions,
-                nested=nested,
+                is_unnamed_nested=is_unnamed_nested,
+                is_named_nested=is_named_nested,
                 name=name,
             )
 
         return exp.DataType(
             this=exp.DataType.Type[type_token.value.upper()],
             expressions=expressions,
-            nested=nested,
+            is_unnamed_nested=is_unnamed_nested,
+            is_named_nested=is_named_nested,
             name=name,
         )
 

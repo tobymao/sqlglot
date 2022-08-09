@@ -1300,7 +1300,7 @@ class Parser:
         if type_token:
             if this:
                 return self.expression(exp.Cast, this=this, to=type_token)
-            if not type_token.args.get("nested"):
+            if not type_token.args.get("expressions"):
                 self._retreat(index)
                 return self._parse_column()
             return type_token
@@ -1390,6 +1390,8 @@ class Parser:
         this = self._parse_field()
         if isinstance(this, exp.Identifier):
             this = self.expression(exp.Column, this=this)
+        elif not this:
+            return self._parse_bracket(this)
         this = self._parse_bracket(this)
 
         while self._match_set(self.COLUMN_OPERATORS):

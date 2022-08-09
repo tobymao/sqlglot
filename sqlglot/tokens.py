@@ -72,6 +72,7 @@ class TokenType(AutoName):
     DATETIME = auto()
     DATE = auto()
     UUID = auto()
+    GEOGRAPHY = auto()
 
     # keywords
     ADD_FILE = auto()
@@ -104,8 +105,9 @@ class TokenType(AutoName):
     CUBE = auto()
     CURRENT_DATE = auto()
     CURRENT_DATETIME = auto()
-    CURRENT_ROW = auto()
+    CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
+    CURRENT_ROW = auto()
     DIV = auto()
     DEFAULT = auto()
     DELETE = auto()

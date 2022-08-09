@@ -1681,6 +1681,48 @@ class TestDialects(unittest.TestCase):
             "SELECT a FROM test AS t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY Z) = 1",
             read="snowflake",
         )
+        self.validate(
+            "SELECT TO_TIMESTAMP(1659981729)",
+            "SELECT TO_TIMESTAMP(1659981729)",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT TO_TIMESTAMP(1659981729000, 3)",
+            "SELECT TO_TIMESTAMP(1659981729)",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT TO_TIMESTAMP('1659981729')",
+            "SELECT TO_TIMESTAMP('1659981729')",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT TO_TIMESTAMP('2013-04-05 01:02:03')",
+            "SELECT TO_TIMESTAMP('2013-04-05 01:02:03', 'yyyy-mm-dd hh24:mi:ss')",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss')",
+            "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss')",
+            read="snowflake",
+        )
+        self.validate(
+            "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss')",
+            "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'MM/dd/yyyy HH:mm:ss')",
+            read="snowflake",
+            write="spark",
+        )
+        self.validate(
+            "SELECT strptime('04/05/2013 01:02:03', '%m/%d/%Y %H:%M:%S');",
+            "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss')",
+            read="duckdb",
+            write="snowflake",
+        )
+        self.validate(
+            "SELECT IFF(TRUE, 'true', 'false')",
+            "SELECT IFF(TRUE, 'true', 'false')",
+            read="snowflake",
+        )
 
     def test_sqlite(self):
         self.validate(

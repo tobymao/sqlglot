@@ -29,7 +29,7 @@ class Generator:
         pad (int): determines padding in a formatted string. Default: 2.
         indent (int): determines the size of indentation in a formatted string. Default: 4.
         unnest_column_only (bool): if true unnest table aliases are considered only as column aliases
-        alias_post_tablesample (bool): If the table alias comes after tablesample
+        alias_post_tablesample (bool): if the table alias comes after tablesample
             Default: False
         unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
             unsupported expressions. Default ErrorLevel.WARN.
@@ -44,6 +44,8 @@ class Generator:
     TYPE_MAPPING = {}
 
     TOKEN_MAPPING = {}
+
+    STRUCT_DELIMITER = ("<", ">")
 
     __slots__ = (
         "time_mapping",
@@ -319,7 +321,9 @@ class Generator:
         interior = self.expressions(expression, flat=True)
         if interior:
             nested = (
-                f"<{interior}>" if expression.args.get("nested") else f"({interior})"
+                f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
+                if expression.args.get("nested")
+                else f"({interior})"
             )
         return f"{type_sql}{nested}"
 
@@ -585,6 +589,9 @@ class Generator:
         replace = self.expressions(expression, key="replace", flat=True)
         replace = f"{self.seg('REPLACE')} ({replace})" if replace else ""
         return f"*{except_}{replace}"
+
+    def structkwarg_sql(self, expression):
+        return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def placeholder_sql(self, *_):
         return "?"

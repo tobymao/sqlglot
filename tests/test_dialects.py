@@ -427,6 +427,34 @@ class TestDialects(unittest.TestCase):
             read="bigquery",
         )
 
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRING>)",
+            read="spark",
+            write="bigquery",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+            read="spark",
+            write="bigquery",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a int64, struct_col_b string>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRING>)",
+            read="bigquery",
+            write="bigquery",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
+            read="bigquery",
+            write="bigquery",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
@@ -519,6 +547,12 @@ class TestDialects(unittest.TestCase):
                 unsupported_level=ErrorLevel.RAISE,
             )
 
+        self.validate(
+            "SELECT * FROM x FETCH 1 ROW",
+            "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",
+            read="postgres",
+        )
+
     def test_presto(self):
         self.validate(
             'SELECT "a"."b" FROM foo',
@@ -549,31 +583,25 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "CAST(a AS ARRAY(INT))",
-            "CAST(a AS ARRAY<INTEGER>)",
+            "CAST(a AS ARRAY(INTEGER))",
             read="presto",
             write="presto",
         )
         self.validate(
             "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
-            "CAST(ARRAY[1, 2] AS ARRAY<BIGINT>)",
+            "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
             read="presto",
             write="presto",
         )
         self.validate(
             "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INT,INT))",
-            "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP<INTEGER, INTEGER>)",
+            "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INTEGER, INTEGER))",
             read="presto",
             write="presto",
         )
         self.validate(
             "CAST(MAP(ARRAY['a','b','c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INT)))",
-            "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP<VARCHAR, ARRAY<INTEGER>>)",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "CAST(ARRAY[1, 2] AS ARRAY<BIGINT>)",
-            "CAST(ARRAY[1, 2] AS ARRAY<BIGINT>)",
+            "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
             read="presto",
             write="presto",
         )
@@ -1082,6 +1110,34 @@ class TestDialects(unittest.TestCase):
         self.validate(
             "SELECT a AS b FROM x GROUP BY b",
             "SELECT a AS b FROM x GROUP BY 1",
+            write="presto",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
+            read="spark",
+            write="presto",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
+            read="spark",
+            write="presto",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
+            read="presto",
+            write="presto",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
+            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
+            read="presto",
             write="presto",
         )
 
@@ -1645,6 +1701,55 @@ class TestDialects(unittest.TestCase):
             "FILTER(the_array, x -> x > 0)",
             read="spark",
             write="presto",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
+            read="spark",
+            write="spark",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
+            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
+            read="spark",
+            write="spark",
+        )
+
+        self.validate(
+            "CREATE TABLE db.example_table (col_a array<int>, col_b array<array<int>>)",
+            "CREATE TABLE db.example_table (col_a ARRAY<INT>, col_b ARRAY<ARRAY<INT>>)",
+            read="spark",
+            write="spark",
+        )
+
+        self.validate(
+            "SELECT 4 << 1",
+            "SELECT SHIFTLEFT(4, 1)",
+            read="hive",
+            write="spark",
+        )
+
+        self.validate(
+            "SELECT 4 >> 1",
+            "SELECT SHIFTRIGHT(4, 1)",
+            read="hive",
+            write="spark",
+        )
+
+        self.validate(
+            "SELECT SHIFTRIGHT(4, 1)",
+            "SELECT 4 >> 1",
+            read="spark",
+            write="hive",
+        )
+
+        self.validate(
+            "SELECT SHIFTLEFT(4, 1)",
+            "SELECT 4 << 1",
+            read="spark",
+            write="hive",
         )
 
     def test_snowflake(self):

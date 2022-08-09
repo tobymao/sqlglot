@@ -35,6 +35,12 @@ class Parser:
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
     }
 
+    NESTED_TYPE_TOKENS = {
+        TokenType.ARRAY,
+        TokenType.MAP,
+        TokenType.STRUCT,
+    }
+
     TYPE_TOKENS = {
         TokenType.BOOLEAN,
         TokenType.TINYINT,
@@ -52,15 +58,9 @@ class Parser:
         TokenType.TIMESTAMPTZ,
         TokenType.DATETIME,
         TokenType.DATE,
-        TokenType.ARRAY,
         TokenType.DECIMAL,
-        TokenType.MAP,
         TokenType.UUID,
-    }
-
-    NESTED_TYPE_TOKENS = {
-        TokenType.ARRAY,
-        TokenType.MAP,
+        *NESTED_TYPE_TOKENS,
     }
 
     SUBQUERY_PREDICATES = {
@@ -136,7 +136,7 @@ class Parser:
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
-        TokenType.ROWS,
+        TokenType.ROW,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,
@@ -168,8 +168,6 @@ class Parser:
     }
 
     BITWISE = {
-        TokenType.LSHIFT: exp.BitwiseLeftShift,
-        TokenType.RSHIFT: exp.BitwiseRightShift,
         TokenType.AMP: exp.BitwiseAnd,
         TokenType.CARET: exp.BitwiseXor,
         TokenType.PIPE: exp.BitwiseOr,
@@ -213,11 +211,6 @@ class Parser:
 
     COLUMN_OPERATORS = {
         TokenType.DOT: None,
-        TokenType.COLON: lambda self, this, path: self.expression(
-            exp.Bracket,
-            this=this,
-            expressions=[path],
-        ),
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
             this=this,
@@ -1159,7 +1152,7 @@ class Parser:
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
             direction = self._prev.text if direction else "FIRST"
             count = self._parse_number()
-            self._match(TokenType.ROWS)
+            self._match_set((TokenType.ROW, TokenType.ROWS))
             self._match(TokenType.ONLY)
             return self.expression(exp.Fetch, direction=direction, count=count)
         return this
@@ -1255,7 +1248,27 @@ class Parser:
         return self.expression(exp.Escape, this=this, expression=self._parse_string())
 
     def _parse_bitwise(self):
-        return self._parse_tokens(self._parse_term, self.BITWISE)
+        this = self._parse_term()
+
+        while True:
+            if self._match_set(self.BITWISE):
+                this = self.expression(
+                    self.BITWISE[self._prev.token_type],
+                    this=this,
+                    expression=self._parse_term(),
+                )
+            elif self._match_pair(TokenType.LT, TokenType.LT):
+                this = self.expression(
+                    exp.BitwiseLeftShift, this=this, expression=self._parse_term()
+                )
+            elif self._match_pair(TokenType.GT, TokenType.GT):
+                this = self.expression(
+                    exp.BitwiseRightShift, this=this, expression=self._parse_term()
+                )
+            else:
+                break
+
+        return this
 
     def _parse_term(self):
         return self._parse_tokens(self._parse_factor, self.TERM)
@@ -1308,6 +1321,7 @@ class Parser:
 
         type_token = self._prev.token_type
         nested = type_token in self.NESTED_TYPE_TOKENS
+        is_struct = type_token == TokenType.STRUCT
         expressions = None
 
         if self._match(TokenType.L_BRACKET):
@@ -1315,9 +1329,12 @@ class Parser:
             return None
 
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(
-                self._parse_types if nested else self._parse_number
-            )
+            if is_struct:
+                expressions = self._parse_csv(self._parse_struct_kwargs)
+            elif nested:
+                expressions = self._parse_csv(self._parse_types)
+            else:
+                expressions = self._parse_csv(self._parse_number)
 
             if not expressions:
                 self._retreat(index)
@@ -1326,7 +1343,10 @@ class Parser:
             self._match_r_paren()
 
         if nested and self._match(TokenType.LT):
-            expressions = self._parse_csv(self._parse_types)
+            if is_struct:
+                expressions = self._parse_csv(self._parse_struct_kwargs)
+            else:
+                expressions = self._parse_csv(self._parse_types)
 
             if not self._match(TokenType.GT):
                 self.raise_error("Expecting >")
@@ -1351,6 +1371,14 @@ class Parser:
             expressions=expressions,
             nested=nested,
         )
+
+    def _parse_struct_kwargs(self):
+        this = self._parse_id_var()
+        self._match(TokenType.COLON)
+        data_type = self._parse_types()
+        if not data_type:
+            return None
+        return self.expression(exp.StructKwarg, this=this, expression=data_type)
 
     def _parse_at_time_zone(self, this):
         if not self._match(TokenType.AT_TIME_ZONE):
@@ -1906,6 +1934,19 @@ class Parser:
 
         if self._curr.token_type in types:
             self._advance()
+            return True
+
+        return None
+
+    def _match_pair(self, token_type_a, token_type_b):
+        if not self._curr or not self._next:
+            return None
+
+        if (
+            self._curr.token_type == token_type_a
+            and self._next.token_type == token_type_b
+        ):
+            self._advance(2)
             return True
 
         return None

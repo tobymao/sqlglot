@@ -1464,6 +1464,7 @@ class DataType(Expression):
         ARRAY = auto()
         MAP = auto()
         UUID = auto()
+        STRUCT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):
@@ -1473,6 +1474,10 @@ class DataType(Expression):
             else DataType.Type[dtype.upper()],
             **kwargs,
         )
+
+
+class StructKwarg(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 # WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)

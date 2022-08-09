@@ -18,12 +18,12 @@ def _date_add(expression_class):
     return func
 
 
-def _date_add_sql(kind):
+def _date_add_sql(data_type, kind):
     def func(self, expression):
         this = self.sql(expression, "this")
         unit = self.sql(expression, "unit")
         expression = self.sql(expression, "expression")
-        return f"DATE_{kind}({this}, INTERVAL {expression} {unit})"
+        return f"{data_type}_{kind}({this}, INTERVAL {expression} {unit})"
 
     return func
 
@@ -39,6 +39,8 @@ class BigQuery(Dialect):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
+            "CURRENT_TIME": TokenType.CURRENT_TIME,
+            "GEOGRAPHY": TokenType.GEOGRAPHY,
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
             "QUALIFY": TokenType.QUALIFY,
@@ -50,19 +52,32 @@ class BigQuery(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
+            "DATETIME_ADD": _date_add(exp.DateTimeAdd),
+            "TIME_ADD": _date_add(exp.TimeAdd),
+            "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
             "DATE_SUB": _date_add(exp.DateSub),
+            "DATETIME_SUB": _date_add(exp.DateTimeSub),
+            "TIME_SUB": _date_add(exp.TimeSub),
+            "TIMESTAMP_SUB": _date_add(exp.TimestampSub),
         }
 
         NO_PAREN_FUNCTIONS = {
             **Parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
+            TokenType.CURRENT_TIME: exp.CurrentTime,
         }
 
     class Generator(Generator):
         TRANSFORMS = {
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
-            exp.DateAdd: _date_add_sql("ADD"),
-            exp.DateSub: _date_add_sql("SUB"),
+            exp.DateAdd: _date_add_sql("DATE", "ADD"),
+            exp.DateSub: _date_add_sql("DATE", "SUB"),
+            exp.DateTimeAdd: _date_add_sql("DATETIME", "ADD"),
+            exp.DateTimeSub: _date_add_sql("DATETIME", "SUB"),
+            exp.TimeAdd: _date_add_sql("TIME", "ADD"),
+            exp.TimeSub: _date_add_sql("TIME", "SUB"),
+            exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
+            exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
         }
 
         TYPE_MAPPING = {

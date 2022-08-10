@@ -734,7 +734,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         while True:
             if self._char == self.escape and self._peek == quote:
-                text += f"{self.ESCAPE_CODE}{self._char}"
+                text += f"{self.ESCAPE_CODE}{self._peek}"
                 self._advance(2)
             else:
                 if self._chars(size) == quote:
@@ -743,7 +743,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     break
 
                 if self._char == "'":
-                    text += f"{self.ESCAPE_CODE}{self._char}"
+                    text += f"{self.ESCAPE_CODE}'"
                     self._advance()
                 elif self._end:
                     raise RuntimeError(

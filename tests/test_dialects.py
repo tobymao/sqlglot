@@ -1247,6 +1247,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate("LOG(10)", "LN(10)", read="hive", write="presto")
         self.validate("LOG(2, 10)", "LOG(2, 10)", read="hive", write="presto")
+        self.validate("'\\''", "''''", read="hive", write="presto")
         self.validate("'\"x\"'", "'\"x\"'", read="hive", write="presto")
         self.validate("\"'x'\"", "'''x'''", read="hive", write="presto")
         self.validate('ds = "2020-01-01"', "ds = '2020-01-01'", read="hive")

@@ -1,6 +1,6 @@
 import logging
 
-from sqlglot import exp
+from sqlglot import constants as c, exp
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
@@ -46,6 +46,10 @@ class Generator:
     TOKEN_MAPPING = {}
 
     STRUCT_DELIMITER = ("<", ">")
+
+    TABLE_COMMENT_AS_OPTION = True
+
+    SUPPORTS_TABLE_OPTIONS = True
 
     __slots__ = (
         "time_mapping",
@@ -259,6 +263,21 @@ class Generator:
         return f"{column} {kind}{not_null}{default}{collate}{comment}{unique}{primary}{auto_increment}"
 
     def create_sql(self, expression):
+        comment = self.sql(expression, "comment")
+        if comment:
+            if self.TABLE_COMMENT_AS_OPTION:
+                comment = f"{c.COMMENT}={comment}"
+            else:
+                properties = expression.args['properties'] or exp.Properties(expressions=[])
+                properties.args['expressions'].append(
+                    exp.Property(
+                        this=exp.Literal.string(c.COMMENT),
+                        value=comment,
+                    )
+                )
+                expression.args['properties'] = properties
+                comment = None
+
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind").upper()
         expression_sql = self.sql(expression, "expression")
@@ -267,27 +286,28 @@ class Generator:
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         properties = self.sql(expression, "properties")
-        engine = self.sql(expression, "engine")
-        engine = f"ENGINE={engine}" if engine else ""
-        auto_increment = self.sql(expression, "auto_increment")
-        auto_increment = f"AUTO_INCREMENT={auto_increment}" if auto_increment else ""
-        character_set = self.sql(expression, "character_set")
-        collate = self.sql(expression, "collate")
-        collate = f"COLLATE={collate}" if collate else ""
-        comment = self.sql(expression, "comment")
-        comment = f"COMMENT={comment}" if comment else ""
+        if self.SUPPORTS_TABLE_OPTIONS:
+            engine = self.sql(expression, "engine")
+            engine = f"ENGINE={engine}" if engine else ""
+            auto_increment = self.sql(expression, "auto_increment")
+            auto_increment = f"AUTO_INCREMENT={auto_increment}" if auto_increment else ""
+            character_set = self.sql(expression, "character_set")
+            collate = self.sql(expression, "collate")
+            collate = f"COLLATE={collate}" if collate else ""
 
-        options = " ".join(
-            option
-            for option in (
-                engine,
-                auto_increment,
-                character_set,
-                collate,
-                comment,
+            options = " ".join(
+                option
+                for option in (
+                    engine,
+                    auto_increment,
+                    character_set,
+                    collate,
+                    comment,
+                )
+                if option
             )
-            if option
-        )
+        else:
+            options = ""
 
         expression_sql = f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}{options}"
         return self.prepend_ctes(expression, expression_sql)

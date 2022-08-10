@@ -301,6 +301,20 @@ class TestDialects(unittest.TestCase):
             write="mysql",
         )
 
+        self.validate(
+            'CREATE TABLE IF NOT EXISTS db.table (col_a INT) ENGINE=INNODB COMMENT="Test Comment"',
+            "CREATE TABLE IF NOT EXISTS db.table (col_a INT) ENGINE=INNODB COMMENT='Test Comment'",
+            read="mysql",
+            write="mysql",
+        )
+
+        self.validate(
+            'CREATE TABLE IF NOT EXISTS db.table (col_a INT) ENGINE=INNODB COMMENT="Test Comment"',
+            "CREATE TABLE IF NOT EXISTS db.table (col_a INT) COMMENT 'Test Comment'",
+            read="mysql",
+            write="spark",
+        )
+
     def test_starrocks(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",
@@ -1762,6 +1776,13 @@ class TestDialects(unittest.TestCase):
             "SELECT 4 << 1",
             read="spark",
             write="hive",
+        )
+
+        self.validate(
+            'CREATE TABLE db.table (col_a STRING, col_b STRING) COMMENT "Test Comment" PARTITIONED BY (col_b) STORED AS ICEBERG',
+            "CREATE TABLE db.table (col_a STRING, col_b STRING) COMMENT 'Test Comment' PARTITIONED BY (col_b) STORED AS ICEBERG",
+            read="spark",
+            write="spark",
         )
 
     def test_snowflake(self):

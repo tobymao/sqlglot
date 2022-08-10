@@ -55,38 +55,32 @@ def _properties_sql(self, expression):
     expression = expression.copy()
     properties = expression.expressions
 
-    using = ""
-    stored_as = ""
-    partitioned_by = ""
-    location = ""
-
-    for p in properties:
+    values = []
+    for p in properties[:]:
         name = p.name.upper()
+        value = None
         if name == c.TABLE_FORMAT:
-            using = p
+            properties.remove(p)
+            value = self.seg(f"USING {p.text('value').upper()}")
         elif name == c.FILE_FORMAT:
-            stored_as = p
+            properties.remove(p)
+            value = self.seg(f"STORED AS {p.text('value').upper()}")
         elif name == c.LOCATION:
-            location = p
+            properties.remove(p)
+            value = self.seg(f"LOCATION {self.sql(p, 'value')}")
         elif isinstance(p.args["value"], exp.Schema):
-            partitioned_by = p
-
-    if partitioned_by:
-        properties.remove(partitioned_by)
-        partitioned_by = self.seg(
-            f"PARTITIONED BY {self.sql(partitioned_by.args['value'])}"
-        )
-    if using:
-        properties.remove(using)
-        using = self.seg(f"USING {using.text('value').upper()}")
-    if stored_as:
-        properties.remove(stored_as)
-        stored_as = self.seg(f"STORED AS {stored_as.text('value').upper()}")
-    if location:
-        properties.remove(location)
-        stored_as = self.seg(f"LOCATION {self.sql(location, 'value')}")
-
-    return f"{using}{partitioned_by}{stored_as}{self.properties('TBLPROPERTIES', expression)}"
+            properties.remove(p)
+            value = self.seg(
+                f"PARTITIONED BY {self.sql(p.args['value'])}"
+            )
+        elif name == c.COMMENT:
+            properties.remove(p)
+            value = self.seg(f"COMMENT {self.sql(p.args['value'])}")
+        if value:
+            values.append(value)
+    if properties:
+        values.append(self.properties('TBLPROPERTIES', expression))
+    return "".join(values)
 
 
 def _property_sql(self, expression):
@@ -241,6 +235,9 @@ class Hive(Dialect):
         }
 
     class Generator(Generator):
+        TABLE_COMMENT_AS_OPTION = False
+        SUPPORTS_TABLE_OPTIONS = False
+
         TYPE_MAPPING = {
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.VARCHAR: "STRING",

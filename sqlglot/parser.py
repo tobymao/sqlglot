@@ -606,12 +606,12 @@ class Parser:
     def _parse_properties(self, schema):
         properties = []
 
-        if self._match(TokenType.WITH):
-            self._match_l_paren()
-            properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
-            self._match_r_paren()
-        else:
-            if self._match(TokenType.USING):
+        while True:
+            if self._match(TokenType.WITH):
+                self._match_l_paren()
+                properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
+                self._match_r_paren()
+            elif self._match(TokenType.USING):
                 properties.append(
                     self.expression(
                         exp.Property,
@@ -619,8 +619,7 @@ class Parser:
                         value=exp.Literal.string(self._parse_var().name),
                     )
                 )
-
-            if self._match_by(TokenType.PARTITION):
+            elif self._match_by(TokenType.PARTITION):
                 properties.append(
                     self.expression(
                         exp.Property,
@@ -629,7 +628,7 @@ class Parser:
                     )
                 )
 
-            if self._match(TokenType.STORED):
+            elif self._match(TokenType.STORED):
                 self._match(TokenType.ALIAS)
                 properties.append(
                     self.expression(
@@ -638,7 +637,7 @@ class Parser:
                         value=exp.Literal.string(self._parse_var().text("this")),
                     )
                 )
-            if self._match(TokenType.LOCATION):
+            elif self._match(TokenType.LOCATION):
                 properties.append(
                     self.expression(
                         exp.Property,
@@ -646,8 +645,7 @@ class Parser:
                         value=self._parse_string(),
                     )
                 )
-
-            if self._match(TokenType.PROPERTIES):
+            elif self._match(TokenType.PROPERTIES):
                 self._match_l_paren()
                 properties.extend(
                     self._parse_csv(
@@ -659,6 +657,16 @@ class Parser:
                     )
                 )
                 self._match_r_paren()
+            elif self._match(TokenType.SCHEMA_COMMENT):
+                properties.append(
+                    self.expression(
+                        exp.Property,
+                        this=exp.Literal.string(c.COMMENT),
+                        value=self._parse_string(),
+                    )
+                )
+            else:
+                break
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None

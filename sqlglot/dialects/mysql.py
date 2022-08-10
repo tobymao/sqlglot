@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
+from sqlglot.tokens import Tokenizer
 
 
 class MySQL(Dialect):
@@ -23,6 +24,9 @@ class MySQL(Dialect):
         "%s": "%S",
         "%S": "%S",
     }
+
+    class Tokenizer(Tokenizer):
+        QUOTES = ["'", '"']
 
     class Parser(Parser):
         STRICT_CAST = False

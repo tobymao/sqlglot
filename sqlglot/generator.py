@@ -749,7 +749,7 @@ class Generator:
     def reference_sql(self, expression):
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)
-        return f"REFERENCES({this}) ({expressions})"
+        return f"REFERENCES {this}({expressions})"
 
     def anonymous_sql(self, expression):
         args = self.indent(

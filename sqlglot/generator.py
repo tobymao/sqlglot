@@ -268,14 +268,16 @@ class Generator:
             if self.TABLE_COMMENT_AS_OPTION:
                 comment = f"{c.COMMENT}={comment}"
             else:
-                properties = expression.args['properties'] or exp.Properties(expressions=[])
-                properties.args['expressions'].append(
+                properties = expression.args["properties"] or exp.Properties(
+                    expressions=[]
+                )
+                properties.args["expressions"].append(
                     exp.Property(
                         this=exp.Literal.string(c.COMMENT),
                         value=comment,
                     )
                 )
-                expression.args['properties'] = properties
+                expression.args["properties"] = properties
                 comment = None
 
         this = self.sql(expression, "this")
@@ -290,7 +292,9 @@ class Generator:
             engine = self.sql(expression, "engine")
             engine = f"ENGINE={engine}" if engine else ""
             auto_increment = self.sql(expression, "auto_increment")
-            auto_increment = f"AUTO_INCREMENT={auto_increment}" if auto_increment else ""
+            auto_increment = (
+                f"AUTO_INCREMENT={auto_increment}" if auto_increment else ""
+            )
             character_set = self.sql(expression, "character_set")
             collate = self.sql(expression, "collate")
             collate = f"COLLATE={collate}" if collate else ""

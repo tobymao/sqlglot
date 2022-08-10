@@ -70,16 +70,14 @@ def _properties_sql(self, expression):
             value = self.seg(f"LOCATION {self.sql(p, 'value')}")
         elif isinstance(p.args["value"], exp.Schema):
             properties.remove(p)
-            value = self.seg(
-                f"PARTITIONED BY {self.sql(p.args['value'])}"
-            )
+            value = self.seg(f"PARTITIONED BY {self.sql(p.args['value'])}")
         elif name == c.COMMENT:
             properties.remove(p)
             value = self.seg(f"COMMENT {self.sql(p.args['value'])}")
         if value:
             values.append(value)
     if properties:
-        values.append(self.properties('TBLPROPERTIES', expression))
+        values.append(self.properties("TBLPROPERTIES", expression))
     return "".join(values)
 
 

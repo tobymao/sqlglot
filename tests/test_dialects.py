@@ -1963,3 +1963,10 @@ class TestDialects(unittest.TestCase):
             "REDUCE(ARRAY[1, 2], 0, (acc, x) -> acc + x, acc -> acc)",
             write="trino",
         )
+
+    def test_clickhouse(self):
+        self.validate(
+            "dictGet(x, 'y')",
+            "dictGet(x, 'y')",
+            write="clickhouse",
+        )

@@ -1493,7 +1493,7 @@ class Parser:
             this = self._parse_extract()
         else:
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
-            this = self._curr.text.upper()
+            this = self._curr.text
             self._advance(2)
 
             if subquery_predicate and self._curr.token_type in (
@@ -1504,7 +1504,7 @@ class Parser:
                 self._match_r_paren()
                 return this
 
-            function = self.FUNCTIONS.get(this)
+            function = self.FUNCTIONS.get(this.upper())
             args = self._parse_csv(self._parse_lambda)
 
             if function:

@@ -1764,6 +1764,11 @@ class TestDialects(unittest.TestCase):
             read="spark",
             write="hive",
         )
+        self.validate(
+            "SELECT * FROM VALUES ('x'), ('y') AS t(z)",
+            "SELECT * FROM (VALUES ('x'), ('y')) AS t(z)",
+            write="spark",
+        )
 
     def test_snowflake(self):
         self.validate(

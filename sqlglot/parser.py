@@ -881,6 +881,9 @@ class Parser:
             this = self.expression(
                 exp.Values, expressions=self._parse_csv(self._parse_value)
             )
+            alias = self._parse_table_alias()
+            if alias:
+                this = self.expression(exp.Subquery, this=this, alias=alias)
         else:
             this = None
 

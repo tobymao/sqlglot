@@ -549,6 +549,15 @@ class Generator:
         this = f"{this} " if this else this
         return self.op_expressions(f"{this}ORDER BY", expression, flat=this or flat)
 
+    def cluster_sql(self, expression):
+        return self.op_expressions("CLUSTER BY", expression)
+
+    def distribute_sql(self, expression):
+        return self.op_expressions("DISTRIBUTE BY", expression)
+
+    def sort_sql(self, expression):
+        return self.op_expressions("SORT BY", expression)
+
     def ordered_sql(self, expression):
         desc = expression.args.get("desc")
         desc = " DESC" if desc else ""
@@ -570,6 +579,9 @@ class Generator:
             self.sql(expression, "having"),
             self.sql(expression, "qualify"),
             self.sql(expression, "window"),
+            self.sql(expression, "distribute"),
+            self.sql(expression, "sort"),
+            self.sql(expression, "cluster"),
             self.sql(expression, "order"),
             self.sql(expression, "limit"),
             self.sql(expression, "offset"),
@@ -603,6 +615,9 @@ class Generator:
             self.wrap(expression),
             f" AS {alias}" if alias else "",
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
+            self.sql(expression, "distribute"),
+            self.sql(expression, "sort"),
+            self.sql(expression, "cluster"),
             self.sql(expression, "order"),
             self.sql(expression, "limit"),
             self.sql(expression, "offset"),

@@ -620,7 +620,7 @@ class Parser:
                     )
                 )
 
-            if self._match_by(TokenType.PARTITION):
+            if self._match(TokenType.PARTITIONED_BY):
                 properties.append(
                     self.expression(
                         exp.Property,
@@ -865,6 +865,11 @@ class Parser:
                     "qualify": self._parse_qualify(),
                     "window": self._match(TokenType.WINDOW)
                     and self._parse_window(self._parse_id_var(), alias=True),
+                    "distribute": self._parse_sort(
+                        TokenType.DISTRIBUTE_BY, exp.Distribute
+                    ),
+                    "sort": self._parse_sort(TokenType.SORT_BY, exp.Sort),
+                    "cluster": self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
                     "order": self._parse_order(),
                     "limit": limit or self._parse_limit(),
                     "offset": self._parse_offset(),
@@ -898,6 +903,9 @@ class Parser:
             this=this,
             alias=alias,
             order=self._parse_order(),
+            distribute=self._parse_sort(TokenType.DISTRIBUTE_BY, exp.Distribute),
+            sort=self._parse_sort(TokenType.SORT_BY, exp.Sort),
+            cluster=self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
             limit=self._parse_limit(),
             offset=self._parse_offset(),
         )
@@ -1100,7 +1108,7 @@ class Parser:
         return self.expression(exp.Where, this=self._parse_conjunction())
 
     def _parse_group(self):
-        if not self._match_by(TokenType.GROUP):
+        if not self._match(TokenType.GROUP_BY):
             return None
         return self.expression(
             exp.Group,
@@ -1137,11 +1145,19 @@ class Parser:
         return self.expression(exp.Qualify, this=self._parse_conjunction())
 
     def _parse_order(self, this=None):
-        if not self._match_by(TokenType.ORDER):
+        if not self._match(TokenType.ORDER_BY):
             return this
 
         return self.expression(
             exp.Order, this=this, expressions=self._parse_csv(self._parse_ordered)
+        )
+
+    def _parse_sort(self, token_type, exp_class):
+        if not self._match(token_type):
+            return None
+
+        return self.expression(
+            exp_class, expressions=self._parse_csv(self._parse_ordered)
         )
 
     def _parse_ordered(self):
@@ -1758,7 +1774,7 @@ class Parser:
 
         alias = self._parse_id_var(False)
 
-        if self._match_by(TokenType.PARTITION):
+        if self._match(TokenType.PARTITION_BY):
             partition = self._parse_csv(self._parse_type)
 
         order = self._parse_order()
@@ -1966,13 +1982,6 @@ class Parser:
     def _match_r_paren(self):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
-
-    def _match_by(self, token_type):
-        if self._match(token_type):
-            if not self._match(TokenType.BY):
-                self.raise_error("Expecting BY")
-            return True
-        return False
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

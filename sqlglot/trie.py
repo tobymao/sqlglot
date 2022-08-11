@@ -13,15 +13,15 @@ def new_trie(keywords):
 
 def in_trie(trie, key):
     if not key:
-        return 0
+        return (0, trie)
 
     current = trie
 
     for char in key:
         if char not in current:
-            return 0
+            return (0, current)
         current = current[char]
 
     if 0 in current:
-        return 2
-    return 1
+        return (2, current)
+    return (1, current)

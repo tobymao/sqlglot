@@ -644,10 +644,16 @@ class Tokenizer(metaclass=_Tokenizer):
         size = 0
         word = None
         chars = self._text
+        char = chars
         prev_space = False
+        skip = False
+        trie = self.KEYWORD_TRIE
 
         while chars:
-            result = in_trie(self.KEYWORD_TRIE, chars.upper())
+            if skip:
+                result = 1
+            else:
+                result, trie = in_trie(trie, char.upper())
 
             if result == 0:
                 break
@@ -661,8 +667,13 @@ class Tokenizer(metaclass=_Tokenizer):
                 is_space = char in self.WHITE_SPACE
 
                 if not is_space or not prev_space:
-                    chars += " " if is_space else char
+                    if is_space:
+                        char = " "
+                    chars += char
                     prev_space = is_space
+                    skip = False
+                else:
+                    skip = True
             else:
                 chars = None
 

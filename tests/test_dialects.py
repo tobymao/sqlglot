@@ -564,6 +564,13 @@ class TestDialects(unittest.TestCase):
             write="sqlite",
         )
 
+        self.validate(
+            "STRFTIME(x, '%y-%-m-%S')",
+            "TO_CHAR(x, 'YY-FMMM-SS')",
+            read="duckdb",
+            write="postgres",
+        )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "DATE_ADD(x, y, 'day')",

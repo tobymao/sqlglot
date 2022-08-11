@@ -727,6 +727,20 @@ class Order(Expression):
     arg_types = {"this": False, "expressions": True}
 
 
+# hive specific sorts
+# https://cwiki.apache.org/confluence/display/Hive/LanguageManual+SortBy
+class Cluster(Order):
+    pass
+
+
+class Distribute(Order):
+    pass
+
+
+class Sort(Order):
+    pass
+
+
 class Ordered(Expression):
     arg_types = {"this": True, "desc": False}
 
@@ -911,6 +925,9 @@ class Select(Subqueryable, Expression):
         "having": False,
         "qualify": False,
         "window": False,
+        "distribute": False,
+        "sort": False,
+        "cluster": False,
         "order": False,
         "limit": False,
         "offset": False,
@@ -1364,6 +1381,9 @@ class Subquery(DerivedTable):
         "this": True,
         "alias": False,
         "joins": False,
+        "distribute": False,
+        "sort": False,
+        "cluster": False,
         "order": False,
         "limit": False,
         "offset": False,

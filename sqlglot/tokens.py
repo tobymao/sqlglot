@@ -88,12 +88,12 @@ class TokenType(AutoName):
     BEGIN = auto()
     BETWEEN = auto()
     BUCKET = auto()
-    BY = auto()
     CACHE = auto()
     CALL = auto()
     CASE = auto()
     CAST = auto()
     CHARACTER_SET = auto()
+    CLUSTER_BY = auto()
     COLLATE = auto()
     COMMENT = auto()
     COMMENT_END = auto()
@@ -113,6 +113,7 @@ class TokenType(AutoName):
     DELETE = auto()
     DESC = auto()
     DISTINCT = auto()
+    DISTRIBUTE_BY = auto()
     DROP = auto()
     ELSE = auto()
     END = auto()
@@ -131,7 +132,7 @@ class TokenType(AutoName):
     FULL = auto()
     FUNCTION = auto()
     FROM = auto()
-    GROUP = auto()
+    GROUP_BY = auto()
     GROUPING_SETS = auto()
     HAVING = auto()
     HINT = auto()
@@ -162,7 +163,7 @@ class TokenType(AutoName):
     ONLY = auto()
     OPTIMIZE = auto()
     OPTIONS = auto()
-    ORDER = auto()
+    ORDER_BY = auto()
     ORDERED = auto()
     ORDINALITY = auto()
     OUTER = auto()
@@ -170,6 +171,8 @@ class TokenType(AutoName):
     OVER = auto()
     OVERWRITE = auto()
     PARTITION = auto()
+    PARTITION_BY = auto()
+    PARTITIONED_BY = auto()
     PERCENT = auto()
     PLACEHOLDER = auto()
     PRECEDING = auto()
@@ -192,6 +195,7 @@ class TokenType(AutoName):
     SET = auto()
     SHOW = auto()
     SOME = auto()
+    SORT_BY = auto()
     STORED = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
@@ -338,13 +342,13 @@ class Tokenizer(metaclass=_Tokenizer):
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,
         "BUCKET": TokenType.BUCKET,
-        "BY": TokenType.BY,
         "CALL": TokenType.CALL,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
         "CAST": TokenType.CAST,
         "CHARACTER SET": TokenType.CHARACTER_SET,
+        "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
@@ -360,6 +364,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
         "DISTINCT": TokenType.DISTINCT,
+        "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
         "DROP": TokenType.DROP,
         "ELSE": TokenType.ELSE,
         "END": TokenType.END,
@@ -378,7 +383,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FOLLOWING": TokenType.FOLLOWING,
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FROM": TokenType.FROM,
-        "GROUP": TokenType.GROUP,
+        "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
@@ -408,14 +413,15 @@ class Tokenizer(metaclass=_Tokenizer):
         "OPTIMIZE": TokenType.OPTIMIZE,
         "OPTIONS": TokenType.OPTIONS,
         "OR": TokenType.OR,
-        "ORDER": TokenType.ORDER,
+        "ORDER BY": TokenType.ORDER_BY,
         "ORDINALITY": TokenType.ORDINALITY,
         "OUTER": TokenType.OUTER,
         "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
         "OVERWRITE": TokenType.OVERWRITE,
         "PARTITION": TokenType.PARTITION,
-        "PARTITIONED": TokenType.PARTITION,
+        "PARTITION BY": TokenType.PARTITION_BY,
+        "PARTITIONED BY": TokenType.PARTITIONED_BY,
         "PERCENT": TokenType.PERCENT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
@@ -434,6 +440,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
         "SOME": TokenType.SOME,
+        "SORT BY": TokenType.SORT_BY,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
         "TBLPROPERTIES": TokenType.PROPERTIES,
@@ -634,9 +641,10 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._add(TokenType.STRING)
 
     def _scan_keywords(self):
-        size = 1
+        size = 0
         word = None
         chars = self._text
+        prev_space = False
 
         while chars:
             result = in_trie(self.KEYWORD_TRIE, chars.upper())
@@ -646,7 +654,17 @@ class Tokenizer(metaclass=_Tokenizer):
             if result == 2:
                 word = chars
             size += 1
-            chars = self._chars(size)
+            end = self._current - 1 + size
+
+            if end < self.size:
+                char = self.sql[end]
+                is_space = char in self.WHITE_SPACE
+
+                if not is_space or not prev_space:
+                    chars += " " if is_space else char
+                    prev_space = is_space
+            else:
+                chars = None
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
@@ -664,7 +682,7 @@ class Tokenizer(metaclass=_Tokenizer):
         if self._scan_string(word):
             return
 
-        self._advance(len(word) - 1)
+        self._advance(size - 1)
         self._add(self.KEYWORDS[word.upper()])
 
     def _scan_comment(self, comment):

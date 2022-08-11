@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 def _unix_to_time(self, expression):
@@ -32,7 +33,21 @@ def _date_add(self, expression):
     return f"{this} + INTERVAL {e} {unit}"
 
 
+def _struct_pack_sql(self, expression):
+    args = [
+        self.binary(e, ":=") if isinstance(e, exp.EQ) else self.sql(e)
+        for e in expression.expressions
+    ]
+    return f"STRUCT_PACK({', '.join(args)})"
+
+
 class DuckDB(Dialect):
+    class Tokenizer(Tokenizer):
+        KEYWORDS = {
+            **Tokenizer.KEYWORDS,
+            ":=": TokenType.EQ,
+        }
+
     class Parser(Parser):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
@@ -54,6 +69,7 @@ class DuckDB(Dialect):
             "STRING_TO_ARRAY": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "STRING_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
+            "STRUCT_PACK": exp.Struct.from_arg_list,
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
         }
@@ -82,6 +98,7 @@ class DuckDB(Dialect):
             exp.Split: rename_func("STR_SPLIT"),
             exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
+            exp.Struct: _struct_pack_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",

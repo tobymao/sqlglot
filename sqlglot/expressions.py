@@ -719,6 +719,12 @@ class Lateral(DerivedTable):
     arg_types = {"this": True, "outer": False, "alias": False}
 
 
+# Clickhouse FROM FINAL modifier
+# https://clickhouse.com/docs/en/sql-reference/statements/select/from/#final-modifier
+class Final(Expression):
+    pass
+
+
 class Offset(Expression):
     arg_types = {"this": False, "expression": True}
 

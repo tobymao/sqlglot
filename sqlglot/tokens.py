@@ -126,6 +126,7 @@ class TokenType(AutoName):
     FALSE = auto()
     FETCH = auto()
     FILTER = auto()
+    FINAL = auto()
     FIRST = auto()
     FOLLOWING = auto()
     FOREIGN_KEY = auto()

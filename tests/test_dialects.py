@@ -1970,3 +1970,14 @@ class TestDialects(unittest.TestCase):
             "dictGet(x, 'y')",
             write="clickhouse",
         )
+
+        self.validate(
+            "select * from x final",
+            "SELECT * FROM x FINAL",
+            read="clickhouse",
+        )
+        self.validate(
+            "select * from x y final",
+            "SELECT * FROM x AS y FINAL",
+            read="clickhouse",
+        )

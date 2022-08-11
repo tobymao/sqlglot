@@ -43,6 +43,7 @@ class Dialect(metaclass=_Dialect):
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False
+    normalize_functions = "upper"
 
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
@@ -124,6 +125,7 @@ class Dialect(metaclass=_Dialect):
                 "time_trie": self.inverse_time_trie,
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
+                "normalize_functions": self.normalize_functions,
                 **opts,
             }
         )

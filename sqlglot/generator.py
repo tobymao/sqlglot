@@ -29,6 +29,8 @@ class Generator:
         pad (int): determines padding in a formatted string. Default: 2.
         indent (int): determines the size of indentation in a formatted string. Default: 4.
         unnest_column_only (bool): if true unnest table aliases are considered only as column aliases
+        normalize_functions (str): normalize function names, "upper", "lower", or None
+            Default: "upper"
         alias_post_tablesample (bool): if the table alias comes after tablesample
             Default: False
         unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
@@ -61,6 +63,7 @@ class Generator:
         "index_offset",
         "unnest_column_only",
         "alias_post_tablesample",
+        "normalize_functions",
         "unsupported_level",
         "unsupported_messages",
         "_indent",
@@ -81,6 +84,7 @@ class Generator:
         index_offset=0,
         unnest_column_only=False,
         alias_post_tablesample=False,
+        normalize_functions="upper",
         unsupported_level=ErrorLevel.WARN,
     ):
         # pylint: disable=too-many-arguments
@@ -99,6 +103,7 @@ class Generator:
         self.index_offset = index_offset
         self.unnest_column_only = unnest_column_only
         self.alias_post_tablesample = alias_post_tablesample
+        self.normalize_functions = normalize_functions
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
         self._indent = indent
@@ -156,6 +161,13 @@ class Generator:
         result = func()
         self.identify = original
         return result
+
+    def normalize_func(self, name):
+        if self.normalize_functions == "upper":
+            return name.upper()
+        if self.normalize_functions == "lower":
+            return name.lower()
+        return name
 
     def indent(self, sql, level=0, pad=None, skip_first=False, skip_last=False):
         if not self.pretty:
@@ -770,7 +782,7 @@ class Generator:
         args = self.indent(
             self.expressions(expression, flat=True), skip_first=True, skip_last=True
         )
-        return f"{self.sql(expression, 'this')}({args})"
+        return f"{self.normalize_func(self.sql(expression, 'this'))}({args})"
 
     def paren_sql(self, expression):
         if isinstance(expression.unnest(), exp.Select):
@@ -928,7 +940,7 @@ class Generator:
                 args.append(self.sql(a))
 
         args_str = self.indent(", ".join(args), skip_first=True, skip_last=True)
-        return f"{expression.sql_name()}({args_str})"
+        return f"{self.normalize_func(expression.sql_name())}({args_str})"
 
     def format_time(self, expression):
         return format_time(

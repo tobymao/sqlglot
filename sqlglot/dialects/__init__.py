@@ -1,4 +1,5 @@
 from sqlglot.dialects.bigquery import BigQuery
+from sqlglot.dialects.clickhouse import Clickhouse
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.dialects.duckdb import DuckDB
 from sqlglot.dialects.hive import Hive

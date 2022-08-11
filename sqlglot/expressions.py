@@ -2133,6 +2133,11 @@ class StrToUnix(Func):
     arg_types = {"this": True, "format": True}
 
 
+class Struct(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 class StructExtract(Func):
     arg_types = {"this": True, "expression": True}
 

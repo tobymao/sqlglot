@@ -286,6 +286,18 @@ class TestDialects(unittest.TestCase):
             write="duckdb",
         )
 
+        self.validate(
+            "STRUCT_PACK(x := 1, y := '2')",
+            "STRUCT_PACK(x := 1, y := '2')",
+            read="duckdb",
+        )
+        self.validate(
+            "STRUCT_PACK(x := 1, y := '2')",
+            "STRUCT(x = 1, y = '2')",
+            read="duckdb",
+            write="spark",
+        )
+
     def test_mysql(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS INT) FROM foo",

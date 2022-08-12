@@ -22,6 +22,10 @@ def _extract_meta(sql):
     return sql, meta
 
 
+def assert_logger_contains(message, logger):
+    assert message in str(logger.error.call_args_list[0][0][0])
+
+
 def load_sql_fixtures(filename):
     with open(os.path.join(FIXTURES_DIR, filename), encoding="utf-8") as f:
         for sql in _filter_comments(f.read()).splitlines():

@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from sqlglot import parse, parse_one, exp, Parser
 from sqlglot.errors import ErrorLevel, ParseError
+from tests.helpers import assert_logger_contains
 
 
 class TestParser(unittest.TestCase):
@@ -147,4 +148,19 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(
             parse_one("SELECT col FROM x").sql(pretty=True), "SELECT\n  col\nFROM x"
+        )
+
+    @patch("sqlglot.parser.logger")
+    def test_comment_error(self, logger):
+        parse_one(
+            """CREATE TABLE x
+(
+-- test
+)""",
+            error_level=ErrorLevel.WARN,
+        )
+
+        assert_logger_contains(
+            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Schema'>. Line 4, Col: 1.",
+            logger,
         )

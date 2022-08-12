@@ -1,5 +1,5 @@
 from sqlglot import expressions as exp
-from sqlglot.dialects import Dialect
+from sqlglot.dialects import Dialect, DialectType
 from sqlglot.diff import diff
 from sqlglot.errors import ErrorLevel, UnsupportedError, ParseError, TokenError
 from sqlglot.expressions import (

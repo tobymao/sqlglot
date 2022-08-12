@@ -1,29 +1,31 @@
-from enum import auto
+from enum import Enum
 
 from sqlglot import exp
 from sqlglot.generator import Generator
-from sqlglot.helper import LowercaseStrEnum, csv, list_get
+from sqlglot.helper import csv, list_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
 from sqlglot.trie import new_trie
 
 
-class DialectType(LowercaseStrEnum):
-    BIGQUERY = auto()
-    CLICKHOUSE = auto()
-    DUCKDB = auto()
-    HIVE = auto()
-    MYSQL = auto()
-    ORACLE = auto()
-    POSTGRES = auto()
-    PRESTO = auto()
-    SNOWFLAKE = auto()
-    SPARK = auto()
-    SQLITE = auto()
-    STARROCKS = auto()
-    TABLEAU = auto()
-    TRINO = auto()
+class Dialects(str, Enum):
+    DIALECT = ""
+
+    BIGQUERY = "bigquery"
+    CLICKHOUSE = "clickhouse"
+    DUCKDB = "duckdb"
+    HIVE = "hive"
+    MYSQL = "mysql"
+    ORACLE = "oracle"
+    POSTGRES = "postgres"
+    PRESTO = "presto"
+    SNOWFLAKE = "snowflake"
+    SPARK = "spark"
+    SQLITE = "sqlite"
+    STARROCKS = "starrocks"
+    TABLEAU = "tableau"
+    TRINO = "trino"
 
 
 class _Dialect(type):
@@ -39,7 +41,8 @@ class _Dialect(type):
 
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
-        cls.classes[clsname.lower()] = klass
+        enum = Dialects.__members__.get(clsname.upper())
+        cls.classes[enum.value if enum is not None else clsname.lower()] = klass
 
         klass.time_trie = new_trie(klass.time_mapping)
         klass.inverse_time_mapping = {v: k for k, v in klass.time_mapping.items()}

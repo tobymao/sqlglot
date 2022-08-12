@@ -1,6 +1,13 @@
 import unittest
 
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, transpile
+from sqlglot import (
+    Dialect,
+    Dialects,
+    ErrorLevel,
+    ParseError,
+    UnsupportedError,
+    transpile,
+)
 
 
 class TestDialects(unittest.TestCase):
@@ -8,6 +15,13 @@ class TestDialects(unittest.TestCase):
 
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
+
+    def test_enum(self):
+        for dialect in Dialects:
+            self.assertIsNotNone(Dialect[dialect])
+            self.assertIsNotNone(Dialect.get(dialect))
+            self.assertIsNotNone(Dialect.get_or_raise(dialect))
+            self.assertIsNotNone(Dialect[dialect.value])
 
     def test_duckdb(self):
         self.validate(

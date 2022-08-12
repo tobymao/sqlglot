@@ -434,7 +434,7 @@ class Parser:
         index = 0
 
         while line < token.line or col < token.col:
-            if sql[index] == "\n":
+            if Tokenizer.WHITE_SPACE.get(sql[index]) == TokenType.BREAK:
                 line += 1
                 col = 1
             else:

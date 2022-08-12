@@ -151,7 +151,7 @@ class TestParser(unittest.TestCase):
         )
 
     @patch("sqlglot.parser.logger")
-    def test_comment_error(self, logger):
+    def test_comment_error_n(self, logger):
         parse_one(
             """CREATE TABLE x
 (
@@ -162,5 +162,17 @@ class TestParser(unittest.TestCase):
 
         assert_logger_contains(
             "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Schema'>. Line 4, Col: 1.",
+            logger,
+        )
+
+    @patch("sqlglot.parser.logger")
+    def test_comment_error_r(self, logger):
+        parse_one(
+            """CREATE TABLE x (-- test\r)""",
+            error_level=ErrorLevel.WARN,
+        )
+
+        assert_logger_contains(
+            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Schema'>. Line 2, Col: 1.",
             logger,
         )

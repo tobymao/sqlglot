@@ -4,7 +4,11 @@ from unittest import mock
 
 from sqlglot import parse_one, transpile
 from sqlglot.errors import ErrorLevel, ParseError
-from tests.helpers import load_sql_fixtures, load_sql_fixture_pairs
+from tests.helpers import (
+    assert_logger_contains,
+    load_sql_fixtures,
+    load_sql_fixture_pairs,
+)
 
 
 class TestTranspile(unittest.TestCase):
@@ -288,9 +292,9 @@ class TestTranspile(unittest.TestCase):
     @mock.patch("sqlglot.parser.logger")
     def test_error_level(self, logger):
         transpile("x + 1 (", error_level=ErrorLevel.WARN)
-        assert (
-            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 7.\n  x + 1 \033[4m(\033[0m"
-            in str(logger.error.call_args_list[0][0][0])
+        assert_logger_contains(
+            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 7.\n  x + 1 \033[4m(\033[0m",
+            logger,
         )
 
         with self.assertRaises(ParseError):

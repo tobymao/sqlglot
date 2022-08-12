@@ -699,7 +699,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_comment(self, comment):
         if comment in self.COMMENTS:
-            while not self._end and self.WHITE_SPACE.get(self._char) != TokenType.BREAK:
+            while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK:
                 self._advance()
             return True
 

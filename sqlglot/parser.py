@@ -579,40 +579,30 @@ class Parser:
         )
 
     def _parse_property(self, schema):
-        result = []
-
         if self._match(TokenType.USING):
-            result.append(
-                self.expression(
-                    exp.Property,
-                    this=exp.Literal.string(c.TABLE_FORMAT),
-                    value=exp.Literal.string(self._parse_var().name),
-                )
+            return self.expression(
+                exp.Property,
+                this=exp.Literal.string(c.TABLE_FORMAT),
+                value=exp.Literal.string(self._parse_var().name),
             )
         elif self._match(TokenType.PARTITIONED_BY):
-            result.append(
-                self.expression(
-                    exp.Property,
-                    this=exp.Literal.string(c.PARTITIONED_BY),
-                    value=self._parse_schema(),
-                )
+            return self.expression(
+                exp.Property,
+                this=exp.Literal.string(c.PARTITIONED_BY),
+                value=self._parse_schema(),
             )
         elif self._match(TokenType.STORED):
             self._match(TokenType.ALIAS)
-            result.append(
-                self.expression(
-                    exp.Property,
-                    this=exp.Literal.string(c.FILE_FORMAT),
-                    value=exp.Literal.string(self._parse_var().text("this")),
-                )
+            return self.expression(
+                exp.Property,
+                this=exp.Literal.string(c.FILE_FORMAT),
+                value=exp.Literal.string(self._parse_var().text("this")),
             )
         elif self._match(TokenType.LOCATION):
-            result.append(
-                self.expression(
-                    exp.Property,
-                    this=exp.Literal.string(c.LOCATION),
-                    value=self._parse_string(),
-                )
+            return self.expression(
+                exp.Property,
+                this=exp.Literal.string(c.LOCATION),
+                value=self._parse_string(),
             )
         elif (
                 self._match_sequence(TokenType.VAR, TokenType.EQ, advance=False)
@@ -639,13 +629,11 @@ class Parser:
             else:
                 value = self._parse_column()
 
-            result.append(self.expression(
+            return self.expression(
                 exp.Property,
                 this=exp.Literal.string(key),
                 value=value,
-            ))
-
-        return result
+            )
 
 
     def _parse_properties(self, schema):
@@ -674,11 +662,11 @@ class Parser:
                 )
                 self._match_r_paren()
             else:
-                identified_properties = self._parse_property(schema)
-                if not identified_properties:
+                identified_property = self._parse_property(schema)
+                if not identified_property:
                     break
                 else:
-                    properties.extend(identified_properties)
+                    properties.append(identified_property)
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None
@@ -1933,14 +1921,13 @@ class Parser:
         return columns
 
     def _parse_csv(self, parse):
-        parse_result = parse() or []
-        items = [parse_result] if not isinstance(parse_result, list) else parse_result
+        parse_result = parse()
+        items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            parse_result = parse() or []
+            parse_result = parse()
             if parse_result is not None:
-                parse_result = [parse_result] if not isinstance(parse_result, list) else parse_result
-                items.extend(parse_result)
+                items.append(parse_result)
 
         return items
 

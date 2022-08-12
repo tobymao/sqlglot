@@ -8,6 +8,18 @@ CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 logger = logging.getLogger("sqlglot")
 
 
+class LowercaseStrEnum(str, Enum):
+    """
+    A ``StrEnum`` where ``auto()`` will convert the name to `lowercase` to
+    produce each member's value.
+    """
+    def _generate_next_value_(name, *_):
+        return name.lower()
+
+    def __str__(self):
+        return str(self.value)
+
+
 class AutoName(Enum):
     # pylint: disable=no-self-argument
     def _generate_next_value_(name, _start, _count, _last_values):

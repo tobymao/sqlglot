@@ -1,10 +1,29 @@
+from enum import auto
+
 from sqlglot import exp
 from sqlglot.generator import Generator
-from sqlglot.helper import csv, list_get
+from sqlglot.helper import LowercaseStrEnum, csv, list_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
 from sqlglot.trie import new_trie
+
+
+class DialectType(LowercaseStrEnum):
+    BIGQUERY = auto()
+    CLICKHOUSE = auto()
+    DUCKDB = auto()
+    HIVE = auto()
+    MYSQL = auto()
+    ORACLE = auto()
+    POSTGRES = auto()
+    PRESTO = auto()
+    SNOWFLAKE = auto()
+    SPARK = auto()
+    SQLITE = auto()
+    STARROCKS = auto()
+    TABLEAU = auto()
+    TRINO = auto()
 
 
 class _Dialect(type):

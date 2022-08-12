@@ -759,6 +759,26 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
+class TableFormatProperty(Property):
+    pass
+
+
+class PartitionedByProperty(Property):
+    pass
+
+
+class FileFormatProperty(Property):
+    pass
+
+
+class LocationProperty(Property):
+    pass
+
+
+class AnonymousProperty(Property):
+    pass
+
+
 class Qualify(Expression):
     pass
 
@@ -1364,7 +1384,7 @@ class Select(Subqueryable, Expression):
             expression=instance,
             properties=Properties(
                 expressions=[
-                    Property(
+                    AnonymousProperty(
                         this=Literal.string(k),
                         value=Literal.string(v),
                     )

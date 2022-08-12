@@ -130,6 +130,7 @@ class TokenType(AutoName):
     FIRST = auto()
     FOLLOWING = auto()
     FOREIGN_KEY = auto()
+    FORMAT = auto()
     FULL = auto()
     FUNCTION = auto()
     FROM = auto()
@@ -383,6 +384,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
+        "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,

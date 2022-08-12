@@ -55,38 +55,15 @@ def _properties_sql(self, expression):
     expression = expression.copy()
     properties = expression.expressions
 
-    using = ""
-    stored_as = ""
-    partitioned_by = ""
-    location = ""
+    known_properties = []
+    for property in properties[:]:
+        if not isinstance(property, exp.AnonymousProperty):
+            properties.remove(property)
+            known_properties.append(property)
 
-    for p in properties:
-        name = p.name.upper()
-        if name == c.TABLE_FORMAT:
-            using = p
-        elif name == c.FILE_FORMAT:
-            stored_as = p
-        elif name == c.LOCATION:
-            location = p
-        elif isinstance(p.args["value"], exp.Schema):
-            partitioned_by = p
-
-    if partitioned_by:
-        properties.remove(partitioned_by)
-        partitioned_by = self.seg(
-            f"PARTITIONED BY {self.sql(partitioned_by.args['value'])}"
-        )
-    if using:
-        properties.remove(using)
-        using = self.seg(f"USING {using.text('value').upper()}")
-    if stored_as:
-        properties.remove(stored_as)
-        stored_as = self.seg(f"STORED AS {stored_as.text('value').upper()}")
-    if location:
-        properties.remove(location)
-        stored_as = self.seg(f"LOCATION {self.sql(location, 'value')}")
-
-    return f"{using}{partitioned_by}{stored_as}{self.properties('TBLPROPERTIES', expression)}"
+    known_property_sql = self.seg(" ".join([self.sql(p) for p in known_properties]))
+    anonymous_property_sql = self.properties('TBLPROPERTIES', expression)
+    return known_property_sql + anonymous_property_sql
 
 
 def _property_sql(self, expression):
@@ -249,6 +226,7 @@ class Hive(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             **transforms.UNALIAS_GROUP,
+            exp.AnonymousProperty: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArraySize: rename_func("SIZE"),
@@ -260,8 +238,7 @@ class Hive(Dialect):
             exp.DateToDateStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Hive.date_format})",
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
-            exp.Properties: _properties_sql,
-            exp.Property: _property_sql,
+            exp.FileFormatProperty: lambda self, e: f"STORED AS {e.text('value').upper()}",
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
             exp.Join: _unnest_to_explode_sql,
@@ -269,6 +246,8 @@ class Hive(Dialect):
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
             exp.Map: _map_sql,
             HiveMap: _map_sql,
+            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e.args['value'])}",
+            exp.Properties: _properties_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),

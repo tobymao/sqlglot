@@ -581,27 +581,35 @@ class Parser:
     def _parse_property(self, schema):
         if self._match(TokenType.USING):
             return self.expression(
-                exp.Property,
+                exp.TableFormatProperty,
                 this=exp.Literal.string(c.TABLE_FORMAT),
                 value=exp.Literal.string(self._parse_var().name),
             )
         elif self._match(TokenType.PARTITIONED_BY):
             return self.expression(
-                exp.Property,
+                exp.PartitionedByProperty,
                 this=exp.Literal.string(c.PARTITIONED_BY),
                 value=self._parse_schema(),
             )
         elif self._match(TokenType.STORED):
             self._match(TokenType.ALIAS)
+            self._match(TokenType.EQ)
             return self.expression(
-                exp.Property,
+                exp.FileFormatProperty,
                 this=exp.Literal.string(c.FILE_FORMAT),
                 value=exp.Literal.string(self._parse_var().text("this")),
             )
         elif self._match(TokenType.LOCATION):
             return self.expression(
-                exp.Property,
+                exp.LocationProperty,
                 this=exp.Literal.string(c.LOCATION),
+                value=self._parse_string(),
+            )
+        elif self._match(TokenType.FORMAT):
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.FileFormatProperty,
+                this=exp.Literal.string(c.FILE_FORMAT),
                 value=self._parse_string(),
             )
         elif (
@@ -612,6 +620,7 @@ class Parser:
             self._match(TokenType.EQ)
 
             if key.upper() == c.PARTITIONED_BY:
+                expression = exp.PartitionedByProperty
                 value = self._parse_schema() or self._parse_bracket(self._parse_field())
 
                 if schema and not isinstance(value, exp.Schema):
@@ -628,9 +637,10 @@ class Parser:
                     value = self.expression(exp.Schema, expressions=partitions)
             else:
                 value = self._parse_column()
+                expression = exp.AnonymousProperty
 
             return self.expression(
-                exp.Property,
+                expression,
                 this=exp.Literal.string(key),
                 value=value,
             )
@@ -654,7 +664,7 @@ class Parser:
                 properties.extend(
                     self._parse_csv(
                         lambda: self.expression(
-                            exp.Property,
+                            exp.AnonymousProperty,
                             this=self._parse_string(),
                             value=self._match(TokenType.EQ) and self._parse_string(),
                         )

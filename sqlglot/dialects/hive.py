@@ -51,21 +51,6 @@ def _array_sort(self, expression):
     return f"SORT_ARRAY({self.sql(expression, 'this')})"
 
 
-def _properties_sql(self, expression):
-    expression = expression.copy()
-    properties = expression.expressions
-
-    known_properties = []
-    for property in properties[:]:
-        if not isinstance(property, exp.AnonymousProperty):
-            properties.remove(property)
-            known_properties.append(property)
-
-    known_property_sql = self.seg(" ".join([self.sql(p) for p in known_properties]))
-    anonymous_property_sql = self.properties('TBLPROPERTIES', expression)
-    return known_property_sql + anonymous_property_sql
-
-
 def _property_sql(self, expression):
     key = expression.text("this")
     value = self.sql(expression, "value")
@@ -218,6 +203,19 @@ class Hive(Dialect):
         }
 
     class Generator(Generator):
+        NATIVE_PROPERTIES = [
+            exp.PartitionedByProperty,
+            exp.FileFormatProperty,
+            exp.SchemaCommentProperty,
+            exp.LocationProperty,
+            exp.TableFormatProperty,
+        ]
+        WITH_PROPERTIES = []
+        TBLPROPERTIES = [
+            exp.AnonymousProperty
+        ]
+        INLINE_PROPERTIES = []
+
         TYPE_MAPPING = {
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.VARCHAR: "STRING",
@@ -247,7 +245,6 @@ class Hive(Dialect):
             exp.Map: _map_sql,
             HiveMap: _map_sql,
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e.args['value'])}",
-            exp.Properties: _properties_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),

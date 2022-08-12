@@ -443,12 +443,15 @@ class Parser:
 
         return index
 
+    def _get_token_at_index(self, index):
+        return list_get(self._tokens, index)
+
     def _advance(self, times=1):
         self._index += times
-        self._curr = list_get(self._tokens, self._index)
-        self._next = list_get(self._tokens, self._index + 1)
+        self._curr = self._get_token_at_index(self._index)
+        self._next = self._get_token_at_index(self._index + 1)
         self._prev = (
-            list_get(self._tokens, self._index - 1) if self._index > 0 else None
+            self._get_token_at_index(self._index - 1) if self._index > 0 else None
         )
 
     def _retreat(self, index):
@@ -576,78 +579,89 @@ class Parser:
         )
 
     def _parse_property(self, schema):
-        key = self._parse_var().this
-        self._match(TokenType.EQ)
+        result = []
 
-        if key.upper() == c.PARTITIONED_BY:
-            value = self._parse_schema() or self._parse_bracket(self._parse_field())
-
-            if schema and not isinstance(value, exp.Schema):
-                columns = {v.text("this").upper() for v in value.expressions}
-                partitions = [
-                    expression
-                    for expression in schema.expressions
-                    if expression.this.text("this").upper() in columns
-                ]
-                schema.set(
-                    "expressions",
-                    [e for e in schema.expressions if e not in partitions],
+        if self._match(TokenType.USING):
+            result.append(
+                self.expression(
+                    exp.Property,
+                    this=exp.Literal.string(c.TABLE_FORMAT),
+                    value=exp.Literal.string(self._parse_var().name),
                 )
-                value = self.expression(exp.Schema, expressions=partitions)
-        else:
-            value = self._parse_column()
+            )
+        elif self._match(TokenType.PARTITIONED_BY):
+            result.append(
+                self.expression(
+                    exp.Property,
+                    this=exp.Literal.string(c.PARTITIONED_BY),
+                    value=self._parse_schema(),
+                )
+            )
+        elif self._match(TokenType.STORED):
+            self._match(TokenType.ALIAS)
+            result.append(
+                self.expression(
+                    exp.Property,
+                    this=exp.Literal.string(c.FILE_FORMAT),
+                    value=exp.Literal.string(self._parse_var().text("this")),
+                )
+            )
+        elif self._match(TokenType.LOCATION):
+            result.append(
+                self.expression(
+                    exp.Property,
+                    this=exp.Literal.string(c.LOCATION),
+                    value=self._parse_string(),
+                )
+            )
+        elif (
+                self._match_sequence(TokenType.VAR, TokenType.EQ, advance=False)
+                or self._match_sequence(TokenType.VAR, TokenType.EQ, advance=False)
+        ):
+            key = self._parse_var().this
+            self._match(TokenType.EQ)
 
-        return self.expression(
-            exp.Property,
-            this=exp.Literal.string(key),
-            value=value,
-        )
+            if key.upper() == c.PARTITIONED_BY:
+                value = self._parse_schema() or self._parse_bracket(self._parse_field())
+
+                if schema and not isinstance(value, exp.Schema):
+                    columns = {v.text("this").upper() for v in value.expressions}
+                    partitions = [
+                        expression
+                        for expression in schema.expressions
+                        if expression.this.text("this").upper() in columns
+                    ]
+                    schema.set(
+                        "expressions",
+                        [e for e in schema.expressions if e not in partitions],
+                    )
+                    value = self.expression(exp.Schema, expressions=partitions)
+            else:
+                value = self._parse_column()
+
+            result.append(self.expression(
+                exp.Property,
+                this=exp.Literal.string(key),
+                value=value,
+            ))
+
+        return result
+
 
     def _parse_properties(self, schema):
+        """
+        Schema is included since if the table schema is defined and we later get a partition by expression
+        then we will define those columns in the partition by section and not in with the rest of the
+        columns
+        """
         properties = []
 
-        if self._match(TokenType.WITH):
-            self._match_l_paren()
-            properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
-            self._match_r_paren()
-        else:
-            if self._match(TokenType.USING):
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.TABLE_FORMAT),
-                        value=exp.Literal.string(self._parse_var().name),
-                    )
-                )
-
-            if self._match(TokenType.PARTITIONED_BY):
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.PARTITIONED_BY),
-                        value=self._parse_schema(),
-                    )
-                )
-
-            if self._match(TokenType.STORED):
-                self._match(TokenType.ALIAS)
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.FILE_FORMAT),
-                        value=exp.Literal.string(self._parse_var().text("this")),
-                    )
-                )
-            if self._match(TokenType.LOCATION):
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.LOCATION),
-                        value=self._parse_string(),
-                    )
-                )
-
-            if self._match(TokenType.PROPERTIES):
+        while True:
+            if self._match(TokenType.WITH):
+                self._match_l_paren()
+                properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
+                self._match_r_paren()
+            elif self._match(TokenType.PROPERTIES):
                 self._match_l_paren()
                 properties.extend(
                     self._parse_csv(
@@ -659,6 +673,12 @@ class Parser:
                     )
                 )
                 self._match_r_paren()
+            else:
+                identified_properties = self._parse_property(schema)
+                if not identified_properties:
+                    break
+                else:
+                    properties.extend(identified_properties)
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None
@@ -1913,13 +1933,14 @@ class Parser:
         return columns
 
     def _parse_csv(self, parse):
-        parse_result = parse()
-        items = [parse_result] if parse_result is not None else []
+        parse_result = parse() or []
+        items = [parse_result] if not isinstance(parse_result, list) else parse_result
 
         while self._match(TokenType.COMMA):
-            parse_result = parse()
+            parse_result = parse() or []
             if parse_result is not None:
-                items.append(parse_result)
+                parse_result = [parse_result] if not isinstance(parse_result, list) else parse_result
+                items.extend(parse_result)
 
         return items
 
@@ -1962,18 +1983,17 @@ class Parser:
 
         return None
 
-    def _match_pair(self, token_type_a, token_type_b):
-        if not self._curr or not self._next:
-            return None
+    def _match_sequence(self, *sequence, advance=True):
+        for i, sequence_token_type in enumerate(sequence):
+            actual_token = self._get_token_at_index(self._index + i)
+            if not actual_token or sequence_token_type != actual_token.token_type:
+                return False
+        if advance:
+            self._advance(len(sequence))
+        return True
 
-        if (
-            self._curr.token_type == token_type_a
-            and self._next.token_type == token_type_b
-        ):
-            self._advance(2)
-            return True
-
-        return None
+    def _match_pair(self, token_type_a, token_type_b, advance=True):
+        return self._match_sequence(token_type_a, token_type_b, advance=advance)
 
     def _match_l_paren(self):
         if not self._match(TokenType.L_PAREN):

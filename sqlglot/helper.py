@@ -13,6 +13,7 @@ class LowercaseStrEnum(str, Enum):
     A ``StrEnum`` where ``auto()`` will convert the name to `lowercase` to
     produce each member's value.
     """
+
     def _generate_next_value_(name, *_):
         return name.lower()
 

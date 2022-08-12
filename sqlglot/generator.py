@@ -41,6 +41,11 @@ class Generator:
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
+        exp.PartitionedByProperty: lambda self, e: f"partitioned_by = {self.sql(e.args['value'])}",
+        exp.TableFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
+        exp.FileFormatProperty: lambda self, e: f"format = '{e.text('value')}'",
+        exp.LocationProperty: lambda self, e: f"LOCATION {self.sql(e, 'value')}",
+        exp.AnonymousProperty: lambda self, e: self.property_sql(e),
     }
 
     TYPE_MAPPING = {}

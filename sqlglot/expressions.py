@@ -775,6 +775,26 @@ class LocationProperty(Property):
     pass
 
 
+class EngineProperty(Property):
+    pass
+
+
+class AutoIncrementProperty(Property):
+    pass
+
+
+class CharacterSetProperty(Property):
+    arg_types = {"this": True, "value": True, "default": True}
+
+
+class CollateProperty(Property):
+    pass
+
+
+class SchemaCommentProperty(Property):
+    pass
+
+
 class AnonymousProperty(Property):
     pass
 

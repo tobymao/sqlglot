@@ -151,6 +151,17 @@ class Presto(Dialect):
     class Generator(Generator):
         STRUCT_DELIMITER = ("(", ")")
 
+        NATIVE_PROPERTIES = []
+        WITH_PROPERTIES = [
+            exp.PartitionedByProperty,
+            exp.FileFormatProperty,
+            exp.SchemaCommentProperty,
+            exp.AnonymousProperty,
+            exp.TableFormatProperty,
+        ]
+        TBLPROPERTIES = []
+        INLINE_PROPERTIES = []
+
         TYPE_MAPPING = {
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.FLOAT: "REAL",

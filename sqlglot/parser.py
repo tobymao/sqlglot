@@ -529,42 +529,42 @@ class Parser:
             if self._match(TokenType.ALIAS):
                 expression = self._parse_with()
 
-        options = {
-            "engine": None,
-            "auto_increment": None,
-            "character_set": None,
-            "collate": None,
-            "comment": None,
-            "parsed": True,
-        }
-
-        def parse_option(option, token, option_lambda):
-            if not options[option] and self._match(token):
-                self._match(TokenType.EQ)
-                options[option] = option_lambda()
-                options["parsed"] = True
-
-        while options["parsed"]:
-            options["parsed"] = False
-
-            parse_option("engine", TokenType.ENGINE, self._parse_var)
-            parse_option("auto_increment", TokenType.AUTO_INCREMENT, self._parse_number)
-            parse_option("collate", TokenType.COLLATE, self._parse_var)
-            parse_option("comment", TokenType.SCHEMA_COMMENT, self._parse_string)
-
-            if not options["character_set"]:
-                default = self._match(TokenType.DEFAULT)
-                parse_option(
-                    "character_set",
-                    TokenType.CHARACTER_SET,
-                    lambda: self.expression(
-                        exp.CharacterSet,
-                        this=self._parse_var(),
-                        default=default,
-                    ),
-                )
-
-        options.pop("parsed")
+        # options = {
+        #     "engine": None,
+        #     "auto_increment": None,
+        #     "character_set": None,
+        #     "collate": None,
+        #     "comment": None,
+        #     "parsed": True,
+        # }
+        #
+        # def parse_option(option, token, option_lambda):
+        #     if not options[option] and self._match(token):
+        #         self._match(TokenType.EQ)
+        #         options[option] = option_lambda()
+        #         options["parsed"] = True
+        #
+        # while options["parsed"]:
+        #     options["parsed"] = False
+        #
+        #     parse_option("engine", TokenType.ENGINE, self._parse_var)
+        #     parse_option("auto_increment", TokenType.AUTO_INCREMENT, self._parse_number)
+        #     parse_option("collate", TokenType.COLLATE, self._parse_var)
+        #     parse_option("comment", TokenType.SCHEMA_COMMENT, self._parse_string)
+        #
+        #     if not options["character_set"]:
+        #         default = self._match(TokenType.DEFAULT)
+        #         parse_option(
+        #             "character_set",
+        #             TokenType.CHARACTER_SET,
+        #             lambda: self.expression(
+        #                 exp.CharacterSet,
+        #                 this=self._parse_var(),
+        #                 default=default,
+        #             ),
+        #         )
+        #
+        # options.pop("parsed")
 
         return self.expression(
             exp.Create,
@@ -575,7 +575,7 @@ class Parser:
             properties=properties,
             temporary=temporary,
             replace=replace,
-            **options,
+            # **options,
         )
 
     def _parse_property(self, schema):
@@ -610,6 +610,43 @@ class Parser:
             return self.expression(
                 exp.FileFormatProperty,
                 this=exp.Literal.string(c.FILE_FORMAT),
+                value=self._parse_string(),
+            )
+        elif self._match(TokenType.ENGINE):
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.EngineProperty,
+                this=exp.Literal.string(c.ENGINE),
+                value=self._parse_var() or self._parse_string(),
+            )
+        elif self._match(TokenType.AUTO_INCREMENT):
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.AutoIncrementProperty,
+                this=exp.Literal.string(c.AUTO_INCREMENT),
+                value=self._parse_var() or self._parse_number(),
+            )
+        elif self._match(TokenType.CHARACTER_SET) or self._match_sequence(TokenType.DEFAULT, TokenType.CHARACTER_SET):
+            self._match(TokenType.EQ)
+            potential_default_token = self._get_token_at_index(self._index - 3)
+            return self.expression(
+                exp.CharacterSetProperty,
+                this=exp.Literal.string(c.CHARACTER_SET),
+                value=self._parse_var() or self._parse_string(),
+                default=potential_default_token is not None and potential_default_token.token_type == TokenType.DEFAULT
+            )
+        elif self._match(TokenType.COLLATE):
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.CollateProperty,
+                this=exp.Literal.string(c.COLLATE),
+                value=self._parse_var() or self._parse_string(),
+            )
+        elif self._match(TokenType.SCHEMA_COMMENT):
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.SchemaCommentProperty,
+                this=exp.Literal.string(c.COMMENT),
                 value=self._parse_string(),
             )
         elif (

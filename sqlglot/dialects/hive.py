@@ -1,4 +1,4 @@
-from sqlglot import exp, constants as c
+from sqlglot import exp
 from sqlglot import transforms
 from sqlglot.dialects.dialect import (
     Dialect,

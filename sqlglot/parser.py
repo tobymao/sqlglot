@@ -548,13 +548,13 @@ class Parser:
                 this=exp.Literal.string(c.TABLE_FORMAT),
                 value=exp.Literal.string(self._parse_var().name),
             )
-        elif self._match(TokenType.PARTITIONED_BY):
+        if self._match(TokenType.PARTITIONED_BY):
             return self.expression(
                 exp.PartitionedByProperty,
                 this=exp.Literal.string(c.PARTITIONED_BY),
                 value=self._parse_schema(),
             )
-        elif self._match(TokenType.STORED):
+        if self._match(TokenType.STORED):
             self._match(TokenType.ALIAS)
             self._match(TokenType.EQ)
             return self.expression(
@@ -562,34 +562,34 @@ class Parser:
                 this=exp.Literal.string(c.FILE_FORMAT),
                 value=exp.Literal.string(self._parse_var().text("this")),
             )
-        elif self._match(TokenType.LOCATION):
+        if self._match(TokenType.LOCATION):
             return self.expression(
                 exp.LocationProperty,
                 this=exp.Literal.string(c.LOCATION),
                 value=self._parse_string(),
             )
-        elif self._match(TokenType.FORMAT):
+        if self._match(TokenType.FORMAT):
             self._match(TokenType.EQ)
             return self.expression(
                 exp.FileFormatProperty,
                 this=exp.Literal.string(c.FILE_FORMAT),
                 value=self._parse_string() or self._parse_var(),
             )
-        elif self._match(TokenType.ENGINE):
+        if self._match(TokenType.ENGINE):
             self._match(TokenType.EQ)
             return self.expression(
                 exp.EngineProperty,
                 this=exp.Literal.string(c.ENGINE),
                 value=self._parse_var() or self._parse_string(),
             )
-        elif self._match(TokenType.AUTO_INCREMENT):
+        if self._match(TokenType.AUTO_INCREMENT):
             self._match(TokenType.EQ)
             return self.expression(
                 exp.AutoIncrementProperty,
                 this=exp.Literal.string(c.AUTO_INCREMENT),
                 value=self._parse_var() or self._parse_number(),
             )
-        elif self._match(TokenType.CHARACTER_SET) or self._match_sequence(
+        if self._match(TokenType.CHARACTER_SET) or self._match_sequence(
             TokenType.DEFAULT, TokenType.CHARACTER_SET
         ):
             self._match(TokenType.EQ)
@@ -601,21 +601,21 @@ class Parser:
                 default=potential_default_token is not None
                 and potential_default_token.token_type == TokenType.DEFAULT,
             )
-        elif self._match(TokenType.COLLATE):
+        if self._match(TokenType.COLLATE):
             self._match(TokenType.EQ)
             return self.expression(
                 exp.CollateProperty,
                 this=exp.Literal.string(c.COLLATE),
                 value=self._parse_var() or self._parse_string(),
             )
-        elif self._match(TokenType.SCHEMA_COMMENT):
+        if self._match(TokenType.SCHEMA_COMMENT):
             self._match(TokenType.EQ)
             return self.expression(
                 exp.SchemaCommentProperty,
                 this=exp.Literal.string(c.COMMENT),
                 value=self._parse_string(),
             )
-        elif self._match_sequence(
+        if self._match_sequence(
             TokenType.VAR, TokenType.EQ, advance=False
         ) or self._match_sequence(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var().this
@@ -646,6 +646,7 @@ class Parser:
                 this=exp.Literal.string(key),
                 value=value,
             )
+        return None
 
     def _parse_properties(self, schema=None):
         """
@@ -676,8 +677,7 @@ class Parser:
                 identified_property = self._parse_property(schema)
                 if not identified_property:
                     break
-                else:
-                    properties.append(identified_property)
+                properties.append(identified_property)
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None

@@ -59,20 +59,19 @@ class Generator:
 
     STRUCT_DELIMITER = ("<", ">")
 
-    NATIVE_PROPERTIES = []
-    WITH_PROPERTIES = [
-        exp.FileFormatProperty,
-        exp.AnonymousProperty,
-        exp.PartitionedByProperty,
-    ]
-    TBLPROPERTIES = []
-    INLINE_PROPERTIES = [
+    ROOT_PROPERTIES = [
         exp.AutoIncrementProperty,
         exp.CharacterSetProperty,
         exp.CollateProperty,
         exp.EngineProperty,
         exp.SchemaCommentProperty,
     ]
+    WITH_PROPERTIES = [
+        exp.FileFormatProperty,
+        exp.AnonymousProperty,
+        exp.PartitionedByProperty,
+    ]
+    TBLPROPERTIES = []
 
     __slots__ = (
         "time_mapping",
@@ -168,9 +167,6 @@ class Generator:
     def properties(self, expression, prefix=' ', suffix='', item_sep=' '):
         if expression.expressions:
             return f"{prefix}{self.expressions(expression, flat=True, item_sep=item_sep)}{suffix}"
-            # return f"{self.seg(prefix)}{self.expressions(expression, item_sep=item_sep)}{suffix}"
-            # return f"{self.seg(prefix)}{self.sep('')}{self.expressions(expression, item_sep=item_sep)}{self.sep('')}{suffix}"
-            # return f"{self.seg(name)} ({self.sep('')}{self.expressions(expression)}{self.sep('')})"
         return ""
 
     def wrap(self, expression):
@@ -401,28 +397,24 @@ class Generator:
         return f"PARTITION({keys})"
 
     def properties_sql(self, expression):
-        native_expression = expression.copy()
+        root_expression = expression.copy()
         with_expression = expression.copy()
         table_properties_expression = expression.copy()
-        inline_properties = expression.copy()
 
         for p in expression.expressions:
             p_class = p.__class__
-            if p_class not in self.NATIVE_PROPERTIES:
-                native_expression.expressions.remove(p)
+            if p_class not in self.ROOT_PROPERTIES:
+                root_expression.expressions.remove(p)
             if p_class not in self.WITH_PROPERTIES:
                 with_expression.expressions.remove(p)
             if p_class not in self.TBLPROPERTIES:
                 table_properties_expression.expressions.remove(p)
-            if p_class not in self.INLINE_PROPERTIES:
-                inline_properties.expressions.remove(p)
 
-        native_sql = self.properties(native_expression)
+        root_sql = self.properties(root_expression)
         with_sql = self.properties(with_expression, prefix=" WITH (", suffix=")", item_sep=", ")
         table_properties_sql = self.properties(table_properties_expression, prefix=" TBLPROPERTIES (", suffix=")", item_sep=", ")
-        inline_sql = self.properties(inline_properties)
 
-        return native_sql + with_sql + table_properties_sql + inline_sql
+        return root_sql + with_sql + table_properties_sql
 
     def property_sql(self, expression):
         key = expression.text("this")

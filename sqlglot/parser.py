@@ -250,6 +250,7 @@ class Parser:
         exp.Table: "_parse_table",
         exp.Condition: "_parse_conjunction",
         exp.Expression: "_parse_statement",
+        exp.Properties: "_parse_properties",
         "JOIN_TYPE": "_parse_join_side_and_kind",
     }
 
@@ -529,43 +530,6 @@ class Parser:
             if self._match(TokenType.ALIAS):
                 expression = self._parse_with()
 
-        # options = {
-        #     "engine": None,
-        #     "auto_increment": None,
-        #     "character_set": None,
-        #     "collate": None,
-        #     "comment": None,
-        #     "parsed": True,
-        # }
-        #
-        # def parse_option(option, token, option_lambda):
-        #     if not options[option] and self._match(token):
-        #         self._match(TokenType.EQ)
-        #         options[option] = option_lambda()
-        #         options["parsed"] = True
-        #
-        # while options["parsed"]:
-        #     options["parsed"] = False
-        #
-        #     parse_option("engine", TokenType.ENGINE, self._parse_var)
-        #     parse_option("auto_increment", TokenType.AUTO_INCREMENT, self._parse_number)
-        #     parse_option("collate", TokenType.COLLATE, self._parse_var)
-        #     parse_option("comment", TokenType.SCHEMA_COMMENT, self._parse_string)
-        #
-        #     if not options["character_set"]:
-        #         default = self._match(TokenType.DEFAULT)
-        #         parse_option(
-        #             "character_set",
-        #             TokenType.CHARACTER_SET,
-        #             lambda: self.expression(
-        #                 exp.CharacterSet,
-        #                 this=self._parse_var(),
-        #                 default=default,
-        #             ),
-        #         )
-        #
-        # options.pop("parsed")
-
         return self.expression(
             exp.Create,
             this=this,
@@ -575,7 +539,6 @@ class Parser:
             properties=properties,
             temporary=temporary,
             replace=replace,
-            # **options,
         )
 
     def _parse_property(self, schema):
@@ -610,7 +573,7 @@ class Parser:
             return self.expression(
                 exp.FileFormatProperty,
                 this=exp.Literal.string(c.FILE_FORMAT),
-                value=self._parse_string(),
+                value=self._parse_string() or self._parse_var(),
             )
         elif self._match(TokenType.ENGINE):
             self._match(TokenType.EQ)
@@ -683,7 +646,7 @@ class Parser:
             )
 
 
-    def _parse_properties(self, schema):
+    def _parse_properties(self, schema=None):
         """
         Schema is included since if the table schema is defined and we later get a partition by expression
         then we will define those columns in the partition by section and not in with the rest of the

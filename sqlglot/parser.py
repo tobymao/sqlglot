@@ -72,7 +72,7 @@ def character_set_parser(self):
         this=exp.Literal.string("CHARACTER_SET"),
         value=self._parse_var() or self._parse_string(),
         default=potential_default_token is not None
-                and potential_default_token.token_type == TokenType.DEFAULT,
+        and potential_default_token.token_type == TokenType.DEFAULT,
     )
 
 
@@ -551,9 +551,7 @@ class Parser:
         self._index += times
         self._curr = self._get_token(self._index)
         self._next = self._get_token(self._index + 1)
-        self._prev = (
-            self._get_token(self._index - 1) if self._index > 0 else None
-        )
+        self._prev = self._get_token(self._index - 1) if self._index > 0 else None
 
     def _retreat(self, index):
         self._advance(index - self._index)
@@ -645,13 +643,9 @@ class Parser:
         if self._match_set(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.token_type](self)
 
-        if self._match_pair(
-            TokenType.DEFAULT, TokenType.CHARACTER_SET
-        ):
+        if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
             return character_set_parser(self)
-        if self._match_pair(
-            TokenType.VAR, TokenType.EQ, advance=False
-        ):
+        if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var().this
             self._match(TokenType.EQ)
 
@@ -2028,7 +2022,6 @@ class Parser:
             return True
 
         return None
-
 
     def _match_l_paren(self):
         if not self._match(TokenType.L_PAREN):

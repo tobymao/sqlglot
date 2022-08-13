@@ -491,11 +491,6 @@ class Create(Expression):
         "properties": False,
         "temporary": False,
         "replace": False,
-        "engine": False,
-        "auto_increment": False,
-        "character_set": False,
-        "collate": False,
-        "comment": False,
     }
 
 
@@ -1398,19 +1393,21 @@ class Select(Subqueryable, Expression):
             dialect=dialect,
             parser_opts=parser_opts,
         )
+        properties_expression = None
+        if properties:
+            properties_str = " ".join([f"{k} = {v}" if not isinstance(v, str) else f"{k} = '{v}'" for k, v in properties.items()])
+            properties_expression = _maybe_parse(
+                properties_str,
+                into=Properties,
+                dialect=dialect,
+                parser_opts=parser_opts,
+            )
+
         return Create(
             this=table_expression,
             kind="table",
             expression=instance,
-            properties=Properties(
-                expressions=[
-                    AnonymousProperty(
-                        this=Literal.string(k),
-                        value=Literal.string(v),
-                    )
-                    for k, v in (properties or {}).items()
-                ]
-            ),
+            properties=properties_expression,
         )
 
     @property

@@ -67,8 +67,8 @@ class Generator:
         exp.SchemaCommentProperty,
     ]
     WITH_PROPERTIES = [
-        exp.FileFormatProperty,
         exp.AnonymousProperty,
+        exp.FileFormatProperty,
         exp.PartitionedByProperty,
     ]
     TBLPROPERTIES = []

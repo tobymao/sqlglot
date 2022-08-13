@@ -38,19 +38,19 @@ class Generator:
     """
 
     TRANSFORMS = {
-        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
-        exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
-        exp.PartitionedByProperty: lambda self, e: f"partitioned_by = {self.sql(e.args['value'])}",
-        exp.TableFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
-        exp.FileFormatProperty: lambda self, e: f"format = '{e.text('value')}'",
-        exp.LocationProperty: lambda self, e: f"LOCATION {self.sql(e, 'value')}",
+        exp.AnonymousProperty: lambda self, e: self.property_sql(e),
         exp.AutoIncrementProperty: lambda self, e: f"AUTO_INCREMENT={e.text('value')}",
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={e.text('value')}",
         exp.CollateProperty: lambda self, e: f"COLLATE={e.text('value')}",
+        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
+        exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.EngineProperty: lambda self, e: f"ENGINE={e.text('value')}",
+        exp.FileFormatProperty: lambda self, e: f"format = '{e.text('value')}'",
+        exp.LocationProperty: lambda self, e: f"LOCATION {self.sql(e, 'value')}",
+        exp.PartitionedByProperty: lambda self, e: f"partitioned_by = {self.sql(e.args['value'])}",
         exp.SchemaCommentProperty: lambda self, e: f"COMMENT='{e.text('value')}'",
-        exp.AnonymousProperty: lambda self, e: self.property_sql(e),
+        exp.TableFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
+        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
     TYPE_MAPPING = {}

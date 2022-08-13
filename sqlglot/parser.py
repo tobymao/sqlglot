@@ -589,14 +589,17 @@ class Parser:
                 this=exp.Literal.string(c.AUTO_INCREMENT),
                 value=self._parse_var() or self._parse_number(),
             )
-        elif self._match(TokenType.CHARACTER_SET) or self._match_sequence(TokenType.DEFAULT, TokenType.CHARACTER_SET):
+        elif self._match(TokenType.CHARACTER_SET) or self._match_sequence(
+            TokenType.DEFAULT, TokenType.CHARACTER_SET
+        ):
             self._match(TokenType.EQ)
             potential_default_token = self._get_token_at_index(self._index - 3)
             return self.expression(
                 exp.CharacterSetProperty,
                 this=exp.Literal.string(c.CHARACTER_SET),
                 value=self._parse_var() or self._parse_string(),
-                default=potential_default_token is not None and potential_default_token.token_type == TokenType.DEFAULT
+                default=potential_default_token is not None
+                and potential_default_token.token_type == TokenType.DEFAULT,
             )
         elif self._match(TokenType.COLLATE):
             self._match(TokenType.EQ)
@@ -612,10 +615,9 @@ class Parser:
                 this=exp.Literal.string(c.COMMENT),
                 value=self._parse_string(),
             )
-        elif (
-                self._match_sequence(TokenType.VAR, TokenType.EQ, advance=False)
-                or self._match_sequence(TokenType.VAR, TokenType.EQ, advance=False)
-        ):
+        elif self._match_sequence(
+            TokenType.VAR, TokenType.EQ, advance=False
+        ) or self._match_sequence(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var().this
             self._match(TokenType.EQ)
 
@@ -644,7 +646,6 @@ class Parser:
                 this=exp.Literal.string(key),
                 value=value,
             )
-
 
     def _parse_properties(self, schema=None):
         """

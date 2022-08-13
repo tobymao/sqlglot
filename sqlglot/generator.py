@@ -164,7 +164,7 @@ class Generator:
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
 
-    def properties(self, expression, prefix=' ', suffix='', item_sep=' '):
+    def properties(self, expression, prefix=" ", suffix="", item_sep=" "):
         if expression.expressions:
             return f"{prefix}{self.expressions(expression, flat=True, item_sep=item_sep)}{suffix}"
         return ""
@@ -411,8 +411,15 @@ class Generator:
                 table_properties_expression.expressions.remove(p)
 
         root_sql = self.properties(root_expression)
-        with_sql = self.properties(with_expression, prefix=" WITH (", suffix=")", item_sep=", ")
-        table_properties_sql = self.properties(table_properties_expression, prefix=" TBLPROPERTIES (", suffix=")", item_sep=", ")
+        with_sql = self.properties(
+            with_expression, prefix=" WITH (", suffix=")", item_sep=", "
+        )
+        table_properties_sql = self.properties(
+            table_properties_expression,
+            prefix=" TBLPROPERTIES (",
+            suffix=")",
+            item_sep=", ",
+        )
 
         return root_sql + with_sql + table_properties_sql
 

@@ -160,7 +160,6 @@ class Presto(Dialect):
             exp.TableFormatProperty,
         ]
         TBLPROPERTIES = []
-        INLINE_PROPERTIES = []
 
         TYPE_MAPPING = {
             exp.DataType.Type.INT: "INTEGER",

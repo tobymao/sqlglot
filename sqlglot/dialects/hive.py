@@ -203,7 +203,7 @@ class Hive(Dialect):
         }
 
     class Generator(Generator):
-        NATIVE_PROPERTIES = [
+        ROOT_PROPERTIES = [
             exp.PartitionedByProperty,
             exp.FileFormatProperty,
             exp.SchemaCommentProperty,
@@ -214,7 +214,6 @@ class Hive(Dialect):
         TBLPROPERTIES = [
             exp.AnonymousProperty
         ]
-        INLINE_PROPERTIES = []
 
         TYPE_MAPPING = {
             exp.DataType.Type.TEXT: "STRING",
@@ -249,6 +248,7 @@ class Hive(Dialect):
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),
             exp.SafeDivide: no_safe_divide_sql,
+            exp.SchemaCommentProperty: lambda self, e: f"COMMENT {self.sql(e.args['value'])}",
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
             exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",

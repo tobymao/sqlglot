@@ -211,9 +211,7 @@ class Hive(Dialect):
             exp.TableFormatProperty,
         ]
         WITH_PROPERTIES = []
-        TBLPROPERTIES = [
-            exp.AnonymousProperty
-        ]
+        TBLPROPERTIES = [exp.AnonymousProperty]
 
         TYPE_MAPPING = {
             exp.DataType.Type.TEXT: "STRING",

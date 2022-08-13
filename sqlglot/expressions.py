@@ -1395,7 +1395,12 @@ class Select(Subqueryable, Expression):
         )
         properties_expression = None
         if properties:
-            properties_str = " ".join([f"{k} = {v}" if not isinstance(v, str) else f"{k} = '{v}'" for k, v in properties.items()])
+            properties_str = " ".join(
+                [
+                    f"{k} = {v}" if not isinstance(v, str) else f"{k} = '{v}'"
+                    for k, v in properties.items()
+                ]
+            )
             properties_expression = _maybe_parse(
                 properties_str,
                 into=Properties,

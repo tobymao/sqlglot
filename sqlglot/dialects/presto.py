@@ -159,7 +159,6 @@ class Presto(Dialect):
             exp.AnonymousProperty,
             exp.TableFormatProperty,
         ]
-        TBLPROPERTIES = []
 
         TYPE_MAPPING = {
             exp.DataType.Type.INT: "INTEGER",

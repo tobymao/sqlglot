@@ -210,8 +210,8 @@ class Hive(Dialect):
             exp.LocationProperty,
             exp.TableFormatProperty,
         ]
-        WITH_PROPERTIES = []
-        TBLPROPERTIES = [exp.AnonymousProperty]
+        WITH_PROPERTIES = [exp.AnonymousProperty]
+        WITH_PROPERTY_PREFIX = "TBLPROPERTIES ("
 
         TYPE_MAPPING = {
             exp.DataType.Type.TEXT: "STRING",

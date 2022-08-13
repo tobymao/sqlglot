@@ -72,7 +72,8 @@ class Generator:
         exp.PartitionedByProperty,
         exp.TableFormatProperty,
     ]
-    TBLPROPERTIES = []
+    WITH_PROPERTY_PREFIX = "WITH ("
+    WITH_PROPERTY_SUFFIX = ")"
 
     __slots__ = (
         "time_mapping",
@@ -165,9 +166,9 @@ class Generator:
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
 
-    def properties(self, expression, prefix=" ", suffix="", sep=" "):
+    def properties(self, expression, prefix="", suffix="", sep=" "):
         if expression.expressions:
-            return f"{prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
+            return f" {prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
         return ""
 
     def wrap(self, expression):
@@ -400,7 +401,6 @@ class Generator:
     def properties_sql(self, expression):
         root_expression = expression.copy()
         with_expression = expression.copy()
-        table_properties_expression = expression.copy()
 
         for p in expression.expressions:
             p_class = p.__class__
@@ -408,21 +408,13 @@ class Generator:
                 root_expression.expressions.remove(p)
             if p_class not in self.WITH_PROPERTIES:
                 with_expression.expressions.remove(p)
-            if p_class not in self.TBLPROPERTIES:
-                table_properties_expression.expressions.remove(p)
 
         root_sql = self.properties(root_expression)
         with_sql = self.properties(
-            with_expression, prefix=" WITH (", suffix=")", sep=", "
-        )
-        table_properties_sql = self.properties(
-            table_properties_expression,
-            prefix=" TBLPROPERTIES (",
-            suffix=")",
-            sep=", ",
+            with_expression, prefix=self.WITH_PROPERTY_PREFIX, suffix=self.WITH_PROPERTY_SUFFIX, sep=", "
         )
 
-        return root_sql + with_sql + table_properties_sql
+        return root_sql + with_sql
 
     def property_sql(self, expression):
         key = expression.text("this")

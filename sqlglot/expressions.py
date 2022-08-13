@@ -1397,7 +1397,7 @@ class Select(Subqueryable, Expression):
         if properties:
             properties_str = " ".join(
                 [
-                    f"{k} = {v}" if not isinstance(v, str) else f"{k} = '{v}'"
+                    f"{k} = '{v}'" if isinstance(v, str) else f"{k} = {v}"
                     for k, v in properties.items()
                 ]
             )

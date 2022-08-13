@@ -39,17 +39,17 @@ class Generator:
 
     TRANSFORMS = {
         exp.AnonymousProperty: lambda self, e: self.property_sql(e),
-        exp.AutoIncrementProperty: lambda self, e: f"AUTO_INCREMENT={e.text('value')}",
-        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={e.text('value')}",
-        exp.CollateProperty: lambda self, e: f"COLLATE={e.text('value')}",
+        exp.AutoIncrementProperty: lambda self, e: f"AUTO_INCREMENT={self.sql(e, 'value')}",
+        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
+        exp.CollateProperty: lambda self, e: f"COLLATE={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.EngineProperty: lambda self, e: f"ENGINE={e.text('value')}",
-        exp.FileFormatProperty: lambda self, e: f"format = '{e.text('value')}'",
+        exp.EngineProperty: lambda self, e: f"ENGINE={self.sql(e, 'value')}",
+        exp.FileFormatProperty: lambda self, e: f"FORMAT={self.sql(e, 'value')}",
         exp.LocationProperty: lambda self, e: f"LOCATION {self.sql(e, 'value')}",
-        exp.PartitionedByProperty: lambda self, e: f"partitioned_by = {self.sql(e.args['value'])}",
-        exp.SchemaCommentProperty: lambda self, e: f"COMMENT='{e.text('value')}'",
-        exp.TableFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
+        exp.PartitionedByProperty: lambda self, e: f"PARTITIONED_BY={self.sql(e.args['value'])}",
+        exp.SchemaCommentProperty: lambda self, e: f"COMMENT={self.sql(e, 'value')}",
+        exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT={self.sql(e, 'value')}",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
@@ -70,6 +70,7 @@ class Generator:
         exp.AnonymousProperty,
         exp.FileFormatProperty,
         exp.PartitionedByProperty,
+        exp.TableFormatProperty,
     ]
     TBLPROPERTIES = []
 
@@ -164,9 +165,9 @@ class Generator:
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
 
-    def properties(self, expression, prefix=" ", suffix="", item_sep=" "):
+    def properties(self, expression, prefix=" ", suffix="", sep=" "):
         if expression.expressions:
-            return f"{prefix}{self.expressions(expression, flat=True, item_sep=item_sep)}{suffix}"
+            return f"{prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
         return ""
 
     def wrap(self, expression):
@@ -412,13 +413,13 @@ class Generator:
 
         root_sql = self.properties(root_expression)
         with_sql = self.properties(
-            with_expression, prefix=" WITH (", suffix=")", item_sep=", "
+            with_expression, prefix=" WITH (", suffix=")", sep=", "
         )
         table_properties_sql = self.properties(
             table_properties_expression,
             prefix=" TBLPROPERTIES (",
             suffix=")",
-            item_sep=", ",
+            sep=", ",
         )
 
         return root_sql + with_sql + table_properties_sql
@@ -974,7 +975,7 @@ class Generator:
             self.sql(expression, "format"), self.time_mapping, self.time_trie
         )
 
-    def expressions(self, expression, key=None, flat=False, indent=True, item_sep=", "):
+    def expressions(self, expression, key=None, flat=False, indent=True, sep=", "):
         # pylint: disable=cell-var-from-loop
         expressions = expression.args.get(key or "expressions")
 
@@ -982,9 +983,9 @@ class Generator:
             return ""
 
         if flat:
-            return item_sep.join(self.sql(e) for e in expressions)
+            return sep.join(self.sql(e) for e in expressions)
 
-        expressions = self.sep(item_sep).join(self.sql(e) for e in expressions)
+        expressions = self.sep(sep).join(self.sql(e) for e in expressions)
         if indent:
             return self.indent(expressions, skip_first=False)
         return expressions

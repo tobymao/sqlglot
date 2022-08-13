@@ -200,6 +200,7 @@ class TokenType(AutoName):
     SORT_BY = auto()
     STORED = auto()
     STRUCT = auto()
+    TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TIME = auto()
@@ -446,6 +447,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SORT BY": TokenType.SORT_BY,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
+        "TABLE_FORMAT": TokenType.TABLE_FORMAT,
         "TBLPROPERTIES": TokenType.PROPERTIES,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

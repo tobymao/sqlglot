@@ -253,6 +253,7 @@ class Hive(Dialect):
             exp.StrToTime: _str_to_time,
             exp.StrToUnix: _str_to_unix,
             exp.StructExtract: struct_extract_sql,
+            exp.TableFormatProperty: lambda self, e: f"USING {self.sql(e, 'value')}",
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),

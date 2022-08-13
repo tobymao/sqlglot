@@ -74,6 +74,7 @@ class Generator:
     ]
     WITH_PROPERTY_PREFIX = "WITH ("
     WITH_PROPERTY_SUFFIX = ")"
+    WITH_PROPERTY_SEP = ", "
 
     __slots__ = (
         "time_mapping",
@@ -168,7 +169,9 @@ class Generator:
 
     def properties(self, expression, prefix="", suffix="", sep=" "):
         if expression.expressions:
-            return f" {prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
+            return (
+                f" {prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
+            )
         return ""
 
     def wrap(self, expression):
@@ -399,19 +402,24 @@ class Generator:
         return f"PARTITION({keys})"
 
     def properties_sql(self, expression):
-        root_expression = expression.copy()
-        with_expression = expression.copy()
+        root_properties = []
+        with_properties = []
 
         for p in expression.expressions:
             p_class = p.__class__
-            if p_class not in self.ROOT_PROPERTIES:
-                root_expression.expressions.remove(p)
-            if p_class not in self.WITH_PROPERTIES:
-                with_expression.expressions.remove(p)
+            if p_class in self.ROOT_PROPERTIES:
+                root_properties.append(p)
+            if p_class in self.WITH_PROPERTIES:
+                with_properties.append(p)
 
+        root_expression = exp.Properties(expressions=root_properties)
+        with_expression = exp.Properties(expressions=with_properties)
         root_sql = self.properties(root_expression)
         with_sql = self.properties(
-            with_expression, prefix=self.WITH_PROPERTY_PREFIX, suffix=self.WITH_PROPERTY_SUFFIX, sep=", "
+            with_expression,
+            prefix=self.WITH_PROPERTY_PREFIX,
+            suffix=self.WITH_PROPERTY_SUFFIX,
+            sep=self.WITH_PROPERTY_SEP,
         )
 
         return root_sql + with_sql

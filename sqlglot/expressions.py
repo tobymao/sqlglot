@@ -109,10 +109,14 @@ class Expression(metaclass=_Expression):
 
     def _set_parent(self, kwargs):
         for arg_key, node in kwargs.items():
-            for v in ensure_list(node):
-                if isinstance(v, Expression):
-                    v.parent = self
-                    v.arg_key = arg_key
+            if isinstance(node, Expression):
+                node.parent = self
+                node.arg_key = arg_key
+            elif isinstance(node, list):
+                for v in node:
+                    if isinstance(v, Expression):
+                        v.parent = self
+                        v.arg_key = arg_key
 
     @property
     def depth(self):

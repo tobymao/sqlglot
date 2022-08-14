@@ -211,7 +211,6 @@ class Hive(Dialect):
             exp.TableFormatProperty,
         ]
         WITH_PROPERTIES = [exp.AnonymousProperty]
-        WITH_PROPERTY_PREFIX = "TBLPROPERTIES ("
 
         TYPE_MAPPING = {
             exp.DataType.Type.TEXT: "STRING",
@@ -269,3 +268,11 @@ class Hive(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
         }
+
+        def with_properties(self, properties):
+            return self.properties(
+                properties,
+                prefix="TBLPROPERTIES (",
+                suffix=")",
+                sep=", ",
+            )

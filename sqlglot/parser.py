@@ -9,7 +9,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 logger = logging.getLogger("sqlglot")
 
 
-def stored_parser(self):
+def _stored_parser(self):
     self._match(TokenType.ALIAS)
     self._match(TokenType.EQ)
     return self.expression(
@@ -19,7 +19,7 @@ def stored_parser(self):
     )
 
 
-def format_parser(self):
+def _format_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.FileFormatProperty,
@@ -28,7 +28,7 @@ def format_parser(self):
     )
 
 
-def engine_parser(self):
+def _engine_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.EngineProperty,
@@ -37,7 +37,7 @@ def engine_parser(self):
     )
 
 
-def auto_increment_parser(self):
+def _auto_increment_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.AutoIncrementProperty,
@@ -46,7 +46,7 @@ def auto_increment_parser(self):
     )
 
 
-def collate_parser(self):
+def _collate_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.CollateProperty,
@@ -55,7 +55,7 @@ def collate_parser(self):
     )
 
 
-def schema_comment_parser(self):
+def _schema_comment_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.SchemaCommentProperty,
@@ -64,19 +64,17 @@ def schema_comment_parser(self):
     )
 
 
-def character_set_parser(self):
+def _character_set_parser(self, default=False):
     self._match(TokenType.EQ)
-    potential_default_token = self._get_token(self._index - 3)
     return self.expression(
         exp.CharacterSetProperty,
         this=exp.Literal.string("CHARACTER_SET"),
         value=self._parse_var() or self._parse_string(),
-        default=potential_default_token is not None
-        and potential_default_token.token_type == TokenType.DEFAULT,
+        default=default,
     )
 
 
-def table_format_parser(self):
+def _table_format_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.TableFormatProperty,
@@ -355,11 +353,11 @@ class Parser:
     }
 
     PROPERTY_PARSERS = {
-        TokenType.AUTO_INCREMENT: auto_increment_parser,
-        TokenType.CHARACTER_SET: character_set_parser,
-        TokenType.COLLATE: collate_parser,
-        TokenType.ENGINE: engine_parser,
-        TokenType.FORMAT: format_parser,
+        TokenType.AUTO_INCREMENT: _auto_increment_parser,
+        TokenType.CHARACTER_SET: _character_set_parser,
+        TokenType.COLLATE: _collate_parser,
+        TokenType.ENGINE: _engine_parser,
+        TokenType.FORMAT: _format_parser,
         TokenType.LOCATION: lambda self: self.expression(
             exp.LocationProperty,
             this=exp.Literal.string("LOCATION"),
@@ -370,10 +368,10 @@ class Parser:
             this=exp.Literal.string("PARTITIONED_BY"),
             value=self._parse_schema(),
         ),
-        TokenType.SCHEMA_COMMENT: schema_comment_parser,
-        TokenType.STORED: stored_parser,
-        TokenType.TABLE_FORMAT: table_format_parser,
-        TokenType.USING: table_format_parser,
+        TokenType.SCHEMA_COMMENT: _schema_comment_parser,
+        TokenType.STORED: _stored_parser,
+        TokenType.TABLE_FORMAT: _table_format_parser,
+        TokenType.USING: _table_format_parser,
     }
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
@@ -642,9 +640,9 @@ class Parser:
     def _parse_property(self, schema):
         if self._match_set(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.token_type](self)
-
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
-            return character_set_parser(self)
+            return _character_set_parser(self, True)
+
         if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var().this
             self._match(TokenType.EQ)

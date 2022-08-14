@@ -151,7 +151,6 @@ class Presto(Dialect):
     class Generator(Generator):
         STRUCT_DELIMITER = ("(", ")")
 
-        NATIVE_PROPERTIES = []
         WITH_PROPERTIES = [
             exp.PartitionedByProperty,
             exp.FileFormatProperty,

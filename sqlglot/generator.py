@@ -423,7 +423,7 @@ class Generator:
         )
 
     def property_sql(self, expression):
-        key = expression.text("this")
+        key = expression.name
         value = self.sql(expression, "value")
         return f"{key} = {value}"
 

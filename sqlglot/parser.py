@@ -1,6 +1,6 @@
 import logging
 
-from sqlglot import constants as c, exp
+from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import apply_index_offset, ensure_list, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -14,7 +14,7 @@ def stored_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.FileFormatProperty,
-        this=exp.Literal.string(c.FILE_FORMAT),
+        this=exp.Literal.string("FORMAT"),
         value=exp.Literal.string(self._parse_var().name),
     )
 
@@ -23,7 +23,7 @@ def format_parser(self):
     self._match(TokenType.EQ)
     return self.expression(
         exp.FileFormatProperty,
-        this=exp.Literal.string(c.FILE_FORMAT),
+        this=exp.Literal.string("FORMAT"),
         value=self._parse_string() or self._parse_var(),
     )
 
@@ -649,7 +649,7 @@ class Parser:
             key = self._parse_var().this
             self._match(TokenType.EQ)
 
-            if key.upper() == c.PARTITIONED_BY:
+            if key.upper() == "PARTITIONED_BY":
                 expression = exp.PartitionedByProperty
                 value = self._parse_schema() or self._parse_bracket(self._parse_field())
 

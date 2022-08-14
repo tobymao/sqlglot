@@ -409,7 +409,7 @@ class Generator:
             p_class = p.__class__
             if p_class in self.ROOT_PROPERTIES:
                 root_properties.append(p)
-            if p_class in self.WITH_PROPERTIES:
+            elif p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
 
         root_expression = exp.Properties(expressions=root_properties)

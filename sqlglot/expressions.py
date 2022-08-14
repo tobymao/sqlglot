@@ -495,11 +495,6 @@ class Create(Expression):
         "properties": False,
         "temporary": False,
         "replace": False,
-        "engine": False,
-        "auto_increment": False,
-        "character_set": False,
-        "collate": False,
-        "comment": False,
     }
 
 
@@ -761,6 +756,46 @@ class Properties(Expression):
 
 class Property(Expression):
     arg_types = {"this": True, "value": True}
+
+
+class TableFormatProperty(Property):
+    pass
+
+
+class PartitionedByProperty(Property):
+    pass
+
+
+class FileFormatProperty(Property):
+    pass
+
+
+class LocationProperty(Property):
+    pass
+
+
+class EngineProperty(Property):
+    pass
+
+
+class AutoIncrementProperty(Property):
+    pass
+
+
+class CharacterSetProperty(Property):
+    arg_types = {"this": True, "value": True, "default": True}
+
+
+class CollateProperty(Property):
+    pass
+
+
+class SchemaCommentProperty(Property):
+    pass
+
+
+class AnonymousProperty(Property):
+    pass
 
 
 class Qualify(Expression):
@@ -1362,19 +1397,26 @@ class Select(Subqueryable, Expression):
             dialect=dialect,
             parser_opts=parser_opts,
         )
+        properties_expression = None
+        if properties:
+            properties_str = " ".join(
+                [
+                    f"{k} = '{v}'" if isinstance(v, str) else f"{k} = {v}"
+                    for k, v in properties.items()
+                ]
+            )
+            properties_expression = _maybe_parse(
+                properties_str,
+                into=Properties,
+                dialect=dialect,
+                parser_opts=parser_opts,
+            )
+
         return Create(
             this=table_expression,
             kind="table",
             expression=instance,
-            properties=Properties(
-                expressions=[
-                    Property(
-                        this=Literal.string(k),
-                        value=Literal.string(v),
-                    )
-                    for k, v in (properties or {}).items()
-                ]
-            ),
+            properties=properties_expression,
         )
 
     @property

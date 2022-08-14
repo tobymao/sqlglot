@@ -1803,6 +1803,20 @@ class TestDialects(unittest.TestCase):
             write="spark",
         )
 
+        self.validate(
+            'CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG',
+            "CREATE TABLE blah (col_a INT) COMMENT 'Test comment: blah' PARTITIONED BY (date STRING) STORED AS ICEBERG",
+            read="spark",
+            write="spark",
+        )
+
+        self.validate(
+            "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
+            "CREATE TABLE z (a INT) COMMENT 'x'",
+            read="spark",
+            write="spark",
+        )
+
     def test_snowflake(self):
         self.validate(
             'x:a:"b c"',

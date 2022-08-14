@@ -38,8 +38,18 @@ class Generator:
     """
 
     TRANSFORMS = {
+        exp.AnonymousProperty: lambda self, e: self.property_sql(e),
+        exp.AutoIncrementProperty: lambda self, e: f"AUTO_INCREMENT={self.sql(e, 'value')}",
+        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
+        exp.CollateProperty: lambda self, e: f"COLLATE={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.EngineProperty: lambda self, e: f"ENGINE={self.sql(e, 'value')}",
+        exp.FileFormatProperty: lambda self, e: f"FORMAT={self.sql(e, 'value')}",
+        exp.LocationProperty: lambda self, e: f"LOCATION {self.sql(e, 'value')}",
+        exp.PartitionedByProperty: lambda self, e: f"PARTITIONED_BY={self.sql(e.args['value'])}",
+        exp.SchemaCommentProperty: lambda self, e: f"COMMENT={self.sql(e, 'value')}",
+        exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT={self.sql(e, 'value')}",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
@@ -48,6 +58,23 @@ class Generator:
     TOKEN_MAPPING = {}
 
     STRUCT_DELIMITER = ("<", ">")
+
+    ROOT_PROPERTIES = [
+        exp.AutoIncrementProperty,
+        exp.CharacterSetProperty,
+        exp.CollateProperty,
+        exp.EngineProperty,
+        exp.SchemaCommentProperty,
+    ]
+    WITH_PROPERTIES = [
+        exp.AnonymousProperty,
+        exp.FileFormatProperty,
+        exp.PartitionedByProperty,
+        exp.TableFormatProperty,
+    ]
+    WITH_PROPERTY_PREFIX = "WITH ("
+    WITH_PROPERTY_SUFFIX = ")"
+    WITH_PROPERTY_SEP = ", "
 
     __slots__ = (
         "time_mapping",
@@ -140,9 +167,11 @@ class Generator:
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
 
-    def properties(self, name, expression):
+    def properties(self, expression, prefix="", suffix="", sep=" "):
         if expression.expressions:
-            return f"{self.seg(name)} ({self.sep('')}{self.expressions(expression)}{self.sep('')})"
+            return (
+                f" {prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
+            )
         return ""
 
     def wrap(self, expression):
@@ -279,29 +308,8 @@ class Generator:
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         properties = self.sql(expression, "properties")
-        engine = self.sql(expression, "engine")
-        engine = f"ENGINE={engine}" if engine else ""
-        auto_increment = self.sql(expression, "auto_increment")
-        auto_increment = f"AUTO_INCREMENT={auto_increment}" if auto_increment else ""
-        character_set = self.sql(expression, "character_set")
-        collate = self.sql(expression, "collate")
-        collate = f"COLLATE={collate}" if collate else ""
-        comment = self.sql(expression, "comment")
-        comment = f"COMMENT={comment}" if comment else ""
 
-        options = " ".join(
-            option
-            for option in (
-                engine,
-                auto_increment,
-                character_set,
-                collate,
-                comment,
-            )
-            if option
-        )
-
-        expression_sql = f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}{options}"
+        expression_sql = f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}"
         return self.prepend_ctes(expression, expression_sql)
 
     def prepend_ctes(self, expression, sql):
@@ -394,7 +402,27 @@ class Generator:
         return f"PARTITION({keys})"
 
     def properties_sql(self, expression):
-        return self.properties("WITH", expression)
+        root_properties = []
+        with_properties = []
+
+        for p in expression.expressions:
+            p_class = p.__class__
+            if p_class in self.ROOT_PROPERTIES:
+                root_properties.append(p)
+            elif p_class in self.WITH_PROPERTIES:
+                with_properties.append(p)
+
+        root_expression = exp.Properties(expressions=root_properties)
+        with_expression = exp.Properties(expressions=with_properties)
+        root_sql = self.properties(root_expression)
+        with_sql = self.properties(
+            with_expression,
+            prefix=self.WITH_PROPERTY_PREFIX,
+            suffix=self.WITH_PROPERTY_SUFFIX,
+            sep=self.WITH_PROPERTY_SEP,
+        )
+
+        return root_sql + with_sql
 
     def property_sql(self, expression):
         key = expression.text("this")
@@ -947,7 +975,7 @@ class Generator:
             self.sql(expression, "format"), self.time_mapping, self.time_trie
         )
 
-    def expressions(self, expression, key=None, flat=False, indent=True):
+    def expressions(self, expression, key=None, flat=False, indent=True, sep=", "):
         # pylint: disable=cell-var-from-loop
         expressions = expression.args.get(key or "expressions")
 
@@ -955,9 +983,9 @@ class Generator:
             return ""
 
         if flat:
-            return ", ".join(self.sql(e) for e in expressions)
+            return sep.join(self.sql(e) for e in expressions)
 
-        expressions = self.sep(", ").join(self.sql(e) for e in expressions)
+        expressions = self.sep(sep).join(self.sql(e) for e in expressions)
         if indent:
             return self.indent(expressions, skip_first=False)
         return expressions

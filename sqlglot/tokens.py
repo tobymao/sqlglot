@@ -130,6 +130,7 @@ class TokenType(AutoName):
     FIRST = auto()
     FOLLOWING = auto()
     FOREIGN_KEY = auto()
+    FORMAT = auto()
     FULL = auto()
     FUNCTION = auto()
     FROM = auto()
@@ -199,6 +200,7 @@ class TokenType(AutoName):
     SORT_BY = auto()
     STORED = auto()
     STRUCT = auto()
+    TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TIME = auto()
@@ -383,6 +385,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
+        "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
@@ -444,6 +447,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SORT BY": TokenType.SORT_BY,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
+        "TABLE_FORMAT": TokenType.TABLE_FORMAT,
         "TBLPROPERTIES": TokenType.PROPERTIES,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

@@ -9,6 +9,82 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 logger = logging.getLogger("sqlglot")
 
 
+def stored_parser(self):
+    self._match(TokenType.ALIAS)
+    self._match(TokenType.EQ)
+    return self.expression(
+        exp.FileFormatProperty,
+        this=exp.Literal.string(c.FILE_FORMAT),
+        value=exp.Literal.string(self._parse_var().name),
+    )
+
+
+def format_parser(self):
+    self._match(TokenType.EQ)
+    return self.expression(
+        exp.FileFormatProperty,
+        this=exp.Literal.string(c.FILE_FORMAT),
+        value=self._parse_string() or self._parse_var(),
+    )
+
+
+def engine_parser(self):
+    self._match(TokenType.EQ)
+    return self.expression(
+        exp.EngineProperty,
+        this=exp.Literal.string("ENGINE"),
+        value=self._parse_var() or self._parse_string(),
+    )
+
+
+def auto_increment_parser(self):
+    self._match(TokenType.EQ)
+    return self.expression(
+        exp.AutoIncrementProperty,
+        this=exp.Literal.string("AUTO_INCREMENT"),
+        value=self._parse_var() or self._parse_number(),
+    )
+
+
+def collate_parser(self):
+    self._match(TokenType.EQ)
+    return self.expression(
+        exp.CollateProperty,
+        this=exp.Literal.string("COLLATE"),
+        value=self._parse_var() or self._parse_string(),
+    )
+
+
+def schema_comment_parser(self):
+    self._match(TokenType.EQ)
+    return self.expression(
+        exp.SchemaCommentProperty,
+        this=exp.Literal.string("COMMENT"),
+        value=self._parse_string(),
+    )
+
+
+def character_set_parser(self):
+    self._match(TokenType.EQ)
+    potential_default_token = self._get_token(self._index - 3)
+    return self.expression(
+        exp.CharacterSetProperty,
+        this=exp.Literal.string("CHARACTER_SET"),
+        value=self._parse_var() or self._parse_string(),
+        default=potential_default_token is not None
+        and potential_default_token.token_type == TokenType.DEFAULT,
+    )
+
+
+def table_format_parser(self):
+    self._match(TokenType.EQ)
+    return self.expression(
+        exp.TableFormatProperty,
+        this=exp.Literal.string("TABLE_FORMAT"),
+        value=self._parse_var() or self._parse_string(),
+    )
+
+
 class Parser:
     """
     Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
@@ -92,6 +168,7 @@ class Parser:
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FOLLOWING,
+        TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
         TokenType.INTERVAL,
@@ -112,6 +189,7 @@ class Parser:
         TokenType.SHOW,
         TokenType.STORED,
         TokenType.TABLE,
+        TokenType.TABLE_FORMAT,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRUNCATE,
@@ -250,6 +328,7 @@ class Parser:
         exp.Table: "_parse_table",
         exp.Condition: "_parse_conjunction",
         exp.Expression: "_parse_statement",
+        exp.Properties: "_parse_properties",
         "JOIN_TYPE": "_parse_join_side_and_kind",
     }
 
@@ -273,6 +352,28 @@ class Parser:
         TokenType.TRUE: lambda *_: exp.Boolean(this=True),
         TokenType.FALSE: lambda *_: exp.Boolean(this=False),
         TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
+    }
+
+    PROPERTY_PARSERS = {
+        TokenType.AUTO_INCREMENT: auto_increment_parser,
+        TokenType.CHARACTER_SET: character_set_parser,
+        TokenType.COLLATE: collate_parser,
+        TokenType.ENGINE: engine_parser,
+        TokenType.FORMAT: format_parser,
+        TokenType.LOCATION: lambda self: self.expression(
+            exp.LocationProperty,
+            this=exp.Literal.string("LOCATION"),
+            value=self._parse_string(),
+        ),
+        TokenType.PARTITIONED_BY: lambda self: self.expression(
+            exp.PartitionedByProperty,
+            this=exp.Literal.string("PARTITIONED_BY"),
+            value=self._parse_schema(),
+        ),
+        TokenType.SCHEMA_COMMENT: schema_comment_parser,
+        TokenType.STORED: stored_parser,
+        TokenType.TABLE_FORMAT: table_format_parser,
+        TokenType.USING: table_format_parser,
     }
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
@@ -443,13 +544,14 @@ class Parser:
 
         return index
 
+    def _get_token(self, index):
+        return list_get(self._tokens, index)
+
     def _advance(self, times=1):
         self._index += times
-        self._curr = list_get(self._tokens, self._index)
-        self._next = list_get(self._tokens, self._index + 1)
-        self._prev = (
-            list_get(self._tokens, self._index - 1) if self._index > 0 else None
-        )
+        self._curr = self._get_token(self._index)
+        self._next = self._get_token(self._index + 1)
+        self._prev = self._get_token(self._index - 1) if self._index > 0 else None
 
     def _retreat(self, index):
         self._advance(index - self._index)
@@ -526,43 +628,6 @@ class Parser:
             if self._match(TokenType.ALIAS):
                 expression = self._parse_with()
 
-        options = {
-            "engine": None,
-            "auto_increment": None,
-            "character_set": None,
-            "collate": None,
-            "comment": None,
-            "parsed": True,
-        }
-
-        def parse_option(option, token, option_lambda):
-            if not options[option] and self._match(token):
-                self._match(TokenType.EQ)
-                options[option] = option_lambda()
-                options["parsed"] = True
-
-        while options["parsed"]:
-            options["parsed"] = False
-
-            parse_option("engine", TokenType.ENGINE, self._parse_var)
-            parse_option("auto_increment", TokenType.AUTO_INCREMENT, self._parse_number)
-            parse_option("collate", TokenType.COLLATE, self._parse_var)
-            parse_option("comment", TokenType.SCHEMA_COMMENT, self._parse_string)
-
-            if not options["character_set"]:
-                default = self._match(TokenType.DEFAULT)
-                parse_option(
-                    "character_set",
-                    TokenType.CHARACTER_SET,
-                    lambda: self.expression(
-                        exp.CharacterSet,
-                        this=self._parse_var(),
-                        default=default,
-                    ),
-                )
-
-        options.pop("parsed")
-
         return self.expression(
             exp.Create,
             this=this,
@@ -572,93 +637,75 @@ class Parser:
             properties=properties,
             temporary=temporary,
             replace=replace,
-            **options,
         )
 
     def _parse_property(self, schema):
-        key = self._parse_var().this
-        self._match(TokenType.EQ)
+        if self._match_set(self.PROPERTY_PARSERS):
+            return self.PROPERTY_PARSERS[self._prev.token_type](self)
 
-        if key.upper() == c.PARTITIONED_BY:
-            value = self._parse_schema() or self._parse_bracket(self._parse_field())
+        if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
+            return character_set_parser(self)
+        if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
+            key = self._parse_var().this
+            self._match(TokenType.EQ)
 
-            if schema and not isinstance(value, exp.Schema):
-                columns = {v.text("this").upper() for v in value.expressions}
-                partitions = [
-                    expression
-                    for expression in schema.expressions
-                    if expression.this.text("this").upper() in columns
-                ]
-                schema.set(
-                    "expressions",
-                    [e for e in schema.expressions if e not in partitions],
-                )
-                value = self.expression(exp.Schema, expressions=partitions)
-        else:
-            value = self._parse_column()
+            if key.upper() == c.PARTITIONED_BY:
+                expression = exp.PartitionedByProperty
+                value = self._parse_schema() or self._parse_bracket(self._parse_field())
 
-        return self.expression(
-            exp.Property,
-            this=exp.Literal.string(key),
-            value=value,
-        )
+                if schema and not isinstance(value, exp.Schema):
+                    columns = {v.text("this").upper() for v in value.expressions}
+                    partitions = [
+                        expression
+                        for expression in schema.expressions
+                        if expression.this.text("this").upper() in columns
+                    ]
+                    schema.set(
+                        "expressions",
+                        [e for e in schema.expressions if e not in partitions],
+                    )
+                    value = self.expression(exp.Schema, expressions=partitions)
+            else:
+                value = self._parse_column()
+                expression = exp.AnonymousProperty
 
-    def _parse_properties(self, schema):
+            return self.expression(
+                expression,
+                this=exp.Literal.string(key),
+                value=value,
+            )
+        return None
+
+    def _parse_properties(self, schema=None):
+        """
+        Schema is included since if the table schema is defined and we later get a partition by expression
+        then we will define those columns in the partition by section and not in with the rest of the
+        columns
+        """
         properties = []
 
-        if self._match(TokenType.WITH):
-            self._match_l_paren()
-            properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
-            self._match_r_paren()
-        else:
-            if self._match(TokenType.USING):
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.TABLE_FORMAT),
-                        value=exp.Literal.string(self._parse_var().name),
-                    )
-                )
-
-            if self._match(TokenType.PARTITIONED_BY):
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.PARTITIONED_BY),
-                        value=self._parse_schema(),
-                    )
-                )
-
-            if self._match(TokenType.STORED):
-                self._match(TokenType.ALIAS)
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.FILE_FORMAT),
-                        value=exp.Literal.string(self._parse_var().text("this")),
-                    )
-                )
-            if self._match(TokenType.LOCATION):
-                properties.append(
-                    self.expression(
-                        exp.Property,
-                        this=exp.Literal.string(c.LOCATION),
-                        value=self._parse_string(),
-                    )
-                )
-
-            if self._match(TokenType.PROPERTIES):
+        while True:
+            if self._match(TokenType.WITH):
+                self._match_l_paren()
+                properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
+                self._match_r_paren()
+            elif self._match(TokenType.PROPERTIES):
                 self._match_l_paren()
                 properties.extend(
                     self._parse_csv(
                         lambda: self.expression(
-                            exp.Property,
+                            exp.AnonymousProperty,
                             this=self._parse_string(),
                             value=self._match(TokenType.EQ) and self._parse_string(),
                         )
                     )
                 )
                 self._match_r_paren()
+            else:
+                identified_property = self._parse_property(schema)
+                if not identified_property:
+                    break
+                properties.append(identified_property)
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None
@@ -1962,7 +2009,7 @@ class Parser:
 
         return None
 
-    def _match_pair(self, token_type_a, token_type_b):
+    def _match_pair(self, token_type_a, token_type_b, advance=True):
         if not self._curr or not self._next:
             return None
 
@@ -1970,7 +2017,8 @@ class Parser:
             self._curr.token_type == token_type_a
             and self._next.token_type == token_type_b
         ):
-            self._advance(2)
+            if advance:
+                self._advance(2)
             return True
 
         return None

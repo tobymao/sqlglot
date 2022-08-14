@@ -132,12 +132,12 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        assert expression.expressions[0].text("this") == "annotation1"
-        assert expression.expressions[1].text("this") == "annotation2:testing"
-        assert expression.expressions[2].text("this") == "test#annotation"
-        assert expression.expressions[3].text("this") == "annotation3"
-        assert expression.expressions[4].text("this") == "annotation4"
-        assert expression.expressions[5].text("this") == ""
+        assert expression.expressions[0].name == "annotation1"
+        assert expression.expressions[1].name == "annotation2:testing"
+        assert expression.expressions[2].name == "test#annotation"
+        assert expression.expressions[3].name == "annotation3"
+        assert expression.expressions[4].name == "annotation4"
+        assert expression.expressions[5].name == ""
 
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")

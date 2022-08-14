@@ -75,7 +75,7 @@ class Expression(metaclass=_Expression):
     @property
     def alias(self):
         if isinstance(self.args.get("alias"), TableAlias):
-            return self.args["alias"].text("this")
+            return self.args["alias"].name
         return self.text("alias")
 
     @property

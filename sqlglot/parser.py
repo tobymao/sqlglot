@@ -652,11 +652,11 @@ class Parser:
                 value = self._parse_schema() or self._parse_bracket(self._parse_field())
 
                 if schema and not isinstance(value, exp.Schema):
-                    columns = {v.text("this").upper() for v in value.expressions}
+                    columns = {v.name.upper() for v in value.expressions}
                     partitions = [
                         expression
                         for expression in schema.expressions
-                        if expression.this.text("this").upper() in columns
+                        if expression.this.name.upper() in columns
                     ]
                     schema.set(
                         "expressions",
@@ -1713,7 +1713,7 @@ class Parser:
 
         expressions = self._parse_csv(self._parse_conjunction)
 
-        if not this or this.text("this").upper() == "ARRAY":
+        if not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:
             expressions = apply_index_offset(expressions, -self.index_offset)

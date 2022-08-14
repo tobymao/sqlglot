@@ -72,9 +72,6 @@ class Generator:
         exp.PartitionedByProperty,
         exp.TableFormatProperty,
     ]
-    WITH_PROPERTY_PREFIX = "WITH ("
-    WITH_PROPERTY_SUFFIX = ")"
-    WITH_PROPERTY_SEP = ", "
 
     __slots__ = (
         "time_mapping",
@@ -166,13 +163,6 @@ class Generator:
 
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
-
-    def properties(self, expression, prefix="", suffix="", sep=" "):
-        if expression.expressions:
-            return (
-                f" {prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
-            )
-        return ""
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -412,17 +402,25 @@ class Generator:
             elif p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
 
-        root_expression = exp.Properties(expressions=root_properties)
-        with_expression = exp.Properties(expressions=with_properties)
-        root_sql = self.properties(root_expression)
-        with_sql = self.properties(
-            with_expression,
-            prefix=self.WITH_PROPERTY_PREFIX,
-            suffix=self.WITH_PROPERTY_SUFFIX,
-            sep=self.WITH_PROPERTY_SEP,
-        )
+        root_sql = self.properties(exp.Properties(expressions=root_properties))
+        with_sql = self.with_properties(exp.Properties(expressions=with_properties))
 
         return root_sql + with_sql
+
+    def properties(self, expression, prefix="", suffix="", sep=" "):
+        if expression.expressions:
+            return (
+                f" {prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
+            )
+        return ""
+
+    def with_properties(self, properties):
+        return self.properties(
+            properties,
+            prefix="WITH (",
+            suffix=")",
+            sep=", ",
+        )
 
     def property_sql(self, expression):
         key = expression.text("this")

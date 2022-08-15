@@ -1804,10 +1804,21 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            'CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG',
-            "CREATE TABLE blah (col_a INT) COMMENT 'Test comment: blah' PARTITIONED BY (date STRING) STORED AS ICEBERG",
+            """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG TBLPROPERTIES('x' = '1')""",
+            """CREATE TABLE blah (
+  col_a INT
+)
+COMMENT 'Test comment: blah'
+PARTITIONED BY (
+  date STRING
+)
+STORED AS ICEBERG
+TBLPROPERTIES (
+  'x' = '1'
+)""",
             read="spark",
             write="spark",
+            pretty=True,
         )
 
         self.validate(

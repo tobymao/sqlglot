@@ -272,7 +272,5 @@ class Hive(Dialect):
         def with_properties(self, properties):
             return self.properties(
                 properties,
-                prefix="TBLPROPERTIES (",
-                suffix=")",
-                sep=", ",
+                prefix="TBLPROPERTIES",
             )

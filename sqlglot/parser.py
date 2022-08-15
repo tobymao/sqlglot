@@ -942,7 +942,20 @@ class Parser:
     def _parse_subquery(self, this):
         alias = self._parse_table_alias()
         if isinstance(this, exp.Select):
-            return self.expression(exp.Subquery, this=this, alias=alias)
+            if self._return_subquery:
+                order = self._parse_order()
+                limit = self._parse_limit()
+                offset = self._parse_offset()
+            else:
+                order = limit = offset = None
+            return self.expression(
+                exp.Subquery,
+                this=this,
+                alias=alias,
+                order=order,
+                limit=limit,
+                offset=offset,
+            )
         return self.expression(
             exp.Subquery,
             this=this,

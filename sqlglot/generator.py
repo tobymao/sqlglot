@@ -402,24 +402,33 @@ class Generator:
             elif p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
 
-        root_sql = self.properties(exp.Properties(expressions=root_properties))
-        with_sql = self.with_properties(exp.Properties(expressions=with_properties))
+        return self.root_properties(
+            exp.Properties(expressions=root_properties)
+        ) + self.with_properties(exp.Properties(expressions=with_properties))
 
-        return root_sql + with_sql
-
-    def properties(self, expression, prefix="", suffix="", sep=" "):
-        if expression.expressions:
-            return (
-                f" {prefix}{self.expressions(expression, flat=True, sep=sep)}{suffix}"
+    def root_properties(self, properties):
+        if properties.expressions:
+            return self.sep() + self.expressions(
+                properties,
+                indent=False,
+                sep=" ",
             )
+        return ""
+
+    def properties(self, properties, prefix="", sep=", "):
+        if properties.expressions:
+            expressions = self.expressions(
+                properties,
+                sep=sep,
+                indent=False,
+            )
+            return f"{self.seg(prefix)}{' ' if prefix else ''}{self.wrap(expressions)}"
         return ""
 
     def with_properties(self, properties):
         return self.properties(
             properties,
-            prefix="WITH (",
-            suffix=")",
-            sep=", ",
+            prefix="WITH",
         )
 
     def property_sql(self, expression):

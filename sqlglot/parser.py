@@ -1065,8 +1065,9 @@ class Parser:
             catalog = db
             db = table
             table = self._parse_id_var()
-            if not table:
-                self.raise_error("Expected table name")
+
+        if not table:
+            self.raise_error("Expected table name")
 
         this = self.expression(exp.Table, this=table, db=db, catalog=catalog)
 

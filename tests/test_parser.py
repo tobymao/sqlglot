@@ -176,3 +176,15 @@ class TestParser(unittest.TestCase):
             "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Schema'>. Line 2, Col: 1.",
             logger,
         )
+
+    @patch("sqlglot.parser.logger")
+    def test_create_table_error(self, logger):
+        parse_one(
+            """CREATE TABLE PARTITION""",
+            error_level=ErrorLevel.WARN,
+        )
+
+        assert_logger_contains(
+            "Expected table name",
+            logger,
+        )

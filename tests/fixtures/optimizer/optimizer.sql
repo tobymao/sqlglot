@@ -39,13 +39,13 @@ WITH "cte" AS (
     SELECT
       "x"."a" AS "a"
     FROM "x" AS "x"
-  ) AS "_q_0"
+  )
   UNION ALL
   (
     SELECT
       "y"."a" AS "a"
     FROM "y" AS "y"
-  ) AS "_q_1"
+  )
 )
 SELECT
   "cte"."a" AS "a"

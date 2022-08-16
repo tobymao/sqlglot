@@ -12,3 +12,6 @@ SELECT 1 FROM x.y.z AS z;
 
 WITH a AS (SELECT 1 FROM z) SELECT 1 FROM a;
 WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a;
+
+SELECT (SELECT y.c FROM y AS y) FROM x;
+SELECT (SELECT y.c FROM c.db.y AS y) FROM c.db.x AS x;

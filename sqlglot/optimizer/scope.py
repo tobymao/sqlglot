@@ -90,7 +90,6 @@ class Scope:
         # Whenever we set it to True, we exclude a subtree from traversal.
         prune = False
 
-        # for node, parent, arg in _walk_next_scope(self.expression):
         for node, parent, _ in self.expression.dfs(
             prune=lambda *_: prune
         ):

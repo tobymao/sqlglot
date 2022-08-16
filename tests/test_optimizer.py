@@ -2,7 +2,7 @@ import unittest
 
 from sqlglot import optimizer, parse_one, table
 from sqlglot.optimizer.schema import ensure_schema, MappingSchema
-from sqlglot.errors import OptimizeError, ErrorLevel
+from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.scope import traverse_scope
 from tests.helpers import (
     load_sql_fixture_pairs,

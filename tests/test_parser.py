@@ -33,6 +33,9 @@ class TestParser(unittest.TestCase):
         self.assertIsNotNone(
             parse_one("select * from (select 1) x order by x.y").args["order"]
         )
+        self.assertIsNotNone(
+            parse_one("select * from x where a = (select 1) order by x.y").args["order"]
+        )
         self.assertEqual(
             len(parse_one("select * from (select 1) x cross join y").args["joins"]), 1
         )

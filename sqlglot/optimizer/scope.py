@@ -86,19 +86,33 @@ class Scope:
         self._derived_tables = []
         self._raw_columns = []
 
-        for node, *_ in _walk_next_scope(self.expression):
+        # We'll use this variable to pass state into the dfs generator.
+        # Whenever we set it to True, we exclude a subtree from traversal.
+        prune = False
+
+        # for node, parent, arg in _walk_next_scope(self.expression):
+        for node, parent, _ in self.expression.dfs(
+            prune=lambda *_: prune
+        ):
+            prune = False
+
             if node is self.expression:
                 continue
             if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
                 self._raw_columns.append(node)
             elif isinstance(node, exp.Table):
                 self._tables.append(node)
+            elif isinstance(node, (exp.Unnest, exp.Lateral)):
+                self._derived_tables.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
-            elif isinstance(node, (exp.Subquery, exp.Unnest, exp.Lateral)):
+                prune = True
+            elif isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)):
                 self._derived_tables.append(node)
+                prune = True
             elif isinstance(node, exp.Subqueryable):
                 self._subqueries.append(node)
+                prune = True
 
         self._collected = True
 
@@ -424,15 +438,3 @@ def _traverse_subqueries(scope):
             yield child_scope
             top = child_scope
         scope.subquery_scopes.append(top)
-
-
-def _walk_next_scope(expression):
-    """
-    Walk the expression tree in DFS order yielding all nodes until a Select or Union instance is found.
-
-    This will yield the Select or Union node itself, but it won't recurse any further.
-    """
-    yield from expression.dfs(
-        prune=lambda n, *_: isinstance(n, (exp.Subqueryable, exp.Subquery, exp.CTE))
-        and n is not expression
-    )

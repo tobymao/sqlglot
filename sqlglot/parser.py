@@ -392,7 +392,7 @@ class Parser:
         "_curr",
         "_next",
         "_prev",
-        "_return_subquery",
+        "_greedy_subqueries",
     )
 
     def __init__(
@@ -419,7 +419,7 @@ class Parser:
         self._curr = None
         self._next = None
         self._prev = None
-        self._return_subquery = False
+        self._greedy_subqueries = False
 
     def parse(self, raw_tokens, sql=None):
         """
@@ -568,11 +568,20 @@ class Parser:
                 expression=self._parse_string(),
             )
 
-        # the initial expression may be a subquery so we want to override the default
-        # behavior of returning a Paren object.
-        self._return_subquery = True
+        # These are both valid queries:
+        #   SELECT * FROM (SELECT 1) LIMIT 1
+        #   SELECT * FROM ((SELECT 1) LIMIT 1)
+        # In the first query, the LIMIT is part of the outer query.
+        # In the second query, the LIMIT is part of the sub query.
+        # This get particularly tricky to parse. For example:
+        #   (SELECT 1) LIMIT 1  -- LIMIT part of inner query
+        #   SELECT * FROM x WHERE y = (SELECT 1) LIMIT 1  -- LIMIT part of outer query
+        # There has to be a more elegant way to parse this, but as a (hopefully) temporary
+        # hack, we're setting this instance attribute to tell the subquery parser to
+        # greedily consume these clauses.
+        self._greedy_subqueries = True
         expression = self._parse_expression()
-        self._return_subquery = False
+        self._greedy_subqueries = False
         return (
             self._parse_set_operations(expression) if expression else self._parse_with()
         )
@@ -942,7 +951,7 @@ class Parser:
     def _parse_subquery(self, this):
         alias = self._parse_table_alias()
         if isinstance(this, exp.Select):
-            if self._return_subquery:
+            if self._greedy_subqueries:
                 order = self._parse_order()
                 limit = self._parse_limit()
                 offset = self._parse_offset()
@@ -1506,7 +1515,7 @@ class Parser:
             this = list_get(expressions, 0)
 
             self._match_r_paren()
-            if self._return_subquery and isinstance(this, exp.Subqueryable):
+            if isinstance(this, exp.Subqueryable):
                 return self._parse_subquery(this)
             if len(expressions) > 1:
                 return self.expression(exp.Tuple, expressions=expressions)

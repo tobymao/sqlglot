@@ -90,9 +90,7 @@ class Scope:
         # Whenever we set it to True, we exclude a subtree from traversal.
         prune = False
 
-        for node, parent, _ in self.expression.dfs(
-            prune=lambda *_: prune
-        ):
+        for node, parent, _ in self.expression.dfs(prune=lambda *_: prune):
             prune = False
 
             if node is self.expression:
@@ -106,7 +104,9 @@ class Scope:
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
                 prune = True
-            elif isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)):
+            elif isinstance(node, exp.Subquery) and isinstance(
+                parent, (exp.From, exp.Join)
+            ):
                 self._derived_tables.append(node)
                 prune = True
             elif isinstance(node, exp.Subqueryable):

@@ -1828,6 +1828,13 @@ TBLPROPERTIES (
             write="spark",
         )
 
+        self.validate(
+            "CREATE TABLE a (x BINARY)",
+            "CREATE TABLE a (x BINARY)",
+            read="spark",
+            write="spark",
+        )
+
     def test_snowflake(self):
         self.validate(
             'x:a:"b c"',

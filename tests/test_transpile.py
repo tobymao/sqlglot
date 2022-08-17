@@ -302,9 +302,20 @@ class TestTranspile(unittest.TestCase):
             assert_logger_contains(error, logger)
 
         with self.assertRaises(ParseError) as ctx:
+            transpile(invalid, error_level=ErrorLevel.IMMEDIATE)
+        self.assertEqual(str(ctx.exception), errors[0])
+
+        with self.assertRaises(ParseError) as ctx:
             transpile(invalid, error_level=ErrorLevel.RAISE)
         self.assertEqual(str(ctx.exception), "\n\n".join(errors))
 
+        more_than_max_errors = "(((("
+        expected = (
+            "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
+            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Paren'>. Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
+            "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
+            "... and 2 more"
+        )
         with self.assertRaises(ParseError) as ctx:
-            transpile(invalid, error_level=ErrorLevel.IMMEDIATE)
-        self.assertEqual(str(ctx.exception), errors[0])
+            transpile(more_than_max_errors, error_level=ErrorLevel.RAISE)
+        self.assertEqual(str(ctx.exception), expected)

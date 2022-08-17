@@ -97,6 +97,9 @@ class Parser:
             Default: 0
         alias_post_tablesample (bool): If the table alias comes after tablesample
             Default: False
+        max_errors (int): Maximum number of error messages to include in a raised ParseError.
+            This is only relevant if error_level is ErrorLevel.RAISE.
+            Default: 3
     """
 
     FUNCTIONS = {
@@ -386,6 +389,7 @@ class Parser:
         "index_offset",
         "unnest_column_only",
         "alias_post_tablesample",
+        "max_errors",
         "_tokens",
         "_chunks",
         "_index",
@@ -402,12 +406,14 @@ class Parser:
         index_offset=0,
         unnest_column_only=False,
         alias_post_tablesample=False,
+        max_errors=3,
     ):
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
         self.unnest_column_only = unnest_column_only
         self.alias_post_tablesample = alias_post_tablesample
+        self.max_errors = max_errors
         self.reset()
 
     def reset(self):
@@ -480,7 +486,11 @@ class Parser:
             for error in self.errors:
                 logger.error(str(error))
         elif self.error_level == ErrorLevel.RAISE and self.errors:
-            raise ParseError("\n\n".join(str(e) for e in self.errors))
+            msg = [str(e) for e in self.errors[: self.max_errors]]
+            remaining = len(self.errors) - self.max_errors
+            if remaining > 0:
+                msg.append(f"... and {remaining} more")
+            raise ParseError("\n\n".join(msg))
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")

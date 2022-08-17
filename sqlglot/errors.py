@@ -4,9 +4,10 @@ from sqlglot.helper import AutoName
 
 
 class ErrorLevel(AutoName):
-    IGNORE = auto()
-    WARN = auto()
-    RAISE = auto()
+    IGNORE = auto()  # Ignore any parser errors
+    WARN = auto()  # Log any parser errors with ERROR level
+    RAISE = auto()  # Collect all parser errors and raise a single exception
+    IMMEDIATE = auto()  # Immediately raise an exception on the first parser error
 
 
 class SqlglotError(Exception):

@@ -23,7 +23,8 @@ def _extract_meta(sql):
 
 
 def assert_logger_contains(message, logger):
-    assert message in str(logger.error.call_args_list[0][0][0])
+    output = "\n".join(str(args[0][0]) for args in logger.error.call_args_list)
+    assert message in output
 
 
 def load_sql_fixtures(filename):

@@ -476,11 +476,11 @@ class Parser:
         return expressions
 
     def check_errors(self):
-        for error in self.errors:
-            if self.error_level == ErrorLevel.RAISE:
-                raise error
-            if self.error_level == ErrorLevel.WARN:
+        if self.error_level == ErrorLevel.WARN:
+            for error in self.errors:
                 logger.error(error)
+        elif self.error_level == ErrorLevel.RAISE and self.errors:
+            raise ParseError("\n\n".join(self.errors))
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
@@ -489,12 +489,13 @@ class Parser:
         start_context = self.sql[max(start - self.error_message_context, 0) : start]
         highlight = self.sql[start:end]
         end_context = self.sql[end : end + self.error_message_context]
-        self.errors.append(
-            ParseError(
-                f"{message}. Line {token.line}, Col: {token.col}.\n"
-                f"  {start_context}\033[4m{highlight}\033[0m{end_context}"
-            )
+        error = (
+            f"{message}. Line {token.line}, Col: {token.col}.\n"
+            f"  {start_context}\033[4m{highlight}\033[0m{end_context}"
         )
+        if self.error_level == ErrorLevel.IMMEDIATE:
+            raise ParseError(error)
+        self.errors.append(error)
 
     def expression(self, exp_class, **kwargs):
         instance = exp_class(**kwargs)
@@ -1905,7 +1906,11 @@ class Parser:
         if identifier:
             return identifier
 
-        if any_token and self._curr.token_type not in self.RESERVED_KEYWORDS:
+        if (
+            any_token
+            and self._curr
+            and self._curr.token_type not in self.RESERVED_KEYWORDS
+        ):
             return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
 
         return self._match_set(self.ID_VAR_TOKENS) and exp.Identifier(

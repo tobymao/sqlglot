@@ -349,6 +349,8 @@ def _traverse_scope(scope):
         yield from _traverse_union(scope)
     elif isinstance(scope.expression, (exp.Lateral, exp.Unnest)):
         pass
+    elif isinstance(scope.expression, exp.Subquery):
+        yield from _traverse_subqueries(scope)
     else:
         raise OptimizeError(f"Unexpected expression type: {type(scope.expression)}")
     yield scope

@@ -126,3 +126,23 @@ FROM (
 ) AS "d"
 GROUP BY
   "a";
+
+(SELECT a FROM x) LIMIT 1;
+(
+  SELECT
+    "x"."a" AS "a"
+  FROM "x" AS "x"
+)
+LIMIT 1;
+
+(SELECT b FROM x UNION SELECT b FROM y) LIMIT 1;
+(
+  SELECT
+    "x"."b" AS "b"
+  FROM "x" AS "x"
+  UNION
+  SELECT
+    "y"."b" AS "b"
+  FROM "y" AS "y"
+)
+LIMIT 1

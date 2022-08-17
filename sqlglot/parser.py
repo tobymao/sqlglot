@@ -1662,7 +1662,7 @@ class Parser:
             )
             parse_option(
                 "default",
-                lambda: self._match(TokenType.DEFAULT) and self._parse_primary(),
+                lambda: self._match(TokenType.DEFAULT) and self._parse_field(),
             )
             parse_option(
                 "not_null",

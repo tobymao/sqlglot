@@ -106,10 +106,10 @@ class TestParser(unittest.TestCase):
             parse_one("WITH cte AS (SELECT * FROM x)")
 
     def test_space(self):
-        # self.assertEqual(
-        #    parse_one("SELECT ROW() OVER(PARTITION  BY x) FROM x GROUP  BY y").sql(),
-        #    "SELECT ROW() OVER (PARTITION BY x) FROM x GROUP BY y",
-        # )
+        self.assertEqual(
+            parse_one("SELECT ROW() OVER(PARTITION  BY x) FROM x GROUP  BY y").sql(),
+            "SELECT ROW() OVER (PARTITION BY x) FROM x GROUP BY y",
+        )
 
         self.assertEqual(
             parse_one(

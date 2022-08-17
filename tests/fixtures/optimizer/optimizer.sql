@@ -145,4 +145,4 @@ LIMIT 1;
     "y"."b" AS "b"
   FROM "y" AS "y"
 )
-LIMIT 1
+LIMIT 1;

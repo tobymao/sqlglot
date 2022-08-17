@@ -93,7 +93,7 @@ class TestParser(unittest.TestCase):
 
         warn = Parser(error_level=ErrorLevel.WARN)
         warn.expression(exp.Hint, y="")
-        assert isinstance(warn.errors[0], ParseError)
+        self.assertEqual(len(warn.errors), 2)
 
     def test_parse_errors(self):
         with self.assertRaises(ParseError):

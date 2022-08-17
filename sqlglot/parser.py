@@ -1509,9 +1509,9 @@ class Parser:
             return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
 
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(self._parse_conjunction) or [
-                self._parse_with()
-            ]
+            expressions = self._parse_csv(
+                lambda: self._parse_alias(self._parse_conjunction(), explicit=True)
+            ) or [self._parse_with()]
             this = list_get(expressions, 0)
 
             self._match_r_paren()
@@ -1889,8 +1889,11 @@ class Parser:
             and self._prev.text,
         }
 
-    def _parse_alias(self, this):
+    def _parse_alias(self, this, explicit=False):
         any_token = self._match(TokenType.ALIAS)
+
+        if explicit and not any_token:
+            return this
 
         if self._match(TokenType.L_PAREN):
             aliases = self.expression(

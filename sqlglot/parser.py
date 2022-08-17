@@ -478,9 +478,9 @@ class Parser:
     def check_errors(self):
         if self.error_level == ErrorLevel.WARN:
             for error in self.errors:
-                logger.error(error)
+                logger.error(str(error))
         elif self.error_level == ErrorLevel.RAISE and self.errors:
-            raise ParseError("\n\n".join(self.errors))
+            raise ParseError("\n\n".join(str(e) for e in self.errors))
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
@@ -489,12 +489,12 @@ class Parser:
         start_context = self.sql[max(start - self.error_message_context, 0) : start]
         highlight = self.sql[start:end]
         end_context = self.sql[end : end + self.error_message_context]
-        error = (
+        error = ParseError(
             f"{message}. Line {token.line}, Col: {token.col}.\n"
             f"  {start_context}\033[4m{highlight}\033[0m{end_context}"
         )
         if self.error_level == ErrorLevel.IMMEDIATE:
-            raise ParseError(error)
+            raise error
         self.errors.append(error)
 
     def expression(self, exp_class, **kwargs):

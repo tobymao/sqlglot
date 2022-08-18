@@ -189,12 +189,9 @@ class DataFrame:
         all_ctes = base_expression.ctes
         other_df.expression.set("with", None)
         base_expression.set("with", None)
-        union = exp.Union(this=base_expression)
-        union.set("distinct", False)
-        union.set("expression", other_df.expression)
+        union = exp.Union(this=base_expression, distinct=False, expression=other_df.expression)
         union.set("with", exp.With(expressions=all_ctes))
         return self.copy(expression=union)._convert_leaf_to_cte()
 
-    @operation(Operation.FROM)
-    def union_all(self, other: "DataFrame"):
-        return self.union(other)
+    unionAll = union
+

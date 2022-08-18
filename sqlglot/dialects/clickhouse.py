@@ -11,7 +11,14 @@ class ClickHouse(Dialect):
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "NULLABLE": TokenType.NULLABLE,
             "FINAL": TokenType.FINAL,
+            "INT8": TokenType.TINYINT,
+            "INT16": TokenType.SMALLINT,
+            "INT32": TokenType.INT,
+            "INT64": TokenType.BIGINT,
+            "FLOAT32": TokenType.FLOAT,
+            "FLOAT64": TokenType.DOUBLE,
         }
 
     class Parser(Parser):
@@ -24,6 +31,8 @@ class ClickHouse(Dialect):
             return this
 
     class Generator(Generator):
+        STRUCT_DELIMITER = ("(", ")")
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",

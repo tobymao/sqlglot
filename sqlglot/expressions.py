@@ -1544,6 +1544,7 @@ class DataType(Expression):
         UUID = auto()
         GEOGRAPHY = auto()
         STRUCT = auto()
+        NULLABLE = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):

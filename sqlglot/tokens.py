@@ -73,6 +73,7 @@ class TokenType(AutoName):
     DATE = auto()
     UUID = auto()
     GEOGRAPHY = auto()
+    NULLABLE = auto()
 
     # keywords
     ADD_FILE = auto()

@@ -589,23 +589,23 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
 
-    def test_double_union(self):
+    def test_double_union_all(self):
         df_unioned = (
             self.df_spark_employee.select(F.col("employee_id"), F.col("fname"))
-            .union(
+            .unionAll(
                 self.df_spark_store.select(F.col("store_id"), F.col("store_name"))
             )
-            .union(
+            .unionAll(
                 self.df_spark_district.select(F.col("district_id"), F.col("district_name"))
             )
         )
 
         dfs_unioned = (
             self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("fname"))
-            .union(
+            .unionAll(
                 self.df_sqlglot_store.select(SF.col("store_id"), SF.col("store_name"))
             )
-            .union(
+            .unionAll(
                 self.df_sqlglot_district.select(SF.col("district_id"), SF.col("district_name"))
             )
         )

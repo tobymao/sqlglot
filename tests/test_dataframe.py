@@ -7,14 +7,18 @@ from sqlglot.dataframe import functions as SF
 class TestDataframe(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        from pyspark import SparkConf
         from pyspark.sql import SparkSession
         from pyspark.sql import types
         from sqlglot.dataframe.session import SparkSession as SqlglotSparkSession
+        # This is for test `test_branching_root_dataframes`
+        config = SparkConf().setAll([('spark.sql.analyzer.failAmbiguousSelfJoin', 'false')])
         cls.spark = (
             SparkSession
             .builder
             .master("local[*]")
             .appName("Unit-tests")
+            .config(conf=config)
             .getOrCreate()
         )
         cls.sqlglot = SqlglotSparkSession()
@@ -32,25 +36,43 @@ class TestDataframe(unittest.TestCase):
             (4, "Claire", "Littleton", 27, 2),
             (5, "Hugo", "Reyes", 29, 100),
         ]
-        df_employee = cls.spark.createDataFrame(data=employee_data, schema=employee_schema)
-        df_employee.createOrReplaceTempView("employee")
+        cls.df_employee = cls.spark.createDataFrame(data=employee_data, schema=employee_schema)
+        cls.df_employee.createOrReplaceTempView("employee")
 
         store_schema = types.StructType([
             types.StructField("store_id", types.IntegerType(), False),
             types.StructField("store_name", types.StringType(), False),
+            types.StructField("district_id", types.IntegerType(), False),
             types.StructField("num_sales", types.IntegerType(), False),
         ])
 
         store_data = [
-            (1, "Hydra", 37),
-            (2, "Arrow", 2000),
+            (1, "Hydra", 1, 37),
+            (2, "Arrow", 2, 2000),
         ]
-        df_store = cls.spark.createDataFrame(data=store_data, schema=store_schema)
-        df_store.createOrReplaceTempView("store")
-        cls.df_spark_store = df_store
-        cls.df_spark_employee = df_employee
-        cls.df_sqlglot_store = cls.sqlglot.read.table("store")
-        cls.df_sqlglot_employee = cls.sqlglot.read.table("employee")
+        cls.df_store = cls.spark.createDataFrame(data=store_data, schema=store_schema)
+        cls.df_store.createOrReplaceTempView("store")
+
+        district_schema = types.StructType([
+            types.StructField("district_id", types.IntegerType(), False),
+            types.StructField("district_name", types.StringType(), False),
+            types.StructField("manager_name", types.StringType(), False),
+        ])
+
+        district_data = [
+            (1, "Temple", "Dogen"),
+            (2, "Lighthouse", "Jacob"),
+        ]
+        cls.df_district = cls.spark.createDataFrame(data=district_data, schema=district_schema)
+        cls.df_district.createOrReplaceTempView("district")
+
+    def setUp(self) -> None:
+        self.df_spark_store = self.df_store.alias('df_store')
+        self.df_spark_employee = self.df_employee.alias('df_employee')
+        self.df_spark_district = self.df_district.alias('df_district')
+        self.df_sqlglot_store = self.sqlglot.read.table('store')
+        self.df_sqlglot_employee = self.sqlglot.read.table('employee')
+        self.df_sqlglot_district = self.sqlglot.read.table('district')
 
     @classmethod
     def compare_spark_with_sqlglot(cls, df_spark, df_sqlglot, no_empty=True):
@@ -476,3 +498,117 @@ class TestDataframe(unittest.TestCase):
             )
         )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
+
+    def test_branching_root_dataframes(self):
+        """
+        Test a pattern that has non-intuitive behavior in spark
+
+        Scenario: You do a self-join in a dataframe using an original dataframe and then a modified version
+        of it. You then reference the columns by the dataframe name instead of the column function.
+        Spark will use the root dataframe's column in the result.
+        """
+        df_hydra_employees_only = self.df_spark_employee.where(F.col("store_id") == F.lit(1))
+        df_joined = (
+            self.df_spark_employee.where(F.col("store_id") == F.lit(2)).alias("df_arrow_employees_only")
+            .join(
+                df_hydra_employees_only.alias("df_hydra_employees_only"),
+                on=["store_id"],
+                how="full_outer",
+            )
+            .select(
+                self.df_spark_employee.fname,
+                F.col("df_arrow_employees_only.fname"),
+                df_hydra_employees_only.fname,
+                F.col("df_hydra_employees_only.fname")
+            )
+        )
+
+        dfs_hydra_employees_only = self.df_sqlglot_employee.where(SF.col("store_id") == SF.lit(1))
+        dfs_joined = (
+            self.df_sqlglot_employee.where(SF.col("store_id") == SF.lit(2)).alias("dfs_arrow_employees_only")
+            .join(
+                dfs_hydra_employees_only.alias("dfs_hydra_employees_only"),
+                on=["store_id"],
+                how="full_outer",
+            )
+            .select(
+                self.df_sqlglot_employee.fname,
+                SF.col("dfs_arrow_employees_only.fname"),
+                dfs_hydra_employees_only.fname,
+                SF.col("dfs_hydra_employees_only.fname")
+            )
+        )
+        self.compare_spark_with_sqlglot(df_joined, dfs_joined)
+
+    def test_basic_union(self):
+        df_unioned = (
+            self.df_spark_employee.select(F.col("employee_id"), F.col("age"))
+            .union(
+                self.df_spark_store.select(F.col("store_id"), F.col("num_sales"))
+            )
+        )
+
+        dfs_unioned = (
+            self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("age"))
+            .union(
+                self.df_sqlglot_store.select(SF.col("store_id"), SF.col("num_sales"))
+            )
+        )
+        self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
+
+    def test_union_with_join(self):
+        df_joined = (
+            self.df_spark_employee
+            .join(
+                self.df_spark_store,
+                on="store_id",
+                how="inner",
+            )
+        )
+        df_unioned = (
+            df_joined.select(F.col("store_id"), F.col("store_name"))
+            .union(
+                self.df_spark_district.select(F.col("district_id"), F.col("district_name"))
+            )
+        )
+
+        dfs_joined = (
+            self.df_sqlglot_employee
+            .join(
+                self.df_sqlglot_store,
+                on="store_id",
+                how="inner",
+            )
+        )
+        dfs_unioned = (
+            dfs_joined.select(SF.col("store_id"), SF.col("store_name"))
+            .union(
+                self.df_sqlglot_district.select(SF.col("district_id"), SF.col("district_name"))
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
+
+    def test_double_union(self):
+        df_unioned = (
+            self.df_spark_employee.select(F.col("employee_id"), F.col("fname"))
+            .union(
+                self.df_spark_store.select(F.col("store_id"), F.col("store_name"))
+            )
+            .union(
+                self.df_spark_district.select(F.col("district_id"), F.col("district_name"))
+            )
+        )
+
+        dfs_unioned = (
+            self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("fname"))
+            .union(
+                self.df_sqlglot_store.select(SF.col("store_id"), SF.col("store_name"))
+            )
+            .union(
+                self.df_sqlglot_district.select(SF.col("district_id"), SF.col("district_name"))
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
+

@@ -116,6 +116,7 @@ class Parser:
         TokenType.ARRAY,
         TokenType.MAP,
         TokenType.STRUCT,
+        TokenType.NULLABLE,
     }
 
     TYPE_TOKENS = {

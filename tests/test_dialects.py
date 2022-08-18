@@ -2035,6 +2035,11 @@ TBLPROPERTIES (
             "dictGet(x, 'y')",
             write="clickhouse",
         )
+        self.validate(
+            "CAST(1 AS NULLABLE(INT64))",
+            "CAST(1 AS NULLABLE(BIGINT))",
+            read="clickhouse",
+        )
 
         self.validate(
             "select * from x final",

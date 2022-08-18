@@ -610,15 +610,9 @@ class Generator:
         desc = " DESC" if desc else ""
         return f"{self.sql(expression, 'this')}{desc}"
 
-    def select_sql(self, expression):
-        hint = self.sql(expression, "hint")
-        distinct = self.sql(expression, "distinct")
-        distinct = f" {distinct}" if distinct else ""
-        expressions = self.expressions(expression)
-        sep = self.sep() if expressions else ""
-        sql = csv(
-            f"SELECT{hint}{distinct}{sep}{expressions}",
-            self.sql(expression, "from"),
+    def query_modifiers(self, expression, *sqls):
+        return csv(
+            *sqls,
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
             self.sql(expression, "where"),
@@ -633,6 +627,18 @@ class Generator:
             self.sql(expression, "limit"),
             self.sql(expression, "offset"),
             sep="",
+        )
+
+    def select_sql(self, expression):
+        hint = self.sql(expression, "hint")
+        distinct = self.sql(expression, "distinct")
+        distinct = f" {distinct}" if distinct else ""
+        expressions = self.expressions(expression)
+        expressions = f"{self.sep()}{expressions}" if expressions else expressions
+        sql = self.query_modifiers(
+            expression,
+            f"SELECT{hint}{distinct}{expressions}",
+            self.sql(expression, "from"),
         )
         return self.prepend_ctes(expression, sql)
 
@@ -658,17 +664,10 @@ class Generator:
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")
 
-        return csv(
+        return self.query_modifiers(
+            expression,
             self.wrap(expression),
             f" AS {alias}" if alias else "",
-            *[self.sql(sql) for sql in expression.args.get("joins", [])],
-            self.sql(expression, "distribute"),
-            self.sql(expression, "sort"),
-            self.sql(expression, "cluster"),
-            self.sql(expression, "order"),
-            self.sql(expression, "limit"),
-            self.sql(expression, "offset"),
-            sep="",
         )
 
     def qualify_sql(self, expression):
@@ -1006,8 +1005,9 @@ class Generator:
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")
         op = self.seg(op)
-        expression = self.sql(expression, "expression")
-        return f"{this}{op}{self.sep()}{expression}"
+        return self.query_modifiers(
+            expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}"
+        )
 
     def token_sql(self, token_type):
         return self.TOKEN_MAPPING.get(token_type, token_type.name)

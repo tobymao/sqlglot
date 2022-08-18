@@ -377,6 +377,25 @@ class Parser:
         TokenType.USING: _table_format_parser,
     }
 
+    QUERY_MODIFIER_PARSERS = {
+        "laterals": lambda self: self._parse_laterals(),
+        "joins": lambda self: self._parse_joins(),
+        "where": lambda self: self._parse_where(),
+        "group": lambda self: self._parse_group(),
+        "having": lambda self: self._parse_having(),
+        "qualify": lambda self: self._parse_qualify(),
+        "window": lambda self: self._match(TokenType.WINDOW)
+        and self._parse_window(self._parse_id_var(), alias=True),
+        "distribute": lambda self: self._parse_sort(
+            TokenType.DISTRIBUTE_BY, exp.Distribute
+        ),
+        "sort": lambda self: self._parse_sort(TokenType.SORT_BY, exp.Sort),
+        "cluster": lambda self: self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
+        "order": lambda self: self._parse_order(),
+        "limit": lambda self: self._parse_limit(),
+        "offset": lambda self: self._parse_offset(),
+    }
+
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
     STRICT_CAST = True
@@ -579,23 +598,12 @@ class Parser:
                 expression=self._parse_string(),
             )
 
-        # These are both valid queries:
-        #   SELECT * FROM (SELECT 1) LIMIT 1
-        #   SELECT * FROM ((SELECT 1) LIMIT 1)
-        # In the first query, the LIMIT is part of the outer query.
-        # In the second query, the LIMIT is part of the sub query.
-        # This get particularly tricky to parse. For example:
-        #   (SELECT 1) LIMIT 1  -- LIMIT part of inner query
-        #   SELECT * FROM x WHERE y = (SELECT 1) LIMIT 1  -- LIMIT part of outer query
-        # There has to be a more elegant way to parse this, but as a (hopefully) temporary
-        # hack, we're setting this instance attribute to tell the subquery parser to
-        # greedily consume these clauses.
-        self._greedy_subqueries = True
         expression = self._parse_expression()
-        self._greedy_subqueries = False
-        return (
+        expression = (
             self._parse_set_operations(expression) if expression else self._parse_with()
         )
+        self._parse_query_modifiers(expression)
+        return expression
 
     def _parse_drop(self):
         if self._match(TokenType.TABLE):
@@ -868,7 +876,7 @@ class Parser:
             self.raise_error("Expected AS in CTE")
 
         self._match_l_paren()
-        expression = self._parse_with()
+        expression = self._parse_statement()
         self._match_r_paren()
 
         return self.expression(
@@ -920,31 +928,15 @@ class Parser:
                 hint=hint,
                 distinct=distinct,
                 expressions=expressions,
-                **{
-                    "from": self._parse_from(),
-                    "laterals": self._parse_laterals(),
-                    "joins": self._parse_joins(),
-                    "where": self._parse_where(),
-                    "group": self._parse_group(),
-                    "having": self._parse_having(),
-                    "qualify": self._parse_qualify(),
-                    "window": self._match(TokenType.WINDOW)
-                    and self._parse_window(self._parse_id_var(), alias=True),
-                    "distribute": self._parse_sort(
-                        TokenType.DISTRIBUTE_BY, exp.Distribute
-                    ),
-                    "sort": self._parse_sort(TokenType.SORT_BY, exp.Sort),
-                    "cluster": self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
-                    "order": self._parse_order(),
-                    "limit": limit or self._parse_limit(),
-                    "offset": self._parse_offset(),
-                },
+                limit=limit,
             )
+            from_ = self._parse_from()
+            if from_:
+                this.set("from", from_)
+            self._parse_query_modifiers(this)
         elif self._match(TokenType.L_PAREN):
             this = self._parse_table()
-            if isinstance(this, exp.Subquery):
-                joins = self._parse_joins()
-                this.set("joins", joins)
+            self._parse_query_modifiers(this)
             self._match_r_paren()
             this = self._parse_subquery(this)
         elif self._match(TokenType.VALUES):
@@ -960,33 +952,17 @@ class Parser:
         return self._parse_set_operations(this)
 
     def _parse_subquery(self, this):
-        alias = self._parse_table_alias()
-        if isinstance(this, exp.Select):
-            if self._greedy_subqueries:
-                order = self._parse_order()
-                limit = self._parse_limit()
-                offset = self._parse_offset()
-            else:
-                order = limit = offset = None
-            return self.expression(
-                exp.Subquery,
-                this=this,
-                alias=alias,
-                order=order,
-                limit=limit,
-                offset=offset,
-            )
-        return self.expression(
-            exp.Subquery,
-            this=this,
-            alias=alias,
-            order=self._parse_order(),
-            distribute=self._parse_sort(TokenType.DISTRIBUTE_BY, exp.Distribute),
-            sort=self._parse_sort(TokenType.SORT_BY, exp.Sort),
-            cluster=self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
-            limit=self._parse_limit(),
-            offset=self._parse_offset(),
-        )
+        return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
+
+    def _parse_query_modifiers(self, this):
+        if not isinstance(this, (exp.Subquery, exp.Subqueryable)):
+            return
+
+        for key, parser in self.QUERY_MODIFIER_PARSERS.items():
+            expression = parser(self)
+
+            if expression:
+                this.set(key, expression)
 
     def _parse_annotation(self, expression):
         if self._match(TokenType.ANNOTATION):
@@ -1523,9 +1499,11 @@ class Parser:
             expressions = self._parse_csv(
                 lambda: self._parse_alias(self._parse_conjunction(), explicit=True)
             ) or [self._parse_with()]
-            this = list_get(expressions, 0)
 
+            this = list_get(expressions, 0)
+            self._parse_query_modifiers(this)
             self._match_r_paren()
+
             if isinstance(this, exp.Subqueryable):
                 return self._parse_subquery(this)
             if len(expressions) > 1:

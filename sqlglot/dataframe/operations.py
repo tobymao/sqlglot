@@ -24,7 +24,7 @@ def operation(op: Operation):
         def wrapper(self: "DataFrame", *args, **kwargs):
             last_op = self.last_op
             new_op = op if op != Operation.NO_OP else last_op
-            if new_op < last_op or (last_op == new_op and new_op == Operation.SELECT):
+            if new_op < last_op or (last_op == new_op and new_op in (Operation.SELECT, Operation.FROM)):
                 self = self._convert_leaf_to_cte()
             df: "DataFrame" = func(self, *args, **kwargs)
             df.last_op = new_op

@@ -9,6 +9,8 @@ from sqlglot.dataframe.util import ensure_strings, convert_join_type, ensure_col
 from sqlglot.helper import ensure_list, flatten
 from sqlglot.dataframe.operations import Operation, operation
 
+from pyspark.sql import DataFrame
+
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.session import SparkSession
 
@@ -52,11 +54,22 @@ class DataFrame:
         return f"a{str(uuid.uuid4())[:8]}"
 
     def sql(self):
-        expression = self.expression.copy()
+        expression = self._resolve_joined_ctes(copy=True)
+        # expression = self.expression.copy()
+        # if len(self.joins_infos) > 0:
+        #     for join_info in self.joins_infos:
+        #         expression = self._add_ctes_to_expression(self.expression, join_info.other_df.expression.ctes)
+        return expression.sql(dialect="spark", pretty=True)
+
+    def _resolve_joined_ctes(self, copy=True):
+        if copy:
+            expression = self.expression.copy()
+        else:
+            expression = self
         if len(self.joins_infos) > 0:
             for join_info in self.joins_infos:
                 expression = self._add_ctes_to_expression(self.expression, join_info.other_df.expression.ctes)
-        return expression.sql(pretty=True)
+        return expression
 
     def copy(self, **kwargs):
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
@@ -66,6 +79,9 @@ class DataFrame:
         name = name or self.random_name
         expression_to_cte = expression.copy()
         expression_to_cte.set("with", None)
+        # new_expression = exp.Select()
+        # for cte in prepend_ctes:
+        #     new_expression = new_expression.with_(cte.alias_or_name, as_=cte.args["this"].sql(), **kwargs)
         return exp.Select().with_(name, as_=expression_to_cte, **kwargs).ctes[0], name
 
     @classmethod
@@ -76,14 +92,18 @@ class DataFrame:
         return expression
 
     def _convert_leaf_to_cte(self, name: t.Optional[str] = None) -> "DataFrame":
-        cte_expression, cte_name = self._create_cte_from_expression(expression=self.expression, name=name)
+        expression = self._resolve_joined_ctes(copy=True)
+        cte_expression, cte_name = self._create_cte_from_expression(expression=expression, name=name)
         new_expression = exp.Select()
-        new_expression = self._add_ctes_to_expression(new_expression, self.expression.ctes + [cte_expression])
-        sel_columns = [x.alias_or_name for x in
-                       dict.fromkeys(cte_expression.find(exp.Select).args.get("expressions", []))]
-        new_expression = new_expression.from_(cte_name).select(*sel_columns)
+        new_expression = self._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
+        sel_columns = self._get_outer_select_columns(cte_expression)
+        new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
         self.joins_infos = []
         return self.copy(expression=new_expression, name=name if name is not None else self.name)
+
+    @classmethod
+    def _get_outer_select_columns(cls, expression):
+        return [x for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
     def _replace_alias_references(self, potential_references: t.List[Column]):
         potential_references = ensure_list(potential_references)
@@ -158,15 +178,23 @@ class DataFrame:
                     column.set_table_name(pre_join_self_latest_cte_name)
                 else:
                     column.set_table_name(other_df.latest_cte_name)
-
-        # if isinstance(columns[0], str):
-        #     join_columns = columns
-        #     join_clause = functools.reduce(lambda x, y: x & y, [
-        #         col.copy().set_table_name(pre_join_self_latest_cte_name) == col.copy().set_table_name(other_df.latest_cte_name)
-        #         for col in columns
-        #     ])
-        # else:
-        #     join_columns = flatten([list(column.expression.find_all(exp.Expression)) for column in columns])
-        #     if isinstance(columns[0], exp.Column):
         self.joins_infos.append(JoinInfo(self, other_df, join_columns, join_type, pre_join_self_latest_cte_name))
         return self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
+
+    @operation(Operation.FROM)
+    def union(self, other: "DataFrame"):
+        other_df = other._convert_leaf_to_cte()
+        base_expression = self.expression.copy()
+        base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
+        all_ctes = base_expression.ctes
+        other_df.expression.set("with", None)
+        base_expression.set("with", None)
+        union = exp.Union(this=base_expression)
+        union.set("distinct", False)
+        union.set("expression", other_df.expression)
+        union.set("with", exp.With(expressions=all_ctes))
+        return self.copy(expression=union)._convert_leaf_to_cte()
+
+    @operation(Operation.FROM)
+    def union_all(self, other: "DataFrame"):
+        return self.union(other)

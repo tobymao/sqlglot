@@ -34,9 +34,11 @@ class Expression(metaclass=_Expression):
 
     def __init__(self, **args):
         self.args = args
-        self._set_parent(args)
         self.parent = None
         self.arg_key = None
+
+        for arg_key, value in self.args.items():
+            self._set_parent(arg_key, value)
 
     def __eq__(self, other):
         return type(self) is type(other) and _norm_args(self) == _norm_args(other)
@@ -96,27 +98,26 @@ class Expression(metaclass=_Expression):
                 item.parent = parent
         return new
 
-    def set(self, arg, value):
+    def set(self, arg_key, value):
         """
         Sets `arg` to `value`.
 
         Args:
-            arg (str): name of the expression arg
+            arg_key (str): name of the expression arg
             value: value to set the arg to.
         """
-        self.args[arg] = value
-        self._set_parent({arg: value})
+        self.args[arg_key] = value
+        self._set_parent(arg_key, value)
 
-    def _set_parent(self, kwargs):
-        for arg_key, node in kwargs.items():
-            if isinstance(node, Expression):
-                node.parent = self
-                node.arg_key = arg_key
-            elif isinstance(node, list):
-                for v in node:
-                    if isinstance(v, Expression):
-                        v.parent = self
-                        v.arg_key = arg_key
+    def _set_parent(self, arg_key, value):
+        if isinstance(value, Expression):
+            value.parent = self
+            value.arg_key = arg_key
+        elif isinstance(value, list):
+            for v in value:
+                if isinstance(v, Expression):
+                    v.parent = self
+                    v.arg_key = arg_key
 
     @property
     def depth(self):
@@ -902,8 +903,31 @@ class Subqueryable:
         )
 
 
+QUERY_MODIFIERS = {
+    "laterals": False,
+    "joins": False,
+    "where": False,
+    "group": False,
+    "having": False,
+    "qualify": False,
+    "window": False,
+    "distribute": False,
+    "sort": False,
+    "cluster": False,
+    "order": False,
+    "limit": False,
+    "offset": False,
+}
+
+
 class Union(Subqueryable, Expression):
-    arg_types = {"with": False, "this": True, "expression": True, "distinct": False}
+    arg_types = {
+        "with": False,
+        "this": True,
+        "expression": True,
+        "distinct": False,
+        **QUERY_MODIFIERS,
+    }
 
     @property
     def named_selects(self):
@@ -963,19 +987,7 @@ class Select(Subqueryable, Expression):
         "hint": False,
         "distinct": False,
         "from": False,
-        "laterals": False,
-        "joins": False,
-        "where": False,
-        "group": False,
-        "having": False,
-        "qualify": False,
-        "window": False,
-        "distribute": False,
-        "sort": False,
-        "cluster": False,
-        "order": False,
-        "limit": False,
-        "offset": False,
+        **QUERY_MODIFIERS,
     }
 
     def from_(
@@ -1432,13 +1444,7 @@ class Subquery(DerivedTable):
     arg_types = {
         "this": True,
         "alias": False,
-        "joins": False,
-        "distribute": False,
-        "sort": False,
-        "cluster": False,
-        "order": False,
-        "limit": False,
-        "offset": False,
+        **QUERY_MODIFIERS,
     }
 
     def unnest(self):

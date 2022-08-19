@@ -84,6 +84,12 @@ class DataFrame:
         #     new_expression = new_expression.with_(cte.alias_or_name, as_=cte.args["this"].sql(), **kwargs)
         return exp.Select().with_(name, as_=expression_to_cte, **kwargs).ctes[0], name
 
+    def _ensure_list_of_columns(self, cols: t.Union[str, t.Iterable[str], Column, t.Iterable[Column]]):
+        columns = ensure_list(cols)
+        columns = ensure_strings(columns)
+        columns = ensure_columns(columns)
+        return columns
+
     @classmethod
     def _add_ctes_to_expression(cls, expression: exp.Subqueryable, ctes: t.List[exp.CTE]):
         for cte in ctes:
@@ -158,9 +164,7 @@ class DataFrame:
     def join(self, other_df: "DataFrame", on: t.Union[str, t.List[str], Column, t.List[Column]], how: str = 'inner', **kwargs) -> "DataFrame":
         other_df = other_df._convert_leaf_to_cte()
         pre_join_self_latest_cte_name = self.latest_cte_name
-        columns = ensure_list(on)
-        columns = ensure_strings(columns)
-        columns = ensure_columns(columns)
+        columns = self._ensure_list_of_columns(on)
         join_type = convert_join_type(how)
         if isinstance(columns[0].expression, exp.Column):
             join_columns = columns
@@ -195,3 +199,17 @@ class DataFrame:
 
     unionAll = union
 
+    @operation(Operation.ORDER_BY)
+    def orderBy(self, *cols: t.Union[str, Column], ascending: t.Optional[t.Union[t.Any, t.List[t.Any]]] = None):
+        cols = self._ensure_list_of_columns(cols)
+        if ascending is None:
+            ascending = [True] * len(cols)
+        elif not isinstance(ascending, list):
+            ascending = [ascending] * len(cols)
+        ascending = [bool(x) for x in ascending]
+        assert len(cols) == len(ascending), "The length of items in ascending must equal the number of columns provided"
+        col_and_ascending = list(zip(cols, ascending))
+        order_by_columns = [exp.Ordered(this=col.expression, desc=not asc) for col, asc in col_and_ascending]
+        return self.copy(expression=self.expression.order_by(*order_by_columns))
+
+    sort = orderBy

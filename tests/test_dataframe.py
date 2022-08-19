@@ -612,3 +612,56 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
 
+    def test_order_by_default(self):
+        df = (
+            self.df_spark_store
+            .groupBy(F.col("district_id"))
+            .agg(F.min("num_sales"))
+            .orderBy(F.col("district_id"))
+        )
+
+        dfs = (
+            self.df_sqlglot_store
+            .groupBy(SF.col("district_id"))
+            .agg(SF.min("num_sales"))
+            .orderBy(SF.col("district_id"))
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_order_by_array_bool(self):
+        df = (
+            self.df_spark_store
+            .groupBy(F.col("district_id"))
+            .agg(F.min("num_sales").alias("total_sales"))
+            .orderBy(F.col("total_sales"), F.col("district_id"), ascending=[1, 0])
+        )
+
+        dfs = (
+            self.df_sqlglot_store
+            .groupBy(SF.col("district_id"))
+            .agg(SF.min("num_sales").alias("total_sales"))
+            .orderBy(SF.col("total_sales"), SF.col("district_id"), ascending=[1, 0])
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_order_by_single_bool(self):
+        df = (
+            self.df_spark_store
+            .groupBy(F.col("district_id"))
+            .agg(F.min("num_sales").alias("total_sales"))
+            .orderBy(F.col("total_sales"), F.col("district_id"), ascending=False)
+        )
+
+        dfs = (
+            self.df_sqlglot_store
+            .groupBy(SF.col("district_id"))
+            .agg(SF.min("num_sales").alias("total_sales"))
+            .orderBy(SF.col("total_sales"), SF.col("district_id"), ascending=False)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+
+

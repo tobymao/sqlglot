@@ -91,3 +91,11 @@ class BigQuery(Dialect):
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.TEXT: "STRING",
         }
+
+        def union_sql(self, expression):
+            return self.prepend_ctes(
+                expression,
+                self.set_operation(
+                    expression, f"UNION{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+                ),
+            )

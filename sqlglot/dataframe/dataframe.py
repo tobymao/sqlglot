@@ -50,18 +50,14 @@ class DataFrame:
 
     @classmethod
     @property
-    def random_name(cls):
+    def random_name(cls) -> str:
         return f"a{str(uuid.uuid4())[:8]}"
 
-    def sql(self):
+    def sql(self) -> str:
         expression = self._resolve_joined_ctes(copy=True)
-        # expression = self.expression.copy()
-        # if len(self.joins_infos) > 0:
-        #     for join_info in self.joins_infos:
-        #         expression = self._add_ctes_to_expression(self.expression, join_info.other_df.expression.ctes)
         return expression.sql(dialect="spark", pretty=True)
 
-    def _resolve_joined_ctes(self, copy=True):
+    def _resolve_joined_ctes(self, copy=True) -> exp.Expression:
         if copy:
             expression = self.expression.copy()
         else:
@@ -71,27 +67,24 @@ class DataFrame:
                 expression = self._add_ctes_to_expression(self.expression, join_info.other_df.expression.ctes)
         return expression
 
-    def copy(self, **kwargs):
+    def copy(self, **kwargs) -> "DataFrame":
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
         return DataFrame(**kwargs)
 
-    def _create_cte_from_expression(self, expression: exp.Expression, name: str = None, **kwargs):
+    def _create_cte_from_expression(self, expression: exp.Expression, name: str = None, **kwargs) -> t.Tuple[exp.CTE, str]:
         name = name or self.random_name
         expression_to_cte = expression.copy()
         expression_to_cte.set("with", None)
-        # new_expression = exp.Select()
-        # for cte in prepend_ctes:
-        #     new_expression = new_expression.with_(cte.alias_or_name, as_=cte.args["this"].sql(), **kwargs)
         return exp.Select().with_(name, as_=expression_to_cte, **kwargs).ctes[0], name
 
-    def _ensure_list_of_columns(self, cols: t.Union[str, t.Iterable[str], Column, t.Iterable[Column]]):
+    def _ensure_list_of_columns(self, cols: t.Union[str, t.Iterable[str], Column, t.Iterable[Column]]) -> t.List[Column]:
         columns = ensure_list(cols)
         columns = ensure_strings(columns)
         columns = ensure_columns(columns)
         return columns
 
     @classmethod
-    def _add_ctes_to_expression(cls, expression: exp.Subqueryable, ctes: t.List[exp.CTE]):
+    def _add_ctes_to_expression(cls, expression: exp.Subqueryable, ctes: t.List[exp.CTE]) -> exp.Expression:
         for cte in ctes:
             if cte not in expression.ctes:
                 expression = expression.with_(cte.alias_or_name, cte.args["this"].sql())
@@ -111,7 +104,7 @@ class DataFrame:
     def _get_outer_select_columns(cls, expression):
         return [x for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
-    def _replace_alias_references(self, potential_references: t.List[Column]):
+    def _replace_alias_references(self, potential_references: t.List[Column]) -> t.List[Column]:
         potential_references = ensure_list(potential_references)
         sqlglot_columns = list(
             flatten([[x.expression] if isinstance(x.expression, exp.Column) else list(x.expression.find_all(exp.Column)) for x in potential_references]))
@@ -186,7 +179,7 @@ class DataFrame:
         return self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
 
     @operation(Operation.FROM)
-    def union(self, other: "DataFrame"):
+    def union(self, other: "DataFrame") -> "DataFrame":
         other_df = other._convert_leaf_to_cte()
         base_expression = self.expression.copy()
         base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
@@ -200,7 +193,7 @@ class DataFrame:
     unionAll = union
 
     @operation(Operation.ORDER_BY)
-    def orderBy(self, *cols: t.Union[str, Column], ascending: t.Optional[t.Union[t.Any, t.List[t.Any]]] = None):
+    def orderBy(self, *cols: t.Union[str, Column], ascending: t.Optional[t.Union[t.Any, t.List[t.Any]]] = None) -> "DataFrame":
         cols = self._ensure_list_of_columns(cols)
         if ascending is None:
             ascending = [True] * len(cols)

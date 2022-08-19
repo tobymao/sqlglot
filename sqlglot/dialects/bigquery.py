@@ -96,6 +96,7 @@ class BigQuery(Dialect):
             return self.prepend_ctes(
                 expression,
                 self.set_operation(
-                    expression, f"UNION{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+                    expression,
+                    f"UNION{' DISTINCT' if expression.args.get('distinct') else ' ALL'}",
                 ),
             )

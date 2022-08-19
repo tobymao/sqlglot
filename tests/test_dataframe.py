@@ -663,5 +663,21 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
+    def test_order_by_column_sort_method(self):
+        df = (
+            self.df_spark_store
+                .groupBy(F.col("district_id"))
+                .agg(F.min("num_sales").alias("total_sales"))
+                .orderBy(F.col("total_sales").asc(), F.col("district_id").desc())
+        )
+
+        dfs = (
+            self.df_sqlglot_store
+                .groupBy(SF.col("district_id"))
+                .agg(SF.min("num_sales").alias("total_sales"))
+                .orderBy(SF.col("total_sales").asc(), SF.col("district_id").desc())
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
 
 

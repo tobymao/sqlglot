@@ -28,6 +28,20 @@ class Column:
     def __or__(self, other) -> "Column":
         return Column(exp.Or(this=self.expression, expression=other.expression))
 
+    @property
+    def is_alias(self):
+        return isinstance(self, exp.Alias)
+
+    @property
+    def is_column(self):
+        return isinstance(self, exp.Column)
+
+    @property
+    def column_expression(self):
+        if self.is_alias:
+            return self.expression.args["this"]
+        return self.expression
+
     def copy(self):
         return Column(self.expression.copy())
 
@@ -39,5 +53,13 @@ class Column:
         return self.expression.sql(dialect="spark", **kwargs)
 
     def alias(self, name: str):
-        self.expression = exp.Alias(alias=exp.Identifier(this=name), this=self.expression)
+        self.expression = exp.Alias(alias=exp.Identifier(this=name), this=self.column_expression)
+        return Column(self.expression)
+
+    def asc(self):
+        self.expression = exp.Ordered(this=self.column_expression, desc=False)
+        return Column(self.expression)
+
+    def desc(self):
+        self.expression = exp.Ordered(this=self.column_expression, desc=True)
         return Column(self.expression)

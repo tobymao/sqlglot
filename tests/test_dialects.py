@@ -493,6 +493,12 @@ class TestDialects(unittest.TestCase):
             write="bigquery",
         )
 
+        self.validate(
+            "SELECT * FROM a UNION SELECT * FROM b",
+            "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+            write="bigquery",
+        )
+
     def test_postgres(self):
         self.validate(
             "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",

@@ -91,3 +91,18 @@ class BigQuery(Dialect):
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.TEXT: "STRING",
         }
+
+        def union_op(self, expression):
+            return f"UNION{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+
+        def except_op(self, expression):
+            if not expression.args.get("distinct", False):
+                self.unsupported("EXCEPT without DISTINCT is not supported in BigQuery")
+            return super().except_op(expression)
+
+        def intersect_op(self, expression):
+            if not expression.args.get("distinct", False):
+                self.unsupported(
+                    "INTERSECT without DISTINCT is not supported in BigQuery"
+                )
+            return super().intersect_op(expression)

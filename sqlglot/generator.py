@@ -352,11 +352,11 @@ class Generator:
     def except_sql(self, expression):
         return self.prepend_ctes(
             expression,
-            self.set_operation(
-                expression,
-                f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}",
-            ),
+            self.set_operation(expression, self.except_op(expression)),
         )
+
+    def except_op(self, expression):
+        return f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}"
 
     def fetch_sql(self, expression):
         direction = expression.args.get("direction")
@@ -453,11 +453,11 @@ class Generator:
     def intersect_sql(self, expression):
         return self.prepend_ctes(
             expression,
-            self.set_operation(
-                expression,
-                f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ''}",
-            ),
+            self.set_operation(expression, self.intersect_op(expression)),
         )
+
+    def intersect_op(self, expression):
+        return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ''}"
 
     def table_sql(self, expression):
         return ".".join(
@@ -677,10 +677,11 @@ class Generator:
     def union_sql(self, expression):
         return self.prepend_ctes(
             expression,
-            self.set_operation(
-                expression, f"UNION{'' if expression.args.get('distinct') else ' ALL'}"
-            ),
+            self.set_operation(expression, self.union_op(expression)),
         )
+
+    def union_op(self, expression):
+        return f"UNION{'' if expression.args.get('distinct') else ' ALL'}"
 
     def unnest_sql(self, expression):
         args = self.expressions(expression, flat=True)

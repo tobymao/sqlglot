@@ -1298,17 +1298,22 @@ class Parser:
                 exp.RegexpLike, this=this, expression=self._parse_type()
             )
         elif self._match(TokenType.IN):
-            self._match_l_paren()
-            expressions = self._parse_csv(
-                lambda: self._parse_expression() or self._parse_with()
-            )
-
-            if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
-                this = self.expression(exp.In, this=this, query=expressions[0])
+            if unnest := self._parse_unnest():
+                this = self.expression(exp.In, this=this, unnest=unnest)
             else:
-                this = self.expression(exp.In, this=this, expressions=expressions)
+                self._match_l_paren()
+                expressions = self._parse_csv(
+                    lambda: self._parse_expression() or self._parse_with()
+                )
 
-            self._match_r_paren()
+                if len(expressions) == 1 and isinstance(
+                    expressions[0], exp.Subqueryable
+                ):
+                    this = self.expression(exp.In, this=this, query=expressions[0])
+                else:
+                    this = self.expression(exp.In, this=this, expressions=expressions)
+
+                self._match_r_paren()
         elif self._match(TokenType.BETWEEN):
             low = self._parse_bitwise()
             self._match(TokenType.AND)

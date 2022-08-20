@@ -1,5 +1,6 @@
 from sqlglot import exp
 from sqlglot import transforms
+from sqlglot.enums import NullOrdering
 from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,
@@ -126,6 +127,8 @@ class Presto(Dialect):
         }
 
     class Parser(Parser):
+        NULL_ORDERING = NullOrdering.NULLS_ARE_LAST
+
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
@@ -149,6 +152,8 @@ class Presto(Dialect):
         }
 
     class Generator(Generator):
+        NULL_ORDERING = NullOrdering.NULLS_ARE_LAST
+
         STRUCT_DELIMITER = ("(", ")")
 
         WITH_PROPERTIES = [

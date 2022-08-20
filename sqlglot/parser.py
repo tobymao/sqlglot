@@ -1,6 +1,7 @@
 import logging
 
 from sqlglot import exp
+from sqlglot.enums import NullOrdering
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import apply_index_offset, ensure_list, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -177,6 +178,8 @@ class Parser:
         TokenType.LAZY,
         TokenType.LOCATION,
         TokenType.NEXT,
+        TokenType.NULLS_FIRST,
+        TokenType.NULLS_LAST,
         TokenType.ONLY,
         TokenType.OPTIMIZE,
         TokenType.OPTIONS,
@@ -216,6 +219,7 @@ class Parser:
         TokenType.EXTRACT,
         TokenType.FILTER,
         TokenType.FIRST,
+        TokenType.ISNULL,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
@@ -398,6 +402,8 @@ class Parser:
     }
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
+
+    NULL_ORDERING = NullOrdering.NULLS_ARE_SMALL
 
     STRICT_CAST = True
 
@@ -1219,7 +1225,24 @@ class Parser:
     def _parse_ordered(self):
         this = self._parse_conjunction()
         self._match(TokenType.ASC)
-        return self.expression(exp.Ordered, this=this, desc=self._match(TokenType.DESC))
+        is_desc = self._match(TokenType.DESC)
+        is_nulls_first = self._match(TokenType.NULLS_FIRST)
+        is_nulls_last = self._match(TokenType.NULLS_LAST)
+        desc = is_desc or False
+        asc = not desc
+        nulls_first = False
+        if is_nulls_last or is_nulls_first:
+            nulls_first = is_nulls_first
+        elif (
+            (
+                (asc and self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL) or
+                (desc and not self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL)
+            )
+            and self.NULL_ORDERING != NullOrdering.NULLS_ARE_LAST
+        ):
+            nulls_first = True
+
+        return self.expression(exp.Ordered, this=this, desc=desc, nulls_first=nulls_first)
 
     def _parse_limit(self, this=None, top=False):
         if self._match(TokenType.TOP if top else TokenType.LIMIT):

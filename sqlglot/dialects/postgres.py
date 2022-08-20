@@ -1,4 +1,5 @@
 from sqlglot import exp
+from sqlglot.enums import NullOrdering
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_sql,
@@ -71,6 +72,7 @@ class Postgres(Dialect):
         }
 
     class Parser(Parser):
+        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
         STRICT_CAST = False
         FUNCTIONS = {
             **Parser.FUNCTIONS,
@@ -79,6 +81,8 @@ class Postgres(Dialect):
         }
 
     class Generator(Generator):
+        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
+
         TYPE_MAPPING = {
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.FLOAT: "REAL",

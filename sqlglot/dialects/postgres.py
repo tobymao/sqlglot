@@ -33,6 +33,7 @@ def _date_add_sql(kind):
 
 
 class Postgres(Dialect):
+    null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
     time_mapping = {
         "AM": "%p",  # AM or PM

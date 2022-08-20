@@ -100,6 +100,9 @@ class Parser:
         max_errors (int): Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
             Default: 3
+        null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
+            Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
+            Default: "nulls_are_small"
     """
 
     FUNCTIONS = {
@@ -173,6 +176,7 @@ class Parser:
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
+        TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
         TokenType.LOCATION,
@@ -216,6 +220,7 @@ class Parser:
         TokenType.EXTRACT,
         TokenType.FILTER,
         TokenType.FIRST,
+        TokenType.ISNULL,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
@@ -410,6 +415,7 @@ class Parser:
         "unnest_column_only",
         "alias_post_tablesample",
         "max_errors",
+        "null_ordering",
         "_tokens",
         "_chunks",
         "_index",
@@ -427,6 +433,7 @@ class Parser:
         unnest_column_only=False,
         alias_post_tablesample=False,
         max_errors=3,
+        null_ordering=None,
     ):
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
@@ -434,6 +441,7 @@ class Parser:
         self.unnest_column_only = unnest_column_only
         self.alias_post_tablesample = alias_post_tablesample
         self.max_errors = max_errors
+        self.null_ordering = null_ordering
         self.reset()
 
     def reset(self):
@@ -1215,7 +1223,26 @@ class Parser:
     def _parse_ordered(self):
         this = self._parse_conjunction()
         self._match(TokenType.ASC)
-        return self.expression(exp.Ordered, this=this, desc=self._match(TokenType.DESC))
+        is_desc = self._match(TokenType.DESC)
+        is_nulls_first = self._match(TokenType.NULLS_FIRST)
+        is_nulls_last = self._match(TokenType.NULLS_LAST)
+        desc = is_desc or False
+        asc = not desc
+        nulls_first = is_nulls_first or False
+        explicitly_null_ordered = is_nulls_first or is_nulls_last
+        if (
+            not explicitly_null_ordered
+            and (
+                (asc and self.null_ordering == "nulls_are_small")
+                or (desc and self.null_ordering != "nulls_are_small")
+            )
+            and self.null_ordering != "nulls_are_last"
+        ):
+            nulls_first = True
+
+        return self.expression(
+            exp.Ordered, this=this, desc=desc, nulls_first=nulls_first
+        )
 
     def _parse_limit(self, this=None, top=False):
         if self._match(TokenType.TOP if top else TokenType.LIMIT):

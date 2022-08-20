@@ -28,6 +28,8 @@ class MySQL(Dialect):
         STRICT_CAST = False
 
     class Generator(Generator):
+        NULL_ORDERING_SUPPORTED = False
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.CurrentDate: no_paren_current_date_sql,

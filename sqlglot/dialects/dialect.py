@@ -66,6 +66,7 @@ class Dialect(metaclass=_Dialect):
     unnest_column_only = False
     alias_post_tablesample = False
     normalize_functions = "upper"
+    null_ordering = "nulls_are_small"
 
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
@@ -131,6 +132,7 @@ class Dialect(metaclass=_Dialect):
                 "index_offset": self.index_offset,
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
+                "null_ordering": self.null_ordering,
                 **opts,
             },
         )
@@ -148,6 +150,7 @@ class Dialect(metaclass=_Dialect):
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
                 "normalize_functions": self.normalize_functions,
+                "null_ordering": self.null_ordering,
                 **opts,
             }
         )

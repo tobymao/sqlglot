@@ -7,6 +7,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 class ClickHouse(Dialect):
     normalize_functions = None
+    null_ordering = "nulls_are_last"
 
     class Tokenizer(Tokenizer):
         KEYWORDS = {

@@ -49,6 +49,7 @@ def _snowflake_to_timestamp(args):
 
 
 class Snowflake(Dialect):
+    null_ordering = "nulls_are_large"
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
 
     # pylint: disable=duplicate-code

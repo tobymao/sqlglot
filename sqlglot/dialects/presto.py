@@ -116,6 +116,7 @@ def _ts_or_ds_add_sql(self, expression):
 
 class Presto(Dialect):
     index_offset = 1
+    null_ordering = "nulls_are_last"
     time_format = "'%Y-%m-%d %H:%i:%S'"
     time_mapping = MySQL.time_mapping
 
@@ -149,6 +150,7 @@ class Presto(Dialect):
         }
 
     class Generator(Generator):
+
         STRUCT_DELIMITER = ("(", ")")
 
         WITH_PROPERTIES = [

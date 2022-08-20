@@ -35,6 +35,9 @@ class Generator:
             Default: False
         unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
             unsupported expressions. Default ErrorLevel.WARN.
+        null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
+            Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
+            Default: "nulls_are_small"
     """
 
     TRANSFORMS = {
@@ -52,6 +55,8 @@ class Generator:
         exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT={self.sql(e, 'value')}",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
+
+    NULL_ORDERING_SUPPORTED = True
 
     TYPE_MAPPING = {}
 
@@ -90,6 +95,7 @@ class Generator:
         "normalize_functions",
         "unsupported_level",
         "unsupported_messages",
+        "null_ordering",
         "max_unsupported",
         "_indent",
     )
@@ -111,6 +117,7 @@ class Generator:
         alias_post_tablesample=False,
         normalize_functions="upper",
         unsupported_level=ErrorLevel.WARN,
+        null_ordering=None,
         max_unsupported=3,
     ):
         # pylint: disable=too-many-arguments
@@ -133,6 +140,7 @@ class Generator:
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
         self.max_unsupported = max_unsupported
+        self.null_ordering = null_ordering
         self._indent = indent
 
     def generate(self, expression):
@@ -615,8 +623,33 @@ class Generator:
 
     def ordered_sql(self, expression):
         desc = expression.args.get("desc")
-        desc = " DESC" if desc else ""
-        return f"{self.sql(expression, 'this')}{desc}"
+        asc = not desc
+        nulls_first = expression.args.get("nulls_first")
+        nulls_last = not nulls_first
+        nulls_are_large = self.null_ordering == "nulls_are_large"
+        nulls_are_small = self.null_ordering == "nulls_are_small"
+        nulls_are_last = self.null_ordering == "nulls_are_last"
+
+        sort_order = " DESC" if desc else ""
+        nulls_sort_change = ""
+        if nulls_first and (
+            (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last
+        ):
+            nulls_sort_change = " NULLS FIRST"
+        elif (
+            nulls_last
+            and ((asc and nulls_are_small) or (desc and nulls_are_large))
+            and not nulls_are_last
+        ):
+            nulls_sort_change = " NULLS LAST"
+
+        if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
+            self.unsupported(
+                "Sorting in an ORDER BY on NULLS FIRST/NULLS LAST is not supported by this dialect"
+            )
+            nulls_sort_change = ""
+
+        return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
 
     def query_modifiers(self, expression, *sqls):
         return csv(

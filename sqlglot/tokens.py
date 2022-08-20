@@ -149,6 +149,7 @@ class TokenType(AutoName):
     INTERVAL = auto()
     INTO = auto()
     IS = auto()
+    ISNULL = auto()
     JOIN = auto()
     LATERAL = auto()
     LAZY = auto()
@@ -161,6 +162,8 @@ class TokenType(AutoName):
     NEXT = auto()
     NO_ACTION = auto()
     NULL = auto()
+    NULLS_FIRST = auto()
+    NULLS_LAST = auto()
     OFFSET = auto()
     ON = auto()
     ONLY = auto()
@@ -401,6 +404,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "INTERSECT": TokenType.INTERSECT,
         "INTO": TokenType.INTO,
         "IS": TokenType.IS,
+        "ISNULL": TokenType.ISNULL,
         "JOIN": TokenType.JOIN,
         "LATERAL": TokenType.LATERAL,
         "LAZY": TokenType.LAZY,
@@ -412,6 +416,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "NO ACTION": TokenType.NO_ACTION,
         "NOT": TokenType.NOT,
         "NULL": TokenType.NULL,
+        "NULLS FIRST": TokenType.NULLS_FIRST,
+        "NULLS LAST": TokenType.NULLS_LAST,
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
         "ONLY": TokenType.ONLY,

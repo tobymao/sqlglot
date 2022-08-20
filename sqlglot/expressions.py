@@ -748,7 +748,7 @@ class Sort(Order):
 
 
 class Ordered(Expression):
-    arg_types = {"this": True, "desc": False}
+    arg_types = {"this": True, "desc": True, "nulls_first": True}
 
 
 class Properties(Expression):

@@ -35,6 +35,9 @@ class Generator:
             Default: False
         unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
             unsupported expressions. Default ErrorLevel.WARN.
+        null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
+            Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
+            Default: "nulls_are_small"
     """
 
     TRANSFORMS = {

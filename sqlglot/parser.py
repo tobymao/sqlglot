@@ -100,6 +100,9 @@ class Parser:
         max_errors (int): Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
             Default: 3
+        null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
+            Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
+            Default: "nulls_are_small"
     """
 
     FUNCTIONS = {
@@ -178,8 +181,6 @@ class Parser:
         TokenType.LAZY,
         TokenType.LOCATION,
         TokenType.NEXT,
-        TokenType.NULLS_FIRST,
-        TokenType.NULLS_LAST,
         TokenType.ONLY,
         TokenType.OPTIMIZE,
         TokenType.OPTIONS,

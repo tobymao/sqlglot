@@ -1234,10 +1234,12 @@ class Parser:
         nulls_first = is_nulls_first or False
         explicitly_null_ordered = is_nulls_first or is_nulls_last
         if (
-            not explicitly_null_ordered and (
+            not explicitly_null_ordered
+            and (
                 (asc and self.null_ordering == "nulls_are_small")
                 or (desc and self.null_ordering != "nulls_are_small")
-            ) and self.null_ordering != "nulls_are_last"
+            )
+            and self.null_ordering != "nulls_are_last"
         ):
             nulls_first = True
 

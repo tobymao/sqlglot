@@ -173,7 +173,9 @@ class TestTranspile(unittest.TestCase):
         )
 
         self.validate(
-            "STR_TO_TIME(x, 'y')", "CAST(DATE_FORMAT(x, 'y') AS TIMESTAMP)", write="hive"
+            "STR_TO_TIME(x, 'y')",
+            "CAST(DATE_FORMAT(x, 'y') AS TIMESTAMP)",
+            write="hive",
         )
         self.validate(
             "STR_TO_TIME(x, 'yyyy-MM-dd HH:mm:ss')",

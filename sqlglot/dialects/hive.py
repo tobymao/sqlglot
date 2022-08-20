@@ -65,17 +65,16 @@ def _str_to_date(self, expression):
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Hive.date_format:
-        return f"TO_DATE({this})"
-    return f"TO_DATE(DATE_FORMAT({this}, {time_format}))"
+        return f"CAST({this} AS DATE)"
+    return f"CAST(DATE_FORMAT({this}, {time_format}) AS DATE)"
 
 
 def _str_to_time(self, expression):
+    this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format in (Hive.time_format, Hive.date_format):
-        return f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
-    return (
-        f"CAST(DATE_FORMAT({self.sql(expression, 'this')}, {time_format}) AS TIMESTAMP)"
-    )
+        return f"CAST({this} AS TIMESTAMP)"
+    return f"CAST(DATE_FORMAT({this}, {time_format}) AS TIMESTAMP)"
 
 
 def _time_format(self, expression):

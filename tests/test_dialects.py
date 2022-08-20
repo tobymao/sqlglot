@@ -1390,6 +1390,18 @@ class TestDialects(unittest.TestCase):
             identity=False,
         )
         self.validate(
+            "STR_TO_DATE(x, 'yyyy')",
+            "CAST(DATE_FORMAT(x, 'yyyy') AS DATE)",
+            write="hive",
+            identity=False,
+        )
+        self.validate(
+            "STR_TO_DATE(x, 'yyyy-MM-dd')",
+            "CAST(x AS DATE)",
+            write="hive",
+            identity=False,
+        )
+        self.validate(
             "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
             "DATE_FORMAT('2020-01-01', '%Y-%m-%d %H:%i:%S')",
             read="hive",

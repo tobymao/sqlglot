@@ -106,7 +106,15 @@ class Parser:
     """
 
     FUNCTIONS = {
-        name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()
+        **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
+        "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
+            this=exp.Cast(
+                this=list_get(args, 0),
+                to=exp.DataType(this=exp.DataType.Type.TEXT),
+            ),
+            start=exp.Literal.number(1),
+            length=exp.Literal.number(10),
+        ),
     }
 
     NO_PAREN_FUNCTIONS = {

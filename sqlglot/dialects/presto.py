@@ -101,10 +101,6 @@ def _str_to_time_sql(self, expression):
     return f"DATE_PARSE({self.sql(expression, 'this')}, {self.format_time(expression)})"
 
 
-def _ts_or_ds_to_date_str_sql(self, expression):
-    return f"SUBSTR(CAST({self.sql(expression, 'this')} AS VARCHAR), 1, 10)"
-
-
 def _ts_or_ds_to_date_sql(self, expression):
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.time_format, Presto.date_format):
@@ -223,7 +219,6 @@ class Presto(Dialect):
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
-            exp.TsOrDsToDateStr: _ts_or_ds_to_date_str_sql,
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),

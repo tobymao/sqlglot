@@ -166,7 +166,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE_STR(x)",
-            "STRFTIME(CAST(x AS DATE), '%Y-%m-%d')",
+            "SUBSTRING(CAST(x AS TEXT), 1, 10)",
             identity=False,
             write="duckdb",
         )
@@ -1400,6 +1400,12 @@ class TestDialects(unittest.TestCase):
             "CAST(x AS DATE)",
             write="hive",
             identity=False,
+        )
+        self.validate(
+            "TS_OR_DS_TO_DATE_STR(x)",
+            "SUBSTRING(CAST(x AS STRING), 1, 10)",
+            identity=False,
+            write="hive",
         )
         self.validate(
             "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",

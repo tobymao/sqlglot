@@ -619,9 +619,15 @@ class Generator:
 
         sort_order = " DESC" if desc else ""
         nulls_sort_change = ""
-        if nulls_first and ((asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last):
+        if nulls_first and (
+            (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last
+        ):
             nulls_sort_change = " NULLS FIRST"
-        elif nulls_last and ((asc and nulls_are_small) or (desc and nulls_are_large)) and not nulls_are_last:
+        elif (
+            nulls_last
+            and ((asc and nulls_are_small) or (desc and nulls_are_large))
+            and not nulls_are_last
+        ):
             nulls_sort_change = " NULLS LAST"
 
         return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"

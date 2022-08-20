@@ -17,15 +17,14 @@ def ordered_sql(self, expression):
     asc = not desc
     nulls_first = expression.args.get("nulls_first")
     nulls_last = not nulls_first
-    field = self.sql(expression, 'this')
+    field = self.sql(expression, "this")
 
     sort_order = " DESC" if desc else ""
     if nulls_first and desc:
         return f"ISNULL({field}) ASC, {field}{sort_order}"
-    elif nulls_last and asc:
+    if nulls_last and asc:
         return f"ISNULL({field}) DESC, {field}{sort_order}"
-    else:
-        return f"{field}{sort_order}"
+    return f"{field}{sort_order}"
 
 
 class MySQL(Dialect):
@@ -54,7 +53,7 @@ class MySQL(Dialect):
                 nulls_first = self._match(TokenType.ASC)
                 self._match(TokenType.DESC)
                 self._match(TokenType.COMMA)
-                ignore = self._parse_conjunction()
+                self._parse_conjunction()
                 is_desc = self._match(TokenType.DESC)
                 self._match(TokenType.ASC)
             else:
@@ -65,7 +64,9 @@ class MySQL(Dialect):
                 if is_asc or (is_asc is None and is_desc is None):
                     nulls_first = True
             desc = is_desc or False
-            return self.expression(exp.Ordered, this=this, desc=desc, nulls_first=nulls_first)
+            return self.expression(
+                exp.Ordered, this=this, desc=desc, nulls_first=nulls_first
+            )
 
     class Generator(Generator):
         TRANSFORMS = {

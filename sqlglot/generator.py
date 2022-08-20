@@ -1,7 +1,7 @@
 import logging
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, UnsupportedError
+from sqlglot.errors import ErrorLevel, UnsupportedError, concat_errors
 from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType, Tokenizer
@@ -90,6 +90,7 @@ class Generator:
         "normalize_functions",
         "unsupported_level",
         "unsupported_messages",
+        "max_unsupported",
         "_indent",
     )
 
@@ -110,6 +111,7 @@ class Generator:
         alias_post_tablesample=False,
         normalize_functions="upper",
         unsupported_level=ErrorLevel.WARN,
+        max_unsupported=3,
     ):
         # pylint: disable=too-many-arguments
         import sqlglot
@@ -130,6 +132,7 @@ class Generator:
         self.normalize_functions = normalize_functions
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
+        self.max_unsupported = max_unsupported
         self._indent = indent
 
     def generate(self, expression):
@@ -148,14 +151,19 @@ class Generator:
         if self.unsupported_level == ErrorLevel.IGNORE:
             return sql
 
-        for msg in self.unsupported_messages:
-            if self.unsupported_level == ErrorLevel.RAISE:
-                raise UnsupportedError(msg)
-            logger.warning(msg)
+        if self.unsupported_level == ErrorLevel.WARN:
+            for msg in self.unsupported_messages:
+                logger.warning(msg)
+        elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
+            raise UnsupportedError(
+                concat_errors(self.unsupported_messages, self.max_unsupported)
+            )
 
         return sql
 
     def unsupported(self, message):
+        if self.unsupported_level == ErrorLevel.IMMEDIATE:
+            raise UnsupportedError(message)
         self.unsupported_messages.append(message)
 
     def sep(self, sep=" "):

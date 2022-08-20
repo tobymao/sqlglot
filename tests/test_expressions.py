@@ -27,7 +27,7 @@ class TestExpressions(unittest.TestCase):
             parse_one("ROW() OVER (partition BY y)"),
         )
         self.assertEqual(
-            parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date_str(x)")
+            parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date(x)")
         )
 
     def test_find(self):

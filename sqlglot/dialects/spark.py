@@ -19,6 +19,14 @@ def _map_sql(self, expression):
     return f"MAP_FROM_ARRAYS({keys}, {values})"
 
 
+def _str_to_date(self, expression):
+    this = self.sql(expression, "this")
+    time_format = self.format_time(expression)
+    if time_format == Hive.date_format:
+        return f"TO_DATE({this})"
+    return f"TO_DATE({this}, {time_format})"
+
+
 class Spark(Hive):
     class Parser(Hive.Parser):
         FUNCTIONS = {
@@ -68,6 +76,7 @@ class Spark(Hive):
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
+            exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Create: _create_sql,
             exp.Map: _map_sql,

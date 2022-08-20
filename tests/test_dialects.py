@@ -801,13 +801,13 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
-            "FROM_UNIXTIME(UNIX_TIMESTAMP(x))",
+            "CAST(x AS TIMESTAMP)",
             read="presto",
             write="hive",
         )
         self.validate(
             "DATE_PARSE(x, '%Y-%m-%d')",
-            "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-dd'))",
+            "CAST(x AS TIMESTAMP)",
             read="presto",
             write="hive",
         )
@@ -876,7 +876,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TS_OR_DS_TO_DATE(x)",
-            "CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE)",
+            "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
             write="presto",
             identity=False,
         )
@@ -964,7 +964,7 @@ class TestDialects(unittest.TestCase):
         self.validate("MONTH(x)", "MONTH(x)", read="presto", write="hive")
         self.validate(
             "MONTH(x)",
-            "MONTH(CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
+            "MONTH(CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE))",
             read="hive",
             write="presto",
         )
@@ -972,7 +972,7 @@ class TestDialects(unittest.TestCase):
         self.validate("DAY(x)", "DAY(x)", read="presto", write="hive")
         self.validate(
             "DAY(x)",
-            "DAY(CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
+            "DAY(CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE))",
             read="hive",
             write="presto",
         )
@@ -981,7 +981,7 @@ class TestDialects(unittest.TestCase):
         self.validate("YEAR(x)", "YEAR(x)", read="presto", write="hive")
         self.validate(
             "YEAR(x)",
-            "YEAR(CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
+            "YEAR(CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE))",
             read="hive",
             write="presto",
         )
@@ -1373,21 +1373,27 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd')",
-            "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
+            "CAST('2020-01-01' AS TIMESTAMP)",
             write="hive",
             identity=False,
         )
         self.validate(
             "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
-            "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
+            "CAST('2020-01-01' AS TIMESTAMP)",
             write="hive",
             identity=False,
         )
         self.validate(
             "STR_TO_TIME(x, 'yyyy')",
-            "FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy'))",
+            "CAST(DATE_FORMAT(x, 'yyyy') AS TIMESTAMP)",
             write="hive",
             identity=False,
+        )
+        self.validate(
+            "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
+            "DATE_FORMAT('2020-01-01', '%Y-%m-%d %H:%i:%S')",
+            read="hive",
+            write="presto",
         )
         self.validate(
             "DATE_ADD('2020-01-01', 1)",
@@ -1456,16 +1462,15 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "DATEDIFF(TO_DATE(y), x)",
-            "DATE_DIFF('day', CAST(DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE), "
-            "CAST(DATE_PARSE(SUBSTR(CAST(DATE_FORMAT(DATE_PARSE(SUBSTR(CAST(y AS VARCHAR), 1, 10), '%Y-%m-%d'), '%Y-%m-%d') "
-            "AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
+            "DATE_DIFF('day', CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE), "
+            "CAST(SUBSTR(CAST(CAST(SUBSTR(CAST(y AS VARCHAR), 1, 10) AS DATE) AS VARCHAR), 1, 10) AS DATE))",
             read="hive",
             write="presto",
         )
         self.validate(
             "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATE_DIFF('day', CAST(DATE_PARSE(SUBSTR(CAST('2020-01-01' AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE), "
-            "CAST(DATE_PARSE(SUBSTR(CAST('2020-01-02' AS VARCHAR), 1, 10), '%Y-%m-%d') AS DATE))",
+            "DATE_DIFF('day', CAST(SUBSTR(CAST('2020-01-01' AS VARCHAR), 1, 10) AS DATE), "
+            "CAST(SUBSTR(CAST('2020-01-02' AS VARCHAR), 1, 10) AS DATE))",
             read="hive",
             write="presto",
         )
@@ -1521,7 +1526,7 @@ class TestDialects(unittest.TestCase):
         )
         self.validate(
             "TO_DATE(x)",
-            "TS_OR_DS_TO_DATE_STR(x)",
+            "TS_OR_DS_TO_DATE(x)",
             read="hive",
             identity=False,
         )
@@ -1923,6 +1928,25 @@ TBLPROPERTIES (
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
             read="spark",
             write="spark",
+        )
+
+        self.validate(
+            "TO_DATE(x, 'yyyy-MM-dd')",
+            "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
+            read="spark",
+            write="presto",
+        )
+        self.validate(
+            "TO_DATE(x, 'yyyy')",
+            "CAST(DATE_PARSE(x, '%Y') AS DATE)",
+            read="spark",
+            write="presto",
+        )
+        self.validate(
+            "TO_DATE(x, 'yyyy')",
+            "CAST(STRPTIME(x, '%Y') AS DATE)",
+            read="spark",
+            write="duckdb",
         )
 
     def test_snowflake(self):

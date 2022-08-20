@@ -633,7 +633,9 @@ class Generator:
             nulls_sort_change = " NULLS LAST"
 
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
-            self.unsupported("Sorting in an ORDER BY on NULLS FIRST/NULLS LAST is not supported by this dialect")
+            self.unsupported(
+                "Sorting in an ORDER BY on NULLS FIRST/NULLS LAST is not supported by this dialect"
+            )
             nulls_sort_change = ""
 
         return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"

@@ -1234,15 +1234,14 @@ class Parser:
         if is_nulls_last or is_nulls_first:
             nulls_first = is_nulls_first
         elif (
-            (
-                (asc and self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL) or
-                (desc and not self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL)
-            )
-            and self.NULL_ORDERING != NullOrdering.NULLS_ARE_LAST
-        ):
+            (asc and self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL)
+            or (desc and self.NULL_ORDERING != NullOrdering.NULLS_ARE_SMALL)
+        ) and self.NULL_ORDERING != NullOrdering.NULLS_ARE_LAST:
             nulls_first = True
 
-        return self.expression(exp.Ordered, this=this, desc=desc, nulls_first=nulls_first)
+        return self.expression(
+            exp.Ordered, this=this, desc=desc, nulls_first=nulls_first
+        )
 
     def _parse_limit(self, this=None, top=False):
         if self._match(TokenType.TOP if top else TokenType.LIMIT):

@@ -1973,7 +1973,7 @@ class Parser:
             return None
 
         self._match_l_paren()
-        columns = self._parse_csv(lambda: self._parse_alias(self._parse_id_var()))
+        columns = self._parse_csv(lambda: self._parse_alias(self._parse_expression()))
         self._match_r_paren()
         return columns
 

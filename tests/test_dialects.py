@@ -334,26 +334,12 @@ class TestDialects(unittest.TestCase):
             write="mysql",
         )
 
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY ISNULL(age) ASC, age DESC, ISNULL(fname) DESC, fname, lname",
-            "SELECT fname, lname, age FROM person ORDER BY ISNULL(age) ASC, age DESC, ISNULL(fname) DESC, fname, lname",
-            read="mysql",
-            write="mysql",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY ISNULL(age) ASC, age DESC, ISNULL(fname) DESC, fname, lname",
-            read="spark",
-            write="mysql",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY ISNULL(age) ASC, age DESC, ISNULL(fname) DESC, fname, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
-            read="mysql",
-            write="spark",
-        )
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a ORDER BY col_a NULLS LAST",
+                write="mysql",
+                unsupported_level=ErrorLevel.RAISE,
+            )
 
     def test_starrocks(self):
         self.validate(
@@ -369,6 +355,13 @@ class TestDialects(unittest.TestCase):
             read="hive",
             write="starrocks",
         )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a ORDER BY col_a NULLS LAST",
+                write="starrocks",
+                unsupported_level=ErrorLevel.RAISE,
+            )
 
     def test_bigquery(self):
         self.validate(

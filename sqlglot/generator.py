@@ -53,6 +53,8 @@ class Generator:
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
+    NULL_ORDERING_SUPPORTED = True
+
     TYPE_MAPPING = {}
 
     TOKEN_MAPPING = {}
@@ -629,6 +631,10 @@ class Generator:
             and not nulls_are_last
         ):
             nulls_sort_change = " NULLS LAST"
+
+        if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
+            self.unsupported("Sorting in an ORDER BY on NULLS FIRST/NULLS LAST is not supported by this dialect")
+            nulls_sort_change = ""
 
         return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
 

@@ -173,6 +173,7 @@ class Parser:
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
+        TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
         TokenType.LOCATION,
@@ -1230,13 +1231,14 @@ class Parser:
         is_nulls_last = self._match(TokenType.NULLS_LAST)
         desc = is_desc or False
         asc = not desc
-        nulls_first = False
-        if is_nulls_last or is_nulls_first:
-            nulls_first = is_nulls_first
-        elif (
-            (asc and self.null_ordering == "nulls_are_small")
-            or (desc and self.null_ordering != "nulls_are_small")
-        ) and self.null_ordering != "nulls_are_last":
+        nulls_first = is_nulls_first or False
+        explicitly_null_ordered = is_nulls_first or is_nulls_last
+        if (
+            not explicitly_null_ordered and (
+                (asc and self.null_ordering == "nulls_are_small")
+                or (desc and self.null_ordering != "nulls_are_small")
+            ) and self.null_ordering != "nulls_are_last"
+        ):
             nulls_first = True
 
         return self.expression(

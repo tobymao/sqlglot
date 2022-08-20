@@ -1,4 +1,5 @@
 from sqlglot import exp
+from sqlglot.enums import NullOrdering
 from sqlglot.dialects.dialect import Dialect, format_time_lambda, rename_func
 from sqlglot.expressions import Literal
 from sqlglot.helper import list_get
@@ -84,6 +85,8 @@ class Snowflake(Dialect):
     # pylint: enable=duplicate-code
 
     class Parser(Parser):
+        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
+
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFF": exp.If.from_arg_list,
@@ -107,6 +110,8 @@ class Snowflake(Dialect):
         }
 
     class Generator(Generator):
+        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.If: rename_func("IFF"),

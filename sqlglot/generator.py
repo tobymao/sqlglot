@@ -1,6 +1,7 @@
 import logging
 
 from sqlglot import exp
+from sqlglot.enums import NullOrdering
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
@@ -56,6 +57,8 @@ class Generator:
     TYPE_MAPPING = {}
 
     TOKEN_MAPPING = {}
+
+    NULL_ORDERING = NullOrdering.NULLS_ARE_SMALL
 
     STRUCT_DELIMITER = ("<", ">")
 
@@ -607,8 +610,21 @@ class Generator:
 
     def ordered_sql(self, expression):
         desc = expression.args.get("desc")
-        desc = " DESC" if desc else ""
-        return f"{self.sql(expression, 'this')}{desc}"
+        asc = not desc
+        nulls_first = expression.args.get("nulls_first")
+        nulls_last = not nulls_first
+        nulls_are_large = self.NULL_ORDERING == NullOrdering.NULLS_ARE_LARGE
+        nulls_are_small = self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL
+        nulls_are_last = self.NULL_ORDERING == NullOrdering.NULLS_ARE_LAST
+
+        sort_order = " DESC" if desc else ""
+        nulls_sort_change = ""
+        if nulls_first and ((asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last):
+            nulls_sort_change = " NULLS FIRST"
+        elif nulls_last and ((asc and nulls_are_small) or (desc and nulls_are_large)) and not nulls_are_last:
+            nulls_sort_change = " NULLS LAST"
+
+        return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
 
     def query_modifiers(self, expression, *sqls):
         return csv(

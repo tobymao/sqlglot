@@ -38,6 +38,9 @@ class Generator:
         null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
             Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
             Default: "nulls_are_small"
+        max_unsupported (int): Maximum number of unsupported messages to include in a raised UnsupportedError.
+            This is only relevant if unsupported_level is ErrorLevel.RAISE.
+            Default: 3
     """
 
     TRANSFORMS = {

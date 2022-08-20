@@ -1,5 +1,4 @@
 from sqlglot import exp
-from sqlglot.enums import NullOrdering
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
@@ -8,6 +7,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 class ClickHouse(Dialect):
     normalize_functions = None
+    null_ordering = "nulls_are_last"
 
     class Tokenizer(Tokenizer):
         KEYWORDS = {
@@ -23,8 +23,6 @@ class ClickHouse(Dialect):
         }
 
     class Parser(Parser):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LAST
-
         def _parse_table(self, schema=False):
             this = super()._parse_table(schema)
 
@@ -34,8 +32,6 @@ class ClickHouse(Dialect):
             return this
 
     class Generator(Generator):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LAST
-
         STRUCT_DELIMITER = ("(", ")")
 
         TRANSFORMS = {

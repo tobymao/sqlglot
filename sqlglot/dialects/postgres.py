@@ -1,5 +1,4 @@
 from sqlglot import exp
-from sqlglot.enums import NullOrdering
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_sql,
@@ -34,6 +33,7 @@ def _date_add_sql(kind):
 
 
 class Postgres(Dialect):
+    null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
     time_mapping = {
         "AM": "%p",  # AM or PM
@@ -72,7 +72,6 @@ class Postgres(Dialect):
         }
 
     class Parser(Parser):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
         STRICT_CAST = False
         FUNCTIONS = {
             **Parser.FUNCTIONS,
@@ -81,8 +80,6 @@ class Postgres(Dialect):
         }
 
     class Generator(Generator):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
-
         TYPE_MAPPING = {
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.FLOAT: "REAL",

@@ -1,7 +1,6 @@
 import logging
 
 from sqlglot import exp
-from sqlglot.enums import NullOrdering
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
@@ -58,8 +57,6 @@ class Generator:
 
     TOKEN_MAPPING = {}
 
-    NULL_ORDERING = NullOrdering.NULLS_ARE_SMALL
-
     STRUCT_DELIMITER = ("<", ">")
 
     ROOT_PROPERTIES = [
@@ -93,6 +90,7 @@ class Generator:
         "normalize_functions",
         "unsupported_level",
         "unsupported_messages",
+        "null_ordering",
         "_indent",
     )
 
@@ -113,6 +111,7 @@ class Generator:
         alias_post_tablesample=False,
         normalize_functions="upper",
         unsupported_level=ErrorLevel.WARN,
+        null_ordering=None,
     ):
         # pylint: disable=too-many-arguments
         import sqlglot
@@ -134,6 +133,7 @@ class Generator:
         self.unsupported_level = unsupported_level
         self.unsupported_messages = []
         self._indent = indent
+        self.null_ordering = null_ordering
 
     def generate(self, expression):
         """
@@ -613,9 +613,9 @@ class Generator:
         asc = not desc
         nulls_first = expression.args.get("nulls_first")
         nulls_last = not nulls_first
-        nulls_are_large = self.NULL_ORDERING == NullOrdering.NULLS_ARE_LARGE
-        nulls_are_small = self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL
-        nulls_are_last = self.NULL_ORDERING == NullOrdering.NULLS_ARE_LAST
+        nulls_are_large = self.null_ordering == "nulls_are_large"
+        nulls_are_small = self.null_ordering == "nulls_are_small"
+        nulls_are_last = self.null_ordering == "nulls_are_last"
 
         sort_order = " DESC" if desc else ""
         nulls_sort_change = ""

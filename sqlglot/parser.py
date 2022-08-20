@@ -1,7 +1,6 @@
 import logging
 
 from sqlglot import exp
-from sqlglot.enums import NullOrdering
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import apply_index_offset, ensure_list, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -403,8 +402,6 @@ class Parser:
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
 
-    NULL_ORDERING = NullOrdering.NULLS_ARE_SMALL
-
     STRICT_CAST = True
 
     __slots__ = (
@@ -416,6 +413,7 @@ class Parser:
         "unnest_column_only",
         "alias_post_tablesample",
         "max_errors",
+        "null_ordering",
         "_tokens",
         "_chunks",
         "_index",
@@ -433,6 +431,7 @@ class Parser:
         unnest_column_only=False,
         alias_post_tablesample=False,
         max_errors=3,
+        null_ordering=None,
     ):
         self.error_level = error_level or ErrorLevel.RAISE
         self.error_message_context = error_message_context
@@ -440,6 +439,7 @@ class Parser:
         self.unnest_column_only = unnest_column_only
         self.alias_post_tablesample = alias_post_tablesample
         self.max_errors = max_errors
+        self.null_ordering = null_ordering
         self.reset()
 
     def reset(self):
@@ -1234,9 +1234,9 @@ class Parser:
         if is_nulls_last or is_nulls_first:
             nulls_first = is_nulls_first
         elif (
-            (asc and self.NULL_ORDERING == NullOrdering.NULLS_ARE_SMALL)
-            or (desc and self.NULL_ORDERING != NullOrdering.NULLS_ARE_SMALL)
-        ) and self.NULL_ORDERING != NullOrdering.NULLS_ARE_LAST:
+            (asc and self.null_ordering == "nulls_are_small")
+            or (desc and self.null_ordering != "nulls_are_small")
+        ) and self.null_ordering != "nulls_are_last":
             nulls_first = True
 
         return self.expression(

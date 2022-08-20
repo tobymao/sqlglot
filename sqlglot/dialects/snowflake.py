@@ -1,5 +1,4 @@
 from sqlglot import exp
-from sqlglot.enums import NullOrdering
 from sqlglot.dialects.dialect import Dialect, format_time_lambda, rename_func
 from sqlglot.expressions import Literal
 from sqlglot.helper import list_get
@@ -50,6 +49,7 @@ def _snowflake_to_timestamp(args):
 
 
 class Snowflake(Dialect):
+    null_ordering = "nulls_are_large"
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
 
     # pylint: disable=duplicate-code
@@ -85,8 +85,6 @@ class Snowflake(Dialect):
     # pylint: enable=duplicate-code
 
     class Parser(Parser):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
-
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFF": exp.If.from_arg_list,
@@ -110,8 +108,6 @@ class Snowflake(Dialect):
         }
 
     class Generator(Generator):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LARGE
-
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.If: rename_func("IFF"),

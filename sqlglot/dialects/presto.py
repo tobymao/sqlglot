@@ -1,6 +1,5 @@
 from sqlglot import exp
 from sqlglot import transforms
-from sqlglot.enums import NullOrdering
 from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,
@@ -117,6 +116,7 @@ def _ts_or_ds_add_sql(self, expression):
 
 class Presto(Dialect):
     index_offset = 1
+    null_ordering = "nulls_are_last"
     time_format = "'%Y-%m-%d %H:%i:%S'"
     time_mapping = MySQL.time_mapping
 
@@ -127,8 +127,6 @@ class Presto(Dialect):
         }
 
     class Parser(Parser):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LAST
-
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
@@ -152,7 +150,6 @@ class Presto(Dialect):
         }
 
     class Generator(Generator):
-        NULL_ORDERING = NullOrdering.NULLS_ARE_LAST
 
         STRUCT_DELIMITER = ("(", ")")
 

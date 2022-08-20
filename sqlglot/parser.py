@@ -1,7 +1,7 @@
 import logging
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, ParseError
+from sqlglot.errors import ErrorLevel, ParseError, concat_errors
 from sqlglot.helper import apply_index_offset, ensure_list, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
@@ -506,11 +506,7 @@ class Parser:
             for error in self.errors:
                 logger.error(str(error))
         elif self.error_level == ErrorLevel.RAISE and self.errors:
-            msg = [str(e) for e in self.errors[: self.max_errors]]
-            remaining = len(self.errors) - self.max_errors
-            if remaining > 0:
-                msg.append(f"... and {remaining} more")
-            raise ParseError("\n\n".join(msg))
+            raise ParseError(concat_errors(self.errors, self.max_errors))
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")

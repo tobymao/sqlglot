@@ -92,6 +92,9 @@ class BigQuery(Dialect):
             exp.DataType.Type.TEXT: "STRING",
         }
 
+        def in_unnest_op(self, unnest):
+            return self.unnest_sql(unnest)
+
         def union_op(self, expression):
             return f"UNION{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 

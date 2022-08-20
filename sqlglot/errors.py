@@ -28,3 +28,11 @@ class TokenError(SqlglotError):
 
 class OptimizeError(SqlglotError):
     pass
+
+
+def concat_errors(errors, maximum):
+    msg = [str(e) for e in errors[:maximum]]
+    remaining = len(errors) - maximum
+    if remaining > 0:
+        msg.append(f"... and {remaining} more")
+    return "\n\n".join(msg)

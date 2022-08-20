@@ -3,7 +3,7 @@ import unittest
 from unittest import mock
 
 from sqlglot import parse_one, transpile
-from sqlglot.errors import ErrorLevel, ParseError
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.helpers import (
     assert_logger_contains,
     load_sql_fixtures,
@@ -319,3 +319,26 @@ class TestTranspile(unittest.TestCase):
         with self.assertRaises(ParseError) as ctx:
             transpile(more_than_max_errors, error_level=ErrorLevel.RAISE)
         self.assertEqual(str(ctx.exception), expected)
+
+    @mock.patch("sqlglot.generator.logger")
+    def test_unsupported_level(self, logger):
+        def unsupported(level):
+            transpile(
+                "SELECT MAP(a, b), MAP(a, b), MAP(a, b), MAP(a, b)",
+                read="presto",
+                write="hive",
+                unsupported_level=level,
+            )
+
+        error = "Cannot convert array columns into map use SparkSQL instead."
+
+        unsupported(ErrorLevel.WARN)
+        assert_logger_contains("\n".join([error] * 4), logger, level="warning")
+
+        with self.assertRaises(UnsupportedError) as ctx:
+            unsupported(ErrorLevel.RAISE)
+        self.assertEqual(str(ctx.exception).count(error), 3)
+
+        with self.assertRaises(UnsupportedError) as ctx:
+            unsupported(ErrorLevel.IMMEDIATE)
+        self.assertEqual(str(ctx.exception).count(error), 1)

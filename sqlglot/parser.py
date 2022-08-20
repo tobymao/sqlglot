@@ -1298,7 +1298,8 @@ class Parser:
                 exp.RegexpLike, this=this, expression=self._parse_type()
             )
         elif self._match(TokenType.IN):
-            if unnest := self._parse_unnest():
+            unnest = self._parse_unnest()
+            if unnest:
                 this = self.expression(exp.In, this=this, unnest=unnest)
             else:
                 self._match_l_paren()

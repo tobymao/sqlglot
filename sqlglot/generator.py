@@ -797,9 +797,11 @@ class Generator:
         )
 
     def in_sql(self, expression):
-        if query := expression.args.get("query"):
+        query = expression.args.get("query")
+        unnest = expression.args.get("unnest")
+        if query:
             in_sql = self.wrap(query)
-        elif unnest := expression.args.get("unnest"):
+        elif unnest:
             in_sql = self.unnest_sql(unnest)
         else:
             in_sql = f"({self.expressions(expression, flat=True)})"

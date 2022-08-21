@@ -520,6 +520,20 @@ class TestDialects(unittest.TestCase):
             write="bigquery",
         )
 
+        self.validate(
+            "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
+            "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
+            read="bigquery",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
+            "SELECT * FROM a WHERE b IN (SELECT UNNEST(ARRAY(1, 2, 3)))",
+            read="bigquery",
+            write="mysql",
+        )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT * FROM a INTERSECT SELECT * FROM b",

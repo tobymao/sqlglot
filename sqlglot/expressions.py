@@ -1767,7 +1767,7 @@ class Extract(Expression):
 
 
 class In(Predicate):
-    arg_types = {"this": True, "expressions": False, "query": False}
+    arg_types = {"this": True, "expressions": False, "query": False, "unnest": False}
 
 
 class TimeUnit(Expression):

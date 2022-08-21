@@ -227,12 +227,21 @@ def struct_extract_sql(self, expression):
     return f"{this}.{struct_key}"
 
 
-def format_time_lambda(exp_class, dialect, default=False):
+def format_time_lambda(exp_class, dialect, default=None):
+    """Helper used for time expressions.
+
+    Args
+        exp_class (Class): the expression class to instantiate
+        dialect (string): sql dialect
+        default (Option[bool | str]): the default format, True being time
+    """
+
     def _format_time(args):
         return exp_class(
             this=list_get(args, 0),
             format=Dialect[dialect].format_time(
-                list_get(args, 1) or (Dialect[dialect].time_format if default else None)
+                list_get(args, 1)
+                or (Dialect[dialect].time_format if default is True else default)
             ),
         )
 

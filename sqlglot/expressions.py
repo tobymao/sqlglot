@@ -2178,6 +2178,10 @@ class StrPosition(Func):
     arg_types = {"this": True, "substr": True, "position": False}
 
 
+class StrToDate(Func):
+    arg_types = {"this": True, "format": True}
+
+
 class StrToTime(Func):
     arg_types = {"this": True, "format": True}
 
@@ -2248,7 +2252,7 @@ class TsOrDsToDateStr(Func):
 
 
 class TsOrDsToDate(Func):
-    pass
+    arg_types = {"this": True, "format": False}
 
 
 class TsOrDiToDi(Func):
@@ -2292,10 +2296,18 @@ class Year(Func):
 
 
 def _norm_args(expression):
-    return {
-        k: [_norm_arg(a) for a in arg] if isinstance(arg, list) else _norm_arg(arg)
-        for k, arg in expression.args.items()
-    }
+    args = {}
+
+    for k, arg in expression.args.items():
+        if isinstance(arg, list):
+            arg = [_norm_arg(a) for a in arg]
+        else:
+            arg = _norm_arg(arg)
+
+        if arg is not None:
+            args[k] = arg
+
+    return args
 
 
 def _norm_arg(arg):

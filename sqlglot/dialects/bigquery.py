@@ -93,7 +93,7 @@ class BigQuery(Dialect):
         }
 
         def in_unnest_op(self, unnest):
-            return self.unnest_sql(unnest)
+            return self.sql(unnest)
 
         def union_op(self, expression):
             return f"UNION{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"

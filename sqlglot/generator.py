@@ -808,7 +808,7 @@ class Generator:
         return f"{self.sql(expression, 'this')} IN {in_sql}"
 
     def in_unnest_op(self, unnest):
-        return f"(SELECT {self.unnest_sql(unnest)})"
+        return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression):
         return f"INTERVAL {self.sql(expression, 'this')} {self.sql(expression, 'unit')}"

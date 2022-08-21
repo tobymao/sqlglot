@@ -19,11 +19,22 @@ def _unix_to_time(self, expression):
     return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
 
 
+def _str_to_time_sql(self, expression):
+    return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
+
+
 def _ts_or_ds_add(self, expression):
     this = self.sql(expression, "this")
     e = self.sql(expression, "expression")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     return f"STRFTIME(CAST({this} AS DATE) + INTERVAL {e} {unit}, {DuckDB.date_format})"
+
+
+def _ts_or_ds_to_date_sql(self, expression):
+    time_format = self.format_time(expression)
+    if time_format and time_format not in (DuckDB.time_format, DuckDB.date_format):
+        return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
+    return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
 
 def _date_add(self, expression):
@@ -96,7 +107,8 @@ class DuckDB(Dialect):
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Split: rename_func("STR_SPLIT"),
-            exp.StrToTime: lambda self, e: f"STRPTIME({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
+            exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.Struct: _struct_pack_sql,
             exp.TableSample: no_tablesample_sql,
@@ -108,8 +120,7 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add,
-            exp.TsOrDsToDateStr: lambda self, e: f"STRFTIME(CAST({self.sql(e, 'this')} AS DATE), {DuckDB.date_format})",
-            exp.TsOrDsToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+            exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.UnixToStr: lambda self, e: f"STRFTIME({_unix_to_time(self, e)}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
             exp.UnixToTimeStr: lambda self, e: f"STRFTIME({_unix_to_time(self, e)}, {DuckDB.time_format})",

@@ -61,11 +61,20 @@ def _str_to_unix(self, expression):
     return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), _time_format(self, expression))})"
 
 
+def _str_to_date(self, expression):
+    this = self.sql(expression, "this")
+    time_format = self.format_time(expression)
+    if time_format == Hive.date_format:
+        return f"CAST({this} AS DATE)"
+    return f"CAST(DATE_FORMAT({this}, {time_format}) AS DATE)"
+
+
 def _str_to_time(self, expression):
-    time_format = self.sql(expression, "format")
+    this = self.sql(expression, "this")
+    time_format = self.format_time(expression)
     if time_format in (Hive.time_format, Hive.date_format):
-        return f"DATE_FORMAT({self.sql(expression, 'this')}, {Hive.time_format})"
-    return f"FROM_UNIXTIME({_str_to_unix(self, expression)})"
+        return f"CAST({this} AS TIMESTAMP)"
+    return f"CAST(DATE_FORMAT({this}, {time_format}) AS TIMESTAMP)"
 
 
 def _time_format(self, expression):
@@ -197,7 +206,7 @@ class Hive(Dialect):
             "COLLECT_SET": exp.SetAgg.from_arg_list,
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,
-            "TO_DATE": exp.TsOrDsToDateStr.from_arg_list,
+            "TO_DATE": format_time_lambda(exp.TsOrDsToDate, "hive"),
             "UNIX_TIMESTAMP": format_time_lambda(exp.StrToUnix, "hive", True),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
@@ -249,6 +258,7 @@ class Hive(Dialect):
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
             exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
+            exp.StrToDate: _str_to_date,
             exp.StrToTime: _str_to_time,
             exp.StrToUnix: _str_to_unix,
             exp.StructExtract: struct_extract_sql,
@@ -261,7 +271,6 @@ class Hive(Dialect):
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-            exp.TsOrDsToDateStr: rename_func("TO_DATE"),
             exp.TsOrDsToDate: rename_func("TO_DATE"),
             exp.TryCast: no_trycast_sql,
             exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), _time_format(self, e))})",

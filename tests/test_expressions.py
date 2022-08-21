@@ -27,7 +27,7 @@ class TestExpressions(unittest.TestCase):
             parse_one("ROW() OVER (partition BY y)"),
         )
         self.assertEqual(
-            parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date_str(x)")
+            parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date(x)")
         )
 
     def test_find(self):
@@ -336,7 +336,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("TIME_STR_TO_UNIX(a)"), exp.TimeStrToUnix)
         self.assertIsInstance(parse_one("TS_OR_DS_ADD(a, 1, 'day')"), exp.TsOrDsAdd)
         self.assertIsInstance(parse_one("TS_OR_DS_TO_DATE(a)"), exp.TsOrDsToDate)
-        self.assertIsInstance(parse_one("TS_OR_DS_TO_DATE_STR(a)"), exp.TsOrDsToDateStr)
+        self.assertIsInstance(parse_one("TS_OR_DS_TO_DATE_STR(a)"), exp.Substring)
         self.assertIsInstance(parse_one("UNIX_TO_STR(a, 'format')"), exp.UnixToStr)
         self.assertIsInstance(parse_one("UNIX_TO_TIME(a)"), exp.UnixToTime)
         self.assertIsInstance(parse_one("UNIX_TO_TIME_STR(a)"), exp.UnixToTimeStr)

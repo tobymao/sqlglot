@@ -178,20 +178,6 @@ class DataFrame:
         self.joins_infos.append(JoinInfo(self, other_df, join_columns, join_type, pre_join_self_latest_cte_name))
         return self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
 
-    @operation(Operation.FROM)
-    def union(self, other: "DataFrame") -> "DataFrame":
-        other_df = other._convert_leaf_to_cte()
-        base_expression = self.expression.copy()
-        base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
-        all_ctes = base_expression.ctes
-        other_df.expression.set("with", None)
-        base_expression.set("with", None)
-        union = exp.Union(this=base_expression, distinct=False, expression=other_df.expression)
-        union.set("with", exp.With(expressions=all_ctes))
-        return self.copy(expression=union)._convert_leaf_to_cte()
-
-    unionAll = union
-
     @operation(Operation.ORDER_BY)
     def orderBy(self, *cols: t.Union[str, Column], ascending: t.Optional[t.Union[t.Any, t.List[t.Any]]] = None) -> "DataFrame":
         """
@@ -217,33 +203,31 @@ class DataFrame:
 
     sort = orderBy
 
-    def _intersect(self, other: "DataFrame", distinct: bool) -> "DataFrame":
+    def _set_operation(self, clazz: t.Callable, other: "DataFrame", distinct: bool):
         other_df = other._convert_leaf_to_cte()
         base_expression = self.expression.copy()
         base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
         all_ctes = base_expression.ctes
         other_df.expression.set("with", None)
         base_expression.set("with", None)
-        intersect = exp.Intersect(this=base_expression, distinct=distinct, expression=other_df.expression)
-        intersect.set("with", exp.With(expressions=all_ctes))
-        return self.copy(expression=intersect)._convert_leaf_to_cte()
+        operation = clazz(this=base_expression, distinct=distinct, expression=other_df.expression)
+        operation.set("with", exp.With(expressions=all_ctes))
+        return self.copy(expression=operation)._convert_leaf_to_cte()
+
+    @operation(Operation.FROM)
+    def union(self, other: "DataFrame") -> "DataFrame":
+        return self._set_operation(exp.Union, other, False)
+
+    unionAll = union
 
     @operation(Operation.FROM)
     def intersect(self, other: "DataFrame") -> "DataFrame":
-        return self._intersect(other, True)
+        return self._set_operation(exp.Intersect, other, True)
 
     @operation(Operation.FROM)
     def intersectAll(self, other: "DataFrame") -> "DataFrame":
-        return self._intersect(other, False)
+        return self._set_operation(exp.Intersect, other, False)
 
     @operation(Operation.FROM)
     def exceptAll(self, other: "DataFrame") -> "DataFrame":
-        other_df = other._convert_leaf_to_cte()
-        base_expression = self.expression.copy()
-        base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
-        all_ctes = base_expression.ctes
-        other_df.expression.set("with", None)
-        base_expression.set("with", None)
-        except_op = exp.Except(this=base_expression, distinct=False, expression=other_df.expression)
-        except_op.set("with", exp.With(expressions=all_ctes))
-        return self.copy(expression=except_op)._convert_leaf_to_cte()
+        return self._set_operation(exp.Except, other, False)

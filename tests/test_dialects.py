@@ -515,12 +515,6 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
-            "SELECT * FROM a UNION SELECT * FROM b",
-            "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
-            write="bigquery",
-        )
-
-        self.validate(
             "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
             "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
             read="bigquery",
@@ -534,19 +528,38 @@ class TestDialects(unittest.TestCase):
             write="mysql",
         )
 
+        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
         with self.assertRaises(UnsupportedError):
             transpile(
-                "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
                 write="bigquery",
                 unsupported_level=ErrorLevel.RAISE,
             )
 
         with self.assertRaises(UnsupportedError):
             transpile(
-                "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
                 write="bigquery",
                 unsupported_level=ErrorLevel.RAISE,
             )
+
+        self.validate(
+            "SELECT * FROM a UNION SELECT * FROM b",
+            "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+            write="bigquery",
+        )
+
+        self.validate(
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
+            "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+            write="bigquery",
+        )
 
         self.validate(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
@@ -1979,6 +1992,51 @@ TBLPROPERTIES (
             "CAST(STRPTIME(x, '%Y') AS DATE)",
             read="spark",
             write="duckdb",
+        )
+        self.validate(
+            "SELECT * FROM a UNION SELECT * FROM b",
+            "SELECT * FROM a UNION SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+            "SELECT * FROM a UNION SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+            "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
+            write="spark",
+        )
+        self.validate(
+            "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+            "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+            write="spark",
         )
 
     def test_snowflake(self):

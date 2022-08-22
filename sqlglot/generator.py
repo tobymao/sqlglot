@@ -375,7 +375,7 @@ class Generator:
         )
 
     def except_op(self, expression):
-        return f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ''}"
+        return f"EXCEPT{'' if expression.args.get('distinct') else ' ALL'}"
 
     def fetch_sql(self, expression):
         direction = expression.args.get("direction")
@@ -476,7 +476,7 @@ class Generator:
         )
 
     def intersect_op(self, expression):
-        return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ''}"
+        return f"INTERSECT{'' if expression.args.get('distinct') else ' ALL'}"
 
     def table_sql(self, expression):
         return ".".join(

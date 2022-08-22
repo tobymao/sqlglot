@@ -87,6 +87,8 @@ class Snowflake(Dialect):
     class Parser(Parser):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
+            "ARRAY_AGG": exp.ArrayAgg.from_arg_list,
+            "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
         }

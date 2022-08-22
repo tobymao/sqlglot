@@ -2266,9 +2266,9 @@ class UnixToStr(Func):
 class UnixToTime(Func):
     arg_types = {"this": True, "scale": False}
 
-    SECONDS = "seconds"
-    MILLIS = "millis"
-    MICROS = "micros"
+    SECONDS = Literal.string("seconds")
+    MILLIS = Literal.string("millis")
+    MICROS = Literal.string("micros")
 
 
 class UnixToTimeStr(Func):

@@ -2095,6 +2095,18 @@ TBLPROPERTIES (
             read="snowflake",
         )
         self.validate(
+            "SELECT TO_TIMESTAMP(1659981729000, 3)",
+            "SELECT TIMESTAMP_MILLIS(1659981729000)",
+            read="snowflake",
+            write="spark",
+        )
+        self.validate(
+            "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
+            "SELECT TIMESTAMP_MICROS(1659981729000000000)",
+            read="snowflake",
+            write="spark",
+        )
+        self.validate(
             "SELECT TO_TIMESTAMP('2013-04-05 01:02:03')",
             "SELECT TO_TIMESTAMP('2013-04-05 01:02:03', 'yyyy-mm-dd hh24:mi:ss')",
             read="snowflake",

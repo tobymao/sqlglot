@@ -31,7 +31,7 @@ def _snowflake_to_timestamp(args):
             timescale = exp.UnixToTime.SECONDS
         elif second_arg.name == "3":
             timescale = exp.UnixToTime.MILLIS
-        elif second_arg.name == "3":
+        elif second_arg.name == "9":
             timescale = exp.UnixToTime.MICROS
 
         return exp.UnixToTime(this=first_arg, scale=timescale)

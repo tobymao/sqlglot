@@ -231,3 +231,9 @@ class DataFrame:
     @operation(Operation.FROM)
     def exceptAll(self, other: "DataFrame") -> "DataFrame":
         return self._set_operation(exp.Except, other, False)
+
+    @operation(Operation.SELECT)
+    def distinct(self):
+        expression = self.expression.copy()
+        expression.set("distinct", exp.Distinct())
+        return self.copy(expression=expression)

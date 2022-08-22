@@ -930,4 +930,16 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
+    def test_distinct(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("age")).distinct()
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("age")).distinct()
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
 

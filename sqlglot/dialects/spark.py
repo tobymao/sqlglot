@@ -28,7 +28,7 @@ def _str_to_date(self, expression):
 
 
 def _unix_to_time(self, expression):
-    scale = expression.args.get("scale")
+    scale = expression.text("scale")
     timestamp = self.sql(expression, "this")
     if not scale:
         return f"FROM_UNIXTIME({timestamp})"

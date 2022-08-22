@@ -122,7 +122,5 @@ class Snowflake(Dialect):
 
         def intersect_op(self, expression):
             if not expression.args.get("distinct", False):
-                self.unsupported(
-                    "INTERSECT with All is not supported in Snowflake"
-                )
+                self.unsupported("INTERSECT with All is not supported in Snowflake")
             return super().intersect_op(expression)

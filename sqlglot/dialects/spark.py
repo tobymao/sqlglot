@@ -32,11 +32,11 @@ def _unix_to_time(self, expression):
     timestamp = self.sql(expression, "this")
     if not scale:
         return f"FROM_UNIXTIME({timestamp})"
-    if scale.name == "0":
+    if scale == exp.UnixToTime.SECONDS:
         return f"TIMESTAMP_SECONDS({timestamp})"
-    if scale.name == "3":
+    if scale == exp.UnixToTime.MILLIS:
         return f"TIMESTAMP_MILLIS({timestamp})"
-    if scale.name == "9":
+    if scale == exp.UnixToTime.MICROS:
         return f"TIMESTAMP_MICROS({timestamp})"
 
     raise ValueError("Improper scale for timestamp")

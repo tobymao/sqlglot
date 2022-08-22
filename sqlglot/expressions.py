@@ -2266,6 +2266,10 @@ class UnixToStr(Func):
 class UnixToTime(Func):
     arg_types = {"this": True, "scale": False}
 
+    SECONDS = "seconds"
+    MILLIS = "millis"
+    MICROS = "micros"
+
 
 class UnixToTimeStr(Func):
     pass

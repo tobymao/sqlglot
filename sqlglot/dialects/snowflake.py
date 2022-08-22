@@ -27,7 +27,14 @@ def _snowflake_to_timestamp(args):
                 f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
             )
 
-        return exp.UnixToTime(this=first_arg, scale=second_arg)
+        if second_arg.this == "0":
+            timescale = exp.UnixToTime.SECONDS
+        elif second_arg.this == "3":
+            timescale = exp.UnixToTime.MILLIS
+        elif second_arg.this == "3":
+            timescale = exp.UnixToTime.MICROS
+
+        return exp.UnixToTime(this=first_arg, scale=timescale)
 
     first_arg = list_get(args, 0)
     if not isinstance(first_arg, Literal):
@@ -44,6 +51,19 @@ def _snowflake_to_timestamp(args):
 
     # case: <numeric_expr>
     return exp.UnixToTime.from_arg_list(args)
+
+
+def _unix_to_time(self, expression):
+    scale = expression.args.get("scale")
+    timestamp = self.sql(expression, "this")
+    if not scale or scale == exp.UnixToTime.SECONDS:
+        return f"TO_TIMESTAMP({timestamp})"
+    if scale == exp.UnixToTime.MILLIS:
+        return f"TO_TIMESTAMP({timestamp}, 3)"
+    if scale == exp.UnixToTime.MICROS:
+        return f"TO_TIMESTAMP({timestamp}, 9)"
+
+    raise ValueError("Improper scale for timestamp")
 
 
 class Snowflake(Dialect):
@@ -110,7 +130,7 @@ class Snowflake(Dialect):
             **Generator.TRANSFORMS,
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.UnixToTime: rename_func("TO_TIMESTAMP"),
+            exp.UnixToTime: _unix_to_time,
         }
 
         def except_op(self, expression):

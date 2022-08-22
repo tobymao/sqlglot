@@ -90,6 +90,7 @@ class Spark(Hive):
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
+            exp.ExprToNumeric: lambda self, e: f"CAST({self.sql(e, 'this')} AS LONG)",
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",

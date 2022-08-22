@@ -2038,6 +2038,10 @@ class Exp(Func):
     pass
 
 
+class ExprToNumeric(Func):
+    arg_types = {"this": True, "format": False, "precision": False, "scale": False}
+
+
 class Explode(Func):
     pass
 

@@ -550,6 +550,12 @@ class TestDialects(unittest.TestCase):
         )
 
         self.validate(
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            write="bigquery",
+        )
+
+        self.validate(
             "SELECT * FROM a INTERSECT SELECT * FROM b",
             "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
             write="bigquery",
@@ -2127,6 +2133,44 @@ TBLPROPERTIES (
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             "SELECT fname, lname, age FROM person ORDER BY age DESC, fname, lname NULLS FIRST",
             read="spark",
+            write="snowflake",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                write="snowflake",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                write="snowflake",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        self.validate(
+            "SELECT * FROM a UNION SELECT * FROM b",
+            "SELECT * FROM a UNION SELECT * FROM b",
+            write="snowflake",
+        )
+
+        self.validate(
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            write="snowflake",
+        )
+
+        self.validate(
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            write="snowflake",
+        )
+
+        self.validate(
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
             write="snowflake",
         )
 

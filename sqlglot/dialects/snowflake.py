@@ -17,7 +17,7 @@ def _check_int(s):
 def _snowflake_to_timestamp(args):
     if len(args) == 2:
         first_arg, second_arg = args
-        if first_arg.is_string:
+        if second_arg.is_string:
             # case: <string_expr> [ , <format> ]
             return format_time_lambda(exp.StrToTime, "snowflake")(args)
 
@@ -27,9 +27,7 @@ def _snowflake_to_timestamp(args):
                 f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
             )
 
-        timestamp = int(first_arg.name)
-        scale = int(second_arg.name)
-        return exp.UnixToTime(this=str(timestamp // (10**scale)))
+        return exp.UnixToTime(this=first_arg, scale=second_arg)
 
     first_arg = list_get(args, 0)
     if not isinstance(first_arg, Literal):
@@ -90,6 +88,9 @@ class Snowflake(Dialect):
             "ARRAY_AGG": exp.ArrayAgg.from_arg_list,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "IFF": exp.If.from_arg_list,
+            "TO_DECIMAL": exp.ExprToNumeric.from_arg_list,
+            "TO_NUMBER": exp.ExprToNumeric.from_arg_list,
+            "TO_NUMERIC": exp.ExprToNumeric.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
         }
 

@@ -27,6 +27,21 @@ def _str_to_date(self, expression):
     return f"TO_DATE({this}, {time_format})"
 
 
+def _unix_to_time(self, expression):
+    scale = expression.args.get("scale")
+    timestamp = self.sql(expression, "this")
+    if not scale:
+        return f"FROM_UNIXTIME({timestamp})"
+    if scale.name == "0":
+        return f"TIMESTAMP_SECONDS({timestamp})"
+    if scale.name == "3":
+        return f"TIMESTAMP_MILLIS({timestamp})"
+    if scale.name == "9":
+        return f"TIMESTAMP_MICROS({timestamp})"
+
+    raise ValueError("Improper scale for timestamp")
+
+
 class Spark(Hive):
     class Parser(Hive.Parser):
         FUNCTIONS = {
@@ -75,9 +90,11 @@ class Spark(Hive):
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
+            exp.ExprToNumeric: lambda self, e: f"CAST({self.sql(e, 'this')} AS LONG)",
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.UnixToTime: _unix_to_time,
             exp.Create: _create_sql,
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),

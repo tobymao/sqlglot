@@ -2086,7 +2086,7 @@ TBLPROPERTIES (
         )
         self.validate(
             "SELECT TO_TIMESTAMP(1659981729000, 3)",
-            "SELECT TO_TIMESTAMP(1659981729)",
+            "SELECT TO_TIMESTAMP(1659981729000, 3)",
             read="snowflake",
         )
         self.validate(
@@ -2139,6 +2139,13 @@ TBLPROPERTIES (
         self.validate(
             "SELECT ARRAY_AGG(DISTINCT a)",
             "SELECT COLLECT_LIST(DISTINCT a)",
+            read="snowflake",
+            write="spark",
+        )
+
+        self.validate(
+            "SELECT TO_NUMBER(123456)",
+            "SELECT CAST(123456 AS LONG)",
             read="snowflake",
             write="spark",
         )

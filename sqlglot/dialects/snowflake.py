@@ -114,3 +114,13 @@ class Snowflake(Dialect):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
         }
+
+        def except_op(self, expression):
+            if not expression.args.get("distinct", False):
+                self.unsupported("EXCEPT with All is not supported in Snowflake")
+            return super().except_op(expression)
+
+        def intersect_op(self, expression):
+            if not expression.args.get("distinct", False):
+                self.unsupported("INTERSECT with All is not supported in Snowflake")
+            return super().intersect_op(expression)

@@ -138,6 +138,50 @@ class TestDataframe(unittest.TestCase):
         )
         self.compare_spark_with_sqlglot(df_employee, dfs_employee)
 
+    def test_case_when_otherwise(self):
+        df = (
+            self.df_spark_employee
+            .select(
+                F
+                .when((F.col("age") >= F.lit(40)) & (F.col("age") <= F.lit(60)), F.lit("between 40 and 60"))
+                .when(F.col("age") < F.lit(40), "less than 40")
+                .otherwise("greater than 60")
+            )
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(
+                SF
+                .when((SF.col("age") >= SF.lit(40)) & (SF.col("age") <= SF.lit(60)), SF.lit("between 40 and 60"))
+                .when(SF.col("age") < SF.lit(40), "less than 40")
+                .otherwise("greater than 60")
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_case_when_no_otherwise(self):
+        df = (
+            self.df_spark_employee
+            .select(
+                F
+                .when((F.col("age") >= F.lit(40)) & (F.col("age") <= F.lit(60)), F.lit("between 40 and 60"))
+                .when(F.col("age") < F.lit(40), "less than 40")
+            )
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(
+                SF
+                .when((SF.col("age") >= SF.lit(40)) & (SF.col("age") <= SF.lit(60)), SF.lit("between 40 and 60"))
+                .when(SF.col("age") < SF.lit(40), "less than 40")
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
     def test_where_clause_single(self):
         df_employee = self.df_spark_employee.where(F.col("age") == F.lit(37))
         dfs_employee = self.df_sqlglot_employee.where(SF.col("age") == SF.lit(37))
@@ -218,8 +262,16 @@ class TestDataframe(unittest.TestCase):
         dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] < SF.lit(50))
         self.compare_spark_with_sqlglot(df_employee, dfs_employee)
 
+        df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] <= F.lit(37))
+        dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] <= SF.lit(37))
+        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+
         df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] > F.lit(50))
         dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] > SF.lit(50))
+        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+
+        df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] >= F.lit(37))
+        dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] >= SF.lit(37))
         self.compare_spark_with_sqlglot(df_employee, dfs_employee)
 
         df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] != F.lit(50))
@@ -228,6 +280,22 @@ class TestDataframe(unittest.TestCase):
 
         df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] == F.lit(37))
         dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] == SF.lit(37))
+        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+
+        df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] % F.lit(5) == F.lit(0))
+        dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] % SF.lit(5) == SF.lit(0))
+        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+
+        df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] + F.lit(5) > F.lit(28))
+        dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] + SF.lit(5) > SF.lit(28))
+        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+
+        df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] - F.lit(5) > F.lit(28))
+        dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] - SF.lit(5) > SF.lit(28))
+        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+
+        df_employee = self.df_spark_employee.where(self.df_spark_employee['age'] * F.lit(.5) == self.df_spark_employee['age'] / F.lit(2))
+        dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] * SF.lit(.5) == self.df_sqlglot_employee['age'] / SF.lit(2))
         self.compare_spark_with_sqlglot(df_employee, dfs_employee)
 
     def test_group_by(self):
@@ -617,7 +685,8 @@ class TestDataframe(unittest.TestCase):
             self.df_spark_store
             .groupBy(F.col("district_id"))
             .agg(F.min("num_sales"))
-            .orderBy(F.col("district_id"))
+            .orderBy(F.col("district_id") )
+
         )
 
         dfs = (
@@ -680,4 +749,135 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
+    def test_order_by_column_sort_method_nulls(self):
+        df = (
+            self.df_spark_store
+            .groupBy(F.col("district_id"))
+            .agg(F.min("num_sales").alias("total_sales"))
+            .orderBy(F.when(F.col("district_id") == F.lit(2), F.col("district_id")).asc_nulls_last())
+        )
+
+        dfs = (
+            self.df_sqlglot_store
+            .groupBy(SF.col("district_id"))
+            .agg(SF.min("num_sales").alias("total_sales"))
+            .orderBy(SF.when(SF.col("district_id") == SF.lit(2), SF.col("district_id")).asc_nulls_last())
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_order_by_column_sort_method_nulls(self):
+        df = (
+            self.df_spark_store
+            .groupBy(F.col("district_id"))
+            .agg(F.min("num_sales").alias("total_sales"))
+            .orderBy(F.when(F.col("district_id") == F.lit(1), F.col("district_id")).desc_nulls_first())
+        )
+
+        dfs = (
+            self.df_sqlglot_store
+            .groupBy(SF.col("district_id"))
+            .agg(SF.min("num_sales").alias("total_sales"))
+            .orderBy(SF.when(SF.col("district_id") == SF.lit(1), SF.col("district_id")).desc_nulls_first())
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_intersect(self):
+        df_employee_duplicate = (
+            self.df_spark_employee
+            .select(F.col("employee_id"), F.col("store_id"))
+            .union(
+                self.df_spark_employee
+                .select(F.col("employee_id"), F.col("store_id"))
+            )
+        )
+
+        df_store_duplicate = (
+            self.df_spark_store
+            .select(F.col("store_id"), F.col("district_id"))
+            .union(
+                self.df_spark_store
+                .select(F.col("store_id"), F.col("district_id"))
+            )
+        )
+
+        df = (
+            df_employee_duplicate
+            .intersect(df_store_duplicate)
+        )
+
+        dfs_employee_duplicate = (
+            self.df_sqlglot_employee
+            .select(SF.col("employee_id"), SF.col("store_id"))
+            .union(
+                self.df_sqlglot_employee
+                .select(SF.col("employee_id"), SF.col("store_id"))
+            )
+        )
+
+        dfs_store_duplicate = (
+            self.df_sqlglot_store
+            .select(SF.col("store_id"), SF.col("district_id"))
+            .union(
+                self.df_sqlglot_store
+                .select(SF.col("store_id"), SF.col("district_id"))
+            )
+        )
+
+        dfs = (
+            dfs_employee_duplicate
+            .intersect(dfs_store_duplicate)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_intersect_all(self):
+        df_employee_duplicate = (
+            self.df_spark_employee
+            .select(F.col("employee_id"), F.col("store_id"))
+            .union(
+                self.df_spark_employee
+                .select(F.col("employee_id"), F.col("store_id"))
+            )
+        )
+
+        df_store_duplicate = (
+            self.df_spark_store
+            .select(F.col("store_id"), F.col("district_id"))
+            .union(
+                self.df_spark_store
+                .select(F.col("store_id"), F.col("district_id"))
+            )
+        )
+
+        df = (
+            df_employee_duplicate
+            .intersectAll(df_store_duplicate)
+        )
+
+        dfs_employee_duplicate = (
+            self.df_sqlglot_employee
+            .select(SF.col("employee_id"), SF.col("store_id"))
+            .union(
+                self.df_sqlglot_employee
+                .select(SF.col("employee_id"), SF.col("store_id"))
+            )
+        )
+
+        dfs_store_duplicate = (
+            self.df_sqlglot_store
+            .select(SF.col("store_id"), SF.col("district_id"))
+            .union(
+                self.df_sqlglot_store
+                .select(SF.col("store_id"), SF.col("district_id"))
+            )
+        )
+
+        dfs = (
+            dfs_employee_duplicate
+            .intersectAll(dfs_store_duplicate)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
 

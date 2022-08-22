@@ -194,15 +194,44 @@ class DataFrame:
 
     @operation(Operation.ORDER_BY)
     def orderBy(self, *cols: t.Union[str, Column], ascending: t.Optional[t.Union[t.Any, t.List[t.Any]]] = None) -> "DataFrame":
+        """
+        This implementation lets any ordered columns take priority over whatever is provided in `ascending`. Spark
+        has irregular behavior and can result in runtime errors. Users shouldn't be mixing the two anyways so this
+        is unlikely to come up.
+        """
         cols = self._ensure_list_of_columns(cols)
+        pre_ordered_col_indexes = [x for x in [i if isinstance(col.expression, exp.Ordered) else None for i, col in enumerate(cols)] if x is not None]
         if ascending is None:
             ascending = [True] * len(cols)
         elif not isinstance(ascending, list):
             ascending = [ascending] * len(cols)
-        ascending = [bool(x) for x in ascending]
+        ascending = [bool(x) for i, x in enumerate(ascending)]
         assert len(cols) == len(ascending), "The length of items in ascending must equal the number of columns provided"
         col_and_ascending = list(zip(cols, ascending))
-        order_by_columns = [exp.Ordered(this=col.expression, desc=not asc) for col, asc in col_and_ascending]
+        order_by_columns = [
+            exp.Ordered(this=col.expression, desc=not asc)
+            if i not in pre_ordered_col_indexes else cols[i].expression
+            for i, (col, asc) in enumerate(col_and_ascending)
+        ]
         return self.copy(expression=self.expression.order_by(*order_by_columns))
 
     sort = orderBy
+
+    def _intersect(self, other: "DataFrame", distinct: bool) -> "DataFrame":
+        other_df = other._convert_leaf_to_cte()
+        base_expression = self.expression.copy()
+        base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
+        all_ctes = base_expression.ctes
+        other_df.expression.set("with", None)
+        base_expression.set("with", None)
+        intersect = exp.Intersect(this=base_expression, distinct=distinct, expression=other_df.expression)
+        intersect.set("with", exp.With(expressions=all_ctes))
+        return self.copy(expression=intersect)._convert_leaf_to_cte()
+
+    @operation(Operation.FROM)
+    def intersect(self, other: "DataFrame") -> "DataFrame":
+        return self._intersect(other, True)
+
+    @operation(Operation.FROM)
+    def intersectAll(self, other: "DataFrame") -> "DataFrame":
+        return self._intersect(other, False)

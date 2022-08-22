@@ -2086,7 +2086,7 @@ TBLPROPERTIES (
         )
         self.validate(
             "SELECT TO_TIMESTAMP(1659981729000, 3)",
-            "SELECT TO_TIMESTAMP(1659981729)",
+            "SELECT TO_TIMESTAMP(1659981729000, 3)",
             read="snowflake",
         )
         self.validate(

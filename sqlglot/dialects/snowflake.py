@@ -86,6 +86,9 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFF": exp.If.from_arg_list,
+            "TO_DECIMAL": exp.ExprToNumeric.from_arg_list,
+            "TO_NUMBER": exp.ExprToNumeric.from_arg_list,
+            "TO_NUMERIC": exp.ExprToNumeric.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
         }
 

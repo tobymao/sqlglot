@@ -2136,6 +2136,13 @@ TBLPROPERTIES (
             write="snowflake",
         )
 
+        self.validate(
+            "SELECT TO_NUMBER(123456)",
+            "SELECT CAST(123456 AS LONG)",
+            read="snowflake",
+            write="spark",
+        )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT * FROM a INTERSECT ALL SELECT * FROM b",

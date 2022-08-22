@@ -22,16 +22,16 @@ def _snowflake_to_timestamp(args):
             return format_time_lambda(exp.StrToTime, "snowflake")(args)
 
         # case: <numeric_expr> [ , <scale> ]
-        if second_arg.this not in ["0", "3", "9"]:
+        if second_arg.name not in ["0", "3", "9"]:
             raise ValueError(
                 f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
             )
 
-        if second_arg.this == "0":
+        if second_arg.name == "0":
             timescale = exp.UnixToTime.SECONDS
-        elif second_arg.this == "3":
+        elif second_arg.name == "3":
             timescale = exp.UnixToTime.MILLIS
-        elif second_arg.this == "3":
+        elif second_arg.name == "3":
             timescale = exp.UnixToTime.MICROS
 
         return exp.UnixToTime(this=first_arg, scale=timescale)

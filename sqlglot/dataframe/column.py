@@ -14,19 +14,46 @@ class Column:
         return hash(self.expression)
 
     def __eq__(self, other: "Column") -> "Column":
-        return Column(exp.EQ(this=self.expression, expression=other.expression))
+        return self.binary_op(exp.EQ, other)
 
     def __ne__(self, other: "Column") -> "Column":
-        return Column(exp.NEQ(this=self.expression, expression=other.expression))
+        return self.binary_op(exp.NEQ, other)
 
-    def __gt__(self, other) -> "Column":
-        return Column(exp.GT(this=self.expression, expression=other.expression))
+    def __gt__(self, other: "Column") -> "Column":
+        return self.binary_op(exp.GT, other)
 
-    def __and__(self, other) -> "Column":
-        return Column(exp.And(this=self.expression, expression=other.expression))
+    def __ge__(self, other):
+        return self.binary_op(exp.GTE, other)
 
-    def __or__(self, other) -> "Column":
-        return Column(exp.Or(this=self.expression, expression=other.expression))
+    def __lt__(self, other):
+        return self.binary_op(exp.LT, other)
+
+    def __le__(self, other):
+        return self.binary_op(exp.LTE, other)
+
+    def __and__(self, other: "Column") -> "Column":
+        return self.binary_op(exp.And, other)
+
+    def __or__(self, other: "Column") -> "Column":
+        return self.binary_op(exp.Or, other)
+
+    def __mod__(self, other: "Column") -> "Column":
+        return self.binary_op(exp.Mod, other)
+
+    def __add__(self, other):
+        return self.binary_op(exp.Add, other)
+
+    def __sub__(self, other):
+        return self.binary_op(exp.Sub, other)
+
+    def __mul__(self, other):
+        return self.binary_op(exp.Mul, other)
+
+    def __truediv__(self, other):
+        return self.binary_op(exp.Div, other)
+
+    def binary_op(self, clazz: t.Callable, other: "Column", **kwargs) -> "Column":
+        return Column(clazz(this=self.expression, expression=other.expression, **kwargs))
 
     @property
     def is_alias(self):
@@ -57,9 +84,35 @@ class Column:
         return Column(self.expression)
 
     def asc(self):
-        self.expression = exp.Ordered(this=self.column_expression, desc=False)
+        self.expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=True)
         return Column(self.expression)
 
     def desc(self):
-        self.expression = exp.Ordered(this=self.column_expression, desc=True)
+        self.expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=False)
         return Column(self.expression)
+
+    asc_nulls_first = asc
+
+    def asc_nulls_last(self):
+        self.expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=False)
+        return Column(self.expression)
+
+    def desc_nulls_first(self):
+        self.expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=True)
+        return Column(self.expression)
+
+    desc_null_last = desc
+
+    def when(self, condition: "Column", value: t.Any):
+        from sqlglot.dataframe.functions import when
+        column_with_if = when(condition, value)
+        new_column = self.copy()
+        new_column.expression.args["ifs"].extend(column_with_if.expression.args["ifs"])
+        return new_column
+
+    def otherwise(self, value: t.Any):
+        from sqlglot.dataframe.functions import lit
+        true_value = value if isinstance(value, Column) else lit(value)
+        new_column = self.copy()
+        new_column.expression.args["default"] = true_value.expression
+        return new_column

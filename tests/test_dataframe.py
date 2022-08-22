@@ -881,3 +881,53 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
+    def test_except_all(self):
+        df_employee_duplicate = (
+            self.df_spark_employee
+            .select(F.col("employee_id"), F.col("store_id"))
+            .union(
+                self.df_spark_employee
+                .select(F.col("employee_id"), F.col("store_id"))
+            )
+        )
+
+        df_store_duplicate = (
+            self.df_spark_store
+            .select(F.col("store_id"), F.col("district_id"))
+            .union(
+                self.df_spark_store
+                .select(F.col("store_id"), F.col("district_id"))
+            )
+        )
+
+        df = (
+            df_employee_duplicate
+            .exceptAll(df_store_duplicate)
+        )
+
+        dfs_employee_duplicate = (
+            self.df_sqlglot_employee
+            .select(SF.col("employee_id"), SF.col("store_id"))
+            .union(
+                self.df_sqlglot_employee
+                .select(SF.col("employee_id"), SF.col("store_id"))
+            )
+        )
+
+        dfs_store_duplicate = (
+            self.df_sqlglot_store
+            .select(SF.col("store_id"), SF.col("district_id"))
+            .union(
+                self.df_sqlglot_store
+                .select(SF.col("store_id"), SF.col("district_id"))
+            )
+        )
+
+        dfs = (
+            dfs_employee_duplicate
+            .exceptAll(dfs_store_duplicate)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+

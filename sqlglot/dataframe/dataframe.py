@@ -235,3 +235,15 @@ class DataFrame:
     @operation(Operation.FROM)
     def intersectAll(self, other: "DataFrame") -> "DataFrame":
         return self._intersect(other, False)
+
+    @operation(Operation.FROM)
+    def exceptAll(self, other: "DataFrame") -> "DataFrame":
+        other_df = other._convert_leaf_to_cte()
+        base_expression = self.expression.copy()
+        base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
+        all_ctes = base_expression.ctes
+        other_df.expression.set("with", None)
+        base_expression.set("with", None)
+        except_op = exp.Except(this=base_expression, distinct=False, expression=other_df.expression)
+        except_op.set("with", exp.With(expressions=all_ctes))
+        return self.copy(expression=except_op)._convert_leaf_to_cte()

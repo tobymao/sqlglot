@@ -28,15 +28,15 @@ def _str_to_date(self, expression):
 
 
 def _unix_to_time(self, expression):
-    scale = expression.text("scale")
+    scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
-    if not scale:
+    if scale is None:
         return f"FROM_UNIXTIME({timestamp})"
-    if scale == exp.UnixToTime.SECONDS.name:
+    if scale == exp.UnixToTime.SECONDS:
         return f"TIMESTAMP_SECONDS({timestamp})"
-    if scale == exp.UnixToTime.MILLIS.name:
+    if scale == exp.UnixToTime.MILLIS:
         return f"TIMESTAMP_MILLIS({timestamp})"
-    if scale == exp.UnixToTime.MICROS.name:
+    if scale == exp.UnixToTime.MICROS:
         return f"TIMESTAMP_MICROS({timestamp})"
 
     raise ValueError("Improper scale for timestamp")

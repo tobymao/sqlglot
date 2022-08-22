@@ -54,13 +54,13 @@ def _snowflake_to_timestamp(args):
 
 
 def _unix_to_time(self, expression):
-    scale = expression.text("scale")
+    scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
-    if scale in ["", exp.UnixToTime.SECONDS.name]:
+    if scale in [None, exp.UnixToTime.SECONDS]:
         return f"TO_TIMESTAMP({timestamp})"
-    if scale == exp.UnixToTime.MILLIS.name:
+    if scale == exp.UnixToTime.MILLIS:
         return f"TO_TIMESTAMP({timestamp}, 3)"
-    if scale == exp.UnixToTime.MICROS.name:
+    if scale == exp.UnixToTime.MICROS:
         return f"TO_TIMESTAMP({timestamp}, 9)"
 
     raise ValueError("Improper scale for timestamp")

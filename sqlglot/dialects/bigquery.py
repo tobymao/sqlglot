@@ -101,11 +101,13 @@ class BigQuery(Dialect):
         def except_op(self, expression):
             if not expression.args.get("distinct", False):
                 self.unsupported("EXCEPT without DISTINCT is not supported in BigQuery")
-            return super().except_op(expression)
+            return f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 
         def intersect_op(self, expression):
             if not expression.args.get("distinct", False):
                 self.unsupported(
                     "INTERSECT without DISTINCT is not supported in BigQuery"
                 )
-            return super().intersect_op(expression)
+            return (
+                f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+            )

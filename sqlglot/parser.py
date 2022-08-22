@@ -1278,18 +1278,16 @@ class Parser:
         token_type = self._prev.token_type
 
         if token_type == TokenType.UNION:
-            return self.expression(
-                exp.Union,
-                this=this,
-                distinct=self._match(TokenType.DISTINCT)
-                or not self._match(TokenType.ALL),
-                expression=self._parse_with(),
-            )
+            expression = exp.Union
+        elif token_type == TokenType.EXCEPT:
+            expression = exp.Except
+        else:
+            expression = exp.Intersect
 
         return self.expression(
-            exp.Except if token_type == TokenType.EXCEPT else exp.Intersect,
+            expression,
             this=this,
-            distinct=self._match(TokenType.DISTINCT),
+            distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
             expression=self._parse_with(),
         )
 

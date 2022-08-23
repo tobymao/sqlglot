@@ -56,7 +56,7 @@ class _Dialect(type):
             (identifier[0], identifier[1])
             if isinstance(identifier, tuple)
             else (identifier, identifier)
-            for identifier in klass.identifiers or ['"']
+            for identifier in klass.identifiers
         )
         klass.identifier_start, klass.identifier_end = list(identifiers.items())[0]
 
@@ -69,7 +69,7 @@ class _Dialect(type):
 
 
 class Dialect(metaclass=_Dialect):
-    identifiers = None
+    identifiers = ['"']
     identifier_start = '"'
     identifier_end = '"'
     escape = "'"

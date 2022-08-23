@@ -52,15 +52,26 @@ class _Dialect(type):
         klass.parser_class = getattr(klass, "Parser", Parser)
         klass.generator_class = getattr(klass, "Generator", Generator)
 
+        identifiers = dict(
+            (identifier[0], identifier[1])
+            if isinstance(identifier, tuple)
+            else (identifier, identifier)
+            for identifier in klass.identifiers or ['"']
+        )
+        klass.identifier_start, klass.identifier_end = list(identifiers.items())[0]
+
         klass.tokenizer = klass.tokenizer_class(
-            identifiers=klass.identifiers,
+            identifiers=identifiers,
             escape=klass.escape,
         )
+
         return klass
 
 
 class Dialect(metaclass=_Dialect):
     identifiers = None
+    identifier_start = '"'
+    identifier_end = '"'
     escape = "'"
     index_offset = 0
     unnest_column_only = False
@@ -142,7 +153,8 @@ class Dialect(metaclass=_Dialect):
         return self.generator_class(
             **{
                 "quote": self.tokenizer_class.QUOTES[0],
-                "identifier": list(self.tokenizer.identifiers.items())[0],
+                "identifier_start": self.identifier_start,
+                "identifier_end": self.identifier_end,
                 "escape": self.escape,
                 "index_offset": self.index_offset,
                 "time_mapping": self.inverse_time_mapping,

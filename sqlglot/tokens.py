@@ -573,15 +573,10 @@ class Tokenizer(metaclass=_Tokenizer):
         Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
 
         Args
-            identifier (array): identifier characters and/or tuples when different start and end identifiers
+            identifiers (dict): keys are the identifer start characters and values are the identifier end characters
             escape (str): the escape code character
         """
-        self.identifiers = dict(
-            (identifier[0], identifier[1])
-            if isinstance(identifier, tuple)
-            else (identifier, identifier)
-            for identifier in identifiers or ['"']
-        )
+        self.identifiers = identifiers or {'"': '"'}
         self.escape = escape or "'"
         self.reset()
 

@@ -1,21 +1,8 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect
-from sqlglot.helper import list_get
+from sqlglot.dialects.dialect import Dialect, date_add_interval
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
-
-
-def _date_add(expression_class):
-    def func(args):
-        interval = list_get(args, 1)
-        return expression_class(
-            this=list_get(args, 0),
-            expression=interval.this,
-            unit=interval.args.get("unit"),
-        )
-
-    return func
 
 
 def _date_add_sql(data_type, kind):
@@ -51,14 +38,14 @@ class BigQuery(Dialect):
     class Parser(Parser):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
-            "DATE_ADD": _date_add(exp.DateAdd),
-            "DATETIME_ADD": _date_add(exp.DatetimeAdd),
-            "TIME_ADD": _date_add(exp.TimeAdd),
-            "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
-            "DATE_SUB": _date_add(exp.DateSub),
-            "DATETIME_SUB": _date_add(exp.DatetimeSub),
-            "TIME_SUB": _date_add(exp.TimeSub),
-            "TIMESTAMP_SUB": _date_add(exp.TimestampSub),
+            "DATE_ADD": date_add_interval(exp.DateAdd),
+            "DATETIME_ADD": date_add_interval(exp.DatetimeAdd),
+            "TIME_ADD": date_add_interval(exp.TimeAdd),
+            "TIMESTAMP_ADD": date_add_interval(exp.TimestampAdd),
+            "DATE_SUB": date_add_interval(exp.DateSub),
+            "DATETIME_SUB": date_add_interval(exp.DatetimeSub),
+            "TIME_SUB": date_add_interval(exp.TimeSub),
+            "TIMESTAMP_SUB": date_add_interval(exp.TimestampSub),
         }
 
         NO_PAREN_FUNCTIONS = {

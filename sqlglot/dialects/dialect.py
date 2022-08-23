@@ -258,3 +258,29 @@ def format_time_lambda(exp_class, dialect, default=None):
         )
 
     return _format_time
+
+
+def date_add_interval(expression_class):
+    """
+    Create a Parser function for DATE_ADD where the second argument is an interval.
+
+    For example:
+        DATE_ADD(x, INTERVAL 1 DAY)
+
+    Args:
+        expression_class (Type[exp.Expression]):
+            expression class to parse into
+    Returns:
+        (list) -> exp.Expression:
+            Callable that can be registered in Parser.FUNCTIONS
+    """
+
+    def func(args):
+        interval = list_get(args, 1)
+        return expression_class(
+            this=list_get(args, 0),
+            expression=interval.this,
+            unit=interval.args.get("unit"),
+        )
+
+    return func

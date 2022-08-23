@@ -5,9 +5,61 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    date_add_interval,
 )
 from sqlglot.generator import Generator
+from sqlglot.helper import list_get, invert
 from sqlglot.parser import Parser
+from sqlglot.time import format_time
+
+
+def _date_trunc_sql(self, expression):
+    unit = expression.args.get("unit").name
+
+    this = self.sql(expression.this)
+
+    if unit.lower() == "day":
+        return f"DATE({this})"
+
+    if unit.lower() == "week":
+        concat = f"CONCAT(YEAR({this}), ' ', WEEK({this}, 1), ' 1')"
+        date_format = "%Y %u %w"
+    elif unit.lower() == "month":
+        concat = f"CONCAT(YEAR({this}), ' ', MONTH({this}), ' 1')"
+        date_format = "%Y %c %e"
+    elif unit.lower() == "quarter":
+        concat = f"CONCAT(YEAR({this}), ' ', QUARTER({this}) * 3 - 2, ' 1')"
+        date_format = "%Y %c %e"
+    elif unit.lower() == "year":
+        concat = f"CONCAT(YEAR({this}), ' 1 1')"
+        date_format = "%Y %c %e"
+    else:
+        self.unsupported("Unexpected interval unit: {unit}")
+        return f"DATE({this})"
+
+    return f"STR_TO_DATE({concat}, '{date_format}')"
+
+
+def _str_to_date(args):
+    date_format = format_time(list_get(args, 1).name, MySQL.time_mapping)
+    return exp.StrToDate(this=list_get(args, 0), format=exp.Literal.string(date_format))
+
+
+def _str_to_date_sql(self, expression):
+    date_format = format_time(
+        expression.args.get("format").name, invert(MySQL.time_mapping)
+    )
+    return f"STR_TO_DATE({self.sql(expression.this)}, '{date_format}')"
+
+
+def _date_add_sql(kind):
+    def func(self, expression):
+        this = self.sql(expression, "this")
+        unit = expression.text("unit").upper()
+        expression = self.sql(expression, "expression")
+        return f"DATE_{kind}({this}, INTERVAL {expression} {unit})"
+
+    return func
 
 
 class MySQL(Dialect):
@@ -22,10 +74,18 @@ class MySQL(Dialect):
         "%i": "%M",
         "%s": "%S",
         "%S": "%S",
+        "%u": "%W",
     }
 
     class Parser(Parser):
         STRICT_CAST = False
+
+        FUNCTIONS = {
+            **Parser.FUNCTIONS,
+            "DATE_ADD": date_add_interval(exp.DateAdd),
+            "DATE_SUB": date_add_interval(exp.DateSub),
+            "STR_TO_DATE": _str_to_date,
+        }
 
     class Generator(Generator):
         NULL_ORDERING_SUPPORTED = False
@@ -37,4 +97,8 @@ class MySQL(Dialect):
             exp.ILike: no_ilike_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
+            exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateSub: _date_add_sql("SUB"),
+            exp.DateTrunc: _date_trunc_sql,
+            exp.StrToDate: _str_to_date_sql,
         }

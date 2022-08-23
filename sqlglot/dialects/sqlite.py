@@ -12,6 +12,8 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 
 class SQLite(Dialect):
+    identifiers = ['"', ("[", "]"), "`"]
+
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,

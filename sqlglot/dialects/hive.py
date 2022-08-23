@@ -116,7 +116,7 @@ class HiveMap(exp.Map):
 
 
 class Hive(Dialect):
-    identifier = "`"
+    identifiers = ["`"]
     escape = "\\"
     alias_post_tablesample = True
 

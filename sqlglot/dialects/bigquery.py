@@ -29,7 +29,7 @@ def _date_add_sql(data_type, kind):
 
 
 class BigQuery(Dialect):
-    identifier = "`"
+    identifiers = ["`"]
     escape = "\\"
     unnest_column_only = True
 

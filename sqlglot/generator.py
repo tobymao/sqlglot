@@ -130,7 +130,7 @@ class Generator:
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
         self.configured_pretty = self.pretty
-        self.identifier = identifier or '"'
+        self.identifier = identifier or ('"', '"')
         self.identify = identify
         self.normalize = normalize
         self.quote = quote or "'"
@@ -398,7 +398,7 @@ class Generator:
         value = expression.name
         value = value.lower() if self.normalize else value
         if expression.args.get("quoted") or self.identify:
-            return f"{self.identifier}{value}{self.identifier}"
+            return f"{self.identifier[0]}{value}{self.identifier[1]}"
         return value
 
     def partition_sql(self, expression):

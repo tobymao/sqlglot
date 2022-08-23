@@ -2209,8 +2209,14 @@ TBLPROPERTIES (
             pretty=True,
         )
         self.validate(
+            "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
+            'SELECT CAST("a"."b" AS INTEGER) FROM foo',
+            read="sqlite",
+            write="sqlite",
+        )
+        self.validate(
             "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INTEGER) FROM foo",
+            'SELECT CAST("a"."b" AS INTEGER) FROM foo',
             read="sqlite",
             write="sqlite",
         )

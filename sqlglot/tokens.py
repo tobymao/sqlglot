@@ -550,7 +550,7 @@ class Tokenizer(metaclass=_Tokenizer):
     KEYWORD_TRIE = None  # autofilled
 
     __slots__ = (
-        "identifier",
+        "identifiers",
         "escape",
         "sql",
         "size",
@@ -566,17 +566,17 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def __init__(
         self,
-        identifier=None,
+        identifiers=None,
         escape=None,
     ):
         """
         Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
 
         Args
-            identifier (str): the identifier character
+            identifiers (dict): keys are the identifer start characters and values are the identifier end characters
             escape (str): the escape code character
         """
-        self.identifier = identifier or '"'
+        self.identifiers = identifiers or {'"': '"'}
         self.escape = escape or "'"
         self.reset()
 
@@ -606,6 +606,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 break
 
             white_space = self.WHITE_SPACE.get(self._char)
+            identifier_end = self.identifiers.get(self._char)
 
             if white_space:
                 if white_space == TokenType.BREAK:
@@ -613,8 +614,8 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._line += 1
             elif self._char.isdigit():
                 self._scan_number()
-            elif self._char == self.identifier:
-                self._scan_identifier()
+            elif identifier_end:
+                self._scan_identifier(identifier_end)
             else:
                 self._scan_keywords()
         return self.tokens
@@ -799,11 +800,11 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.STRING, text)
         return True
 
-    def _scan_identifier(self):
-        while self._peek != self.identifier:
+    def _scan_identifier(self, identifier_end):
+        while self._peek != identifier_end:
             if self._end:
                 raise RuntimeError(
-                    f"Missing {self.identifier} from {self._line}:{self._start}"
+                    f"Missing {identifier_end} from {self._line}:{self._start}"
                 )
             self._advance()
         self._advance()

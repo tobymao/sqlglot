@@ -19,7 +19,8 @@ class Generator:
             represents a python time format and the output the target time format
         time_trie (trie): a trie of the time_mapping keys
         pretty (bool): if set to True the returned string will be formatted. Default: False.
-        identifier (str): specifies which character to use to delimit identifiers. Default: ".
+        identifier_start (str): specifies which starting character to use to delimit identifiers. Default: ".
+        identifier_end (str): specifies which ending character to use to delimit identifiers. Default: ".
         identify (bool): if set to True all identifiers will be delimited by the corresponding
             character.
         normalize (bool): if set to True all identifiers will lower cased
@@ -86,7 +87,8 @@ class Generator:
         "time_trie",
         "pretty",
         "configured_pretty",
-        "identifier",
+        "identifier_start",
+        "identifier_end",
         "identify",
         "normalize",
         "quote",
@@ -108,7 +110,8 @@ class Generator:
         time_mapping=None,
         time_trie=None,
         pretty=None,
-        identifier=None,
+        identifier_start=None,
+        identifier_end=None,
         identify=False,
         normalize=False,
         quote=None,
@@ -130,7 +133,8 @@ class Generator:
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
         self.configured_pretty = self.pretty
-        self.identifier = identifier or '"'
+        self.identifier_start = identifier_start or '"'
+        self.identifier_end = identifier_end or '"'
         self.identify = identify
         self.normalize = normalize
         self.quote = quote or "'"
@@ -398,7 +402,7 @@ class Generator:
         value = expression.name
         value = value.lower() if self.normalize else value
         if expression.args.get("quoted") or self.identify:
-            return f"{self.identifier}{value}{self.identifier}"
+            return f"{self.identifier_start}{value}{self.identifier_end}"
         return value
 
     def partition_sql(self, expression):

@@ -2148,6 +2148,13 @@ TBLPROPERTIES (
             write="snowflake",
         )
 
+        self.validate(
+            "SELECT ARRAYAGG(DISTINCT a)",
+            "SELECT COLLECT_LIST(DISTINCT a)",
+            read="snowflake",
+            write="spark",
+        )
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT * FROM a INTERSECT ALL SELECT * FROM b",

@@ -11,7 +11,7 @@ from sqlglot.parser import Parser
 
 
 class MySQL(Dialect):
-    identifier = "`"
+    identifiers = ["`"]
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     time_mapping = {

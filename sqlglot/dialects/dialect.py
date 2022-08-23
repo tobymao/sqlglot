@@ -52,15 +52,26 @@ class _Dialect(type):
         klass.parser_class = getattr(klass, "Parser", Parser)
         klass.generator_class = getattr(klass, "Generator", Generator)
 
+        identifiers = dict(
+            (identifier[0], identifier[1])
+            if isinstance(identifier, tuple)
+            else (identifier, identifier)
+            for identifier in klass.identifiers or ['"']
+        )
+        klass.identifier_start, klass.identifier_end = list(identifiers.items())[0]
+
         klass.tokenizer = klass.tokenizer_class(
-            identifier=klass.identifier,
+            identifiers=identifiers,
             escape=klass.escape,
         )
+
         return klass
 
 
 class Dialect(metaclass=_Dialect):
-    identifier = None
+    identifiers = None
+    identifier_start = '"'
+    identifier_end = '"'
     escape = "'"
     index_offset = 0
     unnest_column_only = False
@@ -142,7 +153,8 @@ class Dialect(metaclass=_Dialect):
         return self.generator_class(
             **{
                 "quote": self.tokenizer_class.QUOTES[0],
-                "identifier": self.identifier,
+                "identifier_start": self.identifier_start,
+                "identifier_end": self.identifier_end,
                 "escape": self.escape,
                 "index_offset": self.index_offset,
                 "time_mapping": self.inverse_time_mapping,
@@ -223,7 +235,7 @@ def no_trycast_sql(self, expression):
 
 def struct_extract_sql(self, expression):
     this = self.sql(expression, "this")
-    struct_key = self.sql(expression, "expression").replace(self.quote, self.identifier)
+    struct_key = self.sql(exp.Identifier(this=expression.expression, quoted=True))
     return f"{this}.{struct_key}"
 
 

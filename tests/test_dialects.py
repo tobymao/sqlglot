@@ -7,6 +7,7 @@ from sqlglot import (
     ParseError,
     UnsupportedError,
     transpile,
+    parse_one,
 )
 
 
@@ -15,6 +16,34 @@ class TestDialects(unittest.TestCase):
 
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
+
+    def validate_all(self, sql, dialect=None, read=None, write=None):
+        """
+        Validate that:
+        1. Everything in `read` transpiles to `sql`
+        2. `sql` transpiles to everything in `write`
+
+        Args:
+            sql (str): Main SQL expression
+            dialect (str): dialect of `sql`
+            read (dict): Mapping of dialect -> SQL
+            write (dict): Mapping of dialect -> SQL
+        """
+        expression = parse_one(sql, read=dialect)
+
+        for read_dialect, read_sql in (read or {}).items():
+            with self.subTest(f"{read_dialect} -> {sql}"):
+                self.assertEqual(parse_one(read_sql, read_dialect).sql(), sql)
+
+        for write_dialect, write_sql in (write or {}).items():
+            with self.subTest(f"{sql} -> {write_dialect}"):
+                if write_sql is UnsupportedError:
+                    with self.assertRaises(UnsupportedError):
+                        expression.sql(
+                            write_dialect, unsupported_level=ErrorLevel.RAISE
+                        )
+                else:
+                    self.assertEqual(expression.sql(write_dialect), write_sql)
 
     def test_enum(self):
         for dialect in Dialects:
@@ -2358,4 +2387,69 @@ TBLPROPERTIES (
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
             read="spark",
             write="clickhouse",
+        )
+
+    def test_read_write_generic(self):
+        self.validate_all(
+            "DATE_ADD(x, 1, 'day')",
+            read={
+                "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
+            },
+            write={
+                "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "duckdb": "x + INTERVAL 1 day",
+                "hive": "DATE_ADD(x, 1)",
+                "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
+                "postgres": "x + INTERVAL '1' 'day'",
+                "presto": "DATE_ADD('day', 1, x)",
+                "spark": "DATE_ADD(x, 1)",
+                "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
+            },
+        )
+        self.validate_all(
+            "DATE_ADD(x, 1, 'week')",
+            write={
+                "mysql": "DATE_ADD(x, INTERVAL 1 WEEK)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'day')",
+            write={
+                "mysql": "DATE(x)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'week')",
+            write={
+                "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', WEEK(x, 1), ' 1'), '%Y %u %w')",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'month')",
+            write={
+                "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', MONTH(x), ' 1'), '%Y %c %e')",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'quarter')",
+            write={
+                "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', QUARTER(x) * 3 - 2, ' 1'), '%Y %c %e')",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'year')",
+            write={
+                "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'millenium')",
+            write={
+                "mysql": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
+            read={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
+            write={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
         )

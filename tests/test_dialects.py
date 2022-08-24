@@ -17,6 +17,34 @@ class TestDialects(unittest.TestCase):
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
+    def validate_all(self, sql, dialect=None, read=None, write=None):
+        """
+        Validate that:
+        1. Everything in `read` transpiles to `sql`
+        2. `sql` transpiles to everything in `write`
+
+        Args:
+            sql (str): Main SQL expression
+            dialect (str): dialect of `sql`
+            read (dict): Mapping of dialect -> SQL
+            write (dict): Mapping of dialect -> SQL
+        """
+        expression = parse_one(sql, read=dialect)
+
+        for read_dialect, read_sql in (read or {}).items():
+            with self.subTest(f"{read_dialect} -> {sql}"):
+                self.assertEqual(parse_one(read_sql, read_dialect).sql(), sql)
+
+        for write_dialect, write_sql in (write or {}).items():
+            with self.subTest(f"{sql} -> {write_dialect}"):
+                if write_sql is UnsupportedError:
+                    with self.assertRaises(UnsupportedError):
+                        expression.sql(
+                            write_dialect, unsupported_level=ErrorLevel.RAISE
+                        )
+                else:
+                    self.assertEqual(expression.sql(write_dialect), write_sql)
+
     def test_enum(self):
         for dialect in Dialects:
             self.assertIsNotNone(Dialect[dialect])
@@ -2361,9 +2389,13 @@ TBLPROPERTIES (
             write="clickhouse",
         )
 
-    def test_generate(self):
-        tests = {
-            "DATE_ADD(x, 1, 'day')": {
+    def test_read_write_generic(self):
+        self.validate_all(
+            "DATE_ADD(x, 1, 'day')",
+            read={
+                "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
+            },
+            write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
                 "duckdb": "x + INTERVAL 1 day",
                 "hive": "DATE_ADD(x, 1)",
@@ -2373,55 +2405,51 @@ TBLPROPERTIES (
                 "spark": "DATE_ADD(x, 1)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
-            "DATE_ADD(x, 1, 'week')": {
+        )
+        self.validate_all(
+            "DATE_ADD(x, 1, 'week')",
+            write={
                 "mysql": "DATE_ADD(x, INTERVAL 1 WEEK)",
             },
-            "DATE_TRUNC(x, 'day')": {
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'day')",
+            write={
                 "mysql": "DATE(x)",
             },
-            "DATE_TRUNC(x, 'week')": {
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'week')",
+            write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', WEEK(x, 1), ' 1'), '%Y %u %w')",
             },
-            "DATE_TRUNC(x, 'month')": {
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'month')",
+            write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', MONTH(x), ' 1'), '%Y %c %e')",
             },
-            "DATE_TRUNC(x, 'quarter')": {
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'quarter')",
+            write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', QUARTER(x) * 3 - 2, ' 1'), '%Y %c %e')",
             },
-            "DATE_TRUNC(x, 'year')": {
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'year')",
+            write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
             },
-            "DATE_TRUNC(x, 'millenium')": {
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, 'millenium')",
+            write={
                 "mysql": UnsupportedError,
             },
-            "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')": {
-                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
-            },
-        }
-
-        for read_sql, writes in tests.items():
-            expression = parse_one(read_sql)
-            for write_dialect, write_sql in writes.items():
-                with self.subTest(f"{read_sql} -> {write_dialect}"):
-                    if write_sql is UnsupportedError:
-                        with self.assertRaises(UnsupportedError):
-                            expression.sql(
-                                write_dialect, unsupported_level=ErrorLevel.RAISE
-                            )
-                    else:
-                        self.assertEqual(expression.sql(write_dialect), write_sql)
-
-    def test_parse(self):
-        tests = {
-            "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')": {
-                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%s')",
-            },
-            "DATE_ADD(x, 1, DAY)": {
-                "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
-            },
-        }
-
-        for write_sql, reads in tests.items():
-            for read_dialect, read_sql in reads.items():
-                with self.subTest(f"{write_sql} <- {read_dialect}"):
-                    self.assertEqual(parse_one(read_sql, read_dialect).sql(), write_sql)
+        )
+        self.validate_all(
+            "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
+            read={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
+            write={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
+        )

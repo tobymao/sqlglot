@@ -5,7 +5,6 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
-    date_add_interval,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
@@ -49,6 +48,18 @@ def _str_to_date_sql(self, expression):
     return f"STR_TO_DATE({self.sql(expression.this)}, {date_format})"
 
 
+def _date_add(expression_class):
+    def func(args):
+        interval = list_get(args, 1)
+        return expression_class(
+            this=list_get(args, 0),
+            expression=interval.this,
+            unit=exp.Literal.string(interval.text("unit").lower()),
+        )
+
+    return func
+
+
 def _date_add_sql(kind):
     def func(self, expression):
         this = self.sql(expression, "this")
@@ -79,8 +90,8 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **Parser.FUNCTIONS,
-            "DATE_ADD": date_add_interval(exp.DateAdd),
-            "DATE_SUB": date_add_interval(exp.DateSub),
+            "DATE_ADD": _date_add(exp.DateAdd),
+            "DATE_SUB": _date_add(exp.DateSub),
             "STR_TO_DATE": _str_to_date,
         }
 

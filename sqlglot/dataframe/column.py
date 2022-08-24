@@ -5,10 +5,14 @@ from sqlglot import expressions as exp
 
 
 class Column:
-    def __init__(self, item: t.Union[str, exp.Expression]):
-        if isinstance(item, str):
-            item = sqlglot.parse_one(item)
-        self.expression = item
+    def __init__(self, expression: t.Union[str, exp.Expression]):
+        if isinstance(expression, str):
+            expression = sqlglot.parse_one(expression)
+        self.expression = expression
+        if isinstance(self.expression, exp.Literal):
+            self.expression = self.alias(self.expression.args["this"]).expression
+        elif isinstance(self.expression, exp.Null):
+            self.expression = self.alias("NULL").expression
 
     def __hash__(self):
         return hash(self.expression)
@@ -53,15 +57,15 @@ class Column:
         return self.binary_op(exp.Div, other)
 
     def binary_op(self, clazz: t.Callable, other: "Column", **kwargs) -> "Column":
-        return Column(clazz(this=self.expression, expression=other.expression, **kwargs))
+        return Column(clazz(this=self.column_expression, expression=other.column_expression, **kwargs))
 
     @property
     def is_alias(self):
-        return isinstance(self, exp.Alias)
+        return isinstance(self.expression, exp.Alias)
 
     @property
     def is_column(self):
-        return isinstance(self, exp.Column)
+        return isinstance(self.expression, exp.Column)
 
     @property
     def column_expression(self):
@@ -69,50 +73,58 @@ class Column:
             return self.expression.args["this"]
         return self.expression
 
-    def copy(self):
+    def copy(self) -> "Column":
         return Column(self.expression.copy())
 
-    def set_table_name(self, table_name: str):
+    def set_table_name(self, table_name: str) -> "Column":
         self.expression.set("table", exp.Identifier(this=table_name))
-        return self
+        return Column(self.expression)
 
-    def sql(self, **kwargs):
+    def sql(self, **kwargs) -> "Column":
         return self.expression.sql(dialect="spark", **kwargs)
 
-    def alias(self, name: str):
-        self.expression = exp.Alias(alias=exp.Identifier(this=name), this=self.column_expression)
-        return Column(self.expression)
+    def alias(self, name: str) -> "Column":
+        new_expression = exp.Alias(alias=exp.Identifier(this=name, quoted=True), this=self.column_expression)
+        return Column(new_expression)
 
-    def asc(self):
-        self.expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=True)
-        return Column(self.expression)
+    def asc(self) -> "Column":
+        new_expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=True)
+        return Column(new_expression)
 
-    def desc(self):
-        self.expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=False)
-        return Column(self.expression)
+    def desc(self) -> "Column":
+        new_expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=False)
+        return Column(new_expression)
 
     asc_nulls_first = asc
 
-    def asc_nulls_last(self):
-        self.expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=False)
-        return Column(self.expression)
+    def asc_nulls_last(self) -> "Column":
+        new_expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=False)
+        return Column(new_expression)
 
-    def desc_nulls_first(self):
-        self.expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=True)
-        return Column(self.expression)
+    def desc_nulls_first(self) -> "Column":
+        new_expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=True)
+        return Column(new_expression)
 
     desc_null_last = desc
 
-    def when(self, condition: "Column", value: t.Any):
+    def when(self, condition: "Column", value: t.Any) -> "Column":
         from sqlglot.dataframe.functions import when
         column_with_if = when(condition, value)
         new_column = self.copy()
         new_column.expression.args["ifs"].extend(column_with_if.expression.args["ifs"])
         return new_column
 
-    def otherwise(self, value: t.Any):
+    def otherwise(self, value: t.Any) -> "Column":
         from sqlglot.dataframe.functions import lit
         true_value = value if isinstance(value, Column) else lit(value)
         new_column = self.copy()
-        new_column.expression.args["default"] = true_value.expression
+        new_column.expression.args["default"] = true_value.column_expression
         return new_column
+
+    def isNull(self) -> "Column":
+        new_expression = exp.Is(this=self.column_expression, expression=exp.Null())
+        return Column(new_expression)
+
+    def isNotNull(self) -> "Column":
+        new_expression = exp.Not(this=exp.Is(this=self.column_expression, expression=exp.Null()))
+        return Column(new_expression)

@@ -10,7 +10,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser
-from sqlglot.time import format_time
 
 
 def _date_trunc_sql(self, expression):
@@ -41,8 +40,8 @@ def _date_trunc_sql(self, expression):
 
 
 def _str_to_date(args):
-    date_format = format_time(list_get(args, 1).name, MySQL.time_mapping)
-    return exp.StrToDate(this=list_get(args, 0), format=exp.Literal.string(date_format))
+    date_format = MySQL.format_time(list_get(args, 1))
+    return exp.StrToDate(this=list_get(args, 0), format=date_format)
 
 
 def _str_to_date_sql(self, expression):

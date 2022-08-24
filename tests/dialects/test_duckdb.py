@@ -4,14 +4,25 @@ from sqlglot import ErrorLevel
 
 
 class TestDuckDB(Validator):
+    dialect = "duckdb"
+
     def test_time(self):
         self.validate_all(
-            "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
+            "EPOCH(x)",
             read={
-                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
+                "duckdb": "EPOCH(x)",
             },
             write={
-                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
+                "duckdb": "EPOCH(x)",
+            },
+        )
+        self.validate_all(
+            "EPOCH(x)",
+            read={
+                "duckdb": "EPOCH(x)",
+            },
+            write={
+                "duckdb": "EPOCH(x)",
             },
         )
 

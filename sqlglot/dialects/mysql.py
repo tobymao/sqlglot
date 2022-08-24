@@ -109,4 +109,5 @@ class MySQL(Dialect):
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
             exp.StrToDate: _str_to_date_sql,
+            exp.StrToTime: _str_to_date_sql,
         }

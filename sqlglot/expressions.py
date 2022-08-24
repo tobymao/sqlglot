@@ -2292,7 +2292,7 @@ class VarianceSamp(AggFunc):
 
 
 class Week(Func):
-    pass
+    arg_types = {"this": True, "mode": False}
 
 
 class Year(Func):

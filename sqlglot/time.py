@@ -7,6 +7,10 @@ def format_time(string, mapping, trie=None):
     """
     Converts a time string given a mapping.
 
+    Examples:
+        >>> format_time("%Y", {"%Y": "YYYY"})
+        'YYYY'
+
     mapping: Dictionary of time format to target time format
     trie: Optional trie, can be passed in for performance
     """

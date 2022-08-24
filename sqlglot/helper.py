@@ -125,7 +125,3 @@ def csv_reader(table):
         yield csv_.reader(file, delimiter=delimiter)
     finally:
         file.close()
-
-
-def invert(dictionary):
-    return {v: k for k, v in dictionary.items()}

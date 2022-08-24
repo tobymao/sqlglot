@@ -8,29 +8,29 @@ from sqlglot.dialects.dialect import (
     date_add_interval,
 )
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get, invert
+from sqlglot.helper import list_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
 
 
 def _date_trunc_sql(self, expression):
-    unit = expression.args.get("unit").name
+    unit = expression.text("unit").lower()
 
     this = self.sql(expression.this)
 
-    if unit.lower() == "day":
+    if unit == "day":
         return f"DATE({this})"
 
-    if unit.lower() == "week":
+    if unit == "week":
         concat = f"CONCAT(YEAR({this}), ' ', WEEK({this}, 1), ' 1')"
         date_format = "%Y %u %w"
-    elif unit.lower() == "month":
+    elif unit == "month":
         concat = f"CONCAT(YEAR({this}), ' ', MONTH({this}), ' 1')"
         date_format = "%Y %c %e"
-    elif unit.lower() == "quarter":
+    elif unit == "quarter":
         concat = f"CONCAT(YEAR({this}), ' ', QUARTER({this}) * 3 - 2, ' 1')"
         date_format = "%Y %c %e"
-    elif unit.lower() == "year":
+    elif unit == "year":
         concat = f"CONCAT(YEAR({this}), ' 1 1')"
         date_format = "%Y %c %e"
     else:
@@ -46,10 +46,8 @@ def _str_to_date(args):
 
 
 def _str_to_date_sql(self, expression):
-    date_format = format_time(
-        expression.args.get("format").name, invert(MySQL.time_mapping)
-    )
-    return f"STR_TO_DATE({self.sql(expression.this)}, '{date_format}')"
+    date_format = self.format_time(expression)
+    return f"STR_TO_DATE({self.sql(expression.this)}, {date_format})"
 
 
 def _date_add_sql(kind):

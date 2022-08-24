@@ -943,3 +943,81 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
+    def test_drop_na_default(self):
+        df = (
+            self.df_spark_employee
+            .select(F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .dropna()
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .dropna()
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_dropna_how(self):
+        df = (
+            self.df_spark_employee
+            .select(F.lit(None), F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .dropna(how="all")
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.lit(None), SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .dropna(how="all")
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_dropna_thresh(self):
+        df = (
+            self.df_spark_employee
+            .select(F.lit(None), F.lit(1), F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .dropna(how="any", thresh=2)
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.lit(None), SF.lit(1), SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .dropna(how="any", thresh=2)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_dropna_subset(self):
+        df = (
+            self.df_spark_employee
+            .select(F.lit(None), F.lit(1), F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .dropna(thresh=1, subset="the_age")
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.lit(None), SF.lit(1), SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .dropna(thresh=1, subset="the_age")
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_dropna_na_function(self):
+        df = (
+            self.df_spark_employee
+            .select(F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .na
+            .drop()
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .na
+            .drop()
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+

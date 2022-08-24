@@ -3,11 +3,14 @@ import functools
 import typing as t
 import uuid
 
+import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.column import Column
+from sqlglot.dataframe import functions as F
 from sqlglot.dataframe.util import ensure_strings, convert_join_type, ensure_columns
 from sqlglot.helper import ensure_list, flatten
 from sqlglot.dataframe.operations import Operation, operation
+from sqlglot.dataframe.dataframe_na_functions import DataFrameNaFunctions
 
 from pyspark.sql import DataFrame
 
@@ -96,13 +99,13 @@ class DataFrame:
         new_expression = exp.Select()
         new_expression = self._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
         sel_columns = self._get_outer_select_columns(cte_expression)
-        new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
+        new_expression = new_expression.from_(cte_name).select(*[x.expression.alias_or_name for x in sel_columns])
         self.joins_infos = []
         return self.copy(expression=new_expression, name=name if name is not None else self.name)
 
     @classmethod
-    def _get_outer_select_columns(cls, expression):
-        return [x for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
+    def _get_outer_select_columns(cls, expression) -> t.List[Column]:
+        return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
     def _replace_alias_references(self, potential_references: t.List[Column]) -> t.List[Column]:
         potential_references = ensure_list(potential_references)
@@ -233,7 +236,41 @@ class DataFrame:
         return self._set_operation(exp.Except, other, False)
 
     @operation(Operation.SELECT)
-    def distinct(self):
+    def distinct(self) -> "DataFrame":
         expression = self.expression.copy()
         expression.set("distinct", exp.Distinct())
         return self.copy(expression=expression)
+
+    @property
+    def na(self) -> "DataFrameNaFunctions":
+        return DataFrameNaFunctions(self)
+
+    @operation(Operation.FROM)
+    def dropna(self, how: str = "any", thresh: t.Optional[int] = None,
+               subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None) -> "DataFrame":
+        if self.expression.ctes[-1].find(exp.Star) is not None:
+            raise RuntimeError("Cannot use `dropna` when a * expression is used")
+        minimum_non_null = thresh
+        new_df = self.copy()
+        all_columns = self._get_outer_select_columns(new_df.expression)
+        if subset:
+            null_check_columns = self._ensure_list_of_columns(subset)
+        else:
+            null_check_columns = all_columns
+        if thresh is None:
+            minimum_num_nulls = 1 if how == "any" else len(null_check_columns)
+        else:
+            minimum_num_nulls = len(null_check_columns) - minimum_non_null + 1
+        if minimum_num_nulls > len(null_check_columns):
+            raise RuntimeError(f"The minimum num nulls for dropna must be less than or equal to the number of columns. "
+                               f"Minimum num nulls: {minimum_num_nulls}, Num Columns: {len(null_check_columns)}")
+        if_null_checks = [
+            F.when(column.isNull(), F.lit(1)).otherwise(F.lit(0))
+            for column in null_check_columns
+        ]
+        nulls_added_together = functools.reduce(lambda x, y: x + y, if_null_checks)
+        num_nulls = nulls_added_together.alias("num_nulls")
+        new_df = new_df.select(num_nulls, append=True)
+        filtered_df = new_df.where(F.col("num_nulls") < F.lit(minimum_num_nulls))
+        final_df = filtered_df.select(*all_columns)
+        return final_df

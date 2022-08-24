@@ -9,7 +9,9 @@ def col(column_name: str) -> "Column":
     return Column(column_name)
 
 
-def lit(value: t.Any) -> "Column":
+def lit(value: t.Optional[t.Any] = None) -> "Column":
+    if value is None:
+        return Column(exp.Null())
     return Column(exp.Literal(this=str(value), is_string=isinstance(value, str)))
 
 
@@ -34,7 +36,7 @@ def min(col: "Column") -> "Column":
 
 def when(condition: "Column", value: t.Any) -> "Column":
     true_value = value if isinstance(value, Column) else lit(value)
-    return Column(exp.Case(ifs=[exp.If(this=condition.expression, true=true_value.expression)]))
+    return Column(exp.Case(ifs=[exp.If(this=condition.column_expression, true=true_value.column_expression)]))
 
 
 def asc(col: "Column") -> "Column":

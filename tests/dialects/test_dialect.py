@@ -12,10 +12,12 @@ from sqlglot import (
 
 
 class Validator(unittest.TestCase):
+    dialect = None
+
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
-    def validate_all(self, sql, dialect=None, read=None, write=None):
+    def validate_all(self, sql, read=None, write=None):
         """
         Validate that:
         1. Everything in `read` transpiles to `sql`
@@ -27,11 +29,13 @@ class Validator(unittest.TestCase):
             read (dict): Mapping of dialect -> SQL
             write (dict): Mapping of dialect -> SQL
         """
-        expression = parse_one(sql, read=dialect)
+        expression = parse_one(sql, read=self.dialect)
 
         for read_dialect, read_sql in (read or {}).items():
             with self.subTest(f"{read_dialect} -> {sql}"):
-                self.assertEqual(parse_one(read_sql, read_dialect).sql(), sql)
+                self.assertEqual(
+                    parse_one(read_sql, read_dialect).sql(self.dialect), sql
+                )
 
         for write_dialect, write_sql in (write or {}).items():
             with self.subTest(f"{sql} -> {write_dialect}"):
@@ -2093,6 +2097,17 @@ TBLPROPERTIES (
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
             read="spark",
             write="clickhouse",
+        )
+
+    def test_time(self):
+        self.validate_all(
+            "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
+            read={
+                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
+            },
+            write={
+                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
+            },
         )
 
     def test_read_write_generic(self):

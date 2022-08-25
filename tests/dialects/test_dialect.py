@@ -2090,12 +2090,13 @@ TBLPROPERTIES (
 
     def test_time(self):
         self.validate_all(
-            "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
+            "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",
             read={
-                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
             },
             write={
-                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
             },
         )
         self.validate_all(
@@ -2226,32 +2227,6 @@ TBLPROPERTIES (
                 "presto": "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
             },
         )
-
-        for unit in ("DAY", "MONTH", "YEAR"):
-            self.validate_all(
-                f"{unit}(x)",
-                read={
-                    dialect: f"{unit}(x)"
-                    for dialect in ("bigquery", "duckdb", "presto")
-                },
-                write={
-                    dialect: f"{unit}(x)"
-                    for dialect in ("bigquery", "duckdb", "presto", "hive", "spark")
-                },
-            )
-
-    def test_array(self):
-        self.validate_all(
-            "ARRAY(0, 1, 2)",
-            write={
-                "bigquery": "[0, 1, 2]",
-                "duckdb": "LIST_VALUE(0, 1, 2)",
-                "presto": "ARRAY[0, 1, 2]",
-                "spark": "ARRAY(0, 1, 2)",
-            },
-        )
-
-    def test_read_write_generic(self):
         self.validate_all(
             "DATE_ADD(x, 1, 'day')",
             read={
@@ -2315,14 +2290,28 @@ TBLPROPERTIES (
             read={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
             write={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
         )
+
+        for unit in ("DAY", "MONTH", "YEAR"):
+            self.validate_all(
+                f"{unit}(x)",
+                read={
+                    dialect: f"{unit}(x)"
+                    for dialect in ("bigquery", "duckdb", "presto")
+                },
+                write={
+                    dialect: f"{unit}(x)"
+                    for dialect in ("bigquery", "duckdb", "presto", "hive", "spark")
+                },
+            )
+
+    def test_array(self):
         self.validate_all(
-            "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",
-            read={
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
-            },
+            "ARRAY(0, 1, 2)",
             write={
-                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
+                "bigquery": "[0, 1, 2]",
+                "duckdb": "LIST_VALUE(0, 1, 2)",
+                "presto": "ARRAY[0, 1, 2]",
+                "spark": "ARRAY(0, 1, 2)",
             },
         )
 

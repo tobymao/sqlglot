@@ -5,6 +5,7 @@ disable=
     attribute-defined-outside-init,
     consider-using-ternary,
     cyclic-import,
+    duplicate-code,
     import-outside-toplevel,
     invalid-name,
     missing-class-docstring,

@@ -274,3 +274,62 @@ class DataFrame:
         filtered_df = new_df.where(F.col("num_nulls") < F.lit(minimum_num_nulls))
         final_df = filtered_df.select(*all_columns)
         return final_df
+
+    @operation(Operation.FROM)
+    def fillna(self,
+               value: t.Union[int, bool, float, str, t.Dict[str, t.Any]],
+               subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None) -> "DataFrame":
+        """
+        Functionality Difference: If you provide a value to replace a null and that type conflicts
+        with the type of the column then PySpark will just ignore your replacement.
+        This will try to cast them to be the same in some cases. So they won't always match.
+        Best to not mix types so make sure replacement is the same type as the column
+
+        Possibility for improvement: Use `typeof` function to get the type of the column
+        and check if it matches the type of the value provided. If not then make it null.
+        """
+        from sqlglot.dataframe.functions import lit
+        values = None
+        columns = None
+        new_df = self.copy()
+        all_columns = self._get_outer_select_columns(new_df.expression)
+        all_column_mapping = {
+            column.expression.alias_or_name: column
+            for column in all_columns
+        }
+        if isinstance(value, dict):
+            values = value.values()
+            columns = self._ensure_list_of_columns(list(value.keys()))
+        if not columns:
+            columns = self._ensure_list_of_columns(subset) if subset else all_columns
+        if not values:
+            values = [value] * len(columns)
+        values = [lit(value) for value in values]
+
+        null_replacement_mapping = {
+            column.expression.alias_or_name: (
+                F.when(column.isNull(), value)
+                .otherwise(column)
+                .alias(column.expression.alias_or_name)
+            )
+            for column, value in zip(columns, values)
+        }
+        null_replacement_mapping = {**all_column_mapping, **null_replacement_mapping}
+        null_replacement_columns = [
+            null_replacement_mapping[column.expression.alias_or_name]
+            for column in all_columns
+        ]
+        new_df = new_df.select(*null_replacement_columns)
+        return new_df
+
+
+
+
+
+
+
+
+
+
+
+

@@ -12,3 +12,7 @@ class DataFrameNaFunctions:
              subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None) -> "DataFrame":
         return self.df.dropna(how=how, thresh=thresh, subset=subset)
 
+    def fill(self,
+             value: t.Union[int, bool, float, str, t.Dict[str, t.Any]],
+             subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None) -> "DataFrame":
+        return self.df.fillna(value=value, subset=subset)

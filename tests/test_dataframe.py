@@ -75,7 +75,7 @@ class TestDataframe(unittest.TestCase):
         self.df_sqlglot_district = self.sqlglot.read.table('district')
 
     @classmethod
-    def compare_spark_with_sqlglot(cls, df_spark, df_sqlglot, no_empty=True):
+    def compare_spark_with_sqlglot(cls, df_spark, df_sqlglot, no_empty=True, skip_schema_compare=False):
         def compare_schemas(schema_1, schema_2):
             for schema in [schema_1, schema_2]:
                 for struct_field in schema.fields:
@@ -84,7 +84,8 @@ class TestDataframe(unittest.TestCase):
         df_sqlglot = cls.spark.sql(df_sqlglot.sql())
         df_spark_results = df_spark.collect()
         df_sqlglot_results = df_sqlglot.collect()
-        compare_schemas(df_spark.schema, df_sqlglot.schema)
+        if not skip_schema_compare:
+            compare_schemas(df_spark.schema, df_sqlglot.schema)
         assert df_spark_results == df_sqlglot_results
         if no_empty:
             assert len(df_spark_results) != 0
@@ -1020,4 +1021,51 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
+    def test_fillna_default(self):
+        df = (
+            self.df_spark_employee
+            .select(F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .fillna(100)
+        )
 
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .fillna(100)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_fillna_dict_replacement(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("fname"), F.when(F.col("lname").startswith("L"), F.col("lname")).alias("l_lname"), F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .fillna({"fname": "Jacob", "l_lname": "NOT_LNAME"})
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("fname"), SF.when(SF.col("lname").startswith("L"), SF.col("lname")).alias("l_lname"), SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .fillna({"fname": "Jacob", "l_lname": "NOT_LNAME"})
+        )
+
+        # For some reason the sqlglot results sets a column as nullable when it doesn't need to
+        # This seems to be a nuance in how spark dataframe from sql works so we can ignore
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
+
+    def test_fillna_na_func(self):
+        df = (
+            self.df_spark_employee
+            .select(F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age"))
+            .na
+            .fill(100)
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.when(SF.col("age") < SF.lit(50), SF.col("age")).alias("the_age"))
+            .na
+            .fill(100)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)

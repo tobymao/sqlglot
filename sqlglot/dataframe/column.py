@@ -68,10 +68,19 @@ class Column:
         return isinstance(self.expression, exp.Column)
 
     @property
-    def column_expression(self):
+    def column_expression(self) -> exp.Expression:
         if self.is_alias:
             return self.expression.args["this"]
         return self.expression
+
+    @classmethod
+    def ensure_literal(cls, value) -> "Column":
+        from sqlglot.dataframe.functions import lit
+        if isinstance(value, cls):
+            value = value.expression
+        if not isinstance(value, exp.Literal):
+            return lit(value)
+        return Column(value)
 
     def copy(self) -> "Column":
         return Column(self.expression.copy())
@@ -127,4 +136,17 @@ class Column:
 
     def isNotNull(self) -> "Column":
         new_expression = exp.Not(this=exp.Is(this=self.column_expression, expression=exp.Null()))
+        return Column(new_expression)
+
+    def cast(self, dataType: str):
+        """
+        Functionality Difference: PySpark cast accepts a datatype instance of the datatype class
+        Sqlglot doesn't currently replicate this class so it only accepts a string
+        """
+        new_expression = exp.Cast(this=self.column_expression, to=dataType)
+        return Column(new_expression)
+
+    def startswith(self, value: t.Union[str, "Column"]) -> "Column":
+        value = self.ensure_literal(value)
+        new_expression = exp.Anonymous(this="startswith", expressions=[self.column_expression, value.column_expression])
         return Column(new_expression)

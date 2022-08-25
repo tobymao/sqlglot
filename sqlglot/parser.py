@@ -228,6 +228,7 @@ class Parser:
         TokenType.EXTRACT,
         TokenType.FILTER,
         TokenType.FIRST,
+        TokenType.FORMAT,
         TokenType.ISNULL,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,

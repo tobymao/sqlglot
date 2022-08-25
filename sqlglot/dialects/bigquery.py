@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, no_ilike_sql
 from sqlglot.helper import list_get
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
@@ -74,6 +74,7 @@ class BigQuery(Dialect):
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
+            exp.ILike: no_ilike_sql,
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),

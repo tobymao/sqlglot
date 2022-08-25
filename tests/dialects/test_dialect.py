@@ -17,6 +17,9 @@ class Validator(unittest.TestCase):
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
+    def validate_identity(self, sql):
+        self.assertEqual(transpile(sql, read=self.dialect, write=self.dialect)[0], sql)
+
     def validate_all(self, sql, read=None, write=None):
         """
         Validate that:
@@ -57,28 +60,6 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect.get(dialect))
             self.assertIsNotNone(Dialect.get_or_raise(dialect))
             self.assertIsNotNone(Dialect[dialect.value])
-
-    def test_mysql(self):
-        self.validate(
-            "SELECT CAST(`a`.`b` AS INT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT) FROM foo",
-            read="mysql",
-            write="mysql",
-        )
-
-        self.validate(
-            "x ILIKE '%y'",
-            "LOWER(x) LIKE '%y'",
-            read="postgres",
-            write="mysql",
-        )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a ORDER BY col_a NULLS LAST",
-                write="mysql",
-                unsupported_level=ErrorLevel.RAISE,
-            )
 
     def test_starrocks(self):
         self.validate(
@@ -2101,17 +2082,6 @@ TBLPROPERTIES (
 
     def test_time(self):
         self.validate_all(
-            "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
-            read={
-                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
-            },
-            write={
-                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
-            },
-        )
-
-    def test_read_write_generic(self):
-        self.validate_all(
             "DATE_ADD(x, 1, 'day')",
             read={
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -2173,4 +2143,44 @@ TBLPROPERTIES (
             "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
             read={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
             write={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
+        )
+        self.validate_all(
+            "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",
+            read={
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
+            },
+            write={
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
+            },
+        )
+
+    def test_operators(self):
+        self.validate_all(
+            "x ILIKE '%y'",
+            read={
+                "clickhouse": "x ILIKE '%y'",
+                "duckdb": "x ILIKE '%y'",
+                "postgres": "x ILIKE '%y'",
+                "snowflake": "x ILIKE '%y'",
+            },
+            write={
+                "bigquery": "LOWER(x) LIKE '%y'",
+                "clickhouse": "x ILIKE '%y'",
+                "duckdb": "x ILIKE '%y'",
+                "hive": "LOWER(x) LIKE '%y'",
+                "mysql": "LOWER(x) LIKE '%y'",
+                "oracle": "LOWER(x) LIKE '%y'",
+                "postgres": "x ILIKE '%y'",
+                "presto": "LOWER(x) LIKE '%y'",
+                "snowflake": "x ILIKE '%y'",
+                "spark": "LOWER(x) LIKE '%y'",
+                "sqlite": "LOWER(x) LIKE '%y'",
+                "starrocks": "LOWER(x) LIKE '%y'",
+                "trino": "LOWER(x) LIKE '%y'",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a ORDER BY col_a NULLS LAST",
+            write={"mysql": UnsupportedError},
         )

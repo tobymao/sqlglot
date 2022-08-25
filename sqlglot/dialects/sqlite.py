@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
+    no_ilike_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType
@@ -42,6 +43,7 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: arrow_json_extract_sql,

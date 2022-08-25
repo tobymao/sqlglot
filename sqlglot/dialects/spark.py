@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.dialect import rename_func, no_ilike_sql
 from sqlglot.dialects.hive import Hive, HiveMap
 from sqlglot.helper import list_get
 
@@ -91,6 +91,7 @@ class Spark(Hive):
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
+            exp.ILike: no_ilike_sql,
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,

@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, no_ilike_sql
 from sqlglot import transforms
 from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType
@@ -19,6 +19,7 @@ class Oracle(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             **transforms.UNALIAS_GROUP,
+            exp.ILike: no_ilike_sql,
         }
 
     class Tokenizer(Tokenizer):

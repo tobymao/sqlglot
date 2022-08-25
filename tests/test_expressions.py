@@ -329,7 +329,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("STDDEV_POP(a)"), exp.StddevPop)
         self.assertIsInstance(parse_one("STDDEV_SAMP(a)"), exp.StddevSamp)
         self.assertIsInstance(parse_one("TIME_TO_STR(a, 'format')"), exp.TimeToStr)
-        self.assertIsInstance(parse_one("TIME_TO_TIME_STR(a)"), exp.TimeToTimeStr)
+        self.assertIsInstance(parse_one("TIME_TO_TIME_STR(a)"), exp.Cast)
         self.assertIsInstance(parse_one("TIME_TO_UNIX(a)"), exp.TimeToUnix)
         self.assertIsInstance(parse_one("TIME_STR_TO_DATE(a)"), exp.TimeStrToDate)
         self.assertIsInstance(parse_one("TIME_STR_TO_TIME(a)"), exp.TimeStrToTime)

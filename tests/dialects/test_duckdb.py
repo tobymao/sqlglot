@@ -1,7 +1,5 @@
 from tests.dialects.test_dialect import Validator
 
-from sqlglot import ErrorLevel
-
 
 class TestDuckDB(Validator):
     dialect = "duckdb"
@@ -10,308 +8,188 @@ class TestDuckDB(Validator):
         self.validate_all(
             "EPOCH(x)",
             read={
-                "duckdb": "EPOCH(x)",
+                "presto": "TO_UNIXTIME(x)",
             },
             write={
+                "bigquery": "TIME_TO_UNIX(x)",
                 "duckdb": "EPOCH(x)",
+                "presto": "TO_UNIXTIME(x)",
+                "spark": "UNIX_TIMESTAMP(x)",
             },
         )
         self.validate_all(
-            "EPOCH(x)",
-            read={
-                "duckdb": "EPOCH(x)",
-            },
+            "EPOCH_MS(x)",
             write={
-                "duckdb": "EPOCH(x)",
+                "bigquery": "UNIX_TO_TIME(x / 1000)",
+                "duckdb": "TO_TIMESTAMP(CAST(x / 1000 AS BIGINT))",
+                "presto": "FROM_UNIXTIME(x / 1000)",
+                "spark": "FROM_UNIXTIME(x / 1000)",
+            },
+        )
+        self.validate_all(
+            "STRFTIME(x, '%y-%-m-%S')",
+            write={
+                "bigquery": "TIME_TO_STR(x, '%y-%-m-%S')",
+                "duckdb": "STRFTIME(x, '%y-%-m-%S')",
+                "presto": "DATE_FORMAT(x, '%y-%c-%S')",
+                "spark": "DATE_FORMAT(x, 'yy-M-ss')",
+            },
+        )
+        self.validate_all(
+            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
+            write={
+                "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
+                "presto": "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
+                "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
+            },
+        )
+        self.validate_all(
+            "STRPTIME(x, '%y-%-m')",
+            write={
+                "bigquery": "STR_TO_TIME(x, '%y-%-m')",
+                "duckdb": "STRPTIME(x, '%y-%-m')",
+                "presto": "DATE_PARSE(x, '%y-%c')",
+                "spark": "TO_TIMESTAMP(x, 'yy-M')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP(x)",
+            write={
+                "duckdb": "CAST(x AS TIMESTAMP)",
+                "presto": "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
+                "hive": "CAST(x AS TIMESTAMP)",
             },
         )
 
     def test_duckdb(self):
-        self.validate("EPOCH(x)", "EPOCH(x)", read="duckdb")
-        self.validate("EPOCH(x)", "TO_UNIXTIME(x)", read="duckdb", write="presto")
-        self.validate(
-            "EPOCH_MS(x)", "FROM_UNIXTIME(x / 1000)", read="duckdb", write="presto"
+        self.validate_all(
+            "LIST_VALUE(0, 1, 2)",
+            write={
+                "bigquery": "[0, 1, 2]",
+                "duckdb": "LIST_VALUE(0, 1, 2)",
+                "presto": "ARRAY[0, 1, 2]",
+                "spark": "ARRAY(0, 1, 2)",
+            },
         )
-        self.validate(
-            "STRFTIME(x, '%y-%-m-%S')",
-            "DATE_FORMAT(x, '%y-%c-%S')",
-            read="duckdb",
-            write="presto",
+        self.validate_all(
+            "REGEXP_MATCHES(x, y)",
+            write={
+                "duckdb": "REGEXP_MATCHES(x, y)",
+                "presto": "REGEXP_LIKE(x, y)",
+                "hive": "x RLIKE y",
+                "spark": "x RLIKE y",
+            },
         )
-        self.validate(
-            "STRPTIME(x, '%y-%-m')",
-            "DATE_PARSE(x, '%y-%c')",
-            read="duckdb",
-            write="presto",
+        self.validate_all(
+            "STR_SPLIT(x, 'a')",
+            write={
+                "duckdb": "STR_SPLIT(x, 'a')",
+                "presto": "SPLIT(x, 'a')",
+                "hive": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
+                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
+            },
         )
-        self.validate(
-            "LIST_VALUE(0, 1, 2)", "ARRAY[0, 1, 2]", read="duckdb", write="presto"
+        self.validate_all(
+            "STRING_TO_ARRAY(x, 'a')",
+            write={
+                "duckdb": "STR_SPLIT(x, 'a')",
+                "presto": "SPLIT(x, 'a')",
+                "hive": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
+                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
+            },
         )
-        self.validate("Array(1, 2)", "LIST_VALUE(1, 2)", write="duckdb")
-
-        self.validate("REGEXP_MATCHES(x, y)", "REGEXP_MATCHES(x, y)", read="duckdb")
-        self.validate("REGEXP_MATCHES(x, y)", "x RLIKE y", read="duckdb", write="hive")
-        self.validate(
-            "REGEXP_MATCHES('abc', 'abc')",
-            "REGEXP_LIKE('abc', 'abc')",
-            read="duckdb",
-            write="presto",
-        )
-        self.validate(
-            "REGEXP_MATCHES('abc', '(b|c).*')",
-            "REGEXP_LIKE('abc', '(b|c).*')",
-            read="duckdb",
-            write="presto",
-        )
-        self.validate(
-            "REGEXP_MATCHES(x, 'abc')",
-            "REGEXP_LIKE(x, 'abc')",
-            read="duckdb",
-            write="presto",
-        )
-        self.validate(
-            "STR_SPLIT(x, 'a')", "SPLIT(x, 'a')", read="duckdb", write="presto"
-        )
-        self.validate(
-            "STRING_SPLIT(x, 'a')", "SPLIT(x, 'a')", read="duckdb", write="presto"
-        )
-        self.validate(
-            "STRING_TO_ARRAY(x, 'a')", "SPLIT(x, 'a')", read="duckdb", write="presto"
-        )
-        self.validate(
+        self.validate_all(
             "STR_SPLIT_REGEX(x, 'a')",
-            "REGEXP_SPLIT(x, 'a')",
-            read="duckdb",
-            write="presto",
+            write={
+                "duckdb": "STR_SPLIT_REGEX(x, 'a')",
+                "presto": "REGEXP_SPLIT(x, 'a')",
+                "hive": "SPLIT(x, 'a')",
+                "spark": "SPLIT(x, 'a')",
+            },
         )
-        self.validate(
-            "STRING_SPLIT_REGEX(x, 'a')",
-            "REGEXP_SPLIT(x, 'a')",
-            read="duckdb",
-            write="presto",
+        self.validate_all(
+            "STRUCT_EXTRACT(x, 'abc')",
+            write={
+                "duckdb": "STRUCT_EXTRACT(x, 'abc')",
+                "presto": 'x."abc"',
+                "hive": "x.`abc`",
+                "spark": "x.`abc`",
+            },
         )
 
-        self.validate(
-            "STRUCT_EXTRACT(x, 'abc')", "STRUCT_EXTRACT(x, 'abc')", read="duckdb"
-        )
-
-        self.validate(
+        self.validate_all(
             "QUANTILE(x, 0.5)",
-            "APPROX_PERCENTILE(x, 0.5)",
-            read="duckdb",
-            write="presto",
-            unsupported_level=ErrorLevel.IGNORE,
-        )
-        self.validate(
-            "QUANTILE(x, 0.5)", "PERCENTILE(x, 0.5)", read="duckdb", write="spark"
-        )
-        self.validate(
-            "PERCENTILE(x, 0.5)", "QUANTILE(x, 0.5)", read="hive", write="duckdb"
+            write={
+                "duckdb": "QUANTILE(x, 0.5)",
+                "presto": "APPROX_PERCENTILE(x, 0.5)",
+                "hive": "PERCENTILE(x, 0.5)",
+                "spark": "PERCENTILE(x, 0.5)",
+            },
         )
 
-        self.validate("MONTH(x)", "MONTH(x)", write="duckdb", identity=False)
-        self.validate("YEAR(x)", "YEAR(x)", write="duckdb", identity=False)
-        self.validate("DAY(x)", "DAY(x)", write="duckdb", identity=False)
-
-        self.validate(
-            "DATEDIFF(a, b)",
-            "DATE_DIFF('day', CAST(b AS DATE), CAST(a AS DATE))",
-            read="hive",
-            write="duckdb",
-        )
-        self.validate(
-            "STR_TO_UNIX('2020-01-01', '%Y-%M-%d')",
-            "EPOCH(STRPTIME('2020-01-01', '%Y-%M-%d'))",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "TIME_STR_TO_DATE('2020-01-01')",
-            "CAST('2020-01-01' AS DATE)",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "TIME_STR_TO_TIME('2020-01-01')",
-            "CAST('2020-01-01' AS TIMESTAMP)",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "TIME_STR_TO_UNIX('2020-01-01')",
-            "EPOCH(CAST('2020-01-01' AS TIMESTAMP))",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "TIME_TO_STR(x, '%Y-%m-%d')",
-            "STRFTIME(x, '%Y-%m-%d')",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "TIME_TO_TIME_STR(x)",
-            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "TIME_TO_UNIX(x)",
-            "EPOCH(x)",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "TS_OR_DS_TO_DATE_STR(x)",
-            "SUBSTRING(CAST(x AS TEXT), 1, 10)",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "UNIX_TO_STR(x, y)",
-            "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), y)",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "UNIX_TO_TIME(x)",
-            "TO_TIMESTAMP(CAST(x AS BIGINT))",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "UNIX_TO_TIME_STR(x)",
-            "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), '%Y-%m-%d %H:%M:%S')",
-            identity=False,
-            write="duckdb",
-        )
-        self.validate(
-            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
-            "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
-            read="duckdb",
-            write="hive",
-        )
-        self.validate(
-            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
-            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
-            read="duckdb",
-            write="presto",
-        )
-        self.validate(
-            "TO_TIMESTAMP(x)",
-            "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
-            read="duckdb",
-            write="presto",
-        )
-        self.validate(
-            "TS_OR_DS_TO_DATE(x)",
+        self.validate_all(
             "CAST(x AS DATE)",
-            write="duckdb",
-            identity=False,
+            write={
+                "duckdb": "CAST(x AS DATE)",
+                "": "CAST(x AS DATE)",
+            },
         )
-        self.validate(
-            "CAST(x AS DATE)",
-            "CAST(x AS DATE)",
-            read="duckdb",
-            identity=False,
-        )
-
-        self.validate(
+        self.validate_all(
             "UNNEST(x)",
-            "EXPLODE(x)",
-            read="duckdb",
-            write="spark",
-        )
-        self.validate(
-            "EXPLODE(x)",
-            "UNNEST(x)",
-            read="spark",
-            write="duckdb",
+            read={
+                "spark": "EXPLODE(x)",
+            },
+            write={
+                "duckdb": "UNNEST(x)",
+                "spark": "EXPLODE(x)",
+            },
         )
 
-        self.validate("1d", "1 AS d", read="duckdb")
-        self.validate("1d", "CAST(1 AS DOUBLE)", read="spark", write="duckdb")
-        self.validate(
-            "POW(2S, 3)", "POW(CAST(2 AS SMALLINT), 3)", read="spark", write="duckdb"
+        self.validate_all(
+            "1d",
+            write={
+                "duckdb": "1 AS d",
+                "spark": "1 AS d",
+            },
         )
-
-        self.validate(
-            "DATE_TO_DATE_STR(x)",
-            "STRFTIME(x, '%Y-%m-%d')",
-            read="duckdb",
-            write="duckdb",
+        self.validate_all(
+            "CAST(1 AS DOUBLE)",
+            read={
+                "hive": "1d",
+                "spark": "1d",
+            },
         )
-        self.validate(
-            "DATE_TO_DATE_STR(x)",
-            "DATE_FORMAT(x, 'yyyy-MM-dd')",
-            read="duckdb",
-            write="spark",
+        self.validate_all(
+            "POW(CAST(2 AS SMALLINT), 3)",
+            read={
+                "hive": "POW(2S, 3)",
+                "spark": "POW(2S, 3)",
+            },
         )
-        self.validate(
-            "DATE_TO_DI(x)",
-            "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
-            read="duckdb",
-            write="duckdb",
-        )
-        self.validate(
-            "DATE_TO_DI(x)",
-            "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
-            read="duckdb",
-            write="spark",
-        )
-        self.validate(
-            "DI_TO_DATE(x)",
-            "CAST(STRPTIME(CAST(x AS STRING), '%Y%m%d') AS DATE)",
-            read="duckdb",
-            write="duckdb",
-        )
-        self.validate(
-            "DI_TO_DATE(x)",
-            "TO_DATE(CAST(x AS STRING), 'yyyyMMdd')",
-            read="duckdb",
-            write="spark",
-        )
-        self.validate(
-            "TS_OR_DI_TO_DI(x)",
-            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
-            read="duckdb",
-            write="duckdb",
-        )
-        self.validate(
-            "TS_OR_DI_TO_DI(x)",
-            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
-            read="duckdb",
-            write="presto",
-        )
-        self.validate(
-            "ARRAY_SUM(ARRAY(1, 2))",
+        self.validate_all(
             "LIST_SUM(LIST_VALUE(1, 2))",
-            read="spark",
-            write="duckdb",
+            read={
+                "spark": "ARRAY_SUM(ARRAY(1, 2))",
+            },
         )
-
-        self.validate(
-            "SAFE_DIVIDE(x, y)",
+        self.validate_all(
             "IF(y <> 0, x / y, NULL)",
-            read="bigquery",
-            write="duckdb",
+            read={
+                "bigquery": "SAFE_DIVIDE(x, y)",
+            },
         )
 
-        self.validate(
+        self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
-            "STRUCT_PACK(x := 1, y := '2')",
-            read="duckdb",
-        )
-        self.validate(
-            "STRUCT_PACK(x := 1, y := '2')",
-            "STRUCT(x = 1, y = '2')",
-            read="duckdb",
-            write="spark",
+            write={
+                "duckdb": "STRUCT_PACK(x := 1, y := '2')",
+                "spark": "STRUCT(x = 1, y = '2')",
+            },
         )
 
-        self.validate(
+        self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
-            read="duckdb",
-            write="duckdb",
+            write={
+                "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+            },
         )

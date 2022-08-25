@@ -87,8 +87,6 @@ def _time_format(self, expression):
 def _time_to_str(self, expression):
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format == Hive.date_format:
-        return f"TO_DATE({this})"
     return f"DATE_FORMAT({this}, {time_format})"
 
 
@@ -238,7 +236,6 @@ class Hive(Dialect):
             exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.DateStrToDate: rename_func("TO_DATE"),
-            exp.DateToDateStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {Hive.date_format})",
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
             exp.FileFormatProperty: lambda self, e: f"STORED AS {e.text('value').upper()}",
@@ -267,7 +264,6 @@ class Hive(Dialect):
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: _time_to_str,
-            exp.TimeToTimeStr: lambda self, e: f"CAST({self.sql(e, 'this')} AS STRING)",
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",

@@ -322,14 +322,49 @@ class DataFrame:
         new_df = new_df.select(*null_replacement_columns)
         return new_df
 
+    @operation(Operation.FROM)
+    def replace(self, to_replace: t.Union[bool, int, float, str, t.List, t.Dict],
+                value: t.Optional[t.Union[bool, int, float, str, t.List]] = None,
+                subset: t.Optional[t.Union[str, t.List[str]]] = None) -> "DataFrame":
+        from sqlglot.dataframe.functions import lit
+        old_values = None
+        subset = ensure_list(subset)
+        new_df = self.copy()
+        all_columns = self._get_outer_select_columns(new_df.expression)
+        all_column_mapping = {
+            column.expression.alias_or_name: column
+            for column in all_columns
+        }
 
+        columns = self._ensure_list_of_columns(subset) if subset else all_columns
+        if isinstance(to_replace, dict):
+            old_values = list(to_replace.keys())
+            new_values = list(to_replace.values())
+        elif not old_values and isinstance(to_replace, list):
+            assert isinstance(value, list), "value must be a list since the replacements are a list"
+            assert len(to_replace) == len(value), "the replacements and values must be the same length"
+            old_values = to_replace
+            new_values = value
+        else:
+            old_values = [to_replace] * len(columns)
+            new_values = [value] * len(columns)
+        old_values = [lit(value) for value in old_values]
+        new_values = [lit(value) for value in new_values]
 
+        replacement_mapping = {}
+        for column in columns:
+            expression = None
+            for i, (old_value, new_value) in enumerate(zip(old_values, new_values)):
+                if i == 0:
+                    expression = F.when(column == old_value, new_value)
+                else:
+                    expression = expression.when(column == old_value, new_value)
+            replacement_mapping[column.expression.alias_or_name] = expression.otherwise(column).alias(column.expression.alias_or_name)
 
-
-
-
-
-
-
-
-
+        replacement_mapping = {**all_column_mapping, **replacement_mapping}
+        replacement_columns = [
+            replacement_mapping[column.expression.alias_or_name]
+            for column in all_columns
+        ]
+        new_df = new_df.select(*replacement_columns)
+        return new_df

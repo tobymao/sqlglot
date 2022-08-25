@@ -1069,3 +1069,80 @@ class TestDataframe(unittest.TestCase):
         )
 
         self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_replace_basic(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("age"), F.lit(37).alias("test_col"))
+            .replace(to_replace=37, value=100)
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("age"), SF.lit(37).alias("test_col"))
+            .replace(to_replace=37, value=100)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
+
+    def test_replace_basic_subset(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("age"), F.lit(37).alias("test_col"))
+            .replace(to_replace=37, value=100, subset="age")
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("age"), SF.lit(37).alias("test_col"))
+            .replace(to_replace=37, value=100, subset="age")
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
+
+    def test_replace_mapping(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("age"), F.lit(37).alias("test_col"))
+            .replace({37: 100})
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("age"), SF.lit(37).alias("test_col"))
+            .replace({37: 100})
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
+
+    def test_replace_mapping_subset(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("age"), F.lit(37).alias("test_col"), F.lit(50).alias("test_col_2"))
+            .replace({37: 100, 50: 1}, subset=["age", "test_col_2"])
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("age"), SF.lit(37).alias("test_col"), SF.lit(50).alias("test_col_2"))
+            .replace({37: 100, 50: 1}, subset=["age", "test_col_2"])
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
+
+    def test_replace_na_func_basic(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("age"), F.lit(37).alias("test_col"))
+            .na
+            .replace(to_replace=37, value=100)
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("age"), SF.lit(37).alias("test_col"))
+            .na
+            .replace(to_replace=37, value=100)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)

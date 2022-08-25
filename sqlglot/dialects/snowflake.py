@@ -70,7 +70,6 @@ class Snowflake(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
 
-    # pylint: disable=duplicate-code
     time_mapping = {
         "YYYY": "%Y",
         "yyyy": "%Y",
@@ -100,7 +99,6 @@ class Snowflake(Dialect):
         "FF6": "%f",
         "ff6": "%f",
     }
-    # pylint: enable=duplicate-code
 
     class Parser(Parser):
         FUNCTIONS = {

@@ -107,6 +107,14 @@ class Parser:
 
     FUNCTIONS = {
         **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
+        "DATE_TO_DATE_STR": lambda args: exp.Cast(
+            this=list_get(args, 0),
+            to=exp.DataType(this=exp.DataType.Type.TEXT),
+        ),
+        "TIME_TO_TIME_STR": lambda args: exp.Cast(
+            this=list_get(args, 0),
+            to=exp.DataType(this=exp.DataType.Type.TEXT),
+        ),
         "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
             this=exp.Cast(
                 this=list_get(args, 0),

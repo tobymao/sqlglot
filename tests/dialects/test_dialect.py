@@ -37,7 +37,10 @@ class Validator(unittest.TestCase):
         for read_dialect, read_sql in (read or {}).items():
             with self.subTest(f"{read_dialect} -> {sql}"):
                 self.assertEqual(
-                    parse_one(read_sql, read_dialect).sql(self.dialect), sql
+                    parse_one(read_sql, read_dialect).sql(
+                        self.dialect, unsupported_level=ErrorLevel.IGNORE
+                    ),
+                    sql,
                 )
 
         for write_dialect, write_sql in (write or {}).items():
@@ -48,7 +51,12 @@ class Validator(unittest.TestCase):
                             write_dialect, unsupported_level=ErrorLevel.RAISE
                         )
                 else:
-                    self.assertEqual(expression.sql(write_dialect), write_sql)
+                    self.assertEqual(
+                        expression.sql(
+                            write_dialect, unsupported_level=ErrorLevel.IGNORE
+                        ),
+                        write_sql,
+                    )
 
 
 class TestDialect(Validator):
@@ -576,12 +584,12 @@ class TestDialect(Validator):
         )
         self.validate(
             "TIME_TO_TIME_STR(x)",
-            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
+            "CAST(x AS VARCHAR)",
             write="presto",
         )
         self.validate(
             "UNIX_TO_TIME_STR(x)",
-            "DATE_FORMAT(FROM_UNIXTIME(x), '%Y-%m-%d %H:%i:%S')",
+            "CAST(FROM_UNIXTIME(x) AS VARCHAR)",
             write="presto",
         )
         self.validate(
@@ -896,13 +904,13 @@ class TestDialect(Validator):
 
         self.validate(
             "DATE_TO_DATE_STR(x)",
-            "DATE_FORMAT(x, '%Y-%m-%d')",
+            "CAST(x AS VARCHAR)",
             read="presto",
             write="presto",
         )
         self.validate(
             "DATE_TO_DATE_STR(x)",
-            "STRFTIME(x, '%Y-%m-%d')",
+            "CAST(x AS TEXT)",
             read="presto",
             write="duckdb",
         )
@@ -926,7 +934,7 @@ class TestDialect(Validator):
         )
         self.validate(
             "DI_TO_DATE(x)",
-            "CAST(STRPTIME(CAST(x AS STRING), '%Y%m%d') AS DATE)",
+            "CAST(STRPTIME(CAST(x AS TEXT), '%Y%m%d') AS DATE)",
             read="presto",
             write="duckdb",
         )
@@ -1348,13 +1356,13 @@ class TestDialect(Validator):
 
         self.validate(
             "DATE_TO_DATE_STR(x)",
-            "DATE_FORMAT(x, 'yyyy-MM-dd')",
+            "CAST(x AS STRING)",
             read="hive",
             write="hive",
         )
         self.validate(
             "DATE_TO_DATE_STR(x)",
-            "DATE_FORMAT(x, '%Y-%m-%d')",
+            "CAST(x AS VARCHAR)",
             read="hive",
             write="presto",
         )
@@ -2082,6 +2090,144 @@ TBLPROPERTIES (
 
     def test_time(self):
         self.validate_all(
+            "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",
+            read={
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
+            },
+            write={
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
+            },
+        )
+        self.validate_all(
+            "STR_TO_UNIX('2020-01-01', '%Y-%M-%d')",
+            write={
+                "duckdb": "EPOCH(STRPTIME('2020-01-01', '%Y-%M-%d'))",
+                "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-mm-dd')",
+                "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%i-%d'))",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_DATE('2020-01-01')",
+            write={
+                "duckdb": "CAST('2020-01-01' AS DATE)",
+                "hive": "TO_DATE('2020-01-01')",
+                "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_TIME('2020-01-01')",
+            write={
+                "duckdb": "CAST('2020-01-01' AS TIMESTAMP)",
+                "hive": "CAST('2020-01-01' AS TIMESTAMP)",
+                "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
+            },
+        )
+        self.validate_all(
+            "TIME_STR_TO_UNIX('2020-01-01')",
+            write={
+                "duckdb": "EPOCH(CAST('2020-01-01' AS TIMESTAMP))",
+                "hive": "UNIX_TIMESTAMP('2020-01-01')",
+                "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%S'))",
+            },
+        )
+        self.validate_all(
+            "TIME_TO_STR(x, '%Y-%m-%d')",
+            write={
+                "duckdb": "STRFTIME(x, '%Y-%m-%d')",
+                "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",
+                "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
+            },
+        )
+        self.validate_all(
+            "TIME_TO_TIME_STR(x)",
+            write={
+                "duckdb": "CAST(x AS TEXT)",
+                "hive": "CAST(x AS STRING)",
+                "presto": "CAST(x AS VARCHAR)",
+            },
+        )
+        self.validate_all(
+            "TIME_TO_UNIX(x)",
+            write={
+                "duckdb": "EPOCH(x)",
+                "hive": "UNIX_TIMESTAMP(x)",
+                "presto": "TO_UNIXTIME(x)",
+            },
+        )
+        self.validate_all(
+            "TS_OR_DS_TO_DATE_STR(x)",
+            write={
+                "duckdb": "SUBSTRING(CAST(x AS TEXT), 1, 10)",
+                "hive": "SUBSTRING(CAST(x AS STRING), 1, 10)",
+                "presto": "SUBSTRING(CAST(x AS VARCHAR), 1, 10)",
+            },
+        )
+        self.validate_all(
+            "TS_OR_DS_TO_DATE(x)",
+            write={
+                "duckdb": "CAST(x AS DATE)",
+                "hive": "TO_DATE(x)",
+                "presto": "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
+            },
+        )
+        self.validate_all(
+            "UNIX_TO_STR(x, y)",
+            write={
+                "duckdb": "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), y)",
+                "hive": "FROM_UNIXTIME(x, y)",
+                "presto": "DATE_FORMAT(FROM_UNIXTIME(x), y)",
+            },
+        )
+        self.validate_all(
+            "UNIX_TO_TIME(x)",
+            write={
+                "duckdb": "TO_TIMESTAMP(CAST(x AS BIGINT))",
+                "hive": "FROM_UNIXTIME(x)",
+                "presto": "FROM_UNIXTIME(x)",
+            },
+        )
+        self.validate_all(
+            "UNIX_TO_TIME_STR(x)",
+            write={
+                "duckdb": "CAST(TO_TIMESTAMP(CAST(x AS BIGINT)) AS TEXT)",
+                "hive": "FROM_UNIXTIME(x)",
+                "presto": "CAST(FROM_UNIXTIME(x) AS VARCHAR)",
+            },
+        )
+        self.validate_all(
+            "DATE_TO_DATE_STR(x)",
+            write={
+                "duckdb": "CAST(x AS TEXT)",
+                "hive": "CAST(x AS STRING)",
+                "presto": "CAST(x AS VARCHAR)",
+            },
+        )
+        self.validate_all(
+            "DATE_TO_DI(x)",
+            write={
+                "duckdb": "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
+                "hive": "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
+                "presto": "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
+            },
+        )
+        self.validate_all(
+            "DATE_TO_DI(x)",
+            write={
+                "duckdb": "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
+                "hive": "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
+                "presto": "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
+            },
+        )
+        self.validate_all(
+            "TS_OR_DI_TO_DI(x)",
+            write={
+                "duckdb": "CAST(SUBSTR(REPLACE(CAST(x AS TEXT), '-', ''), 1, 8) AS INT)",
+                "hive": "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
+                "presto": "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            },
+        )
+        self.validate_all(
             "DATE_ADD(x, 1, 'day')",
             read={
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -2144,14 +2290,28 @@ TBLPROPERTIES (
             read={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
             write={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
         )
+
+        for unit in ("DAY", "MONTH", "YEAR"):
+            self.validate_all(
+                f"{unit}(x)",
+                read={
+                    dialect: f"{unit}(x)"
+                    for dialect in ("bigquery", "duckdb", "presto")
+                },
+                write={
+                    dialect: f"{unit}(x)"
+                    for dialect in ("bigquery", "duckdb", "presto", "hive", "spark")
+                },
+            )
+
+    def test_array(self):
         self.validate_all(
-            "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",
-            read={
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
-            },
+            "ARRAY(0, 1, 2)",
             write={
-                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
+                "bigquery": "[0, 1, 2]",
+                "duckdb": "LIST_VALUE(0, 1, 2)",
+                "presto": "ARRAY[0, 1, 2]",
+                "spark": "ARRAY(0, 1, 2)",
             },
         )
 

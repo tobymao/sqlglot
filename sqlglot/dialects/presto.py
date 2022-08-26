@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
     no_safe_divide_sql,
     rename_func,
+    str_position_sql,
     struct_extract_sql,
 )
 from sqlglot.dialects.mysql import MySQL
@@ -86,15 +87,6 @@ def _schema_sql(self, expression):
 def _quantile_sql(self, expression):
     self.unsupported("Presto does not support exact quantiles")
     return f"APPROX_PERCENTILE({self.sql(expression, 'this')}, {self.sql(expression, 'quantile')})"
-
-
-def _str_position_sql(self, expression):
-    this = self.sql(expression, "this")
-    substr = self.sql(expression, "substr")
-    position = self.sql(expression, "position")
-    if position:
-        return f"STRPOS(SUBSTR({this}, {position}), {substr}) + {position} - 1"
-    return f"STRPOS({this}, {substr})"
 
 
 def _str_to_time_sql(self, expression):
@@ -204,7 +196,7 @@ class Presto(Dialect):
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.SortArray: _no_sort_array,
-            exp.StrPosition: _str_position_sql,
+            exp.StrPosition: str_position_sql,
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",

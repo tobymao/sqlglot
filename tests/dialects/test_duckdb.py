@@ -49,6 +49,7 @@ class TestDuckDB(Validator):
                 "bigquery": "STR_TO_TIME(x, '%y-%-m')",
                 "duckdb": "STRPTIME(x, '%y-%-m')",
                 "presto": "DATE_PARSE(x, '%y-%c')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy-M')) AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(x, 'yy-M')",
             },
         )
@@ -116,6 +117,15 @@ class TestDuckDB(Validator):
                 "spark": "x.`abc`",
             },
         )
+        self.validate_all(
+            "STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')",
+            write={
+                "duckdb": "STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')",
+                "presto": 'x."y"."abc"',
+                "hive": "x.`y`.`abc`",
+                "spark": "x.`y`.`abc`",
+            },
+        )
 
         self.validate_all(
             "QUANTILE(x, 0.5)",
@@ -178,12 +188,47 @@ class TestDuckDB(Validator):
                 "bigquery": "SAFE_DIVIDE(x, y)",
             },
         )
-
         self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
             write={
                 "duckdb": "STRUCT_PACK(x := 1, y := '2')",
                 "spark": "STRUCT(x = 1, y = '2')",
+            },
+        )
+        self.validate_all(
+            "ARRAY_SORT(x)",
+            write={
+                "duckdb": "ARRAY_SORT(x)",
+                "presto": "ARRAY_SORT(x)",
+                "hive": "SORT_ARRAY(x)",
+                "spark": "SORT_ARRAY(x)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_REVERSE_SORT(x)",
+            write={
+                "duckdb": "ARRAY_REVERSE_SORT(x)",
+                "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
+                "hive": "SORT_ARRAY(x, FALSE)",
+                "spark": "SORT_ARRAY(x, FALSE)",
+            },
+        )
+        self.validate_all(
+            "LIST_REVERSE_SORT(x)",
+            write={
+                "duckdb": "ARRAY_REVERSE_SORT(x)",
+                "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
+                "hive": "SORT_ARRAY(x, FALSE)",
+                "spark": "SORT_ARRAY(x, FALSE)",
+            },
+        )
+        self.validate_all(
+            "LIST_SORT(x)",
+            write={
+                "duckdb": "ARRAY_SORT(x)",
+                "presto": "ARRAY_SORT(x)",
+                "hive": "SORT_ARRAY(x)",
+                "spark": "SORT_ARRAY(x)",
             },
         )
 

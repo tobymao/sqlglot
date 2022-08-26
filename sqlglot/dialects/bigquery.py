@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect, no_ilike_sql
+from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func
 from sqlglot.helper import list_get
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
@@ -21,7 +21,7 @@ def _date_add(expression_class):
 def _date_add_sql(data_type, kind):
     def func(self, expression):
         this = self.sql(expression, "this")
-        unit = self.sql(expression, "unit")
+        unit = self.sql(expression, "unit") or "'day'"
         expression = self.sql(expression, "expression")
         return f"{data_type}_{kind}({this}, INTERVAL {expression} {unit})"
 
@@ -70,6 +70,7 @@ class BigQuery(Dialect):
     class Generator(Generator):
         TRANSFORMS = {
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
+            exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
@@ -91,6 +92,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.DOUBLE: "FLOAT64",
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.VARCHAR: "STRING",
         }
 
         def in_unnest_op(self, unnest):

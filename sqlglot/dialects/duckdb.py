@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     no_tablesample_sql,
     rename_func,
+    str_position_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
@@ -44,6 +45,23 @@ def _date_add(self, expression):
     return f"{this} + INTERVAL {e} {unit}"
 
 
+def _array_sort_sql(self, expression):
+    if expression.expression:
+        self.unsupported("DUCKDB ARRAY_SORT does not support a comparator")
+    return f"ARRAY_SORT({self.sql(expression, 'this')})"
+
+
+def _sort_array_sql(self, expression):
+    this = self.sql(expression, "this")
+    if expression.args.get("asc") == exp.FALSE:
+        return f"ARRAY_REVERSE_SORT({this})"
+    return f"ARRAY_SORT({this})"
+
+
+def _sort_array_reverse(args):
+    return exp.SortArray(this=list_get(args, 0), asc=exp.FALSE)
+
+
 def _struct_pack_sql(self, expression):
     args = [
         self.binary(e, ":=") if isinstance(e, exp.EQ) else self.sql(e)
@@ -64,6 +82,8 @@ class DuckDB(Dialect):
             **Parser.FUNCTIONS,
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
+            "ARRAY_SORT": exp.SortArray.from_arg_list,
+            "ARRAY_REVERSE_SORT": _sort_array_reverse,
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
                 this=exp.Div(
@@ -71,6 +91,8 @@ class DuckDB(Dialect):
                     expression=exp.Literal.number(1000),
                 )
             ),
+            "LIST_SORT": exp.SortArray.from_arg_list,
+            "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_VALUE": exp.Array.from_arg_list,
             "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
             "STRFTIME": format_time_lambda(exp.TimeToStr, "duckdb"),
@@ -91,6 +113,7 @@ class DuckDB(Dialect):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
+            exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.DateAdd: _date_add,
             exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
@@ -106,6 +129,8 @@ class DuckDB(Dialect):
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Split: rename_func("STR_SPLIT"),
+            exp.SortArray: _sort_array_sql,
+            exp.StrPosition: str_position_sql,
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
@@ -122,4 +147,8 @@ class DuckDB(Dialect):
             exp.UnixToStr: lambda self, e: f"STRFTIME({_unix_to_time(self, e)}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
             exp.UnixToTimeStr: lambda self, e: f"CAST({_unix_to_time(self, e)} AS TEXT)",
+        }
+
+        TYPE_MAPPING = {
+            exp.DataType.Type.VARCHAR: "TEXT",
         }

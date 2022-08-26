@@ -4,7 +4,7 @@ from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_errors
 from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
-from sqlglot.tokens import TokenType, Tokenizer
+from sqlglot.tokens import TokenType
 
 
 logger = logging.getLogger("sqlglot")
@@ -103,6 +103,8 @@ class Generator:
         "null_ordering",
         "max_unsupported",
         "_indent",
+        "_replace_backslash",
+        "_escaped_quote",
     )
 
     def __init__(
@@ -149,6 +151,8 @@ class Generator:
         self.max_unsupported = max_unsupported
         self.null_ordering = null_ordering
         self._indent = indent
+        self._replace_backslash = self.escape == "\\"
+        self._escaped_quote = self.escape + self.quote
 
     def generate(self, expression):
         """
@@ -603,8 +607,9 @@ class Generator:
     def literal_sql(self, expression):
         text = expression.this or ""
         if expression.is_string:
-            text = text.replace("\\", "\\\\") if self.escape == "\\" else text
-            text = text.replace(Tokenizer.ESCAPE_CODE, self.escape)
+            if self._replace_backslash:
+                text = text.replace("\\", "\\\\")
+            text = text.replace(self.quote, self._escaped_quote)
             return f"{self.quote}{text}{self.quote}"
         return text
 

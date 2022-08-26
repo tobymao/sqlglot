@@ -69,28 +69,6 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect.get_or_raise(dialect))
             self.assertIsNotNone(Dialect[dialect.value])
 
-    def test_starrocks(self):
-        self.validate(
-            "SELECT CAST(`a`.`b` AS INT) FROM foo",
-            "SELECT CAST(`a`.`b` AS INT) FROM foo",
-            read="starrocks",
-            write="starrocks",
-        )
-
-        self.validate(
-            "SELECT CAST(`a` AS TEXT), CAST(`b` AS TIMESTAMP), CAST(`c` AS TIMESTAMPTZ) FROM foo",
-            "SELECT CAST(`a` AS STRING), CAST(`b` AS DATETIME), CAST(`c` AS DATETIME) FROM foo",
-            read="hive",
-            write="starrocks",
-        )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a ORDER BY col_a NULLS LAST",
-                write="starrocks",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
     def test_bigquery(self):
         self.validate(
             '"""x"""',
@@ -1497,6 +1475,7 @@ TBLPROPERTIES (
                 "presto": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
+                "starrocks": "CAST(a AS STRING)",
             },
         )
         self.validate_all(
@@ -1509,7 +1488,14 @@ TBLPROPERTIES (
                 "presto": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
+                "starrocks": "CAST(a AS STRING)",
             },
+        )
+        self.validate_all(
+            "CAST(a AS TIMESTAMP)", write={"starrocks": "CAST(a AS DATETIME)"}
+        )
+        self.validate_all(
+            "CAST(a AS TIMESTAMPTZ)", write={"starrocks": "CAST(a AS DATETIME)"}
         )
 
     def test_time(self):
@@ -1665,6 +1651,7 @@ TBLPROPERTIES (
             "DATE_ADD(x, 1, 'day')",
             read={
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
+                "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
@@ -1686,48 +1673,61 @@ TBLPROPERTIES (
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "presto": "DATE_ADD('day', 1, x)",
                 "spark": "DATE_ADD(x, 1)",
+                "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'day')",
             write={
                 "mysql": "DATE(x)",
+                "starrocks": "DATE(x)",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'week')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', WEEK(x, 1), ' 1'), '%Y %u %w')",
+                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' ', WEEK(x, 1), ' 1'), '%Y %u %w')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'month')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', MONTH(x), ' 1'), '%Y %c %e')",
+                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' ', MONTH(x), ' 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'quarter')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', QUARTER(x) * 3 - 2, ' 1'), '%Y %c %e')",
+                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' ', QUARTER(x) * 3 - 2, ' 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'year')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
+                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'millenium')",
             write={
                 "mysql": UnsupportedError,
+                "starrocks": UnsupportedError,
             },
         )
         self.validate_all(
             "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
-            read={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
-            write={"mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')"},
+            read={
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+            },
+            write={
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+            },
         )
 
         for unit in ("DAY", "MONTH", "YEAR"):
@@ -1735,11 +1735,25 @@ TBLPROPERTIES (
                 f"{unit}(x)",
                 read={
                     dialect: f"{unit}(x)"
-                    for dialect in ("bigquery", "duckdb", "presto")
+                    for dialect in (
+                        "bigquery",
+                        "duckdb",
+                        "mysql",
+                        "presto",
+                        "starrocks",
+                    )
                 },
                 write={
                     dialect: f"{unit}(x)"
-                    for dialect in ("bigquery", "duckdb", "presto", "hive", "spark")
+                    for dialect in (
+                        "bigquery",
+                        "duckdb",
+                        "mysql",
+                        "presto",
+                        "hive",
+                        "spark",
+                        "starrocks",
+                    )
                 },
             )
 
@@ -1790,7 +1804,10 @@ TBLPROPERTIES (
         )
         self.validate_all(
             "SELECT * FROM a ORDER BY col_a NULLS LAST",
-            write={"mysql": UnsupportedError},
+            write={
+                "mysql": UnsupportedError,
+                "starrocks": UnsupportedError,
+            },
         )
         self.validate_all(
             "STR_POSITION(x, 'a')",

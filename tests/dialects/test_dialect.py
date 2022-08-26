@@ -1596,6 +1596,15 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "TS_OR_DS_TO_DATE(x, '%-d')",
+            write={
+                "duckdb": "CAST(STRPTIME(x, '%-d') AS DATE)",
+                "hive": "TO_DATE(x, 'd')",
+                "presto": "CAST(DATE_PARSE(x, '%e') AS DATE)",
+                "spark": "TO_DATE(x, 'd')",
+            },
+        )
+        self.validate_all(
             "UNIX_TO_STR(x, y)",
             write={
                 "duckdb": "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), y)",

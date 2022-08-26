@@ -90,6 +90,14 @@ def _time_to_str(self, expression):
     return f"DATE_FORMAT({this}, {time_format})"
 
 
+def _to_date_sql(self, expression):
+    this = self.sql(expression, "this")
+    time_format = self.format_time(expression)
+    if time_format and time_format not in (Hive.time_format, Hive.date_format):
+        return f"TO_DATE({this}, {time_format})"
+    return f"TO_DATE({this})"
+
+
 def _unnest_to_explode_sql(self, expression):
     unnest = expression.this
     if isinstance(unnest, exp.Unnest):
@@ -267,7 +275,7 @@ class Hive(Dialect):
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-            exp.TsOrDsToDate: rename_func("TO_DATE"),
+            exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), _time_format(self, e))})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),

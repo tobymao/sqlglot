@@ -1369,30 +1369,6 @@ TBLPROPERTIES (
             write="sqlite",
         )
 
-    def test_oracle(self):
-        self.validate(
-            "CREATE TABLE z (n1 NUMBER, n2 NUMBER(10), n3 NUMBER(10, 8))",
-            "CREATE TABLE z (n1 REAL, n2 REAL(10), n3 REAL(10, 8))",
-            read="oracle",
-            write="sqlite",
-        )
-        self.validate(
-            "CREATE TABLE z (n1 INTEGER, n2 INTEGER(10), n3 REAL(8), c1 VARCHAR(30))",
-            "CREATE TABLE z (n1 NUMBER, n2 NUMBER(10), n3 FLOAT(8), c1 VARCHAR2(30))",
-            read="sqlite",
-            write="oracle",
-        )
-        self.validate(
-            "SELECT TOP 10 x FROM y",
-            "SELECT x FROM y LIMIT 10",
-            read="oracle",
-        )
-        self.validate(
-            "SELECT a AS b FROM x GROUP BY b",
-            "SELECT a AS b FROM x GROUP BY 1",
-            write="oracle",
-        )
-
     def test_tableau(self):
         self.validate(
             "IF(x = 'a', y, NULL)",
@@ -1485,10 +1461,33 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "CAST(a AS VARCHAR)",
+            write={
+                "bigquery": "CAST(a AS STRING)",
+                "duckdb": "CAST(a AS TEXT)",
+                "mysql": "CAST(a AS VARCHAR)",
+                "hive": "CAST(a AS STRING)",
+                "oracle": "CAST(a AS VARCHAR2)",
+                "presto": "CAST(a AS VARCHAR)",
+                "snowflake": "CAST(a AS VARCHAR)",
+                "spark": "CAST(a AS STRING)",
+                "starrocks": "CAST(a AS VARCHAR)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS TIMESTAMP)", write={"starrocks": "CAST(a AS DATETIME)"}
         )
         self.validate_all(
             "CAST(a AS TIMESTAMPTZ)", write={"starrocks": "CAST(a AS DATETIME)"}
+        )
+        self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS NUMBER)"})
+        self.validate_all("CAST(a AS SMALLINT)", write={"oracle": "CAST(a AS NUMBER)"})
+        self.validate_all("CAST(a AS BIGINT)", write={"oracle": "CAST(a AS NUMBER)"})
+        self.validate_all("CAST(a AS INT)", write={"oracle": "CAST(a AS NUMBER)"})
+        self.validate_all(
+            "CAST(a AS DECIMAL)",
+            read={"oracle": "CAST(a AS NUMBER)"},
+            write={"oracle": "CAST(a AS NUMBER)"},
         )
 
     def test_time(self):
@@ -1910,6 +1909,13 @@ TBLPROPERTIES (
                 "duckdb": "SELECT a AS b FROM x GROUP BY b",
                 "presto": "SELECT a AS b FROM x GROUP BY 1",
                 "hive": "SELECT a AS b FROM x GROUP BY 1",
+                "oracle": "SELECT a AS b FROM x GROUP BY 1",
                 "spark": "SELECT a AS b FROM x GROUP BY 1",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y LIMIT 10",
+            read={
+                "oracle": "SELECT TOP 10 x FROM y",
             },
         )

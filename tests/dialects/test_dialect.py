@@ -421,608 +421,6 @@ class TestDialect(Validator):
             write="postgres",
         )
 
-    def test_presto(self):
-        self.validate(
-            'SELECT "a"."b" FROM foo',
-            'SELECT "a"."b" FROM "foo"',
-            read="presto",
-            write="presto",
-            identify=True,
-        )
-        self.validate(
-            "SELECT a.b FROM foo", "SELECT a.b FROM foo", read="presto", write="spark"
-        )
-        self.validate(
-            'SELECT "a"."b" FROM foo',
-            "SELECT `a`.`b` FROM `foo`",
-            read="presto",
-            write="spark",
-            identify=True,
-        )
-        self.validate(
-            "SELECT a.b FROM foo",
-            "SELECT `a`.`b` FROM `foo`",
-            read="presto",
-            write="spark",
-            identify=True,
-        )
-        self.validate(
-            "SELECT ARRAY[1, 2]", "SELECT ARRAY(1, 2)", read="presto", write="spark"
-        )
-        self.validate(
-            "CAST(a AS ARRAY(INT))",
-            "CAST(a AS ARRAY(INTEGER))",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
-            "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INT,INT))",
-            "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INTEGER, INTEGER))",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "CAST(MAP(ARRAY['a','b','c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INT)))",
-            "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
-            "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
-            read="presto",
-            write="presto",
-        )
-        self.validate("CAST(a AS TEXT)", "CAST(a AS VARCHAR)", write="presto")
-        self.validate("CAST(a AS STRING)", "CAST(a AS VARCHAR)", write="presto")
-        self.validate(
-            "CAST(a AS VARCHAR)", "CAST(a AS STRING)", read="presto", write="spark"
-        )
-
-        self.validate("x & 1", "BITWISE_AND(x, 1)", read="hive", write="presto")
-        self.validate("~x", "BITWISE_NOT(x)", read="hive", write="presto")
-        self.validate("x | 1", "BITWISE_OR(x, 1)", read="hive", write="presto")
-        self.validate(
-            "x << 1", "BITWISE_ARITHMETIC_SHIFT_LEFT(x, 1)", read="hive", write="presto"
-        )
-        self.validate(
-            "x >> 1",
-            "BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)",
-            read="hive",
-            write="presto",
-        )
-        self.validate("x & 1 > 0", "BITWISE_AND(x, 1) > 0", read="hive", write="presto")
-
-        self.validate("REGEXP_LIKE(a, 'x')", "a RLIKE 'x'", read="presto", write="hive")
-        self.validate("a RLIKE 'x'", "REGEXP_LIKE(a, 'x')", read="hive", write="presto")
-        self.validate(
-            "a REGEXP 'x'", "REGEXP_LIKE(a, 'x')", read="hive", write="presto"
-        )
-
-        self.validate(
-            "SPLIT(x, 'a.')",
-            "SPLIT(x, CONCAT('\\\\Q', 'a.'))",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "REGEXP_SPLIT(x, 'a.')", "SPLIT(x, 'a.')", read="presto", write="hive"
-        )
-
-        self.validate(
-            "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
-            "CASE WHEN x > 1 THEN 1 WHEN x > 2 THEN 2 END",
-            write="presto",
-        )
-
-        self.validate(
-            "ARRAY_CONTAINS(x, 1)", "CONTAINS(x, 1)", read="hive", write="presto"
-        )
-        self.validate("SIZE(x)", "CARDINALITY(x)", read="hive", write="presto")
-        self.validate("SIZE(x)", "ARRAY_LENGTH(x)", read="hive", write="duckdb")
-        self.validate("CARDINALITY(x)", "SIZE(x)", read="presto", write="hive")
-        self.validate("ARRAY_SIZE(x)", "CARDINALITY(x)", write="presto", identity=False)
-        self.validate(
-            "ARRAY_SIZE(x)", "ARRAY_LENGTH(x)", write="duckdb", identity=False
-        )
-
-        self.validate(
-            "PERCENTILE(x, 0.5)",
-            "APPROX_PERCENTILE(x, 0.5)",
-            read="hive",
-            write="presto",
-            unsupported_level=ErrorLevel.IGNORE,
-        )
-
-        self.validate(
-            "STR_POSITION(x, 'a')", "STRPOS(x, 'a')", write="presto", identity=False
-        )
-        self.validate(
-            "STR_POSITION(x, 'a')", "LOCATE('a', x)", read="presto", write="hive"
-        )
-        self.validate("LOCATE('a', x)", "STRPOS(x, 'a')", read="hive", write="presto")
-        self.validate(
-            "LOCATE('a', x, 3)",
-            "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate(
-            "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%s')",
-            "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
-            "CAST(x AS TIMESTAMP)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "DATE_PARSE(x, '%Y-%m-%d')",
-            "CAST(x AS TIMESTAMP)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "TIME_STR_TO_UNIX(x)",
-            "TO_UNIXTIME(DATE_PARSE(x, '%Y-%m-%d %H:%i:%S'))",
-            write="presto",
-        )
-        self.validate(
-            "TIME_STR_TO_TIME(x)",
-            "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
-            write="presto",
-        )
-        self.validate(
-            "TIME_TO_TIME_STR(x)",
-            "CAST(x AS VARCHAR)",
-            write="presto",
-        )
-        self.validate(
-            "UNIX_TO_TIME_STR(x)",
-            "CAST(FROM_UNIXTIME(x) AS VARCHAR)",
-            write="presto",
-        )
-        self.validate(
-            "FROM_UNIXTIME(x)",
-            "FROM_UNIXTIME(x)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "TO_UNIXTIME(x)",
-            "UNIX_TIMESTAMP(x)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "DATE_ADD('day', 1, x)",
-            "DATE_ADD(x, 1)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "DATE_DIFF('day', a, b)",
-            "DATEDIFF(b, a)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "DATE_DIFF(a, b)",
-            "DATE_DIFF('day', b, a)",
-            write="presto",
-            identity=False,
-        )
-        self.validate(
-            "DATE_DIFF(a, b)",
-            "DATE_DIFF('day', b, a)",
-            write="duckdb",
-            identity=False,
-        )
-        self.validate(
-            "DATE_DIFF('month', b, a)",
-            "DATE_DIFF('month', b, a)",
-            read="presto",
-            write="duckdb",
-            identity=False,
-        )
-        self.validate(
-            "TS_OR_DS_TO_DATE(x)",
-            "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
-            write="presto",
-            identity=False,
-        )
-        self.validate(
-            "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
-            "STR_TO_TIME(SUBSTR(x, 1, 10), '%Y-%m-%d')",
-            read="presto",
-            identity=False,
-        )
-
-        self.validate(
-            "SELECT APPROX_DISTINCT(a) FROM foo",
-            "SELECT APPROX_COUNT_DISTINCT(a) FROM foo",
-            read="presto",
-            write="spark",
-        )
-
-        sql = transpile(
-            "SELECT APPROX_DISTINCT(a, 0.1) FROM foo",
-            read="presto",
-            write="spark",
-            unsupported_level=ErrorLevel.IGNORE,
-        )[0]
-        self.assertEqual(sql, "SELECT APPROX_COUNT_DISTINCT(a) FROM foo")
-
-        ctas = "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1"
-        self.assertEqual(transpile(ctas, read="presto", write="presto")[0], ctas)
-
-        sql = transpile(ctas, read="presto", write="spark")[0]
-        self.assertEqual(sql, "CREATE TABLE test STORED AS PARQUET AS SELECT 1")
-        self.validate(
-            "CREATE TABLE test WITH (FORMAT = 'PARQUET', X = '1', Z = '2') AS SELECT 1",
-            "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('X' = '1', 'Z' = '2') AS SELECT 1",
-            read="presto",
-            write="spark",
-        )
-        self.validate(
-            "CREATE TABLE test STORED AS parquet TBLPROPERTIES ('x' = '1', 'Z' = '2') AS SELECT 1",
-            "CREATE TABLE test WITH (FORMAT = 'parquet', x = '1', Z = '2') AS SELECT 1",
-            read="spark",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT JSON_EXTRACT(x, '$.name')",
-            "SELECT GET_JSON_OBJECT(x, '$.name')",
-            read="presto",
-            write="spark",
-        )
-        self.validate(
-            "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
-            "SELECT GET_JSON_OBJECT(x, '$.name')",
-            read="presto",
-            write="spark",
-        )
-
-        # pylint: disable=anomalous-backslash-in-string
-        self.validate(
-            "INITCAP('new york')",
-            "REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate("''''", "''''", read="presto", write="presto")
-        self.validate("''''", "'\\''", read="presto", write="hive")
-        self.validate("'x'", "'x'", read="presto", write="presto")
-        self.validate("'x'", "'x'", read="presto", write="hive")
-        self.validate("'''x'''", "'''x'''", read="presto", write="presto")
-        self.validate("'''x'''", "'\\'x\\''", read="presto", write="hive")
-        self.validate("'''x'", "'\\'x'", read="presto", write="hive")
-        self.validate("'x'''", "'x\\''", read="presto", write="hive")
-
-        self.validate(
-            "STRUCT_EXTRACT(x, 'abc')", 'x."abc"', read="duckdb", write="presto"
-        )
-        self.validate(
-            "STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')",
-            'x."y"."abc"',
-            read="duckdb",
-            write="presto",
-        )
-
-        self.validate("MONTH(x)", "MONTH(x)", read="presto", write="spark")
-        self.validate("MONTH(x)", "MONTH(x)", read="presto", write="hive")
-        self.validate(
-            "MONTH(x)",
-            "MONTH(CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE))",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate("DAY(x)", "DAY(x)", read="presto", write="hive")
-        self.validate(
-            "DAY(x)",
-            "DAY(CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE))",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate("YEAR(x)", "YEAR(x)", read="presto", write="spark")
-        self.validate("YEAR(x)", "YEAR(x)", read="presto", write="hive")
-        self.validate(
-            "YEAR(x)",
-            "YEAR(CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE))",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate(
-            "CONCAT_WS('-', 'a', 'b')",
-            "ARRAY_JOIN(ARRAY['a', 'b'], '-')",
-            write="presto",
-        )
-        self.validate("CONCAT_WS('-', x)", "ARRAY_JOIN(x, '-')", write="presto")
-        self.validate("IF(x > 1, 1, 0)", "IF(x > 1, 1, 0)", write="presto")
-        self.validate(
-            "CASE WHEN 1 THEN x ELSE 0 END",
-            "CASE WHEN 1 THEN x ELSE 0 END",
-            write="presto",
-        )
-        self.validate("x[y]", "x[y]", read="presto", identity=False)
-        self.validate("x[y]", "x[y]", write="presto", identity=False)
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT APPROX_DISTINCT(a, 0.1) FROM foo",
-                read="presto",
-                write="spark",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        self.validate(
-            "SELECT * FROM x TABLESAMPLE(10) y",
-            "SELECT * FROM x AS y TABLESAMPLE(10)",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate("'\u6bdb'", "'\u6bdb'", read="presto")
-
-        self.validate(
-            "SELECT ARRAY_SORT(x)",
-            "SELECT ARRAY_SORT(x)",
-            read="presto",
-        )
-
-        self.validate(
-            "SELECT ARRAY_SORT(x)",
-            "SELECT SORT_ARRAY(x)",
-            read="presto",
-            write="hive",
-        )
-
-        self.validate(
-            "SELECT SORT_ARRAY(x)",
-            "SELECT ARRAY_SORT(x)",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT SORT_ARRAY(x, False)",
-            "SELECT ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
-            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
-            read="presto",
-            write="spark",
-        )
-        self.validate(
-            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
-            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
-            read="spark",
-            write="presto",
-        )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT ARRAY_SORT(x, (left, right) -> -1)",
-                read="presto",
-                write="hive",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        self.validate(
-            "SELECT NULL as foo FROM baz",
-            'SELECT NULL AS "foo" FROM "baz"',
-            read="presto",
-            write="presto",
-            identify=True,
-        )
-        self.validate(
-            "SELECT true as foo FROM baz",
-            'SELECT TRUE AS "foo" FROM "baz"',
-            read="presto",
-            write="presto",
-            identify=True,
-        )
-        self.validate(
-            "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) as foo FROM baz",
-            "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) AS foo FROM baz",
-            read="presto",
-            write="presto",
-            identify=False,
-        )
-        self.validate(
-            "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) as foo FROM baz",
-            'SELECT IF(COALESCE("bar", 0) = 1, TRUE, FALSE) AS "foo" FROM "baz"',
-            read="hive",
-            write="presto",
-            identify=True,
-        )
-        self.validate(
-            "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) u AS b",
-            "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a) CROSS JOIN UNNEST(z) AS u(b)",
-            write="presto",
-        )
-        self.validate(
-            "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
-            "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
-            write="presto",
-        )
-        self.validate(
-            "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
-            "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t(a)",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT a FROM x CROSS JOIN UNNEST(ARRAY(y))AS t (a)",
-            "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
-            "SELECT a FROM x CROSS JOIN UNNEST(ARRAY[y]) AS t(a)",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate(
-            "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY = ARRAY['y', 'z'])",
-            "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
-            "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY = ARRAY['y', 'z'])",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "CREATE TABLE x WITH (bucket_by = ARRAY['y'], bucket_count = 64) AS SELECT 1 AS y",
-            "CREATE TABLE x WITH (bucket_by = ARRAY['y'], bucket_count = 64) AS SELECT 1 AS y",
-            read="presto",
-        )
-
-        self.validate(
-            "DATE_TO_DATE_STR(x)",
-            "CAST(x AS VARCHAR)",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "DATE_TO_DATE_STR(x)",
-            "CAST(x AS TEXT)",
-            read="presto",
-            write="duckdb",
-        )
-        self.validate(
-            "DATE_TO_DI(x)",
-            "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "DATE_TO_DI(x)",
-            "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
-            read="presto",
-            write="duckdb",
-        )
-        self.validate(
-            "DI_TO_DATE(x)",
-            "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "DI_TO_DATE(x)",
-            "CAST(STRPTIME(CAST(x AS TEXT), '%Y%m%d') AS DATE)",
-            read="presto",
-            write="duckdb",
-        )
-        self.validate(
-            "TS_OR_DI_TO_DI(x)",
-            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
-            read="presto",
-            write="presto",
-        )
-        self.validate(
-            "TS_OR_DI_TO_DI(x)",
-            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
-            read="presto",
-            write="spark",
-        )
-
-        self.validate(
-            "LEVENSHTEIN(col1, col2)",
-            "LEVENSHTEIN_DISTANCE(col1, col2)",
-            write="presto",
-        )
-
-        self.validate(
-            "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
-            "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
-            write="presto",
-        )
-
-        self.validate(
-            "ARRAY_FILTER(the_array, x -> x > 0)",
-            "FILTER(the_array, x -> x > 0)",
-            write="presto",
-        )
-
-        self.validate(
-            "FILTER(the_array, x -> x > 0)",
-            "FILTER(the_array, x -> x > 0)",
-            read="presto",
-            identity=False,
-        )
-        self.validate(
-            "SELECT a AS b FROM x GROUP BY b",
-            "SELECT a AS b FROM x GROUP BY 1",
-            write="presto",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
-            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
-            read="spark",
-            write="presto",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
-            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
-            read="spark",
-            write="presto",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
-            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
-            read="presto",
-            write="presto",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
-            "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
-            read="presto",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",
-            read="presto",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
-            read="spark",
-            write="presto",
-        )
-
     def test_hive(self):
         sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
         self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
@@ -1146,13 +544,13 @@ class TestDialect(Validator):
         )
         self.validate(
             "STR_TO_TIME(x, 'yyyy')",
-            "CAST(DATE_FORMAT(x, 'yyyy') AS TIMESTAMP)",
+            "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy')) AS TIMESTAMP)",
             write="hive",
             identity=False,
         )
         self.validate(
             "STR_TO_DATE(x, 'yyyy')",
-            "CAST(DATE_FORMAT(x, 'yyyy') AS DATE)",
+            "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy')) AS DATE)",
             write="hive",
             identity=False,
         )
@@ -2088,6 +1486,32 @@ TBLPROPERTIES (
             write="clickhouse",
         )
 
+    def test_cast(self):
+        self.validate_all(
+            "CAST(a AS TEXT)",
+            write={
+                "bigquery": "CAST(a AS STRING)",
+                "duckdb": "CAST(a AS TEXT)",
+                "mysql": "CAST(a AS TEXT)",
+                "hive": "CAST(a AS STRING)",
+                "presto": "CAST(a AS VARCHAR)",
+                "snowflake": "CAST(a AS TEXT)",
+                "spark": "CAST(a AS STRING)",
+            },
+        )
+        self.validate_all(
+            "CAST(a AS STRING)",
+            write={
+                "bigquery": "CAST(a AS STRING)",
+                "duckdb": "CAST(a AS TEXT)",
+                "mysql": "CAST(a AS TEXT)",
+                "hive": "CAST(a AS STRING)",
+                "presto": "CAST(a AS VARCHAR)",
+                "snowflake": "CAST(a AS TEXT)",
+                "spark": "CAST(a AS STRING)",
+            },
+        )
+
     def test_time(self):
         self.validate_all(
             "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",
@@ -2212,11 +1636,11 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "DATE_TO_DI(x)",
+            "DI_TO_DATE(x)",
             write={
-                "duckdb": "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
-                "hive": "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
-                "presto": "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
+                "duckdb": "CAST(STRPTIME(CAST(x AS TEXT), '%Y%m%d') AS DATE)",
+                "hive": "TO_DATE(CAST(x AS STRING), 'yyyyMMdd')",
+                "presto": "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
             },
         )
         self.validate_all(
@@ -2225,6 +1649,7 @@ TBLPROPERTIES (
                 "duckdb": "CAST(SUBSTR(REPLACE(CAST(x AS TEXT), '-', ''), 1, 8) AS INT)",
                 "hive": "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
                 "presto": "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
+                "spark": "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
             },
         )
         self.validate_all(
@@ -2244,9 +1669,14 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "DATE_ADD(x, 1, 'week')",
+            "DATE_ADD(x, 1)",
             write={
-                "mysql": "DATE_ADD(x, INTERVAL 1 WEEK)",
+                "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "duckdb": "x + INTERVAL 1 DAY",
+                "hive": "DATE_ADD(x, 1)",
+                "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
+                "presto": "DATE_ADD('day', 1, x)",
+                "spark": "DATE_ADD(x, 1)",
             },
         )
         self.validate_all(
@@ -2314,6 +1744,15 @@ TBLPROPERTIES (
                 "spark": "ARRAY(0, 1, 2)",
             },
         )
+        self.validate_all(
+            "ARRAY_SIZE(x)",
+            write={
+                "bigquery": "ARRAY_LENGTH(x)",
+                "duckdb": "ARRAY_LENGTH(x)",
+                "presto": "CARDINALITY(x)",
+                "spark": "SIZE(x)",
+            },
+        )
 
     def test_operators(self):
         self.validate_all(
@@ -2343,4 +1782,105 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT * FROM a ORDER BY col_a NULLS LAST",
             write={"mysql": UnsupportedError},
+        )
+        self.validate_all(
+            "STR_POSITION(x, 'a')",
+            write={
+                "duckdb": "STRPOS(x, 'a')",
+                "presto": "STRPOS(x, 'a')",
+                "spark": "LOCATE('a', x)",
+            },
+        )
+        self.validate_all(
+            "CONCAT_WS('-', 'a', 'b')",
+            write={
+                "duckdb": "CONCAT_WS('-', 'a', 'b')",
+                "presto": "ARRAY_JOIN(ARRAY['a', 'b'], '-')",
+                "hive": "CONCAT_WS('-', 'a', 'b')",
+                "spark": "CONCAT_WS('-', 'a', 'b')",
+            },
+        )
+
+        self.validate_all(
+            "CONCAT_WS('-', x)",
+            write={
+                "duckdb": "CONCAT_WS('-', x)",
+                "presto": "ARRAY_JOIN(x, '-')",
+                "hive": "CONCAT_WS('-', x)",
+                "spark": "CONCAT_WS('-', x)",
+            },
+        )
+        self.validate_all(
+            "IF(x > 1, 1, 0)",
+            write={
+                "duckdb": "CASE WHEN x > 1 THEN 1 ELSE 0 END",
+                "presto": "IF(x > 1, 1, 0)",
+                "hive": "IF(x > 1, 1, 0)",
+                "spark": "IF(x > 1, 1, 0)",
+                "tableau": "IF x > 1 THEN 1 ELSE 0 END",
+            },
+        )
+        self.validate_all(
+            "x[y]",
+            write={
+                "duckdb": "x[y]",
+                "presto": "x[y]",
+                "hive": "x[y]",
+                "spark": "x[y]",
+            },
+        )
+        self.validate_all(
+            'true or null as "foo"',
+            write={
+                "bigquery": "TRUE OR NULL AS `foo`",
+                "duckdb": 'TRUE OR NULL AS "foo"',
+                "presto": 'TRUE OR NULL AS "foo"',
+                "hive": "TRUE OR NULL AS `foo`",
+                "spark": "TRUE OR NULL AS `foo`",
+            },
+        )
+        self.validate_all(
+            "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) as foo FROM baz",
+            write={
+                "bigquery": "SELECT CASE WHEN COALESCE(bar, 0) = 1 THEN TRUE ELSE FALSE END AS foo FROM baz",
+                "duckdb": "SELECT CASE WHEN COALESCE(bar, 0) = 1 THEN TRUE ELSE FALSE END AS foo FROM baz",
+                "presto": "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) AS foo FROM baz",
+                "hive": "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) AS foo FROM baz",
+                "spark": "SELECT IF(COALESCE(bar, 0) = 1, TRUE, FALSE) AS foo FROM baz",
+            },
+        )
+        self.validate_all(
+            "LEVENSHTEIN(col1, col2)",
+            write={
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
+                "hive": "LEVENSHTEIN(col1, col2)",
+                "spark": "LEVENSHTEIN(col1, col2)",
+            },
+        )
+        self.validate_all(
+            "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
+            write={
+                "duckdb": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
+                "presto": "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
+                "hive": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
+                "spark": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
+            },
+        )
+        self.validate_all(
+            "ARRAY_FILTER(the_array, x -> x > 0)",
+            write={
+                "presto": "FILTER(the_array, x -> x > 0)",
+                "hive": "FILTER(the_array, x -> x > 0)",
+                "spark": "FILTER(the_array, x -> x > 0)",
+            },
+        )
+        self.validate_all(
+            "SELECT a AS b FROM x GROUP BY b",
+            write={
+                "duckdb": "SELECT a AS b FROM x GROUP BY b",
+                "presto": "SELECT a AS b FROM x GROUP BY 1",
+                "hive": "SELECT a AS b FROM x GROUP BY 1",
+                "spark": "SELECT a AS b FROM x GROUP BY 1",
+            },
         )

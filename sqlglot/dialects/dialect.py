@@ -233,6 +233,15 @@ def no_trycast_sql(self, expression):
     return self.cast_sql(expression)
 
 
+def str_position_sql(self, expression):
+    this = self.sql(expression, "this")
+    substr = self.sql(expression, "substr")
+    position = self.sql(expression, "position")
+    if position:
+        return f"STRPOS(SUBSTR({this}, {position}), {substr}) + {position} - 1"
+    return f"STRPOS({this}, {substr})"
+
+
 def struct_extract_sql(self, expression):
     this = self.sql(expression, "this")
     struct_key = self.sql(exp.Identifier(this=expression.expression, quoted=True))

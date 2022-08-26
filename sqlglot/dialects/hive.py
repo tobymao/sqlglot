@@ -64,17 +64,17 @@ def _str_to_unix(self, expression):
 def _str_to_date(self, expression):
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format == Hive.date_format:
-        return f"CAST({this} AS DATE)"
-    return f"CAST(DATE_FORMAT({this}, {time_format}) AS DATE)"
+    if time_format not in (Hive.time_format, Hive.date_format):
+        this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
+    return f"CAST({this} AS DATE)"
 
 
 def _str_to_time(self, expression):
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format in (Hive.time_format, Hive.date_format):
-        return f"CAST({this} AS TIMESTAMP)"
-    return f"CAST(DATE_FORMAT({this}, {time_format}) AS TIMESTAMP)"
+    if time_format not in (Hive.time_format, Hive.date_format):
+        this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
+    return f"CAST({this} AS TIMESTAMP)"
 
 
 def _time_format(self, expression):

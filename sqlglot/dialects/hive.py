@@ -229,7 +229,6 @@ class Hive(Dialect):
 
         TYPE_MAPPING = {
             exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.VARCHAR: "STRING",
         }
 
         TRANSFORMS = {
@@ -287,3 +286,11 @@ class Hive(Dialect):
                 properties,
                 prefix="TBLPROPERTIES",
             )
+
+        def datatype_sql(self, expression):
+            if (
+                expression.this == exp.DataType.Type.VARCHAR
+                and not expression.expressions
+            ):
+                expression = exp.DataType.build("text")
+            return super().datatype_sql(expression)

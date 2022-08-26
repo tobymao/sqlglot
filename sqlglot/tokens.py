@@ -543,7 +543,6 @@ class Tokenizer(metaclass=_Tokenizer):
     NUMERIC_LITERALS = {}
     ENCODE = None
 
-    ESCAPE_CODE = "__sqlglot_escape__"
     COMMENTS = {"--"}
     COMMENT_START = "/*"
     COMMENT_END = "*/"
@@ -776,7 +775,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         while True:
             if self._char == self.escape and self._peek == quote:
-                text += f"{self.ESCAPE_CODE}{self._peek}"
+                text += quote
                 self._advance(2)
             else:
                 if self._chars(size) == quote:
@@ -784,16 +783,12 @@ class Tokenizer(metaclass=_Tokenizer):
                         self._advance(size - 1)
                     break
 
-                if self._char == "'":
-                    text += f"{self.ESCAPE_CODE}'"
-                    self._advance()
-                elif self._end:
+                if self._end:
                     raise RuntimeError(
                         f"Missing {quote} from {self._line}:{self._start}"
                     )
-                else:
-                    text += self._char
-                    self._advance()
+                text += self._char
+                self._advance()
 
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
         text = text.replace("\\\\", "\\") if self.escape == "\\" else text

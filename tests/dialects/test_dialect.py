@@ -1475,6 +1475,20 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "CAST(a AS VARCHAR(3))",
+            write={
+                "bigquery": "CAST(a AS STRING(3))",
+                "duckdb": "CAST(a AS TEXT(3))",
+                "mysql": "CAST(a AS VARCHAR(3))",
+                "hive": "CAST(a AS VARCHAR(3))",
+                "oracle": "CAST(a AS VARCHAR2(3))",
+                "presto": "CAST(a AS VARCHAR(3))",
+                "snowflake": "CAST(a AS VARCHAR(3))",
+                "spark": "CAST(a AS VARCHAR(3))",
+                "starrocks": "CAST(a AS VARCHAR(3))",
+            },
+        )
+        self.validate_all(
             "CAST(a AS TIMESTAMP)", write={"starrocks": "CAST(a AS DATETIME)"}
         )
         self.validate_all(

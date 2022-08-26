@@ -1420,13 +1420,6 @@ TBLPROPERTIES (
             write="tableau",
         )
 
-    def test_trino(self):
-        self.validate(
-            "ARRAY_SUM(ARRAY(1, 2))",
-            "REDUCE(ARRAY[1, 2], 0, (acc, x) -> acc + x, acc -> acc)",
-            write="trino",
-        )
-
     def test_clickhouse(self):
         self.validate(
             "dictGet(x, 'y')",
@@ -1774,6 +1767,16 @@ TBLPROPERTIES (
                 "duckdb": "ARRAY_LENGTH(x)",
                 "presto": "CARDINALITY(x)",
                 "spark": "SIZE(x)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_SUM(ARRAY(1, 2))",
+            write={
+                "trino": "REDUCE(ARRAY[1, 2], 0, (acc, x) -> acc + x, acc -> acc)",
+                "duckdb": "LIST_SUM(LIST_VALUE(1, 2))",
+                "hive": "ARRAY_SUM(ARRAY(1, 2))",
+                "presto": "ARRAY_SUM(ARRAY[1, 2])",
+                "spark": "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
             },
         )
 

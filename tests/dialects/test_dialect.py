@@ -399,411 +399,6 @@ class TestDialect(Validator):
             write="postgres",
         )
 
-    def test_hive(self):
-        sql = transpile('SELECT "a"."b" FROM "foo"', write="hive")[0]
-        self.assertEqual(sql, "SELECT `a`.`b` FROM `foo`")
-        self.validate("""'["x"]'""", """'["x"]'""", write="hive", identity=True)
-        self.validate(
-            "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
-            "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            'SELECT "a"."b" FROM foo',
-            "SELECT `a`.`b` FROM `foo`",
-            write="hive",
-            identify=True,
-        )
-        self.validate(
-            "SELECT APPROX_COUNT_DISTINCT(a) FROM foo",
-            "SELECT APPROX_DISTINCT(a) FROM foo",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
-            "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "SELECT GET_JSON_OBJECT(x, '$.name')",
-            "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate(
-            "MAP(a, b, c, d)",
-            "MAP(a, b, c, d)",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            "MAP(a, b)",
-            "MAP(a, b)",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            "MAP(a, b)",
-            "MAP(ARRAY[a], ARRAY[b])",
-            read="hive",
-            write="presto",
-        )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "MAP(a, b)",
-                read="presto",
-                write="hive",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        self.validate(
-            "MAP(a, b, c, d)",
-            "MAP(ARRAY[a, c], ARRAY[b, d])",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "MAP(ARRAY(a, b), ARRAY(c, d))",
-            "MAP(a, c, b, d)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            'MAP(ARRAY("a", "b"), ARRAY("c", "d"))',
-            "MAP(`a`, `c`, `b`, `d`)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "MAP(ARRAY(a), ARRAY(b))",
-            "MAP(a, b)",
-            read="presto",
-            write="hive",
-        )
-        self.validate(
-            "MAP(ARRAY('a'), ARRAY('b'))",
-            "MAP('a', 'b')",
-            read="presto",
-            write="hive",
-        )
-        self.validate("LOG(10)", "LN(10)", read="hive", write="presto")
-        self.validate("LOG(2, 10)", "LOG(2, 10)", read="hive", write="presto")
-        self.validate("'\\''", "''''", read="hive", write="presto")
-        self.validate("'\"x\"'", "'\"x\"'", read="hive", write="presto")
-        self.validate("\"'x'\"", "'''x'''", read="hive", write="presto")
-        self.validate('ds = "2020-01-01"', "ds = '2020-01-01'", read="hive")
-        self.validate("ds = \"1''2\"", "ds = '1\\'\\'2'", read="hive")
-        self.validate("ds = \"1''2\"", "ds = '1''''2'", read="hive", write="presto")
-        self.validate("x == 1", "x = 1", read="hive")
-        self.validate("x == 1", "x = 1", read="hive", write="presto")
-        self.validate("x div y", "CAST(x / y AS INTEGER)", read="hive", write="presto")
-
-        self.validate(
-            "DATE_STR_TO_DATE(x)",
-            "TO_DATE(x)",
-            write="hive",
-        )
-        self.validate(
-            "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd')",
-            "CAST('2020-01-01' AS TIMESTAMP)",
-            write="hive",
-            identity=False,
-        )
-        self.validate(
-            "STR_TO_TIME('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
-            "CAST('2020-01-01' AS TIMESTAMP)",
-            write="hive",
-            identity=False,
-        )
-        self.validate(
-            "STR_TO_TIME(x, 'yyyy')",
-            "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy')) AS TIMESTAMP)",
-            write="hive",
-            identity=False,
-        )
-        self.validate(
-            "STR_TO_DATE(x, 'yyyy')",
-            "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy')) AS DATE)",
-            write="hive",
-            identity=False,
-        )
-        self.validate(
-            "STR_TO_DATE(x, 'yyyy-MM-dd')",
-            "CAST(x AS DATE)",
-            write="hive",
-            identity=False,
-        )
-        self.validate(
-            "TS_OR_DS_TO_DATE_STR(x)",
-            "SUBSTRING(CAST(x AS STRING), 1, 10)",
-            identity=False,
-            write="hive",
-        )
-        self.validate(
-            "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
-            "DATE_FORMAT('2020-01-01', '%Y-%m-%d %H:%i:%S')",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "DATE_ADD('2020-01-01', 1)",
-            "TS_OR_DS_ADD('2020-01-01', 1, 'DAY')",
-            read="hive",
-            write=None,
-            identity=False,
-        )
-        self.validate(
-            "DATE_ADD('2020-01-01', 1)",
-            "DATE_ADD('2020-01-01', 1)",
-            read="hive",
-        )
-        self.validate(
-            "DATE_SUB('2020-01-01', 1)",
-            "DATE_ADD('2020-01-01', 1 * -1)",
-            read="hive",
-        )
-        self.validate(
-            "DATE_SUB('2020-01-01', 1)",
-            "DATE_FORMAT(DATE_ADD('DAY', 1 * -1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "DATE_ADD('2020-01-01', 1)",
-            "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
-            "DATE_FORMAT(DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d')), '%Y-%m-%d')",
-            write="presto",
-            identity=False,
-        )
-        self.validate(
-            "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
-            "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
-            write="duckdb",
-            identity=False,
-        )
-        self.validate(
-            "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
-            "STRFTIME(CAST('2021-02-01' AS DATE) + INTERVAL 1 DAY, '%Y-%m-%d')",
-            write="duckdb",
-            identity=False,
-        )
-        self.validate(
-            "DATE_ADD('2020-01-01', 1)",
-            "STRFTIME(CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY, '%Y-%m-%d')",
-            read="hive",
-            write="duckdb",
-        )
-        self.validate(
-            "DATEDIFF('2020-01-02', '2020-01-02')",
-            "DATE_DIFF(TS_OR_DS_TO_DATE('2020-01-02'), TS_OR_DS_TO_DATE('2020-01-02'))",
-            read="hive",
-            write=None,
-            identity=False,
-        )
-        self.validate(
-            "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATEDIFF(TO_DATE('2020-01-02'), TO_DATE('2020-01-01'))",
-            read="hive",
-        )
-        self.validate(
-            "DATEDIFF(TO_DATE(y), x)",
-            "DATE_DIFF('day', CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE), "
-            "CAST(SUBSTR(CAST(CAST(SUBSTR(CAST(y AS VARCHAR), 1, 10) AS DATE) AS VARCHAR), 1, 10) AS DATE))",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "DATEDIFF('2020-01-02', '2020-01-01')",
-            "DATE_DIFF('day', CAST(SUBSTR(CAST('2020-01-01' AS VARCHAR), 1, 10) AS DATE), "
-            "CAST(SUBSTR(CAST('2020-01-02' AS VARCHAR), 1, 10) AS DATE))",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate("COLLECT_LIST(x)", "ARRAY_AGG(x)", read="hive", write="presto")
-        self.validate("ARRAY_AGG(x)", "COLLECT_LIST(x)", read="presto", write="hive")
-        self.validate("COLLECT_SET(x)", "SET_AGG(x)", read="hive", write="presto")
-        self.validate("SET_AGG(x)", "COLLECT_SET(x)", read="presto", write="hive")
-        self.validate("IF(x > 1, 1, 0)", "IF(x > 1, 1, 0)", write="hive")
-        self.validate(
-            "CASE WHEN 1 THEN x ELSE 0 END",
-            "CASE WHEN 1 THEN x ELSE 0 END",
-            write="hive",
-        )
-
-        self.validate(
-            "UNIX_TIMESTAMP(x)",
-            "STR_TO_UNIX(x, '%Y-%m-%d %H:%M:%S')",
-            read="hive",
-            identity=False,
-        )
-        self.validate(
-            "TIME_STR_TO_UNIX(x)",
-            "UNIX_TIMESTAMP(x)",
-            write="hive",
-        )
-        self.validate(
-            "TIME_STR_TO_TIME(x)",
-            "CAST(x AS TIMESTAMP)",
-            write="hive",
-        )
-        self.validate(
-            "TIME_TO_TIME_STR(x)",
-            "CAST(x AS STRING)",
-            write="hive",
-        )
-        self.validate(
-            "UNIX_TO_TIME_STR(x)",
-            "FROM_UNIXTIME(x)",
-            write="hive",
-        )
-        self.validate(
-            "FROM_UNIXTIME(x)",
-            "DATE_FORMAT(FROM_UNIXTIME(x), '%Y-%m-%d %H:%i:%S')",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "TS_OR_DS_TO_DATE(x)",
-            "TO_DATE(x)",
-            write="hive",
-            identity=False,
-        )
-        self.validate(
-            "TO_DATE(x)",
-            "TS_OR_DS_TO_DATE(x)",
-            read="hive",
-            identity=False,
-        )
-
-        self.validate(
-            "STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read="duckdb", write="hive"
-        )
-        self.validate(
-            "STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')",
-            "x.`y`.`abc`",
-            read="duckdb",
-            write="hive",
-        )
-
-        self.validate(
-            "MONTH('2021-03-01')",
-            "MONTH(CAST('2021-03-01' AS DATE))",
-            read="hive",
-            write="duckdb",
-        )
-        self.validate("MONTH(x)", "MONTH(x)", read="duckdb", write="hive")
-
-        self.validate(
-            "DAY('2021-03-01')",
-            "DAY(CAST('2021-03-01' AS DATE))",
-            read="hive",
-            write="duckdb",
-        )
-        self.validate("DAY(x)", "DAY(x)", read="duckdb", write="hive")
-
-        self.validate("'\\\\a'", "'\\\\a'", read="hive")
-        self.validate("'\\\\a'", "'\\a'", read="hive", write="presto")
-        self.validate("'\\a'", "'\\\\a'", read="presto", write="hive")
-
-        self.validate("1s", "CAST(1 AS SMALLINT)", read="hive")
-        self.validate("1S", "CAST(1 AS SMALLINT)", read="hive")
-        self.validate("1Y", "CAST(1 AS TINYINT)", read="hive")
-        self.validate("1L", "CAST(1 AS BIGINT)", read="hive")
-        self.validate("1.0bd", "CAST(1.0 AS DECIMAL)", read="hive")
-
-        self.validate("TRY_CAST(1 AS INT)", "CAST(1 AS INT)", write="hive")
-        self.validate(
-            "CAST(1 AS INT)", "TRY_CAST(1 AS INTEGER)", read="hive", write="presto"
-        )
-        self.validate(
-            "CAST(1 AS INT)", "CAST(1 AS INT)", read="hive", write="starrocks"
-        )
-
-        self.validate(
-            "DATE_TO_DATE_STR(x)",
-            "CAST(x AS STRING)",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            "DATE_TO_DATE_STR(x)",
-            "CAST(x AS VARCHAR)",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "DATE_TO_DI(x)",
-            "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            "DATE_TO_DI(x)",
-            "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "DI_TO_DATE(x)",
-            "TO_DATE(CAST(x AS STRING), 'yyyyMMdd')",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            "DI_TO_DATE(x)",
-            "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "TS_OR_DI_TO_DI(x)",
-            "CAST(SUBSTR(REPLACE(CAST(x AS STRING), '-', ''), 1, 8) AS INT)",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            "TS_OR_DI_TO_DI(x)",
-            "CAST(SUBSTR(REPLACE(CAST(x AS VARCHAR), '-', ''), 1, 8) AS INT)",
-            read="hive",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT * FROM x TABLESAMPLE(1) foo",
-            "SELECT * FROM x TABLESAMPLE(1) AS foo",
-            read="hive",
-            write="hive",
-        )
-        self.validate(
-            "SELECT * FROM x TABLESAMPLE(1) foo",
-            "SELECT * FROM x AS foo TABLESAMPLE(1)",
-            read="hive",
-            write="presto",
-        )
-        self.validate(
-            "SELECT a AS b FROM x GROUP BY b",
-            "SELECT a AS b FROM x GROUP BY 1",
-            write="hive",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
-            read="hive",
-            write="hive",
-        )
-
     def test_spark(self):
         self.validate(
             'SELECT "a"."b" FROM "foo"',
@@ -1489,6 +1084,20 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "CAST(a AS SMALLINT)",
+            write={
+                "bigquery": "CAST(a AS INT64)",
+                "duckdb": "CAST(a AS SMALLINT)",
+                "mysql": "CAST(a AS SMALLINT)",
+                "hive": "CAST(a AS SMALLINT)",
+                "oracle": "CAST(a AS NUMBER)",
+                "presto": "CAST(a AS SMALLINT)",
+                "snowflake": "CAST(a AS SMALLINT)",
+                "spark": "CAST(a AS SHORT)",
+                "starrocks": "CAST(a AS SMALLINT)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS TIMESTAMP)", write={"starrocks": "CAST(a AS DATETIME)"}
         )
         self.validate_all(
@@ -1513,6 +1122,27 @@ TBLPROPERTIES (
             write={
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS TIMESTAMP)",
+                "presto": "DATE_PARSE(x, '%Y-%m-%dT%H:%i:%S')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')",
+            },
+        )
+        self.validate_all(
+            "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
+            write={
+                "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
+                "hive": "CAST('2020-01-01' AS TIMESTAMP)",
+                "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d')",
+                "spark": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
+            },
+        )
+        self.validate_all(
+            "STR_TO_TIME(x, '%y')",
+            write={
+                "duckdb": "STRPTIME(x, '%y')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy')) AS TIMESTAMP)",
+                "presto": "DATE_PARSE(x, '%y')",
+                "spark": "TO_TIMESTAMP(x, 'yy')",
             },
         )
         self.validate_all(
@@ -1733,6 +1363,46 @@ TBLPROPERTIES (
             write={
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
+                "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%H:%i:%S') AS DATE)",
+                "spark": "TO_DATE(x, 'yyyy-MM-ddTHH:mm:ss')",
+            },
+        )
+        self.validate_all(
+            "STR_TO_DATE(x, '%Y-%m-%d')",
+            write={
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%d')",
+                "starrocks": "STR_TO_DATE(x, '%Y-%m-%d')",
+                "hive": "CAST(x AS DATE)",
+                "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
+                "spark": "TO_DATE(x)",
+            },
+        )
+        self.validate_all(
+            "DATE_STR_TO_DATE(x)",
+            write={
+                "duckdb": "CAST(x AS DATE)",
+                "hive": "TO_DATE(x)",
+                "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
+                "spark": "TO_DATE(x)",
+            },
+        )
+        self.validate_all(
+            "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
+            write={
+                "duckdb": "CAST('2021-02-01' AS DATE) + INTERVAL 1 DAY",
+                "hive": "DATE_ADD('2021-02-01', 1)",
+                "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d'))",
+                "spark": "DATE_ADD('2021-02-01', 1)",
+            },
+        )
+        self.validate_all(
+            "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
+            write={
+                "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
+                "hive": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
+                "presto": "DATE_ADD('day', 1, CAST('2020-01-01' AS DATE))",
+                "spark": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             },
         )
 
@@ -1790,6 +1460,17 @@ TBLPROPERTIES (
                 "hive": "ARRAY_SUM(ARRAY(1, 2))",
                 "presto": "ARRAY_SUM(ARRAY[1, 2])",
                 "spark": "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
+            },
+        )
+
+    def test_order_by(self):
+        self.validate_all(
+            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
+            write={
+                "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+                "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
+                "hive": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+                "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
             },
         )
 
@@ -1863,6 +1544,16 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "CASE WHEN 1 THEN x ELSE 0 END",
+            write={
+                "duckdb": "CASE WHEN 1 THEN x ELSE 0 END",
+                "presto": "CASE WHEN 1 THEN x ELSE 0 END",
+                "hive": "CASE WHEN 1 THEN x ELSE 0 END",
+                "spark": "CASE WHEN 1 THEN x ELSE 0 END",
+                "tableau": "CASE WHEN 1 THEN x ELSE 0 END",
+            },
+        )
+        self.validate_all(
             "x[y]",
             write={
                 "duckdb": "x[y]",
@@ -1871,6 +1562,16 @@ TBLPROPERTIES (
                 "spark": "x[y]",
             },
         )
+        self.validate_all(
+            """'["x"]'""",
+            write={
+                "duckdb": """'["x"]'""",
+                "presto": """'["x"]'""",
+                "hive": """'["x"]'""",
+                "spark": """'["x"]'""",
+            },
+        )
+
         self.validate_all(
             'true or null as "foo"',
             write={

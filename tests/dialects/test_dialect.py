@@ -4,7 +4,6 @@ from sqlglot import (
     Dialect,
     Dialects,
     ErrorLevel,
-    ParseError,
     UnsupportedError,
     transpile,
     parse_one,
@@ -68,217 +67,6 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect.get(dialect))
             self.assertIsNotNone(Dialect.get_or_raise(dialect))
             self.assertIsNotNone(Dialect[dialect.value])
-
-    def test_bigquery(self):
-        self.validate(
-            '"""x"""',
-            "'x'",
-            read="bigquery",
-            write="presto",
-        )
-        self.validate(
-            '"""x\'"""',
-            "'x'''",
-            read="bigquery",
-            write="presto",
-        )
-        self.validate(
-            r'r"""/\*.*\*/"""',
-            r"'/\*.*\*/'",
-            read="bigquery",
-            write="presto",
-        )
-        self.validate(
-            r'r"/\*.*\*/"',
-            r"'/\\*.*\\*/'",
-            read="bigquery",
-            write="hive",
-        )
-
-        self.validate(
-            "SELECT CAST(a AS INT) FROM foo",
-            "SELECT CAST(a AS INT64) FROM foo",
-            write="bigquery",
-        )
-        self.validate(
-            "SELECT CAST(a AS INT64) FROM foo",
-            "SELECT CAST(a AS BIGINT) FROM foo",
-            read="bigquery",
-            write="duckdb",
-        )
-        self.validate(
-            "SELECT CAST(a AS DECIMAL) FROM foo",
-            "SELECT CAST(a AS NUMERIC) FROM foo",
-            write="bigquery",
-        )
-        self.validate(
-            'SELECT CAST("a" AS DOUBLE) FROM foo',
-            "SELECT CAST(`a` AS FLOAT64) FROM foo",
-            write="bigquery",
-        )
-
-        self.validate(
-            "[1, 2, 3]",
-            "[1, 2, 3]",
-            write="bigquery",
-        )
-        self.validate(
-            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
-            "SELECT [1, 2, 3] AS y FROM foo",
-            read="spark",
-            write="bigquery",
-        )
-        self.validate(
-            "SELECT [1, 2, 3] AS y FROM foo",
-            "SELECT ARRAY(1, 2, 3) AS y FROM foo",
-            read="bigquery",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM UNNEST(['7', '14']) AS x",
-            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS (x)",
-            read="bigquery",
-            write="presto",
-        )
-        self.validate(
-            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
-            "SELECT * FROM UNNEST(['7', '14'])",
-            read="presto",
-            write="bigquery",
-        )
-        self.validate(
-            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x(y)",
-            "SELECT * FROM UNNEST(['7', '14']) AS y",
-            read="presto",
-            write="bigquery",
-        )
-
-        with self.assertRaises(ParseError):
-            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
-
-        self.validate(
-            "x IS unknown",
-            "x IS NULL",
-            read="bigquery",
-            write="duckdb",
-        )
-        self.validate(
-            "current_datetime",
-            "CURRENT_DATETIME()",
-            read="bigquery",
-        )
-
-        self.validate(
-            "current_time",
-            "CURRENT_TIME()",
-            read="bigquery",
-        )
-
-        self.validate(
-            "current_timestamp",
-            "CURRENT_TIMESTAMP()",
-            read="bigquery",
-        )
-
-        self.validate(
-            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)",
-            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)",
-            read="bigquery",
-        )
-
-        self.validate(
-            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
-            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
-            read="bigquery",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
-            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRING>)",
-            read="spark",
-            write="bigquery",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
-            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
-            read="spark",
-            write="bigquery",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a struct<struct_col_a int64, struct_col_b string>)",
-            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRING>)",
-            read="bigquery",
-            write="bigquery",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
-            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT64, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
-            read="bigquery",
-            write="bigquery",
-        )
-
-        self.validate(
-            "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
-            "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
-            read="bigquery",
-            write="bigquery",
-        )
-
-        self.validate(
-            "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
-            "SELECT * FROM a WHERE b IN (SELECT UNNEST(ARRAY(1, 2, 3)))",
-            read="bigquery",
-            write="mysql",
-        )
-
-        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        self.validate(
-            "SELECT * FROM a UNION SELECT * FROM b",
-            "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
-            write="bigquery",
-        )
-
-        self.validate(
-            "SELECT * FROM a UNION ALL SELECT * FROM b",
-            "SELECT * FROM a UNION ALL SELECT * FROM b",
-            write="bigquery",
-        )
-
-        self.validate(
-            "SELECT * FROM a INTERSECT SELECT * FROM b",
-            "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
-            write="bigquery",
-        )
-
-        self.validate(
-            "SELECT * FROM a EXCEPT SELECT * FROM b",
-            "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
-            write="bigquery",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
-            read="bigquery",
-            write="bigquery",
-        )
 
     def test_postgres(self):
         self.validate(
@@ -1467,6 +1255,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
+                "bigquery": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
                 "hive": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
@@ -1632,5 +1421,41 @@ TBLPROPERTIES (
             "SELECT x FROM y LIMIT 10",
             read={
                 "oracle": "SELECT TOP 10 x FROM y",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
+                "presto": "SELECT * FROM a UNION SELECT * FROM b",
+                "spark": "SELECT * FROM a UNION SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "duckdb": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "presto": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "spark": "SELECT * FROM a UNION ALL SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
             },
         )

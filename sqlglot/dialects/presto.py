@@ -106,7 +106,7 @@ def _ts_or_ds_add_sql(self, expression):
     this = self.sql(expression, "this")
     e = self.sql(expression, "expression")
     unit = self.sql(expression, "unit") or "'day'"
-    return f"DATE_FORMAT(DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), {Presto.date_format})), {Presto.date_format})"
+    return f"DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), {Presto.date_format}))"
 
 
 class Presto(Dialect):

@@ -363,3 +363,26 @@ class TestPresto(Validator):
                 "hive": UnsupportedError,
             },
         )
+        self.validate_all(
+            "MAP(a, b)",
+            write={
+                "hive": UnsupportedError,
+                "spark": "MAP_FROM_ARRAYS(a, b)",
+            },
+        )
+        self.validate_all(
+            "MAP(ARRAY(a, b), ARRAY(c, d))",
+            write={
+                "hive": "MAP(a, c, b, d)",
+                "presto": "MAP(ARRAY[a, b], ARRAY[c, d])",
+                "spark": "MAP_FROM_ARRAYS(ARRAY(a, b), ARRAY(c, d))",
+            },
+        )
+        self.validate_all(
+            "MAP(ARRAY('a'), ARRAY('b'))",
+            write={
+                "hive": "MAP('a', 'b')",
+                "presto": "MAP(ARRAY['a'], ARRAY['b'])",
+                "spark": "MAP_FROM_ARRAYS(ARRAY('a'), ARRAY('b'))",
+            },
+        )

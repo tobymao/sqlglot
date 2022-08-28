@@ -386,3 +386,21 @@ class TestPresto(Validator):
                 "spark": "MAP_FROM_ARRAYS(ARRAY('a'), ARRAY('b'))",
             },
         )
+        self.validate_all(
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+            write={
+                "bigquery": "SELECT * FROM UNNEST(['7', '14'])",
+                "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x",
+                "hive": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x",
+                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x(y)",
+            write={
+                "bigquery": "SELECT * FROM UNNEST(['7', '14']) AS y",
+                "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x(y)",
+                "hive": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x(y)",
+                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x(y)",
+            },
+        )

@@ -1419,8 +1419,35 @@ TBLPROPERTIES (
         )
         self.validate_all(
             "SELECT x FROM y LIMIT 10",
-            read={
-                "oracle": "SELECT TOP 10 x FROM y",
+            write={
+                "sqlite": "SELECT x FROM y LIMIT 10",
+                "oracle": "SELECT x FROM y FETCH FIRST 10 ROWS ONLY",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y LIMIT 10 OFFSET 5",
+            write={
+                "sqlite": "SELECT x FROM y LIMIT 10 OFFSET 5",
+                "oracle": "SELECT x FROM y OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y LIMIT 10 OFFSET 5",
+            write={
+                "sqlite": "SELECT x FROM y LIMIT 10 OFFSET 5",
+                "oracle": "SELECT x FROM y OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y OFFSET 10 FETCH FIRST 3 ROWS ONLY",
+            write={
+                "oracle": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
+            write={
+                "oracle": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
             },
         )
         self.validate_all(

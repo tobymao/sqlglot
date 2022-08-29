@@ -9,6 +9,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 def _limit_sql(self, expression):
     return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
 
+
 class Oracle(Dialect):
     class Generator(Generator):
         TYPE_MAPPING = {
@@ -41,7 +42,7 @@ class Oracle(Dialect):
                 self.sql(expression, "sort"),
                 self.sql(expression, "cluster"),
                 self.sql(expression, "order"),
-                self.sql(expression, "offset"), # offset before limit in oracle
+                self.sql(expression, "offset"),  # offset before limit in oracle
                 self.sql(expression, "limit"),
                 sep="",
             )

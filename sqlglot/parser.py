@@ -1278,7 +1278,9 @@ class Parser:
     def _parse_offset(self, this=None):
         if not self._match(TokenType.OFFSET):
             return this
-        return self.expression(exp.Offset, this=this, expression=self._parse_number())
+        count = self._parse_number()
+        self._match_set((TokenType.ROW, TokenType.ROWS))
+        return self.expression(exp.Offset, this=this, expression=count)
 
     def _parse_set_operations(self, this):
         if not self._match_set(self.SET_OPERATIONS):

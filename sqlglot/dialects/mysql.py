@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser
+from sqlglot.tokens import Tokenizer
 
 
 def _date_trunc_sql(self, expression):
@@ -84,6 +85,9 @@ class MySQL(Dialect):
         "%S": "%S",
         "%u": "%W",
     }
+
+    class Tokenizer(Tokenizer):
+        QUOTES = ["'", '"']
 
     class Parser(Parser):
         STRICT_CAST = False

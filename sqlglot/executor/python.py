@@ -3,8 +3,8 @@ import collections
 import itertools
 
 from sqlglot import exp, planner
-from sqlglot.dialects import Dialect
 from sqlglot.executor.context import Context
+from sqlglot.dialects.dialect import Dialect, inline_array_sql
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
 from sqlglot.generator import Generator
@@ -330,6 +330,7 @@ class Python(Dialect):
     class Generator(Generator):
         TRANSFORMS = {
             exp.Alias: lambda self, e: self.sql(e.this),
+            exp.Array: inline_array_sql,
             exp.And: lambda self, e: self.binary(e, "and"),
             exp.Cast: _cast_py,
             exp.Column: _column_py,

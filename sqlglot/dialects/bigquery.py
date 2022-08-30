@@ -1,5 +1,10 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func
+from sqlglot.dialects.dialect import (
+    Dialect,
+    inline_array_sql,
+    no_ilike_sql,
+    rename_func,
+)
 from sqlglot.helper import list_get
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
@@ -69,7 +74,7 @@ class BigQuery(Dialect):
 
     class Generator(Generator):
         TRANSFORMS = {
-            exp.Array: lambda self, e: f"[{self.expressions(e)}]",
+            exp.Array: inline_array_sql,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),

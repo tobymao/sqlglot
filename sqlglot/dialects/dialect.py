@@ -197,6 +197,10 @@ def arrow_json_extract_scalar_sql(self, expression):
     return f"{self.sql(expression, 'this')}->>{self.sql(expression, 'path')}"
 
 
+def inline_array_sql(self, expression):
+    return f"[{self.expressions(expression)}]"
+
+
 def no_ilike_sql(self, expression):
     return self.like_sql(
         exp.Like(

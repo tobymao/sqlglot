@@ -39,6 +39,7 @@ class TokenType(AutoName):
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
     ANNOTATION = auto()
+    DOLLAR = auto()
 
     SPACE = auto()
     BREAK = auto()
@@ -311,6 +312,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
         "#": TokenType.ANNOTATION,
+        "$": TokenType.DOLLAR,
     }
 
     QUOTES = ["'"]

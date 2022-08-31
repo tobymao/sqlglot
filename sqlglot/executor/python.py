@@ -327,6 +327,8 @@ def _ordered_py(self, expression):
 
 
 class Python(Dialect):
+    escape = "\\"
+
     class Generator(Generator):
         TRANSFORMS = {
             exp.Alias: lambda self, e: self.sql(e.this),

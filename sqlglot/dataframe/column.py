@@ -13,6 +13,11 @@ class Column:
             self.expression = self.alias(self.expression.args["this"]).expression
         elif isinstance(self.expression, exp.Null):
             self.expression = self.alias("NULL").expression
+        elif isinstance(self.expression, exp.Star):
+            self.expression = exp.Column(this=self.expression)
+
+    def __repr__(self):
+        return repr(self.expression)
 
     def __hash__(self):
         return hash(self.expression)
@@ -72,6 +77,12 @@ class Column:
         if self.is_alias:
             return self.expression.args["this"]
         return self.expression
+
+    @property
+    def alias_or_name(self):
+        if isinstance(self.expression.args.get("this"), exp.Star):
+            return self.expression.args["this"].alias_or_name
+        return self.expression.alias_or_name
 
     @classmethod
     def ensure_literal(cls, value) -> "Column":

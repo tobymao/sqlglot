@@ -99,7 +99,7 @@ class DataFrame:
         new_expression = exp.Select()
         new_expression = self._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
         sel_columns = self._get_outer_select_columns(cte_expression)
-        new_expression = new_expression.from_(cte_name).select(*[x.expression.alias_or_name for x in sel_columns])
+        new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
         self.joins_infos = []
         return self.copy(expression=new_expression, name=name if name is not None else self.name)
 
@@ -115,7 +115,7 @@ class DataFrame:
         for col in sqlglot_columns:
             table_identifier = col.args.get("table")
             if not table_identifier:
-                inner_join_columns = {y.expression.alias_or_name for y in flatten([x.columns for x in self.joins_infos])}
+                inner_join_columns = {y.alias_or_name for y in flatten([x.columns for x in self.joins_infos])}
                 if col.alias_or_name in inner_join_columns:
                     col.set("table", exp.Identifier(this=self.joins_infos[0].base_prejoin_latest_cte_name))
                 continue
@@ -294,7 +294,7 @@ class DataFrame:
         new_df = self.copy()
         all_columns = self._get_outer_select_columns(new_df.expression)
         all_column_mapping = {
-            column.expression.alias_or_name: column
+            column.alias_or_name: column
             for column in all_columns
         }
         if isinstance(value, dict):
@@ -307,16 +307,16 @@ class DataFrame:
         values = [lit(value) for value in values]
 
         null_replacement_mapping = {
-            column.expression.alias_or_name: (
+            column.alias_or_name: (
                 F.when(column.isNull(), value)
                 .otherwise(column)
-                .alias(column.expression.alias_or_name)
+                .alias(column.alias_or_name)
             )
             for column, value in zip(columns, values)
         }
         null_replacement_mapping = {**all_column_mapping, **null_replacement_mapping}
         null_replacement_columns = [
-            null_replacement_mapping[column.expression.alias_or_name]
+            null_replacement_mapping[column.alias_or_name]
             for column in all_columns
         ]
         new_df = new_df.select(*null_replacement_columns)
@@ -332,7 +332,7 @@ class DataFrame:
         new_df = self.copy()
         all_columns = self._get_outer_select_columns(new_df.expression)
         all_column_mapping = {
-            column.expression.alias_or_name: column
+            column.alias_or_name: column
             for column in all_columns
         }
 
@@ -359,11 +359,11 @@ class DataFrame:
                     expression = F.when(column == old_value, new_value)
                 else:
                     expression = expression.when(column == old_value, new_value)
-            replacement_mapping[column.expression.alias_or_name] = expression.otherwise(column).alias(column.expression.alias_or_name)
+            replacement_mapping[column.alias_or_name] = expression.otherwise(column).alias(column.expression.alias_or_name)
 
         replacement_mapping = {**all_column_mapping, **replacement_mapping}
         replacement_columns = [
-            replacement_mapping[column.expression.alias_or_name]
+            replacement_mapping[column.alias_or_name]
             for column in all_columns
         ]
         new_df = new_df.select(*replacement_columns)

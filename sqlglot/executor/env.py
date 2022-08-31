@@ -17,6 +17,7 @@ class reverse_key:
 ENV = {
     "__builtins__": {},
     "datetime": datetime,
+    "locals": locals,
     "re": re,
     "float": float,
     "int": int,

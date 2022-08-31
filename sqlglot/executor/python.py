@@ -344,3 +344,15 @@ class Python(Dialect):
             exp.Ordered: _ordered_py,
             exp.Star: lambda *_: "1",
         }
+
+        def case_sql(self, expression):
+            this = self.sql(expression, "this")
+            chain = self.sql(expression, "default") or "None"
+
+            for e in reversed(expression.args["ifs"]):
+                true = self.sql(e, "true")
+                condition = self.sql(e, "this")
+                condition = f"{this} = ({condition})" if this else condition
+                chain = f"{true} if {condition} else ({chain})"
+
+            return chain

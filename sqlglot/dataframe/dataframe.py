@@ -368,3 +368,16 @@ class DataFrame:
         ]
         new_df = new_df.select(*replacement_columns)
         return new_df
+
+    @operation(Operation.SELECT)
+    def withColumn(self, colName: str, col: Column) -> "DataFrame":
+        return self.copy().select(col.alias(colName), append=True)
+
+    @operation(Operation.SELECT)
+    def drop(self, *cols: t.Union[str, "Column"]) -> "DataFrame":
+        all_columns = self._get_outer_select_columns(self.expression)
+        drop_cols = self._ensure_list_of_columns(cols)
+        new_columns = [col for col in all_columns if
+                       col.alias_or_name not in [drop_column.alias_or_name for drop_column in drop_cols]]
+        return self.copy().select(*new_columns, append=False)
+

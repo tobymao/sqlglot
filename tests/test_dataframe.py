@@ -1146,3 +1146,31 @@ class TestDataframe(unittest.TestCase):
         )
 
         self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
+
+    def test_with_column(self):
+        df = (
+            self.df_spark_employee
+            .withColumn("test", F.col("age"))
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .withColumn("test", SF.col("age"))
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_drop_column_single(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("fname"), F.col("lname"), F.col("age"))
+            .drop("age")
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("fname"), SF.col("lname"), SF.col("age"))
+            .drop("age")
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)

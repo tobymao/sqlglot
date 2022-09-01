@@ -102,6 +102,7 @@ class TokenType(AutoName):
     COMMENT_START = auto()
     COMMIT = auto()
     CONSTRAINT = auto()
+    CONVERT = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
@@ -362,6 +363,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
         "CONSTRAINT": TokenType.CONSTRAINT,
+        "CONVERT": TokenType.CONVERT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,

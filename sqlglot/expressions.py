@@ -1750,20 +1750,8 @@ class Bracket(Condition):
     arg_types = {"this": True, "expressions": True}
 
 
-class Case(Condition):
-    arg_types = {"this": False, "ifs": True, "default": False}
-
-
-class Cast(Expression):
-    arg_types = {"this": True, "to": True}
-
-
 class Distinct(Expression):
     arg_types = {"this": False, "on": False}
-
-
-class Extract(Expression):
-    arg_types = {"this": True, "expression": True}
 
 
 class In(Predicate):
@@ -1789,10 +1777,6 @@ class Interval(TimeUnit):
 
 
 class IgnoreNulls(Expression):
-    pass
-
-
-class TryCast(Cast):
     pass
 
 
@@ -1916,6 +1900,18 @@ class Avg(AggFunc):
     pass
 
 
+class Case(Func):
+    arg_types = {"this": False, "ifs": True, "default": False}
+
+
+class Cast(Func):
+    arg_types = {"this": True, "to": True}
+
+
+class TryCast(Cast):
+    pass
+
+
 class Ceil(Func):
     _sql_names = ["CEIL", "CEILING"]
 
@@ -1980,6 +1976,10 @@ class DatetimeDiff(Func, TimeUnit):
 
 class DatetimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
+
+
+class Extract(Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class TimestampAdd(Func, TimeUnit):

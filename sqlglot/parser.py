@@ -9,80 +9,6 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 logger = logging.getLogger("sqlglot")
 
 
-def _stored_parser(self):
-    self._match(TokenType.ALIAS)
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.FileFormatProperty,
-        this=exp.Literal.string("FORMAT"),
-        value=exp.Literal.string(self._parse_var().name),
-    )
-
-
-def _format_parser(self):
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.FileFormatProperty,
-        this=exp.Literal.string("FORMAT"),
-        value=self._parse_string() or self._parse_var(),
-    )
-
-
-def _engine_parser(self):
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.EngineProperty,
-        this=exp.Literal.string("ENGINE"),
-        value=self._parse_var() or self._parse_string(),
-    )
-
-
-def _auto_increment_parser(self):
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.AutoIncrementProperty,
-        this=exp.Literal.string("AUTO_INCREMENT"),
-        value=self._parse_var() or self._parse_number(),
-    )
-
-
-def _collate_parser(self):
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.CollateProperty,
-        this=exp.Literal.string("COLLATE"),
-        value=self._parse_var() or self._parse_string(),
-    )
-
-
-def _schema_comment_parser(self):
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.SchemaCommentProperty,
-        this=exp.Literal.string("COMMENT"),
-        value=self._parse_string(),
-    )
-
-
-def _character_set_parser(self, default=False):
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.CharacterSetProperty,
-        this=exp.Literal.string("CHARACTER_SET"),
-        value=self._parse_var() or self._parse_string(),
-        default=default,
-    )
-
-
-def _table_format_parser(self):
-    self._match(TokenType.EQ)
-    return self.expression(
-        exp.TableFormatProperty,
-        this=exp.Literal.string("TABLE_FORMAT"),
-        value=self._parse_var() or self._parse_string(),
-    )
-
-
 class Parser:
     """
     Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
@@ -339,31 +265,31 @@ class Parser:
     }
 
     EXPRESSION_PARSERS = {
-        exp.DataType: "_parse_types",
-        exp.From: "_parse_from",
-        exp.Group: "_parse_group",
-        exp.Lateral: "_parse_lateral",
-        exp.Join: "_parse_join",
-        exp.Order: "_parse_order",
-        exp.Lambda: "_parse_lambda",
-        exp.Limit: "_parse_limit",
-        exp.Offset: "_parse_offset",
-        exp.TableAlias: "_parse_table_alias",
-        exp.Table: "_parse_table",
-        exp.Condition: "_parse_conjunction",
-        exp.Expression: "_parse_statement",
-        exp.Properties: "_parse_properties",
-        "JOIN_TYPE": "_parse_join_side_and_kind",
+        exp.DataType: lambda self: self._parse_types(),
+        exp.From: lambda self: self._parse_from(),
+        exp.Group: lambda self: self._parse_group(),
+        exp.Lateral: lambda self: self._parse_lateral(),
+        exp.Join: lambda self: self._parse_join(),
+        exp.Order: lambda self: self._parse_order(),
+        exp.Lambda: lambda self: self._parse_lambda(),
+        exp.Limit: lambda self: self._parse_limit(),
+        exp.Offset: lambda self: self._parse_offset(),
+        exp.TableAlias: lambda self: self._parse_table_alias(),
+        exp.Table: lambda self: self._parse_table(),
+        exp.Condition: lambda self: self._parse_conjunction(),
+        exp.Expression: lambda self: self._parse_statement(),
+        exp.Properties: lambda self: self._parse_properties(),
+        "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 
     STATEMENT_PARSERS = {
-        TokenType.CREATE: "_parse_create",
-        TokenType.DROP: "_parse_drop",
-        TokenType.INSERT: "_parse_insert",
-        TokenType.UPDATE: "_parse_update",
-        TokenType.DELETE: "_parse_delete",
-        TokenType.CACHE: "_parse_cache",
-        TokenType.UNCACHE: "_parse_uncache",
+        TokenType.CREATE: lambda self: self._parse_create(),
+        TokenType.DROP: lambda self: self._parse_drop(),
+        TokenType.INSERT: lambda self: self._parse_insert(),
+        TokenType.UPDATE: lambda self: self._parse_update(),
+        TokenType.DELETE: lambda self: self._parse_delete(),
+        TokenType.CACHE: lambda self: self._parse_cache(),
+        TokenType.UNCACHE: lambda self: self._parse_uncache(),
     }
 
     PRIMARY_PARSERS = {
@@ -378,12 +304,27 @@ class Parser:
         TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
     }
 
+    RANGE_PARSERS = {
+        TokenType.BETWEEN: lambda self, this: self._parse_between(this),
+        TokenType.IN: lambda self, this: self._parse_in(this),
+        TokenType.IS: lambda self, this: self._parse_is(this),
+        TokenType.LIKE: lambda self, this: self._parse_escape(
+            self.expression(exp.Like, this=this, expression=self._parse_type())
+        ),
+        TokenType.ILIKE: lambda self, this: self._parse_escape(
+            self.expression(exp.ILike, this=this, expression=self._parse_type())
+        ),
+        TokenType.RLIKE: lambda self, this: self.expression(
+            exp.RegexpLike, this=this, expression=self._parse_type()
+        ),
+    }
+
     PROPERTY_PARSERS = {
-        TokenType.AUTO_INCREMENT: _auto_increment_parser,
-        TokenType.CHARACTER_SET: _character_set_parser,
-        TokenType.COLLATE: _collate_parser,
-        TokenType.ENGINE: _engine_parser,
-        TokenType.FORMAT: _format_parser,
+        TokenType.AUTO_INCREMENT: lambda self: self._parse_auto_increment(),
+        TokenType.CHARACTER_SET: lambda self: self._parse_character_set(),
+        TokenType.COLLATE: lambda self: self._parse_collate(),
+        TokenType.ENGINE: lambda self: self._parse_engine(),
+        TokenType.FORMAT: lambda self: self._parse_format(),
         TokenType.LOCATION: lambda self: self.expression(
             exp.LocationProperty,
             this=exp.Literal.string("LOCATION"),
@@ -394,10 +335,10 @@ class Parser:
             this=exp.Literal.string("PARTITIONED_BY"),
             value=self._parse_schema(),
         ),
-        TokenType.SCHEMA_COMMENT: _schema_comment_parser,
-        TokenType.STORED: _stored_parser,
-        TokenType.TABLE_FORMAT: _table_format_parser,
-        TokenType.USING: _table_format_parser,
+        TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
+        TokenType.STORED: lambda self: self._parse_stored(),
+        TokenType.TABLE_FORMAT: lambda self: self._parse_table_format(),
+        TokenType.USING: lambda self: self._parse_table_format(),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -485,7 +426,7 @@ class Parser:
             the list of syntax trees (:class:`~sqlglot.expressions.Expression`).
         """
         return self._parse(
-            parse_method=self._parse_statement, raw_tokens=raw_tokens, sql=sql
+            parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql
         )
 
     def parse_into(self, expression_types, raw_tokens, sql=None):
@@ -494,7 +435,7 @@ class Parser:
             if not parser:
                 raise TypeError(f"No parser registered for {expression_type}")
             try:
-                return self._parse(getattr(self, parser), raw_tokens, sql)
+                return self._parse(parser, raw_tokens, sql)
             except ParseError as e:
                 error = e
         raise ParseError(f"Failed to parse into {expression_types}") from error
@@ -517,7 +458,7 @@ class Parser:
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(parse_method())
+            expressions.append(parse_method(self))
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")
@@ -564,7 +505,7 @@ class Parser:
                 )
         for k, mandatory in expression.arg_types.items():
             v = expression.args.get(k)
-            if mandatory and (v is None or v == []):
+            if mandatory and (v is None or (isinstance(v, list) and not v)):
                 self.raise_error(
                     f"Required keyword: '{k}' missing for {expression.__class__}"
                 )
@@ -611,7 +552,7 @@ class Parser:
             return None
 
         if self._match_set(self.STATEMENT_PARSERS):
-            return getattr(self, self.STATEMENT_PARSERS[self._prev.token_type])()
+            return self.STATEMENT_PARSERS[self._prev.token_type](self)
 
         if self._match_set(Tokenizer.COMMANDS):
             return self.expression(
@@ -693,7 +634,7 @@ class Parser:
         if self._match_set(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.token_type](self)
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
-            return _character_set_parser(self, True)
+            return self._parse_character_set(True)
 
         if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var().this
@@ -725,6 +666,72 @@ class Parser:
                 value=value,
             )
         return None
+
+    def _parse_stored(self):
+        self._match(TokenType.ALIAS)
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.FileFormatProperty,
+            this=exp.Literal.string("FORMAT"),
+            value=exp.Literal.string(self._parse_var().name),
+        )
+
+    def _parse_format(self):
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.FileFormatProperty,
+            this=exp.Literal.string("FORMAT"),
+            value=self._parse_string() or self._parse_var(),
+        )
+
+    def _parse_engine(self):
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.EngineProperty,
+            this=exp.Literal.string("ENGINE"),
+            value=self._parse_var() or self._parse_string(),
+        )
+
+    def _parse_auto_increment(self):
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.AutoIncrementProperty,
+            this=exp.Literal.string("AUTO_INCREMENT"),
+            value=self._parse_var() or self._parse_number(),
+        )
+
+    def _parse_collate(self):
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.CollateProperty,
+            this=exp.Literal.string("COLLATE"),
+            value=self._parse_var() or self._parse_string(),
+        )
+
+    def _parse_schema_comment(self):
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.SchemaCommentProperty,
+            this=exp.Literal.string("COMMENT"),
+            value=self._parse_string(),
+        )
+
+    def _parse_character_set(self, default=False):
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.CharacterSetProperty,
+            this=exp.Literal.string("CHARACTER_SET"),
+            value=self._parse_var() or self._parse_string(),
+            default=default,
+        )
+
+    def _parse_table_format(self):
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.TableFormatProperty,
+            this=exp.Literal.string("TABLE_FORMAT"),
+            value=self._parse_var() or self._parse_string(),
+        )
 
     def _parse_properties(self, schema=None):
         """
@@ -1320,53 +1327,46 @@ class Parser:
         this = self._parse_bitwise()
         negate = self._match(TokenType.NOT)
 
-        if self._match(TokenType.IS):
-            negate = self._match(TokenType.NOT)
-            this = self.expression(
-                exp.Is,
-                this=this,
-                expression=self._parse_null() or self._parse_boolean(),
-            )
-        elif self._match(TokenType.LIKE):
-            this = self._parse_escape(
-                self.expression(exp.Like, this=this, expression=self._parse_type())
-            )
-        elif self._match(TokenType.ILIKE):
-            this = self._parse_escape(
-                self.expression(exp.ILike, this=this, expression=self._parse_type())
-            )
-        elif self._match(TokenType.RLIKE):
-            this = self.expression(
-                exp.RegexpLike, this=this, expression=self._parse_type()
-            )
-        elif self._match(TokenType.IN):
-            unnest = self._parse_unnest()
-            if unnest:
-                this = self.expression(exp.In, this=this, unnest=unnest)
-            else:
-                self._match_l_paren()
-                expressions = self._parse_csv(
-                    lambda: self._parse_select() or self._parse_expression()
-                )
-
-                if len(expressions) == 1 and isinstance(
-                    expressions[0], exp.Subqueryable
-                ):
-                    this = self.expression(exp.In, this=this, query=expressions[0])
-                else:
-                    this = self.expression(exp.In, this=this, expressions=expressions)
-
-                self._match_r_paren()
-        elif self._match(TokenType.BETWEEN):
-            low = self._parse_bitwise()
-            self._match(TokenType.AND)
-            high = self._parse_bitwise()
-            this = self.expression(exp.Between, this=this, low=low, high=high)
+        if self._match_set(self.RANGE_PARSERS):
+            this = self.RANGE_PARSERS[self._prev.token_type](self, this)
 
         if negate:
             this = self.expression(exp.Not, this=this)
 
         return this
+
+    def _parse_is(self, this):
+        negate = self._match(TokenType.NOT)
+        this = self.expression(
+            exp.Is,
+            this=this,
+            expression=self._parse_null() or self._parse_boolean(),
+        )
+        return self.expression(exp.Not, this=this) if negate else this
+
+    def _parse_in(self, this):
+        unnest = self._parse_unnest()
+        if unnest:
+            this = self.expression(exp.In, this=this, unnest=unnest)
+        else:
+            self._match_l_paren()
+            expressions = self._parse_csv(
+                lambda: self._parse_select() or self._parse_expression()
+            )
+
+            if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
+                this = self.expression(exp.In, this=this, query=expressions[0])
+            else:
+                this = self.expression(exp.In, this=this, expressions=expressions)
+
+            self._match_r_paren()
+        return this
+
+    def _parse_between(self, this):
+        low = self._parse_bitwise()
+        self._match(TokenType.AND)
+        high = self._parse_bitwise()
+        return self.expression(exp.Between, this=this, low=low, high=high)
 
     def _parse_escape(self, this):
         if not self._match(TokenType.ESCAPE):

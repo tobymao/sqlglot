@@ -34,6 +34,9 @@ class TestHive(Validator):
         )
         self.validate_all(
             "x << 1",
+            read={
+                "spark": "SHIFTLEFT(x, 1)",
+            },
             write={
                 "duckdb": "x << 1",
                 "presto": "BITWISE_ARITHMETIC_SHIFT_LEFT(x, 1)",
@@ -43,6 +46,9 @@ class TestHive(Validator):
         )
         self.validate_all(
             "x >> 1",
+            read={
+                "spark": "SHIFTRIGHT(x, 1)",
+            },
             write={
                 "duckdb": "x >> 1",
                 "presto": "BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)",
@@ -408,7 +414,11 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "SELECT SORT_ARRAY(x, False)",
+            "SELECT SORT_ARRAY(x, FALSE)",
+            read={
+                "duckdb": "SELECT ARRAY_REVERSE_SORT(x)",
+                "spark": "SELECT SORT_ARRAY(x, FALSE)",
+            },
             write={
                 "duckdb": "SELECT ARRAY_REVERSE_SORT(x)",
                 "presto": "SELECT ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",

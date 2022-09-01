@@ -19,7 +19,7 @@ class Validator(unittest.TestCase):
     def validate_identity(self, sql):
         self.assertEqual(transpile(sql, read=self.dialect, write=self.dialect)[0], sql)
 
-    def validate_all(self, sql, read=None, write=None):
+    def validate_all(self, sql, read=None, write=None, pretty=False):
         """
         Validate that:
         1. Everything in `read` transpiles to `sql`
@@ -52,7 +52,9 @@ class Validator(unittest.TestCase):
                 else:
                     self.assertEqual(
                         expression.sql(
-                            write_dialect, unsupported_level=ErrorLevel.IGNORE
+                            write_dialect,
+                            unsupported_level=ErrorLevel.IGNORE,
+                            pretty=pretty,
                         ),
                         write_sql,
                     )
@@ -67,351 +69,6 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect.get(dialect))
             self.assertIsNotNone(Dialect.get_or_raise(dialect))
             self.assertIsNotNone(Dialect[dialect.value])
-
-    def test_spark(self):
-        self.validate(
-            'SELECT "a"."b" FROM "foo"',
-            "SELECT `a`.`b` FROM `foo`",
-            write="spark",
-        )
-
-        self.validate("CAST(a AS TEXT)", "CAST(a AS STRING)", write="spark")
-        self.validate(
-            "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
-            "SELECT CAST(`a`.`b` AS SHORT) FROM foo",
-            read="spark",
-        )
-        self.validate(
-            'SELECT "a"."b" FROM foo',
-            "SELECT `a`.`b` FROM `foo`",
-            write="spark",
-            identify=True,
-        )
-        self.validate(
-            "SELECT APPROX_COUNT_DISTINCT(a) FROM foo",
-            "SELECT APPROX_DISTINCT(a) FROM foo",
-            read="spark",
-            write="presto",
-        )
-        self.validate(
-            "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
-            "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
-            read="spark",
-            write="spark",
-        )
-        self.validate(
-            "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
-            "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
-            read="spark",
-            write="presto",
-        )
-
-        self.validate(
-            "CREATE TABLE test USING ICEBERG STORED AS PARQUET AS SELECT 1",
-            "CREATE TABLE test WITH (TABLE_FORMAT = 'ICEBERG', FORMAT = 'PARQUET') AS SELECT 1",
-            read="spark",
-            write="presto",
-        )
-
-        self.validate("ARRAY(0, 1, 2)", "ARRAY[0, 1, 2]", read="spark", write="presto")
-        self.validate(
-            "ARRAY(0, 1, 2)", "LIST_VALUE(0, 1, 2)", read="spark", write="duckdb"
-        )
-        self.validate(
-            "SELECT /*+ COALESCE(3) */ * FROM x",
-            "SELECT /*+ COALESCE(3) */ * FROM x",
-            read="spark",
-        )
-        self.validate(
-            "SELECT /*+ COALESCE(3), REPARTITION(1) */ * FROM x",
-            "SELECT /*+ COALESCE(3), REPARTITION(1) */ * FROM x",
-            read="spark",
-        )
-        self.validate(
-            "x IN ('a', 'a''b')", "x IN ('a', 'a\\'b')", read="presto", write="spark"
-        )
-
-        self.validate(
-            "STRUCT_EXTRACT(x, 'abc')", "x.`abc`", read="duckdb", write="spark"
-        )
-        self.validate(
-            "STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')",
-            "x.`y`.`abc`",
-            read="duckdb",
-            write="spark",
-        )
-
-        self.validate(
-            "MONTH('2021-03-01')",
-            "MONTH(CAST('2021-03-01' AS DATE))",
-            read="spark",
-            write="duckdb",
-        )
-        self.validate(
-            "YEAR('2021-03-01')",
-            "YEAR(CAST('2021-03-01' AS DATE))",
-            read="spark",
-            write="duckdb",
-        )
-        self.validate("MONTH(x)", "MONTH(x)", read="duckdb", write="spark")
-
-        self.validate("'\u6bdb'", "'毛'", read="spark")
-
-        self.validate(
-            "SELECT LEFT(x, 2), RIGHT(x, 2)",
-            "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - 2 + 1, 2)",
-            read="spark",
-            write="presto",
-        )
-        self.validate(
-            "ARRAY_SUM(ARRAY(1, 2))",
-            "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
-            write="spark",
-        )
-        self.validate(
-            "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
-            "AGGREGATE(x, 0, (acc, x) -> acc + x, acc -> acc)",
-            write="spark",
-        )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT sum(n) FROM t",
-                read="presto",
-                write="spark",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        self.validate(
-            "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
-            "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
-            write="spark",
-        )
-        self.validate(
-            "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t (a, b)",
-            "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) t AS b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
-            "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
-            write="spark",
-        )
-
-        self.validate(
-            "MAP(a, b)",
-            "MAP_FROM_ARRAYS(a, b)",
-            read="presto",
-            write="spark",
-        )
-
-        self.validate(
-            "MAP(ARRAY[1], ARRAY[2])",
-            "MAP_FROM_ARRAYS(ARRAY(1), ARRAY(2))",
-            read="presto",
-            write="spark",
-        )
-        self.validate(
-            "MAP_FROM_ARRAYS(ARRAY(1), c)",
-            "MAP(ARRAY[1], c)",
-            read="spark",
-            write="presto",
-        )
-
-        self.validate(
-            "SELECT SORT_ARRAY(x, FALSE)",
-            "SELECT SORT_ARRAY(x, FALSE)",
-            read="hive",
-            write="spark",
-        )
-        self.validate(
-            "SELECT SORT_ARRAY(x, TRUE)",
-            "SELECT SORT_ARRAY(x, TRUE)",
-            read="hive",
-            write="spark",
-        )
-        self.validate(
-            "SELECT SORT_ARRAY(x, TRUE)",
-            "SELECT SORT_ARRAY(x, TRUE)",
-            read="spark",
-            write="hive",
-        )
-        self.validate(
-            "SELECT ARRAY_SORT(x)",
-            "SELECT SORT_ARRAY(x)",
-            read="spark",
-            write="hive",
-        )
-
-        self.validate(
-            "ARRAY_FILTER(the_array, x -> x > 0)",
-            "FILTER(the_array, x -> x > 0)",
-            write="spark",
-        )
-
-        self.validate(
-            "FILTER(the_array, x -> x > 0)",
-            "FILTER(the_array, x -> x > 0)",
-            read="spark",
-            write="presto",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
-            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
-            read="spark",
-            write="spark",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:struct<nested_col_a:string, nested_col_b:string>>)",
-            "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
-            read="spark",
-            write="spark",
-        )
-
-        self.validate(
-            "CREATE TABLE db.example_table (col_a array<int>, col_b array<array<int>>)",
-            "CREATE TABLE db.example_table (col_a ARRAY<INT>, col_b ARRAY<ARRAY<INT>>)",
-            read="spark",
-            write="spark",
-        )
-
-        self.validate(
-            "SELECT 4 << 1",
-            "SELECT SHIFTLEFT(4, 1)",
-            read="hive",
-            write="spark",
-        )
-
-        self.validate(
-            "SELECT 4 >> 1",
-            "SELECT SHIFTRIGHT(4, 1)",
-            read="hive",
-            write="spark",
-        )
-
-        self.validate(
-            "SELECT SHIFTRIGHT(4, 1)",
-            "SELECT 4 >> 1",
-            read="spark",
-            write="hive",
-        )
-
-        self.validate(
-            "SELECT SHIFTLEFT(4, 1)",
-            "SELECT 4 << 1",
-            read="spark",
-            write="hive",
-        )
-        self.validate(
-            "SELECT * FROM VALUES ('x'), ('y') AS t(z)",
-            "SELECT * FROM (VALUES ('x'), ('y')) AS t(z)",
-            write="spark",
-        )
-
-        self.validate(
-            """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG TBLPROPERTIES('x' = '1')""",
-            """CREATE TABLE blah (
-  col_a INT
-)
-COMMENT 'Test comment: blah'
-PARTITIONED BY (
-  date STRING
-)
-STORED AS ICEBERG
-TBLPROPERTIES (
-  'x' = '1'
-)""",
-            read="spark",
-            write="spark",
-            pretty=True,
-        )
-
-        self.validate(
-            "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
-            "CREATE TABLE z (a INT) COMMENT 'x'",
-            read="mysql",
-            write="spark",
-        )
-
-        self.validate(
-            "CREATE TABLE a (x BINARY)",
-            "CREATE TABLE a (x BINARY)",
-            read="spark",
-            write="spark",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
-            read="spark",
-            write="spark",
-        )
-
-        self.validate(
-            "TO_DATE(x, 'yyyy-MM-dd')",
-            "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
-            read="spark",
-            write="presto",
-        )
-        self.validate(
-            "TO_DATE(x, 'yyyy')",
-            "CAST(DATE_PARSE(x, '%Y') AS DATE)",
-            read="spark",
-            write="presto",
-        )
-        self.validate(
-            "TO_DATE(x, 'yyyy')",
-            "CAST(STRPTIME(x, '%Y') AS DATE)",
-            read="spark",
-            write="duckdb",
-        )
-        self.validate(
-            "SELECT * FROM a UNION SELECT * FROM b",
-            "SELECT * FROM a UNION SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
-            "SELECT * FROM a UNION SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a UNION ALL SELECT * FROM b",
-            "SELECT * FROM a UNION ALL SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a INTERSECT SELECT * FROM b",
-            "SELECT * FROM a INTERSECT SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
-            "SELECT * FROM a INTERSECT SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
-            "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a EXCEPT SELECT * FROM b",
-            "SELECT * FROM a EXCEPT SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
-            "SELECT * FROM a EXCEPT SELECT * FROM b",
-            write="spark",
-        )
-        self.validate(
-            "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
-            "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
-            write="spark",
-        )
 
     def test_snowflake(self):
         self.validate(
@@ -1152,6 +809,16 @@ TBLPROPERTIES (
                 "spark": "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",
             },
         )
+        self.validate_all(
+            "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+            write={
+                "trino": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+                "duckdb": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+                "hive": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+                "presto": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+                "spark": "AGGREGATE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+            },
+        )
 
     def test_order_by(self):
         self.validate_all(
@@ -1204,6 +871,136 @@ TBLPROPERTIES (
             },
             write={
                 "postgres": "x#>>'y'",
+            },
+        )
+
+    def test_cross_join(self):
+        self.validate_all(
+            "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
+            write={
+                "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
+                "spark": "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
+            },
+        )
+        self.validate_all(
+            "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t (a, b)",
+            write={
+                "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t(a, b)",
+                "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) t AS b",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t (a)",
+            write={
+                "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t(a)",
+                "spark": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
+            },
+        )
+
+    def test_set_operators(self):
+        self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
+                "presto": "SELECT * FROM a UNION SELECT * FROM b",
+                "spark": "SELECT * FROM a UNION SELECT * FROM b",
+            },
+            write={
+                "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
+                "presto": "SELECT * FROM a UNION SELECT * FROM b",
+                "spark": "SELECT * FROM a UNION SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a UNION ALL SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "duckdb": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "presto": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "spark": "SELECT * FROM a UNION ALL SELECT * FROM b",
+            },
+            write={
+                "bigquery": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "duckdb": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "presto": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "spark": "SELECT * FROM a UNION ALL SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a INTERSECT SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
+            },
+            write={
+                "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a EXCEPT SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
+            },
+            write={
+                "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+            write={
+                "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
+                "presto": "SELECT * FROM a UNION SELECT * FROM b",
+                "spark": "SELECT * FROM a UNION SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+            write={
+                "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
+                "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+            write={
+                "bigquery": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                "duckdb": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                "presto": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                "spark": "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+            write={
+                "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
+                "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
+                "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+            read={
+                "bigquery": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                "duckdb": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                "presto": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                "spark": "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
             },
         )
 
@@ -1395,42 +1192,6 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "SELECT * FROM a UNION SELECT * FROM b",
-            read={
-                "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
-                "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
-                "presto": "SELECT * FROM a UNION SELECT * FROM b",
-                "spark": "SELECT * FROM a UNION SELECT * FROM b",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM a UNION ALL SELECT * FROM b",
-            read={
-                "bigquery": "SELECT * FROM a UNION ALL SELECT * FROM b",
-                "duckdb": "SELECT * FROM a UNION ALL SELECT * FROM b",
-                "presto": "SELECT * FROM a UNION ALL SELECT * FROM b",
-                "spark": "SELECT * FROM a UNION ALL SELECT * FROM b",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM a INTERSECT SELECT * FROM b",
-            read={
-                "bigquery": "SELECT * FROM a INTERSECT DISTINCT SELECT * FROM b",
-                "duckdb": "SELECT * FROM a INTERSECT SELECT * FROM b",
-                "presto": "SELECT * FROM a INTERSECT SELECT * FROM b",
-                "spark": "SELECT * FROM a INTERSECT SELECT * FROM b",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM a EXCEPT SELECT * FROM b",
-            read={
-                "bigquery": "SELECT * FROM a EXCEPT DISTINCT SELECT * FROM b",
-                "duckdb": "SELECT * FROM a EXCEPT SELECT * FROM b",
-                "presto": "SELECT * FROM a EXCEPT SELECT * FROM b",
-                "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
-            },
-        )
-        self.validate_all(
             '"x" + "y"',
             read={
                 "clickhouse": '`x` + "y"',
@@ -1442,5 +1203,11 @@ TBLPROPERTIES (
             write={
                 "bigquery": "[1, 2]",
                 "clickhouse": "[1, 2]",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM VALUES ('x'), ('y') AS t(z)",
+            write={
+                "spark": "SELECT * FROM (VALUES ('x'), ('y')) AS t(z)",
             },
         )

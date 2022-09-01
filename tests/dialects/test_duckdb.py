@@ -232,10 +232,18 @@ class TestDuckDB(Validator):
                 "spark": "SORT_ARRAY(x)",
             },
         )
-
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
                 "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+            },
+        )
+        self.validate_all(
+            "MONTH('2021-03-01')",
+            write={
+                "duckdb": "MONTH('2021-03-01')",
+                "presto": "MONTH('2021-03-01')",
+                "hive": "MONTH('2021-03-01')",
+                "spark": "MONTH('2021-03-01')",
             },
         )

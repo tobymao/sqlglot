@@ -261,6 +261,15 @@ class TestPresto(Validator):
                 "spark": "'\\'x'",
             },
         )
+        self.validate_all(
+            "x IN ('a', 'a''b')",
+            write={
+                "duckdb": "x IN ('a', 'a''b')",
+                "presto": "x IN ('a', 'a''b')",
+                "hive": "x IN ('a', 'a\\'b')",
+                "spark": "x IN ('a', 'a\\'b')",
+            },
+        )
 
     def test_unnest(self):
         self.validate_all(
@@ -402,5 +411,12 @@ class TestPresto(Validator):
                 "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS x(y)",
                 "hive": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x(y)",
                 "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS x(y)",
+            },
+        )
+        self.validate_all(
+            "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT sum(n) FROM t",
+            write={
+                "presto": "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
+                "spark": UnsupportedError,
             },
         )

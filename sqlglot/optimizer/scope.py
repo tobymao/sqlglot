@@ -53,9 +53,9 @@ class Scope:
         self.scope_type = scope_type
         self.subquery_scopes = []
         self.union = None
-        self._clear_cache()
+        self.clear_cache()
 
-    def _clear_cache(self):
+    def clear_cache(self):
         self._collected = False
         self._raw_columns = None
         self._derived_tables = None
@@ -130,7 +130,7 @@ class Scope:
             new (exp.Expression): new node
         """
         old.replace(new)
-        self._clear_cache()
+        self.clear_cache()
 
     @property
     def tables(self):
@@ -206,11 +206,8 @@ class Scope:
             self._columns = [
                 c
                 for c in columns + external_columns
-                if c.table
-                or not (
-                    # In some dialects, these clauses can reference output columns
-                    c.find_ancestor(exp.Group, exp.Order, exp.Qualify)
-                    and c.name in named_outputs
+                if not (
+                    c.find_ancestor(exp.Qualify, exp.Order) and c.name in named_outputs
                 )
             ]
         return self._columns

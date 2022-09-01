@@ -61,11 +61,20 @@ def pushdown_projections(expression):
 
 
 def _remove_unused_selections(scope, parent_selections):
+    order = scope.expression.args.get("order")
+
+    if order:
+        # Assume columns without a qualified table are references to output columns
+        order_refs = {c.name for c in order.find_all(exp.Column) if not c.table}
+    else:
+        order_refs = set()
+
     new_selections = []
     for selection in scope.selects:
         if (
             SELECT_ALL in parent_selections
             or selection.alias_or_name in parent_selections
+            or selection.alias_or_name in order_refs
         ):
             new_selections.append(selection)
 

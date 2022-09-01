@@ -1,6 +1,8 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
+from sqlglot.helper import list_get
+from sqlglot.parser import Parser
 
 
 def _if_sql(self, expression):
@@ -25,4 +27,11 @@ class Tableau(Dialect):
             exp.If: _if_sql,
             exp.Coalesce: _coalesce_sql,
             exp.Count: _count_sql,
+        }
+
+    class Parser(Parser):
+        FUNCTIONS = {
+            **Parser.FUNCTIONS,
+            "IFNULL": exp.Coalesce.from_arg_list,
+            "COUNTD": lambda args: exp.Count(this=exp.Distinct(this=list_get(args, 0))),
         }

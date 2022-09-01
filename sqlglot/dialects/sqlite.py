@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
 )
 from sqlglot.generator import Generator
+from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
 
@@ -20,6 +21,14 @@ class SQLite(Dialect):
             **Tokenizer.KEYWORDS,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
             "NVARCHAR": TokenType.VARCHAR,
+        }
+
+    class Parser(Parser):
+        STRICT_CAST = False
+
+        FUNCTIONS = {
+            **Parser.FUNCTIONS,
+            "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
     class Generator(Generator):

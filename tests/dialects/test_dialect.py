@@ -68,125 +68,6 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect.get_or_raise(dialect))
             self.assertIsNotNone(Dialect[dialect.value])
 
-    def test_postgres(self):
-        self.validate(
-            "SELECT CAST(`a`.`b` AS DOUBLE) FROM foo",
-            "SELECT CAST(`a`.`b` AS DOUBLE PRECISION) FROM foo",
-            read="postgres",
-            write="postgres",
-        )
-        self.validate(
-            "CREATE TABLE x (a BYTEA)",
-            "CREATE TABLE x (a BINARY)",
-            read="postgres",
-            write="hive",
-        )
-
-        self.validate(
-            "CREATE TABLE x (a UUID)",
-            "CREATE TABLE x (a UUID)",
-            read="postgres",
-            write="hive",
-        )
-
-        self.validate(
-            "CREATE TABLE x (a INT SERIAL)",
-            "CREATE TABLE x (a INTEGER AUTOINCREMENT)",
-            read="postgres",
-            write="sqlite",
-        )
-        self.validate(
-            "CREATE TABLE x (a INTEGER AUTOINCREMENT)",
-            "CREATE TABLE x (a INT SERIAL)",
-            read="sqlite",
-            write="postgres",
-        )
-
-        self.validate(
-            "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
-            "CURRENT_DATE - INTERVAL '1' DAY",
-            read="bigquery",
-            write="postgres",
-        )
-
-        self.validate(
-            "DATE_ADD(CURRENT_DATE(), INTERVAL 1 + 3 DAY)",
-            "CURRENT_DATE + INTERVAL '4' DAY",
-            read="bigquery",
-            write="postgres",
-        )
-
-        self.validate(
-            "CURRENT_DATE('UTC')",
-            "CURRENT_DATE AT TIME ZONE 'UTC'",
-            read="bigquery",
-            write="postgres",
-        )
-
-        self.validate(
-            "CURRENT_TIMESTAMP()",
-            "CURRENT_TIMESTAMP",
-            read="bigquery",
-            write="postgres",
-        )
-
-        for read, write in [(None, "postgres")]:
-            for a, b in [
-                ("JSON_EXTRACT(x, 'y')", "x->'y'"),
-                ("JSON_EXTRACT_SCALAR(x, 'y')", "x->>'y'"),
-                ("JSONB_EXTRACT(x, 'y')", "x#>'y'"),
-                ("JSONB_EXTRACT_SCALAR(x, 'y')", "x#>>'y'"),
-            ]:
-                self.validate(a, b, read=read, write=write, identity=False)
-                self.validate(b, a, read=write, write=read, identity=False)
-
-        self.validate(
-            "x->'1'",
-            "x->'1'",
-            read="postgres",
-            write="sqlite",
-        )
-        self.validate(
-            "x#>'1'",
-            "x->'1'",
-            read="postgres",
-            write="sqlite",
-        )
-
-        self.validate(
-            "STRFTIME(x, '%y-%-m-%S')",
-            "TO_CHAR(x, 'YY-FMMM-SS')",
-            read="duckdb",
-            write="postgres",
-        )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "DATE_ADD(x, y, 'day')",
-                write="postgres",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        self.validate(
-            "SELECT * FROM x FETCH 1 ROW",
-            "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",
-            read="postgres",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC, fname, lname",
-            read="postgres",
-            write="postgres",
-        )
-
-        self.validate(
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC, fname, lname NULLS FIRST",
-            read="spark",
-            write="postgres",
-        )
-
     def test_spark(self):
         self.validate(
             'SELECT "a"."b" FROM "foo"',
@@ -886,6 +767,21 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "CAST(a AS DOUBLE)",
+            write={
+                "bigquery": "CAST(a AS FLOAT64)",
+                "duckdb": "CAST(a AS DOUBLE)",
+                "mysql": "CAST(a AS DOUBLE)",
+                "hive": "CAST(a AS DOUBLE)",
+                "oracle": "CAST(a AS DOUBLE)",
+                "postgres": "CAST(a AS DOUBLE PRECISION)",
+                "presto": "CAST(a AS DOUBLE)",
+                "snowflake": "CAST(a AS DOUBLE)",
+                "spark": "CAST(a AS DOUBLE)",
+                "starrocks": "CAST(a AS DOUBLE)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS TIMESTAMP)", write={"starrocks": "CAST(a AS DATETIME)"}
         )
         self.validate_all(
@@ -1089,6 +985,12 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "DATE_ADD(x, y, 'day')",
+            write={
+                "postgres": UnsupportedError,
+            },
+        )
+        self.validate_all(
             "DATE_ADD(x, 1)",
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
@@ -1260,6 +1162,48 @@ TBLPROPERTIES (
                 "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
                 "hive": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+            },
+        )
+
+    def test_json(self):
+        self.validate_all(
+            "JSON_EXTRACT(x, 'y')",
+            read={
+                "postgres": "x->'y'",
+                "presto": "JSON_EXTRACT(x, 'y')",
+            },
+            write={
+                "postgres": "x->'y'",
+                "presto": "JSON_EXTRACT(x, 'y')",
+            },
+        )
+        self.validate_all(
+            "JSON_EXTRACT_SCALAR(x, 'y')",
+            read={
+                "postgres": "x->>'y'",
+                "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
+            },
+            write={
+                "postgres": "x->>'y'",
+                "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
+            },
+        )
+        self.validate_all(
+            "JSONB_EXTRACT(x, 'y')",
+            read={
+                "postgres": "x#>'y'",
+            },
+            write={
+                "postgres": "x#>'y'",
+            },
+        )
+        self.validate_all(
+            "JSONB_EXTRACT_SCALAR(x, 'y')",
+            read={
+                "postgres": "x#>>'y'",
+            },
+            write={
+                "postgres": "x#>>'y'",
             },
         )
 

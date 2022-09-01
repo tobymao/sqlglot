@@ -120,6 +120,18 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "CURRENT_TIMESTAMP()",
                 "duckdb": "CURRENT_TIMESTAMP()",
+                "postgres": "CURRENT_TIMESTAMP",
+                "presto": "CURRENT_TIMESTAMP()",
+                "hive": "CURRENT_TIMESTAMP()",
+                "spark": "CURRENT_TIMESTAMP()",
+            },
+        )
+        self.validate_all(
+            "current_timestamp()",
+            write={
+                "bigquery": "CURRENT_TIMESTAMP()",
+                "duckdb": "CURRENT_TIMESTAMP()",
+                "postgres": "CURRENT_TIMESTAMP",
                 "presto": "CURRENT_TIMESTAMP()",
                 "hive": "CURRENT_TIMESTAMP()",
                 "spark": "CURRENT_TIMESTAMP()",
@@ -181,3 +193,29 @@ class TestBigQuery(Validator):
 
         with self.assertRaises(ParseError):
             transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
+
+        self.validate_all(
+            "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
+            write={
+                "postgres": "CURRENT_DATE - INTERVAL '1' DAY",
+            },
+        )
+        self.validate_all(
+            "DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY)",
+            write={
+                "bigquery": "DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY)",
+                "duckdb": "CURRENT_DATE + INTERVAL 1 DAY",
+                "mysql": "DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY)",
+                "postgres": "CURRENT_DATE + INTERVAL '1' DAY",
+                "presto": "DATE_ADD(DAY, 1, CURRENT_DATE)",
+                "hive": "DATE_ADD(CURRENT_DATE, 1)",
+                "spark": "DATE_ADD(CURRENT_DATE, 1)",
+            },
+        )
+        self.validate_all(
+            "CURRENT_DATE('UTC')",
+            write={
+                "mysql": "CURRENT_DATE AT TIME ZONE 'UTC'",
+                "postgres": "CURRENT_DATE AT TIME ZONE 'UTC'",
+            },
+        )

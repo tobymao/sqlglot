@@ -31,6 +31,7 @@ class TestDuckDB(Validator):
             write={
                 "bigquery": "TIME_TO_STR(x, '%y-%-m-%S')",
                 "duckdb": "STRFTIME(x, '%y-%-m-%S')",
+                "postgres": "TO_CHAR(x, 'YY-FMMM-SS')",
                 "presto": "DATE_FORMAT(x, '%y-%c-%S')",
                 "spark": "DATE_FORMAT(x, 'yy-M-ss')",
             },

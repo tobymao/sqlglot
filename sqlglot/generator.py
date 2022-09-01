@@ -194,7 +194,7 @@ class Generator:
     def wrap(self, expression):
         this_sql = self.indent(
             self.sql(expression)
-            if isinstance(expression, exp.Select)
+            if isinstance(expression, (exp.Select, exp.Union))
             else self.sql(expression, "this"),
             level=1,
             pad=0,

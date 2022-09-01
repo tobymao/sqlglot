@@ -622,7 +622,9 @@ class Parser:
 
         expression = self._parse_expression()
         expression = (
-            self._parse_set_operations(expression) if expression else self._parse_with()
+            self._parse_set_operations(expression)
+            if expression
+            else self._parse_select()
         )
         self._parse_query_modifiers(expression)
         return expression
@@ -674,7 +676,7 @@ class Parser:
                 this if isinstance(this, exp.Schema) else None
             )
             if self._match(TokenType.ALIAS):
-                expression = self._parse_with()
+                expression = self._parse_select()
 
         return self.expression(
             exp.Create,
@@ -767,7 +769,7 @@ class Parser:
             this=self._parse_table(schema=True),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
-            expression=self._parse_with(),
+            expression=self._parse_select(),
             overwrite=overwrite,
         )
 
@@ -821,7 +823,7 @@ class Parser:
             this=table,
             lazy=lazy,
             options=options,
-            expression=self._parse_with(),
+            expression=self._parse_select(),
         )
 
     def _parse_partition(self):
@@ -850,44 +852,92 @@ class Parser:
         self._match_r_paren()
         return self.expression(exp.Tuple, expressions=expressions)
 
-    def _parse_with(self):
-        if not self._match(TokenType.WITH):
-            return self._parse_select()
+    def _parse_select(self, table=None):
+        index = self._index
 
-        recursive = self._match(TokenType.RECURSIVE)
+        if self._match(TokenType.SELECT):
+            hint = self._parse_hint()
+            all_ = self._match(TokenType.ALL)
+            distinct = self._match(TokenType.DISTINCT)
 
-        expressions = []
+            if distinct:
+                distinct = self.expression(
+                    exp.Distinct,
+                    on=self._parse_value() if self._match(TokenType.ON) else None,
+                )
 
-        while True:
-            expressions.append(self._parse_cte())
+            if all_ and distinct:
+                self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
-            if not self._match(TokenType.COMMA):
-                break
-
-        cte = self.expression(
-            exp.With,
-            expressions=expressions,
-            recursive=recursive,
-        )
-        this = self._parse_statement()
-
-        if not this:
-            self.raise_error("Failed to parse any statement following CTE")
-            return cte
-
-        if "with" in this.arg_types:
-            this.set(
-                "with",
-                self.expression(
-                    exp.With,
-                    expressions=expressions,
-                    recursive=recursive,
-                ),
+            limit = self._parse_limit(top=True)
+            expressions = self._parse_csv(
+                lambda: self._parse_annotation(self._parse_expression())
             )
-        else:
-            self.raise_error(f"{this.key} does not support CTE")
 
-        return this
+            this = self.expression(
+                exp.Select,
+                hint=hint,
+                distinct=distinct,
+                expressions=expressions,
+                limit=limit,
+            )
+            from_ = self._parse_from()
+            if from_:
+                this.set("from", from_)
+            self._parse_query_modifiers(this)
+        elif self._match(TokenType.WITH):
+            recursive = self._match(TokenType.RECURSIVE)
+
+            expressions = []
+
+            while True:
+                expressions.append(self._parse_cte())
+
+                if not self._match(TokenType.COMMA):
+                    break
+
+            cte = self.expression(
+                exp.With,
+                expressions=expressions,
+                recursive=recursive,
+            )
+            this = self._parse_statement()
+
+            if not this:
+                self.raise_error("Failed to parse any statement following CTE")
+                return cte
+
+            if "with" in this.arg_types:
+                this.set(
+                    "with",
+                    self.expression(
+                        exp.With,
+                        expressions=expressions,
+                        recursive=recursive,
+                    ),
+                )
+            else:
+                self.raise_error(f"{this.key} does not support CTE")
+        elif self._match(TokenType.L_PAREN):
+            this = self._parse_table() if table else self._parse_select()
+
+            if this:
+                self._parse_query_modifiers(this)
+                self._match_r_paren()
+                this = self._parse_subquery(this)
+            else:
+                self._retreat(index)
+        elif self._match(TokenType.VALUES):
+            this = self.expression(
+                exp.Values, expressions=self._parse_csv(self._parse_value)
+            )
+            alias = self._parse_table_alias()
+            if alias:
+                this = self.expression(exp.Subquery, this=this, alias=alias)
+        else:
+            this = None
+
+        return self._parse_set_operations(this) if this else None
 
     def _parse_cte(self):
         alias = self._parse_table_alias()
@@ -924,54 +974,6 @@ class Parser:
             this=alias,
             columns=columns,
         )
-
-    def _parse_select(self):
-        if self._match(TokenType.SELECT):
-            hint = self._parse_hint()
-            all_ = self._match(TokenType.ALL)
-            distinct = self._match(TokenType.DISTINCT)
-
-            if distinct:
-                distinct = self.expression(
-                    exp.Distinct,
-                    on=self._parse_value() if self._match(TokenType.ON) else None,
-                )
-
-            if all_ and distinct:
-                self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
-
-            limit = self._parse_limit(top=True)
-            expressions = self._parse_csv(
-                lambda: self._parse_annotation(self._parse_expression())
-            )
-
-            this = self.expression(
-                exp.Select,
-                hint=hint,
-                distinct=distinct,
-                expressions=expressions,
-                limit=limit,
-            )
-            from_ = self._parse_from()
-            if from_:
-                this.set("from", from_)
-            self._parse_query_modifiers(this)
-        elif self._match(TokenType.L_PAREN):
-            this = self._parse_table()
-            self._parse_query_modifiers(this)
-            self._match_r_paren()
-            this = self._parse_subquery(this)
-        elif self._match(TokenType.VALUES):
-            this = self.expression(
-                exp.Values, expressions=self._parse_csv(self._parse_value)
-            )
-            alias = self._parse_table_alias()
-            if alias:
-                this = self.expression(exp.Subquery, this=this, alias=alias)
-        else:
-            this = None
-
-        return self._parse_set_operations(this)
 
     def _parse_subquery(self, this):
         return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
@@ -1070,7 +1072,7 @@ class Parser:
         if unnest:
             return unnest
 
-        subquery = self._parse_with()
+        subquery = self._parse_select(table=True)
 
         if subquery:
             return subquery
@@ -1299,7 +1301,7 @@ class Parser:
             expression,
             this=this,
             distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
-            expression=self._parse_with(),
+            expression=self._parse_select(),
         )
 
     def _parse_expression(self):
@@ -1344,7 +1346,7 @@ class Parser:
             else:
                 self._match_l_paren()
                 expressions = self._parse_csv(
-                    lambda: self._parse_expression() or self._parse_with()
+                    lambda: self._parse_select() or self._parse_expression()
                 )
 
                 if len(expressions) == 1 and isinstance(
@@ -1543,9 +1545,14 @@ class Parser:
             return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
 
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(
-                lambda: self._parse_alias(self._parse_conjunction(), explicit=True)
-            ) or [self._parse_with()]
+            query = self._parse_select()
+
+            if query:
+                expressions = [query]
+            else:
+                expressions = self._parse_csv(
+                    lambda: self._parse_alias(self._parse_conjunction(), explicit=True)
+                )
 
             this = list_get(expressions, 0)
             self._parse_query_modifiers(this)
@@ -1604,7 +1611,7 @@ class Parser:
                 TokenType.SELECT,
                 TokenType.WITH,
             ):
-                this = self.expression(subquery_predicate, this=self._parse_with())
+                this = self.expression(subquery_predicate, this=self._parse_select())
                 self._match_r_paren()
                 return this
 

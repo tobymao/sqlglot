@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, inline_array_sql
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
@@ -37,5 +37,6 @@ class ClickHouse(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.Array: inline_array_sql,
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
         }

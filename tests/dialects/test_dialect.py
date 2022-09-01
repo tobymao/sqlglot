@@ -1493,3 +1493,10 @@ TBLPROPERTIES (
                 "sqlite": '`x` + "y"',
             },
         )
+        self.validate_all(
+            "[1, 2]",
+            write={
+                "bigquery": "[1, 2]",
+                "clickhouse": "[1, 2]",
+            },
+        )

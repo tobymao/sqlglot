@@ -23,3 +23,17 @@ class TestMySQL(Validator):
                 "mysql": "SELECT '2021-01-01' + INTERVAL 1 MONTH",
             },
         )
+
+    def test_convert(self):
+        self.validate_all(
+            "CONVERT(x USING latin1)",
+            write={
+                "mysql": "CAST(x AS CHAR CHARACTER SET latin1)",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS CHAR CHARACTER SET latin1)",
+            write={
+                "mysql": "CAST(x AS CHAR CHARACTER SET latin1)",
+            },
+        )

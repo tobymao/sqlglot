@@ -283,6 +283,8 @@ class Generator:
         return self.prepend_ctes(expression, sql)
 
     def characterset_sql(self, expression):
+        if isinstance(expression.parent, exp.Cast):
+            return f"CHAR CHARACTER SET {self.sql(expression, 'this')}"
         default = "DEFAULT " if expression.args.get("default") else ""
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 

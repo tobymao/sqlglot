@@ -106,6 +106,7 @@ class Parser:
         TokenType.COLLATE,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
+        TokenType.CONVERT,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESC,
@@ -155,6 +156,7 @@ class Parser:
     }
 
     FUNC_TOKENS = {
+        TokenType.CONVERT,
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_DATETIME,
         TokenType.CURRENT_TIMESTAMP,
@@ -339,6 +341,22 @@ class Parser:
         TokenType.STORED: lambda self: self._parse_stored(),
         TokenType.TABLE_FORMAT: lambda self: self._parse_table_format(),
         TokenType.USING: lambda self: self._parse_table_format(),
+    }
+
+    NO_PAREN_FUNCTION_PARSERS = {
+        TokenType.CASE: lambda self: self._parse_case(),
+        TokenType.IF: lambda self: self._parse_if(),
+    }
+
+    FUNCTION_PARSERS = {
+        TokenType.CONVERT: lambda self, _: self._parse_convert(),
+        TokenType.EXTRACT: lambda self, _: self._parse_extract(),
+        **{
+            token_type: lambda self, token_type: self._parse_cast(
+                self.STRICT_CAST and token_type == TokenType.CAST
+            )
+            for token_type in CASTS
+        },
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -689,7 +707,7 @@ class Parser:
         return self.expression(
             exp.EngineProperty,
             this=exp.Literal.string("ENGINE"),
-            value=self._parse_var() or self._parse_string(),
+            value=self._parse_var_or_string(),
         )
 
     def _parse_auto_increment(self):
@@ -705,7 +723,7 @@ class Parser:
         return self.expression(
             exp.CollateProperty,
             this=exp.Literal.string("COLLATE"),
-            value=self._parse_var() or self._parse_string(),
+            value=self._parse_var_or_string(),
         )
 
     def _parse_schema_comment(self):
@@ -721,7 +739,7 @@ class Parser:
         return self.expression(
             exp.CharacterSetProperty,
             this=exp.Literal.string("CHARACTER_SET"),
-            value=self._parse_var() or self._parse_string(),
+            value=self._parse_var_or_string(),
             default=default,
         )
 
@@ -730,7 +748,7 @@ class Parser:
         return self.expression(
             exp.TableFormatProperty,
             this=exp.Literal.string("TABLE_FORMAT"),
-            value=self._parse_var() or self._parse_string(),
+            value=self._parse_var_or_string(),
         )
 
     def _parse_properties(self, schema=None):
@@ -1574,16 +1592,13 @@ class Parser:
         )
 
     def _parse_function(self):
-        if self._match(TokenType.CASE):
-            return self._parse_case()
-
-        if self._match(TokenType.IF):
-            return self._parse_if()
-
         if not self._curr:
             return None
 
         token_type = self._curr.token_type
+
+        if self._match_set(self.NO_PAREN_FUNCTION_PARSERS):
+            return self.NO_PAREN_FUNCTION_PARSERS[token_type](self)
 
         if not self._next or self._next.token_type != TokenType.L_PAREN:
             if token_type in self.NO_PAREN_FUNCTIONS:
@@ -1595,13 +1610,9 @@ class Parser:
         if token_type not in self.FUNC_TOKENS:
             return None
 
-        if self._match_set(self.CASTS):
-            strict = self.STRICT_CAST and token_type == TokenType.CAST
+        if self._match_set(self.FUNCTION_PARSERS):
             self._advance()
-            this = self._parse_cast(strict)
-        elif self._match(TokenType.EXTRACT):
-            self._advance()
-            this = self._parse_extract()
+            this = self.FUNCTION_PARSERS[token_type](self, token_type)
         else:
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
             this = self._curr.text
@@ -1845,8 +1856,21 @@ class Parser:
 
         if not to:
             self.raise_error("Expected TYPE after CAST")
+        elif to.this == exp.DataType.Type.CHAR:
+            if self._match(TokenType.CHARACTER_SET):
+                to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+
+    def _parse_convert(self):
+        this = self._parse_field()
+        if self._match(TokenType.USING):
+            to = self.expression(exp.CharacterSet, this=self._parse_var())
+        elif self._match(TokenType.COMMA):
+            to = self._parse_types()
+        else:
+            to = None
+        return self.expression(exp.Cast, this=this, to=to)
 
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):
@@ -1990,6 +2014,9 @@ class Parser:
         if self._match(TokenType.VAR):
             return exp.Var(this=self._prev.text)
         return self._parse_placeholder()
+
+    def _parse_var_or_string(self):
+        return self._parse_var() or self._parse_string()
 
     def _parse_null(self):
         if self._match(TokenType.NULL):

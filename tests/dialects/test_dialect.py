@@ -1486,3 +1486,10 @@ TBLPROPERTIES (
                 "spark": "SELECT * FROM a EXCEPT SELECT * FROM b",
             },
         )
+        self.validate_all(
+            '"x" + "y"',
+            read={
+                "clickhouse": '`x` + "y"',
+                "sqlite": '`x` + "y"',
+            },
+        )

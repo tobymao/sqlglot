@@ -24,8 +24,6 @@ class SQLite(Dialect):
         }
 
     class Parser(Parser):
-        STRICT_CAST = False
-
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,

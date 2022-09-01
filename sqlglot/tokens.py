@@ -523,7 +523,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "\t": TokenType.SPACE,
         "\n": TokenType.BREAK,
         "\r": TokenType.BREAK,
-        "\rn": TokenType.BREAK,
+        "\r\n": TokenType.BREAK,
     }
 
     COMMANDS = {

@@ -171,7 +171,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "POW(CAST(2 AS SMALLINT), 3)",
+            "POWER(CAST(2 AS SMALLINT), 3)",
             read={
                 "hive": "POW(2S, 3)",
                 "spark": "POW(2S, 3)",

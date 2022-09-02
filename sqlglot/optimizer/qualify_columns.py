@@ -151,8 +151,7 @@ def _expand_group_by(scope, resolver):
 
         return node
 
-    group = group.transform(transform)
-
+    group.transform(transform, copy=False)
     group.set("expressions", _expand_positional_references(scope, group.expressions))
     scope.expression.set("group", group)
 
@@ -162,11 +161,11 @@ def _expand_order_by(scope):
     if not order:
         return
 
-    expressions = [o.this for o in order.expressions]
-    for node, new_node in zip(
-        expressions, _expand_positional_references(scope, expressions)
+    for ordered, new_this in zip(
+        order.expressions,
+        _expand_positional_references(scope, (o.this for o in order.expressions)),
     ):
-        node.replace(new_node)
+        ordered.this.replace(new_this)
 
 
 def _expand_positional_references(scope, expressions):
@@ -174,7 +173,7 @@ def _expand_positional_references(scope, expressions):
     for node in expressions:
         if node.is_int:
             try:
-                select = scope.selects[int(node.this) - 1]
+                select = scope.selects[int(node.name) - 1]
             except IndexError:
                 # pylint: disable=raise-missing-from
                 raise OptimizeError(f"Unknown output column: {node.name}")

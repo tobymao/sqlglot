@@ -75,6 +75,24 @@ class Expression(metaclass=_Expression):
         return ""
 
     @property
+    def is_string(self):
+        return isinstance(self, Literal) and self.args["is_string"]
+
+    @property
+    def is_number(self):
+        return isinstance(self, Literal) and not self.args["is_string"]
+
+    @property
+    def is_int(self):
+        if self.is_number:
+            try:
+                int(self.name)
+                return True
+            except ValueError:
+                pass
+        return False
+
+    @property
     def alias(self):
         if isinstance(self.args.get("alias"), TableAlias):
             return self.args["alias"].name
@@ -650,14 +668,6 @@ class Literal(Condition):
     @classmethod
     def string(cls, string):
         return cls(this=str(string), is_string=True)
-
-    @property
-    def is_string(self):
-        return self.args["is_string"]
-
-    @property
-    def is_int(self):
-        return not self.is_string and self.this.isdigit()
 
 
 class Join(Expression):

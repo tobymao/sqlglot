@@ -29,13 +29,28 @@ SELECT a + b FROM x;
 SELECT x.a + x.b AS "_col_0" FROM x AS x;
 
 SELECT a, SUM(b) FROM x WHERE a > 1 AND b > 1 GROUP BY a;
-SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY a;
+SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
 
 SELECT a AS j, b FROM x ORDER BY j;
 SELECT x.a AS j, x.b AS b FROM x AS x ORDER BY j;
 
 SELECT a AS j, b FROM x GROUP BY j;
-SELECT x.a AS j, x.b AS b FROM x AS x GROUP BY j;
+SELECT x.a AS j, x.b AS b FROM x AS x GROUP BY x.a;
+
+SELECT a, b FROM x GROUP BY 1, 2;
+SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
+
+SELECT a, b FROM x ORDER BY 1, 2;
+SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a, b;
+
+SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
+SELECT DATE(x.a) AS "_col_0", DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
+
+SELECT x.a AS c FROM x JOIN y ON x.b = y.b GROUP BY c;
+SELECT x.a AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
+
+SELECT DATE(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
+SELECT DATE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY DATE(x.a);
 
 SELECT a AS a, b FROM x ORDER BY a;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
@@ -51,8 +66,8 @@ SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY r
 SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x QUALIFY row_num = 1;
 
 # dialect: bigquery
-SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY b ORDER BY a DESC) = 1;
-SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY b ORDER BY a DESC) = 1;
+SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY x.b ORDER BY x.a DESC) = 1;
+SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a DESC) = 1;
 
 --------------------------------------
 -- Derived tables

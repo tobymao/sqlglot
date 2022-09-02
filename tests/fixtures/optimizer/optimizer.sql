@@ -125,7 +125,7 @@ FROM (
     AND NOT "_u_0"."_u_1" IS NULL
 ) AS "d"
 GROUP BY
-  "a";
+  "d"."a";
 
 (SELECT a FROM x) LIMIT 1;
 (

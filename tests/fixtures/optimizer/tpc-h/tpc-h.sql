@@ -43,8 +43,8 @@ FROM "lineitem" AS "lineitem"
 WHERE
   CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1998-09-02' AS DATE)
 GROUP BY
-  "l_returnflag",
-  "l_linestatus"
+  "lineitem"."l_returnflag",
+  "lineitem"."l_linestatus"
 ORDER BY
   "l_returnflag",
   "l_linestatus";
@@ -255,9 +255,9 @@ JOIN (
 ) AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
 GROUP BY
-  "l_orderkey",
-  "o_orderdate",
-  "o_shippriority"
+  "lineitem"."l_orderkey",
+  "orders"."o_orderdate",
+  "orders"."o_shippriority"
 ORDER BY
   "revenue" DESC,
   "o_orderdate"
@@ -306,7 +306,7 @@ WHERE
   AND "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
-  "o_orderpriority"
+  "orders"."o_orderpriority"
 ORDER BY
   "o_orderpriority";
 
@@ -394,7 +394,7 @@ JOIN (
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "lineitem"."l_suppkey" = "supplier"."s_suppkey"
 GROUP BY
-  "n_name"
+  "nation"."n_name"
 ORDER BY
   "revenue" DESC;
 
@@ -529,9 +529,9 @@ FROM (
     )
 ) AS "shipping"
 GROUP BY
-  "supp_nation",
-  "cust_nation",
-  "l_year"
+  "shipping"."supp_nation",
+  "shipping"."cust_nation",
+  "shipping"."l_year"
 ORDER BY
   "supp_nation",
   "cust_nation",
@@ -658,7 +658,7 @@ FROM (
     ON "supplier"."s_nationkey" = "n2"."n_nationkey"
 ) AS "all_nations"
 GROUP BY
-  "o_year"
+  "all_nations"."o_year"
 ORDER BY
   "o_year";
 
@@ -759,8 +759,8 @@ FROM (
     ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 ) AS "profit"
 GROUP BY
-  "nation",
-  "o_year"
+  "profit"."nation",
+  "profit"."o_year"
 ORDER BY
   "nation",
   "o_year" DESC;
@@ -853,13 +853,13 @@ JOIN (
 ) AS "nation"
   ON "customer"."c_nationkey" = "nation"."n_nationkey"
 GROUP BY
-  "c_custkey",
-  "c_name",
-  "c_acctbal",
-  "c_phone",
-  "n_name",
-  "c_address",
-  "c_comment"
+  "customer"."c_custkey",
+  "customer"."c_name",
+  "customer"."c_acctbal",
+  "customer"."c_phone",
+  "nation"."n_name",
+  "customer"."c_address",
+  "customer"."c_comment"
 ORDER BY
   "revenue" DESC
 LIMIT 20;
@@ -923,7 +923,7 @@ JOIN "_e_0" AS "supplier"
 JOIN "_e_1" AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 GROUP BY
-  "ps_partkey"
+  "partsupp"."ps_partkey"
 HAVING
   SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") > (
     SELECT
@@ -1011,7 +1011,7 @@ JOIN (
 ) AS "lineitem"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 GROUP BY
-  "l_shipmode"
+  "lineitem"."l_shipmode"
 ORDER BY
   "l_shipmode";
 
@@ -1060,10 +1060,10 @@ FROM (
   ) AS "orders"
     ON "customer"."c_custkey" = "orders"."o_custkey"
   GROUP BY
-    "c_custkey"
+    "customer"."c_custkey"
 ) AS "c_orders"
 GROUP BY
-  "c_count"
+  "c_orders"."c_count"
 ORDER BY
   "custdist" DESC,
   "c_count" DESC;
@@ -1157,7 +1157,7 @@ WITH "revenue" AS (
     "lineitem"."l_shipdate" < CAST('1996-04-01' AS DATE)
     AND "lineitem"."l_shipdate" >= CAST('1996-01-01' AS DATE)
   GROUP BY
-    "l_suppkey"
+    "lineitem"."l_suppkey"
 )
 SELECT
   "supplier"."s_suppkey" AS "s_suppkey",
@@ -1253,9 +1253,9 @@ JOIN (
 WHERE
   "_u_0"."s_suppkey" IS NULL
 GROUP BY
-  "p_brand",
-  "p_type",
-  "p_size"
+  "part"."p_brand",
+  "part"."p_type",
+  "part"."p_size"
 ORDER BY
   "supplier_cnt" DESC,
   "p_brand",
@@ -1379,7 +1379,7 @@ LEFT JOIN (
     "lineitem"."l_orderkey" AS "l_orderkey"
   FROM "lineitem" AS "lineitem"
   GROUP BY
-    "l_orderkey",
+    "lineitem"."l_orderkey",
     "lineitem"."l_orderkey"
   HAVING
     SUM("lineitem"."l_quantity") > 300
@@ -1395,11 +1395,11 @@ JOIN (
 WHERE
   NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
-  "c_name",
-  "c_custkey",
-  "o_orderkey",
-  "o_orderdate",
-  "o_totalprice"
+  "customer"."c_name",
+  "customer"."c_custkey",
+  "orders"."o_orderkey",
+  "orders"."o_orderdate",
+  "orders"."o_totalprice"
 ORDER BY
   "o_totalprice" DESC,
   "o_orderdate"
@@ -1729,7 +1729,7 @@ WHERE
   AND ARRAY_ANY("_u_0"."_u_1", "_x" -> "_x" <> "l1"."l_suppkey")
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
-  "s_name"
+  "supplier"."s_name"
 ORDER BY
   "numwait" DESC,
   "s_name"
@@ -1805,6 +1805,6 @@ FROM (
     AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
 ) AS "custsale"
 GROUP BY
-  "cntrycode"
+  "custsale"."cntrycode"
 ORDER BY
   "cntrycode";

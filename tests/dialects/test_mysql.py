@@ -16,6 +16,17 @@ class TestMySQL(Validator):
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
 
+    def test_introducers(self):
+        self.validate_all(
+            "_utf8mb4 'hola'",
+            read={
+                "mysql": "_utf8mb4'hola'",
+            },
+            write={
+                "mysql": "_utf8mb4 'hola'",
+            },
+        )
+
     def test_string_literals(self):
         self.validate_all(
             'SELECT "2021-01-01" + INTERVAL 1 MONTH',

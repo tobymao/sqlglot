@@ -152,6 +152,7 @@ class TokenType(AutoName):
     INTERSECT = auto()
     INTERVAL = auto()
     INTO = auto()
+    INTRODUCER = auto()
     IS = auto()
     ISNULL = auto()
     JOIN = auto()
@@ -316,6 +317,11 @@ class Tokenizer(metaclass=_Tokenizer):
         "?": TokenType.PLACEHOLDER,
         "#": TokenType.ANNOTATION,
         "$": TokenType.DOLLAR,
+        # used for breaking a var like x'y' but nothing else
+        # the token type doesn't matter
+        "'": TokenType.QUOTE,
+        "`": TokenType.IDENTIFIER,
+        '"': TokenType.IDENTIFIER,
     }
 
     QUOTES = ["'"]

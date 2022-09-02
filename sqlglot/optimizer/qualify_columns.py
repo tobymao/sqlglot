@@ -29,12 +29,15 @@ def qualify_columns(expression, schema):
     schema = ensure_schema(schema)
 
     for scope in traverse_scope(expression):
+        resolver = _Resolver(scope, schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
-        _expand_using(scope, schema)
-        _qualify_columns(scope, schema)
+        _expand_using(scope, resolver)
+        _expand_group_by(scope, resolver)
+        _expand_order_by(scope)
+        _qualify_columns(scope, resolver)
         if not isinstance(scope.expression, SKIP_QUALIFY):
-            _expand_stars(scope, schema)
+            _expand_stars(scope, resolver)
             _qualify_outputs(scope)
         _check_unknown_tables(scope)
 
@@ -55,7 +58,7 @@ def _pop_table_column_aliases(derived_tables):
             table_alias.args.pop("columns", None)
 
 
-def _expand_using(scope, schema):
+def _expand_using(scope, resolver):
     joins = list(scope.expression.find_all(exp.Join))
     names = {join.this.alias for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
@@ -75,12 +78,12 @@ def _expand_using(scope, schema):
 
         for k in scope.selected_sources:
             if k in ordered:
-                for column in _get_source_columns(k, scope.sources, schema):
+                for column in resolver.get_source_columns(k):
                     if column not in columns:
                         columns[column] = k
 
         ordered.append(join_table)
-        join_columns = _get_source_columns(join_table, scope.sources, schema)
+        join_columns = resolver.get_source_columns(join_table)
         conditions = []
 
         for identifier in using:
@@ -122,12 +125,71 @@ def _expand_using(scope, schema):
                 scope.replace(column, replacement)
 
 
-def _qualify_columns(scope, schema):
-    """Disambiguate columns, ensuring each column specifies a source"""
-    # lazily loaded
-    unambiguous_columns = None
-    all_columns = None
+def _expand_group_by(scope, resolver):
+    group = scope.expression.args.get("group")
+    if not group:
+        return
 
+    # Replace references to select aliases
+    def transform(node, *_):
+        if isinstance(node, exp.Column) and not node.table:
+            table = resolver.get_table(node.name)
+
+            # Source columns get priority over select aliases
+            if table:
+                node.set("table", exp.to_identifier(table))
+                return node
+
+            selects = {s.alias_or_name: s for s in scope.selects}
+
+            select = selects.get(node.name)
+            if select:
+                scope.clear_cache()
+                if isinstance(select, exp.Alias):
+                    select = select.this
+                return select.copy()
+
+        return node
+
+    group.transform(transform, copy=False)
+    group.set("expressions", _expand_positional_references(scope, group.expressions))
+    scope.expression.set("group", group)
+
+
+def _expand_order_by(scope):
+    order = scope.expression.args.get("order")
+    if not order:
+        return
+
+    ordereds = order.expressions
+    for ordered, new_expression in zip(
+        ordereds,
+        _expand_positional_references(scope, (o.this for o in ordereds)),
+    ):
+        ordered.set("this", new_expression)
+
+
+def _expand_positional_references(scope, expressions):
+    new_nodes = []
+    for node in expressions:
+        if node.is_int:
+            try:
+                select = scope.selects[int(node.name) - 1]
+            except IndexError:
+                # pylint: disable=raise-missing-from
+                raise OptimizeError(f"Unknown output column: {node.name}")
+            if isinstance(select, exp.Alias):
+                select = select.this
+            new_nodes.append(select.copy())
+            scope.clear_cache()
+        else:
+            new_nodes.append(node)
+
+    return new_nodes
+
+
+def _qualify_columns(scope, resolver):
+    """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:
         column_table = column.table
         column_name = column.name
@@ -135,27 +197,15 @@ def _qualify_columns(scope, schema):
         if (
             column_table
             and column_table in scope.sources
-            and column_name
-            not in _get_source_columns(column_table, scope.sources, schema)
+            and column_name not in resolver.get_source_columns(column_table)
         ):
             raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:
-            if unambiguous_columns is None:
-                source_columns = {
-                    k: _get_source_columns(k, scope.sources, schema)
-                    for k in scope.selected_sources
-                }
-
-                unambiguous_columns = _get_unambiguous_columns(source_columns)
-                all_columns = set(
-                    column for columns in source_columns.values() for column in columns
-                )
-
-            column_table = unambiguous_columns.get(column_name)
+            column_table = resolver.get_table(column_name)
 
             if not scope.is_subquery and not scope.is_unnest:
-                if column_name not in all_columns:
+                if column_name not in resolver.all_columns:
                     raise OptimizeError(f"Unknown column: {column_name}")
 
                 if column_table is None:
@@ -166,7 +216,7 @@ def _qualify_columns(scope, schema):
                 column.set("table", exp.to_identifier(column_table))
 
 
-def _expand_stars(scope, schema):
+def _expand_stars(scope, resolver):
     """Expand stars to lists of column selections"""
 
     new_selections = []
@@ -191,7 +241,7 @@ def _expand_stars(scope, schema):
         for table in tables:
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
-            columns = _get_source_columns(table, scope.sources, schema)
+            columns = resolver.get_source_columns(table)
             table_id = id(table)
             for name in columns:
                 if name not in except_columns.get(table_id, set()):
@@ -262,67 +312,113 @@ def _check_unknown_tables(scope):
         raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
 
 
-def _get_unambiguous_columns(source_columns):
+class _Resolver:
     """
-    Find all the unambiguous columns in sources.
+    Helper for resolving columns.
 
-    Args:
-        source_columns (dict): Mapping of names to source columns
-    Returns:
-        dict: Mapping of column name to source name
+    This is a class so we can lazily load some things and easily share them across functions.
     """
-    if not source_columns:
-        return {}
 
-    source_columns = list(source_columns.items())
+    def __init__(self, scope, schema):
+        self.scope = scope
+        self.schema = schema
+        self._source_columns = None
+        self._unambiguous_columns = None
+        self._all_columns = None
 
-    first_table, first_columns = source_columns[0]
-    unambiguous_columns = {
-        col: first_table for col in _find_unique_columns(first_columns)
-    }
-    all_columns = set(unambiguous_columns)
+    def get_table(self, column_name):
+        """
+        Get the table for a column name.
 
-    for table, columns in source_columns[1:]:
-        unique = _find_unique_columns(columns)
-        ambiguous = set(all_columns).intersection(unique)
-        all_columns.update(columns)
-        for column in ambiguous:
-            unambiguous_columns.pop(column, None)
-        for column in unique.difference(ambiguous):
-            unambiguous_columns[column] = table
+        Args:
+            column_name (str)
+        Returns:
+            (str) table name
+        """
+        if self._unambiguous_columns is None:
+            self._unambiguous_columns = self._get_unambiguous_columns(
+                self._get_all_source_columns()
+            )
+        return self._unambiguous_columns.get(column_name)
 
-    return unambiguous_columns
+    @property
+    def all_columns(self):
+        """All available columns of all sources in this scope"""
+        if self._all_columns is None:
+            self._all_columns = set(
+                column
+                for columns in self._get_all_source_columns().values()
+                for column in columns
+            )
+        return self._all_columns
 
+    def get_source_columns(self, name):
+        """Resolve the source columns for a given source `name`"""
+        if name not in self.scope.sources:
+            raise OptimizeError(f"Unknown table: {name}")
 
-def _find_unique_columns(columns):
-    """
-    Find the unique columns in a list of columns.
+        source = self.scope.sources[name]
 
-    Example:
-        >>> sorted(_find_unique_columns(["a", "b", "b", "c"]))
-        ['a', 'c']
+        # If referencing a table, return the columns from the schema
+        if isinstance(source, exp.Table):
+            try:
+                return self.schema.column_names(source)
+            except Exception as e:
+                raise OptimizeError(str(e)) from e
 
-    This is necessary because duplicate column names are ambiguous.
-    """
-    counts = {}
-    for column in columns:
-        counts[column] = counts.get(column, 0) + 1
-    return {column for column, count in counts.items() if count == 1}
+        # Otherwise, if referencing another scope, return that scope's named selects
+        return source.expression.named_selects
 
+    def _get_all_source_columns(self):
+        if self._source_columns is None:
+            self._source_columns = {
+                k: self.get_source_columns(k) for k in self.scope.selected_sources
+            }
+        return self._source_columns
 
-def _get_source_columns(name, sources, schema):
-    """Resolve the source columns for a given source `name`"""
-    if name not in sources:
-        raise OptimizeError(f"Unknown table: {name}")
+    def _get_unambiguous_columns(self, source_columns):
+        """
+        Find all the unambiguous columns in sources.
 
-    source = sources[name]
+        Args:
+            source_columns (dict): Mapping of names to source columns
+        Returns:
+            dict: Mapping of column name to source name
+        """
+        if not source_columns:
+            return {}
 
-    # If referencing a table, return the columns from the schema
-    if isinstance(source, exp.Table):
-        try:
-            return schema.column_names(source)
-        except Exception as e:
-            raise OptimizeError(str(e)) from e
+        source_columns = list(source_columns.items())
 
-    # Otherwise, if referencing another scope, return that scope's named selects
-    return source.expression.named_selects
+        first_table, first_columns = source_columns[0]
+        unambiguous_columns = {
+            col: first_table for col in self._find_unique_columns(first_columns)
+        }
+        all_columns = set(unambiguous_columns)
+
+        for table, columns in source_columns[1:]:
+            unique = self._find_unique_columns(columns)
+            ambiguous = set(all_columns).intersection(unique)
+            all_columns.update(columns)
+            for column in ambiguous:
+                unambiguous_columns.pop(column, None)
+            for column in unique.difference(ambiguous):
+                unambiguous_columns[column] = table
+
+        return unambiguous_columns
+
+    @staticmethod
+    def _find_unique_columns(columns):
+        """
+        Find the unique columns in a list of columns.
+
+        Example:
+            >>> sorted(_Resolver._find_unique_columns(["a", "b", "b", "c"]))
+            ['a', 'c']
+
+        This is necessary because duplicate column names are ambiguous.
+        """
+        counts = {}
+        for column in columns:
+            counts[column] = counts.get(column, 0) + 1
+        return {column for column, count in counts.items() if count == 1}

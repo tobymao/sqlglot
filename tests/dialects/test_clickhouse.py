@@ -16,3 +16,10 @@ class TestClickhouse(Validator):
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
             },
         )
+
+        self.validate_all(
+            "CAST(1 AS NULLABLE(Int64))",
+            write={
+                "clickhouse": "CAST(1 AS Nullable(BIGINT))",
+            },
+        )

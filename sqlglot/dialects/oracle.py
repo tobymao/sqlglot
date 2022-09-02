@@ -13,12 +13,16 @@ def _limit_sql(self, expression):
 class Oracle(Dialect):
     class Generator(Generator):
         TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "NUMBER",
             exp.DataType.Type.SMALLINT: "NUMBER",
             exp.DataType.Type.INT: "NUMBER",
             exp.DataType.Type.BIGINT: "NUMBER",
             exp.DataType.Type.DECIMAL: "NUMBER",
+            exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
+            exp.DataType.Type.TEXT: "VARCHAR2",
             exp.DataType.Type.VARCHAR: "VARCHAR2",
+            exp.DataType.Type.NVARCHAR: "NVARCHAR2",
         }
 
         TRANSFORMS = {
@@ -54,4 +58,6 @@ class Oracle(Dialect):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "TOP": TokenType.TOP,
+            "VARCHAR2": TokenType.VARCHAR,
+            "NVARCHAR2": TokenType.NVARCHAR,
         }

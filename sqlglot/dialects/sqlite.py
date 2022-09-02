@@ -20,7 +20,6 @@ class SQLite(Dialect):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
-            "NVARCHAR": TokenType.VARCHAR,
         }
 
     class Parser(Parser):
@@ -31,6 +30,7 @@ class SQLite(Dialect):
 
     class Generator(Generator):
         TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "INTEGER",
             exp.DataType.Type.TINYINT: "INTEGER",
             exp.DataType.Type.SMALLINT: "INTEGER",
@@ -40,7 +40,9 @@ class SQLite(Dialect):
             exp.DataType.Type.DOUBLE: "REAL",
             exp.DataType.Type.DECIMAL: "REAL",
             exp.DataType.Type.CHAR: "TEXT",
+            exp.DataType.Type.NCHAR: "TEXT",
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.NVARCHAR: "TEXT",
             exp.DataType.Type.BINARY: "BLOB",
         }
 

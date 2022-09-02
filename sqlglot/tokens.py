@@ -63,7 +63,9 @@ class TokenType(AutoName):
     DOUBLE = auto()
     DECIMAL = auto()
     CHAR = auto()
+    NCHAR = auto()
     VARCHAR = auto()
+    NVARCHAR = auto()
     TEXT = auto()
     BINARY = auto()
     BYTEA = auto()
@@ -507,7 +509,11 @@ class Tokenizer(metaclass=_Tokenizer):
         "DOUBLE": TokenType.DOUBLE,
         "JSON": TokenType.JSON,
         "CHAR": TokenType.CHAR,
+        "NCHAR": TokenType.NCHAR,
         "VARCHAR": TokenType.VARCHAR,
+        "VARCHAR2": TokenType.VARCHAR,
+        "NVARCHAR": TokenType.NVARCHAR,
+        "NVARCHAR2": TokenType.NVARCHAR,
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,
         "BINARY": TokenType.BINARY,

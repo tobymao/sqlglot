@@ -81,6 +81,7 @@ class Postgres(Dialect):
 
     class Generator(Generator):
         TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",

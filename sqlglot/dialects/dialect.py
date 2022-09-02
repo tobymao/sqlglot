@@ -112,7 +112,7 @@ class Dialect(metaclass=_Dialect):
                     cls.time_trie,
                 )
             )
-        if isinstance(expression, exp.Literal) and expression.is_string:
+        if expression and expression.is_string:
             return exp.Literal.string(
                 format_time(
                     expression.this,

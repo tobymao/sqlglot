@@ -491,6 +491,9 @@ class Generator:
     def intersect_op(self, expression):
         return f"INTERSECT{'' if expression.args.get('distinct') else ' ALL'}"
 
+    def introducer_sql(self, expression):
+        return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
+
     def table_sql(self, expression):
         return ".".join(
             part

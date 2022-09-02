@@ -623,6 +623,11 @@ class Insert(Expression):
     }
 
 
+# https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html
+class Introducer(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class Partition(Expression):
     pass
 

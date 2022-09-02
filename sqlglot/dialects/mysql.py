@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 def _date_trunc_sql(self, expression):
@@ -88,6 +88,11 @@ class MySQL(Dialect):
 
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"']
+
+        KEYWORDS = {
+            **Tokenizer.KEYWORDS,
+            "_UTF8MB4": TokenType.INTRODUCER,
+        }
 
     class Parser(Parser):
         STRICT_CAST = False

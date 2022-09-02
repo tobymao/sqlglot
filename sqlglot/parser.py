@@ -306,6 +306,11 @@ class Parser:
         TokenType.TRUE: lambda *_: exp.Boolean(this=True),
         TokenType.FALSE: lambda *_: exp.Boolean(this=False),
         TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
+        TokenType.INTRODUCER: lambda self, token: self.expression(
+            exp.Introducer,
+            this=token.text,
+            expression=self._parse_var_or_string(),
+        ),
     }
 
     RANGE_PARSERS = {

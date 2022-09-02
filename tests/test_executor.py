@@ -61,7 +61,7 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        for sql, _ in self.sqls[2:3]:
+        for sql, _ in self.sqls[0:3]:
             a = self.cached_execute(sql)
             sql = parse_one(sql).transform(to_csv).sql(pretty=True)
             table = execute(sql, TPCH_SCHEMA)

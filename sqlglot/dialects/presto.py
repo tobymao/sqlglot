@@ -157,6 +157,7 @@ class Presto(Dialect):
         ]
 
         TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.BINARY: "VARBINARY",

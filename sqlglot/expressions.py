@@ -1533,8 +1533,10 @@ class DataType(Expression):
 
     class Type(AutoName):
         CHAR = auto()
-        TEXT = auto()
+        NCHAR = auto()
         VARCHAR = auto()
+        NVARCHAR = auto()
+        TEXT = auto()
         BINARY = auto()
         INT = auto()
         TINYINT = auto()
@@ -2141,7 +2143,7 @@ class Posexplode(Func):
 
 class Pow(Func):
     arg_types = {"this": True, "power": True}
-    _sql_names = ["POW", "POWER"]
+    _sql_names = ["POWER", "POW"]
 
 
 class Quantile(AggFunc):

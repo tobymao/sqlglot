@@ -79,6 +79,8 @@ class TestDialect(Validator):
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS TEXT)",
                 "hive": "CAST(a AS STRING)",
+                "oracle": "CAST(a AS VARCHAR2)",
+                "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
@@ -92,6 +94,8 @@ class TestDialect(Validator):
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS TEXT)",
                 "hive": "CAST(a AS STRING)",
+                "oracle": "CAST(a AS VARCHAR2)",
+                "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
@@ -106,6 +110,7 @@ class TestDialect(Validator):
                 "mysql": "CAST(a AS VARCHAR)",
                 "hive": "CAST(a AS STRING)",
                 "oracle": "CAST(a AS VARCHAR2)",
+                "postgres": "CAST(a AS VARCHAR)",
                 "presto": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS VARCHAR)",
                 "spark": "CAST(a AS STRING)",
@@ -120,6 +125,7 @@ class TestDialect(Validator):
                 "mysql": "CAST(a AS VARCHAR(3))",
                 "hive": "CAST(a AS VARCHAR(3))",
                 "oracle": "CAST(a AS VARCHAR2(3))",
+                "postgres": "CAST(a AS VARCHAR(3))",
                 "presto": "CAST(a AS VARCHAR(3))",
                 "snowflake": "CAST(a AS VARCHAR(3))",
                 "spark": "CAST(a AS VARCHAR(3))",
@@ -134,6 +140,7 @@ class TestDialect(Validator):
                 "mysql": "CAST(a AS SMALLINT)",
                 "hive": "CAST(a AS SMALLINT)",
                 "oracle": "CAST(a AS NUMBER)",
+                "postgres": "CAST(a AS SMALLINT)",
                 "presto": "CAST(a AS SMALLINT)",
                 "snowflake": "CAST(a AS SMALLINT)",
                 "spark": "CAST(a AS SHORT)",
@@ -149,7 +156,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST(a AS DOUBLE)",
                 "mysql": "CAST(a AS DOUBLE)",
                 "hive": "CAST(a AS DOUBLE)",
-                "oracle": "CAST(a AS DOUBLE)",
+                "oracle": "CAST(a AS DOUBLE PRECISION)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "presto": "CAST(a AS DOUBLE)",
                 "snowflake": "CAST(a AS DOUBLE)",
@@ -892,13 +899,6 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "SELECT x FROM y LIMIT 10 OFFSET 5",
-            write={
-                "sqlite": "SELECT x FROM y LIMIT 10 OFFSET 5",
-                "oracle": "SELECT x FROM y OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY",
-            },
-        )
-        self.validate_all(
             "SELECT x FROM y OFFSET 10 FETCH FIRST 3 ROWS ONLY",
             write={
                 "oracle": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
@@ -928,5 +928,21 @@ class TestDialect(Validator):
             "SELECT * FROM VALUES ('x'), ('y') AS t(z)",
             write={
                 "spark": "SELECT * FROM (VALUES ('x'), ('y')) AS t(z)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (c CHAR, nc NCHAR, v1 VARCHAR, v2 VARCHAR2, nv NVARCHAR, nv2 NVARCHAR2)",
+            write={
+                "hive": "CREATE TABLE t (c CHAR, nc CHAR, v1 STRING, v2 STRING, nv STRING, nv2 STRING)",
+                "oracle": "CREATE TABLE t (c CHAR, nc CHAR, v1 VARCHAR2, v2 VARCHAR2, nv NVARCHAR2, nv2 NVARCHAR2)",
+                "postgres": "CREATE TABLE t (c CHAR, nc CHAR, v1 VARCHAR, v2 VARCHAR, nv VARCHAR, nv2 VARCHAR)",
+                "sqlite": "CREATE TABLE t (c TEXT, nc TEXT, v1 TEXT, v2 TEXT, nv TEXT, nv2 TEXT)",
+            },
+        )
+        self.validate_all(
+            "POWER(1.2, 3.4)",
+            read={
+                "hive": "pow(1.2, 3.4)",
+                "postgres": "power(1.2, 3.4)",
             },
         )

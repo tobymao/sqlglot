@@ -62,7 +62,10 @@ class Generator:
 
     NULL_ORDERING_SUPPORTED = True
 
-    TYPE_MAPPING = {}
+    TYPE_MAPPING = {
+        exp.DataType.Type.NCHAR: "CHAR",
+        exp.DataType.Type.NVARCHAR: "VARCHAR",
+    }
 
     TOKEN_MAPPING = {}
 

@@ -88,6 +88,7 @@ class BigQuery(Dialect):
         }
 
         TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.SMALLINT: "INT64",
             exp.DataType.Type.INT: "INT64",
@@ -98,6 +99,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.VARCHAR: "STRING",
+            exp.DataType.Type.NVARCHAR: "STRING",
         }
 
         def in_unnest_op(self, unnest):

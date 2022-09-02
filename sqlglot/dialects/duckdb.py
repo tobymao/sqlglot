@@ -150,5 +150,7 @@ class DuckDB(Dialect):
         }
 
         TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.NVARCHAR: "TEXT",
         }

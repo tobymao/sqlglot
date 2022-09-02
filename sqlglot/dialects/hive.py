@@ -228,6 +228,7 @@ class Hive(Dialect):
         WITH_PROPERTIES = [exp.AnonymousProperty]
 
         TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
         }
 
@@ -289,7 +290,8 @@ class Hive(Dialect):
 
         def datatype_sql(self, expression):
             if (
-                expression.this == exp.DataType.Type.VARCHAR
+                expression.this
+                in (exp.DataType.Type.VARCHAR, exp.DataType.Type.NVARCHAR)
                 and not expression.expressions
             ):
                 expression = exp.DataType.build("text")

@@ -161,11 +161,12 @@ def _expand_order_by(scope):
     if not order:
         return
 
-    for ordered, new_this in zip(
-        order.expressions,
-        _expand_positional_references(scope, (o.this for o in order.expressions)),
+    ordereds = order.expressions
+    for ordered, new_expression in zip(
+        ordereds,
+        _expand_positional_references(scope, (o.this for o in ordereds)),
     ):
-        ordered.this.replace(new_this)
+        ordered.set("this", new_expression)
 
 
 def _expand_positional_references(scope, expressions):

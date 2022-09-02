@@ -35,6 +35,11 @@ class ClickHouse(Dialect):
     class Generator(Generator):
         STRUCT_DELIMITER = ("(", ")")
 
+        TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
+            exp.DataType.Type.NULLABLE: "Nullable",
+        }
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.Array: inline_array_sql,

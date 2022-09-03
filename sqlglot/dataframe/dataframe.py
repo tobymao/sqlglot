@@ -104,7 +104,8 @@ class DataFrame:
         return self.copy(expression=new_expression, name=name if name is not None else self.name)
 
     @classmethod
-    def _get_outer_select_columns(cls, expression) -> t.List[Column]:
+    def _get_outer_select_columns(cls, item: t.Union[exp.Expression, "DataFrame"]) -> t.List[Column]:
+        expression = item.expression if isinstance(item, DataFrame) else item
         return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
     def _replace_alias_references(self, potential_references: t.List[Column]) -> t.List[Column]:
@@ -172,14 +173,17 @@ class DataFrame:
             if len(columns) > 1:
                 columns = [functools.reduce(lambda x, y: x & y, columns)]
             join_clause = columns[0]
-            join_columns = [Column(x) for x in join_clause.expression.find_all(exp.Column)]
-            for i, column in enumerate(join_columns):
-                if i % 2 == 0:
-                    column.set_table_name(pre_join_self_latest_cte_name)
-                else:
-                    column.set_table_name(other_df.latest_cte_name)
+            join_columns = [
+                Column(x).set_table_name(pre_join_self_latest_cte_name) if i % 2 == 0 else Column(x).set_table_name(other_df.latest_cte_name)
+                for i, x in enumerate(join_clause.expression.find_all(exp.Column))
+            ]
         self.joins_infos.append(JoinInfo(self, other_df, join_columns, join_type, pre_join_self_latest_cte_name))
-        return self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
+        self_columns = [column.set_table_name(pre_join_self_latest_cte_name, copy=True) for column in self._get_outer_select_columns(self)]
+        other_columns = [column.set_table_name(other_df.latest_cte_name, copy=True) for column in self._get_outer_select_columns(other_df)]
+        all_columns = list({column.alias_or_name: column for column in join_columns + self_columns + other_columns}.values())
+        new_df = self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
+        new_df = new_df.select.__wrapped__(new_df, *all_columns)
+        return new_df
 
     @operation(Operation.ORDER_BY)
     def orderBy(self, *cols: t.Union[str, Column], ascending: t.Optional[t.Union[t.Any, t.List[t.Any]]] = None) -> "DataFrame":

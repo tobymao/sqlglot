@@ -96,9 +96,10 @@ class Column:
     def copy(self) -> "Column":
         return Column(self.expression.copy())
 
-    def set_table_name(self, table_name: str) -> "Column":
-        self.expression.set("table", exp.Identifier(this=table_name))
-        return Column(self.expression)
+    def set_table_name(self, table_name: str, copy=False) -> "Column":
+        expression = self.expression.copy() if copy else self.expression
+        expression.set("table", exp.Identifier(this=table_name))
+        return Column(expression)
 
     def sql(self, **kwargs) -> "Column":
         return self.expression.sql(dialect="spark", **kwargs)

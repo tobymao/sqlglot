@@ -1174,3 +1174,46 @@ class TestDataframe(unittest.TestCase):
         )
 
         self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_drop_column_reference_join(self):
+        df_spark_employee_cols = (
+             self.df_spark_employee
+             .select(F.col("fname"), F.col("lname"), F.col("age"), F.col("store_id"))
+        )
+        df_spark_store_cols = (
+            self.df_spark_store
+            .select(F.col("store_id"), F.col("store_name"))
+        )
+        df = (
+            df_spark_employee_cols
+            .join(
+                df_spark_store_cols,
+                on="store_id",
+                how="inner"
+            )
+            .drop(
+                df_spark_employee_cols.age,
+            )
+        )
+
+        df_sqlglot_employee_cols = (
+            self.df_sqlglot_employee
+            .select(SF.col("fname"), SF.col("lname"), SF.col("age"), SF.col("store_id"))
+        )
+        df_sqlglot_store_cols = (
+            self.df_sqlglot_store
+            .select(SF.col("store_id"), SF.col("store_name"))
+        )
+        dfs = (
+            df_sqlglot_employee_cols
+            .join(
+                df_sqlglot_store_cols,
+                on="store_id",
+                how="inner"
+            )
+            .drop(
+                df_sqlglot_employee_cols.age,
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)

@@ -7,6 +7,7 @@ SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
 1E-2
 1.1E10
 1.12e-10
+0x0A
 -11.023E7 * 3
 (1 * 2) / (3 - 5)
 ((TRUE))
@@ -411,6 +412,8 @@ SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t(a, b)
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) WITH ORDINALITY AS t(a, b)
 SELECT student, score FROM tests CROSS JOIN UNNEST(x.scores) AS t(score)
 SELECT student, score FROM tests CROSS JOIN UNNEST(ARRAY(x.scores)) AS t(score)
+SELECT 0x0A FROM table
+SELECT 0x0A
 CREATE TABLE a.b AS SELECT 1
 CREATE TABLE a.b AS SELECT a FROM a.c
 CREATE TABLE IF NOT EXISTS x AS SELECT a FROM d

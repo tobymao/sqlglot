@@ -627,6 +627,8 @@ class Tokenizer(metaclass=_Tokenizer):
                 if white_space == TokenType.BREAK:
                     self._col = 1
                     self._line += 1
+            elif self._char == "0" and self._peek == "x":
+                self._scan_hex()
             elif self._char.isdigit():
                 self._scan_number()
             elif identifier_end:
@@ -776,6 +778,20 @@ class Tokenizer(metaclass=_Tokenizer):
                 return self._advance(-len(literal))
             else:
                 return self._add(TokenType.NUMBER)
+
+    def _scan_hex(self):
+        self._advance()
+
+        while True:
+            char = self._peek.strip()
+            if char and char not in self.SINGLE_TOKENS:
+                self._advance()
+            else:
+                break
+        try:
+            self._add(TokenType.BINARY, f"{int(self._text, 16):b}")
+        except ValueError:
+            self._add(TokenType.IDENTIFIER)
 
     def _scan_string(self, quote):
         if quote not in self.QUOTES:

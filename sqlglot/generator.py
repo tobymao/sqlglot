@@ -358,6 +358,8 @@ class Generator:
 
     def datatype_sql(self, expression):
         type_value = expression.this
+        if type_value == exp.DataType.Type.BINARY and expression.expressions:
+            return self.binary_literal_sql(expression)
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
         nested = ""
         interior = self.expressions(expression, flat=True)
@@ -368,6 +370,9 @@ class Generator:
                 else f"({interior})"
             )
         return f"{type_sql}{nested}"
+
+    def binary_literal_sql(self, expression):
+        return f"b'{self.sql(expression.expressions[0])}'"
 
     def delete_sql(self, expression):
         this = self.sql(expression, "this")

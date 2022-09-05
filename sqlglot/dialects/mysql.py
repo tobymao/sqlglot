@@ -88,9 +88,11 @@ class MySQL(Dialect):
 
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"']
+        COMMENTS = {"--", "#"}
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "#": TokenType.COMMENT,
             "_ARMSCII8": TokenType.INTRODUCER,
             "_ASCII": TokenType.INTRODUCER,
             "_BIG5": TokenType.INTRODUCER,

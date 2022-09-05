@@ -69,3 +69,11 @@ class TestMySQL(Validator):
                 "mysql": "CAST(x AS CHAR CHARACTER SET latin1)",
             },
         )
+
+    def test_hash_comments(self):
+        self.validate_all(
+            "SELECT 1 # arbitrary content until end-of-line",
+            write={
+                "mysql": "SELECT 1",
+            },
+        )

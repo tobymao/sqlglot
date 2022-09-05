@@ -20,13 +20,15 @@ if t.TYPE_CHECKING:
 
 
 class DataFrame:
-    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.NO_OP, group_by_columns: t.List[Column] = None, **kwargs):
+    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.NO_OP, group_by_columns: t.List[Column] = None, pending_join_hints: t.List[exp.Expression] = None, pending_select_hints: t.List[exp.Expression] = None, **kwargs):
         self.spark = spark
         self.expression = expression
         self.branch_id = branch_id
         self.sequence_id = sequence_id
         self.last_op = last_op
         self.group_by_columns = group_by_columns or None
+        self.pending_join_hints = pending_join_hints or []
+        self.pending_select_hints = pending_select_hints or []
 
     def __getattr__(self, column_name: str) -> "Column":
         return self[column_name]
@@ -42,13 +44,14 @@ class DataFrame:
         return self.expression.ctes[-1].alias
 
     def sql(self) -> str:
-        expression = self.expression.copy()
+        df = self._resolve_pending_hints()
+        expression = df.expression.copy()
         for transform in ORDERED_TRANSFORMS:
             expression = expression.transform(transform,
-                                              name_to_sequence_id_mapping=self.spark.name_to_sequence_id_mapping,
-                                              known_ids=self.spark.known_ids,
-                                              known_branch_ids=self.spark.known_branch_ids,
-                                              known_sequence_ids=self.spark.known_sequence_ids)
+                                              name_to_sequence_id_mapping=df.spark.name_to_sequence_id_mapping,
+                                              known_ids=df.spark.known_ids,
+                                              known_branch_ids=df.spark.known_branch_ids,
+                                              known_sequence_ids=df.spark.known_sequence_ids)
         return expression.sql(dialect="spark", pretty=True)
 
     def copy(self, **kwargs) -> "DataFrame":
@@ -87,19 +90,37 @@ class DataFrame:
         return expression
 
     def _convert_leaf_to_cte(self, sequence_id: t.Optional[str] = None) -> "DataFrame":
-        sequence_id = sequence_id or self.sequence_id
-        expression = self.expression.copy()
-        cte_expression, cte_name = self._create_cte_from_expression(expression=expression, sequence_id=sequence_id)
+        df = self._resolve_pending_hints()
+        sequence_id = sequence_id or df.sequence_id
+        expression = df.expression.copy()
+        cte_expression, cte_name = df._create_cte_from_expression(expression=expression, sequence_id=sequence_id)
         new_expression = exp.Select()
-        new_expression = self._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
-        sel_columns = self._get_outer_select_columns(cte_expression)
+        new_expression = df._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
+        sel_columns = df._get_outer_select_columns(cte_expression)
         new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
-        return self.copy(expression=new_expression, sequence_id=sequence_id)
+        return df.copy(expression=new_expression, sequence_id=sequence_id)
 
     @classmethod
     def _get_outer_select_columns(cls, item: t.Union[exp.Expression, "DataFrame"]) -> t.List[Column]:
         expression = item.expression if isinstance(item, DataFrame) else item
         return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
+
+    def _resolve_pending_hints(self) -> "DataFrame":
+        expression = self.expression.copy()
+        hint_expression = expression.args.get("hint", exp.Hint(expressions=[]))
+        for hint in self.pending_select_hints:
+            hint_expression.args.get("expressions").append(hint)
+        expression_without_cte = expression.copy()
+        expression_without_cte.args.pop("with", None)
+        join_expression = expression_without_cte.find(exp.Join)
+        if join_expression:
+            for hint in self.pending_join_hints:
+                hint_expression.args.get("expressions").append(hint)
+        if hint_expression.expressions:
+            expression.set("hint", hint_expression)
+        return self.copy(expression=expression,
+                         pending_select_hints=None,
+                         pending_join_hints=None if join_expression else self.pending_join_hints)
 
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> "DataFrame":
@@ -153,6 +174,8 @@ class DataFrame:
         all_columns = list({column.alias_or_name: column for column in join_columns + self_columns + other_columns}.values())
         new_df = self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
         new_df.expression = new_df._add_ctes_to_expression(new_df.expression, other_df.expression.ctes)
+        new_df.pending_join_hints.extend(other_df.pending_join_hints)
+        new_df.pending_select_hints.extend(other_df.pending_select_hints)
         new_df = new_df.select.__wrapped__(new_df, *all_columns)
         return new_df
 
@@ -356,3 +379,34 @@ class DataFrame:
                        col.alias_or_name not in [drop_column.alias_or_name for drop_column in drop_cols]]
         return self.copy().select(*new_columns, append=False)
 
+    @operation(Operation.LIMIT)
+    def limit(self, num: int) -> "DataFrame":
+        return self.copy(expression=self.expression.limit(num))
+
+    def _hint(self, hint_name: str, args: t.List["Column"]) -> "DataFrame":
+        hint_name = hint_name.upper()
+        hint_expression = exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
+        new_df = self.copy()
+        if hint_name in self.spark.join_hint_names:
+            new_df.pending_join_hints.append(hint_expression)
+        else:
+            new_df.pending_select_hints.append(hint_expression)
+        return new_df
+
+    @operation(Operation.NO_OP)
+    def hint(self, name: str, *parameters: t.Optional[t.Union[int, str]]) -> "DataFrame":
+        parameters = ensure_list(parameters)
+        parameters = ensure_columns(parameters) if parameters else ensure_columns([self.branch_id])
+        return self._hint(name, parameters)
+
+    @operation(Operation.NO_OP)
+    def repartition(self, numPartitions: int, *cols: t.Union[int, str]) -> "DataFrame":
+        num_partitions = ensure_columns([numPartitions])
+        cols = ensure_columns(ensure_list(cols))
+        args = num_partitions + cols
+        return self._hint("repartition", args)
+
+    @operation(Operation.NO_OP)
+    def coalesce(self, numPartitions: int) -> "DataFrame":
+        num_partitions = ensure_columns([numPartitions])
+        return self._hint("coalesce", num_partitions)

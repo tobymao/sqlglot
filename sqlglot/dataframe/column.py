@@ -5,7 +5,7 @@ from sqlglot import expressions as exp
 
 
 class Column:
-    def __init__(self, expression: t.Union[str, exp.Expression]):
+    def __init__(self, expression: t.Union[t.Any, exp.Expression]):
         if isinstance(expression, str):
             expression = sqlglot.parse_one(expression)
         self.expression = expression
@@ -15,6 +15,8 @@ class Column:
             self.expression = self.alias("NULL").expression
         elif isinstance(self.expression, exp.Star):
             self.expression = exp.Column(this=self.expression)
+        elif isinstance(expression, (str, int)):
+            self.expression = exp.Column(this=exp.Literal(this=str(expression), is_string=isinstance(expression, str)))
 
     def __repr__(self):
         return repr(self.expression)

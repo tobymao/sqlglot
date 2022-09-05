@@ -101,3 +101,6 @@ class Spark(Hive):
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             HiveMap: _map_sql,
         }
+
+        def binary_literal_sql(self, expression):
+            return f"X'{self.sql(expression.expressions[0])}'"

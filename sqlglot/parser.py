@@ -1509,12 +1509,16 @@ class Parser:
                 return exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPTZ,
                     expressions=expressions,
-                    nested=nested,
                 )
             return exp.DataType(
                 this=exp.DataType.Type.TIMESTAMP,
                 expressions=expressions,
-                nested=nested,
+            )
+
+        if type_token == TokenType.BINARY:
+            return exp.DataType(
+                this=exp.DataType.Type.BINARY,
+                expressions=[self._prev.text] if self._prev.text.isdigit() else None,
             )
 
         return exp.DataType(

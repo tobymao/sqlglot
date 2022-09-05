@@ -1,5 +1,4 @@
 from enum import auto
-from string import hexdigits
 
 from sqlglot.helper import AutoName
 from sqlglot.trie import in_trie, new_trie
@@ -629,7 +628,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._col = 1
                     self._line += 1
             elif self._char == "0" and self._peek == "x":
-                self._scan_hex_literal()
+                self._scan_hex()
             elif self._char.isdigit():
                 self._scan_number()
             elif identifier_end:
@@ -780,26 +779,19 @@ class Tokenizer(metaclass=_Tokenizer):
             else:
                 return self._add(TokenType.NUMBER)
 
-    def _scan_hex_literal(self):
-        prefix = "0x"
-        text = prefix
+    def _scan_hex(self):
         self._advance()
 
         while True:
-            if not self._peek:
-                if text == prefix:
-                    return self._add(TokenType.IDENTIFIER, text)
-                return self._add(TokenType.BINARY, text)
-
-            self._advance()
-
-            if self._char in hexdigits:
-                text = text + self._char.upper()
-            elif text == prefix:
-                self._advance(-1)
-                return self._add(TokenType.IDENTIFIER, text)
+            char = self._peek.strip()
+            if char and char not in self.SINGLE_TOKENS:
+                self._advance()
             else:
-                return self._add(TokenType.BINARY, text)
+                break
+        try:
+            self._add(TokenType.BINARY, f"{int(self._text, 16):b}")
+        except ValueError:
+            self._add(TokenType.IDENTIFIER)
 
     def _scan_string(self, quote):
         if quote not in self.QUOTES:

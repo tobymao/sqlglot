@@ -38,6 +38,9 @@ def replace_alias_names_with_sequence_ids(node: exp.Expression, name_to_sequence
     if isinstance(node, exp.Column) and node.args.get("table") is not None and node.args["table"].alias_or_name in name_to_sequence_id_mapping:
         new_table_name = exp.Identifier(this=name_to_sequence_id_mapping[node.args["table"].alias_or_name][-1])
         node.set("table", new_table_name)
+    if isinstance(node, exp.Column) and node.find_ancestor(exp.Hint) and node.alias_or_name in name_to_sequence_id_mapping:
+        new_hint_name = exp.Identifier(this=name_to_sequence_id_mapping[node.alias_or_name][-1])
+        node.set("this", new_hint_name)
     return node
 
 
@@ -101,25 +104,3 @@ ORDERED_TRANSFORMS = [
     replace_branch_and_sequence_ids_with_cte_name,
     add_left_hand_table_in_join_to_ambiguous_column
 ]
-
-
-if __name__ == '__main__':
-    import sqlglot
-    expression = sqlglot.parse_one("WITH a1 as (SELECT col_a from tablea) SELECT col_a from a1 inner join employee on a1.col_a = employee.col_a")
-    cte = expression.ctes[0]
-    cte.set("branch_id", "a2")
-    cte.set("sequence_id", "a3")
-    name_to_sequence_id_mapping = {
-        "blah": ["a3"],
-    }
-    known_ids = {"a2", "a3"}
-    known_branch_ids = {"a2"}
-    known_sequence_ids = {"a3"}
-    result = expression.transform(replace_alias_names_with_sequence_ids, name_to_sequence_id_mapping)
-    for transform in ORDERED_TRANSFORMS:
-        expression = expression.transform(transform,
-                                          name_to_sequence_id_mapping=name_to_sequence_id_mapping,
-                                          known_ids=known_ids,
-                                          known_branch_ids=known_branch_ids,
-                                          known_sequence_ids=known_sequence_ids)
-    print("here")

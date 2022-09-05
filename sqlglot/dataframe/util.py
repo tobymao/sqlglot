@@ -13,7 +13,7 @@ def ensure_strings(args: t.List[t.Union[str, Column]]) -> t.List[str]:
     return [x.expression if isinstance(x, Column) else x for x in args]
 
 
-def ensure_columns(args: t.List[t.Union[str, Column]]) -> t.List[Column]:
+def ensure_columns(args: t.List[t.Union[int, str, Column]]) -> t.List[Column]:
     return [Column(x) if not isinstance(x, Column) else x for x in args]
 
 

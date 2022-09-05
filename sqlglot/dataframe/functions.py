@@ -4,6 +4,9 @@ from sqlglot import expressions as exp
 from sqlglot.dataframe.column import Column
 from sqlglot.dataframe.util import ensure_strings, ensure_sqlglot_column
 
+if t.TYPE_CHECKING:
+    from sqlglot.dataframe.dataframe import DataFrame
+
 
 def col(column_name: str) -> "Column":
     return Column(column_name)
@@ -45,3 +48,7 @@ def asc(col: "Column") -> "Column":
 
 def desc(col: "Column"):
     return col.desc()
+
+
+def broadcast(df: "DataFrame") -> "DataFrame":
+    return df.hint("broadcast")

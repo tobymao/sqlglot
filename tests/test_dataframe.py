@@ -1,7 +1,11 @@
+import typing as t
 import unittest
 
 from pyspark.sql import functions as F
 from sqlglot.dataframe import functions as SF
+
+if t.TYPE_CHECKING:
+    from pyspark.sql import DataFrame as SparkDataFrame
 
 
 class TestDataframe(unittest.TestCase):
@@ -74,8 +78,13 @@ class TestDataframe(unittest.TestCase):
         self.df_sqlglot_employee = self.sqlglot.read.table('employee')
         self.df_sqlglot_district = self.sqlglot.read.table('district')
 
+
     @classmethod
-    def compare_spark_with_sqlglot(cls, df_spark, df_sqlglot, no_empty=True, skip_schema_compare=False):
+    def get_explain_plan(cls, df: "SparkDataFrame", mode: str = "extended") -> str:
+        return df._sc._jvm.PythonSQLUtils.explainString(df._jdf.queryExecution(), mode)
+
+    @classmethod
+    def compare_spark_with_sqlglot(cls, df_spark, df_sqlglot, no_empty=True, skip_schema_compare=False) -> t.Tuple["SparkDataFrame", "SparkDataFrame"]:
         def compare_schemas(schema_1, schema_2):
             for schema in [schema_1, schema_2]:
                 for struct_field in schema.fields:
@@ -90,6 +99,7 @@ class TestDataframe(unittest.TestCase):
         if no_empty:
             assert len(df_spark_results) != 0
             assert len(df_sqlglot_results) != 0
+        return df_spark, df_sqlglot
 
     def test_simple_select(self):
         df_employee = self.df_spark_employee.select(F.col("employee_id"))
@@ -375,6 +385,29 @@ class TestDataframe(unittest.TestCase):
         )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
 
+    def test_join_inner_no_select(self):
+        df_joined = (
+            self.df_spark_employee
+            .select(F.col("store_id"), F.col("fname"), F.col("lname"))
+            .join(
+                self.df_spark_store
+                .select(F.col("store_id"), F.col("store_name")),
+                on=["store_id"],
+                how="inner"
+            )
+        )
+        dfs_joined = (
+            self.df_sqlglot_employee
+            .select(SF.col("store_id"), SF.col("fname"), SF.col("lname"))
+            .join(
+                self.df_sqlglot_store
+                .select(SF.col("store_id"), SF.col("store_name")),
+                on=["store_id"],
+                how="inner"
+            )
+        )
+        self.compare_spark_with_sqlglot(df_joined, dfs_joined)
+
     def test_join_inner_equality_single(self):
         df_joined = (
             self.df_spark_employee
@@ -568,6 +601,38 @@ class TestDataframe(unittest.TestCase):
         )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
 
+    # def test_join_select_and_select_start(self):
+    #     """
+    #     This test does not work. The problem is that I am select *
+    #     from one of the tables and then not having a select at the end.
+    #     Therefore I return the store_id from the main branch table (as spark expects)
+    #     but then I can't tell spark to not include that column from the table that we are
+    #     doing the * against since I don't know the other columns in order to explicitly include then.
+    #
+    #     If only SQL supported something like `* EXCEPT col_a, col_b` or something
+    #     """
+    #     df = (
+    #         self.df_spark_employee
+    #         .select(F.col("fname"), F.col("lname"), F.col("age"), F.col("store_id"))
+    #         .join(
+    #             self.df_spark_store,
+    #             "store_id",
+    #             "inner"
+    #         )
+    #     )
+    #
+    #     dfs = (
+    #         self.df_sqlglot_employee
+    #         .select(SF.col("fname"), SF.col("lname"), SF.col("age"), SF.col("store_id"))
+    #         .join(
+    #             self.df_sqlglot_store,
+    #             "store_id",
+    #             "inner"
+    #         )
+    #     )
+    #
+    #     self.compare_spark_with_sqlglot(df, dfs)
+
     def test_branching_root_dataframes(self):
         """
         Test a pattern that has non-intuitive behavior in spark
@@ -686,8 +751,7 @@ class TestDataframe(unittest.TestCase):
             self.df_spark_store
             .groupBy(F.col("district_id"))
             .agg(F.min("num_sales"))
-            .orderBy(F.col("district_id") )
-
+            .orderBy(F.col("district_id"))
         )
 
         dfs = (
@@ -750,7 +814,7 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
-    def test_order_by_column_sort_method_nulls(self):
+    def test_order_by_column_sort_method_nulls_last(self):
         df = (
             self.df_spark_store
             .groupBy(F.col("district_id"))
@@ -767,7 +831,7 @@ class TestDataframe(unittest.TestCase):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
-    def test_order_by_column_sort_method_nulls(self):
+    def test_order_by_column_sort_method_nulls_first(self):
         df = (
             self.df_spark_store
             .groupBy(F.col("district_id"))
@@ -1217,3 +1281,189 @@ class TestDataframe(unittest.TestCase):
         )
 
         self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_limit(self):
+        df = (
+            self.df_spark_employee.limit(1)
+        )
+
+        dfs = (
+            self.df_sqlglot_employee.limit(1)
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_hint_broadcast_alias(self):
+        df_joined = (
+            self.df_spark_employee
+            .join(
+                self.df_spark_store.alias("store").hint("broadcast", "store"),
+                on=self.df_spark_employee.store_id == self.df_spark_store.store_id,
+                how="inner"
+            )
+            .select(
+                self.df_spark_employee.employee_id,
+                self.df_spark_employee['fname'],
+                F.col('lname'),
+                F.col('age'),
+                self.df_spark_employee.store_id,
+                self.df_spark_store.store_name,
+                self.df_spark_store['num_sales']
+            )
+        )
+        dfs_joined = (
+            self.df_sqlglot_employee
+            .join(
+                self.df_sqlglot_store.alias("store").hint("broadcast", "store"),
+                on=self.df_sqlglot_employee.store_id == self.df_sqlglot_store.store_id,
+                how="inner"
+            )
+            .select(
+                self.df_sqlglot_employee.employee_id,
+                self.df_sqlglot_employee['fname'],
+                SF.col('lname'),
+                SF.col('age'),
+                self.df_sqlglot_employee.store_id,
+                self.df_sqlglot_store.store_name,
+                self.df_sqlglot_store['num_sales']
+            )
+        )
+        df, dfs = self.compare_spark_with_sqlglot(df_joined, dfs_joined)
+        self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(df))
+        self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(dfs))
+
+
+    def test_hint_broadcast_no_alias(self):
+        df_joined = (
+            self.df_spark_employee
+            .join(
+                self.df_spark_store.hint("broadcast"),
+                on=self.df_spark_employee.store_id == self.df_spark_store.store_id,
+                how="inner"
+            )
+            .select(
+                self.df_spark_employee.employee_id,
+                self.df_spark_employee['fname'],
+                F.col('lname'),
+                F.col('age'),
+                self.df_spark_employee.store_id,
+                self.df_spark_store.store_name,
+                self.df_spark_store['num_sales']
+            )
+        )
+        dfs_joined = (
+            self.df_sqlglot_employee
+            .join(
+                self.df_sqlglot_store.hint("broadcast"),
+                on=self.df_sqlglot_employee.store_id == self.df_sqlglot_store.store_id,
+                how="inner"
+            )
+            .select(
+                self.df_sqlglot_employee.employee_id,
+                self.df_sqlglot_employee['fname'],
+                SF.col('lname'),
+                SF.col('age'),
+                self.df_sqlglot_employee.store_id,
+                self.df_sqlglot_store.store_name,
+                self.df_sqlglot_store['num_sales']
+            )
+        )
+        df, dfs = self.compare_spark_with_sqlglot(df_joined, dfs_joined)
+        self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(df))
+        self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(dfs))
+
+    # Note: Add test to make sure with and without alias are the same once ids are deterministic
+
+    def test_broadcast_func(self):
+        df_joined = (
+            self.df_spark_employee
+            .join(
+                F.broadcast(self.df_spark_store),
+                on=self.df_spark_employee.store_id == self.df_spark_store.store_id,
+                how="inner"
+            )
+            .select(
+                self.df_spark_employee.employee_id,
+                self.df_spark_employee['fname'],
+                F.col('lname'),
+                F.col('age'),
+                self.df_spark_employee.store_id,
+                self.df_spark_store.store_name,
+                self.df_spark_store['num_sales']
+            )
+        )
+        dfs_joined = (
+            self.df_sqlglot_employee
+            .join(
+                SF.broadcast(self.df_sqlglot_store),
+                on=self.df_sqlglot_employee.store_id == self.df_sqlglot_store.store_id,
+                how="inner"
+            )
+            .select(
+                self.df_sqlglot_employee.employee_id,
+                self.df_sqlglot_employee['fname'],
+                SF.col('lname'),
+                SF.col('age'),
+                self.df_sqlglot_employee.store_id,
+                self.df_sqlglot_store.store_name,
+                self.df_sqlglot_store['num_sales']
+            )
+        )
+        df, dfs = self.compare_spark_with_sqlglot(df_joined, dfs_joined)
+        self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(df))
+        self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(dfs))
+
+    def test_repartition_by_num(self):
+        df = (
+            self.df_spark_employee.repartition(63)
+        )
+
+        dfs = (
+            self.df_sqlglot_employee.repartition(63)
+        )
+        df, dfs = self.compare_spark_with_sqlglot(df, dfs)
+        spark_num_partitions = df.rdd.getNumPartitions()
+        sqlglot_num_partitions = dfs.rdd.getNumPartitions()
+        self.assertEqual(spark_num_partitions, 63)
+        self.assertEqual(spark_num_partitions, sqlglot_num_partitions)
+
+    def test_repartition_name_only(self):
+        df = (
+            self.df_spark_employee.repartition("age")
+        )
+
+        dfs = (
+            self.df_sqlglot_employee.repartition("age")
+        )
+        df, dfs = self.compare_spark_with_sqlglot(df, dfs)
+        self.assertIn("RepartitionByExpression [age", self.get_explain_plan(df))
+        self.assertIn("RepartitionByExpression [age", self.get_explain_plan(dfs))
+
+    def test_repartition_num_and_multiple_names(self):
+        df = (
+            self.df_spark_employee.repartition(53, "age", "fname")
+        )
+
+        dfs = (
+            self.df_sqlglot_employee.repartition(53, "age", "fname")
+        )
+        df, dfs = self.compare_spark_with_sqlglot(df, dfs)
+        spark_num_partitions = df.rdd.getNumPartitions()
+        sqlglot_num_partitions = dfs.rdd.getNumPartitions()
+        self.assertEqual(spark_num_partitions, 53)
+        self.assertEqual(spark_num_partitions, sqlglot_num_partitions)
+        self.assertIn("RepartitionByExpression [age#3, fname#1], 53", self.get_explain_plan(df))
+        self.assertIn("RepartitionByExpression [age#3, fname#1], 53", self.get_explain_plan(dfs))
+
+    def test_coalesce(self):
+        df = (
+            self.df_spark_employee.coalesce(3)
+        )
+        dfs = (
+            self.df_sqlglot_employee.coalesce(3)
+        )
+        df, dfs = self.compare_spark_with_sqlglot(df, dfs)
+        spark_num_partitions = df.rdd.getNumPartitions()
+        sqlglot_num_partitions = dfs.rdd.getNumPartitions()
+        self.assertEqual(spark_num_partitions, 3)
+        self.assertEqual(spark_num_partitions, sqlglot_num_partitions)

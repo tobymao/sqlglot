@@ -100,7 +100,6 @@ class Parser:
 
     ID_VAR_TOKENS = {
         TokenType.VAR,
-        TokenType.ASC,
         TokenType.ALTER,
         TokenType.BEGIN,
         TokenType.BUCKET,
@@ -111,7 +110,6 @@ class Parser:
         TokenType.CONVERT,
         TokenType.DEFAULT,
         TokenType.DELETE,
-        TokenType.DESC,
         TokenType.ENGINE,
         TokenType.ESCAPE,
         TokenType.EXPLAIN,

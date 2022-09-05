@@ -541,6 +541,10 @@ class TableAlias(Expression):
         return self.args.get("columns") or []
 
 
+class BitString(Condition):
+    pass
+
+
 class Column(Condition):
     arg_types = {"this": True, "table": False}
 

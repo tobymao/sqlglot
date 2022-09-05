@@ -304,6 +304,7 @@ class Parser:
         TokenType.TRUE: lambda *_: exp.Boolean(this=True),
         TokenType.FALSE: lambda *_: exp.Boolean(this=False),
         TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
+        TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
         TokenType.INTRODUCER: lambda self, token: self.expression(
             exp.Introducer,
             this=token.text,
@@ -1511,12 +1512,6 @@ class Parser:
             return exp.DataType(
                 this=exp.DataType.Type.TIMESTAMP,
                 expressions=expressions,
-            )
-
-        if type_token == TokenType.BINARY:
-            return exp.DataType(
-                this=exp.DataType.Type.BINARY,
-                expressions=[self._prev.text] if self._prev.text.isdigit() else None,
             )
 
         return exp.DataType(

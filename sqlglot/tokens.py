@@ -52,6 +52,7 @@ class TokenType(AutoName):
     SCHEMA = auto()
     TABLE = auto()
     VAR = auto()
+    BIT_STRING = auto()
 
     # types
     BOOLEAN = auto()
@@ -789,7 +790,7 @@ class Tokenizer(metaclass=_Tokenizer):
             else:
                 break
         try:
-            self._add(TokenType.BINARY, f"{int(self._text, 16):b}")
+            self._add(TokenType.BIT_STRING, f"{int(self._text, 16):b}")
         except ValueError:
             self._add(TokenType.IDENTIFIER)
 

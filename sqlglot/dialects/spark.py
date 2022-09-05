@@ -102,5 +102,5 @@ class Spark(Hive):
             HiveMap: _map_sql,
         }
 
-        def binary_literal_sql(self, expression):
-            return f"X'{self.sql(expression.expressions[0])}'"
+        def bitstring_sql(self, expression):
+            return f"X'{self.sql(expression, 'this')}'"

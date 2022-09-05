@@ -216,6 +216,8 @@ SELECT
 FROM users
 ```
 
+SQL annotations are currently incompatible with MySQL, which uses the `#` character to introduce comments.
+
 ## AST Introspection
 
 You can see the AST version of the sql by calling repr.

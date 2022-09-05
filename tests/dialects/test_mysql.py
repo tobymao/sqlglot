@@ -27,6 +27,27 @@ class TestMySQL(Validator):
             },
         )
 
+    def test_binary_literal(self):
+        self.validate_all(
+            "SELECT 0xCC",
+            write={
+                "mysql": "SELECT b'11001100'",
+                "spark": "SELECT X'11001100'",
+            },
+        )
+        self.validate_all(
+            "SELECT 0xz",
+            write={
+                "mysql": "SELECT `0xz`",
+            },
+        )
+        self.validate_all(
+            "SELECT 0XCC",
+            write={
+                "mysql": "SELECT 0 AS XCC",
+            },
+        )
+
     def test_string_literals(self):
         self.validate_all(
             'SELECT "2021-01-01" + INTERVAL 1 MONTH',

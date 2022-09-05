@@ -123,9 +123,6 @@ class DataFrame:
         for col in sqlglot_columns:
             table_identifier = col.args.get("table")
             if not table_identifier:
-                inner_join_columns = {y.alias_or_name for y in flatten([x.columns for x in self.joins_infos])}
-                if col.alias_or_name in inner_join_columns:
-                    col.set("table", exp.Identifier(this=self.joins_infos[0].base_prejoin_latest_cte_name))
                 continue
             table_name = table_identifier.alias_or_name
             # matching_df = [x for x in dfs_within_scope if x.branch_id == table_name or x.name == table_name]

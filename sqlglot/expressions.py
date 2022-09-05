@@ -514,6 +514,7 @@ class Create(Expression):
         "properties": False,
         "temporary": False,
         "replace": False,
+        "unique": False,
     }
 
 
@@ -610,6 +611,10 @@ class Identifier(Expression):
 
     def __hash__(self):
         return hash((self.key, self.this.lower()))
+
+
+class Index(Expression):
+    arg_types = {"this": False, "table": False, "where": False, "columns": False}
 
 
 class Insert(Expression):

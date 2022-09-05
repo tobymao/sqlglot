@@ -147,6 +147,7 @@ class TokenType(AutoName):
     IGNORE_NULLS = auto()
     ILIKE = auto()
     IN = auto()
+    INDEX = auto()
     INNER = auto()
     INSERT = auto()
     INTERSECT = auto()
@@ -410,6 +411,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ILIKE": TokenType.ILIKE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
+        "INDEX": TokenType.INDEX,
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,
         "INTERVAL": TokenType.INTERVAL,

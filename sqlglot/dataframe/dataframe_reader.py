@@ -12,4 +12,6 @@ class DataFrameReader:
         self.spark = spark
 
     def table(self, table_name: str) -> "DataFrame":
-        return DataFrame(self.spark, exp.Select().from_(table_name).select("*"), branch_id=DataFrame.random_name)
+        return DataFrame(self.spark, exp.Select().from_(table_name).select("*"),
+                         branch_id=self.spark.random_id,
+                         sequence_id=self.spark.random_id)

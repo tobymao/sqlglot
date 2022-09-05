@@ -11,6 +11,7 @@ from sqlglot.dataframe.util import ensure_strings, convert_join_type, ensure_col
 from sqlglot.helper import ensure_list, flatten
 from sqlglot.dataframe.operations import Operation, operation
 from sqlglot.dataframe.dataframe_na_functions import DataFrameNaFunctions
+from sqlglot.dataframe.transforms import ORDERED_TRANSFORMS
 
 from pyspark.sql import DataFrame
 
@@ -28,12 +29,11 @@ class JoinInfo:
 
 
 class DataFrame:
-    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, name: t.Optional[str] = None, last_op: t.Optional[Operation] = Operation.NO_OP, group_by_columns: t.List[Column] = None, joins_infos: t.List["JoinInfo"] = None, **kwargs):
-        self.id = self.random_name
+    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.NO_OP, group_by_columns: t.List[Column] = None, joins_infos: t.List["JoinInfo"] = None, **kwargs):
         self.spark = spark
         self.expression = expression
         self.branch_id = branch_id
-        self.name = name or self.random_name
+        self.sequence_id = sequence_id
         self.last_op = last_op
         self.group_by_columns = group_by_columns or None
         self.joins_infos = joins_infos or []
@@ -51,13 +51,12 @@ class DataFrame:
             return self.expression.find(exp.Table).alias_or_name
         return self.expression.ctes[-1].alias
 
-    @classmethod
-    @property
-    def random_name(cls) -> str:
-        return f"a{str(uuid.uuid4())[:8]}"
-
     def sql(self) -> str:
         expression = self._resolve_joined_ctes(copy=True)
+        for transform in ORDERED_TRANSFORMS:
+            expression = expression.transform(transform,
+                                              name_to_sequence_id_mapping=self.spark.name_to_sequence_id_mapping,
+                                              known_ids=self.spark.known_ids)
         return expression.sql(dialect="spark", pretty=True)
 
     def _resolve_joined_ctes(self, copy=True) -> exp.Expression:
@@ -74,11 +73,15 @@ class DataFrame:
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
         return DataFrame(**kwargs)
 
-    def _create_cte_from_expression(self, expression: exp.Expression, name: str = None, **kwargs) -> t.Tuple[exp.CTE, str]:
-        name = name or self.random_name
+    def _create_cte_from_expression(self, expression: exp.Expression, branch_id: t.Optional[str] = None,
+                                    sequence_id: t.Optional[str] = None, **kwargs) -> t.Tuple[exp.CTE, str]:
+        name = self.spark.random_name
         expression_to_cte = expression.copy()
         expression_to_cte.set("with", None)
-        return exp.Select().with_(name, as_=expression_to_cte, **kwargs).ctes[0], name
+        cte = exp.Select().with_(name, as_=expression_to_cte, **kwargs).ctes[0]
+        cte.set("branch_id", branch_id or self.branch_id)
+        cte.set("sequence_id", sequence_id or self.sequence_id)
+        return cte, name
 
     def _ensure_list_of_columns(self, cols: t.Union[str, t.Iterable[str], Column, t.Iterable[Column]]) -> t.List[Column]:
         columns = ensure_list(cols)
@@ -88,20 +91,24 @@ class DataFrame:
 
     @classmethod
     def _add_ctes_to_expression(cls, expression: exp.Subqueryable, ctes: t.List[exp.CTE]) -> exp.Expression:
-        for cte in ctes:
-            if cte not in expression.ctes:
-                expression = expression.with_(cte.alias_or_name, cte.args["this"].sql())
+        with_expression = expression.args.get("with")
+        existing_ctes = []
+        if with_expression:
+            existing_ctes = with_expression.args["expressions"]
+        existing_ctes.extend(ctes)
+        expression.set("with", exp.With(expressions=existing_ctes))
         return expression
 
-    def _convert_leaf_to_cte(self, name: t.Optional[str] = None) -> "DataFrame":
+    def _convert_leaf_to_cte(self, sequence_id: t.Optional[str] = None) -> "DataFrame":
+        sequence_id = sequence_id or self.sequence_id
         expression = self._resolve_joined_ctes(copy=True)
-        cte_expression, cte_name = self._create_cte_from_expression(expression=expression, name=name)
+        cte_expression, cte_name = self._create_cte_from_expression(expression=expression, sequence_id=sequence_id)
         new_expression = exp.Select()
         new_expression = self._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
         sel_columns = self._get_outer_select_columns(cte_expression)
         new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
         self.joins_infos = []
-        return self.copy(expression=new_expression, name=name if name is not None else self.name)
+        return self.copy(expression=new_expression, sequence_id=sequence_id)
 
     @classmethod
     def _get_outer_select_columns(cls, item: t.Union[exp.Expression, "DataFrame"]) -> t.List[Column]:
@@ -121,7 +128,8 @@ class DataFrame:
                     col.set("table", exp.Identifier(this=self.joins_infos[0].base_prejoin_latest_cte_name))
                 continue
             table_name = table_identifier.alias_or_name
-            matching_df = [x for x in dfs_within_scope if x.branch_id == table_name or x.name == table_name]
+            # matching_df = [x for x in dfs_within_scope if x.branch_id == table_name or x.name == table_name]
+            matching_df = [x for x in dfs_within_scope if x.branch_id == table_name]
             if len(matching_df) > 0:
                 matching_df = matching_df[0]
                 col.set("table", exp.Identifier(this=matching_df.latest_cte_name))
@@ -137,7 +145,9 @@ class DataFrame:
 
     @operation(Operation.NO_OP)
     def alias(self, name: str, **kwargs) -> "DataFrame":
-        return self._convert_leaf_to_cte(name=name)
+        sequence_id = self.spark.random_id
+        self.spark.add_alias_to_mapping(name, sequence_id)
+        return self._convert_leaf_to_cte(sequence_id=sequence_id)
 
     @operation(Operation.WHERE)
     def where(self, column: t.Union[Column, bool], **kwargs) -> "DataFrame":

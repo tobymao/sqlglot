@@ -1,6 +1,5 @@
-from tests.dialects.test_dialect import Validator
-
 from sqlglot import UnsupportedError
+from tests.dialects.test_dialect import Validator
 
 
 class TestSnowflake(Validator):

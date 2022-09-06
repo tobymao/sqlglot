@@ -1,12 +1,12 @@
-from sqlglot.optimizer.normalize import normalize
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
+from sqlglot.optimizer.normalize import normalize
 from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
 from sqlglot.optimizer.pushdown_projections import pushdown_projections
-from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.qualify_columns import qualify_columns
+from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 

@@ -6,7 +6,6 @@ from sqlglot.executor.python import PythonExecutor
 from sqlglot.optimizer import optimize
 from sqlglot.planner import Plan
 
-
 logger = logging.getLogger("sqlglot")
 
 

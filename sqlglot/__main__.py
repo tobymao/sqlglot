@@ -2,7 +2,6 @@ import argparse
 
 import sqlglot
 
-
 parser = argparse.ArgumentParser(description="Transpile SQL")
 parser.add_argument("sql", metavar="sql", type=str, help="SQL string to transpile")
 parser.add_argument(

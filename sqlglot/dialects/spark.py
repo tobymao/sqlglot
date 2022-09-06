@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import rename_func, no_ilike_sql
+from sqlglot.dialects.dialect import no_ilike_sql, rename_func
 from sqlglot.dialects.hive import Hive, HiveMap
 from sqlglot.helper import list_get
 

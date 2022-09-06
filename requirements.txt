@@ -1,5 +1,6 @@
+autoflake
 black
 duckdb
+isort
 pandas
-pylint
 python-dateutil

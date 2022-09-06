@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from sqlglot import alias, exp
-from sqlglot.optimizer.scope import traverse_scope, Scope
+from sqlglot.optimizer.scope import Scope, traverse_scope
 
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()

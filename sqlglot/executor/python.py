@@ -3,8 +3,8 @@ import collections
 import itertools
 
 from sqlglot import exp, planner
-from sqlglot.executor.context import Context
 from sqlglot.dialects.dialect import Dialect, inline_array_sql
+from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
 from sqlglot.generator import Generator

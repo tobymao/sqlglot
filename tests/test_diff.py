@@ -1,7 +1,7 @@
 import unittest
 
 from sqlglot import parse_one
-from sqlglot.diff import diff, Insert, Keep, Move, Remove, Update
+from sqlglot.diff import Insert, Keep, Move, Remove, Update, diff
 from sqlglot.expressions import Join, to_identifier
 
 

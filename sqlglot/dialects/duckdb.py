@@ -2,8 +2,8 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
-    arrow_json_extract_sql,
     arrow_json_extract_scalar_sql,
+    arrow_json_extract_sql,
     format_time_lambda,
     no_safe_divide_sql,
     no_tablesample_sql,

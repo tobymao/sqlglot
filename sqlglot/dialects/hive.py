@@ -1,13 +1,12 @@
-from sqlglot import exp
-from sqlglot import transforms
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
     format_time_lambda,
     if_sql,
     no_ilike_sql,
-    no_safe_divide_sql,
     no_recursive_cte_sql,
+    no_safe_divide_sql,
     no_trycast_sql,
     rename_func,
     struct_extract_sql,

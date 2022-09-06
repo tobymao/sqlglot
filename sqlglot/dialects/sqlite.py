@@ -1,12 +1,12 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
-    arrow_json_extract_sql,
     arrow_json_extract_scalar_sql,
+    arrow_json_extract_sql,
+    no_ilike_sql,
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
-    no_ilike_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser

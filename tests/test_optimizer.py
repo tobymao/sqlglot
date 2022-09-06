@@ -1,14 +1,10 @@
 import unittest
 
 from sqlglot import optimizer, parse_one, table
-from sqlglot.optimizer.schema import ensure_schema, MappingSchema
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.schema import MappingSchema, ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
-from tests.helpers import (
-    load_sql_fixture_pairs,
-    load_sql_fixtures,
-    TPCH_SCHEMA,
-)
+from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
 
 
 class TestOptimizer(unittest.TestCase):

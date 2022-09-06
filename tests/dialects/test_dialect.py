@@ -946,3 +946,27 @@ class TestDialect(Validator):
                 "postgres": "power(1.2, 3.4)",
             },
         )
+        self.validate_all(
+            "CREATE INDEX my_idx ON tbl (a, b)",
+            read={
+                "hive": "CREATE INDEX my_idx ON TABLE tbl (a, b)",
+                "sqlite": "CREATE INDEX my_idx ON tbl (a, b)",
+            },
+            write={
+                "hive": "CREATE INDEX my_idx ON TABLE tbl (a, b)",
+                "postgres": "CREATE INDEX my_idx ON tbl (a, b)",
+                "sqlite": "CREATE INDEX my_idx ON tbl (a, b)",
+            },
+        )
+        self.validate_all(
+            "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+            read={
+                "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl (a, b)",
+                "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+            },
+            write={
+                "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl (a, b)",
+                "postgres": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+                "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+            },
+        )

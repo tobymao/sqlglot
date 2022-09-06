@@ -119,6 +119,7 @@ class Parser:
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
+        TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
@@ -384,7 +385,7 @@ class Parser:
         "offset": lambda self: self._parse_offset(),
     }
 
-    CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION}
+    CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION, TokenType.INDEX}
 
     STRICT_CAST = True
 
@@ -619,11 +620,12 @@ class Parser:
     def _parse_create(self):
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
+        unique = self._match(TokenType.UNIQUE)
 
         create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
-            self.raise_error("Expected TABLE, VIEW, or FUNCTION")
+            self.raise_error("Expected TABLE, VIEW, INDEX, or FUNCTION")
 
         exists = self._parse_exists(not_=True)
         this = None
@@ -634,8 +636,9 @@ class Parser:
             this = self._parse_var()
             if self._match(TokenType.ALIAS):
                 expression = self._parse_string()
-
-        if create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
+        elif create_token.token_type == TokenType.INDEX:
+            this = self._parse_index()
+        elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
             this = self._parse_table(schema=True)
             properties = self._parse_properties(
                 this if isinstance(this, exp.Schema) else None
@@ -652,6 +655,7 @@ class Parser:
             properties=properties,
             temporary=temporary,
             replace=replace,
+            unique=unique,
         )
 
     def _parse_property(self, schema):
@@ -1096,6 +1100,16 @@ class Parser:
             kwargs["using"] = self._parse_wrapped_id_vars()
 
         return self.expression(exp.Join, **kwargs)
+
+    def _parse_index(self):
+        index = self._parse_id_var()
+        self._match(TokenType.ON)
+        self._match(TokenType.TABLE)  # hive
+        # table = self._parse_table(schema=True)
+        table = self.expression(exp.Table, this=self._parse_id_var())
+        columns = self._parse_expression()
+        this = self.expression(exp.Index, this=index, table=table, columns=columns)
+        return this
 
     def _parse_table(self, schema=False):
         unnest = self._parse_unnest()

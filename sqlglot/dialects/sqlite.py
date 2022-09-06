@@ -14,9 +14,9 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 
 class SQLite(Dialect):
-    identifiers = ['"', ("[", "]"), "`"]
-
     class Tokenizer(Tokenizer):
+        IDENTIFIERS = ['"', ("[", "]"), "`"]
+
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,

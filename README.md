@@ -273,10 +273,9 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 
 class Custom(Dialect):
-    identifier = "`"
-
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"']
+        IDENTIFIERS = ["`"]
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,

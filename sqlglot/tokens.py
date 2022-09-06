@@ -271,9 +271,17 @@ class _Tokenizer(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        klass.QUOTES = [
-            prefix + quote for prefix in ["", "r"] for quote in klass.QUOTES
-        ]
+        klass.QUOTES = dict(
+            (quote, quote) if isinstance(quote, str) else (quote[0], quote[1])
+            for quote in klass.QUOTES
+        )
+
+        klass.IDENTIFIERS = dict(
+            (identifier, identifier)
+            if isinstance(identifier, str)
+            else (identifier[0], identifier[1])
+            for identifier in klass.IDENTIFIERS
+        )
 
         klass.COMMENTS = dict(
             (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
@@ -329,6 +337,10 @@ class Tokenizer(metaclass=_Tokenizer):
     }
 
     QUOTES = ["'"]
+
+    IDENTIFIERS = ['"']
+
+    ESCAPE = "'"
 
     KEYWORDS = {
         "/*+": TokenType.HINT,
@@ -566,8 +578,6 @@ class Tokenizer(metaclass=_Tokenizer):
     KEYWORD_TRIE = None  # autofilled
 
     __slots__ = (
-        "identifiers",
-        "escape",
         "sql",
         "size",
         "tokens",
@@ -580,20 +590,10 @@ class Tokenizer(metaclass=_Tokenizer):
         "_peek",
     )
 
-    def __init__(
-        self,
-        identifiers=None,
-        escape=None,
-    ):
+    def __init__(self):
         """
         Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
-
-        Args
-            identifiers (dict): keys are the identifer start characters and values are the identifier end characters
-            escape (str): the escape code character
         """
-        self.identifiers = identifiers or {'"': '"'}
-        self.escape = escape or "'"
         self.reset()
 
     def reset(self):
@@ -622,7 +622,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 break
 
             white_space = self.WHITE_SPACE.get(self._char)
-            identifier_end = self.identifiers.get(self._char)
+            identifier_end = self.IDENTIFIERS.get(self._char)
 
             if white_space:
                 if white_space == TokenType.BREAK:
@@ -799,25 +799,22 @@ class Tokenizer(metaclass=_Tokenizer):
             self._add(TokenType.IDENTIFIER)
 
     def _scan_string(self, quote):
-        if quote not in self.QUOTES:
+        quote_end = self.QUOTES.get(quote)
+        if quote_end is None:
             return False
 
-        size = len(quote)
         text = ""
-        self._advance(size)
-
-        if quote.startswith("r"):
-            quote = quote[1:]
-            size = len(quote)
+        self._advance(len(quote))
+        quote_end_size = len(quote_end)
 
         while True:
-            if self._char == self.escape and self._peek == quote:
+            if self._char == self.ESCAPE and self._peek == quote_end:
                 text += quote
                 self._advance(2)
             else:
-                if self._chars(size) == quote:
-                    if size > 1:
-                        self._advance(size - 1)
+                if self._chars(quote_end_size) == quote_end:
+                    if quote_end_size > 1:
+                        self._advance(quote_end_size - 1)
                     break
 
                 if self._end:
@@ -828,7 +825,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance()
 
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
-        text = text.replace("\\\\", "\\") if self.escape == "\\" else text
+        text = text.replace("\\\\", "\\") if self.ESCAPE == "\\" else text
         self._add(TokenType.STRING, text)
         return True
 

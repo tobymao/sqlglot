@@ -19,13 +19,13 @@ class Generator:
             represents a python time format and the output the target time format
         time_trie (trie): a trie of the time_mapping keys
         pretty (bool): if set to True the returned string will be formatted. Default: False.
+        quote_start (str): specifies which starting character to use to delimit quotes. Default: '.
+        quote_end (str): specifies which ending character to use to delimit quotes. Default: '.
         identifier_start (str): specifies which starting character to use to delimit identifiers. Default: ".
         identifier_end (str): specifies which ending character to use to delimit identifiers. Default: ".
         identify (bool): if set to True all identifiers will be delimited by the corresponding
             character.
         normalize (bool): if set to True all identifiers will lower cased
-        quote (str): specifies a character which should be treated as a quote (eg. to delimit
-            literals). Default: '.
         escape (str): specifies an escape character. Default: '.
         pad (int): determines padding in a formatted string. Default: 2.
         indent (int): determines the size of indentation in a formatted string. Default: 4.
@@ -90,11 +90,12 @@ class Generator:
         "time_trie",
         "pretty",
         "configured_pretty",
+        "quote_start",
+        "quote_end",
         "identifier_start",
         "identifier_end",
         "identify",
         "normalize",
-        "quote",
         "escape",
         "pad",
         "index_offset",
@@ -107,7 +108,7 @@ class Generator:
         "max_unsupported",
         "_indent",
         "_replace_backslash",
-        "_escaped_quote",
+        "_escaped_quote_end",
     )
 
     def __init__(
@@ -115,11 +116,12 @@ class Generator:
         time_mapping=None,
         time_trie=None,
         pretty=None,
+        quote_start=None,
+        quote_end=None,
         identifier_start=None,
         identifier_end=None,
         identify=False,
         normalize=False,
-        quote=None,
         escape=None,
         pad=2,
         indent=2,
@@ -138,11 +140,12 @@ class Generator:
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
         self.configured_pretty = self.pretty
+        self.quote_start = quote_start or "'"
+        self.quote_end = quote_end or "'"
         self.identifier_start = identifier_start or '"'
         self.identifier_end = identifier_end or '"'
         self.identify = identify
         self.normalize = normalize
-        self.quote = quote or "'"
         self.escape = escape or "'"
         self.pad = pad
         self.index_offset = index_offset
@@ -155,7 +158,7 @@ class Generator:
         self.null_ordering = null_ordering
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
-        self._escaped_quote = self.escape + self.quote
+        self._escaped_quote_end = self.escape + self.quote_end
 
     def generate(self, expression):
         """
@@ -627,8 +630,8 @@ class Generator:
         if expression.is_string:
             if self._replace_backslash:
                 text = text.replace("\\", "\\\\")
-            text = text.replace(self.quote, self._escaped_quote)
-            return f"{self.quote}{text}{self.quote}"
+            text = text.replace(self.quote_end, self._escaped_quote_end)
+            return f"{self.quote_start}{text}{self.quote_end}"
         return text
 
     def null_sql(self, *_):

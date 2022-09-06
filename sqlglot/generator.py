@@ -796,8 +796,9 @@ class Generator:
         start = csv(
             self.sql(expression, "start"), self.sql(expression, "start_side"), sep=" "
         )
-        end = csv(
-            self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" "
+        end = (
+            csv(self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" ")
+            or "CURRENT ROW"
         )
         return f"{kind} BETWEEN {start} AND {end}"
 

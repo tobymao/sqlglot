@@ -26,8 +26,6 @@ class Generator:
         identify (bool): if set to True all identifiers will be delimited by the corresponding
             character.
         normalize (bool): if set to True all identifiers will lower cased
-        quote (str): specifies a character which should be treated as a quote (eg. to delimit
-            literals). Default: '.
         escape (str): specifies an escape character. Default: '.
         pad (int): determines padding in a formatted string. Default: 2.
         indent (int): determines the size of indentation in a formatted string. Default: 4.
@@ -98,7 +96,6 @@ class Generator:
         "identifier_end",
         "identify",
         "normalize",
-        "quote",
         "escape",
         "pad",
         "index_offset",
@@ -125,7 +122,6 @@ class Generator:
         identifier_end=None,
         identify=False,
         normalize=False,
-        quote=None,
         escape=None,
         pad=2,
         indent=2,
@@ -150,7 +146,6 @@ class Generator:
         self.identifier_end = identifier_end or '"'
         self.identify = identify
         self.normalize = normalize
-        self.quote = quote or "'"
         self.escape = escape or "'"
         self.pad = pad
         self.index_offset = index_offset

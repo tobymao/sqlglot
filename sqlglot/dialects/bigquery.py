@@ -38,7 +38,7 @@ class BigQuery(Dialect):
 
     class Tokenizer(Tokenizer):
         QUOTES = [
-            quote if len(prefix) == 0 else (prefix + quote, quote)
+            (prefix + quote, quote) if prefix else quote
             for quote in ["'", '"', '"""', "'''"]
             for prefix in ["", "r", "R"]
         ]

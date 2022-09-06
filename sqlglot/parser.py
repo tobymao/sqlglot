@@ -1929,7 +1929,7 @@ class Parser:
         alias = self._parse_id_var(False)
 
         if self._match(TokenType.PARTITION_BY):
-            partition = self._parse_csv(self._parse_type)
+            partition = self._parse_csv(self._parse_conjunction)
 
         order = self._parse_order()
 

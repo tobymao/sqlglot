@@ -1105,11 +1105,12 @@ class Parser:
         index = self._parse_id_var()
         self._match(TokenType.ON)
         self._match(TokenType.TABLE)  # hive
-        # table = self._parse_table(schema=True)
-        table = self.expression(exp.Table, this=self._parse_id_var())
-        columns = self._parse_expression()
-        this = self.expression(exp.Index, this=index, table=table, columns=columns)
-        return this
+        return self.expression(
+            exp.Index,
+            this=index,
+            table=self.expression(exp.Table, this=self._parse_id_var()),
+            columns=self._parse_expression(),
+        )
 
     def _parse_table(self, schema=False):
         unnest = self._parse_unnest()

@@ -608,6 +608,10 @@ class Hint(Expression):
 class Identifier(Expression):
     arg_types = {"this": True, "quoted": False}
 
+    @property
+    def quoted(self):
+        return bool(self.args.get("quoted"))
+
     def __eq__(self, other):
         return isinstance(other, self.__class__) and _norm_arg(self.this) == _norm_arg(
             other.this

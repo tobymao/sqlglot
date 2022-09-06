@@ -386,7 +386,6 @@ class TestHive(Validator):
                 "spark": "LOCATE('a', x, 3)",
             },
         )
-        # pylint: disable=anomalous-backslash-in-string
         self.validate_all(
             "INITCAP('new york')",
             write={

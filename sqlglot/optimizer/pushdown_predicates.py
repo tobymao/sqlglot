@@ -169,7 +169,6 @@ def replace_aliases(source, predicate):
             aliases[select.name] = select
 
     def _replace_alias(column):
-        # pylint: disable=cell-var-from-loop
         if isinstance(column, exp.Column) and column.name in aliases:
             return aliases[column.name]
         return column

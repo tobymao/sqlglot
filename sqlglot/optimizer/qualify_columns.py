@@ -175,7 +175,6 @@ def _expand_positional_references(scope, expressions):
             try:
                 select = scope.selects[int(node.name) - 1]
             except IndexError:
-                # pylint: disable=raise-missing-from
                 raise OptimizeError(f"Unknown output column: {node.name}")
             if isinstance(select, exp.Alias):
                 select = select.this

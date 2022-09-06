@@ -7,7 +7,7 @@ import sqlglot.optimizer
 import sqlglot.transforms
 
 
-def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument
+def load_tests(loader, tests, ignore):
     """
     This finds and runs all the doctests
     """

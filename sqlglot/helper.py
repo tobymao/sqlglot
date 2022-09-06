@@ -8,7 +8,6 @@ logger = logging.getLogger("sqlglot")
 
 
 class AutoName(Enum):
-    # pylint: disable=no-self-argument
     def _generate_next_value_(name, _start, _count, _last_values):
         return name
 

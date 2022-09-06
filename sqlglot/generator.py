@@ -132,7 +132,6 @@ class Generator:
         null_ordering=None,
         max_unsupported=3,
     ):
-        # pylint: disable=too-many-arguments
         import sqlglot
 
         self.time_mapping = time_mapping or {}
@@ -1061,7 +1060,6 @@ class Generator:
         )
 
     def expressions(self, expression, key=None, flat=False, indent=True, sep=", "):
-        # pylint: disable=cell-var-from-loop
         expressions = expression.args.get(key or "expressions")
 
         if not expressions:

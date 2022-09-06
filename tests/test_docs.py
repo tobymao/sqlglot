@@ -3,8 +3,8 @@ import inspect
 import unittest
 
 import sqlglot
-import sqlglot.transforms
 import sqlglot.optimizer
+import sqlglot.transforms
 
 
 def load_tests(loader, tests, ignore):  # pylint: disable=unused-argument

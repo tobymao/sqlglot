@@ -1,24 +1,23 @@
 from sqlglot import expressions as exp
 from sqlglot.dialects import Dialect, Dialects
 from sqlglot.diff import diff
-from sqlglot.errors import ErrorLevel, UnsupportedError, ParseError, TokenError
+from sqlglot.errors import ErrorLevel, ParseError, TokenError, UnsupportedError
+from sqlglot.expressions import Expression
+from sqlglot.expressions import alias_ as alias
 from sqlglot.expressions import (
-    Expression,
-    select,
-    from_,
     and_,
-    or_,
-    not_,
-    condition,
-    alias_ as alias,
     column,
-    table_ as table,
+    condition,
+    from_,
+    not_,
+    or_,
+    select,
     subquery,
 )
+from sqlglot.expressions import table_ as table
 from sqlglot.generator import Generator
-from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.parser import Parser
-
+from sqlglot.tokens import Tokenizer, TokenType
 
 __version__ = "5.3.1"
 

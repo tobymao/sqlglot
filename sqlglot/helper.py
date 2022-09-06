@@ -3,7 +3,6 @@ import re
 from contextlib import contextmanager
 from enum import Enum
 
-
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 logger = logging.getLogger("sqlglot")
 

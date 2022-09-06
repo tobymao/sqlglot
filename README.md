@@ -317,7 +317,6 @@ Dialects["custom"]
 ## Run Tests and Lint
 ```
 pip install -r requirements.txt
-./format_code.sh
 ./run_checks.sh
 ```
 

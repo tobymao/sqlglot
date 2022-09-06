@@ -5,8 +5,8 @@ from sqlglot import (
     Dialects,
     ErrorLevel,
     UnsupportedError,
-    transpile,
     parse_one,
+    transpile,
 )
 
 

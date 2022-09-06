@@ -1,5 +1,4 @@
-from sqlglot import exp
-from sqlglot import transforms
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,

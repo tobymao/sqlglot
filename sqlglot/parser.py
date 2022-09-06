@@ -5,7 +5,6 @@ from sqlglot.errors import ErrorLevel, ParseError, concat_errors
 from sqlglot.helper import apply_index_offset, ensure_list, list_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
-
 logger = logging.getLogger("sqlglot")
 
 

@@ -5,8 +5,8 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
     rename_func,
 )
-from sqlglot.helper import list_get
 from sqlglot.generator import Generator
+from sqlglot.helper import list_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 

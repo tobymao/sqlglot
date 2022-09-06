@@ -1,9 +1,9 @@
-from copy import deepcopy
-from collections import deque
-from enum import auto
-import re
 import inspect
+import re
 import sys
+from collections import deque
+from copy import deepcopy
+from enum import auto
 
 from sqlglot.errors import ParseError
 from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list

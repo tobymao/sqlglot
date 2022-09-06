@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from sqlglot import parse, parse_one, exp, Parser
+from sqlglot import Parser, exp, parse, parse_one
 from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import assert_logger_contains
 

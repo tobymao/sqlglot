@@ -6,8 +6,7 @@ from pandas.testing import assert_frame_equal
 
 from sqlglot import exp, parse_one
 from sqlglot.executor import execute
-from tests.helpers import load_sql_fixture_pairs, FIXTURES_DIR, TPCH_SCHEMA
-
+from tests.helpers import FIXTURES_DIR, TPCH_SCHEMA, load_sql_fixture_pairs
 
 DIR = FIXTURES_DIR + "/optimizer/tpc-h/"
 

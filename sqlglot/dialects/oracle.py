@@ -1,8 +1,7 @@
-from sqlglot import exp
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql
-from sqlglot import transforms
-from sqlglot.helper import csv
 from sqlglot.generator import Generator
+from sqlglot.helper import csv
 from sqlglot.tokens import Tokenizer, TokenType
 
 

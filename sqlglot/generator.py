@@ -6,7 +6,6 @@ from sqlglot.helper import apply_index_offset, csv, ensure_list
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
-
 logger = logging.getLogger("sqlglot")
 
 

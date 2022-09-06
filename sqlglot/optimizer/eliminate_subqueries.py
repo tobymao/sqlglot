@@ -1,8 +1,8 @@
 import itertools
 
 from sqlglot import alias, exp, select, table
-from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.simplify import simplify
 
 
 def eliminate_subqueries(expression):

@@ -101,8 +101,6 @@ class TokenType(AutoName):
     CLUSTER_BY = auto()
     COLLATE = auto()
     COMMENT = auto()
-    COMMENT_END = auto()
-    COMMENT_START = auto()
     COMMIT = auto()
     CONSTRAINT = auto()
     CONVERT = auto()
@@ -276,15 +274,19 @@ class _Tokenizer(type):
             prefix + quote for prefix in ["", "r"] for quote in klass.QUOTES
         ]
 
+        klass.COMMENTS = dict(
+            (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
+            for comment in klass.COMMENTS
+        )
+
         klass.KEYWORD_TRIE = new_trie(
             key.upper()
             for key, value in {
                 **klass.KEYWORDS,
+                **{comment: TokenType.COMMENT for comment in klass.COMMENTS},
                 **{quote: TokenType.QUOTE for quote in klass.QUOTES},
             }.items()
-            if value in (TokenType.COMMENT, TokenType.COMMENT_START, TokenType.QUOTE)
-            or " " in key
-            or any(single in key for single in klass.SINGLE_TOKENS)
+            if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
         return klass
@@ -329,9 +331,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     KEYWORDS = {
         "/*+": TokenType.HINT,
-        "--": TokenType.COMMENT,
-        "/*": TokenType.COMMENT_START,
-        "*/": TokenType.COMMENT_END,
+        "*/": TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
         "||": TokenType.DPIPE,
@@ -560,9 +560,7 @@ class Tokenizer(metaclass=_Tokenizer):
     NUMERIC_LITERALS = {}
     ENCODE = None
 
-    COMMENTS = {"--"}
-    COMMENT_START = "/*"
-    COMMENT_END = "*/"
+    COMMENTS = ["--", ("/*", "*/")]
     KEYWORD_TRIE = None  # autofilled
 
     __slots__ = (
@@ -719,32 +717,36 @@ class Tokenizer(metaclass=_Tokenizer):
             self._scan_var()
             return
 
-        if self._scan_comment(word):
-            return
         if self._scan_string(word):
+            return
+        if self._scan_comment(word):
             return
 
         self._advance(size - 1)
         self._add(self.KEYWORDS[word.upper()])
 
-    def _scan_comment(self, comment):
-        if comment in self.COMMENTS:
-            while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK:
-                self._advance()
-            return True
+    def _scan_comment(self, comment_start):
+        if comment_start not in self.COMMENTS:
+            return False
 
-        if comment == self.COMMENT_START:
-            comment_end_size = len(self.COMMENT_END)
-            while not self._end and self._chars(comment_end_size) != self.COMMENT_END:
+        comment_end = self.COMMENTS[comment_start]
+
+        if comment_end:
+            comment_end_size = len(comment_end)
+
+            while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
             self._advance(comment_end_size - 1)
-            return True
-
-        return False
+        else:
+            while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK:
+                self._advance()
+        return True
 
     def _scan_annotation(self):
         while (
-            not self._end and self._peek not in self.WHITE_SPACE and self._peek != ","
+            not self._end
+            and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK
+            and self._peek != ","
         ):
             self._advance()
         self._add(TokenType.ANNOTATION, self._text[1:])

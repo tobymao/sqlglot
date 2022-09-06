@@ -400,6 +400,10 @@ class TestExpressions(unittest.TestCase):
         week = unit.find(exp.Week)
         self.assertEqual(week.this, exp.Var(this="thursday"))
 
+    def test_identifier(self):
+        self.assertTrue(exp.to_identifier('"x"').quoted)
+        self.assertFalse(exp.to_identifier("x").quoted)
+
     def test_function_normalizer(self):
         self.assertEqual(
             parse_one("HELLO()").sql(normalize_functions="lower"), "hello()"

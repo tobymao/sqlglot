@@ -119,6 +119,7 @@ class Parser:
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
+        TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,

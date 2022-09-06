@@ -37,6 +37,16 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            R'R"""/\*.*\*/"""',
+            write={
+                "bigquery": R"'/\\*.*\\*/'",
+                "duckdb": R"'/\*.*\*/'",
+                "presto": R"'/\*.*\*/'",
+                "hive": R"'/\\*.*\\*/'",
+                "spark": R"'/\\*.*\\*/'",
+            },
+        )
+        self.validate_all(
             "CAST(a AS INT64)",
             write={
                 "bigquery": "CAST(a AS INT64)",

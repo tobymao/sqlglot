@@ -122,8 +122,6 @@ class HiveMap(exp.Map):
 
 
 class Hive(Dialect):
-    identifiers = ["`"]
-    escape = "\\"
     alias_post_tablesample = True
 
     time_mapping = {
@@ -156,7 +154,8 @@ class Hive(Dialect):
 
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"']
-
+        IDENTIFIERS = ["`"]
+        ESCAPE = "\\"
         ENCODE = "utf-8"
 
         NUMERIC_LITERALS = {

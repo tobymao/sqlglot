@@ -34,12 +34,25 @@ def _date_add_sql(data_type, kind):
 
 
 class BigQuery(Dialect):
-    identifiers = ["`"]
-    escape = "\\"
     unnest_column_only = True
 
     class Tokenizer(Tokenizer):
-        QUOTES = ["'", '"', '"""']
+        QUOTES = [
+            "'",
+            '"',
+            '"""',
+            "'''",
+            ("r'", "'"),
+            ("R'", "'"),
+            ('r"', '"'),
+            ('R"', '"'),
+            ('r"""', '"""'),
+            ('R"""', '"""'),
+            ("r'''", "'''"),
+            ("R'''", "'''"),
+        ]
+        IDENTIFIERS = ["`"]
+        ESCAPE = "\\"
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,

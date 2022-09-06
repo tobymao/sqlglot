@@ -52,27 +52,22 @@ class _Dialect(type):
         klass.parser_class = getattr(klass, "Parser", Parser)
         klass.generator_class = getattr(klass, "Generator", Generator)
 
-        identifiers = dict(
-            (identifier[0], identifier[1])
-            if isinstance(identifier, tuple)
-            else (identifier, identifier)
-            for identifier in klass.identifiers
-        )
-        klass.identifier_start, klass.identifier_end = list(identifiers.items())[0]
-
-        klass.tokenizer = klass.tokenizer_class(
-            identifiers=identifiers,
-            escape=klass.escape,
-        )
+        klass.tokenizer = klass.tokenizer_class()
+        klass.quote_start, klass.quote_end = list(
+            klass.tokenizer_class._QUOTES.items()
+        )[0]
+        klass.identifier_start, klass.identifier_end = list(
+            klass.tokenizer_class._IDENTIFIERS.items()
+        )[0]
 
         return klass
 
 
 class Dialect(metaclass=_Dialect):
-    identifiers = ['"']
+    quote_start = "'"
+    quote_end = "'"
     identifier_start = '"'
     identifier_end = '"'
-    escape = "'"
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False
@@ -152,10 +147,11 @@ class Dialect(metaclass=_Dialect):
         # pylint: disable=not-callable
         return self.generator_class(
             **{
-                "quote": self.tokenizer_class.QUOTES[0],
+                "quote_start": self.quote_start,
+                "quote_end": self.quote_end,
                 "identifier_start": self.identifier_start,
                 "identifier_end": self.identifier_end,
-                "escape": self.escape,
+                "escape": self.tokenizer_class.ESCAPE,
                 "index_offset": self.index_offset,
                 "time_mapping": self.inverse_time_mapping,
                 "time_trie": self.inverse_time_trie,

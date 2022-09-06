@@ -270,12 +270,12 @@ class _Tokenizer(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        klass._QUOTES = dict(
+        klass.QUOTES = dict(
             (quote[0], quote[1]) if isinstance(quote, tuple) else (quote, quote)
             for quote in klass.QUOTES
         )
 
-        klass._IDENTIFIERS = dict(
+        klass.IDENTIFIERS = dict(
             (identifier[0], identifier[1])
             if isinstance(identifier, tuple)
             else (identifier, identifier)
@@ -292,7 +292,7 @@ class _Tokenizer(type):
             for key, value in {
                 **klass.KEYWORDS,
                 **{comment: TokenType.COMMENT for comment in klass.COMMENTS},
-                **{quote: TokenType.QUOTE for quote in klass._QUOTES.keys()},
+                **{quote: TokenType.QUOTE for quote in klass.QUOTES},
             }.items()
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
@@ -574,8 +574,6 @@ class Tokenizer(metaclass=_Tokenizer):
 
     COMMENTS = ["--", ("/*", "*/")]
     KEYWORD_TRIE = None  # autofilled
-    _QUOTES = None  # autofilled
-    _IDENTIFIERS = None  # autofilled
 
     __slots__ = (
         "sql",
@@ -619,7 +617,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 break
 
             white_space = self.WHITE_SPACE.get(self._char)
-            identifier_end = self._IDENTIFIERS.get(self._char)
+            identifier_end = self.IDENTIFIERS.get(self._char)
 
             if white_space:
                 if white_space == TokenType.BREAK:
@@ -794,22 +792,22 @@ class Tokenizer(metaclass=_Tokenizer):
             self._add(TokenType.IDENTIFIER)
 
     def _scan_string(self, quote):
-        quote_end = self._QUOTES.get(quote)
+        quote_end = self.QUOTES.get(quote)
         if quote_end is None:
             return False
 
         text = ""
         self._advance(len(quote))
-        end_size = len(quote_end)
+        quote_end_size = len(quote_end)
 
         while True:
             if self._char == self.ESCAPE and self._peek == quote_end:
                 text += quote
                 self._advance(2)
             else:
-                if self._chars(end_size) == quote_end:
-                    if end_size > 1:
-                        self._advance(end_size - 1)
+                if self._chars(quote_end_size) == quote_end:
+                    if quote_end_size > 1:
+                        self._advance(quote_end_size - 1)
                     break
 
                 if self._end:

@@ -53,11 +53,11 @@ class _Dialect(type):
         klass.generator_class = getattr(klass, "Generator", Generator)
 
         klass.tokenizer = klass.tokenizer_class()
-        klass.quote_start, klass.quote_end = list(
-            klass.tokenizer_class._QUOTES.items()
-        )[0]
+        klass.quote_start, klass.quote_end = list(klass.tokenizer_class.QUOTES.items())[
+            0
+        ]
         klass.identifier_start, klass.identifier_end = list(
-            klass.tokenizer_class._IDENTIFIERS.items()
+            klass.tokenizer_class.IDENTIFIERS.items()
         )[0]
 
         return klass

@@ -6,11 +6,12 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 
 class ClickHouse(Dialect):
-    identifiers = ['"', "`"]
     normalize_functions = None
     null_ordering = "nulls_are_last"
 
     class Tokenizer(Tokenizer):
+        IDENTIFIERS = ['"', "`"]
+
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "NULLABLE": TokenType.NULLABLE,

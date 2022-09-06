@@ -64,10 +64,6 @@ class _Dialect(type):
 
 
 class Dialect(metaclass=_Dialect):
-    quote_start = "'"
-    quote_end = "'"
-    identifier_start = '"'
-    identifier_end = '"'
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False
@@ -80,6 +76,11 @@ class Dialect(metaclass=_Dialect):
     time_mapping = {}
 
     # autofilled
+    quote_start = None
+    quote_end = None
+    identifier_start = None
+    identifier_end = None
+
     time_trie = None
     inverse_time_mapping = None
     inverse_time_trie = None

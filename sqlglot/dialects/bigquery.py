@@ -38,18 +38,9 @@ class BigQuery(Dialect):
 
     class Tokenizer(Tokenizer):
         QUOTES = [
-            "'",
-            '"',
-            '"""',
-            "'''",
-            ("r'", "'"),
-            ("R'", "'"),
-            ('r"', '"'),
-            ('R"', '"'),
-            ('r"""', '"""'),
-            ('R"""', '"""'),
-            ("r'''", "'''"),
-            ("R'''", "'''"),
+            quote if len(prefix) == 0 else (prefix + quote, quote)
+            for quote in ["'", '"', '"""', "'''"]
+            for prefix in ["", "r", "R"]
         ]
         IDENTIFIERS = ["`"]
         ESCAPE = "\\"

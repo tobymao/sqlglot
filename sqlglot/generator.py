@@ -111,7 +111,6 @@ class Generator:
         "max_unsupported",
         "_indent",
         "_replace_backslash",
-        "_escaped_quote_start",
         "_escaped_quote_end",
     )
 
@@ -164,7 +163,6 @@ class Generator:
         self.null_ordering = null_ordering
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
-        self._escaped_quote_start = self.escape + self.quote_start
         self._escaped_quote_end = self.escape + self.quote_end
 
     def generate(self, expression):
@@ -630,9 +628,7 @@ class Generator:
         if expression.is_string:
             if self._replace_backslash:
                 text = text.replace("\\", "\\\\")
-            text = text.replace(self.quote_start, self._escaped_quote_start)
-            if self._escaped_quote_end != self._escaped_quote_end:
-                text = text.replace(self.quote_end, self._escaped_quote_end)
+            text = text.replace(self.quote_end, self._escaped_quote_end)
             return f"{self.quote_start}{text}{self.quote_end}"
         return text
 

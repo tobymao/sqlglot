@@ -271,14 +271,14 @@ class _Tokenizer(type):
         klass = super().__new__(cls, clsname, bases, attrs)
 
         klass.QUOTES = dict(
-            (quote[0], quote[1]) if isinstance(quote, tuple) else (quote, quote)
+            (quote, quote) if isinstance(quote, str) else (quote[0], quote[1])
             for quote in klass.QUOTES
         )
 
         klass.IDENTIFIERS = dict(
-            (identifier[0], identifier[1])
-            if isinstance(identifier, tuple)
-            else (identifier, identifier)
+            (identifier, identifier)
+            if isinstance(identifier, str)
+            else (identifier[0], identifier[1])
             for identifier in klass.IDENTIFIERS
         )
 
@@ -589,6 +589,9 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(self):
+        """
+        Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
+        """
         self.reset()
 
     def reset(self):

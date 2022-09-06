@@ -741,7 +741,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_annotation(self):
         while (
-            not self._end and self._peek not in self.WHITE_SPACE and self._peek != ","
+            not self._end
+            and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK
+            and self._peek != ","
         ):
             self._advance()
         self._add(TokenType.ANNOTATION, self._text[1:])

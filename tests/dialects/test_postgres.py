@@ -19,6 +19,12 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "SELECT SUM(x) OVER (PARTITION BY a ORDER BY d ROWS 1 PRECEDING)",
+            write={
+                "postgres": "SELECT SUM(x) OVER (PARTITION BY a ORDER BY d ROWS BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM x FETCH 1 ROW",
             write={
                 "postgres": "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",

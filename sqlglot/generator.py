@@ -329,9 +329,10 @@ class Generator:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
+        unique = " UNIQUE" if expression.args.get("unique") else ""
         properties = self.sql(expression, "properties")
 
-        expression_sql = f"CREATE{replace}{temporary} {kind}{exists_sql} {this}{properties} {expression_sql}"
+        expression_sql = f"CREATE{replace}{temporary}{unique} {kind}{exists_sql} {this}{properties} {expression_sql}"
         return self.prepend_ctes(expression, expression_sql)
 
     def prepend_ctes(self, expression, sql):
@@ -409,6 +410,12 @@ class Generator:
         if self.sql(expression, "this"):
             self.unsupported("Hints are not supported")
         return ""
+
+    def index_sql(self, expression):
+        this = self.sql(expression, "this")
+        table = self.sql(expression, "table")
+        columns = self.sql(expression, "columns")
+        return f"{this} ON {table} {columns}"
 
     def identifier_sql(self, expression):
         value = expression.name

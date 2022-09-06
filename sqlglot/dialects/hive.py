@@ -117,6 +117,13 @@ def _unnest_to_explode_sql(self, expression):
     return self.join_sql(expression)
 
 
+def _index_sql(self, expression):
+    this = self.sql(expression, "this")
+    table = self.sql(expression, "table")
+    columns = self.sql(expression, "columns")
+    return f"{this} ON TABLE {table} {columns}"
+
+
 class HiveMap(exp.Map):
     is_var_len_args = True
 
@@ -248,6 +255,7 @@ class Hive(Dialect):
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
             exp.FileFormatProperty: lambda self, e: f"STORED AS {e.text('value').upper()}",
             exp.If: if_sql,
+            exp.Index: _index_sql,
             exp.ILike: no_ilike_sql,
             exp.Join: _unnest_to_explode_sql,
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),

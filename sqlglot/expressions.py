@@ -464,7 +464,7 @@ class Predicate(Condition):
 class DerivedTable(Expression):
     @property
     def alias_column_names(self):
-        table_alias = self.args.get("alias")  # pylint: disable=no-member
+        table_alias = self.args.get("alias")
         if not table_alias:
             return []
         column_list = table_alias.assert_is(TableAlias).args.get("columns") or []
@@ -864,7 +864,7 @@ class Subqueryable:
 
     @property
     def ctes(self):
-        with_ = self.args.get("with")  # pylint: disable=no-member
+        with_ = self.args.get("with")
         if not with_:
             return []
         return with_.expressions

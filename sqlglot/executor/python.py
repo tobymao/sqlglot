@@ -121,7 +121,6 @@ class PythonExecutor:
         return self.context({step.name: sink})
 
     def scan_csv(self, step):
-        # pylint: disable=stop-iteration-return
         source = step.source
         alias = source.alias
 
@@ -288,7 +287,6 @@ class PythonExecutor:
         return self.scan(step, context)
 
 
-# pylint: disable=no-member
 def _cast_py(self, expression):
     to = expression.args["to"].this
     this = self.sql(expression, "this")

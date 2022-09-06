@@ -132,7 +132,6 @@ class Dialect(metaclass=_Dialect):
         return self.generate(self.parse(code), **opts)
 
     def parser(self, **opts):
-        # pylint: disable=not-callable
         return self.parser_class(
             **{
                 "index_offset": self.index_offset,
@@ -144,7 +143,6 @@ class Dialect(metaclass=_Dialect):
         )
 
     def generator(self, **opts):
-        # pylint: disable=not-callable
         return self.generator_class(
             **{
                 "quote_start": self.quote_start,

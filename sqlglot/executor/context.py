@@ -26,7 +26,6 @@ class Context:
         self.env = {**(env or {}), "scope": self.row_readers}
 
     def eval(self, code):
-        # pylint: disable=eval-used
         return eval(code, ENV, self.env)
 
     def eval_tuple(self, codes):

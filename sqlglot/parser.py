@@ -1547,7 +1547,7 @@ class Parser:
         if not self._match(TokenType.AT_TIME_ZONE):
             return this
 
-        return self.expression(exp.AtTimeZone, this=this, zone=self._parse_string())
+        return self.expression(exp.AtTimeZone, this=this, zone=self._parse_type())
 
     def _parse_column(self):
         this = self._parse_field()

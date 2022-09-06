@@ -9,6 +9,7 @@ from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
 from sqlglot.generator import Generator
 from sqlglot.helper import csv_reader
+from sqlglot.tokens import Tokenizer
 
 
 class PythonExecutor:
@@ -325,7 +326,8 @@ def _ordered_py(self, expression):
 
 
 class Python(Dialect):
-    escape = "\\"
+    class Tokenizer(Tokenizer):
+        ESCAPE = "\\"
 
     class Generator(Generator):
         TRANSFORMS = {

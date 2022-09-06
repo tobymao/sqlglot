@@ -72,7 +72,7 @@ class TestMySQL(Validator):
 
     def test_hash_comments(self):
         self.validate_all(
-            "SELECT 1 # arbitrary content until end-of-line",
+            "SELECT 1 # arbitrary content,,, until end-of-line",
             write={
                 "mysql": "SELECT 1",
             },

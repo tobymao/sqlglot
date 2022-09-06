@@ -130,17 +130,19 @@ class TestParser(unittest.TestCase):
                 a #annotation1,
                 b as B #annotation2:testing ,
                 "test#annotation",c#annotation3, d #annotation4,
-                e #
+                e #,
+                f # space
             FROM foo
         """
         )
 
         assert expression.expressions[0].name == "annotation1"
-        assert expression.expressions[1].name == "annotation2:testing"
+        assert expression.expressions[1].name == "annotation2:testing "
         assert expression.expressions[2].name == "test#annotation"
         assert expression.expressions[3].name == "annotation3"
         assert expression.expressions[4].name == "annotation4"
         assert expression.expressions[5].name == ""
+        assert expression.expressions[6].name == " space"
 
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")

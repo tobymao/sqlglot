@@ -1,19 +1,15 @@
 from copy import copy
 import functools
 import typing as t
-import uuid
 
-import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.column import Column
 from sqlglot.dataframe import functions as F
 from sqlglot.dataframe.util import ensure_strings, convert_join_type, ensure_columns
-from sqlglot.helper import ensure_list, flatten
+from sqlglot.helper import ensure_list
 from sqlglot.dataframe.operations import Operation, operation
 from sqlglot.dataframe.dataframe_na_functions import DataFrameNaFunctions
 from sqlglot.dataframe.transforms import ORDERED_TRANSFORMS
-
-from pyspark.sql import DataFrame
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.session import SparkSession
@@ -400,7 +396,7 @@ class DataFrame:
         return self._hint(name, parameters)
 
     @operation(Operation.NO_OP)
-    def repartition(self, numPartitions: int, *cols: t.Union[int, str]) -> "DataFrame":
+    def repartition(self, numPartitions: t.Union[int, str], *cols: t.Union[int, str]) -> "DataFrame":
         num_partitions = ensure_columns([numPartitions])
         cols = ensure_columns(ensure_list(cols))
         args = num_partitions + cols

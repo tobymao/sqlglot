@@ -571,15 +571,15 @@ class AutoIncrementColumnConstraint(Expression):
 
 
 class CollateColumnConstraint(Expression):
-    arg_types = {"this": True}
+    pass
 
 
 class CommentColumnConstraint(Expression):
-    arg_types = {"value": True}
+    pass
 
 
 class DefaultColumnConstraint(Expression):
-    arg_types = {"expression": True}
+    pass
 
 
 class NotNullColumnConstraint(Expression):
@@ -620,7 +620,7 @@ class ForeignKey(Expression):
 
 
 class Unique(Expression):
-    arg_types = {"columns": True}
+    arg_types = {"expressions": True}
 
 
 class From(Expression):

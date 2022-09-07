@@ -306,17 +306,14 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
+        constraints = self.expressions(expression, key="constraints", sep=" ", flat=True)
 
-        if len(expression.args.get("constraints")) == 0:
+        if not constraints:
             return f"{column} {kind}"
-
-        constraints = " ".join(
-            [self.sql(constraint) for constraint in expression.args.get("constraints")]
-        )
         return f"{column} {kind} {constraints}"
 
     def columnconstraint_sql(self, expression):
-        this = expression.args.get("this")
+        this = self.sql(expression, "this")
         kind_sql = self.sql(expression, "kind")
         return f"CONSTRAINT {this} {kind_sql}" if this else kind_sql
 
@@ -324,7 +321,7 @@ class Generator:
         return self.token_sql(TokenType.AUTO_INCREMENT)
 
     def commentcolumnconstraint_sql(self, expression):
-        comment = self.sql(expression, "value")
+        comment = self.sql(expression, "this")
         return f"COMMENT {comment}"
 
     def collatecolumnconstraint_sql(self, expression):
@@ -332,7 +329,7 @@ class Generator:
         return f"COLLATE {collate}"
 
     def defaultcolumnconstraint_sql(self, expression):
-        default = self.sql(expression, "expression")
+        default = self.sql(expression, "this")
         return f"DEFAULT {default}"
 
     def notnullcolumnconstraint_sql(self, _):
@@ -887,7 +884,7 @@ class Generator:
         return f"FOREIGN KEY ({expressions}){reference}{delete}{update}"
 
     def unique_sql(self, expression):
-        columns = self.expressions(expression, key="columns")
+        columns = self.expressions(expression, key="expressions")
         return f"UNIQUE ({columns})"
 
     def if_sql(self, expression):

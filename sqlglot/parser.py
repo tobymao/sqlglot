@@ -1734,13 +1734,13 @@ class Parser:
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
             kind = self.expression(
-                exp.DefaultColumnConstraint, expression=self._parse_field()
+                exp.DefaultColumnConstraint, this=self._parse_field()
             )
         elif self._match(TokenType.NOT) and self._match(TokenType.NULL):
             kind = exp.NotNullColumnConstraint()
         elif self._match(TokenType.SCHEMA_COMMENT):
             kind = self.expression(
-                exp.CommentColumnConstraint, value=self._parse_string()
+                exp.CommentColumnConstraint, this=self._parse_string()
             )
         elif self._match(TokenType.PRIMARY_KEY):
             kind = exp.PrimaryKeyColumnConstraint()
@@ -1777,7 +1777,7 @@ class Parser:
         self._match(TokenType.UNIQUE)
         columns = self._parse_wrapped_id_vars()
 
-        return self.expression(exp.Unique, columns=columns)
+        return self.expression(exp.Unique, expressions=columns)
 
     def _parse_foreign_key(self):
         self._match(TokenType.FOREIGN_KEY)

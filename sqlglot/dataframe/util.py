@@ -9,7 +9,7 @@ from sqlglot.helper import ensure_list
 flatten = chain.from_iterable
 
 
-def ensure_strings(args: t.List[t.Union[str, Column]]) -> t.List[str]:
+def ensure_strings(args: t.Iterable[t.Union[str, Column]]) -> t.List[str]:
     return [x.expression if isinstance(x, Column) else x for x in args]
 
 

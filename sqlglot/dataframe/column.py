@@ -8,15 +8,13 @@ class Column:
     def __init__(self, expression: t.Union[t.Any, exp.Expression]):
         if isinstance(expression, str):
             expression = sqlglot.parse_one(expression)
+        elif isinstance(expression, Column):
+            expression = expression.expression
         self.expression = expression
-        if isinstance(self.expression, exp.Literal):
-            self.expression = self.alias(self.expression.args["this"]).expression
-        elif isinstance(self.expression, exp.Null):
+        if isinstance(self.expression, exp.Null):
             self.expression = self.alias("NULL").expression
-        elif isinstance(self.expression, exp.Star):
-            self.expression = exp.Column(this=self.expression)
-        elif isinstance(expression, (str, int)):
-            self.expression = exp.Column(this=exp.Literal(this=str(expression), is_string=isinstance(expression, str)))
+        elif isinstance(expression, (int, float)):
+            self.expression = exp.Column(this=exp.Literal(this=str(expression), is_string=False))
 
     def __repr__(self):
         return repr(self.expression)
@@ -128,7 +126,7 @@ class Column:
         new_expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=True)
         return Column(new_expression)
 
-    desc_null_last = desc
+    desc_nulls_last = desc
 
     def when(self, condition: "Column", value: t.Any) -> "Column":
         from sqlglot.dataframe.functions import when
@@ -164,3 +162,4 @@ class Column:
         value = self.ensure_literal(value)
         new_expression = exp.Anonymous(this="startswith", expressions=[self.column_expression, value.column_expression])
         return Column(new_expression)
+

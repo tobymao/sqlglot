@@ -1710,66 +1710,47 @@ class Parser:
         if not kind:
             return this
 
-        options = {
-            "not_null": None,
-            "auto_increment": None,
-            "collate": None,
-            "comment": None,
-            "default": None,
-            "primary": None,
-            "unique": None,
-            "parsed": True,
-        }
-        constraint = None
+        constraints = []
+        while True:
+            constraint = self._parse_column_constraint()
+            if not constraint:
+                break
+            constraints.append(constraint)
 
-        def parse_option(option, option_lambda):
-            nonlocal constraint
-            if not options[option]:
-                options[option] = option_lambda()
+        return self.expression(
+            exp.ColumnDef, this=this, kind=kind, constraints=constraints
+        )
 
-                if options[option]:
-                    options["parsed"] = True
-                    if constraint is not None and not isinstance(options[option], bool):
-                        options[option] = self.expression(
-                            exp.Constraint,
-                            this=constraint,
-                            expressions=[options[option]],
-                        )
-                    constraint = None
+    def _parse_column_constraint(self):
+        kind = None
+        this = None
 
-        while options["parsed"]:
-            options["parsed"] = False
-            if self._match(TokenType.CONSTRAINT):
-                constraint = self._parse_id_var()
-            parse_option(
-                "auto_increment", lambda: self._match(TokenType.AUTO_INCREMENT)
-            )
-            parse_option(
-                "collate",
-                lambda: self._match(TokenType.COLLATE) and self._parse_var(),
-            )
-            parse_option(
-                "default",
-                lambda: self._match(TokenType.DEFAULT) and self._parse_field(),
-            )
-            parse_option(
-                "not_null",
-                lambda: self._match(TokenType.NOT)
-                and self._match(TokenType.NULL)
-                and "NOT NULL",
-            )
-            parse_option(
-                "comment",
-                lambda: self._match(TokenType.SCHEMA_COMMENT) and self._parse_string(),
-            )
-            parse_option(
-                "primary",
-                lambda: self._match(TokenType.PRIMARY_KEY) and "PRIMARY KEY",
-            )
-            parse_option("unique", lambda: self._match(TokenType.UNIQUE) and "UNIQUE")
+        if self._match(TokenType.CONSTRAINT):
+            this = self._parse_id_var()
 
-        options.pop("parsed")
-        return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
+        if self._match(TokenType.AUTO_INCREMENT):
+            kind = exp.AutoIncrementColumnConstraint()
+        elif self._match(TokenType.COLLATE):
+            kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
+        elif self._match(TokenType.DEFAULT):
+            kind = self.expression(
+                exp.DefaultColumnConstraint, expression=self._parse_field()
+            )
+        elif self._match(TokenType.NOT) and self._match(TokenType.NULL):
+            kind = exp.NotNullColumnConstraint()
+        elif self._match(TokenType.SCHEMA_COMMENT):
+            kind = self.expression(
+                exp.CommentColumnConstraint, value=self._parse_string()
+            )
+        elif self._match(TokenType.PRIMARY_KEY):
+            kind = exp.PrimaryKeyColumnConstraint()
+        elif self._match(TokenType.UNIQUE):
+            kind = exp.UniqueColumnConstraint()
+
+        if kind is None:
+            return None
+
+        return self.expression(exp.ColumnConstraint, this=this, kind=kind)
 
     def _parse_constraint(self):
         if not self._match(TokenType.CONSTRAINT):

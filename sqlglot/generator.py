@@ -306,33 +306,43 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        not_null = (
-            f" {self.sql(expression, 'not_null')}"
-            if expression.args.get("not_null")
-            else ""
+
+        if len(expression.args.get("constraints")) == 0:
+            return f"{column} {kind}"
+
+        constraints = " ".join(
+            [self.sql(constraint) for constraint in expression.args.get("constraints")]
         )
-        default = self.sql(expression, "default")
-        default = f" DEFAULT {default}" if default else ""
-        auto_increment = (
-            " " + self.token_sql(TokenType.AUTO_INCREMENT)
-            if expression.args.get("auto_increment")
-            else ""
-        )
-        collate = self.sql(expression, "collate")
-        collate = f" COLLATE {collate}" if collate else ""
-        comment = self.sql(expression, "comment")
-        comment = f" COMMENT {comment}" if comment else ""
-        primary = (
-            f" {self.sql(expression, 'primary')}"
-            if expression.args.get("primary")
-            else ""
-        )
-        unique = (
-            f" {self.sql(expression, 'unique')}"
-            if expression.args.get("unique")
-            else ""
-        )
-        return f"{column} {kind}{not_null}{default}{collate}{comment}{unique}{primary}{auto_increment}"
+        return f"{column} {kind} {constraints}"
+
+    def columnconstraint_sql(self, expression):
+        this = expression.args.get("this")
+        kind_sql = self.sql(expression, "kind")
+        return f"CONSTRAINT {this} {kind_sql}" if this else kind_sql
+
+    def autoincrementcolumnconstraint_sql(self, _):
+        return self.token_sql(TokenType.AUTO_INCREMENT)
+
+    def commentcolumnconstraint_sql(self, expression):
+        comment = self.sql(expression, "value")
+        return f"COMMENT {comment}"
+
+    def collatecolumnconstraint_sql(self, expression):
+        collate = self.sql(expression, "this")
+        return f"COLLATE {collate}"
+
+    def defaultcolumnconstraint_sql(self, expression):
+        default = self.sql(expression, "expression")
+        return f"DEFAULT {default}"
+
+    def notnullcolumnconstraint_sql(self, _):
+        return "NOT NULL"
+
+    def primarykeycolumnconstraint_sql(self, _):
+        return "PRIMARY KEY"
+
+    def uniquecolumnconstraint_sql(self, _):
+        return "UNIQUE"
 
     def create_sql(self, expression):
         this = self.sql(expression, "this")

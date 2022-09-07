@@ -2767,7 +2767,7 @@ def subquery(expression, alias=None, dialect=None, **opts):
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        Select: a new select with the subquery epxresion included
+        Select: a new select with the subquery expression included
     """
 
     expression = _maybe_parse(expression, dialect=dialect, **opts).subquery(alias)

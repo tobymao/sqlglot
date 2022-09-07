@@ -593,6 +593,10 @@ class ForeignKey(Expression):
     }
 
 
+class Unique(Expression):
+    arg_types = {"columns": True}
+
+
 class From(Expression):
     arg_types = {"expressions": True}
 

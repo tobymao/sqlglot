@@ -306,7 +306,11 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        not_null = " NOT NULL" if expression.args.get("not_null") else ""
+        not_null = (
+            f" {self.sql(expression, 'not_null')}"
+            if expression.args.get("not_null")
+            else ""
+        )
         default = self.sql(expression, "default")
         default = f" DEFAULT {default}" if default else ""
         auto_increment = (
@@ -318,8 +322,16 @@ class Generator:
         collate = f" COLLATE {collate}" if collate else ""
         comment = self.sql(expression, "comment")
         comment = f" COMMENT {comment}" if comment else ""
-        primary = " PRIMARY KEY" if expression.args.get("primary") else ""
-        unique = " UNIQUE" if expression.args.get("unique") else ""
+        primary = (
+            f" {self.sql(expression, 'primary')}"
+            if expression.args.get("primary")
+            else ""
+        )
+        unique = (
+            f" {self.sql(expression, 'unique')}"
+            if expression.args.get("unique")
+            else ""
+        )
         return f"{column} {kind}{not_null}{default}{collate}{comment}{unique}{primary}{auto_increment}"
 
     def create_sql(self, expression):
@@ -863,6 +875,10 @@ class Generator:
         update = self.sql(expression, "update")
         update = f" ON UPDATE {update}" if update else ""
         return f"FOREIGN KEY ({expressions}){reference}{delete}{update}"
+
+    def unique_sql(self, expression):
+        columns = self.expressions(expression, key="columns")
+        return f"UNIQUE ({columns})"
 
     def if_sql(self, expression):
         return self.case_sql(

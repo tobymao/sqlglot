@@ -274,8 +274,8 @@ CREATE TABLE "t_customer_account" (
 CREATE TABLE "t_customer_account" (
   "id" INT(11) NOT NULL AUTO_INCREMENT,
   "customer_id" INT(11) DEFAULT NULL COMMENT '客户id',
-  "bank" VARCHAR(100) DEFAULT NULL COLLATE utf8_bin COMMENT '行别',
-  "account_no" VARCHAR(100) DEFAULT NULL COLLATE utf8_bin COMMENT '账号',
+  "bank" VARCHAR(100) COLLATE utf8_bin DEFAULT NULL COMMENT '行别',
+  "account_no" VARCHAR(100) COLLATE utf8_bin DEFAULT NULL COMMENT '账号',
   PRIMARY KEY("id")
 )
 ENGINE=InnoDB

@@ -4,6 +4,26 @@ from tests.dialects.test_dialect import Validator
 class TestPostgres(Validator):
     dialect = "postgres"
 
+    def test_ddl(self):
+        self.validate_all(
+            "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
+            write={
+                "postgres": "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)"
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)",
+            write={
+                "postgres": "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)"
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE products (product_no INT, name TEXT, price DECIMAL, UNIQUE (product_no, name))",
+            write={
+                "postgres": "CREATE TABLE products (product_no INT, name TEXT, price DECIMAL, UNIQUE (product_no, name))"
+            },
+        )
+
     def test_postgres(self):
         self.validate_all(
             "CREATE TABLE x (a INT SERIAL)",

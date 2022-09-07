@@ -558,14 +558,40 @@ class ColumnDef(Expression):
     arg_types = {
         "this": True,
         "kind": True,
-        "auto_increment": False,
-        "comment": False,
-        "collate": False,
-        "default": False,
-        "not_null": False,
-        "primary": False,
-        "unique": False,
+        "constraints": False,
     }
+
+
+class ColumnConstraint(Expression):
+    arg_types = {"this": False, "kind": True}
+
+
+class AutoIncrementColumnConstraint(Expression):
+    pass
+
+
+class CollateColumnConstraint(Expression):
+    pass
+
+
+class CommentColumnConstraint(Expression):
+    pass
+
+
+class DefaultColumnConstraint(Expression):
+    pass
+
+
+class NotNullColumnConstraint(Expression):
+    pass
+
+
+class PrimaryKeyColumnConstraint(Expression):
+    pass
+
+
+class UniqueColumnConstraint(Expression):
+    pass
 
 
 class Constraint(Expression):
@@ -591,6 +617,10 @@ class ForeignKey(Expression):
         "delete": False,
         "update": False,
     }
+
+
+class Unique(Expression):
+    arg_types = {"expressions": True}
 
 
 class From(Expression):

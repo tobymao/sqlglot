@@ -349,6 +349,11 @@ class Parser:
         TokenType.USING: lambda self: self._parse_table_format(),
     }
 
+    CONSTRAINT_PARSERS = {
+        TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
+        TokenType.UNIQUE: lambda self: self._parse_unique(),
+    }
+
     NO_PAREN_FUNCTION_PARSERS = {
         TokenType.CASE: lambda self: self._parse_case(),
         TokenType.IF: lambda self: self._parse_if(),
@@ -1705,72 +1710,77 @@ class Parser:
         if not kind:
             return this
 
-        options = {
-            "not_null": None,
-            "auto_increment": None,
-            "collate": None,
-            "comment": None,
-            "default": None,
-            "primary": None,
-            "unique": None,
-            "parsed": True,
-        }
+        constraints = []
+        while True:
+            constraint = self._parse_column_constraint()
+            if not constraint:
+                break
+            constraints.append(constraint)
 
-        def parse_option(option, option_lambda):
-            if not options[option]:
-                options[option] = option_lambda()
+        return self.expression(
+            exp.ColumnDef, this=this, kind=kind, constraints=constraints
+        )
 
-                if options[option]:
-                    options["parsed"] = True
+    def _parse_column_constraint(self):
+        kind = None
+        this = None
 
-        while options["parsed"]:
-            options["parsed"] = False
-            parse_option(
-                "auto_increment", lambda: self._match(TokenType.AUTO_INCREMENT)
-            )
-            parse_option(
-                "collate",
-                lambda: self._match(TokenType.COLLATE) and self._parse_var(),
-            )
-            parse_option(
-                "default",
-                lambda: self._match(TokenType.DEFAULT) and self._parse_field(),
-            )
-            parse_option(
-                "not_null",
-                lambda: self._match(TokenType.NOT) and self._match(TokenType.NULL),
-            )
-            parse_option(
-                "comment",
-                lambda: self._match(TokenType.SCHEMA_COMMENT) and self._parse_string(),
-            )
-            parse_option(
-                "primary",
-                lambda: self._match(TokenType.PRIMARY_KEY),
-            )
-            parse_option("unique", lambda: self._match(TokenType.UNIQUE))
+        if self._match(TokenType.CONSTRAINT):
+            this = self._parse_id_var()
 
-        options.pop("parsed")
-        return self.expression(exp.ColumnDef, this=this, kind=kind, **options)
+        if self._match(TokenType.AUTO_INCREMENT):
+            kind = exp.AutoIncrementColumnConstraint()
+        elif self._match(TokenType.COLLATE):
+            kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
+        elif self._match(TokenType.DEFAULT):
+            kind = self.expression(
+                exp.DefaultColumnConstraint, this=self._parse_field()
+            )
+        elif self._match(TokenType.NOT) and self._match(TokenType.NULL):
+            kind = exp.NotNullColumnConstraint()
+        elif self._match(TokenType.SCHEMA_COMMENT):
+            kind = self.expression(
+                exp.CommentColumnConstraint, this=self._parse_string()
+            )
+        elif self._match(TokenType.PRIMARY_KEY):
+            kind = exp.PrimaryKeyColumnConstraint()
+        elif self._match(TokenType.UNIQUE):
+            kind = exp.UniqueColumnConstraint()
+
+        if kind is None:
+            return None
+
+        return self.expression(exp.ColumnConstraint, this=this, kind=kind)
 
     def _parse_constraint(self):
         if not self._match(TokenType.CONSTRAINT):
-            return self._parse_foreign_key()
+            return self._parse_unnamed_constraint()
 
         this = self._parse_id_var()
         expressions = []
 
         while True:
-            constraint = self._parse_foreign_key() or self._parse_function()
+            constraint = self._parse_unnamed_constraint() or self._parse_function()
             if not constraint:
                 break
             expressions.append(constraint)
 
         return self.expression(exp.Constraint, this=this, expressions=expressions)
 
-    def _parse_foreign_key(self):
-        if not self._match(TokenType.FOREIGN_KEY):
+    def _parse_unnamed_constraint(self):
+        if not self._match_set(self.CONSTRAINT_PARSERS):
             return None
+
+        return self.CONSTRAINT_PARSERS[self._prev.token_type](self)
+
+    def _parse_unique(self):
+        self._match(TokenType.UNIQUE)
+        columns = self._parse_wrapped_id_vars()
+
+        return self.expression(exp.Unique, expressions=columns)
+
+    def _parse_foreign_key(self):
+        self._match(TokenType.FOREIGN_KEY)
 
         expressions = self._parse_wrapped_id_vars()
         reference = self._match(TokenType.REFERENCES) and self.expression(

@@ -306,7 +306,9 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        constraints = self.expressions(expression, key="constraints", sep=" ", flat=True)
+        constraints = self.expressions(
+            expression, key="constraints", sep=" ", flat=True
+        )
 
         if not constraints:
             return f"{column} {kind}"
@@ -319,6 +321,10 @@ class Generator:
 
     def autoincrementcolumnconstraint_sql(self, _):
         return self.token_sql(TokenType.AUTO_INCREMENT)
+
+    def checkcolumnconstraint_sql(self, expression):
+        this = self.sql(expression, "this")
+        return f"CHECK {this}"
 
     def commentcolumnconstraint_sql(self, expression):
         comment = self.sql(expression, "this")
@@ -872,6 +878,10 @@ class Generator:
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")
         return f"EXTRACT({this} FROM {expression_sql})"
+
+    def check_sql(self, expression):
+        this = self.sql(expression, key="this")
+        return f"CHECK {this}"
 
     def foreignkey_sql(self, expression):
         expressions = self.expressions(expression, flat=True)

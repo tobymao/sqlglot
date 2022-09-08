@@ -98,6 +98,7 @@ class TokenType(AutoName):
     CASE = auto()
     CAST = auto()
     CHARACTER_SET = auto()
+    CHECK = auto()
     CLUSTER_BY = auto()
     COLLATE = auto()
     COMMENT = auto()
@@ -380,6 +381,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CASE": TokenType.CASE,
         "CAST": TokenType.CAST,
         "CHARACTER SET": TokenType.CHARACTER_SET,
+        "CHECK": TokenType.CHECK,
         "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COMMENT": TokenType.SCHEMA_COMMENT,

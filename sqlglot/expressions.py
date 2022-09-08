@@ -405,7 +405,7 @@ class Expression(metaclass=_Expression):
 
 
 class Condition(Expression):
-    def and_(self, *expressions, dialect=None, parser_opts=None):
+    def and_(self, *expressions, dialect=None, **opts):
         """
         AND this condition with one or multiple expressions.
 
@@ -417,14 +417,14 @@ class Condition(Expression):
             *expressions (str or Expression): the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             And: the new condition.
         """
-        return and_(self, *expressions, dialect=dialect, **(parser_opts or {}))
+        return and_(self, *expressions, dialect=dialect, **opts)
 
-    def or_(self, *expressions, dialect=None, parser_opts=None):
+    def or_(self, *expressions, dialect=None, **opts):
         """
         OR this condition with one or multiple expressions.
 
@@ -436,12 +436,12 @@ class Condition(Expression):
             *expressions (str or Expression): the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Or: the new condition.
         """
-        return or_(self, *expressions, dialect=dialect, **(parser_opts or {}))
+        return or_(self, *expressions, dialect=dialect, **opts)
 
     def not_(self):
         """
@@ -743,7 +743,7 @@ class Join(Expression):
     def side(self):
         return self.text("side").upper()
 
-    def on(self, *expressions, append=True, dialect=None, parser_opts=None, copy=True):
+    def on(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Append to or set the ON expressions.
 
@@ -759,8 +759,8 @@ class Join(Expression):
             append (bool): if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
             dialect (str): the dialect used to parse the input expressions.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Join: the modified join expression.
@@ -771,8 +771,8 @@ class Join(Expression):
             arg="on",
             append=append,
             dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
+            **opts,
         )
 
         if join.kind == "CROSS":
@@ -918,8 +918,8 @@ class Subqueryable:
         recursive=None,
         append=True,
         dialect=None,
-        parser_opts=None,
         copy=True,
+        **opts,
     ):
         """
         Append to or set the common table expressions.
@@ -937,22 +937,22 @@ class Subqueryable:
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
         """
-        alias_expression = _maybe_parse(
+        alias_expression = maybe_parse(
             alias,
             dialect=dialect,
             into=TableAlias,
-            parser_opts=parser_opts,
+            **opts,
         )
-        as_expression = _maybe_parse(
+        as_expression = maybe_parse(
             as_,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
         cte = CTE(
             this=as_expression,
@@ -965,7 +965,7 @@ class Subqueryable:
             append=append,
             copy=copy,
             into=With,
-            recursive=recursive or False,
+            properties={"recursive": recursive or False},
         )
 
 
@@ -1056,9 +1056,7 @@ class Select(Subqueryable, Expression):
         **QUERY_MODIFIERS,
     }
 
-    def from_(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def from_(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Set the FROM expression.
 
@@ -1073,8 +1071,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `From` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1088,12 +1086,10 @@ class Select(Subqueryable, Expression):
             prefix="FROM",
             into=From,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
 
-    def group_by(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def group_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Set the GROUP BY expression.
 
@@ -1108,8 +1104,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Group` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1123,12 +1119,10 @@ class Select(Subqueryable, Expression):
             prefix="GROUP BY",
             into=Group,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
 
-    def order_by(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def order_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Set the ORDER BY expression.
 
@@ -1143,8 +1137,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1158,10 +1152,10 @@ class Select(Subqueryable, Expression):
             prefix="ORDER BY",
             into=Order,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
 
-    def limit(self, expression, dialect=None, parser_opts=None, copy=True):
+    def limit(self, expression, dialect=None, copy=True, **opts):
         """
         Set the LIMIT expression.
 
@@ -1175,8 +1169,8 @@ class Select(Subqueryable, Expression):
                 If a `Limit` instance is passed, this is used as-is.
                 If another `Expression` instance is passed, it will be wrapped in a `Limit`.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1188,11 +1182,11 @@ class Select(Subqueryable, Expression):
             into=Limit,
             prefix="LIMIT",
             dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
+            **opts,
         )
 
-    def offset(self, expression, dialect=None, parser_opts=None, copy=True):
+    def offset(self, expression, dialect=None, copy=True, **opts):
         """
         Set the OFFSET expression.
 
@@ -1206,8 +1200,8 @@ class Select(Subqueryable, Expression):
                 If a `Offset` instance is passed, this is used as-is.
                 If another `Expression` instance is passed, it will be wrapped in a `Offset`.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1219,13 +1213,11 @@ class Select(Subqueryable, Expression):
             into=Offset,
             prefix="OFFSET",
             dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
+            **opts,
         )
 
-    def select(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def select(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Append to or set the SELECT expressions.
 
@@ -1239,8 +1231,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             dialect (str): the dialect used to parse the input expressions.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1251,13 +1243,11 @@ class Select(Subqueryable, Expression):
             arg="expressions",
             append=append,
             dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
+            **opts,
         )
 
-    def lateral(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def lateral(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Append to or set the LATERAL expressions.
 
@@ -1271,8 +1261,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             dialect (str): the dialect used to parse the input expressions.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1285,8 +1275,8 @@ class Select(Subqueryable, Expression):
             into=Lateral,
             prefix="LATERAL VIEW",
             dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
+            **opts,
         )
 
     def join(
@@ -1297,8 +1287,8 @@ class Select(Subqueryable, Expression):
         join_type=None,
         join_alias=None,
         dialect=None,
-        parser_opts=None,
         copy=True,
+        **opts,
     ):
         """
         Append to or set the JOIN expressions.
@@ -1321,20 +1311,18 @@ class Select(Subqueryable, Expression):
                 Otherwise, this resets the expressions.
             join_type (str): If set, alter the parsed join type
             dialect (str): the dialect used to parse the input expressions.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
         """
-        parse_args = {"dialect": dialect, "parser_opts": parser_opts}
+        parse_args = {"dialect": dialect, **opts}
 
         try:
-            expression = _maybe_parse(
-                expression, into=Join, prefix="JOIN", **parse_args
-            )
+            expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)
         except ParseError:
-            expression = _maybe_parse(expression, into=(Join, Expression), **parse_args)
+            expression = maybe_parse(expression, into=(Join, Expression), **parse_args)
 
         join = expression if isinstance(expression, Join) else Join(this=expression)
 
@@ -1342,14 +1330,14 @@ class Select(Subqueryable, Expression):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            side, kind = _maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
+            side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
             if side:
                 join.set("side", side.text)
             if kind:
                 join.set("kind", kind.text)
 
         if on:
-            on = and_(*ensure_list(on), dialect=dialect, **(parser_opts or {}))
+            on = and_(*ensure_list(on), dialect=dialect, **opts)
             join.set("on", on)
 
         if join_alias:
@@ -1360,11 +1348,10 @@ class Select(Subqueryable, Expression):
             arg="joins",
             append=append,
             copy=copy,
+            **opts,
         )
 
-    def where(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def where(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Append to or set the WHERE expressions.
 
@@ -1379,8 +1366,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
             dialect (str): the dialect used to parse the input expressions.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1392,13 +1379,11 @@ class Select(Subqueryable, Expression):
             append=append,
             into=Where,
             dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
+            **opts,
         )
 
-    def having(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def having(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Append to or set the HAVING expressions.
 
@@ -1413,8 +1398,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
             dialect (str): the dialect used to parse the input expressions.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1426,8 +1411,8 @@ class Select(Subqueryable, Expression):
             append=append,
             into=Having,
             dialect=dialect,
-            parser_opts=parser_opts,
             copy=copy,
+            **opts,
         )
 
     def distinct(self, distinct=True, copy=True):
@@ -1449,7 +1434,7 @@ class Select(Subqueryable, Expression):
         instance.set("distinct", Distinct() if distinct else None)
         return instance
 
-    def ctas(self, table, properties=None, dialect=None, parser_opts=None, copy=True):
+    def ctas(self, table, properties=None, dialect=None, copy=True, **opts):
         """
         Convert this expression to a CREATE TABLE AS statement.
 
@@ -1462,18 +1447,18 @@ class Select(Subqueryable, Expression):
                 If another `Expression` instance is passed, it will be used as-is.
             properties (dict): an optional mapping of table properties
             dialect (str): the dialect used to parse the input table.
-            parser_opts (dict): other options to use to parse the input table.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input table.
 
         Returns:
             Create: the CREATE TABLE AS expression
         """
         instance = _maybe_copy(self, copy)
-        table_expression = _maybe_parse(
+        table_expression = maybe_parse(
             table,
             into=Table,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
         properties_expression = None
         if properties:
@@ -1483,11 +1468,11 @@ class Select(Subqueryable, Expression):
                     for k, v in properties.items()
                 ]
             )
-            properties_expression = _maybe_parse(
+            properties_expression = maybe_parse(
                 properties_str,
                 into=Properties,
                 dialect=dialect,
-                parser_opts=parser_opts,
+                **opts,
             )
 
         return Create(
@@ -2401,14 +2386,35 @@ def _all_functions():
 ALL_FUNCTIONS = _all_functions()
 
 
-def _maybe_parse(
+def maybe_parse(
     sql_or_expression,
     *,
     into=None,
     dialect=None,
     prefix=None,
-    parser_opts=None,
+    **opts,
 ):
+    """Gracefully handle a possible string or expression.
+
+    Example:
+        >>> maybe_parse("1")
+        (LITERAL this: 1, is_string: False)
+        >>> maybe_parse(to_identifier("x"))
+        (IDENTIFIER this: x, quoted: False)
+
+    Args:
+        sql_or_expression (str or Expression): the SQL code string or an expression
+        into (Expression): the SQLGlot Expression to parse into
+        dialect (str): the dialect used to parse the input expressions (in the case that an
+            input expression is a SQL string).
+        prefix (str): a string to prefix the sql with before it gets parsed
+            (automatically includes a space)
+        **opts: other options to use to parse the input expressions (again, in the case
+            that an input expression is a SQL string).
+
+    Returns:
+        Expression: the parsed or given expression.
+    """
     if isinstance(sql_or_expression, Expression):
         return sql_or_expression
 
@@ -2417,7 +2423,7 @@ def _maybe_parse(
     sql = str(sql_or_expression)
     if prefix:
         sql = f"{prefix} {sql}"
-    return sqlglot.parse_one(sql, read=dialect, into=into, **(parser_opts or {}))
+    return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 
 def _maybe_copy(instance, copy=True):
@@ -2436,17 +2442,17 @@ def _apply_builder(
     prefix=None,
     into=None,
     dialect=None,
-    parser_opts=None,
+    **opts,
 ):
     if _is_wrong_expression(expression, into):
         expression = into(this=expression)
     instance = _maybe_copy(instance, copy)
-    expression = _maybe_parse(
+    expression = maybe_parse(
         sql_or_expression=expression,
         prefix=prefix,
         into=into,
         dialect=dialect,
-        parser_opts=parser_opts,
+        **opts,
     )
     instance.set(arg, expression)
     return instance
@@ -2461,20 +2467,20 @@ def _apply_child_list_builder(
     prefix=None,
     into=None,
     dialect=None,
-    parser_opts=None,
-    **kwargs,
+    properties=None,
+    **opts,
 ):
     instance = _maybe_copy(instance, copy)
     parsed = []
     for expression in expressions:
         if _is_wrong_expression(expression, into):
             expression = into(expressions=[expression])
-        expression = _maybe_parse(
+        expression = maybe_parse(
             expression,
             into=into,
             dialect=dialect,
             prefix=prefix,
-            parser_opts=parser_opts,
+            **opts,
         )
         parsed.extend(expression.expressions)
 
@@ -2483,7 +2489,7 @@ def _apply_child_list_builder(
         parsed = existing.expressions + parsed
 
     child = into(expressions=parsed)
-    for k, v in kwargs.items():
+    for k, v in (properties or {}).items():
         child.set(k, v)
     instance.set(arg, child)
     return instance
@@ -2498,17 +2504,17 @@ def _apply_list_builder(
     prefix=None,
     into=None,
     dialect=None,
-    parser_opts=None,
+    **opts,
 ):
     inst = _maybe_copy(instance, copy)
 
     expressions = [
-        _maybe_parse(
+        maybe_parse(
             sql_or_expression=expression,
             into=into,
             prefix=prefix,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
         for expression in expressions
     ]
@@ -2529,7 +2535,7 @@ def _apply_conjunction_builder(
     append=True,
     copy=True,
     dialect=None,
-    parser_opts=None,
+    **opts,
 ):
     expressions = [exp for exp in expressions if exp is not None and exp != ""]
     if not expressions:
@@ -2541,7 +2547,7 @@ def _apply_conjunction_builder(
     if append and existing is not None:
         expressions = [existing.this if into else existing] + list(expressions)
 
-    node = and_(*expressions, dialect=dialect, **(parser_opts or {}))
+    node = and_(*expressions, dialect=dialect, **opts)
 
     inst.set(arg, into(this=node) if into else node)
     return inst
@@ -2584,7 +2590,7 @@ def select(*expressions, dialect=None, **opts):
     Returns:
         Select: the syntax tree for the SELECT statement.
     """
-    return Select().select(*expressions, dialect=dialect, parser_opts=opts)
+    return Select().select(*expressions, dialect=dialect, **opts)
 
 
 def from_(*expressions, dialect=None, **opts):
@@ -2606,7 +2612,7 @@ def from_(*expressions, dialect=None, **opts):
     Returns:
         Select: the syntax tree for the SELECT statement.
     """
-    return Select().from_(*expressions, dialect=dialect, parser_opts=opts)
+    return Select().from_(*expressions, dialect=dialect, **opts)
 
 
 def condition(expression, dialect=None, **opts):
@@ -2634,11 +2640,11 @@ def condition(expression, dialect=None, **opts):
     Returns:
         Condition: the expression
     """
-    return _maybe_parse(
+    return maybe_parse(
         expression,
         into=Condition,
         dialect=dialect,
-        parser_opts=opts,
+        **opts,
     )
 
 
@@ -2749,7 +2755,7 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     Returns:
         Alias: the aliased expression
     """
-    exp = _maybe_parse(expression, dialect=dialect, parser_opts=opts)
+    exp = maybe_parse(expression, dialect=dialect, **opts)
     alias = to_identifier(alias, quoted=quoted)
     alias = TableAlias(this=alias) if table else alias
 
@@ -2778,7 +2784,7 @@ def subquery(expression, alias=None, dialect=None, **opts):
         Select: a new select with the subquery expression included
     """
 
-    expression = _maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
+    expression = maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
     return Select().from_(expression, dialect=dialect, **opts)
 
 

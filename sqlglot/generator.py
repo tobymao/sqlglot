@@ -324,7 +324,7 @@ class Generator:
 
     def checkcolumnconstraint_sql(self, expression):
         this = self.sql(expression, "this")
-        return f"CHECK {this}"
+        return f"CHECK ({this})"
 
     def commentcolumnconstraint_sql(self, expression):
         comment = self.sql(expression, "this")
@@ -881,7 +881,7 @@ class Generator:
 
     def check_sql(self, expression):
         this = self.sql(expression, key="this")
-        return f"CHECK {this}"
+        return f"CHECK ({this})"
 
     def foreignkey_sql(self, expression):
         expressions = self.expressions(expression, flat=True)

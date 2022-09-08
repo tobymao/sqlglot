@@ -79,7 +79,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS TEXT)",
                 "hive": "CAST(a AS STRING)",
-                "oracle": "CAST(a AS VARCHAR2)",
+                "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS TEXT)",
@@ -94,7 +94,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS TEXT)",
                 "hive": "CAST(a AS STRING)",
-                "oracle": "CAST(a AS VARCHAR2)",
+                "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS TEXT)",
@@ -968,5 +968,14 @@ class TestDialect(Validator):
                 "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl (a, b)",
                 "postgres": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
                 "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (b1 BINARY, b2 BINARY(1024), c1 TEXT, c2 TEXT(1024))",
+            write={
+                "hive": "CREATE TABLE t (b1 BINARY, b2 BINARY(1024), c1 STRING, c2 STRING(1024))",
+                "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
+                "postgres": "CREATE TABLE t (b1 BYTEA, b2 BYTEA(1024), c1 TEXT, c2 TEXT(1024))",
+                "sqlite": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
             },
         )

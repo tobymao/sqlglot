@@ -68,7 +68,9 @@ class TokenType(AutoName):
     VARCHAR = auto()
     NVARCHAR = auto()
     TEXT = auto()
+    CLOB = auto()
     BINARY = auto()
+    BLOB = auto()
     BYTEA = auto()
     JSON = auto()
     TIMESTAMP = auto()
@@ -537,7 +539,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "NVARCHAR2": TokenType.NVARCHAR,
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,
+        "CLOB": TokenType.TEXT,
         "BINARY": TokenType.BINARY,
+        "BLOB": TokenType.BINARY,
         "BYTEA": TokenType.BINARY,
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,

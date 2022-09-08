@@ -306,7 +306,9 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        constraints = self.expressions(expression, key="constraints", sep=" ", flat=True)
+        constraints = self.expressions(
+            expression, key="constraints", sep=" ", flat=True
+        )
 
         if not constraints:
             return f"{column} {kind}"

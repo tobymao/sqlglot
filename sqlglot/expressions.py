@@ -570,6 +570,10 @@ class AutoIncrementColumnConstraint(Expression):
     pass
 
 
+class CheckColumnConstraint(Expression):
+    pass
+
+
 class CollateColumnConstraint(Expression):
     pass
 
@@ -608,6 +612,10 @@ class Drop(Expression):
 
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}
+
+
+class Check(Expression):
+    pass
 
 
 class ForeignKey(Expression):

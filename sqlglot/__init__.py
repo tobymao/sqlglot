@@ -9,6 +9,7 @@ from sqlglot.expressions import (
     column,
     condition,
     from_,
+    maybe_parse,
     not_,
     or_,
     select,

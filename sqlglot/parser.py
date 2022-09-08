@@ -350,6 +350,7 @@ class Parser:
     }
 
     CONSTRAINT_PARSERS = {
+        TokenType.CHECK: lambda self: self._parse_check(),
         TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
         TokenType.UNIQUE: lambda self: self._parse_unique(),
     }
@@ -1730,6 +1731,10 @@ class Parser:
 
         if self._match(TokenType.AUTO_INCREMENT):
             kind = exp.AutoIncrementColumnConstraint()
+        elif self._match(TokenType.CHECK):
+            kind = self.expression(
+                exp.CheckColumnConstraint, this=self._parse_expression()
+            )
         elif self._match(TokenType.COLLATE):
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
@@ -1772,6 +1777,12 @@ class Parser:
             return None
 
         return self.CONSTRAINT_PARSERS[self._prev.token_type](self)
+
+    def _parse_check(self):
+        self._match(TokenType.CHECK)
+        expression = self._parse_expression()
+
+        return self.expression(exp.Check, this=expression)
 
     def _parse_unique(self):
         self._match(TokenType.UNIQUE)

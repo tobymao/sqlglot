@@ -1732,9 +1732,11 @@ class Parser:
         if self._match(TokenType.AUTO_INCREMENT):
             kind = exp.AutoIncrementColumnConstraint()
         elif self._match(TokenType.CHECK):
+            self._match_l_paren()
             kind = self.expression(
-                exp.CheckColumnConstraint, this=self._parse_expression()
+                exp.CheckColumnConstraint, this=self._parse_conjunction()
             )
+            self._match_r_paren()
         elif self._match(TokenType.COLLATE):
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
@@ -1780,7 +1782,9 @@ class Parser:
 
     def _parse_check(self):
         self._match(TokenType.CHECK)
-        expression = self._parse_expression()
+        self._match_l_paren()
+        expression = self._parse_conjunction()
+        self._match_r_paren()
 
         return self.expression(exp.Check, this=expression)
 

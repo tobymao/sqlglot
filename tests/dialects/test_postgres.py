@@ -1,3 +1,4 @@
+from sqlglot import ParseError, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -41,6 +42,16 @@ class TestPostgres(Validator):
                 " CONSTRAINT valid_discount CHECK (price > discounted_price))"
             },
         )
+
+        with self.assertRaises(ParseError):
+            transpile(
+                "CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres"
+            )
+        with self.assertRaises(ParseError):
+            transpile(
+                "CREATE TABLE products (price DECIMAL, CHECK price > 1)",
+                read="postgres",
+            )
 
     def test_postgres(self):
         self.validate_all(

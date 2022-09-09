@@ -119,3 +119,15 @@ class TestSnowflake(Validator):
                 "snowflake": UnsupportedError,
             },
         )
+        self.validate_all(
+            "SELECT ARRAY_UNION_AGG(a)",
+            write={
+                "snowflake": "SELECT ARRAY_UNION_AGG(a)",
+            },
+        )
+        self.validate_all(
+            "SELECT NVL2(a, b, c)",
+            write={
+                "snowflake": "SELECT NVL2(a, b, c)",
+            },
+        )

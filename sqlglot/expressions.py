@@ -2116,7 +2116,7 @@ class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
 
-class Ifnull(Func):
+class IfNull(Func):
     arg_types = {"this": True, "expression": False}
     _sql_names = ["IFNULL", "NVL"]
 

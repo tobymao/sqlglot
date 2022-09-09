@@ -126,26 +126,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT ANY_VALUE(a)",
-            write={
-                "snowflake": "SELECT ANY_VALUE(a)",
-            },
-        )
-        self.validate_all(
-            "SELECT ANY_VALUE(DISTINCT a) OVER (PARTITION BY b)",
-            write={
-                "snowflake": "SELECT ANY_VALUE(DISTINCT a) OVER (PARTITION BY b)",
-            },
-        )
-        self.validate_all(
-            "SELECT NVL(a, b)",
-            write={
-                "bigquery": "SELECT IFNULL(a, b)",
-                "snowflake": "SELECT IFNULL(a, b)",
-                "spark": "SELECT IFNULL(a, b)",
-            },
-        )
-        self.validate_all(
             "SELECT NVL2(a, b, c)",
             write={
                 "snowflake": "SELECT NVL2(a, b, c)",

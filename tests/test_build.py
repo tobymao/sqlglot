@@ -170,8 +170,24 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl ORDER BY y",
             ),
             (
+                lambda: select("x").from_("tbl").cluster_by("y"),
+                "SELECT x FROM tbl CLUSTER BY y",
+            ),
+            (
+                lambda: select("x").from_("tbl").sort_by("y"),
+                "SELECT x FROM tbl SORT BY y",
+            ),
+            (
                 lambda: select("x").from_("tbl").order_by("x, y DESC"),
                 "SELECT x FROM tbl ORDER BY x, y DESC",
+            ),
+            (
+                lambda: select("x").from_("tbl").cluster_by("x, y DESC"),
+                "SELECT x FROM tbl CLUSTER BY x, y DESC",
+            ),
+            (
+                lambda: select("x").from_("tbl").sort_by("x, y DESC"),
+                "SELECT x FROM tbl SORT BY x, y DESC",
             ),
             (
                 lambda: select("x", "y", "z", "a")
@@ -179,6 +195,20 @@ class TestBuild(unittest.TestCase):
                 .order_by("x, y", "z")
                 .order_by("a"),
                 "SELECT x, y, z, a FROM tbl ORDER BY x, y, z, a",
+            ),
+            (
+                lambda: select("x", "y", "z", "a")
+                .from_("tbl")
+                .cluster_by("x, y", "z")
+                .cluster_by("a"),
+                "SELECT x, y, z, a FROM tbl CLUSTER BY x, y, z, a",
+            ),
+            (
+                lambda: select("x", "y", "z", "a")
+                .from_("tbl")
+                .sort_by("x, y", "z")
+                .sort_by("a"),
+                "SELECT x, y, z, a FROM tbl SORT BY x, y, z, a",
             ),
             (lambda: select("x").from_("tbl").limit(10), "SELECT x FROM tbl LIMIT 10"),
             (

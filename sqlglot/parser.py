@@ -273,6 +273,8 @@ class Parser:
         exp.Lateral: lambda self: self._parse_lateral(),
         exp.Join: lambda self: self._parse_join(),
         exp.Order: lambda self: self._parse_order(),
+        exp.Cluster: lambda self: self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
+        exp.Sort: lambda self: self._parse_sort(TokenType.SORT_BY, exp.Sort),
         exp.Lambda: lambda self: self._parse_lambda(),
         exp.Limit: lambda self: self._parse_limit(),
         exp.Offset: lambda self: self._parse_offset(),

@@ -1155,6 +1155,76 @@ class Select(Subqueryable, Expression):
             **opts,
         )
 
+    def sort_by(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Set the CLUSTER BY expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").sort_by("x DESC").sql()
+            'SELECT x FROM tbl SORT BY x DESC'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If a `Group` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `SORT`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Order` expression into a single expression.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="sort",
+            append=append,
+            copy=copy,
+            prefix="SORT BY",
+            into=Sort,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+
+    def cluster_by(
+        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
+    ):
+        """
+        Set the CLUSTER BY expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").cluster_by("x DESC").sql()
+            'SELECT x FROM tbl CLUSTER BY x DESC'
+
+        Args:
+            *expressions (str or Expression): the SQL code strings to parse.
+                If a `Group` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Cluster`.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Order` expression into a single expression.
+            dialect (str): the dialect used to parse the input expression.
+            parser_opts (dict): other options to use to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="cluster",
+            append=append,
+            copy=copy,
+            prefix="CLUSTER BY",
+            into=Cluster,
+            dialect=dialect,
+            parser_opts=parser_opts,
+        )
+
     def limit(self, expression, dialect=None, copy=True, **opts):
         """
         Set the LIMIT expression.

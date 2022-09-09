@@ -1949,7 +1949,15 @@ class ArraySum(Func):
     pass
 
 
+class ArrayUnionAgg(AggFunc):
+    pass
+
+
 class Avg(AggFunc):
+    pass
+
+
+class AnyValue(AggFunc):
     pass
 
 
@@ -2108,6 +2116,11 @@ class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
 
+class Ifnull(Func):
+    arg_types = {"this": True, "expression": False}
+    _sql_names = ["IFNULL", "NVL"]
+
+
 class Initcap(Func):
     pass
 
@@ -2176,6 +2189,10 @@ class Min(AggFunc):
 
 class Month(Func):
     pass
+
+
+class Nvl2(Func):
+    arg_types = {"this": True, "true": True, "false": False}
 
 
 class Posexplode(Func):
@@ -2333,15 +2350,11 @@ class Upper(Func):
 
 
 class Variance(AggFunc):
-    pass
+    _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 
 
 class VariancePop(AggFunc):
-    pass
-
-
-class VarianceSamp(AggFunc):
-    pass
+    _sql_names = ["VARIANCE_POP", "VAR_POP"]
 
 
 class Week(Func):

@@ -119,3 +119,59 @@ class TestSnowflake(Validator):
                 "snowflake": UnsupportedError,
             },
         )
+        self.validate_all(
+            "SELECT ARRAY_UNION_AGG(a)",
+            write={
+                "snowflake": "SELECT ARRAY_UNION_AGG(a)",
+            },
+        )
+        self.validate_all(
+            "SELECT ANY_VALUE(a)",
+            write={
+                "snowflake": "SELECT ANY_VALUE(a)",
+            },
+        )
+        self.validate_all(
+            "SELECT ANY_VALUE(DISTINCT a) OVER (PARTITION BY b)",
+            write={
+                "snowflake": "SELECT ANY_VALUE(DISTINCT a) OVER (PARTITION BY b)",
+            },
+        )
+        self.validate_all(
+            "SELECT VARIANCE_POP(a)",
+            write={
+                "bigquery": "SELECT VAR_POP(a)",
+                "snowflake": "SELECT VARIANCE_POP(a)",
+                "spark": "SELECT VARIANCE_POP(a)",
+            },
+        )
+        self.validate_all(
+            "SELECT VARIANCE_SAMP(a)",
+            write={
+                "bigquery": "SELECT VARIANCE(a)",
+                "snowflake": "SELECT VARIANCE(a)",
+                "spark": "SELECT VARIANCE(a)",
+            },
+        )
+        self.validate_all(
+            "SELECT VARIANCE_SAMP(a)",
+            write={
+                "bigquery": "SELECT VARIANCE(a)",
+                "snowflake": "SELECT VARIANCE(a)",
+                "spark": "SELECT VARIANCE(a)",
+            },
+        )
+        self.validate_all(
+            "SELECT NVL(a, b)",
+            write={
+                "bigquery": "SELECT IFNULL(a, b)",
+                "snowflake": "SELECT IFNULL(a, b)",
+                "spark": "SELECT IFNULL(a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT NVL2(a, b, c)",
+            write={
+                "snowflake": "SELECT NVL2(a, b, c)",
+            },
+        )

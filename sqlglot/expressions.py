@@ -1170,8 +1170,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.            
 
         Returns:
             Select: the modified expression.
@@ -1203,8 +1203,8 @@ class Select(Subqueryable, Expression):
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
-            parser_opts (dict): other options to use to parse the input expressions.
             copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.            
 
         Returns:
             Select: the modified expression.

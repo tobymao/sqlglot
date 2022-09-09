@@ -89,6 +89,7 @@ class BigQuery(Dialect):
             exp.TimeSub: _date_add_sql("TIME", "SUB"),
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
+            exp.VariancePop: rename_func("VAR_POP"),
         }
 
         TYPE_MAPPING = {

@@ -138,30 +138,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT VARIANCE_POP(a)",
-            write={
-                "bigquery": "SELECT VAR_POP(a)",
-                "snowflake": "SELECT VARIANCE_POP(a)",
-                "spark": "SELECT VARIANCE_POP(a)",
-            },
-        )
-        self.validate_all(
-            "SELECT VARIANCE_SAMP(a)",
-            write={
-                "bigquery": "SELECT VARIANCE(a)",
-                "snowflake": "SELECT VARIANCE(a)",
-                "spark": "SELECT VARIANCE(a)",
-            },
-        )
-        self.validate_all(
-            "SELECT VARIANCE_SAMP(a)",
-            write={
-                "bigquery": "SELECT VARIANCE(a)",
-                "snowflake": "SELECT VARIANCE(a)",
-                "spark": "SELECT VARIANCE(a)",
-            },
-        )
-        self.validate_all(
             "SELECT NVL(a, b)",
             write={
                 "bigquery": "SELECT IFNULL(a, b)",

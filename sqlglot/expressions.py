@@ -1155,11 +1155,9 @@ class Select(Subqueryable, Expression):
             **opts,
         )
 
-    def sort_by(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def sort_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
-        Set the CLUSTER BY expression.
+        Set the SORT BY expression.
 
         Example:
             >>> Select().from_("tbl").select("x").sort_by("x DESC").sql()
@@ -1187,12 +1185,10 @@ class Select(Subqueryable, Expression):
             prefix="SORT BY",
             into=Sort,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
 
-    def cluster_by(
-        self, *expressions, append=True, dialect=None, parser_opts=None, copy=True
-    ):
+    def cluster_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Set the CLUSTER BY expression.
 
@@ -1222,7 +1218,7 @@ class Select(Subqueryable, Expression):
             prefix="CLUSTER BY",
             into=Cluster,
             dialect=dialect,
-            parser_opts=parser_opts,
+            **opts,
         )
 
     def limit(self, expression, dialect=None, copy=True, **opts):

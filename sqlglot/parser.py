@@ -1477,11 +1477,11 @@ class Parser:
                 return self._parse_column()
             return type_token
 
-        if self._match(TokenType.DCOLON):
+        while self._match(TokenType.DCOLON):
             type_token = self._parse_types()
             if not type_token:
                 self.raise_error("Expected type")
-            return self.expression(exp.Cast, this=this, to=type_token)
+            this = self.expression(exp.Cast, this=this, to=type_token)
 
         return this
 

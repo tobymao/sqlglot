@@ -131,3 +131,15 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT NVL2(a, b, c)",
             },
         )
+        self.validate_all(
+            "SELECT $$a$$",
+            write={
+                "snowflake": "SELECT 'a'",
+            },
+        )
+        self.validate_all(
+            r"SELECT $$a ' \ \t \x21 z $ $$",
+            write={
+                "snowflake": r"SELECT 'a \' \\ \\t \\x21 z $ '",
+            },
+        )

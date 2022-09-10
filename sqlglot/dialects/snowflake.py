@@ -118,6 +118,8 @@ class Snowflake(Dialect):
         }
 
     class Tokenizer(Tokenizer):
+        QUOTES = ["'", "$$"]
+        ESCAPE = "\\"
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,

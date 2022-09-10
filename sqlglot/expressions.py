@@ -1171,7 +1171,7 @@ class Select(Subqueryable, Expression):
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
             copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.            
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -1204,7 +1204,7 @@ class Select(Subqueryable, Expression):
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
             copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.            
+            opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.

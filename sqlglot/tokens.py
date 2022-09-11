@@ -73,6 +73,7 @@ class TokenType(AutoName):
     JSON = auto()
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
+    TIMESTAMPLTZ = auto()
     DATETIME = auto()
     DATE = auto()
     UUID = auto()
@@ -113,6 +114,7 @@ class TokenType(AutoName):
     CURRENT_ROW = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
+    DATE_PART = auto()
     DIV = auto()
     DEFAULT = auto()
     DELETE = auto()
@@ -233,6 +235,7 @@ class TokenType(AutoName):
     WINDOW = auto()
     WITH = auto()
     WITH_TIME_ZONE = auto()
+    WITH_LOCAL_TIME_ZONE = auto()
     WITHIN_GROUP = auto()
     WITHOUT_TIME_ZONE = auto()
     UNIQUE = auto()
@@ -394,6 +397,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
+        "DATE_PART": TokenType.DATE_PART,
         "DIV": TokenType.DIV,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,
@@ -504,6 +508,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "WHERE": TokenType.WHERE,
         "WITH": TokenType.WITH,
         "WITH TIME ZONE": TokenType.WITH_TIME_ZONE,
+        "WITH LOCAL TIME ZONE": TokenType.WITH_LOCAL_TIME_ZONE,
         "WITHIN GROUP": TokenType.WITHIN_GROUP,
         "WITHOUT TIME ZONE": TokenType.WITHOUT_TIME_ZONE,
         "ARRAY": TokenType.ARRAY,

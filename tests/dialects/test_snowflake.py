@@ -143,3 +143,30 @@ class TestSnowflake(Validator):
                 "snowflake": r"SELECT 'a \' \\ \\t \\x21 z $ '",
             },
         )
+        self.validate_all(
+            "SELECT CAST(a AS TIMESTAMP_NTZ(9))",
+            write={
+                "snowflake": "SELECT CAST(a AS TIMESTAMP(9))",
+            },
+        )
+        # TODO: fix this test, should be TIMESTAMP_LTZ
+        self.validate_all(
+            "SELECT a::TIMESTAMP WITH LOCAL TIME ZONE",
+            write={
+                "snowflake": "SELECT CAST(a AS TIMESTAMPLTZ)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT('month', a)",
+            write={
+                "snowflake": "SELECT DATE_PART('month', a)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(month FROM a)",
+            write={
+                "snowflake": "SELECT EXTRACT(month FROM a)",
+            },
+        )
+        with self.assertRaises(ParseError):
+            self.validate(f"SELECT TIMESTAMP WITHOUT TIME ZONE a", "")

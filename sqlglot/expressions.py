@@ -1656,6 +1656,7 @@ class DataType(Expression):
         JSON = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
+        TIMESTAMPLTZ = auto()
         DATE = auto()
         DATETIME = auto()
         ARRAY = auto()
@@ -2106,6 +2107,10 @@ class DatetimeTrunc(Func, TimeUnit):
 
 
 class Extract(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class DatePart(Func):
     arg_types = {"this": True, "expression": True}
 
 

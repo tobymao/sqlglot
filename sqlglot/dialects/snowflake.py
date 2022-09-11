@@ -106,6 +106,7 @@ class Snowflake(Dialect):
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
+            "TIMESTAMP": None,
         }
 
         COLUMN_OPERATORS = {
@@ -124,6 +125,12 @@ class Snowflake(Dialect):
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
+            "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
+            "TIMESTAMPNTZ": TokenType.TIMESTAMP,
+            "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
+            "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
+            # "TIMESTAMP": ???,
+            # The TIMESTAMP_* variation associated with TIMESTAMP is specified by the TIMESTAMP_TYPE_MAPPING session parameter. The default is TIMESTAMP_NTZ.
         }
 
     class Generator(Generator):
@@ -132,6 +139,10 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP_TZ",
+            exp.DataType.Type.TIMESTAMP: "TIMESTAMP_NTZ",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP_LTZ",
+            # exp.ArraySize: rename_func("SIZE"),
         }
 
         def except_op(self, expression):

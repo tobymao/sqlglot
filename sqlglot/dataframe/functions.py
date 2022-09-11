@@ -342,7 +342,7 @@ def cume_dist() -> "Column":
 
 
 def percent_rank() -> "Column":
-    return Column(glotexp.Anonymous(this="PRECENT_RANK"))
+    return Column(glotexp.Anonymous(this="PERCENT_RANK"))
 
 
 def approxCountDistinct(col: "ColumnOrName", rsd: t.Optional[float] = None) -> "Column":

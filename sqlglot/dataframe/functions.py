@@ -10,6 +10,7 @@ if t.TYPE_CHECKING:
 from pyspark.sql import functions
 
 ColumnOrName = t.TypeVar("ColumnOrName", bound=t.Union["Column", str])
+ColumnOrPrimitive = t.TypeVar("ColumnOrPrimitive", bound=t.Union["Column", str, float, int, bool])
 
 
 def ensure_col(value: t.Union["ColumnOrName", int, float]):
@@ -28,7 +29,9 @@ def _invoke_expression_over_column(column: "ColumnOrName", expression: t.Callabl
     return Column(new_expression)
 
 
-def _invoke_anonymous_function(column: "ColumnOrName", func_name: str, *args) -> "Column":
+def _invoke_anonymous_function(column: t.Optional["ColumnOrName"], func_name: str, *args) -> "Column":
+    if column is None:
+        return Column(glotexp.Anonymous(this=func_name.upper()))
     column = ensure_col(column)
     args = [ensure_col(arg) for arg in args]
     expressions = [x.expression for x in [column] + args]
@@ -36,7 +39,7 @@ def _invoke_anonymous_function(column: "ColumnOrName", func_name: str, *args) ->
     return Column(new_expression)
 
 
-def col(column_name: t.Union[ColumnOrName, int]) -> "Column":
+def col(column_name: t.Union[ColumnOrName, t.Any]) -> "Column":
     return Column(column_name)
 
 
@@ -51,13 +54,15 @@ def greatest(*cols: "ColumnOrName") -> "Column":
     return Column(glotexp.Greatest(this=cols[0], expressions=cols[1:]))
 
 
-def count_distinct(col: "ColumnOrName") -> "Column":
-    col = ensure_strings([col])[0]
-    return Column(glotexp.Count(this=glotexp.Distinct(this=col)))
+def count_distinct(col: "ColumnOrName", *cols: "ColumnOrName") -> "Column":
+    cols = [ensure_col(x) for x in [col] + list(cols)]
+    if len(cols) > 1:
+        raise NotImplementedError("Multiple columns in a count distinct is not supported")
+    return Column(glotexp.Count(this=glotexp.Distinct(this=cols[0].expression)))
 
 
-def countDistinct(col: "Column") -> "Column":
-    return count_distinct(col)
+def countDistinct(col: "Column", *cols: "ColumnOrName") -> "Column":
+    return count_distinct(col, *cols)
 
 
 def when(condition: "Column", value: t.Any) -> "Column":
@@ -365,41 +370,71 @@ def covar_samp(col1: "ColumnOrName", col2: "ColumnOrName") -> "Column":
     return _invoke_anonymous_function(col1, "COVAR_SAMP", col2)
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def first(col: "ColumnOrName", ignorenulls: bool = None) -> "Column":
+    if ignorenulls is not None:
+        return _invoke_anonymous_function(col, "FIRST", ignorenulls)
+    return _invoke_anonymous_function(col, "FIRST")
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def grouping_id(*cols: "ColumnOrName") -> "Column":
+    if len(cols) == 0:
+        return _invoke_anonymous_function(None, "GROUPING_ID")
+    if len(cols) == 1:
+        return _invoke_anonymous_function(cols[0], "GROUPING_ID")
+    return _invoke_anonymous_function(cols[0], "GROUPING_ID", *cols[1:])
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def input_file_name() -> "Column":
+    return _invoke_anonymous_function(None, "INPUT_FILE_NAME")
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def isnan(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "ISNAN")
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def isnull(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "ISNULL")
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def last(col: "ColumnOrName", ignorenulls: bool = None) -> "Column":
+    if ignorenulls is not None:
+        return _invoke_anonymous_function(col, "LAST", ignorenulls)
+    return _invoke_anonymous_function(col, "LAST")
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def monotonically_increasing_id() -> "Column":
+    return _invoke_anonymous_function(None, "MONOTONICALLY_INCREASING_ID")
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def nanvl(col1: "ColumnOrName", col2: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col1, "NANVL", col2)
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def percentile_approx(
+    col: "ColumnOrName",
+    percentage: t.Union["ColumnOrName", float, t.List[float], t.Tuple[float]],
+    accuracy: t.Union["ColumnOrName", float] = None,
+) -> "Column":
+    if accuracy:
+        return _invoke_anonymous_function(col, "PERCENTILE_APPROX", percentage, accuracy)
+    return _invoke_anonymous_function(col, "PERCENTILE_APPROX", percentage)
 
 
-def sec(col: "ColumnOrName") -> "Column":
-    return _invoke_anonymous_function(col, "SEC")
+def rand(seed: "ColumnOrPrimitive" = None) -> "Column":
+    return _invoke_anonymous_function(seed, "RAND")
+
+
+def randn(seed: "ColumnOrPrimitive" = None) -> "Column":
+    return _invoke_anonymous_function(seed, "RANDN")
+
+
+def round(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "ROUND", scale)
+    return _invoke_anonymous_function(col, "ROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")

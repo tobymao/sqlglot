@@ -30,6 +30,10 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("10", test_int.sql())
         test_float = SF.col(10.10)
         self.assertEqual("10.1", test_float.sql())
+        test_bool = SF.col(True)
+        self.assertEqual("true", test_bool.sql())
+        test_array = SF.col([1, 2, 3])
+        self.assertEqual("ARRAY(1, 2, 3)", test_array.sql())
 
     def test_greatest(self):
         single_str = SF.greatest("cola")
@@ -493,28 +497,205 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("COUNT(DISTINCT cola)", col.sql())
         col_legacy = SF.countDistinct(SF.col("cola"))
         self.assertEqual("COUNT(DISTINCT cola)", col_legacy.sql())
+        with self.assertRaises(NotImplementedError):
+            SF.count_distinct(SF.col("cola"), SF.col("colb"))
 
-    def test_cbrt(self):
-        col_str = SF.cbrt("cola")
-        self.assertEqual("CBRT(cola)", col_str.sql())
-        col = SF.cbrt(SF.col("cola"))
-        self.assertEqual("CBRT(cola)", col.sql())
+    def test_first(self):
+        col_str = SF.first("cola")
+        self.assertEqual("FIRST(cola)", col_str.sql())
+        col = SF.first(SF.col("cola"))
+        self.assertEqual("FIRST(cola)", col.sql())
+        ignore_nulls = SF.first("cola", True)
+        self.assertEqual("FIRST(cola, true)", ignore_nulls.sql())
 
-    def test_cbrt(self):
-        col_str = SF.cbrt("cola")
-        self.assertEqual("CBRT(cola)", col_str.sql())
-        col = SF.cbrt(SF.col("cola"))
-        self.assertEqual("CBRT(cola)", col.sql())
+    def test_grouping_id(self):
+        col_str = SF.grouping_id("cola", "colb")
+        self.assertEqual("GROUPING_ID(cola, colb)", col_str.sql())
+        col = SF.grouping_id(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("GROUPING_ID(cola, colb)", col.sql())
+        col_grouping_no_arg = SF.grouping_id()
+        self.assertEqual("GROUPING_ID()", col_grouping_no_arg.sql())
+        col_grouping_single_arg = SF.grouping_id("cola")
+        self.assertEqual("GROUPING_ID(cola)", col_grouping_single_arg.sql())
 
-    def test_cbrt(self):
-        col_str = SF.cbrt("cola")
-        self.assertEqual("CBRT(cola)", col_str.sql())
-        col = SF.cbrt(SF.col("cola"))
-        self.assertEqual("CBRT(cola)", col.sql())
+    def test_input_file_name(self):
+        col = SF.input_file_name()
+        self.assertEqual("INPUT_FILE_NAME()", col.sql())
 
-    def test_cbrt(self):
-        col_str = SF.cbrt("cola")
-        self.assertEqual("CBRT(cola)", col_str.sql())
-        col = SF.cbrt(SF.col("cola"))
-        self.assertEqual("CBRT(cola)", col.sql())
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
 
+    def test_isnull(self):
+        col_str = SF.isnull("cola")
+        self.assertEqual("ISNULL(cola)", col_str.sql())
+        col = SF.isnull(SF.col("cola"))
+        self.assertEqual("ISNULL(cola)", col.sql())
+
+    def test_last(self):
+        col_str = SF.last("cola")
+        self.assertEqual("LAST(cola)", col_str.sql())
+        col = SF.last(SF.col("cola"))
+        self.assertEqual("LAST(cola)", col.sql())
+        ignore_nulls = SF.last("cola", True)
+        self.assertEqual("LAST(cola, true)", ignore_nulls.sql())
+
+    def test_monotonically_increasing_id(self):
+        col = SF.monotonically_increasing_id()
+        self.assertEqual("MONOTONICALLY_INCREASING_ID()", col.sql())
+
+    def test_nanvl(self):
+        col_str = SF.nanvl("cola", "colb")
+        self.assertEqual("NANVL(cola, colb)", col_str.sql())
+        col = SF.nanvl(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("NANVL(cola, colb)", col.sql())
+
+    def test_percentile_approx(self):
+        col_str = SF.percentile_approx("cola", [0.5, 0.4, 0.1])
+        self.assertEqual("PERCENTILE_APPROX(cola, ARRAY(0.5, 0.4, 0.1))", col_str.sql())
+        col = SF.percentile_approx(SF.col("cola"), [0.5, 0.4, 0.1])
+        self.assertEqual("PERCENTILE_APPROX(cola, ARRAY(0.5, 0.4, 0.1))", col.sql())
+        col_accuracy = SF.percentile_approx("cola", 0.1, 100)
+        self.assertEqual("PERCENTILE_APPROX(cola, 0.1, 100)", col_accuracy.sql())
+
+    def test_rand(self):
+        col_str = SF.rand(SF.lit(0))
+        self.assertEqual("RAND(0)", col_str.sql())
+        col = SF.rand(SF.lit(0))
+        self.assertEqual("RAND(0)", col.sql())
+        no_col = SF.rand()
+        self.assertEqual("RAND()", no_col.sql())
+
+    def test_randn(self):
+        col_str = SF.randn(0)
+        self.assertEqual("RANDN(0)", col_str.sql())
+        col = SF.randn(0)
+        self.assertEqual("RANDN(0)", col.sql())
+        no_col = SF.randn()
+        self.assertEqual("RANDN()", no_col.sql())
+
+    def test_round(self):
+        col_str = SF.round("cola", 0)
+        self.assertEqual("ROUND(cola, 0)", col_str.sql())
+        col = SF.round(SF.col("cola"), 0)
+        self.assertEqual("ROUND(cola, 0)", col.sql())
+        col_no_scale = SF.round("cola")
+        self.assertEqual("ROUND(cola)", col_no_scale.sql())
+
+    def test_bround(self):
+        col_str = SF.bround("cola", 0)
+        self.assertEqual("BROUND(cola, 0)", col_str.sql())
+        col = SF.bround(SF.col("cola"), 0)
+        self.assertEqual("BROUND(cola, 0)", col.sql())
+        col_no_scale = SF.bround("cola")
+        self.assertEqual("BROUND(cola)", col_no_scale.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())
+
+    def test_isnan(self):
+        col_str = SF.isnan("cola")
+        self.assertEqual("ISNAN(cola)", col_str.sql())
+        col = SF.isnan(SF.col("cola"))
+        self.assertEqual("ISNAN(cola)", col.sql())

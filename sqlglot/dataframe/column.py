@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 import typing as t
 
 import sqlglot
@@ -13,8 +14,11 @@ class Column:
         self.expression = expression
         if isinstance(self.expression, exp.Null):
             self.expression = self.alias("NULL").expression
-        elif isinstance(expression, (int, float)):
-            self.expression = exp.Column(this=exp.Literal(this=str(expression), is_string=False))
+        elif isinstance(self.expression, (int, float, bool)):
+            self.expression = exp.Column(this=exp.Literal(this=str(expression).lower(), is_string=False))
+        elif isinstance(self.expression, Iterable):
+            expressions = [exp.Literal(this=str(x).lower(), is_string=False) for x in self.expression]
+            self.expression = exp.Column(this=exp.Array(expressions=expressions))
 
     def __repr__(self):
         return repr(self.expression)

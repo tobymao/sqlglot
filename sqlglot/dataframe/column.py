@@ -66,7 +66,7 @@ class Column:
         return self.binary_op(exp.Div, other)
 
     def binary_op(self, clazz: t.Callable, other: "Column", **kwargs) -> "Column":
-        return Column(clazz(this=self.column_expression, expression=other.column_expression, **kwargs))
+        return Column(clazz(this=self.column_expression, expression=Column(other).column_expression, **kwargs))
 
     @property
     def is_alias(self):

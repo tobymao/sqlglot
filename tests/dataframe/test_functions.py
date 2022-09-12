@@ -35,14 +35,6 @@ class TestDataframeFunctions(unittest.TestCase):
         test_array = SF.col([1, 2, 3])
         self.assertEqual("ARRAY(1, 2, 3)", test_array.sql())
 
-    def test_greatest(self):
-        single_str = SF.greatest("cola")
-        self.assertEqual("GREATEST(cola)", single_str.sql())
-        single_col = SF.greatest(SF.col("cola"))
-        self.assertEqual("GREATEST(cola)", single_col.sql())
-        multiple_mix = SF.greatest("col1", "col2", SF.col("col3"), SF.col("col4"))
-        self.assertEqual("GREATEST(col1, col2, col3, col4)", multiple_mix.sql())
-
     def test_asc(self):
         asc_str = SF.asc("cola")
         # ASC is removed from output since that is default so we can't check sql
@@ -230,9 +222,11 @@ class TestDataframeFunctions(unittest.TestCase):
 
     def test_log(self):
         col_str = SF.log("cola")
-        self.assertEqual("LOG(cola)", col_str.sql())
+        self.assertEqual("LN(cola)", col_str.sql())
         col = SF.log(SF.col("cola"))
-        self.assertEqual("LOG(cola)", col.sql())
+        self.assertEqual("LN(cola)", col.sql())
+        col_arg = SF.log(10.0, "age")
+        self.assertEqual("LOG(10.0, age)", col_arg.sql())
 
     def test_log10(self):
         col_str = SF.log10("cola")
@@ -245,6 +239,13 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("LOG1P(cola)", col_str.sql())
         col = SF.log1p(SF.col("cola"))
         self.assertEqual("LOG1P(cola)", col.sql())
+
+
+    def test_log2(self):
+        col_str = SF.log2("cola")
+        self.assertEqual("LOG2(cola)", col_str.sql())
+        col = SF.log2(SF.col("cola"))
+        self.assertEqual("LOG2(cola)", col.sql())
 
     def test_rint(self):
         col_str = SF.rint("cola")
@@ -592,47 +593,65 @@ class TestDataframeFunctions(unittest.TestCase):
         col_no_scale = SF.bround("cola")
         self.assertEqual("BROUND(cola)", col_no_scale.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_shiftleft(self):
+        col_str = SF.shiftleft("cola", 1)
+        self.assertEqual("SHIFTLEFT(cola, 1)", col_str.sql())
+        col = SF.shiftleft(SF.col("cola"), 1)
+        self.assertEqual("SHIFTLEFT(cola, 1)", col.sql())
+        col_legacy = SF.shiftLeft(SF.col("cola"), 1)
+        self.assertEqual("SHIFTLEFT(cola, 1)", col_legacy.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_shiftright(self):
+        col_str = SF.shiftright("cola", 1)
+        self.assertEqual("SHIFTRIGHT(cola, 1)", col_str.sql())
+        col = SF.shiftright(SF.col("cola"), 1)
+        self.assertEqual("SHIFTRIGHT(cola, 1)", col.sql())
+        col_legacy = SF.shiftRight(SF.col("cola"), 1)
+        self.assertEqual("SHIFTRIGHT(cola, 1)", col_legacy.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_shiftrightunsigned(self):
+        col_str = SF.shiftrightunsigned("cola", 1)
+        self.assertEqual("SHIFTRIGHTUNSIGNED(cola, 1)", col_str.sql())
+        col = SF.shiftrightunsigned(SF.col("cola"), 1)
+        self.assertEqual("SHIFTRIGHTUNSIGNED(cola, 1)", col.sql())
+        col_legacy = SF.shiftRightUnsigned(SF.col("cola"), 1)
+        self.assertEqual("SHIFTRIGHTUNSIGNED(cola, 1)", col_legacy.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_expr(self):
+        col_str = SF.expr("LENGTH(name)")
+        self.assertEqual("LENGTH(name)", col_str.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_struct(self):
+        col_str = SF.struct("cola", "colb", "colc")
+        self.assertEqual("STRUCT(cola, colb, colc)", col_str.sql())
+        col = SF.struct(SF.col("cola"), SF.col("colb"), SF.col("colc"))
+        self.assertEqual("STRUCT(cola, colb, colc)", col.sql())
+        col_single = SF.struct("cola")
+        self.assertEqual("STRUCT(cola)", col_single.sql())
+        col_list = SF.struct(['cola', 'colb', 'colc'])
+        self.assertEqual("STRUCT(cola, colb, colc)", col_list.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_greatest(self):
+        single_str = SF.greatest("cola")
+        self.assertEqual("GREATEST(cola)", single_str.sql())
+        single_col = SF.greatest(SF.col("cola"))
+        self.assertEqual("GREATEST(cola)", single_col.sql())
+        multiple_mix = SF.greatest("col1", "col2", SF.col("col3"), SF.col("col4"))
+        self.assertEqual("GREATEST(col1, col2, col3, col4)", multiple_mix.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_least(self):
+        single_str = SF.least("cola")
+        self.assertEqual("LEAST(cola)", single_str.sql())
+        single_col = SF.least(SF.col("cola"))
+        self.assertEqual("LEAST(cola)", single_col.sql())
+        multiple_mix = SF.least("col1", "col2", SF.col("col3"), SF.col("col4"))
+        self.assertEqual("LEAST(col1, col2, col3, col4)", multiple_mix.sql())
+
+    def test_when(self):
+        col_simple = SF.when(SF.col("cola") == 2, 1)
+        self.assertEqual("CASE WHEN cola = 2 THEN 1 END", col_simple.sql())
+        col_complex = SF.when(SF.col("cola") == 2, SF.col("colb") + 2)
+        self.assertEqual("CASE WHEN cola = 2 THEN colb + 2 END", col_complex.sql())
 
     def test_isnan(self):
         col_str = SF.isnan("cola")

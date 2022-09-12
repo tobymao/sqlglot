@@ -23,9 +23,9 @@ def _invoke_column_function(column: "ColumnOrName", func_name: str, *args, **kwa
     return func(*args, **kwargs)
 
 
-def _invoke_expression_over_column(column: "ColumnOrName", expression: t.Callable, **kwargs) -> "Column":
+def _invoke_expression_over_column(column: "ColumnOrName", callable_expression: t.Callable, **kwargs) -> "Column":
     column = ensure_col(column)
-    new_expression = expression(this=column.column_expression, **kwargs)
+    new_expression = callable_expression(this=column.column_expression, **kwargs)
     return Column(new_expression)
 
 
@@ -50,9 +50,15 @@ def lit(value: t.Optional[t.Any] = None) -> "Column":
 
 
 def greatest(*cols: "ColumnOrName") -> "Column":
-    cols = ensure_strings(cols)
-    return Column(glotexp.Greatest(this=cols[0], expressions=cols[1:]))
+    cols = [ensure_col(col) for col in cols]
+    return _invoke_expression_over_column(cols[0], glotexp.Greatest,
+                                          expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None)
 
+
+def least(*cols: "ColumnOrName") -> "Column":
+    cols = [ensure_col(col) for col in cols]
+    return _invoke_expression_over_column(cols[0], glotexp.Least,
+                                          expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None)
 
 def count_distinct(col: "ColumnOrName", *cols: "ColumnOrName") -> "Column":
     cols = [ensure_col(x) for x in [col] + list(cols)]
@@ -197,16 +203,22 @@ def floor(col: "ColumnOrName") -> "Column":
     return _invoke_expression_over_column(col, glotexp.Floor)
 
 
-def log(col: "ColumnOrName") -> "Column":
-    return _invoke_expression_over_column(col, glotexp.Log)
-
-
 def log10(col: "ColumnOrName") -> "Column":
     return _invoke_expression_over_column(col, glotexp.Log10)
 
 
 def log1p(col: "ColumnOrName") -> "Column":
     return _invoke_anonymous_function(col, "LOG1P")
+
+
+def log2(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Log2)
+
+
+def log(arg1: t.Union["ColumnOrName", float], arg2: t.Optional["ColumnOrName"] = None) -> "Column":
+    if arg2 is None:
+        return _invoke_expression_over_column(arg1, glotexp.Ln)
+    return _invoke_expression_over_column(arg1, glotexp.Log, expression=ensure_col(arg2).expression)
 
 
 def rint(col: "ColumnOrName") -> "Column":
@@ -432,6 +444,269 @@ def round(col: "ColumnOrName", scale: int = None) -> "Column":
     if scale is not None:
         return _invoke_anonymous_function(col, "ROUND", scale)
     return _invoke_anonymous_function(col, "ROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def shiftleft(col: "ColumnOrName", numBits: int) -> "Column":
+    return _invoke_expression_over_column(
+        col,
+        glotexp.BitwiseLeftShift,
+        expression=ensure_col(numBits).expression
+    )
+
+
+def shiftLeft(col: "ColumnOrName", numBits: int) -> "Column":
+    return shiftleft(col, numBits)
+
+
+def shiftright(col: "ColumnOrName", numBits: int) -> "Column":
+    return _invoke_expression_over_column(
+        col,
+        glotexp.BitwiseRightShift,
+        expression=ensure_col(numBits).expression
+    )
+
+
+def shiftRight(col: "ColumnOrName", numBits: int) -> "Column":
+    return shiftright(col, numBits)
+
+
+def shiftrightunsigned(col: "ColumnOrName", numBits: int) -> "Column":
+    return _invoke_anonymous_function(
+        col,
+        "SHIFTRIGHTUNSIGNED",
+        numBits
+    )
+
+
+def shiftRightUnsigned(col: "ColumnOrName", numBits: int) -> "Column":
+    return shiftrightunsigned(col, numBits)
+
+
+def expr(str: str) -> "Column":
+    return Column(str)
+
+
+def struct(col: t.Union["ColumnOrName", t.Iterable["ColumnOrName"]], *cols: "ColumnOrName") -> "Column":
+    col = [col] if isinstance(col, (str, Column)) else col
+    columns = col + list(cols)
+    expressions = [ensure_col(column).expression for column in columns]
+    return Column(glotexp.Struct(expressions=expressions))
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
+
+
+def bround(col: "ColumnOrName", scale: int = None) -> "Column":
+    if scale is not None:
+        return _invoke_anonymous_function(col, "BROUND", scale)
+    return _invoke_anonymous_function(col, "BROUND")
 
 
 def bround(col: "ColumnOrName", scale: int = None) -> "Column":

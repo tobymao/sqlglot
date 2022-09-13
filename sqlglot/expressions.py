@@ -1654,6 +1654,7 @@ class DataType(Expression):
         DECIMAL = auto()
         BOOLEAN = auto()
         JSON = auto()
+        INTERVAL = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         DATE = auto()

@@ -1921,26 +1921,27 @@ class Parser:
         return self.expression(exp.Cast, this=this, to=to)
 
     def _parse_substring(self):
-        this = self._parse_term()
+        args = [self._parse_term()]
 
         # Postgres supports the form: substring(string [from int] [for int])
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
-        matching_delimiter = {
-            TokenType.FROM: TokenType.FOR,
-            TokenType.COMMA: TokenType.COMMA,
-        }
 
-        start = None
-        length = None
+        if self._match(TokenType.FROM):
+            args.append(self._parse_term())
 
-        if self._match_set((TokenType.FROM, TokenType.COMMA)):
-            delim = self._prev
-            start = self._parse_term()
+            if self._match(TokenType.FOR):
+                args.append(self._parse_term())
+        elif self._match(TokenType.COMMA):
+            if self._match(TokenType.R_PAREN):
+                self.raise_error("Unexpected ) token")
 
-            if self._match(matching_delimiter[delim.token_type]):
-                length = self._parse_term()
+            args.extend(self._parse_csv(self._parse_term))
 
-        return self.expression(exp.Substring, this=this, start=start, length=length)
+        function = self.FUNCTIONS.get(exp.Substring.sql_names()[0])
+        this = function(args)
+        self.validate_expression(this, args)
+
+        return this
 
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):

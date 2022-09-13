@@ -134,6 +134,7 @@ class TokenType(AutoName):
     FINAL = auto()
     FIRST = auto()
     FOLLOWING = auto()
+    FOR = auto()
     FOREIGN_KEY = auto()
     FORMAT = auto()
     FULL = auto()
@@ -210,6 +211,7 @@ class TokenType(AutoName):
     SORT_BY = auto()
     STORED = auto()
     STRUCT = auto()
+    SUBSTRING = auto()
     TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
@@ -416,6 +418,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
+        "FOR": TokenType.FOR,
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
@@ -482,6 +485,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "STORED": TokenType.STORED,
+        "SUBSTRING": TokenType.SUBSTRING,
         "TABLE": TokenType.TABLE,
         "TABLE_FORMAT": TokenType.TABLE_FORMAT,
         "TBLPROPERTIES": TokenType.PROPERTIES,

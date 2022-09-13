@@ -115,6 +115,7 @@ class Parser:
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FOLLOWING,
+        TokenType.FOR,
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
@@ -170,6 +171,7 @@ class Parser:
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
         TokenType.ROW,
+        TokenType.SUBSTRING,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,
@@ -365,6 +367,7 @@ class Parser:
     FUNCTION_PARSERS = {
         TokenType.CONVERT: lambda self, _: self._parse_convert(),
         TokenType.EXTRACT: lambda self, _: self._parse_extract(),
+        TokenType.SUBSTRING: lambda self, _: self._parse_substring(),
         **{
             token_type: lambda self, token_type: self._parse_cast(
                 self.STRICT_CAST and token_type == TokenType.CAST
@@ -1916,6 +1919,28 @@ class Parser:
         else:
             to = None
         return self.expression(exp.Cast, this=this, to=to)
+
+    def _parse_substring(self):
+        this = self._parse_term()
+
+        # Postgres supports the form: substring(string [from int] [for int])
+        # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
+        matching_delimiter = {
+            TokenType.FROM: TokenType.FOR,
+            TokenType.COMMA: TokenType.COMMA,
+        }
+
+        start = None
+        length = None
+
+        if self._match_set((TokenType.FROM, TokenType.COMMA)):
+            delim = self._prev
+            start = self._parse_term()
+
+            if self._match(matching_delimiter[delim.token_type]):
+                length = self._parse_term()
+
+        return self.expression(exp.Substring, this=this, start=start, length=length)
 
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):

@@ -1921,21 +1921,15 @@ class Parser:
         return self.expression(exp.Cast, this=this, to=to)
 
     def _parse_substring(self):
-        args = [self._parse_term()]
-
         # Postgres supports the form: substring(string [from int] [for int])
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 
+        args = self._parse_csv(self._parse_term)
+
         if self._match(TokenType.FROM):
             args.append(self._parse_term())
-
             if self._match(TokenType.FOR):
                 args.append(self._parse_term())
-        elif self._match(TokenType.COMMA):
-            if self._match(TokenType.R_PAREN):
-                self.raise_error("Unexpected ) token")
-
-            args.extend(self._parse_csv(self._parse_term))
 
         this = exp.Substring.from_arg_list(args)
         self.validate_expression(this, args)

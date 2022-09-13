@@ -653,68 +653,516 @@ class TestDataframeFunctions(unittest.TestCase):
         col_complex = SF.when(SF.col("cola") == 2, SF.col("colb") + 2)
         self.assertEqual("CASE WHEN cola = 2 THEN colb + 2 END", col_complex.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_conv(self):
+        col_str = SF.conv("cola", 2, 16)
+        self.assertEqual("CONV(cola, 2, 16)", col_str.sql())
+        col = SF.conv(SF.col("cola"), 2, 16)
+        self.assertEqual("CONV(cola, 2, 16)", col.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_factorial(self):
+        col_str = SF.factorial("cola")
+        self.assertEqual("FACTORIAL(cola)", col_str.sql())
+        col = SF.factorial(SF.col("cola"))
+        self.assertEqual("FACTORIAL(cola)", col.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_lag(self):
+        col_str = SF.lag("cola", 3, "colc")
+        self.assertEqual("LAG(cola, 3, colc)", col_str.sql())
+        col = SF.lag(SF.col("cola"), 3, "colc")
+        self.assertEqual("LAG(cola, 3, colc)", col.sql())
+        col_no_default = SF.lag("cola", 3)
+        self.assertEqual("LAG(cola, 3)", col_no_default.sql())
+        col_no_offset = SF.lag("cola")
+        self.assertEqual("LAG(cola)", col_no_offset.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_lead(self):
+        col_str = SF.lead("cola", 3, "colc")
+        self.assertEqual("LEAD(cola, 3, colc)", col_str.sql())
+        col = SF.lead(SF.col("cola"), 3, "colc")
+        self.assertEqual("LEAD(cola, 3, colc)", col.sql())
+        col_no_default = SF.lead("cola", 3)
+        self.assertEqual("LEAD(cola, 3)", col_no_default.sql())
+        col_no_offset = SF.lead("cola")
+        self.assertEqual("LEAD(cola)", col_no_offset.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_nth_value(self):
+        col_str = SF.nth_value("cola", 3)
+        self.assertEqual("NTH_VALUE(cola, 3)", col_str.sql())
+        col = SF.nth_value(SF.col("cola"), 3)
+        self.assertEqual("NTH_VALUE(cola, 3)", col.sql())
+        col_no_offset = SF.nth_value("cola")
+        self.assertEqual("NTH_VALUE(cola)", col_no_offset.sql())
+        with self.assertRaises(NotImplementedError):
+            SF.nth_value("cola", ignoreNulls=True)
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_ntile(self):
+        col = SF.ntile(2)
+        self.assertEqual("NTILE(2)", col.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_current_date(self):
+        col = SF.current_date()
+        self.assertEqual("CURRENT_DATE", col.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_current_timestamp(self):
+        col = SF.current_timestamp()
+        self.assertEqual("CURRENT_TIMESTAMP", col.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_date_format(self):
+        col_str = SF.date_format("cola", 'MM/dd/yyy')
+        self.assertEqual("DATE_FORMAT(cola, 'MM/dd/yyy')", col_str.sql())
+        col = SF.date_format(SF.col("cola"), 'MM/dd/yyy')
+        self.assertEqual("DATE_FORMAT(cola, 'MM/dd/yyy')", col.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_year(self):
+        col_str = SF.year("cola")
+        self.assertEqual("YEAR(cola)", col_str.sql())
+        col = SF.year(SF.col("cola"))
+        self.assertEqual("YEAR(cola)", col.sql())
 
-    def test_isnan(self):
-        col_str = SF.isnan("cola")
-        self.assertEqual("ISNAN(cola)", col_str.sql())
-        col = SF.isnan(SF.col("cola"))
-        self.assertEqual("ISNAN(cola)", col.sql())
+    def test_quarter(self):
+        col_str = SF.quarter("cola")
+        self.assertEqual("QUARTER(cola)", col_str.sql())
+        col = SF.quarter(SF.col("cola"))
+        self.assertEqual("QUARTER(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_dayofweek(self):
+        col_str = SF.dayofweek("cola")
+        self.assertEqual("DAYOFWEEK(cola)", col_str.sql())
+        col = SF.dayofweek(SF.col("cola"))
+        self.assertEqual("DAYOFWEEK(cola)", col.sql())
+
+    def test_dayofmonth(self):
+        col_str = SF.dayofmonth("cola")
+        self.assertEqual("DAYOFMONTH(cola)", col_str.sql())
+        col = SF.dayofmonth(SF.col("cola"))
+        self.assertEqual("DAYOFMONTH(cola)", col.sql())
+
+    def test_dayofyear(self):
+        col_str = SF.dayofyear("cola")
+        self.assertEqual("DAYOFYEAR(cola)", col_str.sql())
+        col = SF.dayofyear(SF.col("cola"))
+        self.assertEqual("DAYOFYEAR(cola)", col.sql())
+
+    def test_hour(self):
+        col_str = SF.hour("cola")
+        self.assertEqual("HOUR(cola)", col_str.sql())
+        col = SF.hour(SF.col("cola"))
+        self.assertEqual("HOUR(cola)", col.sql())
+
+    def test_minute(self):
+        col_str = SF.minute("cola")
+        self.assertEqual("MINUTE(cola)", col_str.sql())
+        col = SF.minute(SF.col("cola"))
+        self.assertEqual("MINUTE(cola)", col.sql())
+
+    def test_second(self):
+        col_str = SF.second("cola")
+        self.assertEqual("SECOND(cola)", col_str.sql())
+        col = SF.second(SF.col("cola"))
+        self.assertEqual("SECOND(cola)", col.sql())
+
+    def test_weekofyear(self):
+        col_str = SF.weekofyear("cola")
+        self.assertEqual("WEEKOFYEAR(cola)", col_str.sql())
+        col = SF.weekofyear(SF.col("cola"))
+        self.assertEqual("WEEKOFYEAR(cola)", col.sql())
+
+    def test_make_date(self):
+        col_str = SF.make_date("cola", "colb", "colc")
+        self.assertEqual("MAKE_DATE(cola, colb, colc)", col_str.sql())
+        col = SF.make_date(SF.col("cola"), SF.col("colb"), "colc")
+        self.assertEqual("MAKE_DATE(cola, colb, colc)", col.sql())
+
+    def test_date_add(self):
+        col_str = SF.date_add("cola", 2)
+        self.assertEqual("DATE_ADD(cola, 2)", col_str.sql())
+        col = SF.date_add(SF.col("cola"), 2)
+        self.assertEqual("DATE_ADD(cola, 2)", col.sql())
+        col_col_for_add = SF.date_add("cola", "colb")
+        self.assertEqual("DATE_ADD(cola, colb)", col_col_for_add.sql())
+
+    def test_date_sub(self):
+        col_str = SF.date_sub("cola", 2)
+        self.assertEqual("DATE_SUB(cola, 2)", col_str.sql())
+        col = SF.date_sub(SF.col("cola"), 2)
+        self.assertEqual("DATE_SUB(cola, 2)", col.sql())
+        col_col_for_add = SF.date_sub("cola", "colb")
+        self.assertEqual("DATE_SUB(cola, colb)", col_col_for_add.sql())
+
+    def test_date_diff(self):
+        col_str = SF.date_diff("cola", "colb")
+        self.assertEqual("DATEDIFF(cola, colb)", col_str.sql())
+        col = SF.date_diff(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("DATEDIFF(cola, colb)", col.sql())
+
+    def test_add_months(self):
+        col_str = SF.add_months("cola", 2)
+        self.assertEqual("ADD_MONTHS(cola, 2)", col_str.sql())
+        col = SF.add_months(SF.col("cola"), 2)
+        self.assertEqual("ADD_MONTHS(cola, 2)", col.sql())
+        col_col_for_add = SF.add_months("cola", "colb")
+        self.assertEqual("ADD_MONTHS(cola, colb)", col_col_for_add.sql())
+
+    def test_months_between(self):
+        col_str = SF.months_between("cola", "colb")
+        self.assertEqual("MONTHS_BETWEEN(cola, colb)", col_str.sql())
+        col = SF.months_between(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("MONTHS_BETWEEN(cola, colb)", col.sql())
+        col_round_off = SF.months_between("cola", "colb", True)
+        self.assertEqual("MONTHS_BETWEEN(cola, colb, true)", col_round_off.sql())
+
+    def test_to_date(self):
+        col_str = SF.to_date("cola")
+        self.assertEqual("TO_DATE(cola)", col_str.sql())
+        col = SF.to_date(SF.col("cola"))
+        self.assertEqual("TO_DATE(cola)", col.sql())
+        col_with_format = SF.to_date("cola", "yyyy-MM-dd")
+        self.assertEqual("TO_DATE(cola, 'yyyy-MM-dd')", col_with_format.sql())
+
+    def test_to_timestamp(self):
+        col_str = SF.to_timestamp("cola")
+        self.assertEqual("TO_TIMESTAMP(cola)", col_str.sql())
+        col = SF.to_timestamp(SF.col("cola"))
+        self.assertEqual("TO_TIMESTAMP(cola)", col.sql())
+        col_with_format = SF.to_timestamp("cola", "yyyy-MM-dd")
+        self.assertEqual("TO_TIMESTAMP(cola, 'yyyy-MM-dd')", col_with_format.sql())
+
+    def test_trunc(self):
+        col_str = SF.trunc("cola", "year")
+        self.assertEqual("TRUNC(cola, 'year')", col_str.sql())
+        col = SF.trunc(SF.col("cola"), "year")
+        self.assertEqual("TRUNC(cola, 'year')", col.sql())
+
+    def test_date_trunc(self):
+        col_str = SF.date_trunc("year", "cola")
+        self.assertEqual("DATE_TRUNC('year', cola)", col_str.sql())
+        col = SF.date_trunc("year", SF.col("cola"))
+        self.assertEqual("DATE_TRUNC('year', cola)", col.sql())
+
+    def test_next_day(self):
+        col_str = SF.next_day("cola", "Mon")
+        self.assertEqual("NEXT_DAY(cola, 'Mon')", col_str.sql())
+        col = SF.next_day(SF.col("cola"), "Mon")
+        self.assertEqual("NEXT_DAY(cola, 'Mon')", col.sql())
+
+    def test_last_day(self):
+        col_str = SF.last_day("cola")
+        self.assertEqual("LAST_DAY(cola)", col_str.sql())
+        col = SF.last_day(SF.col("cola"))
+        self.assertEqual("LAST_DAY(cola)", col.sql())
+
+    def test_from_unixtime(self):
+        col_str = SF.from_unixtime("cola")
+        self.assertEqual("FROM_UNIXTIME(cola)", col_str.sql())
+        col = SF.from_unixtime(SF.col("cola"))
+        self.assertEqual("FROM_UNIXTIME(cola)", col.sql())
+        col_format = SF.from_unixtime("cola", "yyyy-MM-dd HH:mm:ss")
+        self.assertEqual("FROM_UNIXTIME(cola, 'yyyy-MM-dd HH:mm:ss')", col_format.sql())
+
+    def test_unix_timestamp(self):
+        col_str = SF.unix_timestamp("cola")
+        self.assertEqual("UNIX_TIMESTAMP(cola)", col_str.sql())
+        col = SF.unix_timestamp(SF.col("cola"))
+        self.assertEqual("UNIX_TIMESTAMP(cola)", col.sql())
+        col_format = SF.unix_timestamp("cola", "yyyy-MM-dd HH:mm:ss")
+        self.assertEqual("UNIX_TIMESTAMP(cola, 'yyyy-MM-dd HH:mm:ss')", col_format.sql())
+        col_current = SF.unix_timestamp()
+        self.assertEqual("UNIX_TIMESTAMP()", col_current.sql())
+
+    def test_from_utc_timestamp(self):
+        col_str = SF.from_utc_timestamp("cola", "PST")
+        self.assertEqual("FROM_UTC_TIMESTAMP(cola, 'PST')", col_str.sql())
+        col = SF.from_utc_timestamp(SF.col("cola"), "PST")
+        self.assertEqual("FROM_UTC_TIMESTAMP(cola, 'PST')", col.sql())
+        col_col = SF.from_utc_timestamp("cola", SF.col("colb"))
+        self.assertEqual("FROM_UTC_TIMESTAMP(cola, colb)", col_col.sql())
+
+    def test_to_utc_timestamp(self):
+        col_str = SF.to_utc_timestamp("cola", "PST")
+        self.assertEqual("TO_UTC_TIMESTAMP(cola, 'PST')", col_str.sql())
+        col = SF.to_utc_timestamp(SF.col("cola"), "PST")
+        self.assertEqual("TO_UTC_TIMESTAMP(cola, 'PST')", col.sql())
+        col_col = SF.to_utc_timestamp("cola", SF.col("colb"))
+        self.assertEqual("TO_UTC_TIMESTAMP(cola, colb)", col_col.sql())
+
+    def test_timestamp_seconds(self):
+        col_str = SF.timestamp_seconds("cola")
+        self.assertEqual("TIMESTAMP_SECONDS(cola)", col_str.sql())
+        col = SF.timestamp_seconds(SF.col("cola"))
+        self.assertEqual("TIMESTAMP_SECONDS(cola)", col.sql())
+
+    def test_window(self):
+        col_str = SF.window("cola", "10 minutes")
+        self.assertEqual("WINDOW(cola, '10 minutes')", col_str.sql())
+        col = SF.window(SF.col("cola"), "10 minutes")
+        self.assertEqual("WINDOW(cola, '10 minutes')", col.sql())
+        col_all_values = SF.window("cola", "2 minutes 30 seconds", "30 seconds", "15 seconds")
+        self.assertEqual("WINDOW(cola, '2 minutes 30 seconds', '30 seconds', '15 seconds')", col_all_values.sql())
+        col_no_start_time = SF.window("cola", "2 minutes 30 seconds", "30 seconds")
+        self.assertEqual("WINDOW(cola, '2 minutes 30 seconds', '30 seconds')", col_no_start_time.sql())
+        col_no_slide = SF.window("cola", "2 minutes 30 seconds", startTime="15 seconds")
+        self.assertEqual("WINDOW(cola, '2 minutes 30 seconds', '2 minutes 30 seconds', '15 seconds')", col_no_slide.sql())
+
+    def test_session_window(self):
+        col_str = SF.session_window("cola", "5 seconds")
+        self.assertEqual("SESSION_WINDOW(cola, '5 seconds')", col_str.sql())
+        col = SF.session_window(SF.col("cola"), SF.lit("5 seconds"))
+        self.assertEqual("SESSION_WINDOW(cola, '5 seconds')", col.sql())
+
+    def test_crc32(self):
+        col_str = SF.crc32("Spark")
+        self.assertEqual("CRC32('Spark')", col_str.sql())
+        col = SF.crc32(SF.col("cola"))
+        self.assertEqual("CRC32(cola)", col.sql())
+
+    def test_md5(self):
+        col_str = SF.md5("Spark")
+        self.assertEqual("MD5('Spark')", col_str.sql())
+        col = SF.md5(SF.col("cola"))
+        self.assertEqual("MD5(cola)", col.sql())
+
+    def test_sha1(self):
+        col_str = SF.sha1("Spark")
+        self.assertEqual("SHA1('Spark')", col_str.sql())
+        col = SF.sha1(SF.col("cola"))
+        self.assertEqual("SHA1(cola)", col.sql())
+
+    def test_sha2(self):
+        col_str = SF.sha2("Spark", 256)
+        self.assertEqual("SHA2('Spark', 256)", col_str.sql())
+        col = SF.sha2(SF.col("cola"), 256)
+        self.assertEqual("SHA2(cola, 256)", col.sql())
+
+    def test_hash(self):
+        col_str = SF.hash("cola", "colb", "colc")
+        self.assertEqual("HASH(cola, colb, colc)", col_str.sql())
+        col = SF.hash(SF.col("cola"), SF.col("colb"), SF.col("colc"))
+        self.assertEqual("HASH(cola, colb, colc)", col.sql())
+
+    def test_xxhash64(self):
+        col_str = SF.xxhash64("cola", "colb", "colc")
+        self.assertEqual("XXHASH64(cola, colb, colc)", col_str.sql())
+        col = SF.xxhash64(SF.col("cola"), SF.col("colb"), SF.col("colc"))
+        self.assertEqual("XXHASH64(cola, colb, colc)", col.sql())
+
+    def test_assert_true(self):
+        col = SF.assert_true(SF.col("cola") < SF.col("colb"))
+        self.assertEqual("ASSERT_TRUE(cola < colb)", col.sql())
+        col_error_msg_col = SF.assert_true(SF.col("cola") < SF.col("colb"), SF.col("colc"))
+        self.assertEqual("ASSERT_TRUE(cola < colb, colc)", col_error_msg_col.sql())
+        col_error_msg_lit = SF.assert_true(SF.col("cola") < SF.col("colb"), "error")
+        self.assertEqual("ASSERT_TRUE(cola < colb, 'error')", col_error_msg_lit.sql())
+
+    def test_raise_error(self):
+        col_str = SF.raise_error("custom error message")
+        self.assertEqual("RAISE_ERROR('custom error message')", col_str.sql())
+        col = SF.raise_error(SF.col("cola"))
+        self.assertEqual("RAISE_ERROR(cola)", col.sql())
+
+    def test_upper(self):
+        col_str = SF.upper("cola")
+        self.assertEqual("UPPER(cola)", col_str.sql())
+        col = SF.upper(SF.col("cola"))
+        self.assertEqual("UPPER(cola)", col.sql())
+
+    def test_lower(self):
+        col_str = SF.lower("cola")
+        self.assertEqual("LOWER(cola)", col_str.sql())
+        col = SF.lower(SF.col("cola"))
+        self.assertEqual("LOWER(cola)", col.sql())
+
+    def test_ascii(self):
+        col_str = SF.ascii(SF.lit(2))
+        self.assertEqual("ASCII(2)", col_str.sql())
+        col = SF.ascii(SF.col("cola"))
+        self.assertEqual("ASCII(cola)", col.sql())
+
+    def test_base64(self):
+        col_str = SF.base64(SF.lit(2))
+        self.assertEqual("BASE64(2)", col_str.sql())
+        col = SF.base64(SF.col("cola"))
+        self.assertEqual("BASE64(cola)", col.sql())
+
+    def test_unbase64(self):
+        col_str = SF.unbase64(SF.lit(2))
+        self.assertEqual("UNBASE64(2)", col_str.sql())
+        col = SF.unbase64(SF.col("cola"))
+        self.assertEqual("UNBASE64(cola)", col.sql())
+
+    def test_ltrim(self):
+        col_str = SF.ltrim(SF.lit("Spark"))
+        self.assertEqual("LTRIM('Spark')", col_str.sql())
+        col = SF.ltrim(SF.col("cola"))
+        self.assertEqual("LTRIM(cola)", col.sql())
+
+    def test_rtrim(self):
+        col_str = SF.rtrim(SF.lit("Spark"))
+        self.assertEqual("RTRIM('Spark')", col_str.sql())
+        col = SF.rtrim(SF.col("cola"))
+        self.assertEqual("RTRIM(cola)", col.sql())
+
+    def test_trim(self):
+        col_str = SF.trim(SF.lit("Spark"))
+        self.assertEqual("TRIM('Spark')", col_str.sql())
+        col = SF.trim(SF.col("cola"))
+        self.assertEqual("TRIM(cola)", col.sql())
+
+    def test_concat_ws(self):
+        col_str = SF.concat_ws("-", "cola", "colb")
+        self.assertEqual("CONCAT_WS('-', cola, colb)", col_str.sql())
+        col = SF.concat_ws("-", SF.col("cola"), SF.col("colb"))
+        self.assertEqual("CONCAT_WS('-', cola, colb)", col.sql())
+
+    def test_decode(self):
+        col_str = SF.decode("cola", "US-ASCII")
+        self.assertEqual("DECODE(cola, 'US-ASCII')", col_str.sql())
+        col = SF.decode(SF.col("cola"), "US-ASCII")
+        self.assertEqual("DECODE(cola, 'US-ASCII')", col.sql())
+
+    def test_encode(self):
+        col_str = SF.encode("cola", "US-ASCII")
+        self.assertEqual("ENCODE(cola, 'US-ASCII')", col_str.sql())
+        col = SF.encode(SF.col("cola"), "US-ASCII")
+        self.assertEqual("ENCODE(cola, 'US-ASCII')", col.sql())
+
+    def test_format_number(self):
+        col_str = SF.format_number("cola", 4)
+        self.assertEqual("FORMAT_NUMBER(cola, 4)", col_str.sql())
+        col = SF.format_number(SF.col("cola"), 4)
+        self.assertEqual("FORMAT_NUMBER(cola, 4)", col.sql())
+
+    def test_format_string(self):
+        col_str = SF.format_string("%d %s", "cola", "colb", "colc")
+        self.assertEqual("FORMAT_STRING('%d %s', cola, colb, colc)", col_str.sql())
+        col = SF.format_string("%d %s", SF.col("cola"), SF.col("colb"), SF.col("colc"))
+        self.assertEqual("FORMAT_STRING('%d %s', cola, colb, colc)", col.sql())
+
+    def test_instr(self):
+        col_str = SF.instr("cola", "test")
+        self.assertEqual("INSTR(cola, 'test')", col_str.sql())
+        col = SF.instr(SF.col("cola"), "test")
+        self.assertEqual("INSTR(cola, 'test')", col.sql())
+
+    def test_overlay(self):
+        col_str = SF.overlay("cola", "colb", 3, 7)
+        self.assertEqual("OVERLAY(cola, colb, 3, 7)", col_str.sql())
+        col = SF.overlay(SF.col("cola"), SF.col("colb"), SF.lit(3), SF.lit(7))
+        self.assertEqual("OVERLAY(cola, colb, 3, 7)", col.sql())
+        col_no_length = SF.overlay("cola", "colb", 3)
+        self.assertEqual("OVERLAY(cola, colb, 3)", col_no_length.sql())
+
+    def test_sentences(self):
+        col_str = SF.sentences("cola", SF.lit("en"), SF.lit("US"))
+        self.assertEqual("SENTENCES(cola, 'en', 'US')", col_str.sql())
+        col = SF.sentences(SF.col("cola"), SF.lit("en"), SF.lit("US"))
+        self.assertEqual("SENTENCES(cola, 'en', 'US')", col.sql())
+        col_no_country = SF.sentences("cola", SF.lit("en"))
+        self.assertEqual("SENTENCES(cola, 'en')", col_no_country.sql())
+        col_no_lang = SF.sentences(SF.col("cola"), country=SF.lit("US"))
+        self.assertEqual("SENTENCES(cola, 'en', 'US')", col_no_lang.sql())
+        col_defaults = SF.sentences(SF.col("cola"))
+        self.assertEqual("SENTENCES(cola)", col_defaults.sql())
+
+    def test_substring(self):
+        col_str = SF.substring("cola", 2, 3)
+        self.assertEqual("SUBSTRING(cola, 2, 3)", col_str.sql())
+        col = SF.substring(SF.col("cola"), 2, 3)
+        self.assertEqual("SUBSTRING(cola, 2, 3)", col.sql())
+
+    def test_substring_index(self):
+        col_str = SF.substring_index("cola", ".", 2)
+        self.assertEqual("SUBSTRING_INDEX(cola, '.', 2)", col_str.sql())
+        col = SF.substring_index(SF.col("cola"), ".", 2)
+        self.assertEqual("SUBSTRING_INDEX(cola, '.', 2)", col.sql())
+
+    def test_levenshtein(self):
+        col_str = SF.levenshtein("cola", "colb")
+        self.assertEqual("LEVENSHTEIN(cola, colb)", col_str.sql())
+        col = SF.levenshtein(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("LEVENSHTEIN(cola, colb)", col.sql())
+
+    def test_locate(self):
+        col_str = SF.locate("test", "cola", 3)
+        self.assertEqual("LOCATE('test', cola, 3)", col_str.sql())
+        col = SF.locate("test", SF.col("cola"), 3)
+        self.assertEqual("LOCATE('test', cola, 3)", col.sql())
+        col_no_pos = SF.locate("test", "cola")
+        self.assertEqual("LOCATE('test', cola)", col_no_pos.sql())
+
+    def test_lpad(self):
+        col_str = SF.lpad("cola", 3, "#")
+        self.assertEqual("LPAD(cola, 3, '#')", col_str.sql())
+        col = SF.lpad(SF.col("cola"), 3, "#")
+        self.assertEqual("LPAD(cola, 3, '#')", col.sql())
+
+    def test_rpad(self):
+        col_str = SF.rpad("cola", 3, "#")
+        self.assertEqual("RPAD(cola, 3, '#')", col_str.sql())
+        col = SF.rpad(SF.col("cola"), 3, "#")
+        self.assertEqual("RPAD(cola, 3, '#')", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())
+
+    def test_month(self):
+        col_str = SF.month("cola")
+        self.assertEqual("MONTH(cola)", col_str.sql())
+        col = SF.month(SF.col("cola"))
+        self.assertEqual("MONTH(cola)", col.sql())

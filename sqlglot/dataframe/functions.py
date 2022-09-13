@@ -23,18 +23,20 @@ def _invoke_column_function(column: "ColumnOrName", func_name: str, *args, **kwa
     return func(*args, **kwargs)
 
 
-def _invoke_expression_over_column(column: "ColumnOrName", callable_expression: t.Callable, **kwargs) -> "Column":
-    column = ensure_col(column)
-    new_expression = callable_expression(this=column.column_expression, **kwargs)
+def _invoke_expression_over_column(column: t.Union["ColumnOrName", None], callable_expression: t.Callable, **kwargs) -> "Column":
+    column = ensure_col(column) if column is not None else None
+    new_expression = (
+        callable_expression(this=column.column_expression, **kwargs)
+        if column is not None
+        else callable_expression(**kwargs)
+    )
     return Column(new_expression)
 
 
 def _invoke_anonymous_function(column: t.Optional["ColumnOrName"], func_name: str, *args) -> "Column":
-    if column is None:
-        return Column(glotexp.Anonymous(this=func_name.upper()))
-    column = ensure_col(column)
+    column = [ensure_col(column)] if column is not None else []
     args = [ensure_col(arg) for arg in args]
-    expressions = [x.expression for x in [column] + args]
+    expressions = [x.expression for x in column + args]
     new_expression = glotexp.Anonymous(this=func_name.upper(), expressions=expressions)
     return Column(new_expression)
 
@@ -499,217 +501,436 @@ def struct(col: t.Union["ColumnOrName", t.Iterable["ColumnOrName"]], *cols: "Col
     return Column(glotexp.Struct(expressions=expressions))
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def conv(col: "ColumnOrName", fromBase: int, toBase: int) -> "Column":
+    return _invoke_anonymous_function(col, "CONV", fromBase, toBase)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def factorial(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "FACTORIAL")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def lag(col: "ColumnOrName", offset: t.Optional[int] = 1, default: t.Optional[t.Any] = None) -> "Column":
+    if default is not None:
+        return _invoke_anonymous_function(col, "LAG", offset, default)
+    if offset != 1:
+        return _invoke_anonymous_function(col, "LAG", offset)
+    return _invoke_anonymous_function(col, "LAG")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def lead(col: "ColumnOrName", offset: t.Optional[int] = 1, default: t.Optional[t.Any] = None) -> "Column":
+    if default is not None:
+        return _invoke_anonymous_function(col, "LEAD", offset, default)
+    if offset != 1:
+        return _invoke_anonymous_function(col, "LEAD", offset)
+    return _invoke_anonymous_function(col, "LEAD")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def nth_value(col: "ColumnOrName", offset: t.Optional[int] = 1, ignoreNulls: t.Optional[bool] = None) -> "Column":
+    if ignoreNulls is not None:
+        raise NotImplementedError("There is currently not support for `ignoreNulls` parameter")
+    if offset != 1:
+        return _invoke_anonymous_function(col, "NTH_VALUE", offset)
+    return _invoke_anonymous_function(col, "NTH_VALUE")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def ntile(n: int) -> "Column":
+    return _invoke_anonymous_function(None, "NTILE", n)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def current_date() -> "Column":
+    return _invoke_expression_over_column(None, glotexp.CurrentDate)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def current_timestamp() -> "Column":
+    return _invoke_expression_over_column(None, glotexp.CurrentTimestamp)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def date_format(col: "ColumnOrName", format: str) -> "Column":
+    return _invoke_anonymous_function(col, "DATE_FORMAT", lit(format))
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def year(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Year)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def quarter(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "QUARTER")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def month(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Month)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def dayofweek(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "DAYOFWEEK")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def dayofmonth(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "DAYOFMONTH")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def dayofyear(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "DAYOFYEAR")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def hour(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "HOUR")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def minute(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "MINUTE")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def second(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "SECOND")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def weekofyear(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "WEEKOFYEAR")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def make_date(year: "ColumnOrName", month: "ColumnOrName", day: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(year, "MAKE_DATE", month, day)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def date_add(col: "ColumnOrName", days: t.Union["ColumnOrName", int]) -> "Column":
+    return _invoke_expression_over_column(col, glotexp.DateAdd, expression=ensure_col(days).expression)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def date_sub(col: "ColumnOrName", days: t.Union["ColumnOrName", int]) -> "Column":
+    return _invoke_expression_over_column(col, glotexp.DateSub, expression=ensure_col(days).expression)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def date_diff(end: "ColumnOrName", start: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(end, glotexp.DateDiff, expression=ensure_col(start).expression)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def add_months(start: "ColumnOrName", months: t.Union["ColumnOrName", int]) -> "Column":
+    return _invoke_anonymous_function(col, "ADD_MONTHS", months)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def months_between(date1: "ColumnOrName", date2: "ColumnOrName", roundOff: t.Optional[bool] = None) -> "Column":
+    if roundOff is None:
+        return _invoke_anonymous_function(date1, "MONTHS_BETWEEN", date2)
+    return _invoke_anonymous_function(date1, "MONTHS_BETWEEN", date2, roundOff)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def to_date(col: "ColumnOrName", format: t.Optional[str] = None) -> "Column":
+    if format is not None:
+        return _invoke_anonymous_function(col, "TO_DATE", lit(format))
+    return _invoke_anonymous_function(col, "TO_DATE")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def to_timestamp(col: "ColumnOrName", format: t.Optional[str] = None) -> "Column":
+    if format is not None:
+        return _invoke_anonymous_function(col, "TO_TIMESTAMP", lit(format))
+    return _invoke_anonymous_function(col, "TO_TIMESTAMP")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def trunc(col: "ColumnOrName", format: str) -> "Column":
+    return _invoke_expression_over_column(col, glotexp.DateTrunc, unit=lit(format).expression)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def date_trunc(format: str, timestamp: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(timestamp, glotexp.TimestampTrunc, unit=lit(format).expression)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def next_day(col: "ColumnOrName", dayOfWeek: str) -> "Column":
+    return _invoke_anonymous_function(col, "NEXT_DAY", lit(dayOfWeek))
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def last_day(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "LAST_DAY")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def from_unixtime(col: "ColumnOrName", format: str = None) -> "Column":
+    if format is not None:
+        return _invoke_anonymous_function(col, "FROM_UNIXTIME", lit(format))
+    return _invoke_anonymous_function(col, "FROM_UNIXTIME")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def unix_timestamp(timestamp: t.Optional["ColumnOrName"] = None, format: str = None) -> "Column":
+    if format is not None:
+        return _invoke_anonymous_function(timestamp, "UNIX_TIMESTAMP", lit(format))
+    return _invoke_anonymous_function(timestamp, "UNIX_TIMESTAMP")
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def from_utc_timestamp(timestamp: "ColumnOrName", tz: "ColumnOrName") -> "Column":
+    tz = tz if isinstance(tz, Column) else lit(tz)
+    return _invoke_anonymous_function(timestamp, "FROM_UTC_TIMESTAMP", tz)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def to_utc_timestamp(timestamp: "ColumnOrName", tz: "ColumnOrName") -> "Column":
+    tz = tz if isinstance(tz, Column) else lit(tz)
+    return _invoke_anonymous_function(timestamp, "TO_UTC_TIMESTAMP", tz)
 
 
-def bround(col: "ColumnOrName", scale: int = None) -> "Column":
-    if scale is not None:
-        return _invoke_anonymous_function(col, "BROUND", scale)
-    return _invoke_anonymous_function(col, "BROUND")
+def timestamp_seconds(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "TIMESTAMP_SECONDS")
+
+
+def window(timeColumn: "ColumnOrName", windowDuration: str,
+           slideDuration: t.Optional[str] = None, startTime: t.Optional[str] = None) -> "Column":
+    if slideDuration is not None and startTime is not None:
+        return _invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration), lit(slideDuration), lit(startTime))
+    if slideDuration is not None:
+        return _invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration), lit(slideDuration))
+    if startTime is not None:
+        return _invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration), lit(windowDuration), lit(startTime))
+    return _invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration))
+
+
+def session_window(timeColumn: "ColumnOrName", gapDuration: "ColumnOrName") -> "Column":
+    gapDuration = gapDuration if isinstance(gapDuration, Column) else lit(gapDuration)
+    return _invoke_anonymous_function(timeColumn, "SESSION_WINDOW", gapDuration)
+
+
+def crc32(col: "ColumnOrName") -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "CRC32")
+
+
+def md5(col: "ColumnOrName") -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "MD5")
+
+
+def sha1(col: "ColumnOrName") -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA1")
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def hash(*cols: "ColumnOrName") -> "Column":
+    args = cols[1:] if len(cols) > 1 else []
+    return _invoke_anonymous_function(cols[0], "HASH", *args)
+
+
+def xxhash64(*cols: "ColumnOrName") -> "Column":
+    args = cols[1:] if len(cols) > 1 else []
+    return _invoke_anonymous_function(cols[0], "XXHASH64", *args)
+
+
+def assert_true(col: "ColumnOrName", errorMsg: t.Optional["ColumnOrName"] = None) -> "Column":
+    if errorMsg is not None:
+        errorMsg = errorMsg if isinstance(errorMsg, Column) else lit(errorMsg)
+        return _invoke_anonymous_function(col, "ASSERT_TRUE", errorMsg)
+    return _invoke_anonymous_function(col, "ASSERT_TRUE")
+
+
+def raise_error(errorMsg: "ColumnOrName") -> "Column":
+    errorMsg = errorMsg if isinstance(errorMsg, Column) else lit(errorMsg)
+    return _invoke_anonymous_function(errorMsg, "RAISE_ERROR")
+
+
+def upper(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Upper)
+
+
+def lower(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Lower)
+
+
+def ascii(col: "ColumnOrPrimitive") -> "Column":
+    return _invoke_anonymous_function(col, "ASCII")
+
+
+def base64(col: "ColumnOrPrimitive") -> "Column":
+    return _invoke_anonymous_function(col, "BASE64")
+
+
+def unbase64(col: "ColumnOrPrimitive") -> "Column":
+    return _invoke_anonymous_function(col, "UNBASE64")
+
+
+def ltrim(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "LTRIM")
+
+
+def rtrim(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "RTRIM")
+
+
+def trim(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "TRIM")
+
+
+def concat_ws(sep: str, *cols: "ColumnOrName") -> "Column":
+    cols = [Column(col) for col in cols]
+    return _invoke_expression_over_column(None, glotexp.ConcatWs, expressions=[x.expression for x in [lit(sep)] + list(cols)])
+
+
+def decode(col: "ColumnOrName", charset: str) -> "Column":
+    return _invoke_anonymous_function(col, "DECODE", lit(charset))
+
+
+def encode(col: "ColumnOrName", charset: str) -> "Column":
+    return _invoke_anonymous_function(col, "ENCODE", lit(charset))
+
+
+def format_number(col: "ColumnOrName", d: int) -> "Column":
+    return _invoke_anonymous_function(col, "FORMAT_NUMBER", lit(d))
+
+
+def format_string(format: str, *cols: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(lit(format), "FORMAT_STRING", *cols)
+
+
+def instr(col: "ColumnOrName", substr: str) -> "Column":
+    return _invoke_anonymous_function(col, "SHA2", lit(substr))
+
+
+def overlay(src: "ColumnOrName",
+            replace: "ColumnOrName",
+            pos: t.Union["ColumnOrName", int],
+            len: t.Union["ColumnOrName", int] = None) -> "Column":
+    if len is not None:
+        return _invoke_anonymous_function(src, "OVERLAY", replace, pos, len)
+    return _invoke_anonymous_function(src, "OVERLAY", replace, pos)
+
+
+def sentences(string: "ColumnOrName",
+              language: t.Optional["ColumnOrName"] = None,
+              country: t.Optional["ColumnOrName"] = None) -> "Column":
+    if language is not None and country is not None:
+        return _invoke_anonymous_function(string, "SENTENCES", language, country)
+    if language is not None:
+        return _invoke_anonymous_function(string, "SENTENCES", language)
+    if country is not None:
+        return _invoke_anonymous_function(string, "SENTENCES", lit("en"), country)
+    return _invoke_anonymous_function(string, "SENTENCES")
+
+
+def substring(str: "ColumnOrName", pos: int, len: int) -> "Column":
+    return _invoke_expression_over_column(str, glotexp.Substring, start=lit(pos).expression, length=lit(len).expression)
+
+
+def substring_index(str: "ColumnOrName", delim: str, count: int) -> "Column":
+    return _invoke_anonymous_function(str, "SUBSTRING_INDEX", lit(delim), lit(count))
+
+
+def levenshtein(left: "ColumnOrName", right: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(left, glotexp.Levenshtein, expression=ensure_col(right).expression)
+
+
+def locate(substr: str, str: "ColumnOrName", pos: int = None) -> "Column":
+    if pos is not None:
+        return _invoke_anonymous_function(lit(substr), "LOCATE", str, lit(pos))
+    return _invoke_anonymous_function(lit(substr), "LOCATE", str)
+
+
+def lpad(col: "ColumnOrName", len: int, pad: str) -> "Column":
+    return _invoke_anonymous_function(col, "LPAD", lit(len), lit(pad))
+
+
+def rpad(col: "ColumnOrName", len: int, pad: str) -> "Column":
+    return _invoke_anonymous_function(col, "RPAD", lit(len), lit(pad))
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)
+
+
+def sha2(col: "ColumnOrName", numBits: int) -> "Column":
+    col = col if isinstance(col, Column) else lit(col)
+    return _invoke_anonymous_function(col, "SHA2", numBits)

@@ -2306,8 +2306,10 @@ class Split(Func):
     arg_types = {"this": True, "expression": True}
 
 
+# Start may be omitted in the case of postgres
+# https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 class Substring(Func):
-    arg_types = {"this": True, "start": True, "length": False}
+    arg_types = {"this": True, "start": False, "length": False}
 
 
 class StrPosition(Func):

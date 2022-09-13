@@ -115,6 +115,7 @@ class Parser:
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FOLLOWING,
+        TokenType.FOR,
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
@@ -170,6 +171,7 @@ class Parser:
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
         TokenType.ROW,
+        TokenType.SUBSTRING,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,
@@ -365,6 +367,7 @@ class Parser:
     FUNCTION_PARSERS = {
         TokenType.CONVERT: lambda self, _: self._parse_convert(),
         TokenType.EXTRACT: lambda self, _: self._parse_extract(),
+        TokenType.SUBSTRING: lambda self, _: self._parse_substring(),
         **{
             token_type: lambda self, token_type: self._parse_cast(
                 self.STRICT_CAST and token_type == TokenType.CAST
@@ -1916,6 +1919,22 @@ class Parser:
         else:
             to = None
         return self.expression(exp.Cast, this=this, to=to)
+
+    def _parse_substring(self):
+        # Postgres supports the form: substring(string [from int] [for int])
+        # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
+
+        args = self._parse_csv(self._parse_term)
+
+        if self._match(TokenType.FROM):
+            args.append(self._parse_term())
+            if self._match(TokenType.FOR):
+                args.append(self._parse_term())
+
+        this = exp.Substring.from_arg_list(args)
+        self.validate_expression(this, args)
+
+        return this
 
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):

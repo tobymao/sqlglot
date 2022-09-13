@@ -54,6 +54,25 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
+        self.validate_identity(
+            "SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END"
+        )
+        self.validate_identity(
+            "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END"
+        )
+        self.validate_identity(
+            "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1 FOR 2) IN ('ab') THEN 1 ELSE 0 END"
+        )
+        self.validate_identity(
+            'SELECT * FROM "x" WHERE SUBSTRING("x"."foo" FROM 1 FOR 2) IN (\'mas\')'
+        )
+        self.validate_identity(
+            "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')"
+        )
+        self.validate_identity(
+            "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')"
+        )
+
         self.validate_all(
             "CREATE TABLE x (a INT SERIAL)",
             read={"sqlite": "CREATE TABLE x (a INTEGER AUTOINCREMENT)"},
@@ -89,5 +108,19 @@ class TestPostgres(Validator):
                 "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",
                 "hive": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
+            },
+        )
+        self.validate_all(
+            "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1 FOR 2) IN ('ab') THEN 1 ELSE 0 END",
+            write={
+                "hive": "SELECT CASE WHEN SUBSTRING('abcdefg', 1, 2) IN ('ab') THEN 1 ELSE 0 END",
+                "spark": "SELECT CASE WHEN SUBSTRING('abcdefg', 1, 2) IN ('ab') THEN 1 ELSE 0 END",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x WHERE SUBSTRING(col1 FROM 3 + LENGTH(col1) - 10 FOR 10) IN (col2)",
+            write={
+                "hive": "SELECT * FROM x WHERE SUBSTRING(col1, 3 + LENGTH(col1) - 10, 10) IN (col2)",
+                "spark": "SELECT * FROM x WHERE SUBSTRING(col1, 3 + LENGTH(col1) - 10, 10) IN (col2)",
             },
         )

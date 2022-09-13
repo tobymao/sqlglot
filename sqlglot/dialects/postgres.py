@@ -32,6 +32,17 @@ def _date_add_sql(kind):
     return func
 
 
+def _substring_sql(self, expression):
+    this = self.sql(expression, "this")
+    start = self.sql(expression, "start")
+    length = self.sql(expression, "length")
+
+    from_part = f" FROM {start}" if start else ""
+    for_part = f" FOR {length}" if length else ""
+
+    return f"SUBSTRING({this}{from_part}{for_part})"
+
+
 class Postgres(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
@@ -69,6 +80,7 @@ class Postgres(Dialect):
             **Tokenizer.KEYWORDS,
             "SERIAL": TokenType.AUTO_INCREMENT,
             "UUID": TokenType.UUID,
+            "FOR": TokenType.FOR,
         }
 
     class Parser(Parser):
@@ -103,6 +115,7 @@ class Postgres(Dialect):
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.Substring: _substring_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,

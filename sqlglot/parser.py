@@ -1937,8 +1937,7 @@ class Parser:
 
             args.extend(self._parse_csv(self._parse_term))
 
-        function = self.FUNCTIONS.get(exp.Substring.sql_names()[0])
-        this = function(args)
+        this = exp.Substring.from_arg_list(args)
         self.validate_expression(this, args)
 
         return this

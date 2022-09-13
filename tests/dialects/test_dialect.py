@@ -165,6 +165,12 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "CAST('1 DAY' AS INTERVAL)",
+            write={
+                "postgres": "CAST('1 DAY' AS INTERVAL)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS TIMESTAMP)", write={"starrocks": "CAST(a AS DATETIME)"}
         )
         self.validate_all(

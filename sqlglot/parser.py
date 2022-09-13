@@ -78,6 +78,7 @@ class Parser:
         TokenType.TEXT,
         TokenType.BINARY,
         TokenType.JSON,
+        TokenType.INTERVAL,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.DATETIME,

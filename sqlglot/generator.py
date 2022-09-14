@@ -879,6 +879,17 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         return f"EXTRACT({this} FROM {expression_sql})"
 
+    def trim_sql(self, expression):
+        target = self.sql(expression, "this")
+        trim_type = self.sql(expression, "position")
+
+        if trim_type == "LEADING":
+            return f"LTRIM({target})"
+        elif trim_type == "TRAILING":
+            return f"RTRIM({target})"
+        else:
+            return f"TRIM({target})"
+
     def check_sql(self, expression):
         this = self.sql(expression, key="this")
         return f"CHECK ({this})"

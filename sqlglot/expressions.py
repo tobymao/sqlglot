@@ -2382,6 +2382,15 @@ class TimeStrToUnix(Func):
     pass
 
 
+class Trim(Func):
+    arg_types = {
+        "this": True,
+        "position": False,
+        "expression": False,
+        "collation": False,
+    }
+
+
 class TsOrDsAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 

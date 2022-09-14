@@ -72,6 +72,10 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')"
         )
+        self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
+        self.validate_identity(
+            "SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)"
+        )
 
         self.validate_all(
             "CREATE TABLE x (a INT SERIAL)",
@@ -122,5 +126,31 @@ class TestPostgres(Validator):
             write={
                 "hive": "SELECT * FROM x WHERE SUBSTRING(col1, 3 + LENGTH(col1) - 10, 10) IN (col2)",
                 "spark": "SELECT * FROM x WHERE SUBSTRING(col1, 3 + LENGTH(col1) - 10, 10) IN (col2)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRIM(BOTH ' XXX ')",
+            write={
+                "mysql": "SELECT TRIM(' XXX ')",
+                "postgres": "SELECT TRIM(' XXX ')",
+                "hive": "SELECT TRIM(' XXX ')",
+            },
+        )
+        self.validate_all(
+            "TRIM(LEADING FROM ' XXX ')",
+            write={
+                "mysql": "LTRIM(' XXX ')",
+                "postgres": "LTRIM(' XXX ')",
+                "hive": "LTRIM(' XXX ')",
+                "presto": "LTRIM(' XXX ')",
+            },
+        )
+        self.validate_all(
+            "TRIM(TRAILING FROM ' XXX ')",
+            write={
+                "mysql": "RTRIM(' XXX ')",
+                "postgres": "RTRIM(' XXX ')",
+                "hive": "RTRIM(' XXX ')",
+                "presto": "RTRIM(' XXX ')",
             },
         )

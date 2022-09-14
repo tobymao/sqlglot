@@ -92,6 +92,7 @@ class TokenType(AutoName):
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
+    BOTH = auto()
     BUCKET = auto()
     CACHE = auto()
     CALL = auto()
@@ -160,6 +161,7 @@ class TokenType(AutoName):
     JOIN = auto()
     LATERAL = auto()
     LAZY = auto()
+    LEADING = auto()
     LEFT = auto()
     LIKE = auto()
     LIMIT = auto()
@@ -218,7 +220,9 @@ class TokenType(AutoName):
     TIME = auto()
     TOP = auto()
     THEN = auto()
+    TRIM = auto()
     TRUE = auto()
+    TRAILING = auto()
     TRUNCATE = auto()
     TRY_CAST = auto()
     UNBOUNDED = auto()
@@ -376,6 +380,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,
+        "BOTH": TokenType.BOTH,
         "BUCKET": TokenType.BUCKET,
         "CALL": TokenType.CALL,
         "CACHE": TokenType.CACHE,
@@ -439,6 +444,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "JOIN": TokenType.JOIN,
         "LATERAL": TokenType.LATERAL,
         "LAZY": TokenType.LAZY,
+        "LEADING": TokenType.LEADING,
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
@@ -493,6 +499,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
+        "TRAILING": TokenType.TRAILING,
+        "TRIM": TokenType.TRIM,
         "TRUNCATE": TokenType.TRUNCATE,
         "TRY_CAST": TokenType.TRY_CAST,
         "UNBOUNDED": TokenType.UNBOUNDED,

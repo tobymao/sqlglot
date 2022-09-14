@@ -737,6 +737,11 @@ class TestDialect(Validator):
         )
 
     def test_operators(self):
+        self.validate_identity(
+            "some.column LIKE 'foo' || another.column || 'bar' || LOWER(x)"
+        )
+        self.validate_identity("some.column LIKE 'foo' + another.column + 'bar'")
+
         self.validate_all(
             "x ILIKE '%y'",
             read={

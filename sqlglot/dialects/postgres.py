@@ -43,6 +43,23 @@ def _substring_sql(self, expression):
     return f"SUBSTRING({this}{from_part}{for_part})"
 
 
+def _trim_sql(self, expression):
+    target = self.sql(expression, "this")
+    trim_type = self.sql(expression, "position")
+    remove_chars = self.sql(expression, "expression")
+    collation = self.sql(expression, "collation")
+
+    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't postgres-specific
+    if not remove_chars and not collation:
+        return self.trim_sql(expression)
+
+    trim_type = f"{trim_type} " if trim_type else ""
+    remove_chars = f"{remove_chars} " if remove_chars else ""
+    from_part = "FROM " if trim_type or remove_chars else ""
+    collation = f" COLLATE {collation}" if collation else ""
+    return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
+
+
 class Postgres(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
@@ -118,5 +135,6 @@ class Postgres(Dialect):
             exp.Substring: _substring_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
+            exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
         }

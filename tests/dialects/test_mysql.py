@@ -15,6 +15,10 @@ class TestMySQL(Validator):
 
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
+        self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ')")
+        self.validate_identity("SELECT TRIM(TRAILING 'bla' FROM ' XXX ')")
+        self.validate_identity("SELECT TRIM(BOTH 'bla' FROM ' XXX ')")
+        self.validate_identity("SELECT TRIM('bla' FROM ' XXX ')")
 
     def test_introducers(self):
         self.validate_all(

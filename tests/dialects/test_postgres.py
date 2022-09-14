@@ -72,7 +72,6 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')"
         )
-        self.validate_identity("SELECT TRIM(BOTH FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
         self.validate_identity(
             "SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)"
@@ -130,9 +129,28 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            "SELECT TRIM(FROM ' XXX ')",
+            "SELECT TRIM(BOTH ' XXX ')",
             write={
                 "mysql": "SELECT TRIM(' XXX ')",
                 "postgres": "SELECT TRIM(' XXX ')",
+                "hive": "SELECT TRIM(' XXX ')",
+            },
+        )
+        self.validate_all(
+            "TRIM(LEADING FROM ' XXX ')",
+            write={
+                "mysql": "LTRIM(' XXX ')",
+                "postgres": "LTRIM(' XXX ')",
+                "hive": "LTRIM(' XXX ')",
+                "presto": "LTRIM(' XXX ')",
+            },
+        )
+        self.validate_all(
+            "TRIM(TRAILING FROM ' XXX ')",
+            write={
+                "mysql": "RTRIM(' XXX ')",
+                "postgres": "RTRIM(' XXX ')",
+                "hive": "RTRIM(' XXX ')",
+                "presto": "RTRIM(' XXX ')",
             },
         )

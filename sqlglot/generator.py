@@ -882,13 +882,13 @@ class Generator:
     def trim_sql(self, expression):
         target = self.sql(expression, "this")
         trim_type = self.sql(expression, "position")
-        remove_chars = self.sql(expression, "expression")
-        collation = self.sql(expression, "collation")
-        trim_type = f"{trim_type} " if trim_type else ""
-        remove_chars = f"{remove_chars} " if remove_chars else ""
-        from_part = "FROM " if trim_type or remove_chars else ""
-        collation = f" COLLATE {collation}" if collation else ""
-        return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
+
+        if trim_type == "LEADING":
+            return f"LTRIM({target})"
+        elif trim_type == "TRAILING":
+            return f"RTRIM({target})"
+        else:
+            return f"TRIM({target})"
 
     def check_sql(self, expression):
         this = self.sql(expression, key="this")

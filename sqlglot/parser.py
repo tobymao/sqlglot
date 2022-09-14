@@ -160,6 +160,8 @@ class Parser:
         TokenType.TRY_CAST,
     }
 
+    TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
+
     FUNC_TOKENS = {
         TokenType.CONVERT,
         TokenType.CURRENT_DATE,
@@ -1949,7 +1951,7 @@ class Parser:
         position = None
         collation = None
 
-        if self._match_set((TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH)):
+        if self._match_set(self.TRIM_TYPES):
             position = self._prev.text.upper()
 
         expression = self._parse_term()

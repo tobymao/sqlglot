@@ -102,6 +102,7 @@ class Parser:
         TokenType.VAR,
         TokenType.ALTER,
         TokenType.BEGIN,
+        TokenType.BOTH,
         TokenType.BUCKET,
         TokenType.CACHE,
         TokenType.COLLATE,
@@ -124,6 +125,7 @@ class Parser:
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
+        TokenType.LEADING,
         TokenType.LOCATION,
         TokenType.NEXT,
         TokenType.ONLY,
@@ -143,6 +145,7 @@ class Parser:
         TokenType.TABLE_FORMAT,
         TokenType.TEMPORARY,
         TokenType.TOP,
+        TokenType.TRAILING,
         TokenType.TRUNCATE,
         TokenType.TRUE,
         TokenType.UNBOUNDED,
@@ -173,6 +176,7 @@ class Parser:
         TokenType.REPLACE,
         TokenType.ROW,
         TokenType.SUBSTRING,
+        TokenType.TRIM,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,
@@ -369,6 +373,7 @@ class Parser:
         TokenType.CONVERT: lambda self, _: self._parse_convert(),
         TokenType.EXTRACT: lambda self, _: self._parse_extract(),
         TokenType.SUBSTRING: lambda self, _: self._parse_substring(),
+        TokenType.TRIM: lambda self, _: self._parse_trim(),
         **{
             token_type: lambda self, token_type: self._parse_cast(
                 self.STRICT_CAST and token_type == TokenType.CAST
@@ -1936,6 +1941,34 @@ class Parser:
         self.validate_expression(this, args)
 
         return this
+
+    def _parse_trim(self):
+        # https://www.w3resource.com/sql/character-functions/trim.php
+        # https://docs.oracle.com/javadb/10.8.3.0/ref/rreftrimfunc.html
+
+        position = None
+        collation = None
+
+        if self._match_set((TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH)):
+            position = self._prev.text.upper()
+
+        expression = self._parse_term()
+        if self._match(TokenType.FROM):
+            this = self._parse_term()
+        else:
+            this = expression
+            expression = None
+
+        if self._match(TokenType.COLLATE):
+            collation = self._parse_term()
+
+        return self.expression(
+            exp.Trim,
+            this=this,
+            position=position,
+            expression=expression,
+            collation=collation,
+        )
 
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):

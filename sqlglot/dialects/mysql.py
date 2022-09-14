@@ -49,6 +49,21 @@ def _str_to_date_sql(self, expression):
     return f"STR_TO_DATE({self.sql(expression.this)}, {date_format})"
 
 
+def _trim_sql(self, expression):
+    target = self.sql(expression, "this")
+    trim_type = self.sql(expression, "position")
+    remove_chars = self.sql(expression, "expression")
+
+    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't mysql-specific
+    if not remove_chars:
+        return self.trim_sql(expression)
+
+    trim_type = f"{trim_type} " if trim_type else ""
+    remove_chars = f"{remove_chars} " if remove_chars else ""
+    from_part = "FROM " if trim_type or remove_chars else ""
+    return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
+
+
 def _date_add(expression_class):
     def func(args):
         interval = list_get(args, 1)
@@ -160,4 +175,5 @@ class MySQL(Dialect):
             exp.DateTrunc: _date_trunc_sql,
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
+            exp.Trim: _trim_sql,
         }

@@ -36,7 +36,7 @@ def merge_derived_tables(expression):
 
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery)
-                _merge_joins(outer_scope, inner_scope)
+                _merge_joins(outer_scope, inner_scope, from_or_join)
                 _merge_expressions(outer_scope, inner_scope, alias)
                 _merge_where(outer_scope, inner_scope, from_or_join)
                 _merge_order(outer_scope, inner_scope)
@@ -135,23 +135,42 @@ def _merge_from(outer_scope, inner_scope, subquery):
     )
 
 
-def _merge_joins(outer_scope, inner_scope):
+def _merge_joins(outer_scope, inner_scope, from_or_join):
     """
     Merge JOIN clauses of inner query into outer query.
 
     Args:
         outer_scope (sqlglot.optimizer.scope.Scope)
         inner_scope (sqlglot.optimizer.scope.Scope)
+        from_or_join (exp.From|exp.Join)
     """
+
+    new_joins = []
     comma_joins = inner_scope.expression.args.get("from").expressions[1:]
-    for e in comma_joins:
-        outer_scope.expression.join(e, join_type="CROSS", copy=False)
-        outer_scope.add_source(e.alias_or_name, inner_scope.sources[e.alias_or_name])
+    for subquery in comma_joins:
+        new_joins.append(exp.Join(this=subquery, kind="CROSS"))
+        outer_scope.add_source(
+            subquery.alias_or_name, inner_scope.sources[subquery.alias_or_name]
+        )
 
     joins = inner_scope.expression.args.get("joins") or []
-    for e in joins:
-        outer_scope.expression.join(e, copy=False)
-        outer_scope.add_source(e.alias_or_name, inner_scope.sources[e.alias_or_name])
+    for join in joins:
+        new_joins.append(join)
+        outer_scope.add_source(
+            join.alias_or_name, inner_scope.sources[join.alias_or_name]
+        )
+
+    if new_joins:
+        outer_joins = outer_scope.expression.args.get("joins", [])
+
+        # Maintain the join order
+        if isinstance(from_or_join, exp.From):
+            position = 0
+        else:
+            position = outer_joins.index(from_or_join) + 1
+        outer_joins[position:position] = new_joins
+
+        outer_scope.expression.set("joins", outer_joins)
 
 
 def _merge_expressions(outer_scope, inner_scope, alias):

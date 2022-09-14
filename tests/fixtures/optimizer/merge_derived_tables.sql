@@ -30,19 +30,17 @@ SELECT x.a AS a, y.c AS c FROM x JOIN y ON x.b = y.b;
 SELECT a, c FROM (SELECT q.a, q.b FROM x AS q) AS x JOIN y AS q ON x.b = q.b;
 SELECT q_2.a AS a, q.c AS c FROM x AS q_2 JOIN y AS q ON q_2.b = q.b;
 
-
 -- Inner query has conflicting name in joined source
 SELECT x.a, q.c FROM (SELECT a, x.b FROM x JOIN y AS q ON x.b = q.b) AS x JOIN y AS q ON x.b = q.b;
-SELECT x.a AS a, q.c AS c FROM x JOIN y AS q ON x.b = q.b JOIN y AS q_2 ON x.b = q_2.b;
+SELECT x.a AS a, q.c AS c FROM x JOIN y AS q_2 ON x.b = q_2.b JOIN y AS q ON x.b = q.b;
 
 -- Inner query has multiple conflicting names
 SELECT x.a, q.c, r.c FROM (SELECT q.a, r.b FROM x AS q JOIN y AS r ON q.b = r.b) AS x JOIN y AS q ON x.b = q.b JOIN y AS r ON x.b = r.b;
-SELECT q_2.a AS a, q.c AS c, r.c AS c FROM x AS q_2 JOIN y AS q ON r_2.b = q.b JOIN y AS r ON r_2.b = r.b JOIN y AS r_2 ON q_2.b = r_2.b;
+SELECT q_2.a AS a, q.c AS c, r.c AS c FROM x AS q_2 JOIN y AS r_2 ON q_2.b = r_2.b JOIN y AS q ON r_2.b = q.b JOIN y AS r ON r_2.b = r.b;
 
 -- Inner queries have conflicting names with each other
 SELECT r.b FROM (SELECT b FROM x AS x) AS q JOIN (SELECT b FROM x) AS r ON q.b = r.b;
 SELECT x_2.b AS b FROM x AS x JOIN x AS x_2 ON x.b = x_2.b;
-
 
 -- WHERE clause in joined derived table is merged
 SELECT x.a, y.c FROM x JOIN (SELECT b, c FROM y WHERE c > 1) AS y;

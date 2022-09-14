@@ -3,10 +3,14 @@ import time
 
 from sqlglot import parse_one
 from sqlglot.executor.python import PythonExecutor
-from sqlglot.optimizer import optimize
+from sqlglot.optimizer import RULES, optimize
+from sqlglot.optimizer.merge_derived_tables import merge_derived_tables
 from sqlglot.planner import Plan
 
 logger = logging.getLogger("sqlglot")
+
+OPTIMIZER_RULES = list(RULES)
+OPTIMIZER_RULES.remove(merge_derived_tables)
 
 
 def execute(sql, schema, read=None):
@@ -28,7 +32,7 @@ def execute(sql, schema, read=None):
     """
     expression = parse_one(sql, read=read)
     now = time.time()
-    expression = optimize(expression, schema)
+    expression = optimize(expression, schema, rules=OPTIMIZER_RULES)
     logger.debug("Optimization finished: %f", time.time() - now)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = Plan(expression)

@@ -41,7 +41,7 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
                 3. {catalog: {db: {table: {col: type}}}}
         db (str): specify the default database, as might be set by a `USE DATABASE db` statement
         catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
-        rules (typing.Sequence): sequence of optimizer rules to use
+        rules (list): sequence of optimizer rules to use
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
     Returns:
         sqlglot.Expression: optimized expression
@@ -49,10 +49,14 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
     possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
     expression = expression.copy()
     for rule in rules:
+
+        # Find any additional rule parameters, beyond `expression`
+        rule_params = rule.__code__.co_varnames
         rule_kwargs = {
             param: possible_kwargs[param]
-            for param in rule.__code__.co_varnames
+            for param in rule_params
             if param in possible_kwargs
         }
+
         expression = rule(expression, **rule_kwargs)
     return expression

@@ -10,6 +10,8 @@ from sqlglot.planner import Plan
 logger = logging.getLogger("sqlglot")
 
 OPTIMIZER_RULES = list(RULES)
+
+# The executor needs isolated table selects
 OPTIMIZER_RULES.remove(merge_derived_tables)
 
 

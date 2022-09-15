@@ -44,7 +44,7 @@ def merge_derived_tables(expression):
 
 
 # If a derived table has these Select args, it can't be merged
-UNMERGABLE_ARGS = set(exp.Select.arg_types.keys()) - {
+UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
     "expressions",
     "from",
     "joins",

@@ -140,6 +140,7 @@ class TestOptimizer(unittest.TestCase):
 
     def test_merge_derived_tables(self):
         def optimize(expression, **kwargs):
+            expression = optimizer.qualify_tables.qualify_tables(expression)
             expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
             expression = optimizer.merge_derived_tables.merge_derived_tables(expression)
             return expression

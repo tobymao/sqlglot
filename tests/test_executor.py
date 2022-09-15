@@ -50,11 +50,12 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(Python().generate(parse_one("'x '''")), r"'x \''")
 
     def test_optimized_tpch(self):
-        for sql, optimized in self.sqls[0:20]:
-            a = self.cached_execute(sql)
-            b = self.conn.execute(optimized).fetchdf()
-            self.rename_anonymous(b, a)
-            assert_frame_equal(a, b)
+        for i, (sql, optimized) in enumerate(self.sqls[:20], start=1):
+            with self.subTest(f"{i}, {sql}"):
+                a = self.cached_execute(sql)
+                b = self.conn.execute(optimized).fetchdf()
+                self.rename_anonymous(b, a)
+                assert_frame_equal(a, b)
 
     def test_execute_tpch(self):
         def to_csv(expression):

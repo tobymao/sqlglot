@@ -267,6 +267,14 @@ class Expression(metaclass=_Expression):
             expression = expression.this
         return expression
 
+    def unalias(self):
+        """
+        Returns the inner expression if this is an Alias.
+        """
+        if isinstance(self, Alias):
+            return self.this
+        return self
+
     def unnest_operands(self):
         """
         Returns unnested operands as a tuple.
@@ -742,6 +750,10 @@ class Join(Expression):
     @property
     def side(self):
         return self.text("side").upper()
+
+    @property
+    def alias_or_name(self):
+        return self.this.alias_or_name
 
     def on(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """

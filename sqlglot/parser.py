@@ -328,13 +328,13 @@ class Parser:
         TokenType.IN: lambda self, this: self._parse_in(this),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: lambda self, this: self._parse_escape(
-            self.expression(exp.Like, this=this, expression=self._parse_type())
+            self.expression(exp.Like, this=this, expression=self._parse_bitwise())
         ),
         TokenType.ILIKE: lambda self, this: self._parse_escape(
-            self.expression(exp.ILike, this=this, expression=self._parse_type())
+            self.expression(exp.ILike, this=this, expression=self._parse_bitwise())
         ),
         TokenType.RLIKE: lambda self, this: self.expression(
-            exp.RegexpLike, this=this, expression=self._parse_type()
+            exp.RegexpLike, this=this, expression=self._parse_bitwise()
         ),
     }
 

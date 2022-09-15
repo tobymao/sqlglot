@@ -558,6 +558,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+                "oracle": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
                 "hive": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
@@ -572,6 +573,7 @@ class TestDialect(Validator):
                 "presto": "JSON_EXTRACT(x, 'y')",
             },
             write={
+                "oracle": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
             },
@@ -893,16 +895,8 @@ class TestDialect(Validator):
                 "spark": "FILTER(the_array, x -> x > 0)",
             },
         )
-        self.validate_all(
-            "SELECT a AS b FROM x GROUP BY b",
-            write={
-                "duckdb": "SELECT a AS b FROM x GROUP BY b",
-                "presto": "SELECT a AS b FROM x GROUP BY 1",
-                "hive": "SELECT a AS b FROM x GROUP BY 1",
-                "oracle": "SELECT a AS b FROM x GROUP BY 1",
-                "spark": "SELECT a AS b FROM x GROUP BY 1",
-            },
-        )
+
+    def test_limit(self):
         self.validate_all(
             "SELECT x FROM y LIMIT 10",
             write={
@@ -996,5 +990,35 @@ class TestDialect(Validator):
                 "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
                 "postgres": "CREATE TABLE t (b1 BYTEA, b2 BYTEA(1024), c1 TEXT, c2 TEXT(1024))",
                 "sqlite": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
+            },
+        )
+
+    def test_alias(self):
+        self.validate_all(
+            "SELECT a AS b FROM x GROUP BY b",
+            write={
+                "duckdb": "SELECT a AS b FROM x GROUP BY b",
+                "presto": "SELECT a AS b FROM x GROUP BY 1",
+                "hive": "SELECT a AS b FROM x GROUP BY 1",
+                "oracle": "SELECT a AS b FROM x GROUP BY 1",
+                "spark": "SELECT a AS b FROM x GROUP BY 1",
+            },
+        )
+        self.validate_all(
+            "SELECT y x FROM my_table t",
+            write={
+                "hive": "SELECT y AS x FROM my_table AS t",
+                "oracle": "SELECT y AS x FROM my_table t",
+                "postgres": "SELECT y AS x FROM my_table AS t",
+                "sqlite": "SELECT y AS x FROM my_table AS t",
+            },
+        )
+        self.validate_all(
+            "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
+            write={
+                "hive": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
+                "oracle": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 t JOIN cte2 WHERE cte1.a = cte2.c",
+                "postgres": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
+                "sqlite": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
             },
         )

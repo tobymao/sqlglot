@@ -1109,12 +1109,7 @@ class Parser:
         if not self._match(TokenType.JOIN):
             return None
 
-        this = (
-            self._parse_lateral()
-            if self._curr and self._curr.token_type == TokenType.LATERAL
-            else self._parse_table()
-        )
-        kwargs = {"this": this}
+        kwargs = {"this": self._parse_lateral() or self._parse_table()}
 
         if side:
             kwargs["side"] = side.text

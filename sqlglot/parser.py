@@ -1070,8 +1070,12 @@ class Parser:
         if not self._match(TokenType.LATERAL):
             return None
 
-        if not self._match(TokenType.VIEW):
-            self.raise_error("Expected VIEW after LATERAL")
+        subquery = self._parse_select(table=True)
+
+        if subquery:
+            return self.expression(exp.Lateral, this=subquery)
+        elif not self._match(TokenType.VIEW):
+            self.raise_error("Expected subquery or VIEW after LATERAL")
 
         outer = self._match(TokenType.OUTER)
 
@@ -1105,7 +1109,7 @@ class Parser:
         if not self._match(TokenType.JOIN):
             return None
 
-        kwargs = {"this": self._parse_table()}
+        kwargs = {"this": self._parse_lateral() or self._parse_table()}
 
         if side:
             kwargs["side"] = side.text

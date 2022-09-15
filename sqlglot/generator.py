@@ -630,6 +630,8 @@ class Generator:
 
     def lateral_sql(self, expression):
         this = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Subquery):
+            return f"LATERAL{self.sep()}{this}"
         op_sql = self.seg(
             f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}"
         )

@@ -207,7 +207,9 @@ class Scope:
                 c
                 for c in columns + external_columns
                 if not (
-                    c.find_ancestor(exp.Qualify, exp.Order) and c.name in named_outputs
+                    c.find_ancestor(exp.Qualify, exp.Order)
+                    and not c.table
+                    and c.name in named_outputs
                 )
             ]
         return self._columns

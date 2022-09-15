@@ -629,6 +629,14 @@ class TestDialect(Validator):
             },
         )
 
+    def test_lateral_subquery(self):
+        self.validate_identity(
+            "SELECT art FROM tbl1 INNER JOIN LATERAL (SELECT art FROM tbl2) AS tbl2 ON tbl1.art = tbl2.art"
+        )
+        self.validate_identity(
+            "SELECT * FROM tbl AS t LEFT JOIN LATERAL (SELECT * FROM b WHERE b.t_id = t.t_id) AS t ON TRUE"
+        )
+
     def test_set_operators(self):
         self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b",

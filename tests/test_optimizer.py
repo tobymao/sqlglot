@@ -138,6 +138,14 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
         )
 
+    def test_merge_derived_tables(self):
+        def optimize(expression, **kwargs):
+            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+            expression = optimizer.merge_derived_tables.merge_derived_tables(expression)
+            return expression
+
+        self.check_file("merge_derived_tables", optimize, schema=self.schema)
+
     def test_tpch(self):
         self.check_file(
             "tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True

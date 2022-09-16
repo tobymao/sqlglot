@@ -1990,6 +1990,15 @@ class Parser:
             self._match_r_paren()
             return this
 
+        # SQL spec defines an optional [ { IGNORE | RESPECT } NULLS ] OVER
+        # Some dialects choose to implement and some do not.
+        # https://dev.mysql.com/doc/refman/8.0/en/window-function-descriptions.html
+        null_treatment = ""
+        if self._match(TokenType.RESPECT_NULLS):
+            null_treatment = "RESPECT NULLS"
+        elif self._match(TokenType.IGNORE_NULLS):
+            null_treatment = "IGNORE NULLS"
+
         # bigquery select from window x AS (partition by ...)
         if alias:
             self._match(TokenType.ALIAS)
@@ -2037,6 +2046,7 @@ class Parser:
         return self.expression(
             exp.Window,
             this=this,
+            null_treatment=null_treatment,
             partition_by=partition,
             order=order,
             spec=spec,

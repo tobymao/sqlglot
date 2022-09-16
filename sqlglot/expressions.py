@@ -1590,6 +1590,7 @@ class TableSample(Expression):
 class Window(Expression):
     arg_types = {
         "this": True,
+        "null_treatment": False,
         "partition_by": False,
         "order": False,
         "spec": False,

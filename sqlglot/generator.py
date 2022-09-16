@@ -60,6 +60,7 @@ class Generator:
     }
 
     NULL_ORDERING_SUPPORTED = True
+    NULL_TREATMENT_IMPLEMENTED = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -798,18 +799,31 @@ class Generator:
 
     def window_sql(self, expression):
         this = self.sql(expression, "this")
+
+        null_treatment = expression.args.get("null_treatment")
+        if null_treatment and not self.NULL_TREATMENT_IMPLEMENTED:
+            self.unsupported(
+                "[ { IGNORE | RESPECT } NULLS ] in a WINDOW function is not supported by this dialect"
+            )
+        null_treatment = f" {null_treatment} " if null_treatment else " "
+
         partition = self.expressions(expression, key="partition_by", flat=True)
         partition = f"PARTITION BY {partition}" if partition else ""
+
         order = expression.args.get("order")
         order_sql = self.order_sql(order, flat=True) if order else ""
+
         partition_sql = partition + " " if partition and order else partition
+
         spec = expression.args.get("spec")
         spec_sql = " " + self.window_spec_sql(spec) if spec else ""
+
         alias = self.sql(expression, "alias")
+
         if expression.arg_key == "window":
             this = this = f"{self.seg('WINDOW')} {this} AS"
         else:
-            this = f"{this} OVER"
+            this = f"{this}{null_treatment}OVER"
 
         if not partition and not order and not spec and alias:
             return f"{this} {alias}"

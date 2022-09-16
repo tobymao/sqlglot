@@ -14,6 +14,7 @@ class Dialects(str, Enum):
 
     BIGQUERY = "bigquery"
     CLICKHOUSE = "clickhouse"
+    POSTHOG_CLICKHOUSE = "posthogclickhouse"
     DUCKDB = "duckdb"
     HIVE = "hive"
     MYSQL = "mysql"

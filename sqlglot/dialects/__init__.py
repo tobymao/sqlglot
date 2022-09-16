@@ -6,6 +6,7 @@ from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.dialects.oracle import Oracle
 from sqlglot.dialects.postgres import Postgres
+from sqlglot.dialects.posthog_clickhouse import PosthogClickHouse
 from sqlglot.dialects.presto import Presto
 from sqlglot.dialects.snowflake import Snowflake
 from sqlglot.dialects.spark import Spark

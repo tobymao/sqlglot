@@ -2126,6 +2126,10 @@ class Extract(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class PosthogProperty(Func):
+    pass
+
+
 class TimestampAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 

@@ -1912,6 +1912,10 @@ class IgnoreNulls(Expression):
     pass
 
 
+class RespectNulls(Expression):
+    pass
+
+
 # Functions
 class Func(Condition):
     """

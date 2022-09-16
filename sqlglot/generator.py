@@ -531,7 +531,7 @@ class Generator:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def table_sql(self, expression):
-        return ".".join(
+        table = ".".join(
             part
             for part in [
                 self.sql(expression, "catalog"),
@@ -540,6 +540,8 @@ class Generator:
             ]
             if part
         )
+
+        return f"{table}{self.query_modifiers(expression)}"
 
     def tablesample_sql(self, expression):
         if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):

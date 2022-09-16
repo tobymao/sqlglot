@@ -108,6 +108,13 @@ class TestTranspile(unittest.TestCase):
             "extract(month from '2021-01-31'::timestamp without time zone)",
             "EXTRACT(month FROM CAST('2021-01-31' AS TIMESTAMP))",
         )
+        self.validate(
+            "extract(week from current_date + 2)", "EXTRACT(week FROM CURRENT_DATE + 2)"
+        )
+        self.validate(
+            "EXTRACT(minute FROM datetime1 - datetime2)",
+            "EXTRACT(minute FROM datetime1 - datetime2)",
+        )
 
     def test_if(self):
         self.validate(

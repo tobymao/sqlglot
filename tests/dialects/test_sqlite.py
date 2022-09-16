@@ -71,10 +71,10 @@ class TestSQLite(Validator):
             },
         )
 
-        def test_window_null_treatment(self):
-            self.validate_all(
-                "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks",
-                write={
-                    "sqlite": "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks"
-                },
-            )
+    def test_window_null_treatment(self):
+        self.validate_all(
+            "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks",
+            write={
+                "sqlite": "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks"
+            },
+        )

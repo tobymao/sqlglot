@@ -1993,11 +1993,21 @@ class Parser:
         # SQL spec defines an optional [ { IGNORE | RESPECT } NULLS ] OVER
         # Some dialects choose to implement and some do not.
         # https://dev.mysql.com/doc/refman/8.0/en/window-function-descriptions.html
-        null_treatment = ""
-        if self._match(TokenType.RESPECT_NULLS):
-            null_treatment = "RESPECT NULLS"
-        elif self._match(TokenType.IGNORE_NULLS):
-            null_treatment = "IGNORE NULLS"
+
+        # There is some code above in _parse_lambda that handles
+        #   SELECT FIRST_VALUE(TABLE.COLUMN IGNORE|RESPECT NULLS) OVER ...
+
+        # The below changes handle
+        #   SELECT FIRST_VALUE(TABLE.COLUMN) IGNORE|RESPECT NULLS OVER ...
+
+        # Oracle allows both formats
+        #   (https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/img_text/first_value.html)
+        #   and Snowflake chose to do the same for familiarity
+        #   https://docs.snowflake.com/en/sql-reference/functions/first_value.html#usage-notes
+        if self._match(TokenType.IGNORE_NULLS):
+            this = self.expression(exp.IgnoreNulls, this=this)
+        elif self._match(TokenType.RESPECT_NULLS):
+            this = self.expression(exp.RespectNulls, this=this)
 
         # bigquery select from window x AS (partition by ...)
         if alias:
@@ -2046,7 +2056,6 @@ class Parser:
         return self.expression(
             exp.Window,
             this=this,
-            null_treatment=null_treatment,
             partition_by=partition,
             order=order,
             spec=spec,

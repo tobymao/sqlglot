@@ -167,3 +167,9 @@ class Column:
         new_expression = exp.Anonymous(this="startswith", expressions=[self.column_expression, value.column_expression])
         return Column(new_expression)
 
+    def rlike(self, regexp: str) -> "Column":
+        regexp = self.ensure_literal(regexp)
+        new_expression = exp.RegexpLike(this=self.column_expression, expression=regexp.expression)
+        return Column(new_expression)
+
+

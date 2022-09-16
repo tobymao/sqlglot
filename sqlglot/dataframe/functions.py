@@ -1,13 +1,15 @@
+from inspect import signature
+from itertools import chain
 import typing as t
 
 from sqlglot import expressions as glotexp
 from sqlglot.dataframe.column import Column
-from sqlglot.dataframe.util import ensure_strings, ensure_sqlglot_column
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.dataframe import DataFrame
 
-from pyspark.sql import functions
+
+_flatten = chain.from_iterable
 
 ColumnOrName = t.TypeVar("ColumnOrName", bound=t.Union["Column", str])
 ColumnOrPrimitive = t.TypeVar("ColumnOrPrimitive", bound=t.Union["Column", str, float, int, bool])
@@ -48,7 +50,9 @@ def col(column_name: t.Union[ColumnOrName, t.Any]) -> "Column":
 def lit(value: t.Optional[t.Any] = None) -> "Column":
     if value is None:
         return Column(glotexp.Null())
-    return Column(glotexp.Literal(this=str(value), is_string=isinstance(value, str)))
+    if isinstance(value, str):
+        return Column(glotexp.Literal(this=str(value), is_string=isinstance(value, str)))
+    return Column(value)
 
 
 def greatest(*cols: "ColumnOrName") -> "Column":
@@ -606,7 +610,7 @@ def date_diff(end: "ColumnOrName", start: "ColumnOrName") -> "Column":
 
 
 def add_months(start: "ColumnOrName", months: t.Union["ColumnOrName", int]) -> "Column":
-    return _invoke_anonymous_function(col, "ADD_MONTHS", months)
+    return _invoke_anonymous_function(start, "ADD_MONTHS", months)
 
 
 def months_between(date1: "ColumnOrName", date2: "ColumnOrName", roundOff: t.Optional[bool] = None) -> "Column":
@@ -781,7 +785,7 @@ def format_string(format: str, *cols: "ColumnOrName") -> "Column":
 
 
 def instr(col: "ColumnOrName", substr: str) -> "Column":
-    return _invoke_anonymous_function(col, "SHA2", lit(substr))
+    return _invoke_anonymous_function(col, "INSTR", lit(substr))
 
 
 def overlay(src: "ColumnOrName",
@@ -831,106 +835,429 @@ def rpad(col: "ColumnOrName", len: int, pad: str) -> "Column":
     return _invoke_anonymous_function(col, "RPAD", lit(len), lit(pad))
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def repeat(col: "ColumnOrName", n: int) -> "Column":
+    return _invoke_anonymous_function(col, "REPEAT", n)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def split(str: "ColumnOrName", pattern: str, limit: t.Optional[int] = None) -> "Column":
+    if limit is not None:
+        return _invoke_expression_over_column(str, glotexp.Split, expression=lit(pattern).expression, limit=lit(limit).expression)
+    return _invoke_expression_over_column(str, glotexp.Split, expression=lit(pattern).expression)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def regexp_extract(str: "ColumnOrName", pattern: str, idx: t.Optional[int] = None) -> "Column":
+    if idx is not None:
+        return _invoke_anonymous_function(str, "REGEXP_EXTRACT", lit(pattern), idx)
+    return _invoke_anonymous_function(str, "REGEXP_EXTRACT", lit(pattern))
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def regexp_replace(str: "ColumnOrName", pattern: str, replacement: str) -> "Column":
+    return _invoke_anonymous_function(str, "REGEXP_REPLACE", lit(pattern), lit(replacement))
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def initcap(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Initcap)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def soundex(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "SOUNDEX")
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def bin(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "BIN")
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def hex(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "HEX")
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def unhex(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "UNHEX")
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def length(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Length)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def octet_length(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "OCTET_LENGTH")
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def bit_length(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "BIT_LENGTH")
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def translate(srcCol: "ColumnOrName", matching: str, replace: str) -> "Column":
+    return _invoke_anonymous_function(srcCol, "TRANSLATE", lit(matching), lit(replace))
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def array(*cols: t.Union["ColumnOrName", t.Iterable["ColumnOrName"]]) -> "Column":
+    cols = _flatten(cols) if not isinstance(cols[0], (str, Column)) else cols
+    cols = [ensure_col(col).expression for col in cols]
+    return _invoke_expression_over_column(None, glotexp.Array, expressions=cols)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def create_map(*cols: t.Union["ColumnOrName", t.Iterable["ColumnOrName"]]) -> "Column":
+    cols = list(_flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols
+    return _invoke_expression_over_column(None, glotexp.Map, keys=array(cols[::2]).expression, values=array(cols[1::2]).expression)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def map_from_arrays(col1: "ColumnOrName", col2: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col1, "MAP_FROM_ARRAYS", col2)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def array_contains(col: "ColumnOrName", value: ColumnOrPrimitive) -> "Column":
+    value = value if isinstance(value, Column) else lit(value)
+    return _invoke_expression_over_column(col, glotexp.ArrayContains, expression=value.expression)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def arrays_overlap(col1: "ColumnOrName",  col2: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col1, "ARRAYS_OVERLAP", ensure_col(col2))
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def slice(
+    x: "ColumnOrName", start: t.Union["ColumnOrName", int], length: t.Union["ColumnOrName", int]
+) -> Column:
+    start = start if isinstance(start, Column) else lit(start)
+    length = length if isinstance(length, Column) else lit(length)
+    return _invoke_anonymous_function(x, "SLICE", start, length)
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def array_join(col: "ColumnOrName", delimiter: str, null_replacement: t.Optional[str] = None) -> Column:
+    if null_replacement is not None:
+        return _invoke_anonymous_function(col, "ARRAY_JOIN", lit(delimiter), lit(null_replacement))
+    return _invoke_anonymous_function(col, "ARRAY_JOIN", lit(delimiter))
 
 
-def sha2(col: "ColumnOrName", numBits: int) -> "Column":
-    col = col if isinstance(col, Column) else lit(col)
-    return _invoke_anonymous_function(col, "SHA2", numBits)
+def concat(*cols: "ColumnOrName") -> "Column":
+    if len(cols) == 1:
+        return _invoke_anonymous_function(cols[0], "CONCAT")
+    return _invoke_anonymous_function(cols[0], "CONCAT", *[ensure_col(x).expression for x in cols[1:]])
+
+
+def array_position(col: "ColumnOrName", value: ColumnOrPrimitive) -> "Column":
+    value = value if isinstance(value, Column) else lit(value)
+    return _invoke_anonymous_function(col, "ARRAY_POSITION", value)
+
+
+def element_at(col: "ColumnOrName", value: ColumnOrPrimitive) -> "Column":
+    value = value if isinstance(value, Column) else lit(value)
+    return _invoke_anonymous_function(col, "ELEMENT_AT", value)
+
+
+def array_remove(col: "ColumnOrName", value: "ColumnOrPrimitive") -> "Column":
+    value = value if isinstance(value, Column) else lit(value)
+    return _invoke_anonymous_function(col, "ARRAY_REMOVE", value)
+
+
+def array_distinct(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "ARRAY_DISTINCT")
+
+
+def array_intersect(col1: "ColumnOrName", col2: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col1, "ARRAY_INTERSECT", ensure_col(col2))
+
+
+def array_union(col1: "ColumnOrName", col2: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col1, "ARRAY_UNION", ensure_col(col2))
+
+
+def array_except(col1: "ColumnOrName", col2: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col1, "ARRAY_EXCEPT", ensure_col(col2))
+
+
+def explode(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Explode)
+
+
+def posexplode(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.Posexplode)
+
+
+def explode_outer(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "EXPLODE_OUTER")
+
+
+def posexplode_outer(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "POSEXPLODE_OUTER")
+
+
+def get_json_object(col: "ColumnOrName", path: str) -> "Column":
+    return _invoke_expression_over_column(col, glotexp.JSONExtract, path=lit(path).expression)
+
+
+def json_tuple(col: "ColumnOrName", *fields: str) -> "Column":
+    return _invoke_anonymous_function(col, "JSON_TUPLE", *[lit(field) for field in fields])
+
+
+def from_json(
+    col: "ColumnOrName",
+    schema: t.Union["Column", str],
+    options: t.Optional[t.Dict[str, str]] = None,
+) -> "Column":
+    schema = schema if isinstance(schema, Column) else lit(schema)
+    if options is not None:
+        options = create_map([lit(x) for x in _flatten(options.items())])
+        return _invoke_anonymous_function(col, "FROM_JSON", schema, options)
+    return _invoke_anonymous_function(col, "FROM_JSON", schema)
+
+
+def to_json(col: "ColumnOrName", options: t.Optional[t.Dict[str, str]] = None) -> "Column":
+    if options is not None:
+        options = create_map([lit(x) for x in _flatten(options.items())])
+        return _invoke_anonymous_function(col, "TO_JSON", options)
+    return _invoke_anonymous_function(col, "TO_JSON")
+
+
+def schema_of_json(col: "ColumnOrName", options: t.Optional[t.Dict[str, str]] = None) -> "Column":
+    if options is not None:
+        options = create_map([lit(x) for x in _flatten(options.items())])
+        return _invoke_anonymous_function(col, "SCHEMA_OF_JSON", options)
+    return _invoke_anonymous_function(col, "SCHEMA_OF_JSON")
+
+
+def schema_of_csv(col: "ColumnOrName", options: t.Optional[t.Dict[str, str]] = None) -> "Column":
+    if options is not None:
+        options = create_map([lit(x) for x in _flatten(options.items())])
+        return _invoke_anonymous_function(col, "SCHEMA_OF_CSV", options)
+    return _invoke_anonymous_function(col, "SCHEMA_OF_CSV")
+
+
+def to_csv(col: "ColumnOrName", options: t.Optional[t.Dict[str, str]] = None) -> "Column":
+    if options is not None:
+        options = create_map([lit(x) for x in _flatten(options.items())])
+        return _invoke_anonymous_function(col, "TO_CSV", options)
+    return _invoke_anonymous_function(col, "TO_CSV")
+
+
+def size(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "SIZE")
+
+
+def array_min(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "ARRAY_MIN")
+
+
+def array_max(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "ARRAY_MAX")
+
+
+def sort_array(col: "ColumnOrName", asc: t.Optional[bool] = None) -> "Column":
+    if asc is not None:
+        return _invoke_anonymous_function(col, "SORT_ARRAY", lit(asc))
+    return _invoke_anonymous_function(col, "SORT_ARRAY")
+
+
+def array_sort(col: "ColumnOrName") -> "Column":
+    return _invoke_expression_over_column(col, glotexp.ArraySort)
+
+
+def shuffle(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "SHUFFLE")
+
+
+def reverse(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "REVERSE")
+
+
+def flatten(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "FLATTEN")
+
+
+def map_keys(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "MAP_KEYS")
+
+
+def map_values(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "MAP_VALUES")
+
+
+def map_entries(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "MAP_ENTRIES")
+
+
+def map_from_entries(col: "ColumnOrName") -> "Column":
+    return _invoke_anonymous_function(col, "MAP_FROM_ENTRIES")
+
+
+def array_repeat(col: "ColumnOrName", count: t.Union["ColumnOrName", int]) -> "Column":
+    count = count if isinstance(count, Column) else lit(count)
+    return _invoke_anonymous_function(col, "ARRAY_REPEAT", count)
+
+
+def array_zip(*cols: "ColumnOrName") -> "Column":
+    if len(cols) == 1:
+        return _invoke_anonymous_function(cols[0], "ARRAY_ZIP")
+    return _invoke_anonymous_function(cols[0], "ARRAY_ZIP", *cols[1:])
+
+
+def map_concat(*cols: t.Union["ColumnOrName", t.Iterable["ColumnOrName"]]) -> "Column":
+    cols = list(flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols
+    if len(cols) == 1:
+       return _invoke_anonymous_function(cols[0], "MAP_CONCAT")
+    return _invoke_anonymous_function(cols[0], "MAP_CONCAT", *cols[1:])
+
+
+def sequence(
+    start: "ColumnOrName", stop: "ColumnOrName", step: t.Optional["ColumnOrName"] = None
+) -> "Column":
+    if step is not None:
+        return _invoke_anonymous_function(start, "SEQUENCE", stop, step)
+    return _invoke_anonymous_function(start, "SEQUENCE", stop)
+
+
+def from_csv(
+    col: "ColumnOrName",
+    schema: t.Union["Column", str],
+    options: t.Optional[t.Dict[str, str]] = None,
+) -> "Column":
+    schema = schema if isinstance(schema, Column) else lit(schema)
+    if options is not None:
+        options = create_map([lit(x) for x in _flatten(options.items())])
+        return _invoke_anonymous_function(col, "FROM_CSV", schema, options)
+    return _invoke_anonymous_function(col, "FROM_CSV", schema)
+
+
+def aggregate(col: "ColumnOrName",
+              initialValue: "ColumnOrName",
+              merge: t.Callable[["Column", "Column"], "Column"],
+              finish: t.Optional[t.Callable[[Column], Column]] = None,
+              accumulator_name: str = "acc",
+              target_row_name: str = "x") -> "Column":
+    merge_exp = glotexp.Lambda(
+        this=merge(Column(accumulator_name), Column(target_row_name)).expression,
+        expressions=[glotexp.Identifier(this=accumulator_name), glotexp.Identifier(this=target_row_name)]
+    )
+    if finish is not None:
+        finish_exp = glotexp.Lambda(
+            this=finish(Column(accumulator_name)).expression,
+            expressions=[glotexp.Identifier(this=accumulator_name)]
+        )
+        return _invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp), Column(finish_exp))
+    return _invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp))
+
+
+def transform(
+    col: "ColumnOrName",
+    f: t.Union[t.Callable[["Column"], "Column"], t.Callable[["Column", "Column"], "Column"]],
+    target_row_name: str = "x",
+    row_count_name: str = "i",
+) -> "Column":
+    num_arguments = len(signature(f).parameters)
+    expressions = [glotexp.Identifier(this=target_row_name)]
+    columns = [Column(target_row_name)]
+    if num_arguments > 1:
+        columns.append(Column(row_count_name))
+        expressions.append(glotexp.Identifier(this=row_count_name))
+
+    f_expression = glotexp.Lambda(
+        this=f(*columns).expression,
+        expressions=expressions
+    )
+    return _invoke_anonymous_function(col, "TRANSFORM", Column(f_expression))
+
+
+def exists(col: "ColumnOrName", f: t.Callable[["Column"], "Column"], target_row_name: str = "x") -> "Column":
+    f_expression = glotexp.Lambda(
+        this=f(Column(target_row_name)).expression,
+        expressions=[glotexp.Identifier(this=target_row_name)]
+    )
+    return _invoke_anonymous_function(col, "EXISTS", Column(f_expression))
+
+
+def forall(col: "ColumnOrName", f: t.Callable[["Column"], "Column"], target_row_name: str = "x") -> "Column":
+    f_expression = glotexp.Lambda(
+        this=f(Column(target_row_name)).expression,
+        expressions=[glotexp.Identifier(this=target_row_name)]
+    )
+
+    return _invoke_anonymous_function(col, "FORALL", Column(f_expression))
+
+
+def filter(
+    col: "ColumnOrName",
+    f: t.Union[t.Callable[["Column"], "Column"], t.Callable[["Column", "Column"], "Column"]],
+    target_row_name: str = "x",
+    row_count_name: str = "i"
+) -> Column:
+    num_arguments = len(signature(f).parameters)
+    expressions = [glotexp.Identifier(this=target_row_name)]
+    columns = [Column(target_row_name)]
+    if num_arguments > 1:
+        columns.append(Column(row_count_name))
+        expressions.append(glotexp.Identifier(this=row_count_name))
+
+    f_expression = glotexp.Lambda(
+        this=f(*columns).expression,
+        expressions=expressions
+    )
+    return _invoke_anonymous_function(col, "FILTER", Column(f_expression))
+
+
+def zip_with(
+    left: "ColumnOrName",
+    right: "ColumnOrName",
+    f: t.Callable[["Column", "Column"], "Column"],
+    left_name: str = "x",
+    right_name: str = "y",
+) -> Column:
+    f_expression = glotexp.Lambda(
+        this=f(Column(left_name), Column(right_name)).expression,
+        expressions=[glotexp.Identifier(this=left_name), glotexp.Identifier(this=right_name)]
+    )
+
+    return _invoke_anonymous_function(left, "ZIP_WITH", right, Column(f_expression))
+
+
+def transform_keys(
+    col: "ColumnOrName",
+    f: t.Union[t.Callable[["Column", "Column"], "Column"]],
+    key_name: str = "k",
+    value_name: str = "v"
+) -> Column:
+    f_expression = glotexp.Lambda(
+        this=f(Column(key_name), Column(value_name)).expression,
+        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)]
+    )
+    return _invoke_anonymous_function(col, "TRANSFORM_KEYS", Column(f_expression))
+
+
+def transform_values(
+    col: "ColumnOrName",
+    f: t.Union[t.Callable[["Column", "Column"], "Column"]],
+    key_name: str = "k",
+    value_name: str = "v"
+) -> Column:
+    f_expression = glotexp.Lambda(
+        this=f(Column(key_name), Column(value_name)).expression,
+        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)]
+    )
+    return _invoke_anonymous_function(col, "TRANSFORM_VALUES", Column(f_expression))
+
+
+def map_filter(
+    col: "ColumnOrName",
+    f: t.Union[t.Callable[["Column", "Column"], "Column"]],
+    key_name: str = "k",
+    value_name: str = "v"
+) -> Column:
+    f_expression = glotexp.Lambda(
+        this=f(Column(key_name), Column(value_name)).expression,
+        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)]
+    )
+    return _invoke_anonymous_function(col, "MAP_FILTER", Column(f_expression))
+
+
+def map_zip_with(
+        col1: "ColumnOrName",
+        col2: "ColumnOrName",
+        f: t.Union[t.Callable[["Column", "Column", "Column"], "Column"]],
+        key_name: str = "k",
+        value1: str = "v1",
+        value2: str = "v2",
+) -> "Column":
+    f_expression = glotexp.Lambda(
+        this=f(Column(key_name), Column(value1), Column(value2)).expression,
+        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value1), glotexp.Identifier(this=value2)]
+    )
+    return _invoke_anonymous_function(col1, "MAP_ZIP_WITH", col2, Column(f_expression))

@@ -29,8 +29,6 @@ class SQLite(Dialect):
         }
 
     class Generator(Generator):
-        NULL_TREATMENT_IMPLEMENTED = False
-
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "INTEGER",

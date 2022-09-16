@@ -1936,12 +1936,12 @@ class Parser:
         # Postgres supports the form: substring(string [from int] [for int])
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 
-        args = self._parse_csv(self._parse_term)
+        args = self._parse_csv(self._parse_bitwise)
 
         if self._match(TokenType.FROM):
-            args.append(self._parse_term())
+            args.append(self._parse_bitwise())
             if self._match(TokenType.FOR):
-                args.append(self._parse_term())
+                args.append(self._parse_bitwise())
 
         this = exp.Substring.from_arg_list(args)
         self.validate_expression(this, args)

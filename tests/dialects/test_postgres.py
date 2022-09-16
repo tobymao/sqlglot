@@ -72,6 +72,9 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')"
         )
+        self.validate_identity(
+            "SELECT SUBSTRING('bla' + 'foo' || 'bar' FROM 3 - 1 + 5 FOR 4 + SOME_FUNC(arg1, arg2))"
+        )
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
         self.validate_identity(
             "SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)"
@@ -126,6 +129,12 @@ class TestPostgres(Validator):
             write={
                 "hive": "SELECT * FROM x WHERE SUBSTRING(col1, 3 + LENGTH(col1) - 10, 10) IN (col2)",
                 "spark": "SELECT * FROM x WHERE SUBSTRING(col1, 3 + LENGTH(col1) - 10, 10) IN (col2)",
+            },
+        )
+        self.validate_all(
+            "SELECT SUBSTRING(CAST(2022 AS CHAR(4)) || LPAD(CAST(3 AS CHAR(2)), 2, '0') FROM 3 FOR 4)",
+            read={
+                "postgres": "SELECT SUBSTRING(2022::CHAR(4) || LPAD(3::CHAR(2), 2, '0') FROM 3 FOR 4)",
             },
         )
         self.validate_all(

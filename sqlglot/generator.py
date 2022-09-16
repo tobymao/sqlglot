@@ -541,7 +541,8 @@ class Generator:
             if part
         )
 
-        return f"{table}{self.query_modifiers(expression)}"
+        joins = self.expressions(expression, key="joins", sep="")
+        return f"{table}{joins}"
 
     def tablesample_sql(self, expression):
         if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):

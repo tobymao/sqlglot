@@ -995,7 +995,7 @@ QUERY_MODIFIERS = {
 
 
 class Table(Expression):
-    arg_types = {"this": True, "db": False, "catalog": False, **QUERY_MODIFIERS}
+    arg_types = {"this": True, "db": False, "catalog": False, "joins": False}
 
 
 class Union(Subqueryable, Expression):

@@ -1,7 +1,5 @@
 import unittest
 
-from pyspark.sql import functions
-
 from sqlglot import expressions as exp
 from sqlglot.dataframe import functions as SF
 
@@ -15,7 +13,7 @@ class TestDataframeFunctions(unittest.TestCase):
         test_float = SF.lit(10.10)
         self.assertEqual("10.1", test_float.sql())
         test_bool = SF.lit(False)
-        self.assertEqual("False", test_bool.sql())
+        self.assertEqual("false", test_bool.sql())
         test_null = SF.lit(None)
         self.assertEqual("NULL AS `NULL`", test_null.sql())
 
@@ -705,7 +703,7 @@ class TestDataframeFunctions(unittest.TestCase):
 
     def test_current_timestamp(self):
         col = SF.current_timestamp()
-        self.assertEqual("CURRENT_TIMESTAMP", col.sql())
+        self.assertEqual("CURRENT_TIMESTAMP()", col.sql())
 
     def test_date_format(self):
         col_str = SF.date_format("cola", 'MM/dd/yyy')
@@ -1107,62 +1105,476 @@ class TestDataframeFunctions(unittest.TestCase):
         col = SF.rpad(SF.col("cola"), 3, "#")
         self.assertEqual("RPAD(cola, 3, '#')", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_repeat(self):
+        col_str = SF.repeat("cola", 3)
+        self.assertEqual("REPEAT(cola, 3)", col_str.sql())
+        col = SF.repeat(SF.col("cola"), 3)
+        self.assertEqual("REPEAT(cola, 3)", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_split(self):
+        col_str = SF.split("cola", "[ABC]", 3)
+        self.assertEqual("SPLIT(cola, '[ABC]', 3)", col_str.sql())
+        col = SF.split(SF.col("cola"), "[ABC]", 3)
+        self.assertEqual("SPLIT(cola, '[ABC]', 3)", col.sql())
+        col_no_limit = SF.split("cola", "[ABC]")
+        self.assertEqual("SPLIT(cola, '[ABC]')", col_no_limit.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_regexp_extract(self):
+        col_str = SF.regexp_extract("cola", r'(\d+)-(\d+)', 1)
+        self.assertEqual("REGEXP_EXTRACT(cola, '(\\\d+)-(\\\d+)', 1)", col_str.sql())
+        col = SF.regexp_extract(SF.col("cola"), r'(\d+)-(\d+)', 1)
+        self.assertEqual("REGEXP_EXTRACT(cola, '(\\\d+)-(\\\d+)', 1)", col.sql())
+        col_no_idx = SF.regexp_extract(SF.col("cola"), r'(\d+)-(\d+)')
+        self.assertEqual("REGEXP_EXTRACT(cola, '(\\\d+)-(\\\d+)')", col_no_idx.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_regexp_replace(self):
+        col_str = SF.regexp_replace("cola", r'(\d+)', '--')
+        self.assertEqual("REGEXP_REPLACE(cola, '(\\\d+)', '--')", col_str.sql())
+        col = SF.regexp_replace(SF.col("cola"), r'(\d+)', '--')
+        self.assertEqual("REGEXP_REPLACE(cola, '(\\\d+)', '--')", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_initcap(self):
+        col_str = SF.initcap("cola")
+        self.assertEqual("INITCAP(cola)", col_str.sql())
+        col = SF.initcap(SF.col("cola"))
+        self.assertEqual("INITCAP(cola)", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_soundex(self):
+        col_str = SF.soundex("cola")
+        self.assertEqual("SOUNDEX(cola)", col_str.sql())
+        col = SF.soundex(SF.col("cola"))
+        self.assertEqual("SOUNDEX(cola)", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_bin(self):
+        col_str = SF.bin("cola")
+        self.assertEqual("BIN(cola)", col_str.sql())
+        col = SF.bin(SF.col("cola"))
+        self.assertEqual("BIN(cola)", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_hex(self):
+        col_str = SF.hex("cola")
+        self.assertEqual("HEX(cola)", col_str.sql())
+        col = SF.hex(SF.col("cola"))
+        self.assertEqual("HEX(cola)", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_unhex(self):
+        col_str = SF.unhex("cola")
+        self.assertEqual("UNHEX(cola)", col_str.sql())
+        col = SF.unhex(SF.col("cola"))
+        self.assertEqual("UNHEX(cola)", col.sql())
 
-    def test_month(self):
-        col_str = SF.month("cola")
-        self.assertEqual("MONTH(cola)", col_str.sql())
-        col = SF.month(SF.col("cola"))
-        self.assertEqual("MONTH(cola)", col.sql())
+    def test_length(self):
+        col_str = SF.length("cola")
+        self.assertEqual("LENGTH(cola)", col_str.sql())
+        col = SF.length(SF.col("cola"))
+        self.assertEqual("LENGTH(cola)", col.sql())
+
+    def test_octet_length(self):
+        col_str = SF.octet_length("cola")
+        self.assertEqual("OCTET_LENGTH(cola)", col_str.sql())
+        col = SF.octet_length(SF.col("cola"))
+        self.assertEqual("OCTET_LENGTH(cola)", col.sql())
+
+    def test_bit_length(self):
+        col_str = SF.bit_length("cola")
+        self.assertEqual("BIT_LENGTH(cola)", col_str.sql())
+        col = SF.bit_length(SF.col("cola"))
+        self.assertEqual("BIT_LENGTH(cola)", col.sql())
+
+    def test_translate(self):
+        col_str = SF.translate("cola", "abc", "xyz")
+        self.assertEqual("TRANSLATE(cola, 'abc', 'xyz')", col_str.sql())
+        col = SF.translate(SF.col("cola"), "abc", "xyz")
+        self.assertEqual("TRANSLATE(cola, 'abc', 'xyz')", col.sql())
+
+    def test_array(self):
+        col_str = SF.array("cola", "colb")
+        self.assertEqual("ARRAY(cola, colb)", col_str.sql())
+        col = SF.array(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAY(cola, colb)", col.sql())
+        col_array = SF.array(["cola", "colb"])
+        self.assertEqual("ARRAY(cola, colb)", col_array.sql())
+
+    def test_create_map(self):
+        col_str = SF.create_map("keya", "valuea", "keyb", "valueb")
+        self.assertEqual("MAP(keya, valuea, keyb, valueb)", col_str.sql())
+        col = SF.create_map(SF.col("keya"), SF.col("valuea"), SF.col("keyb"), SF.col("valueb"))
+        self.assertEqual("MAP(keya, valuea, keyb, valueb)", col.sql())
+        col_array = SF.create_map(["keya", "valuea", "keyb", "valueb"])
+        self.assertEqual("MAP(keya, valuea, keyb, valueb)", col_array.sql())
+
+    def test_map_from_arrays(self):
+        col_str = SF.map_from_arrays("cola", "colb")
+        self.assertEqual("MAP_FROM_ARRAYS(cola, colb)", col_str.sql())
+        col = SF.map_from_arrays(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("MAP_FROM_ARRAYS(cola, colb)", col.sql())
+
+    def test_array_contains(self):
+        col_str = SF.array_contains("cola", "test")
+        self.assertEqual("ARRAY_CONTAINS(cola, 'test')", col_str.sql())
+        col = SF.array_contains(SF.col("cola"), "test")
+        self.assertEqual("ARRAY_CONTAINS(cola, 'test')", col.sql())
+        col_as_value = SF.array_contains("cola", SF.col("colb"))
+        self.assertEqual("ARRAY_CONTAINS(cola, colb)", col_as_value.sql())
+
+    def test_arrays_overlap(self):
+        col_str = SF.arrays_overlap("cola", "colb")
+        self.assertEqual("ARRAYS_OVERLAP(cola, colb)", col_str.sql())
+        col = SF.arrays_overlap(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAYS_OVERLAP(cola, colb)", col.sql())
+
+    def test_slice(self):
+        col_str = SF.slice("cola", SF.col("colb"), SF.col("colc"))
+        self.assertEqual("SLICE(cola, colb, colc)", col_str.sql())
+        col = SF.slice(SF.col("cola"), SF.col("colb"), SF.col("colc"))
+        self.assertEqual("SLICE(cola, colb, colc)", col.sql())
+        col_ints = SF.slice("cola", 1, 10)
+        self.assertEqual("SLICE(cola, 1, 10)", col_ints.sql())
+
+    def test_array_join(self):
+        col_str = SF.array_join("cola", "-", "NULL_REPLACEMENT")
+        self.assertEqual("ARRAY_JOIN(cola, '-', 'NULL_REPLACEMENT')", col_str.sql())
+        col = SF.array_join(SF.col("cola"), "-", "NULL_REPLACEMENT")
+        self.assertEqual("ARRAY_JOIN(cola, '-', 'NULL_REPLACEMENT')", col.sql())
+        col_no_replacement = SF.array_join("cola", "-")
+        self.assertEqual("ARRAY_JOIN(cola, '-')", col_no_replacement.sql())
+
+    def test_concat(self):
+        col_str = SF.concat("cola", "colb")
+        self.assertEqual("CONCAT(cola, colb)", col_str.sql())
+        col = SF.concat(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("CONCAT(cola, colb)", col.sql())
+        col_single = SF.concat("cola")
+        self.assertEqual("CONCAT(cola)", col_single.sql())
+
+    def test_array_position(self):
+        col_str = SF.array_position("cola", SF.col("colb"))
+        self.assertEqual("ARRAY_POSITION(cola, colb)", col_str.sql())
+        col = SF.array_position(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAY_POSITION(cola, colb)", col.sql())
+        col_lit = SF.array_position("cola", "test")
+        self.assertEqual("ARRAY_POSITION(cola, 'test')", col_lit)
+
+    def test_element_at(self):
+        col_str = SF.element_at("cola", SF.col("colb"))
+        self.assertEqual("ELEMENT_AT(cola, colb)", col_str.sql())
+        col = SF.element_at(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ELEMENT_AT(cola, colb)", col.sql())
+        col_lit = SF.element_at("cola", "test")
+        self.assertEqual("ELEMENT_AT(cola, 'test')", col_lit)
+
+    def test_array_remove(self):
+        col_str = SF.array_remove("cola", SF.col("colb"))
+        self.assertEqual("ARRAY_REMOVE(cola, colb)", col_str.sql())
+        col = SF.array_remove(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAY_REMOVE(cola, colb)", col.sql())
+        col_lit = SF.array_remove("cola", "test")
+        self.assertEqual("ARRAY_REMOVE(cola, 'test')", col_lit)
+
+    def test_array_distinct(self):
+        col_str = SF.array_distinct("cola")
+        self.assertEqual("ARRAY_DISTINCT(cola)", col_str.sql())
+        col = SF.array_distinct(SF.col("cola"))
+        self.assertEqual("ARRAY_DISTINCT(cola)", col.sql())
+
+    def test_array_intersect(self):
+        col_str = SF.array_intersect("cola", "colb")
+        self.assertEqual("ARRAY_INTERSECT(cola, colb)", col_str.sql())
+        col = SF.array_intersect(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAY_INTERSECT(cola, colb)", col.sql())
+
+    def test_array_union(self):
+        col_str = SF.array_union("cola", "colb")
+        self.assertEqual("ARRAY_UNION(cola, colb)", col_str.sql())
+        col = SF.array_union(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAY_UNION(cola, colb)", col.sql())
+
+    def test_array_except(self):
+        col_str = SF.array_except("cola", "colb")
+        self.assertEqual("ARRAY_EXCEPT(cola, colb)", col_str.sql())
+        col = SF.array_except(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAY_EXCEPT(cola, colb)", col.sql())
+
+    def test_explode(self):
+        col_str = SF.explode("cola")
+        self.assertEqual("EXPLODE(cola)", col_str.sql())
+        col = SF.explode(SF.col("cola"))
+        self.assertEqual("EXPLODE(cola)", col.sql())
+
+    def test_pos_explode(self):
+        col_str = SF.posexplode("cola")
+        self.assertEqual("POSEXPLODE(cola)", col_str.sql())
+        col = SF.posexplode(SF.col("cola"))
+        self.assertEqual("POSEXPLODE(cola)", col.sql())
+
+    def test_explode_outer(self):
+        col_str = SF.explode_outer("cola")
+        self.assertEqual("EXPLODE_OUTER(cola)", col_str.sql())
+        col = SF.explode_outer(SF.col("cola"))
+        self.assertEqual("EXPLODE_OUTER(cola)", col.sql())
+
+    def test_posexplode_outer(self):
+        col_str = SF.posexplode_outer("cola")
+        self.assertEqual("POSEXPLODE_OUTER(cola)", col_str.sql())
+        col = SF.posexplode_outer(SF.col("cola"))
+        self.assertEqual("POSEXPLODE_OUTER(cola)", col.sql())
+
+    def test_get_json_object(self):
+        col_str = SF.get_json_object("cola", "$.f1")
+        self.assertEqual("GET_JSON_OBJECT(cola, '$.f1')", col_str.sql())
+        col = SF.get_json_object(SF.col("cola"), "$.f1")
+        self.assertEqual("GET_JSON_OBJECT(cola, '$.f1')", col.sql())
+
+    def test_json_tuple(self):
+        col_str = SF.json_tuple("cola", "f1", "f2")
+        self.assertEqual("JSON_TUPLE(cola, 'f1', 'f2')", col_str.sql())
+        col = SF.json_tuple(SF.col("cola"), "f1", "f2")
+        self.assertEqual("JSON_TUPLE(cola, 'f1', 'f2')", col.sql())
+
+    def test_from_json(self):
+        col_str = SF.from_json("cola", "cola INT", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("FROM_JSON(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        col = SF.from_json(SF.col("cola"), "cola INT", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("FROM_JSON(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        col_no_option = SF.from_json("cola", "cola INT")
+        self.assertEqual("FROM_JSON(cola, 'cola INT')", col_no_option.sql())
+
+    def test_to_json(self):
+        col_str = SF.to_json("cola", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("TO_JSON(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        col = SF.to_json(SF.col("cola"), dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("TO_JSON(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        col_no_option = SF.to_json("cola")
+        self.assertEqual("TO_JSON(cola)", col_no_option.sql())
+
+    def test_schema_of_json(self):
+        col_str = SF.schema_of_json("cola", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("SCHEMA_OF_JSON(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        col = SF.schema_of_json(SF.col("cola"), dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("SCHEMA_OF_JSON(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        col_no_option = SF.schema_of_json("cola")
+        self.assertEqual("SCHEMA_OF_JSON(cola)", col_no_option.sql())
+
+    def test_schema_of_csv(self):
+        col_str = SF.schema_of_csv("cola", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("SCHEMA_OF_CSV(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        col = SF.schema_of_csv(SF.col("cola"), dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("SCHEMA_OF_CSV(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        col_no_option = SF.schema_of_csv("cola")
+        self.assertEqual("SCHEMA_OF_CSV(cola)", col_no_option.sql())
+
+    def test_to_csv(self):
+        col_str = SF.to_csv("cola", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("TO_CSV(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        col = SF.to_csv(SF.col("cola"), dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("TO_CSV(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        col_no_option = SF.to_csv("cola")
+        self.assertEqual("TO_CSV(cola)", col_no_option.sql())
+
+    def test_size(self):
+        col_str = SF.size("cola")
+        self.assertEqual("SIZE(cola)", col_str.sql())
+        col = SF.size(SF.col("cola"))
+        self.assertEqual("SIZE(cola)", col.sql())
+
+    def test_array_min(self):
+        col_str = SF.array_min("cola")
+        self.assertEqual("ARRAY_MIN(cola)", col_str.sql())
+        col = SF.array_min(SF.col("cola"))
+        self.assertEqual("ARRAY_MIN(cola)", col.sql())
+
+    def test_array_max(self):
+        col_str = SF.array_max("cola")
+        self.assertEqual("ARRAY_MAX(cola)", col_str.sql())
+        col = SF.array_max(SF.col("cola"))
+        self.assertEqual("ARRAY_MAX(cola)", col.sql())
+
+    def test_sort_array(self):
+        col_str = SF.sort_array("cola", False)
+        self.assertEqual("SORT_ARRAY(cola, false)", col_str.sql())
+        col = SF.sort_array(SF.col("cola"), False)
+        self.assertEqual("SORT_ARRAY(cola, false)", col.sql())
+        col_no_sort = SF.sort_array("cola")
+        self.assertEqual("SORT_ARRAY(cola)", col_no_sort.sql())
+
+    def test_array_sort(self):
+        col_str = SF.array_sort("cola")
+        self.assertEqual("ARRAY_SORT(cola)", col_str.sql())
+        col = SF.array_sort(SF.col("cola"))
+        self.assertEqual("ARRAY_SORT(cola)", col.sql())
+
+    def test_reverse(self):
+        col_str = SF.reverse("cola")
+        self.assertEqual("REVERSE(cola)", col_str.sql())
+        col = SF.reverse(SF.col("cola"))
+        self.assertEqual("REVERSE(cola)", col.sql())
+
+    def test_flatten(self):
+        col_str = SF.flatten("cola")
+        self.assertEqual("FLATTEN(cola)", col_str.sql())
+        col = SF.flatten(SF.col("cola"))
+        self.assertEqual("FLATTEN(cola)", col.sql())
+
+    def test_map_keys(self):
+        col_str = SF.map_keys("cola")
+        self.assertEqual("MAP_KEYS(cola)", col_str.sql())
+        col = SF.map_keys(SF.col("cola"))
+        self.assertEqual("MAP_KEYS(cola)", col.sql())
+
+    def test_map_values(self):
+        col_str = SF.map_values("cola")
+        self.assertEqual("MAP_VALUES(cola)", col_str.sql())
+        col = SF.map_values(SF.col("cola"))
+        self.assertEqual("MAP_VALUES(cola)", col.sql())
+
+    def test_map_entries(self):
+        col_str = SF.map_entries("cola")
+        self.assertEqual("MAP_ENTRIES(cola)", col_str.sql())
+        col = SF.map_entries(SF.col("cola"))
+        self.assertEqual("MAP_ENTRIES(cola)", col.sql())
+
+    def test_map_from_entries(self):
+        col_str = SF.map_from_entries("cola")
+        self.assertEqual("MAP_FROM_ENTRIES(cola)", col_str.sql())
+        col = SF.map_from_entries(SF.col("cola"))
+        self.assertEqual("MAP_FROM_ENTRIES(cola)", col.sql())
+
+    def test_array_repeat(self):
+        col_str = SF.array_repeat("cola", 2)
+        self.assertEqual("ARRAY_REPEAT(cola, 2)", col_str.sql())
+        col = SF.array_repeat(SF.col("cola"), 2)
+        self.assertEqual("ARRAY_REPEAT(cola, 2)", col.sql())
+
+    def test_array_zip(self):
+        col_str = SF.array_zip("cola", "colb")
+        self.assertEqual("ARRAY_ZIP(cola, colb)", col_str.sql())
+        col = SF.array_zip(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("ARRAY_ZIP(cola, colb)", col.sql())
+        col_single = SF.array_zip("cola")
+        self.assertEqual("ARRAY_ZIP(cola)", col_single.sql())
+
+    def test_map_concat(self):
+        col_str = SF.map_concat("cola", "colb")
+        self.assertEqual("MAP_CONCAT(cola, colb)", col_str.sql())
+        col = SF.map_concat(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("MAP_CONCAT(cola, colb)", col.sql())
+        col_single = SF.map_concat("cola")
+        self.assertEqual("MAP_CONCAT(cola)", col_single.sql())
+
+    def test_sequence(self):
+        col_str = SF.sequence("cola", "colb", "colc")
+        self.assertEqual("SEQUENCE(cola, colb, colc)", col_str.sql())
+        col = SF.sequence(SF.col("cola"), SF.col("colb"), SF.col("colc"))
+        self.assertEqual("SEQUENCE(cola, colb, colc)", col.sql())
+        col_no_step = SF.sequence("cola", "colb")
+        self.assertEqual("SEQUENCE(cola, colb)", col_no_step.sql())
+
+    def test_from_csv(self):
+        col_str = SF.from_csv("cola", "cola INT", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("FROM_CSV(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        col = SF.from_csv(SF.col("cola"), "cola INT", dict(timestampFormat="dd/MM/yyyy"))
+        self.assertEqual("FROM_CSV(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        col_no_option = SF.from_csv("cola", "cola INT")
+        self.assertEqual("FROM_CSV(cola, 'cola INT')", col_no_option.sql())
+
+    def test_aggregate(self):
+        col_str = SF.aggregate("cola", SF.lit(0), lambda acc, x: acc + x, lambda acc: acc * 2)
+        self.assertEqual("AGGREGATE(cola, 0, (acc, x) -> acc + x, acc -> acc * 2)", col_str.sql())
+        col = SF.aggregate(SF.col("cola"), SF.lit(0), lambda acc, x: acc + x, lambda acc: acc * 2)
+        self.assertEqual("AGGREGATE(cola, 0, (acc, x) -> acc + x, acc -> acc * 2)", col.sql())
+        col_no_finish = SF.aggregate("cola", SF.lit(0), lambda acc, x: acc + x)
+        self.assertEqual("AGGREGATE(cola, 0, (acc, x) -> acc + x)", col_no_finish.sql())
+        col_custom_names = SF.aggregate(
+            "cola",
+            SF.lit(0),
+            lambda accumulator, target: accumulator + target,
+            lambda accumulator: accumulator * 2,
+            "accumulator",
+            "target"
+        )
+        self.assertEqual("AGGREGATE(cola, 0, (accumulator, target) -> accumulator + target, accumulator -> accumulator * 2)", col_custom_names.sql())
+
+
+    def test_transform(self):
+        col_str = SF.transform("cola", lambda x: x * 2)
+        self.assertEqual("TRANSFORM(cola, x -> x * 2)", col_str.sql())
+        col = SF.transform(SF.col("cola"), lambda x, i: x * i)
+        self.assertEqual("TRANSFORM(cola, (x, i) -> x * i)", col.sql())
+        col_custom_names = SF.transform(
+            "cola",
+            lambda target, row_count: target * row_count,
+            "target",
+            "row_count"
+        )
+
+        self.assertEqual("TRANSFORM(cola, (target, row_count) -> target * row_count)", col_custom_names.sql())
+
+    def test_exists(self):
+        col_str = SF.exists("cola", lambda x: x % 2 == 0)
+        self.assertEqual("EXISTS(cola, x -> x % 2 = 0)", col_str.sql())
+        col = SF.exists(SF.col("cola"), lambda x: x % 2 == 0)
+        self.assertEqual("EXISTS(cola, x -> x % 2 = 0)", col.sql())
+        col_custom_name = SF.exists(
+            "cola",
+            lambda target: target > 0,
+            "target"
+        )
+        self.assertEqual("EXISTS(cola, target -> target > 0)", col_custom_name.sql())
+
+    def test_forall(self):
+        col_str = SF.forall("cola", lambda x: x.rlike("foo"))
+        self.assertEqual("FORALL(cola, x -> RLIKE(x, 'foo'))", col_str.sql())
+        col = SF.forall(SF.col("cola"), lambda x: x.rlike("foo"))
+        self.assertEqual("FORALL(cola, x -> RLIKE(x, 'foo'))", col.sql())
+        col_custom_name = SF.forall(
+            "cola",
+            lambda target: target.rlike('foo'),
+            "target"
+        )
+        self.assertEqual("FORALL(cola, target -> RLIKE(target, 'foo'))", col_custom_name.sql())
+
+    def test_filter(self):
+        col_str = SF.filter("cola", lambda x: SF.month(SF.to_date(x)) > SF.lit(6))
+        self.assertEqual("FILTER(cola, x -> MONTH(TO_DATE(x)) > 6)", col_str.sql())
+        col = SF.filter(SF.col("cola"), lambda x, i: SF.month(SF.to_date(x)) > SF.lit(i))
+        self.assertEqual("FILTER(cola, (x, i) -> MONTH(TO_DATE(x)) > i)", col.sql())
+        col_custom_names = SF.filter(
+            "cola",
+            lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count),
+            "target",
+            "row_count"
+        )
+
+        self.assertEqual("FILTER(cola, (target, row_count) -> MONTH(TO_DATE(target)) > row_count)", col_custom_names.sql())
+
+    def test_zip_with(self):
+        col_str = SF.zip_with("cola", "colb", lambda x, y: SF.concat_ws("_", x, y))
+        self.assertEqual("ZIP_WITH(cola, colb, (x, y) -> CONCAT_WS('_', x, y))", col_str.sql())
+        col = SF.zip_with(SF.col("cola"), SF.col("colb"), lambda x, y: SF.concat_ws("_", x, y))
+        self.assertEqual("ZIP_WITH(cola, colb, (x, y) -> CONCAT_WS('_', x, y))", col.sql())
+        col_custom_names = SF.zip_with("cola", "colb", lambda l, r: SF.concat_ws("_", l, r), "l", "r")
+        self.assertEqual("ZIP_WITH(cola, colb, (l, r) -> CONCAT_WS('_', l, r))", col_custom_names.sql())
+
+    def test_transform_keys(self):
+        col_str = SF.transform_keys("cola", lambda k, v: SF.upper(k))
+        self.assertEqual("TRANSFORM_KEYS(cola, (k, v) -> UPPER(k))", col_str.sql())
+        col = SF.transform_keys(SF.col("cola"), lambda k, v: SF.upper(k))
+        self.assertEqual("TRANSFORM_KEYS(cola, (k, v) -> UPPER(k))", col.sql())
+        col_custom_names = SF.transform_keys("cola", lambda key, _: SF.upper(key), "key", "_")
+        self.assertEqual("TRANSFORM_KEYS(cola, (key, _) -> UPPER(key))", col_custom_names.sql())
+
+    def test_transform_values(self):
+        col_str = SF.transform_values("cola", lambda k, v: SF.upper(v))
+        self.assertEqual("TRANSFORM_VALUES(cola, (k, v) -> UPPER(v))", col_str.sql())
+        col = SF.transform_values(SF.col("cola"), lambda k, v: SF.upper(v))
+        self.assertEqual("TRANSFORM_VALUES(cola, (k, v) -> UPPER(v))", col.sql())
+        col_custom_names = SF.transform_values("cola", lambda _, value: SF.upper(value), "_", "value")
+        self.assertEqual("TRANSFORM_VALUES(cola, (_, value) -> UPPER(value))", col_custom_names.sql())
+
+    def test_map_filter(self):
+        col_str = SF.map_filter("cola", lambda k, v: k > v)
+        self.assertEqual("MAP_FILTER(cola, (k, v) -> k > v)", col_str.sql())
+        col = SF.map_filter(SF.col("cola"), lambda k, v: k > v)
+        self.assertEqual("MAP_FILTER(cola, (k, v) -> k > v)", col.sql())
+        col_custom_names = SF.map_filter("cola", lambda key, value: key > value, "key", "value")
+        self.assertEqual("MAP_FILTER(cola, (key, value) -> key > value)", col_custom_names.sql())

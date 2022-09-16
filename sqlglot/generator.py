@@ -800,14 +800,20 @@ class Generator:
 
     def window_sql(self, expression):
         this = self.sql(expression, "this")
+
         partition = self.expressions(expression, key="partition_by", flat=True)
         partition = f"PARTITION BY {partition}" if partition else ""
+
         order = expression.args.get("order")
         order_sql = self.order_sql(order, flat=True) if order else ""
+
         partition_sql = partition + " " if partition and order else partition
+
         spec = expression.args.get("spec")
         spec_sql = " " + self.window_spec_sql(spec) if spec else ""
+
         alias = self.sql(expression, "alias")
+
         if expression.arg_key == "window":
             this = this = f"{self.seg('WINDOW')} {this} AS"
         else:
@@ -1018,6 +1024,9 @@ class Generator:
 
     def ignorenulls_sql(self, expression):
         return f"{self.sql(expression, 'this')} IGNORE NULLS"
+
+    def respectnulls_sql(self, expression):
+        return f"{self.sql(expression, 'this')} RESPECT NULLS"
 
     def intdiv_sql(self, expression):
         return self.sql(

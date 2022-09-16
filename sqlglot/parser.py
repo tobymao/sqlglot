@@ -1032,9 +1032,10 @@ class Parser:
         return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
 
     def _parse_query_modifiers(self, this):
+        if isinstance(this, exp.Table):
+            this.set("joins", self._parse_joins())
+            return
         if not isinstance(this, (exp.Subquery, exp.Subqueryable)):
-            if isinstance(this, exp.Table):
-                this.set("joins", self._parse_joins())
             return
 
         for key, parser in self.QUERY_MODIFIER_PARSERS.items():

@@ -541,9 +541,7 @@ class Generator:
             if part
         )
 
-        joins = csv(
-            *[self.sql(sql) for sql in expression.args.get("joins", [])], sep=""
-        )
+        joins = self.expressions(expression, key="joins", sep="")
         return f"{table}{joins}"
 
     def tablesample_sql(self, expression):

@@ -1904,7 +1904,7 @@ class Parser:
         if not self._match(TokenType.FROM):
             self.raise_error("Expected FROM after EXTRACT", self._prev)
 
-        return self.expression(exp.Extract, this=this, expression=self._parse_type())
+        return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
 
     def _parse_cast(self, strict):
         this = self._parse_conjunction()

@@ -1034,9 +1034,7 @@ class Parser:
     def _parse_query_modifiers(self, this):
         if not isinstance(this, (exp.Subquery, exp.Subqueryable)):
             if isinstance(this, exp.Table):
-                joins = self._parse_joins()
-                if joins:
-                    this.set("joins", joins)
+                this.set("joins", self._parse_joins())
             return
 
         for key, parser in self.QUERY_MODIFIER_PARSERS.items():

@@ -885,10 +885,6 @@ class Reference(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
-class Table(Expression):
-    arg_types = {"this": True, "db": False, "catalog": False}
-
-
 class Tuple(Expression):
     arg_types = {"expressions": False}
 
@@ -996,6 +992,10 @@ QUERY_MODIFIERS = {
     "limit": False,
     "offset": False,
 }
+
+
+class Table(Expression):
+    arg_types = {"this": True, "db": False, "catalog": False, "joins": False}
 
 
 class Union(Subqueryable, Expression):

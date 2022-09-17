@@ -1032,6 +1032,9 @@ class Parser:
         return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
 
     def _parse_query_modifiers(self, this):
+        if isinstance(this, exp.Table):
+            this.set("joins", self._parse_joins())
+            return
         if not isinstance(this, (exp.Subquery, exp.Subqueryable)):
             return
 
@@ -1904,7 +1907,7 @@ class Parser:
         if not self._match(TokenType.FROM):
             self.raise_error("Expected FROM after EXTRACT", self._prev)
 
-        return self.expression(exp.Extract, this=this, expression=self._parse_type())
+        return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
 
     def _parse_cast(self, strict):
         this = self._parse_conjunction()
@@ -1936,12 +1939,12 @@ class Parser:
         # Postgres supports the form: substring(string [from int] [for int])
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 
-        args = self._parse_csv(self._parse_term)
+        args = self._parse_csv(self._parse_bitwise)
 
         if self._match(TokenType.FROM):
-            args.append(self._parse_term())
+            args.append(self._parse_bitwise())
             if self._match(TokenType.FOR):
-                args.append(self._parse_term())
+                args.append(self._parse_bitwise())
 
         this = exp.Substring.from_arg_list(args)
         self.validate_expression(this, args)

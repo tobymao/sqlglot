@@ -38,6 +38,7 @@ class TokenType(AutoName):
     DARROW = auto()
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
+    LR_ARROW = auto()
     ANNOTATION = auto()
     DOLLAR = auto()
 

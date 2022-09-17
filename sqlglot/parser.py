@@ -1077,9 +1077,8 @@ class Parser:
 
         if subquery:
             return self.expression(exp.Lateral, this=subquery)
-        elif not self._match(TokenType.VIEW):
-            self.raise_error("Expected subquery or VIEW after LATERAL")
 
+        self._match(TokenType.VIEW)
         outer = self._match(TokenType.OUTER)
 
         return self.expression(
@@ -1138,6 +1137,11 @@ class Parser:
         )
 
     def _parse_table(self, schema=False):
+        lateral = self._parse_lateral()
+
+        if lateral:
+            return lateral
+
         unnest = self._parse_unnest()
 
         if unnest:

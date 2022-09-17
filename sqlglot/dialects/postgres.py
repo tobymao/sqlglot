@@ -32,6 +32,22 @@ def _date_add_sql(kind):
     return func
 
 
+def _distance_sql(self, expression):
+    return self.binary(expression, "<->")
+
+
+def _lateral_sql(self, expression):
+    this = self.sql(expression, "this")
+    if isinstance(expression.this, exp.Subquery):
+        return f"LATERAL{self.sep()}{this}"
+    alias = expression.args["alias"]
+    table = alias.name
+    table = f" {table}" if table else table
+    columns = self.expressions(alias, key="columns", flat=True)
+    columns = f" AS {columns}" if columns else ""
+    return f"LATERAL{self.sep()}{this}{table}{columns}"
+
+
 def _substring_sql(self, expression):
     this = self.sql(expression, "this")
     start = self.sql(expression, "start")
@@ -95,6 +111,7 @@ class Postgres(Dialect):
     class Tokenizer(Tokenizer):
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "<->": TokenType.LR_ARROW,
             "SERIAL": TokenType.AUTO_INCREMENT,
             "UUID": TokenType.UUID,
             "FOR": TokenType.FOR,
@@ -102,11 +119,14 @@ class Postgres(Dialect):
 
     class Parser(Parser):
         STRICT_CAST = False
+
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "TO_TIMESTAMP": format_time_lambda(exp.StrToTime, "postgres"),
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
         }
+
+        FACTOR = {**Parser.FACTOR, TokenType.LR_ARROW: exp.Distance}
 
     class Generator(Generator):
         TYPE_MAPPING = {
@@ -131,6 +151,8 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
+            exp.Distance: _distance_sql,
+            exp.Lateral: _lateral_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",

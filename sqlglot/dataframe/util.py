@@ -9,6 +9,10 @@ from sqlglot.helper import ensure_list
 flatten = chain.from_iterable
 
 
+def ensure_col(value: t.Union["ColumnOrName", int, float]):
+    return Column(value)
+
+
 def ensure_strings(args: t.Iterable[t.Union[str, Column]]) -> t.List[str]:
     return [x.expression if isinstance(x, Column) else x for x in args]
 
@@ -34,3 +38,13 @@ def ensure_sqlglot_column(args: t.Union[t.List[t.Union[str, Column, exp.Column]]
 
 def convert_join_type(join_type: str) -> str:
     return join_type.replace("_", " ")
+
+
+def _invoke_expression_over_column(column: t.Union["ColumnOrName", None], callable_expression: t.Callable, **kwargs) -> "Column":
+    column = ensure_col(column) if column is not None else None
+    new_expression = (
+        callable_expression(this=column.column_expression, **kwargs)
+        if column is not None
+        else callable_expression(**kwargs)
+    )
+    return Column(new_expression)

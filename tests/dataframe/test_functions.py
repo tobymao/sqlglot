@@ -1,3 +1,4 @@
+import datetime
 import unittest
 
 from sqlglot import expressions as exp
@@ -16,6 +17,10 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("false", test_bool.sql())
         test_null = SF.lit(None)
         self.assertEqual("NULL AS `NULL`", test_null.sql())
+        test_date = SF.lit(datetime.date(2022, 1, 1))
+        self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
+        test_datetime = SF.lit(datetime.datetime(2022, 1, 1, 1, 1, 1))
+        self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
 
     def test_col(self):
         test_col = SF.col("cola")
@@ -32,6 +37,10 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("true", test_bool.sql())
         test_array = SF.col([1, 2, 3])
         self.assertEqual("ARRAY(1, 2, 3)", test_array.sql())
+        test_date = SF.col(datetime.date(2022, 1, 1))
+        self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
+        test_datetime = SF.col(datetime.datetime(2022, 1, 1, 1, 1, 1))
+        self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
 
     def test_asc(self):
         asc_str = SF.asc("cola")

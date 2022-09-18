@@ -149,6 +149,17 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "TRY_CAST(a AS DOUBLE)",
+            read={
+                "postgres": "CAST(a AS DOUBLE PRECISION)",
+            },
+            write={
+                "duckdb": "TRY_CAST(a AS DOUBLE)",
+                "postgres": "CAST(a AS DOUBLE PRECISION)",
+            },
+        )
+
+        self.validate_all(
             "CAST(a AS DOUBLE)",
             write={
                 "bigquery": "CAST(a AS FLOAT64)",

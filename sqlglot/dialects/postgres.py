@@ -98,6 +98,7 @@ class Postgres(Dialect):
             "SERIAL": TokenType.AUTO_INCREMENT,
             "UUID": TokenType.UUID,
             "FOR": TokenType.FOR,
+            "DOUBLE PRECISION": TokenType.DOUBLE,
         }
 
     class Parser(Parser):

@@ -1720,7 +1720,7 @@ class Parser:
 
         args = self._parse_csv(
             lambda: self._parse_constraint()
-            or self._parse_column_def(self._parse_field())
+            or self._parse_column_def(self._parse_field(True))
         )
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)

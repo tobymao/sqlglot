@@ -224,6 +224,7 @@ class Parser:
 
     FACTOR = {
         TokenType.DIV: exp.IntDiv,
+        TokenType.LR_ARROW: exp.Distance,
         TokenType.SLASH: exp.Div,
         TokenType.STAR: exp.Mul,
     }

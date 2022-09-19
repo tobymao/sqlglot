@@ -67,10 +67,10 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("POW(cola, 2)", (F.col("cola") ** 2).sql())
 
     def test_rpow(self):
-        self.assertEqual("POW(2, cola)", 2 ** F.col("cola").sql())
+        self.assertEqual("POW(2, cola)", (2 ** F.col("cola")).sql())
 
     def test_invert(self):
-        self.assertEqual("NOT cola", ~F.col("cola").sql())
+        self.assertEqual("NOT cola", (~F.col("cola")).sql())
 
     def test_startswith(self):
         self.assertEqual("STARTSWITH(cola, 'test')", F.col("cola").startswith('test').sql())

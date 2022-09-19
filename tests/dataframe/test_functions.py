@@ -16,7 +16,7 @@ class TestDataframeFunctions(unittest.TestCase):
         test_bool = SF.lit(False)
         self.assertEqual("false", test_bool.sql())
         test_null = SF.lit(None)
-        self.assertEqual("NULL AS `NULL`", test_null.sql())
+        self.assertEqual("NULL", test_null.sql())
         test_date = SF.lit(datetime.date(2022, 1, 1))
         self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
         test_datetime = SF.lit(datetime.datetime(2022, 1, 1, 1, 1, 1))

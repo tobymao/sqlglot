@@ -5,7 +5,7 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.dataframe.window import Window, WindowSpec
+from sqlglot.dataframe.window import WindowSpec
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe._typing import ColumnOrName, ColumnOrPrimitive, DateTimeLiteral, DecimalLiteral, Literals, Primitives
@@ -21,9 +21,7 @@ class Column:
         elif isinstance(expression, Column):
             expression = expression.expression
         self.expression = expression
-        if isinstance(self.expression, exp.Null):
-            self.expression = self.alias("NULL").expression
-        elif isinstance(self.expression, (int, float, bool)):
+        if isinstance(self.expression, (int, float, bool)):
             self.expression = exp.Column(this=exp.Literal(this=str(expression).lower(), is_string=False))
         elif isinstance(self.expression, Iterable):
             expressions = [exp.Literal(this=str(x).lower(), is_string=False) for x in self.expression]
@@ -178,6 +176,8 @@ class Column:
 
     @property
     def alias_or_name(self):
+        if isinstance(self.expression, exp.Null):
+            return "NULL"
         if isinstance(self.expression.args.get("this"), exp.Star):
             return self.expression.args["this"].alias_or_name
         return self.expression.alias_or_name

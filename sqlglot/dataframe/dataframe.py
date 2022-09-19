@@ -39,7 +39,7 @@ class DataFrame:
             return self.expression.find(exp.Table).alias_or_name
         return self.expression.ctes[-1].alias
 
-    def sql(self) -> str:
+    def sql(self, **kwargs) -> str:
         df = self._resolve_pending_hints()
         expression = df.expression.copy()
         for transform in ORDERED_TRANSFORMS:
@@ -48,7 +48,7 @@ class DataFrame:
                                               known_ids=df.spark.known_ids,
                                               known_branch_ids=df.spark.known_branch_ids,
                                               known_sequence_ids=df.spark.known_sequence_ids)
-        return expression.sql(dialect="spark", pretty=True)
+        return expression.sql(dialect="spark", **{'pretty': True, **kwargs})
 
     def copy(self, **kwargs) -> "DataFrame":
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}

@@ -1135,12 +1135,12 @@ class Generator:
         if flat:
             return sep.join(self.sql(e) for e in expressions)
 
-        sql = [self.sql(e) for e in expressions]
+        sql = (self.sql(e) for e in expressions)
         # the only time leading_comma changes the output is if pretty print is enabled
         if self._leading_comma and self.pretty:
+            pad = " " * self.pad
             expressions = "\n".join(
-                f"{sep}{s}" if i > 0 else f"{' ' * self.pad}{s}"
-                for i, s in enumerate(sql)
+                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql)
             )
         else:
             expressions = self.sep(sep).join(sql)

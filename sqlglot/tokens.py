@@ -38,6 +38,7 @@ class TokenType(AutoName):
     DARROW = auto()
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
+    LR_ARROW = auto()
     ANNOTATION = auto()
     DOLLAR = auto()
 
@@ -363,6 +364,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "->>": TokenType.DARROW,
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
+        "<->": TokenType.LR_ARROW,
         "ADD ARCHIVE": TokenType.ADD_FILE,
         "ADD ARCHIVES": TokenType.ADD_FILE,
         "ADD FILE": TokenType.ADD_FILE,

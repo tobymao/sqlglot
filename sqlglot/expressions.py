@@ -1811,6 +1811,10 @@ class Like(Binary, Predicate):
     pass
 
 
+class Distance(Binary):
+    pass
+
+
 class LT(Binary, Predicate):
     pass
 

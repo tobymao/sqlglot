@@ -1137,10 +1137,10 @@ class Generator:
 
         sql = [self.sql(e) for e in expressions]
         # the only time leading_comma changes the output is if pretty print is enabled
-        # and there is more than 1 expression
-        if self._leading_comma and self.pretty and len(sql) > 1:
-            remaining_expr = "\n".join([f"{sep}{s}" for s in sql[1:]])
-            expressions = f"  {sql[0]}\n{remaining_expr}"
+        if self._leading_comma and self.pretty:
+            expressions = "\n".join(
+                f"{sep}{s}" if i > 0 else s for i, s in enumerate(sql)
+            )
         else:
             expressions = self.sep(sep).join(sql)
 

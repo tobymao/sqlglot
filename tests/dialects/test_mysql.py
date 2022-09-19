@@ -31,20 +31,14 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT 0xCC",
             write={
-                "mysql": "SELECT b'11001100'",
-                "spark": "SELECT X'11001100'",
+                "mysql": "SELECT x'CC'",
+                "spark": "SELECT X'CC'",
             },
         )
         self.validate_all(
             "SELECT 0xz",
             write={
                 "mysql": "SELECT `0xz`",
-            },
-        )
-        self.validate_all(
-            "SELECT 0XCC",
-            write={
-                "mysql": "SELECT 0 AS XCC",
             },
         )
 

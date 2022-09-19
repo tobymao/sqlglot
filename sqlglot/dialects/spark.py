@@ -102,5 +102,5 @@ class Spark(Hive):
             HiveMap: _map_sql,
         }
 
-        def bitstring_sql(self, expression):
-            return f"X'{self.sql(expression, 'this')}'"
+    class Tokenizer(Hive.Tokenizer):
+        HEX_STRINGS = [("X'", "'")]

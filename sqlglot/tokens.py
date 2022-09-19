@@ -53,6 +53,7 @@ class TokenType(AutoName):
     TABLE = auto()
     VAR = auto()
     BIT_STRING = auto()
+    HEX_STRING = auto()
 
     # types
     BOOLEAN = auto()
@@ -272,19 +273,11 @@ class _Tokenizer(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        klass.QUOTES = dict(
-            (quote, quote) if isinstance(quote, str) else (quote[0], quote[1])
-            for quote in klass.QUOTES
-        )
-
-        klass.IDENTIFIERS = dict(
-            (identifier, identifier)
-            if isinstance(identifier, str)
-            else (identifier[0], identifier[1])
-            for identifier in klass.IDENTIFIERS
-        )
-
-        klass.COMMENTS = dict(
+        klass._QUOTES = cls._delimeter_list_to_dict(klass.QUOTES)
+        klass._BIT_STRINGS = cls._delimeter_list_to_dict(klass.BIT_STRINGS)
+        klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
+        klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
+        klass._COMMENTS = dict(
             (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
             for comment in klass.COMMENTS
         )
@@ -293,13 +286,28 @@ class _Tokenizer(type):
             key.upper()
             for key, value in {
                 **klass.KEYWORDS,
-                **{comment: TokenType.COMMENT for comment in klass.COMMENTS},
-                **{quote: TokenType.QUOTE for quote in klass.QUOTES},
+                **{comment: TokenType.COMMENT for comment in klass._COMMENTS},
+                **{quote: TokenType.QUOTE for quote in klass._QUOTES},
+                **{
+                    bit_string: TokenType.BIT_STRING
+                    for bit_string in klass._BIT_STRINGS
+                },
+                **{
+                    hex_string: TokenType.HEX_STRING
+                    for hex_string in klass._HEX_STRINGS
+                },
             }.items()
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
         return klass
+
+    @staticmethod
+    def _delimeter_list_to_dict(list):
+        return dict(
+            (item, item) if isinstance(item, str) else (item[0], item[1])
+            for item in list
+        )
 
 
 class Tokenizer(metaclass=_Tokenizer):
@@ -338,6 +346,10 @@ class Tokenizer(metaclass=_Tokenizer):
     }
 
     QUOTES = ["'"]
+
+    BIT_STRINGS = []
+
+    HEX_STRINGS = []
 
     IDENTIFIERS = ['"']
 
@@ -626,13 +638,15 @@ class Tokenizer(metaclass=_Tokenizer):
                 break
 
             white_space = self.WHITE_SPACE.get(self._char)
-            identifier_end = self.IDENTIFIERS.get(self._char)
+            identifier_end = self._IDENTIFIERS.get(self._char)
 
             if white_space:
                 if white_space == TokenType.BREAK:
                     self._col = 1
                     self._line += 1
-            elif self._char == "0" and self._peek == "x":
+            elif self._char == "0" and self._peek.upper() == "B":
+                self._scan_bits()
+            elif self._char == "0" and self._peek.upper() == "X":
                 self._scan_hex()
             elif self._char.isdigit():
                 self._scan_number()
@@ -725,6 +739,10 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if self._scan_string(word):
             return
+        if self._scan_bit_string(word):
+            return
+        if self._scan_hex_string(word):
+            return
         if self._scan_comment(word):
             return
 
@@ -732,10 +750,10 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(self.KEYWORDS[word.upper()])
 
     def _scan_comment(self, comment_start):
-        if comment_start not in self.COMMENTS:
+        if comment_start not in self._COMMENTS:
             return False
 
-        comment_end = self.COMMENTS[comment_start]
+        comment_end = self._COMMENTS[comment_start]
 
         if comment_end:
             comment_end_size = len(comment_end)
@@ -788,22 +806,34 @@ class Tokenizer(metaclass=_Tokenizer):
             else:
                 return self._add(TokenType.NUMBER)
 
+    def _scan_bits(self):
+        self._advance()
+        value = self._extract_value()
+        try:
+            self._add(TokenType.BIT_STRING, f"{int(value, 2)}")
+        except ValueError:
+            self._add(TokenType.IDENTIFIER)
+
     def _scan_hex(self):
         self._advance()
+        value = self._extract_value()
+        try:
+            self._add(TokenType.HEX_STRING, f"{int(value, 16)}")
+        except ValueError:
+            self._add(TokenType.IDENTIFIER)
 
+    def _extract_value(self):
         while True:
             char = self._peek.strip()
             if char and char not in self.SINGLE_TOKENS:
                 self._advance()
             else:
                 break
-        try:
-            self._add(TokenType.BIT_STRING, f"{int(self._text, 16):b}")
-        except ValueError:
-            self._add(TokenType.IDENTIFIER)
+
+        return self._text
 
     def _scan_string(self, quote):
-        quote_end = self.QUOTES.get(quote)
+        quote_end = self._QUOTES.get(quote)
         if quote_end is None:
             return False
 
@@ -833,6 +863,42 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.STRING, text)
         return True
 
+    def _scan_bit_string(self, bit_string):
+        bs_end = self._BIT_STRINGS.get(bit_string)
+        if bs_end is None:
+            return False
+
+        self._advance(len(bit_string))
+        text = self._extract_string(bs_end)
+        if bs_end != " ":
+            self._advance(len(bs_end) - 1)
+
+        try:
+            self._add(TokenType.BIT_STRING, f"{int(text, 2)}")
+        except ValueError:
+            raise RuntimeError(
+                f"Bit string contains invalid characters from {self._line}:{self._start}"
+            )
+        return True
+
+    def _scan_hex_string(self, hex_string):
+        hs_end = self._HEX_STRINGS.get(hex_string)
+        if hs_end is None:
+            return False
+
+        self._advance(len(hex_string))
+        text = self._extract_string(hs_end)
+        if hs_end != " ":
+            self._advance(len(hs_end) - 1)
+
+        try:
+            self._add(TokenType.HEX_STRING, f"{int(text, 16)}")
+        except ValueError:
+            raise RuntimeError(
+                f"Hex string contains invalid characters from {self._line}:{self._start}"
+            )
+        return True
+
     def _scan_identifier(self, identifier_end):
         while self._peek != identifier_end:
             if self._end:
@@ -851,3 +917,24 @@ class Tokenizer(metaclass=_Tokenizer):
             else:
                 break
         self._add(self.KEYWORDS.get(self._text.upper(), TokenType.VAR))
+
+    def _extract_string(self, delimiter):
+        text = ""
+        delim_size = len(delimiter)
+
+        while True:
+            if self._char == self.ESCAPE and self._peek == delimiter:
+                text += delimiter
+                self._advance(2)
+            else:
+                if self._chars(delim_size) == delimiter:
+                    break
+
+                if self._end:
+                    raise RuntimeError(
+                        f"Missing {delimiter} from {self._line}:{self._start}"
+                    )
+                text += self._char
+                self._advance()
+
+        return text

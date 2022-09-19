@@ -53,12 +53,20 @@ class _Dialect(type):
         klass.generator_class = getattr(klass, "Generator", Generator)
 
         klass.tokenizer = klass.tokenizer_class()
-        klass.quote_start, klass.quote_end = list(klass.tokenizer_class.QUOTES.items())[
-            0
-        ]
-        klass.identifier_start, klass.identifier_end = list(
-            klass.tokenizer_class.IDENTIFIERS.items()
+        klass.quote_start, klass.quote_end = list(
+            klass.tokenizer_class._QUOTES.items()
         )[0]
+        klass.identifier_start, klass.identifier_end = list(
+            klass.tokenizer_class._IDENTIFIERS.items()
+        )[0]
+        if len(klass.tokenizer_class._BIT_STRINGS) > 0:
+            klass.bit_string_start, klass.bit_string_end = list(
+                klass.tokenizer_class._BIT_STRINGS.items()
+            )[0]
+        if len(klass.tokenizer_class._HEX_STRINGS) > 0:
+            klass.hex_string_start, klass.hex_string_end = list(
+                klass.tokenizer_class._HEX_STRINGS.items()
+            )[0]
 
         return klass
 
@@ -80,6 +88,10 @@ class Dialect(metaclass=_Dialect):
     quote_end = None
     identifier_start = None
     identifier_end = None
+    bit_string_start = None
+    bit_string_end = None
+    hex_string_start = None
+    hex_string_end = None
 
     time_trie = None
     inverse_time_mapping = None
@@ -150,6 +162,10 @@ class Dialect(metaclass=_Dialect):
                 "quote_end": self.quote_end,
                 "identifier_start": self.identifier_start,
                 "identifier_end": self.identifier_end,
+                "bit_string_start": self.bit_string_start,
+                "bit_string_end": self.bit_string_end,
+                "hex_string_start": self.hex_string_start,
+                "hex_string_end": self.hex_string_end,
                 "escape": self.tokenizer_class.ESCAPE,
                 "index_offset": self.index_offset,
                 "time_mapping": self.inverse_time_mapping,

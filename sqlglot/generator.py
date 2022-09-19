@@ -110,7 +110,7 @@ class Generator:
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
-        "leading_comma",
+        "_leading_comma",
     )
 
     def __init__(
@@ -161,7 +161,7 @@ class Generator:
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
-        self.leading_comma = leading_comma
+        self._leading_comma = leading_comma
 
     def generate(self, expression):
         """
@@ -1136,7 +1136,9 @@ class Generator:
             return sep.join(self.sql(e) for e in expressions)
 
         sql = [self.sql(e) for e in expressions]
-        if len(sql) > 1 and self.leading_comma:
+        # the only time leading_comma changes the output is if pretty print is enabled
+        # and there is more than 1 expression
+        if self._leading_comma and self.pretty and len(sql) > 1:
             remaining_expr = "\n".join([f"{sep}{s}" for s in sql[1:]])
             expressions = f"  {sql[0]}\n{remaining_expr}"
         else:

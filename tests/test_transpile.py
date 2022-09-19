@@ -42,6 +42,20 @@ class TestTranspile(unittest.TestCase):
             "SELECT * FROM x WHERE a = ANY (SELECT 1)",
         )
 
+    def test_leading_comma(self):
+        self.validate(
+            "SELECT FOO, BAR, BAZ",
+            "SELECT\n    FOO\n  , BAR\n  , BAZ",
+            leading_comma=True,
+            pretty=True,
+        )
+        # without pretty, this should be a no-op
+        self.validate(
+            "SELECT FOO, BAR, BAZ",
+            "SELECT FOO, BAR, BAZ"
+            leading_comma=True,
+        )
+
     def test_space(self):
         self.validate("SELECT MIN(3)>MIN(2)", "SELECT MIN(3) > MIN(2)")
         self.validate("SELECT MIN(3)>=MIN(2)", "SELECT MIN(3) >= MIN(2)")

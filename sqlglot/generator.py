@@ -110,6 +110,7 @@ class Generator:
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
+        "leading_comma",
     )
 
     def __init__(

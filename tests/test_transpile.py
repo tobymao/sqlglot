@@ -52,7 +52,7 @@ class TestTranspile(unittest.TestCase):
         # without pretty, this should be a no-op
         self.validate(
             "SELECT FOO, BAR, BAZ",
-            "SELECT FOO, BAR, BAZ"
+            "SELECT FOO, BAR, BAZ",
             leading_comma=True,
         )
 

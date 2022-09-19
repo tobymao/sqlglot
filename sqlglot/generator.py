@@ -1048,6 +1048,9 @@ class Generator:
     def div_sql(self, expression):
         return self.binary(expression, "/")
 
+    def distance_sql(self, expression):
+        return self.binary(expression, "<->")
+
     def dot_sql(self, expression):
         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
 

@@ -82,7 +82,6 @@ class TokenType(AutoName):
     GEOMETRY = auto()
     HLLSKETCH = auto()
     SUPER = auto()
-    VARBYTE = auto()
 
     # keywords
     ADD_FILE = auto()

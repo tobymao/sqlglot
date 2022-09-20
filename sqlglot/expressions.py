@@ -1657,7 +1657,6 @@ class DataType(Expression):
         NVARCHAR = auto()
         TEXT = auto()
         BINARY = auto()
-        VARBYTE = auto()
         INT = auto()
         TINYINT = auto()
         SMALLINT = auto()

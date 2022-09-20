@@ -89,7 +89,6 @@ class Parser:
         TokenType.GEOMETRY,
         TokenType.HLLSKETCH,
         TokenType.SUPER,
-        TokenType.VARBYTE,
         *NESTED_TYPE_TOKENS,
     }
 

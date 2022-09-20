@@ -71,6 +71,15 @@ class TestSQLite(Validator):
             },
         )
 
+    def test_hexadecimal_literal(self):
+        self.validate_all(
+            "SELECT 0XCC",
+            write={
+                "sqlite": "SELECT x'CC'",
+                "mysql": "SELECT x'CC'",
+            },
+        )
+
     def test_window_null_treatment(self):
         self.validate_all(
             "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks",

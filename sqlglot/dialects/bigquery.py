@@ -44,6 +44,7 @@ class BigQuery(Dialect):
         ]
         IDENTIFIERS = ["`"]
         ESCAPE = "\\"
+        HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,

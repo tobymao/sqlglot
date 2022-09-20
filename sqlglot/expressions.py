@@ -554,6 +554,10 @@ class BitString(Condition):
     pass
 
 
+class HexString(Condition):
+    pass
+
+
 class Column(Condition):
     arg_types = {"this": True, "table": False}
 

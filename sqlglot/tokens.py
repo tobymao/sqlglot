@@ -167,6 +167,7 @@ class TokenType(AutoName):
     LOCATION = auto()
     MAP = auto()
     MOD = auto()
+    NATURAL = auto()
     NEXT = auto()
     NO_ACTION = auto()
     NULL = auto()
@@ -455,6 +456,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
         "LOCATION": TokenType.LOCATION,
+        "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
         "NO ACTION": TokenType.NO_ACTION,
         "NOT": TokenType.NOT,

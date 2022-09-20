@@ -2209,6 +2209,10 @@ class Greatest(Func):
     is_var_len_args = True
 
 
+class GroupConcat(Func):
+    arg_types = {"this": True, "separator": False}
+
+
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 

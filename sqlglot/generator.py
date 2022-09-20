@@ -41,6 +41,8 @@ class Generator:
         max_unsupported (int): Maximum number of unsupported messages to include in a raised UnsupportedError.
             This is only relevant if unsupported_level is ErrorLevel.RAISE.
             Default: 3
+        leading_comma (bool): if the the comma is leading or trailing in select statements
+            Default: False
     """
 
     TRANSFORMS = {
@@ -108,6 +110,7 @@ class Generator:
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
+        "_leading_comma",
     )
 
     def __init__(
@@ -131,6 +134,7 @@ class Generator:
         unsupported_level=ErrorLevel.WARN,
         null_ordering=None,
         max_unsupported=3,
+        leading_comma=False,
     ):
         import sqlglot
 
@@ -157,6 +161,7 @@ class Generator:
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
+        self._leading_comma = leading_comma
 
     def generate(self, expression):
         """
@@ -1135,7 +1140,16 @@ class Generator:
         if flat:
             return sep.join(self.sql(e) for e in expressions)
 
-        expressions = self.sep(sep).join(self.sql(e) for e in expressions)
+        sql = (self.sql(e) for e in expressions)
+        # the only time leading_comma changes the output is if pretty print is enabled
+        if self._leading_comma and self.pretty:
+            pad = " " * self.pad
+            expressions = "\n".join(
+                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql)
+            )
+        else:
+            expressions = self.sep(sep).join(sql)
+
         if indent:
             return self.indent(expressions, skip_first=False)
         return expressions

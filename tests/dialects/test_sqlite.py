@@ -70,3 +70,12 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
             },
         )
+
+    def test_hexadecimal_literal(self):
+        self.validate_all(
+            "SELECT 0XCC",
+            write={
+                "sqlite": "SELECT x'CC'",
+                "mysql": "SELECT x'CC'",
+            },
+        )

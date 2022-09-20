@@ -32,7 +32,9 @@ class TestMySQL(Validator):
             "SELECT 0xCC",
             write={
                 "mysql": "SELECT x'CC'",
+                "sqlite": "SELECT x'CC'",
                 "spark": "SELECT X'CC'",
+                "trino": "SELECT X'CC'",
                 "bigquery": "SELECT 0xCC",
                 "oracle": "SELECT 204",
             },

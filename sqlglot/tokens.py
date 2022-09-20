@@ -284,8 +284,7 @@ class _Tokenizer(type):
         klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
         klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
         klass._COMMENTS = dict(
-            (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
-            for comment in klass.COMMENTS
+            (comment, None) if isinstance(comment, str) else (comment[0], comment[1]) for comment in klass.COMMENTS
         )
 
         klass.KEYWORD_TRIE = new_trie(
@@ -294,14 +293,8 @@ class _Tokenizer(type):
                 **klass.KEYWORDS,
                 **{comment: TokenType.COMMENT for comment in klass._COMMENTS},
                 **{quote: TokenType.QUOTE for quote in klass._QUOTES},
-                **{
-                    bit_string: TokenType.BIT_STRING
-                    for bit_string in klass._BIT_STRINGS
-                },
-                **{
-                    hex_string: TokenType.HEX_STRING
-                    for hex_string in klass._HEX_STRINGS
-                },
+                **{bit_string: TokenType.BIT_STRING for bit_string in klass._BIT_STRINGS},
+                **{hex_string: TokenType.HEX_STRING for hex_string in klass._HEX_STRINGS},
             }.items()
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
@@ -310,10 +303,7 @@ class _Tokenizer(type):
 
     @staticmethod
     def _delimeter_list_to_dict(list):
-        return dict(
-            (item, item) if isinstance(item, str) else (item[0], item[1])
-            for item in list
-        )
+        return dict((item, item) if isinstance(item, str) else (item[0], item[1]) for item in list)
 
 
 class Tokenizer(metaclass=_Tokenizer):
@@ -683,9 +673,7 @@ class Tokenizer(metaclass=_Tokenizer):
         text = self._text if text is None else text
         self.tokens.append(Token(token_type, text, self._line, self._col))
 
-        if token_type in self.COMMANDS and (
-            len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON
-        ):
+        if token_type in self.COMMANDS and (len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON):
             self._start = self._current
             while not self._end and self._peek != ";":
                 self._advance()
@@ -768,11 +756,7 @@ class Tokenizer(metaclass=_Tokenizer):
         return True
 
     def _scan_annotation(self):
-        while (
-            not self._end
-            and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK
-            and self._peek != ","
-        ):
+        while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK and self._peek != ",":
             self._advance()
         self._add(TokenType.ANNOTATION, self._text[1:])
 
@@ -872,17 +856,13 @@ class Tokenizer(metaclass=_Tokenizer):
         try:
             self._add(token_type, f"{int(text, base)}")
         except ValueError:
-            raise RuntimeError(
-                f"Numeric string contains invalid characters from {self._line}:{self._start}"
-            )
+            raise RuntimeError(f"Numeric string contains invalid characters from {self._line}:{self._start}")
         return True
 
     def _scan_identifier(self, identifier_end):
         while self._peek != identifier_end:
             if self._end:
-                raise RuntimeError(
-                    f"Missing {identifier_end} from {self._line}:{self._start}"
-                )
+                raise RuntimeError(f"Missing {identifier_end} from {self._line}:{self._start}")
             self._advance()
         self._advance()
         self._add(TokenType.IDENTIFIER, self._text[1:-1])
@@ -911,9 +891,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     break
 
                 if self._end:
-                    raise RuntimeError(
-                        f"Missing {delimiter} from {self._line}:{self._start}"
-                    )
+                    raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._start}")
                 text += self._char
                 self._advance()
 

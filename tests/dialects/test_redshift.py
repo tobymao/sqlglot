@@ -60,9 +60,5 @@ class TestRedshift(Validator):
         self.validate_identity(
             "SELECT caldate + INTERVAL '1 second' AS dateplus FROM date WHERE caldate = '12-31-2008'"
         )
-        self.validate_identity(
-            "CREATE TABLE datetable (start_date DATE, end_date DATE)"
-        )
-        self.validate_identity(
-            "SELECT COUNT(*) FROM event WHERE eventname LIKE '%Ring%' OR eventname LIKE '%Die%'"
-        )
+        self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
+        self.validate_identity("SELECT COUNT(*) FROM event WHERE eventname LIKE '%Ring%' OR eventname LIKE '%Die%'")

@@ -183,9 +183,7 @@ class Generator:
             for msg in self.unsupported_messages:
                 logger.warning(msg)
         elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
-            raise UnsupportedError(
-                concat_errors(self.unsupported_messages, self.max_unsupported)
-            )
+            raise UnsupportedError(concat_errors(self.unsupported_messages, self.max_unsupported))
 
         return sql
 
@@ -202,9 +200,7 @@ class Generator:
 
     def wrap(self, expression):
         this_sql = self.indent(
-            self.sql(expression)
-            if isinstance(expression, (exp.Select, exp.Union))
-            else self.sql(expression, "this"),
+            self.sql(expression) if isinstance(expression, (exp.Select, exp.Union)) else self.sql(expression, "this"),
             level=1,
             pad=0,
         )
@@ -256,9 +252,7 @@ class Generator:
             return transform
 
         if not isinstance(expression, exp.Expression):
-            raise ValueError(
-                f"Expected an Expression. Received {type(expression)}: {expression}"
-            )
+            raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
         exp_handler_name = f"{expression.key}_sql"
         if hasattr(self, exp_handler_name):
@@ -281,11 +275,7 @@ class Generator:
         lazy = " LAZY" if expression.args.get("lazy") else ""
         table = self.sql(expression, "this")
         options = expression.args.get("options")
-        options = (
-            f" OPTIONS({self.sql(options[0])} = {self.sql(options[1])})"
-            if options
-            else ""
-        )
+        options = f" OPTIONS({self.sql(options[0])} = {self.sql(options[1])})" if options else ""
         sql = self.sql(expression, "expression")
         sql = f" AS{self.sep()}{sql}" if sql else ""
         sql = f"CACHE{lazy} TABLE {table}{options}{sql}"
@@ -311,9 +301,7 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        constraints = self.expressions(
-            expression, key="constraints", sep=" ", flat=True
-        )
+        constraints = self.expressions(expression, key="constraints", sep=" ", flat=True)
 
         if not constraints:
             return f"{column} {kind}"
@@ -460,10 +448,7 @@ class Generator:
 
     def partition_sql(self, expression):
         keys = csv(
-            *[
-                f"{k.args['this']}='{v.args['this']}'" if v else k.args["this"]
-                for k, v in expression.args.get("this")
-            ]
+            *[f"{k.args['this']}='{v.args['this']}'" if v else k.args["this"] for k, v in expression.args.get("this")]
         )
         return f"PARTITION({keys})"
 
@@ -478,9 +463,9 @@ class Generator:
             elif p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
 
-        return self.root_properties(
-            exp.Properties(expressions=root_properties)
-        ) + self.with_properties(exp.Properties(expressions=with_properties))
+        return self.root_properties(exp.Properties(expressions=root_properties)) + self.with_properties(
+            exp.Properties(expressions=with_properties)
+        )
 
     def root_properties(self, properties):
         if properties.expressions:
@@ -516,11 +501,7 @@ class Generator:
         kind = "OVERWRITE TABLE" if expression.args.get("overwrite") else "INTO"
         this = self.sql(expression, "this")
         exists = " IF EXISTS " if expression.args.get("exists") else " "
-        partition_sql = (
-            self.sql(expression, "partition")
-            if expression.args.get("partition")
-            else ""
-        )
+        partition_sql = self.sql(expression, "partition") if expression.args.get("partition") else ""
         expression_sql = self.sql(expression, "expression")
         sep = self.sep() if partition_sql else ""
         sql = f"INSERT {kind} {this}{exists}{partition_sql}{sep}{expression_sql}"
@@ -597,11 +578,7 @@ class Generator:
     def group_sql(self, expression):
         group_by = self.op_expressions("GROUP BY", expression)
         grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
-        grouping_sets = (
-            f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}"
-            if grouping_sets
-            else ""
-        )
+        grouping_sets = f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}" if grouping_sets else ""
         cube = self.expressions(expression, key="cube", indent=False)
         cube = f"{self.seg('CUBE')} {self.wrap(cube)}" if cube else ""
         rollup = self.expressions(expression, key="rollup", indent=False)
@@ -652,9 +629,7 @@ class Generator:
         this = self.sql(expression, "this")
         if isinstance(expression.this, exp.Subquery):
             return f"LATERAL{self.sep()}{this}"
-        op_sql = self.seg(
-            f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}"
-        )
+        op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
         alias = expression.args["alias"]
         table = alias.name
         table = f" {table}" if table else table
@@ -710,21 +685,13 @@ class Generator:
 
         sort_order = " DESC" if desc else ""
         nulls_sort_change = ""
-        if nulls_first and (
-            (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last
-        ):
+        if nulls_first and ((asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last):
             nulls_sort_change = " NULLS FIRST"
-        elif (
-            nulls_last
-            and ((asc and nulls_are_small) or (desc and nulls_are_large))
-            and not nulls_are_last
-        ):
+        elif nulls_last and ((asc and nulls_are_small) or (desc and nulls_are_large)) and not nulls_are_last:
             nulls_sort_change = " NULLS LAST"
 
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
-            self.unsupported(
-                "Sorting in an ORDER BY on NULLS FIRST/NULLS LAST is not supported by this dialect"
-            )
+            self.unsupported("Sorting in an ORDER BY on NULLS FIRST/NULLS LAST is not supported by this dialect")
             nulls_sort_change = ""
 
         return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
@@ -846,13 +813,8 @@ class Generator:
 
     def window_spec_sql(self, expression):
         kind = self.sql(expression, "kind")
-        start = csv(
-            self.sql(expression, "start"), self.sql(expression, "start_side"), sep=" "
-        )
-        end = (
-            csv(self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" ")
-            or "CURRENT ROW"
-        )
+        start = csv(self.sql(expression, "start"), self.sql(expression, "start_side"), sep=" ")
+        end = csv(self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" ") or "CURRENT ROW"
         return f"{kind} BETWEEN {start} AND {end}"
 
     def withingroup_sql(self, expression):
@@ -937,9 +899,7 @@ class Generator:
         return f"UNIQUE ({columns})"
 
     def if_sql(self, expression):
-        return self.case_sql(
-            exp.Case(ifs=[expression], default=expression.args.get("false"))
-        )
+        return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
 
     def in_sql(self, expression):
         query = expression.args.get("query")
@@ -966,9 +926,7 @@ class Generator:
         return f"REFERENCES {this}({expressions})"
 
     def anonymous_sql(self, expression):
-        args = self.indent(
-            self.expressions(expression, flat=True), skip_first=True, skip_last=True
-        )
+        args = self.indent(self.expressions(expression, flat=True), skip_first=True, skip_last=True)
         return f"{self.normalize_func(self.sql(expression, 'this'))}({args})"
 
     def paren_sql(self, expression):
@@ -1119,14 +1077,10 @@ class Generator:
         return self.binary(expression, "-")
 
     def trycast_sql(self, expression):
-        return (
-            f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
-        )
+        return f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
     def binary(self, expression, op):
-        return (
-            f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
-        )
+        return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
 
     def function_fallback_sql(self, expression):
         args = []
@@ -1139,9 +1093,7 @@ class Generator:
         return f"{self.normalize_func(expression.sql_name())}({args_str})"
 
     def format_time(self, expression):
-        return format_time(
-            self.sql(expression, "format"), self.time_mapping, self.time_trie
-        )
+        return format_time(self.sql(expression, "format"), self.time_mapping, self.time_trie)
 
     def expressions(self, expression, key=None, flat=False, indent=True, sep=", "):
         expressions = expression.args.get(key or "expressions")
@@ -1156,9 +1108,7 @@ class Generator:
         # the only time leading_comma changes the output is if pretty print is enabled
         if self._leading_comma and self.pretty:
             pad = " " * self.pad
-            expressions = "\n".join(
-                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql)
-            )
+            expressions = "\n".join(f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql))
         else:
             expressions = self.sep(sep).join(sql)
 
@@ -1175,9 +1125,7 @@ class Generator:
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")
         op = self.seg(op)
-        return self.query_modifiers(
-            expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}"
-        )
+        return self.query_modifiers(expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}")
 
     def token_sql(self, token_type):
         return self.TOKEN_MAPPING.get(token_type, token_type.name)

@@ -72,9 +72,7 @@ class Step:
         if from_:
             from_ = from_.expressions
             if len(from_) > 1:
-                raise UnsupportedError(
-                    "Multi-from statements are unsupported. Run it through the optimizer"
-                )
+                raise UnsupportedError("Multi-from statements are unsupported. Run it through the optimizer")
 
             step = Scan.from_expression(from_[0], ctes)
         else:
@@ -104,9 +102,7 @@ class Step:
                         continue
                     if operand not in operands:
                         operands[operand] = f"_a_{next(sequence)}"
-                    operand.replace(
-                        exp.column(operands[operand], step.name, quoted=True)
-                    )
+                    operand.replace(exp.column(operands[operand], step.name, quoted=True))
             else:
                 projections.append(e)
 
@@ -121,14 +117,9 @@ class Step:
             aggregate = Aggregate()
             aggregate.source = step.name
             aggregate.name = step.name
-            aggregate.operands = tuple(
-                alias(operand, alias_) for operand, alias_ in operands.items()
-            )
+            aggregate.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
             aggregate.aggregations = aggregations
-            aggregate.group = [
-                exp.column(e.alias_or_name, step.name, quoted=True)
-                for e in group.expressions
-            ]
+            aggregate.group = [exp.column(e.alias_or_name, step.name, quoted=True) for e in group.expressions]
             aggregate.add_dependency(step)
             step = aggregate
 
@@ -212,9 +203,7 @@ class Scan(Step):
         alias_ = expression.alias
 
         if not alias_:
-            raise UnsupportedError(
-                "Tables/Subqueries must be aliased. Run it through the optimizer"
-            )
+            raise UnsupportedError("Tables/Subqueries must be aliased. Run it through the optimizer")
 
         if isinstance(expression, exp.Subquery):
             step = Step.from_expression(table, ctes)

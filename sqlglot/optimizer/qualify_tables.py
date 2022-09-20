@@ -27,9 +27,7 @@ def qualify_tables(expression, db=None, catalog=None):
         for derived_table in scope.ctes + scope.derived_tables:
             if not derived_table.args.get("alias"):
                 alias_ = f"_q_{next(sequence)}"
-                derived_table.set(
-                    "alias", exp.TableAlias(this=exp.to_identifier(alias_))
-                )
+                derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))
                 scope.rename_source(None, alias_)
 
         for source in scope.sources.values():

@@ -89,11 +89,7 @@ def decorrelate(select, parent_select, external_columns, sequence):
             return
 
         if isinstance(predicate, exp.Binary):
-            key = (
-                predicate.right
-                if any(node is column for node, *_ in predicate.left.walk())
-                else predicate.left
-            )
+            key = predicate.right if any(node is column for node, *_ in predicate.left.walk()) else predicate.left
         else:
             return
 
@@ -124,9 +120,7 @@ def decorrelate(select, parent_select, external_columns, sequence):
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
     # so that it can be grouped
     if not value.find(exp.AggFunc) and value.this not in group_by:
-        select.select(
-            f"ARRAY_AGG({value.this}) AS {value.alias}", append=False, copy=False
-        )
+        select.select(f"ARRAY_AGG({value.this}) AS {value.alias}", append=False, copy=False)
 
     # exists queries should not have any selects as it only checks if there are any rows
     # all selects will be added by the optimizer and only used for join keys
@@ -151,16 +145,12 @@ def decorrelate(select, parent_select, external_columns, sequence):
         else:
             parent_predicate = _replace(parent_predicate, "TRUE")
     elif isinstance(parent_predicate, exp.All):
-        parent_predicate = _replace(
-            parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> _x = {other})"
-        )
+        parent_predicate = _replace(parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> _x = {other})")
     elif isinstance(parent_predicate, exp.Any):
         if value.this in group_by:
             parent_predicate = _replace(parent_predicate.parent, f"{other} = {alias}")
         else:
-            parent_predicate = _replace(
-                parent_predicate, f"ARRAY_ANY({alias}, _x -> _x = {other})"
-            )
+            parent_predicate = _replace(parent_predicate, f"ARRAY_ANY({alias}, _x -> _x = {other})")
     elif isinstance(parent_predicate, exp.In):
         if value.this in group_by:
             parent_predicate = _replace(parent_predicate, f"{other} = {alias}")
@@ -178,9 +168,7 @@ def decorrelate(select, parent_select, external_columns, sequence):
 
         if key in group_by:
             key.replace(nested)
-            parent_predicate = _replace(
-                parent_predicate, f"({parent_predicate} AND NOT {nested} IS NULL)"
-            )
+            parent_predicate = _replace(parent_predicate, f"({parent_predicate} AND NOT {nested} IS NULL)")
         elif isinstance(predicate, exp.EQ):
             parent_predicate = _replace(
                 parent_predicate,

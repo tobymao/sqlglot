@@ -12,9 +12,7 @@ def unalias_group(expression):
     """
     if isinstance(expression, exp.Group) and isinstance(expression.parent, exp.Select):
         aliased_selects = {
-            e.alias: i
-            for i, e in enumerate(expression.parent.expressions, start=1)
-            if isinstance(e, exp.Alias)
+            e.alias: i for i, e in enumerate(expression.parent.expressions, start=1) if isinstance(e, exp.Alias)
         }
 
         expression = expression.copy()

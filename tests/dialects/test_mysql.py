@@ -81,3 +81,19 @@ class TestMySQL(Validator):
                 "mysql": "SELECT 1",
             },
         )
+
+    def test_mysql(self):
+        self.validate_all(
+            "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+            write={
+                "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",
+                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+            },
+        )
+        self.validate_all(
+            "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
+            write={
+                "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC, '')",
+            },
+        )

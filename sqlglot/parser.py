@@ -108,7 +108,6 @@ class Parser:
         TokenType.COLLATE,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
-        TokenType.CONVERT,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.ENGINE,
@@ -155,20 +154,13 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    CASTS = {
-        TokenType.CAST,
-        TokenType.TRY_CAST,
-    }
-
     TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
     FUNC_TOKENS = {
-        TokenType.CONVERT,
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_DATETIME,
         TokenType.CURRENT_TIMESTAMP,
         TokenType.CURRENT_TIME,
-        TokenType.EXTRACT,
         TokenType.FILTER,
         TokenType.FIRST,
         TokenType.FORMAT,
@@ -177,8 +169,6 @@ class Parser:
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,
         TokenType.ROW,
-        TokenType.SUBSTRING,
-        TokenType.TRIM,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,
@@ -187,7 +177,6 @@ class Parser:
         TokenType.DATETIME,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
-        *CASTS,
         *NESTED_TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }
@@ -373,16 +362,12 @@ class Parser:
     }
 
     FUNCTION_PARSERS = {
-        TokenType.CONVERT: lambda self, _: self._parse_convert(),
-        TokenType.EXTRACT: lambda self, _: self._parse_extract(),
-        TokenType.SUBSTRING: lambda self, _: self._parse_substring(),
-        TokenType.TRIM: lambda self, _: self._parse_trim(),
-        **{
-            token_type: lambda self, token_type: self._parse_cast(
-                self.STRICT_CAST and token_type == TokenType.CAST
-            )
-            for token_type in CASTS
-        },
+        "CONVERT": lambda self: self._parse_convert(),
+        "EXTRACT": lambda self: self._parse_extract(),
+        "SUBSTRING": lambda self: self._parse_substring(),
+        "TRIM": lambda self: self._parse_trim(),
+        "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
+        "TRY_CAST": lambda self: self._parse_cast(False),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -1653,13 +1638,16 @@ class Parser:
         if token_type not in self.FUNC_TOKENS:
             return None
 
-        if self._match_set(self.FUNCTION_PARSERS):
-            self._advance()
-            this = self.FUNCTION_PARSERS[token_type](self, token_type)
+        this = self._curr.text
+        upper = this.upper()
+        self._advance(2)
+
+        parser = self.FUNCTION_PARSERS.get(upper)
+
+        if parser:
+            this = parser(self)
         else:
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
-            this = self._curr.text
-            self._advance(2)
 
             if subquery_predicate and self._curr.token_type in (
                 TokenType.SELECT,
@@ -1669,7 +1657,7 @@ class Parser:
                 self._match_r_paren()
                 return this
 
-            function = self.FUNCTIONS.get(this.upper())
+            function = self.FUNCTIONS.get(upper)
             args = self._parse_csv(self._parse_lambda)
 
             if function:

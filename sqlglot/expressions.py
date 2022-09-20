@@ -1657,6 +1657,7 @@ class DataType(Expression):
         NVARCHAR = auto()
         TEXT = auto()
         BINARY = auto()
+        VARBYTE = auto()
         INT = auto()
         TINYINT = auto()
         SMALLINT = auto()
@@ -1667,6 +1668,8 @@ class DataType(Expression):
         BOOLEAN = auto()
         JSON = auto()
         INTERVAL = auto()
+        TIME = auto()
+        TIMEZ = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         DATE = auto()
@@ -1675,8 +1678,11 @@ class DataType(Expression):
         MAP = auto()
         UUID = auto()
         GEOGRAPHY = auto()
+        GEOMETRY = auto()
         STRUCT = auto()
         NULLABLE = auto()
+        HLLSKETCH = auto()
+        SUPER = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):
@@ -1808,6 +1814,10 @@ class Is(Binary, Predicate):
 
 
 class Like(Binary, Predicate):
+    pass
+
+
+class SimilarTo(Binary, Predicate):
     pass
 
 

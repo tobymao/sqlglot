@@ -20,6 +20,7 @@ class Dialects(str, Enum):
     ORACLE = "oracle"
     POSTGRES = "postgres"
     PRESTO = "presto"
+    REDSHIFT = "redshift"
     SNOWFLAKE = "snowflake"
     SPARK = "spark"
     SQLITE = "sqlite"

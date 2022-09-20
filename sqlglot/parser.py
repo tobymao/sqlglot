@@ -86,6 +86,12 @@ class Parser:
         TokenType.DECIMAL,
         TokenType.UUID,
         TokenType.GEOGRAPHY,
+        TokenType.TIME,
+        TokenType.TIMEZ,
+        TokenType.GEOMETRY,
+        TokenType.HLLSKETCH,
+        TokenType.SUPER,
+        TokenType.VARBYTE,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -336,6 +342,9 @@ class Parser:
         ),
         TokenType.RLIKE: lambda self, this: self.expression(
             exp.RegexpLike, this=this, expression=self._parse_bitwise()
+        ),
+        TokenType.SIMILAR_TO: lambda self, this: self.expression(
+            exp.SimilarTo, this=this, expression=self._parse_bitwise()
         ),
     }
 

@@ -939,7 +939,9 @@ class Generator:
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression):
-        return f"INTERVAL {self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
+        unit = self.sql(expression, "unit")
+        unit = f" {unit}" if unit else ""
+        return f"INTERVAL {self.sql(expression, 'this')}{unit}"
 
     def reference_sql(self, expression):
         this = self.sql(expression, "this")
@@ -1074,6 +1076,9 @@ class Generator:
 
     def like_sql(self, expression):
         return self.binary(expression, "LIKE")
+
+    def similarto_sql(self, expression):
+        return self.binary(expression, "SIMILAR TO")
 
     def lt_sql(self, expression):
         return self.binary(expression, "<")

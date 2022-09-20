@@ -126,6 +126,7 @@ class Parser:
         TokenType.LAZY,
         TokenType.LEADING,
         TokenType.LOCATION,
+        TokenType.NATURAL,
         TokenType.NEXT,
         TokenType.ONLY,
         TokenType.OPTIMIZE,
@@ -153,6 +154,8 @@ class Parser:
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }
+
+    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL}
 
     TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
@@ -993,7 +996,7 @@ class Parser:
 
     def _parse_table_alias(self):
         any_token = self._match(TokenType.ALIAS)
-        alias = self._parse_id_var(any_token)
+        alias = self._parse_id_var(any_token=any_token, tokens=self.TABLE_ALIAS_TOKENS)
         columns = None
 
         if self._match(TokenType.L_PAREN):
@@ -1082,18 +1085,21 @@ class Parser:
 
     def _parse_join_side_and_kind(self):
         return (
+            self._match(TokenType.NATURAL) and self._prev,
             self._match_set(self.JOIN_SIDES) and self._prev,
             self._match_set(self.JOIN_KINDS) and self._prev,
         )
 
     def _parse_join(self):
-        side, kind = self._parse_join_side_and_kind()
+        natural, side, kind = self._parse_join_side_and_kind()
 
         if not self._match(TokenType.JOIN):
             return None
 
         kwargs = {"this": self._parse_lateral() or self._parse_table()}
 
+        if natural:
+            kwargs["natural"] = True
         if side:
             kwargs["side"] = side.text
         if kind:
@@ -2092,7 +2098,7 @@ class Parser:
 
         return this
 
-    def _parse_id_var(self, any_token=True):
+    def _parse_id_var(self, any_token=True, tokens=None):
         identifier = self._parse_identifier()
 
         if identifier:
@@ -2105,7 +2111,7 @@ class Parser:
         ):
             return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
 
-        return self._match_set(self.ID_VAR_TOKENS) and exp.Identifier(
+        return self._match_set(tokens or self.ID_VAR_TOKENS) and exp.Identifier(
             this=self._prev.text, quoted=False
         )
 

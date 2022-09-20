@@ -30,6 +30,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(tables, ["a", "b.c", "d"])
 
     def test_select(self):
+        self.assertIsNotNone(parse_one("select 1 natural"))
         self.assertIsNotNone(
             parse_one("select * from (select 1) x order by x.y").args["order"]
         )

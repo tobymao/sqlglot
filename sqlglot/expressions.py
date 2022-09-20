@@ -745,6 +745,7 @@ class Join(Expression):
         "side": False,
         "kind": False,
         "using": False,
+        "natural": False,
     }
 
     @property
@@ -1412,7 +1413,9 @@ class Select(Subqueryable, Expression):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
+            natural, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
+            if natural:
+                join.set("natural", True)
             if side:
                 join.set("side", side.text)
             if kind:

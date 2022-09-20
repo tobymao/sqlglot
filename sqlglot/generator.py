@@ -614,7 +614,16 @@ class Generator:
 
     def join_sql(self, expression):
         op_sql = self.seg(
-            " ".join(op for op in (expression.side, expression.kind, "JOIN") if op)
+            " ".join(
+                op
+                for op in (
+                    "NATURAL" if expression.args.get("natural") else None,
+                    expression.side,
+                    expression.kind,
+                    "JOIN",
+                )
+                if op
+            )
         )
         on_sql = self.sql(expression, "on")
         using = expression.args.get("using")

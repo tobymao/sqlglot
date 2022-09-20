@@ -52,6 +52,7 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("CAST('bla' AS SUPER)")
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")
         self.validate_identity("CAST('foo' AS HLLSKETCH)")
         self.validate_identity("SELECT DATEADD(day, 1, 'today')")

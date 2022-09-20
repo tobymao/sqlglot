@@ -4,6 +4,34 @@ from sqlglot.tokens import TokenType
 
 
 class Redshift(Postgres):
+    time_format = "'YYYY-MM-DD HH:MI:SS'"
+    time_mapping = {
+        "YY": "%y",
+        "yy": "%y",
+        "YYYY": "%Y",
+        "yyyy": "%Y",
+        "MM": "%m",
+        "mm": "%m",
+        "MON": "%b",
+        "mon": "%b",
+        "DD": "%d",
+        "dd": "%d",
+        "HH12": "%I",
+        "hh12": "%I",
+        "HH24": "%H",
+        "hh24": "%H",
+        "HH": "%H",
+        "hh": "%H",
+        "MI": "%M",
+        "mi": "%M",
+        "SS": "%S",
+        "ss": "%S",
+        "OF": "%z",
+        "of": "%z",
+        "AM": "%p",
+        "PM": "%p",
+    }
+
     class Tokenizer(Postgres.Tokenizer):
         ESCAPE = "\\"
 

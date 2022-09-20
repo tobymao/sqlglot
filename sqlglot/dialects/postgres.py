@@ -105,6 +105,8 @@ class Postgres(Dialect):
     }
 
     class Tokenizer(Tokenizer):
+        BIT_STRINGS = [("b'", "'"), ("B'", "'")]
+        HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "SERIAL": TokenType.AUTO_INCREMENT,

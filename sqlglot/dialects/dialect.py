@@ -53,12 +53,29 @@ class _Dialect(type):
         klass.generator_class = getattr(klass, "Generator", Generator)
 
         klass.tokenizer = klass.tokenizer_class()
-        klass.quote_start, klass.quote_end = list(klass.tokenizer_class.QUOTES.items())[
-            0
-        ]
-        klass.identifier_start, klass.identifier_end = list(
-            klass.tokenizer_class.IDENTIFIERS.items()
+        klass.quote_start, klass.quote_end = list(
+            klass.tokenizer_class._QUOTES.items()
         )[0]
+        klass.identifier_start, klass.identifier_end = list(
+            klass.tokenizer_class._IDENTIFIERS.items()
+        )[0]
+
+        if (
+            klass.tokenizer_class._BIT_STRINGS
+            and exp.BitString not in klass.generator_class.TRANSFORMS
+        ):
+            bs_start, bs_end = list(klass.tokenizer_class._BIT_STRINGS.items())[0]
+            klass.generator_class.TRANSFORMS[
+                exp.BitString
+            ] = lambda self, e: f"{bs_start}{int(self.sql(e, 'this')):b}{bs_end}"
+        if (
+            klass.tokenizer_class._HEX_STRINGS
+            and exp.HexString not in klass.generator_class.TRANSFORMS
+        ):
+            hs_start, hs_end = list(klass.tokenizer_class._HEX_STRINGS.items())[0]
+            klass.generator_class.TRANSFORMS[
+                exp.HexString
+            ] = lambda self, e: f"{hs_start}{int(self.sql(e, 'this')):X}{hs_end}"
 
         return klass
 

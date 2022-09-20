@@ -29,9 +29,6 @@ class Redshift(Postgres):
     class Generator(Postgres.Generator):
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
-            exp.DataType.Type.GEOMETRY: "GEOMETRY",
             exp.DataType.Type.BINARY: "VARBYTE",
-            exp.DataType.Type.HLLSKETCH: "HLLSKETCH",
             exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.SUPER: "SUPER",
         }

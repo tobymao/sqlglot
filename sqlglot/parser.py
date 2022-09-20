@@ -86,6 +86,9 @@ class Parser:
         TokenType.DECIMAL,
         TokenType.UUID,
         TokenType.GEOGRAPHY,
+        TokenType.GEOMETRY,
+        TokenType.HLLSKETCH,
+        TokenType.SUPER,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -329,6 +332,9 @@ class Parser:
         ),
         TokenType.RLIKE: lambda self, this: self.expression(
             exp.RegexpLike, this=this, expression=self._parse_bitwise()
+        ),
+        TokenType.SIMILAR_TO: lambda self, this: self.expression(
+            exp.SimilarTo, this=this, expression=self._parse_bitwise()
         ),
     }
 
@@ -1533,7 +1539,10 @@ class Parser:
                 self.raise_error("Expecting >")
 
         if type_token in self.TIMESTAMPS:
-            tz = self._match(TokenType.WITH_TIME_ZONE)
+            tz = (
+                self._match(TokenType.WITH_TIME_ZONE)
+                or type_token == TokenType.TIMESTAMPTZ
+            )
             self._match(TokenType.WITHOUT_TIME_ZONE)
             if tz:
                 return exp.DataType(

@@ -76,7 +76,8 @@ class Postgres(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
     time_mapping = {
-        "AM": "%p",  # AM or PM
+        "AM": "%p",
+        "PM": "%p",
         "D": "%w",  # 1-based day of week
         "DD": "%d",  # day of month
         "DDD": "%j",  # zero padded day of year

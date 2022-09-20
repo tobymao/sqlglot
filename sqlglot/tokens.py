@@ -80,6 +80,9 @@ class TokenType(AutoName):
     UUID = auto()
     GEOGRAPHY = auto()
     NULLABLE = auto()
+    GEOMETRY = auto()
+    HLLSKETCH = auto()
+    SUPER = auto()
 
     # keywords
     ADD_FILE = auto()
@@ -210,6 +213,7 @@ class TokenType(AutoName):
     SEPARATOR = auto()
     SET = auto()
     SHOW = auto()
+    SIMILAR_TO = auto()
     SOME = auto()
     SORT_BY = auto()
     STORED = auto()
@@ -217,7 +221,6 @@ class TokenType(AutoName):
     TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
-    TIME = auto()
     TOP = auto()
     THEN = auto()
     TRUE = auto()

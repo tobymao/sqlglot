@@ -1682,8 +1682,11 @@ class DataType(Expression):
         MAP = auto()
         UUID = auto()
         GEOGRAPHY = auto()
+        GEOMETRY = auto()
         STRUCT = auto()
         NULLABLE = auto()
+        HLLSKETCH = auto()
+        SUPER = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):
@@ -1815,6 +1818,10 @@ class Is(Binary, Predicate):
 
 
 class Like(Binary, Predicate):
+    pass
+
+
+class SimilarTo(Binary, Predicate):
     pass
 
 

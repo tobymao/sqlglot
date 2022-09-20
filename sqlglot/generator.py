@@ -389,10 +389,10 @@ class Generator:
         return f"{alias}{columns}"
 
     def bitstring_sql(self, expression):
-        return f"{self.sql(expression, 'this')}"
+        return self.sql(expression, "this")
 
     def hexstring_sql(self, expression):
-        return f"{self.sql(expression, 'this')}"
+        return self.sql(expression, "this")
 
     def datatype_sql(self, expression):
         type_value = expression.this

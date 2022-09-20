@@ -42,6 +42,20 @@ class TestTranspile(unittest.TestCase):
             "SELECT * FROM x WHERE a = ANY (SELECT 1)",
         )
 
+    def test_leading_comma(self):
+        self.validate(
+            "SELECT FOO, BAR, BAZ",
+            "SELECT\n    FOO\n  , BAR\n  , BAZ",
+            leading_comma=True,
+            pretty=True,
+        )
+        # without pretty, this should be a no-op
+        self.validate(
+            "SELECT FOO, BAR, BAZ",
+            "SELECT FOO, BAR, BAZ",
+            leading_comma=True,
+        )
+
     def test_space(self):
         self.validate("SELECT MIN(3)>MIN(2)", "SELECT MIN(3) > MIN(2)")
         self.validate("SELECT MIN(3)>=MIN(2)", "SELECT MIN(3) >= MIN(2)")
@@ -107,6 +121,13 @@ class TestTranspile(unittest.TestCase):
         self.validate(
             "extract(month from '2021-01-31'::timestamp without time zone)",
             "EXTRACT(month FROM CAST('2021-01-31' AS TIMESTAMP))",
+        )
+        self.validate(
+            "extract(week from current_date + 2)", "EXTRACT(week FROM CURRENT_DATE + 2)"
+        )
+        self.validate(
+            "EXTRACT(minute FROM datetime1 - datetime2)",
+            "EXTRACT(minute FROM datetime1 - datetime2)",
         )
 
     def test_if(self):

@@ -41,6 +41,8 @@ class Generator:
         max_unsupported (int): Maximum number of unsupported messages to include in a raised UnsupportedError.
             This is only relevant if unsupported_level is ErrorLevel.RAISE.
             Default: 3
+        leading_comma (bool): if the the comma is leading or trailing in select statements
+            Default: False
     """
 
     TRANSFORMS = {
@@ -108,6 +110,7 @@ class Generator:
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
+        "_leading_comma",
     )
 
     def __init__(
@@ -131,6 +134,7 @@ class Generator:
         unsupported_level=ErrorLevel.WARN,
         null_ordering=None,
         max_unsupported=3,
+        leading_comma=False,
     ):
         import sqlglot
 
@@ -157,6 +161,7 @@ class Generator:
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
+        self._leading_comma = leading_comma
 
     def generate(self, expression):
         """
@@ -534,7 +539,7 @@ class Generator:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def table_sql(self, expression):
-        return ".".join(
+        table = ".".join(
             part
             for part in [
                 self.sql(expression, "catalog"),
@@ -543,6 +548,9 @@ class Generator:
             ]
             if part
         )
+
+        joins = self.expressions(expression, key="joins", sep="")
+        return f"{table}{joins}"
 
     def tablesample_sql(self, expression):
         if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):
@@ -633,6 +641,8 @@ class Generator:
 
     def lateral_sql(self, expression):
         this = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Subquery):
+            return f"LATERAL{self.sep()}{this}"
         op_sql = self.seg(
             f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}"
         )
@@ -801,14 +811,20 @@ class Generator:
 
     def window_sql(self, expression):
         this = self.sql(expression, "this")
+
         partition = self.expressions(expression, key="partition_by", flat=True)
         partition = f"PARTITION BY {partition}" if partition else ""
+
         order = expression.args.get("order")
         order_sql = self.order_sql(order, flat=True) if order else ""
+
         partition_sql = partition + " " if partition and order else partition
+
         spec = expression.args.get("spec")
         spec_sql = " " + self.window_spec_sql(spec) if spec else ""
+
         alias = self.sql(expression, "alias")
+
         if expression.arg_key == "window":
             this = this = f"{self.seg('WINDOW')} {this} AS"
         else:
@@ -881,6 +897,17 @@ class Generator:
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")
         return f"EXTRACT({this} FROM {expression_sql})"
+
+    def trim_sql(self, expression):
+        target = self.sql(expression, "this")
+        trim_type = self.sql(expression, "position")
+
+        if trim_type == "LEADING":
+            return f"LTRIM({target})"
+        elif trim_type == "TRAILING":
+            return f"RTRIM({target})"
+        else:
+            return f"TRIM({target})"
 
     def check_sql(self, expression):
         this = self.sql(expression, key="this")
@@ -1009,6 +1036,9 @@ class Generator:
     def ignorenulls_sql(self, expression):
         return f"{self.sql(expression, 'this')} IGNORE NULLS"
 
+    def respectnulls_sql(self, expression):
+        return f"{self.sql(expression, 'this')} RESPECT NULLS"
+
     def intdiv_sql(self, expression):
         return self.sql(
             exp.Cast(
@@ -1025,6 +1055,9 @@ class Generator:
 
     def div_sql(self, expression):
         return self.binary(expression, "/")
+
+    def distance_sql(self, expression):
+        return self.binary(expression, "<->")
 
     def dot_sql(self, expression):
         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
@@ -1105,7 +1138,16 @@ class Generator:
         if flat:
             return sep.join(self.sql(e) for e in expressions)
 
-        expressions = self.sep(sep).join(self.sql(e) for e in expressions)
+        sql = (self.sql(e) for e in expressions)
+        # the only time leading_comma changes the output is if pretty print is enabled
+        if self._leading_comma and self.pretty:
+            pad = " " * self.pad
+            expressions = "\n".join(
+                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql)
+            )
+        else:
+            expressions = self.sep(sep).join(sql)
+
         if indent:
             return self.indent(expressions, skip_first=False)
         return expressions

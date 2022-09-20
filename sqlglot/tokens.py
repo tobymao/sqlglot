@@ -38,6 +38,7 @@ class TokenType(AutoName):
     DARROW = auto()
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
+    LR_ARROW = auto()
     ANNOTATION = auto()
     DOLLAR = auto()
 
@@ -93,11 +94,11 @@ class TokenType(AutoName):
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
+    BOTH = auto()
     BUCKET = auto()
     CACHE = auto()
     CALL = auto()
     CASE = auto()
-    CAST = auto()
     CHARACTER_SET = auto()
     CHECK = auto()
     CLUSTER_BY = auto()
@@ -105,7 +106,6 @@ class TokenType(AutoName):
     COMMENT = auto()
     COMMIT = auto()
     CONSTRAINT = auto()
-    CONVERT = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
@@ -128,13 +128,13 @@ class TokenType(AutoName):
     EXCEPT = auto()
     EXISTS = auto()
     EXPLAIN = auto()
-    EXTRACT = auto()
     FALSE = auto()
     FETCH = auto()
     FILTER = auto()
     FINAL = auto()
     FIRST = auto()
     FOLLOWING = auto()
+    FOR = auto()
     FOREIGN_KEY = auto()
     FORMAT = auto()
     FULL = auto()
@@ -160,6 +160,7 @@ class TokenType(AutoName):
     JOIN = auto()
     LATERAL = auto()
     LAZY = auto()
+    LEADING = auto()
     LEFT = auto()
     LIKE = auto()
     LIMIT = auto()
@@ -205,6 +206,7 @@ class TokenType(AutoName):
     ROWS = auto()
     SCHEMA_COMMENT = auto()
     SELECT = auto()
+    SEPARATOR = auto()
     SET = auto()
     SHOW = auto()
     SOME = auto()
@@ -218,8 +220,8 @@ class TokenType(AutoName):
     TOP = auto()
     THEN = auto()
     TRUE = auto()
+    TRAILING = auto()
     TRUNCATE = auto()
-    TRY_CAST = auto()
     UNBOUNDED = auto()
     UNCACHE = auto()
     UNION = auto()
@@ -369,6 +371,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "->>": TokenType.DARROW,
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
+        "<->": TokenType.LR_ARROW,
         "ADD ARCHIVE": TokenType.ADD_FILE,
         "ADD ARCHIVES": TokenType.ADD_FILE,
         "ADD FILE": TokenType.ADD_FILE,
@@ -386,12 +389,12 @@ class Tokenizer(metaclass=_Tokenizer):
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,
+        "BOTH": TokenType.BOTH,
         "BUCKET": TokenType.BUCKET,
         "CALL": TokenType.CALL,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
-        "CAST": TokenType.CAST,
         "CHARACTER SET": TokenType.CHARACTER_SET,
         "CHECK": TokenType.CHECK,
         "CLUSTER BY": TokenType.CLUSTER_BY,
@@ -399,7 +402,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
         "CONSTRAINT": TokenType.CONSTRAINT,
-        "CONVERT": TokenType.CONVERT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,
@@ -420,7 +422,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "EXCEPT": TokenType.EXCEPT,
         "EXISTS": TokenType.EXISTS,
         "EXPLAIN": TokenType.EXPLAIN,
-        "EXTRACT": TokenType.EXTRACT,
         "FALSE": TokenType.FALSE,
         "FETCH": TokenType.FETCH,
         "FILTER": TokenType.FILTER,
@@ -449,6 +450,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "JOIN": TokenType.JOIN,
         "LATERAL": TokenType.LATERAL,
         "LAZY": TokenType.LAZY,
+        "LEADING": TokenType.LEADING,
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
@@ -502,8 +504,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
+        "TRAILING": TokenType.TRAILING,
         "TRUNCATE": TokenType.TRUNCATE,
-        "TRY_CAST": TokenType.TRY_CAST,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
         "UNNEST": TokenType.UNNEST,

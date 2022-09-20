@@ -207,7 +207,9 @@ class Scope:
                 c
                 for c in columns + external_columns
                 if not (
-                    c.find_ancestor(exp.Qualify, exp.Order) and c.name in named_outputs
+                    c.find_ancestor(exp.Qualify, exp.Order)
+                    and not c.table
+                    and c.name in named_outputs
                 )
             ]
         return self._columns
@@ -310,6 +312,16 @@ class Scope:
         columns = self.sources.pop(old_name or "", [])
         self.sources[new_name] = columns
 
+    def add_source(self, name, source):
+        """Add a source to this scope"""
+        self.sources[name] = source
+        self.clear_cache()
+
+    def remove_source(self, name):
+        """Remove a source from this scope"""
+        self.sources.pop(name, None)
+        self.clear_cache()
+
 
 def traverse_scope(expression):
     """
@@ -334,7 +346,7 @@ def traverse_scope(expression):
     Args:
         expression (exp.Expression): expression to traverse
     Returns:
-        List[Scope]: scope instances
+        list[Scope]: scope instances
     """
     return list(_traverse_scope(Scope(expression)))
 

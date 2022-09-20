@@ -32,6 +32,46 @@ def _date_add_sql(kind):
     return func
 
 
+def _lateral_sql(self, expression):
+    this = self.sql(expression, "this")
+    if isinstance(expression.this, exp.Subquery):
+        return f"LATERAL{self.sep()}{this}"
+    alias = expression.args["alias"]
+    table = alias.name
+    table = f" {table}" if table else table
+    columns = self.expressions(alias, key="columns", flat=True)
+    columns = f" AS {columns}" if columns else ""
+    return f"LATERAL{self.sep()}{this}{table}{columns}"
+
+
+def _substring_sql(self, expression):
+    this = self.sql(expression, "this")
+    start = self.sql(expression, "start")
+    length = self.sql(expression, "length")
+
+    from_part = f" FROM {start}" if start else ""
+    for_part = f" FOR {length}" if length else ""
+
+    return f"SUBSTRING({this}{from_part}{for_part})"
+
+
+def _trim_sql(self, expression):
+    target = self.sql(expression, "this")
+    trim_type = self.sql(expression, "position")
+    remove_chars = self.sql(expression, "expression")
+    collation = self.sql(expression, "collation")
+
+    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't postgres-specific
+    if not remove_chars and not collation:
+        return self.trim_sql(expression)
+
+    trim_type = f"{trim_type} " if trim_type else ""
+    remove_chars = f"{remove_chars} " if remove_chars else ""
+    from_part = "FROM " if trim_type or remove_chars else ""
+    collation = f" COLLATE {collation}" if collation else ""
+    return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
+
+
 class Postgres(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
@@ -71,10 +111,13 @@ class Postgres(Dialect):
             **Tokenizer.KEYWORDS,
             "SERIAL": TokenType.AUTO_INCREMENT,
             "UUID": TokenType.UUID,
+            "FOR": TokenType.FOR,
+            "DOUBLE PRECISION": TokenType.DOUBLE,
         }
 
     class Parser(Parser):
         STRICT_CAST = False
+
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "TO_TIMESTAMP": format_time_lambda(exp.StrToTime, "postgres"),
@@ -104,8 +147,11 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
+            exp.Lateral: _lateral_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.Substring: _substring_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
+            exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
         }

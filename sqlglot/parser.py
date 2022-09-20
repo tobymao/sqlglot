@@ -78,6 +78,7 @@ class Parser:
         TokenType.TEXT,
         TokenType.BINARY,
         TokenType.JSON,
+        TokenType.INTERVAL,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.DATETIME,
@@ -101,12 +102,12 @@ class Parser:
         TokenType.VAR,
         TokenType.ALTER,
         TokenType.BEGIN,
+        TokenType.BOTH,
         TokenType.BUCKET,
         TokenType.CACHE,
         TokenType.COLLATE,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
-        TokenType.CONVERT,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.ENGINE,
@@ -115,6 +116,7 @@ class Parser:
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FOLLOWING,
+        TokenType.FOR,
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.IF,
@@ -122,6 +124,7 @@ class Parser:
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
+        TokenType.LEADING,
         TokenType.LOCATION,
         TokenType.NEXT,
         TokenType.ONLY,
@@ -141,6 +144,7 @@ class Parser:
         TokenType.TABLE_FORMAT,
         TokenType.TEMPORARY,
         TokenType.TOP,
+        TokenType.TRAILING,
         TokenType.TRUNCATE,
         TokenType.TRUE,
         TokenType.UNBOUNDED,
@@ -150,18 +154,13 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    CASTS = {
-        TokenType.CAST,
-        TokenType.TRY_CAST,
-    }
+    TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
     FUNC_TOKENS = {
-        TokenType.CONVERT,
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_DATETIME,
         TokenType.CURRENT_TIMESTAMP,
         TokenType.CURRENT_TIME,
-        TokenType.EXTRACT,
         TokenType.FILTER,
         TokenType.FIRST,
         TokenType.FORMAT,
@@ -178,7 +177,6 @@ class Parser:
         TokenType.DATETIME,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
-        *CASTS,
         *NESTED_TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }
@@ -215,6 +213,7 @@ class Parser:
 
     FACTOR = {
         TokenType.DIV: exp.IntDiv,
+        TokenType.LR_ARROW: exp.Distance,
         TokenType.SLASH: exp.Div,
         TokenType.STAR: exp.Mul,
     }
@@ -320,13 +319,13 @@ class Parser:
         TokenType.IN: lambda self, this: self._parse_in(this),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: lambda self, this: self._parse_escape(
-            self.expression(exp.Like, this=this, expression=self._parse_type())
+            self.expression(exp.Like, this=this, expression=self._parse_bitwise())
         ),
         TokenType.ILIKE: lambda self, this: self._parse_escape(
-            self.expression(exp.ILike, this=this, expression=self._parse_type())
+            self.expression(exp.ILike, this=this, expression=self._parse_bitwise())
         ),
         TokenType.RLIKE: lambda self, this: self.expression(
-            exp.RegexpLike, this=this, expression=self._parse_type()
+            exp.RegexpLike, this=this, expression=self._parse_bitwise()
         ),
     }
 
@@ -364,14 +363,12 @@ class Parser:
     }
 
     FUNCTION_PARSERS = {
-        TokenType.CONVERT: lambda self, _: self._parse_convert(),
-        TokenType.EXTRACT: lambda self, _: self._parse_extract(),
-        **{
-            token_type: lambda self, token_type: self._parse_cast(
-                self.STRICT_CAST and token_type == TokenType.CAST
-            )
-            for token_type in CASTS
-        },
+        "CONVERT": lambda self: self._parse_convert(),
+        "EXTRACT": lambda self: self._parse_extract(),
+        "SUBSTRING": lambda self: self._parse_substring(),
+        "TRIM": lambda self: self._parse_trim(),
+        "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
+        "TRY_CAST": lambda self: self._parse_cast(False),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -652,7 +649,7 @@ class Parser:
                 this if isinstance(this, exp.Schema) else None
             )
             if self._match(TokenType.ALIAS):
-                expression = self._parse_select()
+                expression = self._parse_select(nested=True)
 
         return self.expression(
             exp.Create,
@@ -812,7 +809,7 @@ class Parser:
             this=self._parse_table(schema=True),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
-            expression=self._parse_select(),
+            expression=self._parse_select(nested=True),
             overwrite=overwrite,
         )
 
@@ -866,7 +863,7 @@ class Parser:
             this=table,
             lazy=lazy,
             options=options,
-            expression=self._parse_select(),
+            expression=self._parse_select(nested=True),
         )
 
     def _parse_partition(self):
@@ -895,9 +892,7 @@ class Parser:
         self._match_r_paren()
         return self.expression(exp.Tuple, expressions=expressions)
 
-    def _parse_select(self, table=None):
-        index = self._index
-
+    def _parse_select(self, nested=False, table=False):
         if self._match(TokenType.SELECT):
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
@@ -961,15 +956,11 @@ class Parser:
                 )
             else:
                 self.raise_error(f"{this.key} does not support CTE")
-        elif self._match(TokenType.L_PAREN):
-            this = self._parse_table() if table else self._parse_select()
-
-            if this:
-                self._parse_query_modifiers(this)
-                self._match_r_paren()
-                this = self._parse_subquery(this)
-            else:
-                self._retreat(index)
+        elif (table or nested) and self._match(TokenType.L_PAREN):
+            this = self._parse_table() if table else self._parse_select(nested=True)
+            self._parse_query_modifiers(this)
+            self._match_r_paren()
+            this = self._parse_subquery(this)
         elif self._match(TokenType.VALUES):
             this = self.expression(
                 exp.Values, expressions=self._parse_csv(self._parse_value)
@@ -1022,6 +1013,9 @@ class Parser:
         return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
 
     def _parse_query_modifiers(self, this):
+        if isinstance(this, exp.Table):
+            this.set("joins", self._parse_joins())
+            return
         if not isinstance(this, (exp.Subquery, exp.Subqueryable)):
             return
 
@@ -1060,9 +1054,12 @@ class Parser:
         if not self._match(TokenType.LATERAL):
             return None
 
-        if not self._match(TokenType.VIEW):
-            self.raise_error("Expected VIEW after LATERAL")
+        subquery = self._parse_select(table=True)
 
+        if subquery:
+            return self.expression(exp.Lateral, this=subquery)
+
+        self._match(TokenType.VIEW)
         outer = self._match(TokenType.OUTER)
 
         return self.expression(
@@ -1095,7 +1092,7 @@ class Parser:
         if not self._match(TokenType.JOIN):
             return None
 
-        kwargs = {"this": self._parse_table()}
+        kwargs = {"this": self._parse_lateral() or self._parse_table()}
 
         if side:
             kwargs["side"] = side.text
@@ -1121,6 +1118,11 @@ class Parser:
         )
 
     def _parse_table(self, schema=False):
+        lateral = self._parse_lateral()
+
+        if lateral:
+            return lateral
+
         unnest = self._parse_unnest()
 
         if unnest:
@@ -1355,7 +1357,7 @@ class Parser:
             expression,
             this=this,
             distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
-            expression=self._parse_select(),
+            expression=self._parse_select(nested=True),
         )
 
     def _parse_expression(self):
@@ -1604,7 +1606,7 @@ class Parser:
             self._match_r_paren()
 
             if isinstance(this, exp.Subqueryable):
-                return self._parse_subquery(this)
+                return self._parse_set_operations(self._parse_subquery(this))
             if len(expressions) > 1:
                 return self.expression(exp.Tuple, expressions=expressions)
             return self.expression(exp.Paren, this=this)
@@ -1637,13 +1639,16 @@ class Parser:
         if token_type not in self.FUNC_TOKENS:
             return None
 
-        if self._match_set(self.FUNCTION_PARSERS):
-            self._advance()
-            this = self.FUNCTION_PARSERS[token_type](self, token_type)
+        this = self._curr.text
+        upper = this.upper()
+        self._advance(2)
+
+        parser = self.FUNCTION_PARSERS.get(upper)
+
+        if parser:
+            this = parser(self)
         else:
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
-            this = self._curr.text
-            self._advance(2)
 
             if subquery_predicate and self._curr.token_type in (
                 TokenType.SELECT,
@@ -1653,7 +1658,7 @@ class Parser:
                 self._match_r_paren()
                 return this
 
-            function = self.FUNCTIONS.get(this.upper())
+            function = self.FUNCTIONS.get(upper)
             args = self._parse_csv(self._parse_lambda)
 
             if function:
@@ -1703,7 +1708,7 @@ class Parser:
 
         args = self._parse_csv(
             lambda: self._parse_constraint()
-            or self._parse_column_def(self._parse_field())
+            or self._parse_column_def(self._parse_field(True))
         )
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
@@ -1890,7 +1895,7 @@ class Parser:
         if not self._match(TokenType.FROM):
             self.raise_error("Expected FROM after EXTRACT", self._prev)
 
-        return self.expression(exp.Extract, this=this, expression=self._parse_type())
+        return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
 
     def _parse_cast(self, strict):
         this = self._parse_conjunction()
@@ -1918,6 +1923,50 @@ class Parser:
             to = None
         return self.expression(exp.Cast, this=this, to=to)
 
+    def _parse_substring(self):
+        # Postgres supports the form: substring(string [from int] [for int])
+        # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
+
+        args = self._parse_csv(self._parse_bitwise)
+
+        if self._match(TokenType.FROM):
+            args.append(self._parse_bitwise())
+            if self._match(TokenType.FOR):
+                args.append(self._parse_bitwise())
+
+        this = exp.Substring.from_arg_list(args)
+        self.validate_expression(this, args)
+
+        return this
+
+    def _parse_trim(self):
+        # https://www.w3resource.com/sql/character-functions/trim.php
+        # https://docs.oracle.com/javadb/10.8.3.0/ref/rreftrimfunc.html
+
+        position = None
+        collation = None
+
+        if self._match_set(self.TRIM_TYPES):
+            position = self._prev.text.upper()
+
+        expression = self._parse_term()
+        if self._match(TokenType.FROM):
+            this = self._parse_term()
+        else:
+            this = expression
+            expression = None
+
+        if self._match(TokenType.COLLATE):
+            collation = self._parse_term()
+
+        return self.expression(
+            exp.Trim,
+            this=this,
+            position=position,
+            expression=expression,
+            collation=collation,
+        )
+
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):
             self._match_l_paren()
@@ -1935,6 +1984,25 @@ class Parser:
             )
             self._match_r_paren()
             return this
+
+        # SQL spec defines an optional [ { IGNORE | RESPECT } NULLS ] OVER
+        # Some dialects choose to implement and some do not.
+        # https://dev.mysql.com/doc/refman/8.0/en/window-function-descriptions.html
+
+        # There is some code above in _parse_lambda that handles
+        #   SELECT FIRST_VALUE(TABLE.COLUMN IGNORE|RESPECT NULLS) OVER ...
+
+        # The below changes handle
+        #   SELECT FIRST_VALUE(TABLE.COLUMN) IGNORE|RESPECT NULLS OVER ...
+
+        # Oracle allows both formats
+        #   (https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/img_text/first_value.html)
+        #   and Snowflake chose to do the same for familiarity
+        #   https://docs.snowflake.com/en/sql-reference/functions/first_value.html#usage-notes
+        if self._match(TokenType.IGNORE_NULLS):
+            this = self.expression(exp.IgnoreNulls, this=this)
+        elif self._match(TokenType.RESPECT_NULLS):
+            this = self.expression(exp.RespectNulls, this=this)
 
         # bigquery select from window x AS (partition by ...)
         if alias:

@@ -49,6 +49,21 @@ def _str_to_date_sql(self, expression):
     return f"STR_TO_DATE({self.sql(expression.this)}, {date_format})"
 
 
+def _trim_sql(self, expression):
+    target = self.sql(expression, "this")
+    trim_type = self.sql(expression, "position")
+    remove_chars = self.sql(expression, "expression")
+
+    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't mysql-specific
+    if not remove_chars:
+        return self.trim_sql(expression)
+
+    trim_type = f"{trim_type} " if trim_type else ""
+    remove_chars = f"{remove_chars} " if remove_chars else ""
+    from_part = "FROM " if trim_type or remove_chars else ""
+    return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
+
+
 def _date_add(expression_class):
     def func(args):
         interval = list_get(args, 1)
@@ -93,6 +108,7 @@ class MySQL(Dialect):
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "SEPARATOR": TokenType.SEPARATOR,
             "_ARMSCII8": TokenType.INTRODUCER,
             "_ASCII": TokenType.INTRODUCER,
             "_BIG5": TokenType.INTRODUCER,
@@ -147,6 +163,15 @@ class MySQL(Dialect):
             "STR_TO_DATE": _str_to_date,
         }
 
+        FUNCTION_PARSERS = {
+            **Parser.FUNCTION_PARSERS,
+            "GROUP_CONCAT": lambda self: self.expression(
+                exp.GroupConcat,
+                this=self._parse_lambda(),
+                separator=self._match(TokenType.SEPARATOR) and self._parse_field(),
+            ),
+        }
+
     class Generator(Generator):
         NULL_ORDERING_SUPPORTED = False
 
@@ -160,6 +185,8 @@ class MySQL(Dialect):
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
+            exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
+            exp.Trim: _trim_sql,
         }

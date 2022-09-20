@@ -149,6 +149,17 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "TRY_CAST(a AS DOUBLE)",
+            read={
+                "postgres": "CAST(a AS DOUBLE PRECISION)",
+            },
+            write={
+                "duckdb": "TRY_CAST(a AS DOUBLE)",
+                "postgres": "CAST(a AS DOUBLE PRECISION)",
+            },
+        )
+
+        self.validate_all(
             "CAST(a AS DOUBLE)",
             write={
                 "bigquery": "CAST(a AS FLOAT64)",
@@ -162,6 +173,12 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS DOUBLE)",
                 "spark": "CAST(a AS DOUBLE)",
                 "starrocks": "CAST(a AS DOUBLE)",
+            },
+        )
+        self.validate_all(
+            "CAST('1 DAY' AS INTERVAL)",
+            write={
+                "postgres": "CAST('1 DAY' AS INTERVAL)",
             },
         )
         self.validate_all(
@@ -552,6 +569,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+                "oracle": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname NULLS FIRST",
                 "hive": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
@@ -566,6 +584,7 @@ class TestDialect(Validator):
                 "presto": "JSON_EXTRACT(x, 'y')",
             },
             write={
+                "oracle": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
             },
@@ -621,6 +640,41 @@ class TestDialect(Validator):
                 "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t(a)",
                 "spark": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
             },
+        )
+
+    # https://dev.mysql.com/doc/refman/8.0/en/join.html
+    # https://www.postgresql.org/docs/current/queries-table-expressions.html
+    def test_joined_tables(self):
+        self.validate_identity("SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)")
+        self.validate_identity("SELECT * FROM (tbl1 JOIN tbl2 JOIN tbl3)")
+        self.validate_identity(
+            "SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)"
+        )
+        self.validate_identity(
+            "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)"
+        )
+
+        self.validate_all(
+            "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
+            write={
+                "postgres": "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
+                "mysql": "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)",
+            write={
+                "postgres": "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)",
+                "mysql": "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)",
+            },
+        )
+
+    def test_lateral_subquery(self):
+        self.validate_identity(
+            "SELECT art FROM tbl1 INNER JOIN LATERAL (SELECT art FROM tbl2) AS tbl2 ON tbl1.art = tbl2.art"
+        )
+        self.validate_identity(
+            "SELECT * FROM tbl AS t LEFT JOIN LATERAL (SELECT * FROM b WHERE b.t_id = t.t_id) AS t ON TRUE"
         )
 
     def test_set_operators(self):
@@ -731,6 +785,11 @@ class TestDialect(Validator):
         )
 
     def test_operators(self):
+        self.validate_identity(
+            "some.column LIKE 'foo' || another.column || 'bar' || LOWER(x)"
+        )
+        self.validate_identity("some.column LIKE 'foo' + another.column + 'bar'")
+
         self.validate_all(
             "x ILIKE '%y'",
             read={
@@ -874,16 +933,8 @@ class TestDialect(Validator):
                 "spark": "FILTER(the_array, x -> x > 0)",
             },
         )
-        self.validate_all(
-            "SELECT a AS b FROM x GROUP BY b",
-            write={
-                "duckdb": "SELECT a AS b FROM x GROUP BY b",
-                "presto": "SELECT a AS b FROM x GROUP BY 1",
-                "hive": "SELECT a AS b FROM x GROUP BY 1",
-                "oracle": "SELECT a AS b FROM x GROUP BY 1",
-                "spark": "SELECT a AS b FROM x GROUP BY 1",
-            },
-        )
+
+    def test_limit(self):
         self.validate_all(
             "SELECT x FROM y LIMIT 10",
             write={
@@ -977,5 +1028,35 @@ class TestDialect(Validator):
                 "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
                 "postgres": "CREATE TABLE t (b1 BYTEA, b2 BYTEA(1024), c1 TEXT, c2 TEXT(1024))",
                 "sqlite": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
+            },
+        )
+
+    def test_alias(self):
+        self.validate_all(
+            "SELECT a AS b FROM x GROUP BY b",
+            write={
+                "duckdb": "SELECT a AS b FROM x GROUP BY b",
+                "presto": "SELECT a AS b FROM x GROUP BY 1",
+                "hive": "SELECT a AS b FROM x GROUP BY 1",
+                "oracle": "SELECT a AS b FROM x GROUP BY 1",
+                "spark": "SELECT a AS b FROM x GROUP BY 1",
+            },
+        )
+        self.validate_all(
+            "SELECT y x FROM my_table t",
+            write={
+                "hive": "SELECT y AS x FROM my_table AS t",
+                "oracle": "SELECT y AS x FROM my_table t",
+                "postgres": "SELECT y AS x FROM my_table AS t",
+                "sqlite": "SELECT y AS x FROM my_table AS t",
+            },
+        )
+        self.validate_all(
+            "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
+            write={
+                "hive": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
+                "oracle": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 t JOIN cte2 WHERE cte1.a = cte2.c",
+                "postgres": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
+                "sqlite": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
             },
         )

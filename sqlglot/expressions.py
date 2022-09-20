@@ -267,6 +267,14 @@ class Expression(metaclass=_Expression):
             expression = expression.this
         return expression
 
+    def unalias(self):
+        """
+        Returns the inner expression if this is an Alias.
+        """
+        if isinstance(self, Alias):
+            return self.this
+        return self
+
     def unnest_operands(self):
         """
         Returns unnested operands as a tuple.
@@ -747,6 +755,10 @@ class Join(Expression):
     def side(self):
         return self.text("side").upper()
 
+    @property
+    def alias_or_name(self):
+        return self.this.alias_or_name
+
     def on(self, *expressions, append=True, dialect=None, copy=True, **opts):
         """
         Append to or set the ON expressions.
@@ -877,10 +889,6 @@ class Reference(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
-class Table(Expression):
-    arg_types = {"this": True, "db": False, "catalog": False}
-
-
 class Tuple(Expression):
     arg_types = {"expressions": False}
 
@@ -988,6 +996,10 @@ QUERY_MODIFIERS = {
     "limit": False,
     "offset": False,
 }
+
+
+class Table(Expression):
+    arg_types = {"this": True, "db": False, "catalog": False, "joins": False}
 
 
 class Union(Subqueryable, Expression):
@@ -1658,6 +1670,7 @@ class DataType(Expression):
         DECIMAL = auto()
         BOOLEAN = auto()
         JSON = auto()
+        INTERVAL = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         DATE = auto()
@@ -1802,6 +1815,10 @@ class Like(Binary, Predicate):
     pass
 
 
+class Distance(Binary):
+    pass
+
+
 class LT(Binary, Predicate):
     pass
 
@@ -1900,6 +1917,10 @@ class Interval(TimeUnit):
 
 
 class IgnoreNulls(Expression):
+    pass
+
+
+class RespectNulls(Expression):
     pass
 
 
@@ -2182,6 +2203,10 @@ class Greatest(Func):
     is_var_len_args = True
 
 
+class GroupConcat(Func):
+    arg_types = {"this": True, "separator": False}
+
+
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
@@ -2310,8 +2335,10 @@ class Split(Func):
     arg_types = {"this": True, "expression": True}
 
 
+# Start may be omitted in the case of postgres
+# https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 class Substring(Func):
-    arg_types = {"this": True, "start": True, "length": False}
+    arg_types = {"this": True, "start": False, "length": False}
 
 
 class StrPosition(Func):
@@ -2381,6 +2408,15 @@ class TimeStrToTime(Func):
 
 class TimeStrToUnix(Func):
     pass
+
+
+class Trim(Func):
+    arg_types = {
+        "this": True,
+        "position": False,
+        "expression": False,
+        "collation": False,
+    }
 
 
 class TsOrDsAdd(Func, TimeUnit):

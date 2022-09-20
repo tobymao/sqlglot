@@ -549,8 +549,9 @@ class Generator:
             if part
         )
 
+        laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
-        return f"{table}{joins}"
+        return f"{table}{laterals}{joins}"
 
     def tablesample_sql(self, expression):
         if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):

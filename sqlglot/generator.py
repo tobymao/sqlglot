@@ -93,10 +93,6 @@ class Generator:
         "quote_end",
         "identifier_start",
         "identifier_end",
-        "bit_string_start",
-        "bit_string_end",
-        "hex_string_start",
-        "hex_string_end",
         "identify",
         "normalize",
         "escape",
@@ -123,10 +119,6 @@ class Generator:
         quote_end=None,
         identifier_start=None,
         identifier_end=None,
-        bit_string_start=None,
-        bit_string_end=None,
-        hex_string_start=None,
-        hex_string_end=None,
         identify=False,
         normalize=False,
         escape=None,
@@ -150,10 +142,6 @@ class Generator:
         self.quote_end = quote_end or "'"
         self.identifier_start = identifier_start or '"'
         self.identifier_end = identifier_end or '"'
-        self.bit_string_start = bit_string_start
-        self.bit_string_end = bit_string_end
-        self.hex_string_start = hex_string_start
-        self.hex_string_end = hex_string_end
         self.identify = identify
         self.normalize = normalize
         self.escape = escape or "'"
@@ -396,16 +384,10 @@ class Generator:
         return f"{alias}{columns}"
 
     def bitstring_sql(self, expression):
-        if not self.bit_string_start:
-            return f"{self.sql(expression, 'this')}"
-
-        return f"{self.bit_string_start}{int(self.sql(expression, 'this')):b}{self.bit_string_end}"
+        return f"{self.sql(expression, 'this')}"
 
     def hexstring_sql(self, expression):
-        if not self.hex_string_start:
-            return f"{self.sql(expression, 'this')}"
-
-        return f"{self.hex_string_start}{int(self.sql(expression, 'this')):X}{self.hex_string_end}"
+        return f"{self.sql(expression, 'this')}"
 
     def datatype_sql(self, expression):
         type_value = expression.this

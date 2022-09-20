@@ -644,10 +644,6 @@ class Tokenizer(metaclass=_Tokenizer):
                 if white_space == TokenType.BREAK:
                     self._col = 1
                     self._line += 1
-            elif self._char == "0" and self._peek.upper() == "B":
-                self._scan_bits()
-            elif self._char == "0" and self._peek.upper() == "X":
-                self._scan_hex()
             elif self._char.isdigit():
                 self._scan_number()
             elif identifier_end:
@@ -739,9 +735,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if self._scan_string(word):
             return
-        if self._scan_bit_string(word):
-            return
-        if self._scan_hex_string(word):
+        if self._scan_numeric_string(word):
             return
         if self._scan_comment(word):
             return
@@ -776,6 +770,13 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.ANNOTATION, self._text[1:])
 
     def _scan_number(self):
+        if self._char == "0":
+            peek = self._peek.upper()
+            if peek == "B":
+                return self._scan_bits()
+            elif peek == "X":
+                return self._scan_hex()
+
         decimal = False
         scientific = 0
 
@@ -837,65 +838,35 @@ class Tokenizer(metaclass=_Tokenizer):
         if quote_end is None:
             return False
 
-        text = ""
         self._advance(len(quote))
-        quote_end_size = len(quote_end)
-
-        while True:
-            if self._char == self.ESCAPE and self._peek == quote_end:
-                text += quote
-                self._advance(2)
-            else:
-                if self._chars(quote_end_size) == quote_end:
-                    if quote_end_size > 1:
-                        self._advance(quote_end_size - 1)
-                    break
-
-                if self._end:
-                    raise RuntimeError(
-                        f"Missing {quote} from {self._line}:{self._start}"
-                    )
-                text += self._char
-                self._advance()
+        text = self._extract_string(quote_end)
 
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
         text = text.replace("\\\\", "\\") if self.ESCAPE == "\\" else text
         self._add(TokenType.STRING, text)
         return True
 
-    def _scan_bit_string(self, bit_string):
-        bs_end = self._BIT_STRINGS.get(bit_string)
-        if bs_end is None:
+    def _scan_numeric_string(self, string_start):
+        if string_start in self._HEX_STRINGS:
+            delimiters = self._HEX_STRINGS
+            token_type = TokenType.HEX_STRING
+            base = 16
+        elif string_start in self._BIT_STRINGS:
+            delimiters = self._BIT_STRINGS
+            token_type = TokenType.BIT_STRING
+            base = 2
+        else:
             return False
 
-        self._advance(len(bit_string))
-        text = self._extract_string(bs_end)
-        if bs_end != " ":
-            self._advance(len(bs_end) - 1)
+        self._advance(len(string_start))
+        string_end = delimiters.get(string_start)
+        text = self._extract_string(string_end)
 
         try:
-            self._add(TokenType.BIT_STRING, f"{int(text, 2)}")
+            self._add(token_type, f"{int(text, base)}")
         except ValueError:
             raise RuntimeError(
-                f"Bit string contains invalid characters from {self._line}:{self._start}"
-            )
-        return True
-
-    def _scan_hex_string(self, hex_string):
-        hs_end = self._HEX_STRINGS.get(hex_string)
-        if hs_end is None:
-            return False
-
-        self._advance(len(hex_string))
-        text = self._extract_string(hs_end)
-        if hs_end != " ":
-            self._advance(len(hs_end) - 1)
-
-        try:
-            self._add(TokenType.HEX_STRING, f"{int(text, 16)}")
-        except ValueError:
-            raise RuntimeError(
-                f"Hex string contains invalid characters from {self._line}:{self._start}"
+                f"Numeric string contains invalid characters from {self._line}:{self._start}"
             )
         return True
 
@@ -928,6 +899,8 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance(2)
             else:
                 if self._chars(delim_size) == delimiter:
+                    if delim_size > 1:
+                        self._advance(delim_size - 1)
                     break
 
                 if self._end:

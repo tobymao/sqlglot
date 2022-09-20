@@ -27,18 +27,44 @@ class TestMySQL(Validator):
             },
         )
 
-    def test_binary_literal(self):
+    def test_hexadecimal_literal(self):
         self.validate_all(
             "SELECT 0xCC",
             write={
                 "mysql": "SELECT x'CC'",
                 "spark": "SELECT X'CC'",
+                "bigquery": "SELECT 0xCC",
+                "oracle": "SELECT 204",
+            },
+        )
+        self.validate_all(
+            "SELECT X'1A'",
+            write={
+                "mysql": "SELECT x'1A'",
             },
         )
         self.validate_all(
             "SELECT 0xz",
             write={
                 "mysql": "SELECT `0xz`",
+            },
+        )
+
+    def test_bits_literal(self):
+        self.validate_all(
+            "SELECT 0b1011",
+            write={
+                "mysql": "SELECT b'1011'",
+                "postgres": "SELECT b'1011'",
+                "oracle": "SELECT 11",
+            },
+        )
+        self.validate_all(
+            "SELECT B'1011'",
+            write={
+                "mysql": "SELECT b'1011'",
+                "postgres": "SELECT b'1011'",
+                "oracle": "SELECT 11",
             },
         )
 

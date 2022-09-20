@@ -98,7 +98,6 @@ class TokenType(AutoName):
     CACHE = auto()
     CALL = auto()
     CASE = auto()
-    CAST = auto()
     CHARACTER_SET = auto()
     CHECK = auto()
     CLUSTER_BY = auto()
@@ -106,7 +105,6 @@ class TokenType(AutoName):
     COMMENT = auto()
     COMMIT = auto()
     CONSTRAINT = auto()
-    CONVERT = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
@@ -129,7 +127,6 @@ class TokenType(AutoName):
     EXCEPT = auto()
     EXISTS = auto()
     EXPLAIN = auto()
-    EXTRACT = auto()
     FALSE = auto()
     FETCH = auto()
     FILTER = auto()
@@ -208,24 +205,22 @@ class TokenType(AutoName):
     ROWS = auto()
     SCHEMA_COMMENT = auto()
     SELECT = auto()
+    SEPARATOR = auto()
     SET = auto()
     SHOW = auto()
     SOME = auto()
     SORT_BY = auto()
     STORED = auto()
     STRUCT = auto()
-    SUBSTRING = auto()
     TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TIME = auto()
     TOP = auto()
     THEN = auto()
-    TRIM = auto()
     TRUE = auto()
     TRAILING = auto()
     TRUNCATE = auto()
-    TRY_CAST = auto()
     UNBOUNDED = auto()
     UNCACHE = auto()
     UNION = auto()
@@ -388,7 +383,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
-        "CAST": TokenType.CAST,
         "CHARACTER SET": TokenType.CHARACTER_SET,
         "CHECK": TokenType.CHECK,
         "CLUSTER BY": TokenType.CLUSTER_BY,
@@ -396,7 +390,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
         "CONSTRAINT": TokenType.CONSTRAINT,
-        "CONVERT": TokenType.CONVERT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,
@@ -417,7 +410,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "EXCEPT": TokenType.EXCEPT,
         "EXISTS": TokenType.EXISTS,
         "EXPLAIN": TokenType.EXPLAIN,
-        "EXTRACT": TokenType.EXTRACT,
         "FALSE": TokenType.FALSE,
         "FETCH": TokenType.FETCH,
         "FILTER": TokenType.FILTER,
@@ -492,7 +484,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "STORED": TokenType.STORED,
-        "SUBSTRING": TokenType.SUBSTRING,
         "TABLE": TokenType.TABLE,
         "TABLE_FORMAT": TokenType.TABLE_FORMAT,
         "TBLPROPERTIES": TokenType.PROPERTIES,
@@ -502,9 +493,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
         "TRAILING": TokenType.TRAILING,
-        "TRIM": TokenType.TRIM,
         "TRUNCATE": TokenType.TRUNCATE,
-        "TRY_CAST": TokenType.TRY_CAST,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
         "UNNEST": TokenType.UNNEST,

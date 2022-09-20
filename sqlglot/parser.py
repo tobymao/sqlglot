@@ -381,8 +381,6 @@ class Parser:
     }
 
     QUERY_MODIFIER_PARSERS = {
-        "laterals": lambda self: self._parse_laterals(),
-        "joins": lambda self: self._parse_joins(),
         "where": lambda self: self._parse_where(),
         "group": lambda self: self._parse_group(),
         "having": lambda self: self._parse_having(),
@@ -398,6 +396,8 @@ class Parser:
         "limit": lambda self: self._parse_limit(),
         "offset": lambda self: self._parse_offset(),
     }
+
+    MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
     CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION, TokenType.INDEX}
 
@@ -1022,11 +1022,23 @@ class Parser:
         return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
 
     def _parse_query_modifiers(self, this):
-        if isinstance(this, exp.Table):
-            this.set("joins", self._parse_joins())
+        if not isinstance(this, self.MODIFIABLES):
             return
-        if not isinstance(this, (exp.Subquery, exp.Subqueryable)):
-            return
+
+        table = isinstance(this, exp.Table)
+
+        while True:
+            lateral = self._parse_lateral()
+            join = self._parse_join()
+            comma = None if table else self._match(TokenType.COMMA)
+            if lateral:
+                this.append("laterals", lateral)
+            if join:
+                this.append("joins", join)
+            if comma:
+                this.args["from"].append("expressions", self._parse_table())
+            if not (lateral or join or comma):
+                break
 
         for key, parser in self.QUERY_MODIFIER_PARSERS.items():
             expression = parser(self)
@@ -1056,9 +1068,6 @@ class Parser:
 
         return self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
 
-    def _parse_laterals(self):
-        return self._parse_all(self._parse_lateral)
-
     def _parse_lateral(self):
         if not self._match(TokenType.LATERAL):
             return None
@@ -1086,9 +1095,6 @@ class Parser:
             ),
         )
 
-    def _parse_joins(self):
-        return self._parse_all(self._parse_join)
-
     def _parse_join_side_and_kind(self):
         return (
             self._match(TokenType.NATURAL) and self._prev,
@@ -1102,7 +1108,7 @@ class Parser:
         if not self._match(TokenType.JOIN):
             return None
 
-        kwargs = {"this": self._parse_lateral() or self._parse_table()}
+        kwargs = {"this": self._parse_table()}
 
         if natural:
             kwargs["natural"] = True
@@ -2206,9 +2212,6 @@ class Parser:
             )
 
         return this
-
-    def _parse_all(self, parse):
-        return list(iter(parse, None))
 
     def _parse_wrapped_id_vars(self):
         self._match_l_paren()

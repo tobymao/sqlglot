@@ -663,7 +663,7 @@ class Parser:
                 this if isinstance(this, exp.Schema) else None
             )
             if self._match(TokenType.ALIAS):
-                expression = self._parse_select()
+                expression = self._parse_select(nested=True)
 
         return self.expression(
             exp.Create,
@@ -823,7 +823,7 @@ class Parser:
             this=self._parse_table(schema=True),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
-            expression=self._parse_select(),
+            expression=self._parse_select(nested=True),
             overwrite=overwrite,
         )
 
@@ -877,7 +877,7 @@ class Parser:
             this=table,
             lazy=lazy,
             options=options,
-            expression=self._parse_select(),
+            expression=self._parse_select(nested=True),
         )
 
     def _parse_partition(self):
@@ -906,9 +906,7 @@ class Parser:
         self._match_r_paren()
         return self.expression(exp.Tuple, expressions=expressions)
 
-    def _parse_select(self, table=None):
-        index = self._index
-
+    def _parse_select(self, nested=False, table=False):
         if self._match(TokenType.SELECT):
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
@@ -972,15 +970,11 @@ class Parser:
                 )
             else:
                 self.raise_error(f"{this.key} does not support CTE")
-        elif self._match(TokenType.L_PAREN):
-            this = self._parse_table() if table else self._parse_select()
-
-            if this:
-                self._parse_query_modifiers(this)
-                self._match_r_paren()
-                this = self._parse_subquery(this)
-            else:
-                self._retreat(index)
+        elif (table or nested) and self._match(TokenType.L_PAREN):
+            this = self._parse_table() if table else self._parse_select(nested=True)
+            self._parse_query_modifiers(this)
+            self._match_r_paren()
+            this = self._parse_subquery(this)
         elif self._match(TokenType.VALUES):
             this = self.expression(
                 exp.Values, expressions=self._parse_csv(self._parse_value)
@@ -1377,7 +1371,7 @@ class Parser:
             expression,
             this=this,
             distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
-            expression=self._parse_select(),
+            expression=self._parse_select(nested=True),
         )
 
     def _parse_expression(self):
@@ -1626,7 +1620,7 @@ class Parser:
             self._match_r_paren()
 
             if isinstance(this, exp.Subqueryable):
-                return self._parse_subquery(this)
+                return self._parse_set_operations(self._parse_subquery(this))
             if len(expressions) > 1:
                 return self.expression(exp.Tuple, expressions=expressions)
             return self.expression(exp.Paren, this=this)

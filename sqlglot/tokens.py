@@ -223,8 +223,6 @@ class TokenType(AutoName):
     TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
-    TIME = auto()
-    TIMEZ = auto()
     TOP = auto()
     THEN = auto()
     TRIM = auto()

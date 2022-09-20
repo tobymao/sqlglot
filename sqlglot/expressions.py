@@ -1668,8 +1668,6 @@ class DataType(Expression):
         BOOLEAN = auto()
         JSON = auto()
         INTERVAL = auto()
-        TIME = auto()
-        TIMEZ = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         DATE = auto()

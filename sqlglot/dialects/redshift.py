@@ -13,8 +13,8 @@ class Redshift(Postgres):
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
-            "TIME": TokenType.TIME,
-            "TIMEZ": TokenType.TIMEZ,
+            "TIME": TokenType.TIMESTAMP,
+            "TIMETZ": TokenType.TIMESTAMPTZ,
             "VARBYTE": TokenType.VARBYTE,
             "SIMILAR TO": TokenType.SIMILAR_TO,
         }
@@ -27,6 +27,4 @@ class Redshift(Postgres):
             exp.DataType.Type.HLLSKETCH: "HLLSKETCH",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.SUPER: "SUPER",
-            exp.DataType.Type.TIME: "TIME",
-            exp.DataType.Type.TIMEZ: "TIMEZ",
         }

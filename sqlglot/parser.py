@@ -86,8 +86,6 @@ class Parser:
         TokenType.DECIMAL,
         TokenType.UUID,
         TokenType.GEOGRAPHY,
-        TokenType.TIME,
-        TokenType.TIMEZ,
         TokenType.GEOMETRY,
         TokenType.HLLSKETCH,
         TokenType.SUPER,

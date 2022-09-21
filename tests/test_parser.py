@@ -31,9 +31,7 @@ class TestParser(unittest.TestCase):
         self.assertIsNotNone(parse_one("select * from x where a = (select 1) order by x.y").args["order"])
         self.assertEqual(len(parse_one("select * from (select 1) x cross join y").args["joins"]), 1)
         self.assertEqual(
-            parse_one(
-                """SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)"""
-            ).sql(),
+            parse_one("""SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)""").sql(),
             """SELECT * FROM x, z LATERAL VIEW EXPLODE(y) CROSS JOIN y""",
         )
 

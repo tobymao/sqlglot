@@ -89,6 +89,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "CAST(a AS DATETIME)",
+            write={
+                "postgres": "CAST(a AS TIMESTAMP)",
+                "sqlite": "CAST(a AS DATETIME)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS STRING)",
             write={
                 "bigquery": "CAST(a AS STRING)",

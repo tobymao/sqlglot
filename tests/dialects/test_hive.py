@@ -342,10 +342,18 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "APPROX_PERCENTILE(x, 0.5)",
+            "PERCENTILE_APPROX(x, 0.5)",
+            read={
+                "hive": "PERCENTILE_APPROX(x, 0.5)",
+                "presto": "APPROX_PERCENTILE(x, 0.5)",
+                "duckdb": "APPROX_QUANTILE(x, 0.5)",
+                "spark": "APPROX_PERCENTILE(x, 0.5)",
+            },
             write={
                 "hive": "PERCENTILE_APPROX(x, 0.5)",
                 "presto": "APPROX_PERCENTILE(x, 0.5)",
+                "duckdb": "APPROX_QUANTILE(x, 0.5)",
+                "spark": "APPROX_PERCENTILE(x, 0.5)",
             },
         )
         self.validate_all(

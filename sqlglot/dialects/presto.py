@@ -139,6 +139,7 @@ class Presto(Dialect):
             "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
             "STRPOS": exp.StrPosition.from_arg_list,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
+            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
         }
 
     class Generator(Generator):
@@ -191,6 +192,7 @@ class Presto(Dialect):
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED_BY = {self.sql(e.args['value'])}",
             exp.Quantile: _quantile_sql,
+            exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.SortArray: _no_sort_array,

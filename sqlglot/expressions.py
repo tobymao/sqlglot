@@ -2310,7 +2310,7 @@ class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
-class ApproxPercentile(Quantile):
+class ApproxQuantile(Quantile):
     pass
 
 

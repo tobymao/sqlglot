@@ -130,9 +130,7 @@ def _merge_from(outer_scope, inner_scope, subquery):
     new_subquery = inner_scope.expression.args.get("from").expressions[0]
     subquery.replace(new_subquery)
     outer_scope.remove_source(subquery.alias_or_name)
-    outer_scope.add_source(
-        new_subquery.alias_or_name, inner_scope.sources[new_subquery.alias_or_name]
-    )
+    outer_scope.add_source(new_subquery.alias_or_name, inner_scope.sources[new_subquery.alias_or_name])
 
 
 def _merge_joins(outer_scope, inner_scope, from_or_join):
@@ -149,16 +147,12 @@ def _merge_joins(outer_scope, inner_scope, from_or_join):
     comma_joins = inner_scope.expression.args.get("from").expressions[1:]
     for subquery in comma_joins:
         new_joins.append(exp.Join(this=subquery, kind="CROSS"))
-        outer_scope.add_source(
-            subquery.alias_or_name, inner_scope.sources[subquery.alias_or_name]
-        )
+        outer_scope.add_source(subquery.alias_or_name, inner_scope.sources[subquery.alias_or_name])
 
     joins = inner_scope.expression.args.get("joins") or []
     for join in joins:
         new_joins.append(join)
-        outer_scope.add_source(
-            join.alias_or_name, inner_scope.sources[join.alias_or_name]
-        )
+        outer_scope.add_source(join.alias_or_name, inner_scope.sources[join.alias_or_name])
 
     if new_joins:
         outer_joins = outer_scope.expression.args.get("joins", [])
@@ -217,9 +211,7 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
         from_or_join.set("on", simplify(from_or_join.args.get("on")))
     else:
         outer_scope.expression.where(where.this, copy=False)
-        outer_scope.expression.set(
-            "where", simplify(outer_scope.expression.args.get("where"))
-        )
+        outer_scope.expression.set("where", simplify(outer_scope.expression.args.get("where")))
 
 
 def _merge_order(outer_scope, inner_scope):
@@ -231,15 +223,9 @@ def _merge_order(outer_scope, inner_scope):
         inner_scope (sqlglot.optimizer.scope.Scope)
     """
     if (
-        any(
-            outer_scope.expression.args.get(arg)
-            for arg in ["group", "distinct", "having", "order"]
-        )
+        any(outer_scope.expression.args.get(arg) for arg in ["group", "distinct", "having", "order"])
         or len(outer_scope.selected_sources) != 1
-        or any(
-            expression.find(exp.AggFunc)
-            for expression in outer_scope.expression.expressions
-        )
+        or any(expression.find(exp.AggFunc) for expression in outer_scope.expression.expressions)
     ):
         return
 

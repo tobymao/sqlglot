@@ -31,12 +31,22 @@ class TestMySQL(Validator):
             },
         )
 
-    def test_binary_literal(self):
+    def test_hexadecimal_literal(self):
         self.validate_all(
             "SELECT 0xCC",
             write={
-                "mysql": "SELECT b'11001100'",
-                "spark": "SELECT X'11001100'",
+                "mysql": "SELECT x'CC'",
+                "sqlite": "SELECT x'CC'",
+                "spark": "SELECT X'CC'",
+                "trino": "SELECT X'CC'",
+                "bigquery": "SELECT 0xCC",
+                "oracle": "SELECT 204",
+            },
+        )
+        self.validate_all(
+            "SELECT X'1A'",
+            write={
+                "mysql": "SELECT x'1A'",
             },
         )
         self.validate_all(
@@ -45,10 +55,22 @@ class TestMySQL(Validator):
                 "mysql": "SELECT `0xz`",
             },
         )
+
+    def test_bits_literal(self):
         self.validate_all(
-            "SELECT 0XCC",
+            "SELECT 0b1011",
             write={
-                "mysql": "SELECT 0 AS XCC",
+                "mysql": "SELECT b'1011'",
+                "postgres": "SELECT b'1011'",
+                "oracle": "SELECT 11",
+            },
+        )
+        self.validate_all(
+            "SELECT B'1011'",
+            write={
+                "mysql": "SELECT b'1011'",
+                "postgres": "SELECT b'1011'",
+                "oracle": "SELECT 11",
             },
         )
 
@@ -79,5 +101,21 @@ class TestMySQL(Validator):
             "SELECT 1 # arbitrary content,,, until end-of-line",
             write={
                 "mysql": "SELECT 1",
+            },
+        )
+
+    def test_mysql(self):
+        self.validate_all(
+            "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+            write={
+                "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",
+                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+            },
+        )
+        self.validate_all(
+            "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
+            write={
+                "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC, '')",
             },
         )

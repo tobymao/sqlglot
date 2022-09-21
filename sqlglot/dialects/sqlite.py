@@ -16,6 +16,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 class SQLite(Dialect):
     class Tokenizer(Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
+        HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
@@ -60,4 +61,8 @@ class SQLite(Dialect):
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
+        }
+
+        COLUMN_CONSTRAINT_ORDER = {
+            exp.AutoIncrementColumnConstraint: 1,
         }

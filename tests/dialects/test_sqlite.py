@@ -30,10 +30,12 @@ class TestSQLite(Validator):
             "CREATE TABLE z (a INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT)",
             read={
                 "mysql": "CREATE TABLE z (a INT UNIQUE PRIMARY KEY AUTO_INCREMENT)",
+                "postgres": "CREATE TABLE z (a INT UNIQUE SERIAL PRIMARY KEY)",
             },
             write={
                 "sqlite": "CREATE TABLE z (a INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT)",
                 "mysql": "CREATE TABLE z (a INT UNIQUE PRIMARY KEY AUTO_INCREMENT)",
+                "postgres": "CREATE TABLE z (a INT UNIQUE SERIAL PRIMARY KEY)",
             },
         )
         self.validate_all(
@@ -68,6 +70,15 @@ class TestSQLite(Validator):
             write={
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "sqlite": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+            },
+        )
+
+    def test_hexadecimal_literal(self):
+        self.validate_all(
+            "SELECT 0XCC",
+            write={
+                "sqlite": "SELECT x'CC'",
+                "mysql": "SELECT x'CC'",
             },
         )
 

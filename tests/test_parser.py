@@ -16,28 +16,23 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
 
     def test_column(self):
-        columns = parse_one("select a, ARRAY[1] b, case when 1 then 1 end").find_all(
-            exp.Column
-        )
+        columns = parse_one("select a, ARRAY[1] b, case when 1 then 1 end").find_all(exp.Column)
         assert len(list(columns)) == 1
 
         self.assertIsNotNone(parse_one("date").find(exp.Column))
 
     def test_table(self):
-        tables = [
-            t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)
-        ]
+        tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
         self.assertEqual(tables, ["a", "b.c", "d"])
 
     def test_select(self):
-        self.assertIsNotNone(
-            parse_one("select * from (select 1) x order by x.y").args["order"]
-        )
-        self.assertIsNotNone(
-            parse_one("select * from x where a = (select 1) order by x.y").args["order"]
-        )
+        self.assertIsNotNone(parse_one("select 1 natural"))
+        self.assertIsNotNone(parse_one("select * from (select 1) x order by x.y").args["order"])
+        self.assertIsNotNone(parse_one("select * from x where a = (select 1) order by x.y").args["order"])
+        self.assertEqual(len(parse_one("select * from (select 1) x cross join y").args["joins"]), 1)
         self.assertEqual(
-            len(parse_one("select * from (select 1) x cross join y").args["joins"]), 1
+            parse_one("""SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)""").sql(),
+            """SELECT * FROM x, z LATERAL VIEW EXPLODE(y) CROSS JOIN y""",
         )
 
     def test_command(self):
@@ -72,12 +67,8 @@ class TestParser(unittest.TestCase):
         )
 
         assert len(expressions) == 2
-        assert (
-            expressions[0].args["from"].expressions[0].args["this"].args["this"] == "a"
-        )
-        assert (
-            expressions[1].args["from"].expressions[0].args["this"].args["this"] == "b"
-        )
+        assert expressions[0].args["from"].expressions[0].args["this"].args["this"] == "a"
+        assert expressions[1].args["from"].expressions[0].args["this"].args["this"] == "b"
 
     def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)
@@ -147,13 +138,9 @@ class TestParser(unittest.TestCase):
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
         with patch("sqlglot.pretty", True):
-            self.assertEqual(
-                parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x"
-            )
+            self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT\n  col\nFROM x")
 
-        self.assertEqual(
-            parse_one("SELECT col FROM x").sql(pretty=True), "SELECT\n  col\nFROM x"
-        )
+        self.assertEqual(parse_one("SELECT col FROM x").sql(pretty=True), "SELECT\n  col\nFROM x")
 
     @patch("sqlglot.parser.logger")
     def test_comment_error_n(self, logger):

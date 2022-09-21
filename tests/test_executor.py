@@ -27,10 +27,7 @@ class TestExecutor(unittest.TestCase):
             )
 
         cls.cache = {}
-        cls.sqls = [
-            (sql, expected)
-            for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")
-        ]
+        cls.sqls = [(sql, expected) for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")]
 
     @classmethod
     def tearDownClass(cls):
@@ -60,9 +57,7 @@ class TestExecutor(unittest.TestCase):
     def test_execute_tpch(self):
         def to_csv(expression):
             if isinstance(expression, exp.Table):
-                return parse_one(
-                    f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.name}"
-                )
+                return parse_one(f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.name}")
             return expression
 
         for sql, _ in self.sqls[0:3]:

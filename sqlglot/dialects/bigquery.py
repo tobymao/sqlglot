@@ -44,6 +44,7 @@ class BigQuery(Dialect):
         ]
         IDENTIFIERS = ["`"]
         ESCAPE = "\\"
+        HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
@@ -120,9 +121,5 @@ class BigQuery(Dialect):
 
         def intersect_op(self, expression):
             if not expression.args.get("distinct", False):
-                self.unsupported(
-                    "INTERSECT without DISTINCT is not supported in BigQuery"
-                )
-            return (
-                f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
-            )
+                self.unsupported("INTERSECT without DISTINCT is not supported in BigQuery")
+            return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"

@@ -36,9 +36,7 @@ class Validator(unittest.TestCase):
         for read_dialect, read_sql in (read or {}).items():
             with self.subTest(f"{read_dialect} -> {sql}"):
                 self.assertEqual(
-                    parse_one(read_sql, read_dialect).sql(
-                        self.dialect, unsupported_level=ErrorLevel.IGNORE
-                    ),
+                    parse_one(read_sql, read_dialect).sql(self.dialect, unsupported_level=ErrorLevel.IGNORE),
                     sql,
                 )
 
@@ -46,9 +44,7 @@ class Validator(unittest.TestCase):
             with self.subTest(f"{sql} -> {write_dialect}"):
                 if write_sql is UnsupportedError:
                     with self.assertRaises(UnsupportedError):
-                        expression.sql(
-                            write_dialect, unsupported_level=ErrorLevel.RAISE
-                        )
+                        expression.sql(write_dialect, unsupported_level=ErrorLevel.RAISE)
                 else:
                     self.assertEqual(
                         expression.sql(
@@ -82,9 +78,17 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
+                "redshift": "CAST(a AS TEXT)",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
+            },
+        )
+        self.validate_all(
+            "CAST(a AS DATETIME)",
+            write={
+                "postgres": "CAST(a AS TIMESTAMP)",
+                "sqlite": "CAST(a AS DATETIME)",
             },
         )
         self.validate_all(
@@ -97,6 +101,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
+                "redshift": "CAST(a AS TEXT)",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
@@ -112,6 +117,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS VARCHAR2)",
                 "postgres": "CAST(a AS VARCHAR)",
                 "presto": "CAST(a AS VARCHAR)",
+                "redshift": "CAST(a AS VARCHAR)",
                 "snowflake": "CAST(a AS VARCHAR)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS VARCHAR)",
@@ -127,6 +133,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS VARCHAR2(3))",
                 "postgres": "CAST(a AS VARCHAR(3))",
                 "presto": "CAST(a AS VARCHAR(3))",
+                "redshift": "CAST(a AS VARCHAR(3))",
                 "snowflake": "CAST(a AS VARCHAR(3))",
                 "spark": "CAST(a AS VARCHAR(3))",
                 "starrocks": "CAST(a AS VARCHAR(3))",
@@ -142,6 +149,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS NUMBER)",
                 "postgres": "CAST(a AS SMALLINT)",
                 "presto": "CAST(a AS SMALLINT)",
+                "redshift": "CAST(a AS SMALLINT)",
                 "snowflake": "CAST(a AS SMALLINT)",
                 "spark": "CAST(a AS SHORT)",
                 "sqlite": "CAST(a AS INTEGER)",
@@ -152,10 +160,12 @@ class TestDialect(Validator):
             "TRY_CAST(a AS DOUBLE)",
             read={
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
+                "redshift": "CAST(a AS DOUBLE PRECISION)",
             },
             write={
                 "duckdb": "TRY_CAST(a AS DOUBLE)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
+                "redshift": "CAST(a AS DOUBLE PRECISION)",
             },
         )
 
@@ -170,6 +180,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS DOUBLE PRECISION)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "presto": "CAST(a AS DOUBLE)",
+                "redshift": "CAST(a AS DOUBLE PRECISION)",
                 "snowflake": "CAST(a AS DOUBLE)",
                 "spark": "CAST(a AS DOUBLE)",
                 "starrocks": "CAST(a AS DOUBLE)",
@@ -179,13 +190,22 @@ class TestDialect(Validator):
             "CAST('1 DAY' AS INTERVAL)",
             write={
                 "postgres": "CAST('1 DAY' AS INTERVAL)",
+                "redshift": "CAST('1 DAY' AS INTERVAL)",
             },
         )
         self.validate_all(
-            "CAST(a AS TIMESTAMP)", write={"starrocks": "CAST(a AS DATETIME)"}
+            "CAST(a AS TIMESTAMP)",
+            write={
+                "starrocks": "CAST(a AS DATETIME)",
+                "redshift": "CAST(a AS TIMESTAMP)",
+            },
         )
         self.validate_all(
-            "CAST(a AS TIMESTAMPTZ)", write={"starrocks": "CAST(a AS DATETIME)"}
+            "CAST(a AS TIMESTAMPTZ)",
+            write={
+                "starrocks": "CAST(a AS DATETIME)",
+                "redshift": "CAST(a AS TIMESTAMPTZ)",
+            },
         )
         self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS NUMBER)"})
         self.validate_all("CAST(a AS SMALLINT)", write={"oracle": "CAST(a AS NUMBER)"})
@@ -647,12 +667,8 @@ class TestDialect(Validator):
     def test_joined_tables(self):
         self.validate_identity("SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)")
         self.validate_identity("SELECT * FROM (tbl1 JOIN tbl2 JOIN tbl3)")
-        self.validate_identity(
-            "SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)"
-        )
-        self.validate_identity(
-            "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)"
-        )
+        self.validate_identity("SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)")
+        self.validate_identity("SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)")
 
         self.validate_all(
             "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
@@ -785,9 +801,7 @@ class TestDialect(Validator):
         )
 
     def test_operators(self):
-        self.validate_identity(
-            "some.column LIKE 'foo' || another.column || 'bar' || LOWER(x)"
-        )
+        self.validate_identity("some.column LIKE 'foo' || another.column || 'bar' || LOWER(x)")
         self.validate_identity("some.column LIKE 'foo' + another.column + 'bar'")
 
         self.validate_all(
@@ -966,6 +980,7 @@ class TestDialect(Validator):
             read={
                 "clickhouse": '`x` + "y"',
                 "sqlite": '`x` + "y"',
+                "redshift": '"x" + "y"',
             },
         )
         self.validate_all(
@@ -1028,6 +1043,7 @@ class TestDialect(Validator):
                 "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
                 "postgres": "CREATE TABLE t (b1 BYTEA, b2 BYTEA(1024), c1 TEXT, c2 TEXT(1024))",
                 "sqlite": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
+                "redshift": "CREATE TABLE t (b1 VARBYTE, b2 VARBYTE(1024), c1 TEXT, c2 TEXT(1024))",
             },
         )
 

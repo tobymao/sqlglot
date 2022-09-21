@@ -65,9 +65,7 @@ class Spark(Hive):
                 this=list_get(args, 0),
                 start=exp.Sub(
                     this=exp.Length(this=list_get(args, 0)),
-                    expression=exp.Add(
-                        this=list_get(args, 1), expression=exp.Literal.number(1)
-                    ),
+                    expression=exp.Add(this=list_get(args, 1), expression=exp.Literal.number(1)),
                 ),
                 length=list_get(args, 1),
             ),
@@ -82,11 +80,7 @@ class Spark(Hive):
         }
 
         TRANSFORMS = {
-            **{
-                k: v
-                for k, v in Hive.Generator.TRANSFORMS.items()
-                if k not in {exp.ArraySort}
-            },
+            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort}},
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
@@ -102,5 +96,5 @@ class Spark(Hive):
             HiveMap: _map_sql,
         }
 
-        def bitstring_sql(self, expression):
-            return f"X'{self.sql(expression, 'this')}'"
+    class Tokenizer(Hive.Tokenizer):
+        HEX_STRINGS = [("X'", "'")]

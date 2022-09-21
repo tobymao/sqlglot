@@ -103,9 +103,12 @@ class MySQL(Dialect):
         QUOTES = ["'", '"']
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
+        BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
+        HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "SEPARATOR": TokenType.SEPARATOR,
             "_ARMSCII8": TokenType.INTRODUCER,
             "_ASCII": TokenType.INTRODUCER,
             "_BIG5": TokenType.INTRODUCER,
@@ -160,6 +163,15 @@ class MySQL(Dialect):
             "STR_TO_DATE": _str_to_date,
         }
 
+        FUNCTION_PARSERS = {
+            **Parser.FUNCTION_PARSERS,
+            "GROUP_CONCAT": lambda self: self.expression(
+                exp.GroupConcat,
+                this=self._parse_lambda(),
+                separator=self._match(TokenType.SEPARATOR) and self._parse_field(),
+            ),
+        }
+
     class Generator(Generator):
         NULL_ORDERING_SUPPORTED = False
 
@@ -173,6 +185,7 @@ class MySQL(Dialect):
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
+            exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Trim: _trim_sql,

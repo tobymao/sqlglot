@@ -32,6 +32,18 @@ def _date_add_sql(kind):
     return func
 
 
+def _lateral_sql(self, expression):
+    this = self.sql(expression, "this")
+    if isinstance(expression.this, exp.Subquery):
+        return f"LATERAL{self.sep()}{this}"
+    alias = expression.args["alias"]
+    table = alias.name
+    table = f" {table}" if table else table
+    columns = self.expressions(alias, key="columns", flat=True)
+    columns = f" AS {columns}" if columns else ""
+    return f"LATERAL{self.sep()}{this}{table}{columns}"
+
+
 def _substring_sql(self, expression):
     this = self.sql(expression, "this")
     start = self.sql(expression, "start")
@@ -64,7 +76,8 @@ class Postgres(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
     time_mapping = {
-        "AM": "%p",  # AM or PM
+        "AM": "%p",
+        "PM": "%p",
         "D": "%w",  # 1-based day of week
         "DD": "%d",  # day of month
         "DDD": "%j",  # zero padded day of year
@@ -93,6 +106,8 @@ class Postgres(Dialect):
     }
 
     class Tokenizer(Tokenizer):
+        BIT_STRINGS = [("b'", "'"), ("B'", "'")]
+        HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "SERIAL": TokenType.AUTO_INCREMENT,
@@ -103,6 +118,7 @@ class Postgres(Dialect):
 
     class Parser(Parser):
         STRICT_CAST = False
+
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "TO_TIMESTAMP": format_time_lambda(exp.StrToTime, "postgres"),
@@ -116,6 +132,7 @@ class Postgres(Dialect):
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
             exp.DataType.Type.BINARY: "BYTEA",
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 
         TOKEN_MAPPING = {
@@ -132,10 +149,15 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
+            exp.Lateral: _lateral_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
+        }
+
+        COLUMN_CONSTRAINT_ORDER = {
+            exp.PrimaryKeyColumnConstraint: 1,
         }

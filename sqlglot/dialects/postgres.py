@@ -157,3 +157,7 @@ class Postgres(Dialect):
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
         }
+
+        COLUMN_CONSTRAINT_ORDER = {
+            exp.PrimaryKeyColumnConstraint: 1,
+        }

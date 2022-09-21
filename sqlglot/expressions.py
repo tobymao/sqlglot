@@ -113,9 +113,22 @@ class Expression(metaclass=_Expression):
                 item.parent = parent
         return new
 
+    def append(self, arg_key, value):
+        """
+        Appends value to arg_key if it's a list or sets it as a new list.
+
+        Args:
+            arg_key (str): name of the list expression arg
+            value (Any): value to append to the list
+        """
+        if not isinstance(self.args.get(arg_key), list):
+            self.args[arg_key] = []
+        self.args[arg_key].append(value)
+        self._set_parent(arg_key, value)
+
     def set(self, arg_key, value):
         """
-        Sets `arg` to `value`.
+        Sets `arg_key` to `value`.
 
         Args:
             arg_key (str): name of the expression arg
@@ -987,7 +1000,13 @@ QUERY_MODIFIERS = {
 
 
 class Table(Expression):
-    arg_types = {"this": True, "db": False, "catalog": False, "joins": False}
+    arg_types = {
+        "this": True,
+        "db": False,
+        "catalog": False,
+        "laterals": False,
+        "joins": False,
+    }
 
 
 class Union(Subqueryable, Expression):

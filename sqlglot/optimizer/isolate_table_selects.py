@@ -13,9 +13,7 @@ def isolate_table_selects(expression):
                 continue
 
             if not isinstance(source.parent, exp.Alias):
-                raise OptimizeError(
-                    "Tables require an alias. Run qualify_tables optimization."
-                )
+                raise OptimizeError("Tables require an alias. Run qualify_tables optimization.")
 
             parent = source.parent
 

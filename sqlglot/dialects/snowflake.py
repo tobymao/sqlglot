@@ -23,9 +23,7 @@ def _snowflake_to_timestamp(args):
 
         # case: <numeric_expr> [ , <scale> ]
         if second_arg.name not in ["0", "3", "9"]:
-            raise ValueError(
-                f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
-            )
+            raise ValueError(f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9")
 
         if second_arg.name == "0":
             timescale = exp.UnixToTime.SECONDS

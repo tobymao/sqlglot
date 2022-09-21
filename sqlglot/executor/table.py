@@ -37,10 +37,7 @@ class Table:
                 break
 
             lines.append(
-                " ".join(
-                    str(row[column]).rjust(widths[column])[0 : widths[column]]
-                    for column in self.columns
-                )
+                " ".join(str(row[column]).rjust(widths[column])[0 : widths[column]] for column in self.columns)
             )
         return "\n".join(lines)
 

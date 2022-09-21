@@ -96,9 +96,7 @@ def _ts_or_ds_to_date_sql(self, expression):
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.time_format, Presto.date_format):
         return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
-    return (
-        f"CAST(SUBSTR(CAST({self.sql(expression, 'this')} AS VARCHAR), 1, 10) AS DATE)"
-    )
+    return f"CAST(SUBSTR(CAST({self.sql(expression, 'this')} AS VARCHAR), 1, 10) AS DATE)"
 
 
 def _ts_or_ds_add_sql(self, expression):

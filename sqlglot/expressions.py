@@ -47,10 +47,7 @@ class Expression(metaclass=_Expression):
         return hash(
             (
                 self.key,
-                tuple(
-                    (k, tuple(v) if isinstance(v, list) else v)
-                    for k, v in _norm_args(self).items()
-                ),
+                tuple((k, tuple(v) if isinstance(v, list) else v) for k, v in _norm_args(self).items()),
             )
         )
 
@@ -300,9 +297,7 @@ class Expression(metaclass=_Expression):
 
         A AND B AND C -> [A, B, C]
         """
-        for node, _, _ in self.dfs(
-            prune=lambda n, p, *_: p and not isinstance(n, self.__class__)
-        ):
+        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and not isinstance(n, self.__class__)):
             if not isinstance(node, self.__class__):
                 yield node.unnest() if unnest else node
 
@@ -335,9 +330,7 @@ class Expression(metaclass=_Expression):
 
         args = {
             k: ", ".join(
-                v.to_s(hide_missing=hide_missing, level=level + 1)
-                if hasattr(v, "to_s")
-                else str(v)
+                v.to_s(hide_missing=hide_missing, level=level + 1) if hasattr(v, "to_s") else str(v)
                 for v in ensure_list(vs)
                 if v is not None
             )
@@ -375,9 +368,7 @@ class Expression(metaclass=_Expression):
             new_node.parent = node.parent
             return new_node
 
-        replace_children(
-            new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs)
-        )
+        replace_children(new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs))
         return new_node
 
     def replace(self, expression):
@@ -676,9 +667,7 @@ class Identifier(Expression):
         return bool(self.args.get("quoted"))
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__) and _norm_arg(self.this) == _norm_arg(
-            other.this
-        )
+        return isinstance(other, self.__class__) and _norm_arg(self.this) == _norm_arg(other.this)
 
     def __hash__(self):
         return hash((self.key, self.this.lower()))
@@ -734,9 +723,7 @@ class Literal(Condition):
 
     def __eq__(self, other):
         return (
-            isinstance(other, Literal)
-            and self.this == other.this
-            and self.args["is_string"] == other.args["is_string"]
+            isinstance(other, Literal) and self.this == other.this and self.args["is_string"] == other.args["is_string"]
         )
 
     def __hash__(self):
@@ -1567,10 +1554,7 @@ class Select(Subqueryable, Expression):
         properties_expression = None
         if properties:
             properties_str = " ".join(
-                [
-                    f"{k} = '{v}'" if isinstance(v, str) else f"{k} = {v}"
-                    for k, v in properties.items()
-                ]
+                [f"{k} = '{v}'" if isinstance(v, str) else f"{k} = {v}" for k, v in properties.items()]
             )
             properties_expression = maybe_parse(
                 properties_str,
@@ -1710,9 +1694,7 @@ class DataType(Expression):
     @classmethod
     def build(cls, dtype, **kwargs):
         return DataType(
-            this=dtype
-            if isinstance(dtype, DataType.Type)
-            else DataType.Type[dtype.upper()],
+            this=dtype if isinstance(dtype, DataType.Type) else DataType.Type[dtype.upper()],
             **kwargs,
         )
 
@@ -1978,9 +1960,7 @@ class Func(Condition):
 
         all_arg_keys = list(cls.arg_types)
         # If this function supports variable length argument treat the last argument as such.
-        non_var_len_arg_keys = (
-            all_arg_keys[:-1] if cls.is_var_len_args else all_arg_keys
-        )
+        non_var_len_arg_keys = all_arg_keys[:-1] if cls.is_var_len_args else all_arg_keys
 
         args_dict = {}
         arg_idx = 0
@@ -1998,9 +1978,7 @@ class Func(Condition):
     @classmethod
     def sql_names(cls):
         if cls is Func:
-            raise NotImplementedError(
-                "SQL name is only supported by concrete function implementations"
-            )
+            raise NotImplementedError("SQL name is only supported by concrete function implementations")
         if not hasattr(cls, "_sql_names"):
             cls._sql_names = [camel_to_snake_case(cls.__name__)]
         return cls._sql_names
@@ -2524,9 +2502,7 @@ def _all_functions():
         obj
         for _, obj in inspect.getmembers(
             sys.modules[__name__],
-            lambda obj: inspect.isclass(obj)
-            and issubclass(obj, Func)
-            and obj not in (AggFunc, Anonymous, Func),
+            lambda obj: inspect.isclass(obj) and issubclass(obj, Func) and obj not in (AggFunc, Anonymous, Func),
         )
     ]
 
@@ -2702,9 +2678,7 @@ def _apply_conjunction_builder(
 
 
 def _combine(expressions, operator, dialect=None, **opts):
-    expressions = [
-        condition(expression, dialect=dialect, **opts) for expression in expressions
-    ]
+    expressions = [condition(expression, dialect=dialect, **opts) for expression in expressions]
     this = expressions[0]
     if expressions[1:]:
         this = _wrap_operator(this)
@@ -2878,9 +2852,7 @@ def to_identifier(alias, quoted=None):
             quoted = not re.match(SAFE_IDENTIFIER_RE, alias)
         identifier = Identifier(this=alias, quoted=quoted)
     else:
-        raise ValueError(
-            f"Alias needs to be a string or an Identifier, got: {alias.__class__}"
-        )
+        raise ValueError(f"Alias needs to be a string or an Identifier, got: {alias.__class__}")
     return identifier
 
 

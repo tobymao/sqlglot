@@ -109,9 +109,7 @@ def _unnest_to_explode_sql(self, expression):
                     alias=exp.TableAlias(this=alias.this, columns=[column]),
                 )
             )
-            for expression, column in zip(
-                unnest.expressions, alias.columns if alias else []
-            )
+            for expression, column in zip(unnest.expressions, alias.columns if alias else [])
         )
     return self.join_sql(expression)
 
@@ -206,11 +204,7 @@ class Hive(Dialect):
                 substr=list_get(args, 0),
                 position=list_get(args, 2),
             ),
-            "LOG": (
-                lambda args: exp.Log.from_arg_list(args)
-                if len(args) > 1
-                else exp.Ln.from_arg_list(args)
-            ),
+            "LOG": (lambda args: exp.Log.from_arg_list(args) if len(args) > 1 else exp.Ln.from_arg_list(args)),
             "MAP": _parse_map,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
             "PERCENTILE": exp.Quantile.from_arg_list,
@@ -296,8 +290,7 @@ class Hive(Dialect):
 
         def datatype_sql(self, expression):
             if (
-                expression.this
-                in (exp.DataType.Type.VARCHAR, exp.DataType.Type.NVARCHAR)
+                expression.this in (exp.DataType.Type.VARCHAR, exp.DataType.Type.NVARCHAR)
                 and not expression.expressions
             ):
                 expression = exp.DataType.build("text")

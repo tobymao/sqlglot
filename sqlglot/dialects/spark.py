@@ -69,7 +69,6 @@ class Spark(Hive):
                 ),
                 length=list_get(args, 1),
             ),
-            "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
         }
 
@@ -93,8 +92,6 @@ class Spark(Hive):
             exp.UnixToTime: _unix_to_time,
             exp.Create: _create_sql,
             exp.Map: _map_sql,
-            exp.Quantile: rename_func("PERCENTILE"),
-            exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             HiveMap: _map_sql,

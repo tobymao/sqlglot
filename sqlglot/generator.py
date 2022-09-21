@@ -903,7 +903,7 @@ class Generator:
         return f"UNIQUE ({columns})"
 
     def if_sql(self, expression):
-        return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
+        return self.case_sql(exp.Case(ifs=[expression.copy()], default=expression.args.get("false")))
 
     def in_sql(self, expression):
         query = expression.args.get("query")

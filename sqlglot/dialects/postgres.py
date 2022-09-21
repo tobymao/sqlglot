@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.transforms import delegate, preprocess
 
 
 def _date_add_sql(kind):
@@ -72,6 +73,50 @@ def _trim_sql(self, expression):
     return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
 
 
+def _auto_increment_to_serial(expression):
+    auto = expression.find(exp.AutoIncrementColumnConstraint)
+
+    if auto:
+        expression = expression.copy()
+        expression.args["constraints"].remove(auto.parent)
+        kind = expression.args["kind"]
+
+        if kind.this == exp.DataType.Type.INT:
+            kind.replace(exp.DataType(this=exp.DataType.Type.SERIAL))
+        elif kind.this == exp.DataType.Type.SMALLINT:
+            kind.replace(exp.DataType(this=exp.DataType.Type.SMALLSERIAL))
+        elif kind.this == exp.DataType.Type.BIGINT:
+            kind.replace(exp.DataType(this=exp.DataType.Type.BIGSERIAL))
+
+    return expression
+
+
+def _serial_to_generated(expression):
+    kind = expression.args["kind"]
+
+    if kind.this == exp.DataType.Type.SERIAL:
+        data_type = exp.DataType(this=exp.DataType.Type.INT)
+    elif kind.this == exp.DataType.Type.SMALLSERIAL:
+        data_type = exp.DataType(this=exp.DataType.Type.SMALLINT)
+    elif kind.this == exp.DataType.Type.BIGSERIAL:
+        data_type = exp.DataType(this=exp.DataType.Type.BIGINT)
+    else:
+        data_type = None
+
+    if data_type:
+        expression = expression.copy()
+        expression.args["kind"].replace(data_type)
+        constraints = expression.args["constraints"]
+        generated = exp.ColumnConstraint(kind=exp.GeneratedAsIdentityColumnConstraint(this=False))
+        notnull = exp.ColumnConstraint(kind=exp.NotNullColumnConstraint())
+        if notnull not in constraints:
+            constraints.insert(0, notnull)
+        if generated not in constraints:
+            constraints.insert(0, generated)
+
+    return expression
+
+
 class Postgres(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
@@ -110,10 +155,16 @@ class Postgres(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
-            "SERIAL": TokenType.AUTO_INCREMENT,
-            "UUID": TokenType.UUID,
+            "ALWAYS": TokenType.ALWAYS,
+            "BY DEFAULT": TokenType.BY_DEFAULT,
+            "IDENTITY": TokenType.IDENTITY,
             "FOR": TokenType.FOR,
+            "GENERATED": TokenType.GENERATED,
             "DOUBLE PRECISION": TokenType.DOUBLE,
+            "BIGSERIAL": TokenType.BIGSERIAL,
+            "SERIAL": TokenType.SERIAL,
+            "SMALLSERIAL": TokenType.SMALLSERIAL,
+            "UUID": TokenType.UUID,
         }
 
     class Parser(Parser):
@@ -135,12 +186,15 @@ class Postgres(Dialect):
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 
-        TOKEN_MAPPING = {
-            TokenType.AUTO_INCREMENT: "SERIAL",
-        }
-
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.ColumnDef: preprocess(
+                [
+                    _auto_increment_to_serial,
+                    _serial_to_generated,
+                ],
+                delegate("columndef_sql"),
+            ),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: lambda self, e: f"{self.sql(e, 'this')}#>{self.sql(e, 'path')}",

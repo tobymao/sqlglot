@@ -331,6 +331,9 @@ class Generator:
         default = self.sql(expression, "this")
         return f"DEFAULT {default}"
 
+    def generatedasidentitycolumnconstraint_sql(self, expression):
+        return f"GENERATED {'ALWAYS' if expression.this else 'BY DEFAULT'} AS IDENTITY"
+
     def notnullcolumnconstraint_sql(self, _):
         return "NOT NULL"
 

@@ -86,6 +86,13 @@ class TokenType(AutoName):
     SERIAL = auto()
     SMALLSERIAL = auto()
     BIGSERIAL = auto()
+    XML = auto()
+    UNIQUEIDENTIFIER = auto()
+    MONEY = auto()
+    SMALLMONEY = auto()
+    ROWVERSION = auto()
+    IMAGE = auto()
+    SQL_VARIANT = auto()
 
     # keywords
     ADD_FILE = auto()
@@ -123,6 +130,7 @@ class TokenType(AutoName):
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     DIV = auto()
+    DECLARE = auto()
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()

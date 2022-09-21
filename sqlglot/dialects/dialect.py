@@ -26,6 +26,7 @@ class Dialects(str, Enum):
     SQLITE = "sqlite"
     STARROCKS = "starrocks"
     TABLEAU = "tableau"
+    TRANSACTSQL = "transactsql"
     TRINO = "trino"
 
 

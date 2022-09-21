@@ -1702,6 +1702,13 @@ class DataType(Expression):
         SERIAL = auto()
         SMALLSERIAL = auto()
         BIGSERIAL = auto()
+        XML = auto()
+        UNIQUEIDENTIFIER = auto()
+        MONEY = auto()
+        SMALLMONEY = auto()
+        ROWVERSION = auto()
+        IMAGE = auto()
+        SQL_VARIANT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):

@@ -8,5 +8,5 @@ python -m autoflake -i -r \
   --remove-unused-variables \
   sqlglot/ tests/
 python -m isort --profile black sqlglot/ tests/
-python -m black sqlglot/ tests/
+python -m black --line-length 120 sqlglot/ tests/
 python -m unittest

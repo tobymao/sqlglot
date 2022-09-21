@@ -42,11 +42,7 @@ def pushdown(condition, sources):
     condition = condition.replace(simplify(condition))
     cnf_like = normalized(condition) or not normalized(condition, dnf=True)
 
-    predicates = list(
-        condition.flatten()
-        if isinstance(condition, exp.And if cnf_like else exp.Or)
-        else [condition]
-    )
+    predicates = list(condition.flatten() if isinstance(condition, exp.And if cnf_like else exp.Or) else [condition])
 
     if cnf_like:
         pushdown_cnf(predicates, sources)
@@ -105,17 +101,11 @@ def pushdown_dnf(predicates, scope):
             for column in predicate.find_all(exp.Column):
                 if column.table == table:
                     condition = column.find_ancestor(exp.Condition)
-                    predicate_condition = (
-                        exp.and_(predicate_condition, condition)
-                        if predicate_condition
-                        else condition
-                    )
+                    predicate_condition = exp.and_(predicate_condition, condition) if predicate_condition else condition
 
             if predicate_condition:
                 conditions[table] = (
-                    exp.or_(conditions[table], predicate_condition)
-                    if table in conditions
-                    else predicate_condition
+                    exp.or_(conditions[table], predicate_condition) if table in conditions else predicate_condition
                 )
 
         for name, node in nodes.items():
@@ -133,9 +123,7 @@ def pushdown_dnf(predicates, scope):
 def nodes_for_predicate(predicate, sources):
     nodes = {}
     tables = exp.column_table_names(predicate)
-    where_condition = isinstance(
-        predicate.find_ancestor(exp.Join, exp.Where), exp.Where
-    )
+    where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
 
     for table in tables:
         node, source = sources.get(table) or (None, None)

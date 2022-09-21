@@ -188,9 +188,7 @@ def absorb_and_eliminate(expression):
                     aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
                 elif is_complement(b, ab):
                     ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
-                elif (set(b.flatten()) if isinstance(b, kind) else {b}) < set(
-                    a.flatten()
-                ):
+                elif (set(b.flatten()) if isinstance(b, kind) else {b}) < set(a.flatten()):
                     a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
                 elif isinstance(b, kind):
                     # eliminate
@@ -227,9 +225,7 @@ def simplify_literals(expression):
                 operands.append(a)
 
         if len(operands) < size:
-            return functools.reduce(
-                lambda a, b: expression.__class__(this=a, expression=b), operands
-            )
+            return functools.reduce(lambda a, b: expression.__class__(this=a, expression=b), operands)
     elif isinstance(expression, exp.Neg):
         this = expression.this
         if this.is_number:

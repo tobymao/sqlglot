@@ -19,9 +19,7 @@ class Context:
             env (Optional[dict]): dictionary of functions within the execution context
         """
         self.tables = tables
-        self.range_readers = {
-            name: table.range_reader for name, table in self.tables.items()
-        }
+        self.range_readers = {name: table.range_reader for name, table in self.tables.items()}
         self.row_readers = {name: table.reader for name, table in tables.items()}
         self.env = {**(env or {}), "scope": self.row_readers}
 

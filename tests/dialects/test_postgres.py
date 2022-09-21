@@ -8,9 +8,7 @@ class TestPostgres(Validator):
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
-            write={
-                "postgres": "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)"
-            },
+            write={"postgres": "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)"},
         )
         self.validate_all(
             "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)",
@@ -44,9 +42,7 @@ class TestPostgres(Validator):
         )
 
         with self.assertRaises(ParseError):
-            transpile(
-                "CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres"
-            )
+            transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
         with self.assertRaises(ParseError):
             transpile(
                 "CREATE TABLE products (price DECIMAL, CHECK price > 1)",
@@ -54,31 +50,15 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
-        self.validate_identity(
-            "SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END"
-        )
-        self.validate_identity(
-            "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END"
-        )
-        self.validate_identity(
-            "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1 FOR 2) IN ('ab') THEN 1 ELSE 0 END"
-        )
-        self.validate_identity(
-            'SELECT * FROM "x" WHERE SUBSTRING("x"."foo" FROM 1 FOR 2) IN (\'mas\')'
-        )
-        self.validate_identity(
-            "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')"
-        )
-        self.validate_identity(
-            "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')"
-        )
-        self.validate_identity(
-            "SELECT SUBSTRING('bla' + 'foo' || 'bar' FROM 3 - 1 + 5 FOR 4 + SOME_FUNC(arg1, arg2))"
-        )
+        self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
+        self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END")
+        self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1 FOR 2) IN ('ab') THEN 1 ELSE 0 END")
+        self.validate_identity('SELECT * FROM "x" WHERE SUBSTRING("x"."foo" FROM 1 FOR 2) IN (\'mas\')')
+        self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
+        self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')")
+        self.validate_identity("SELECT SUBSTRING('bla' + 'foo' || 'bar' FROM 3 - 1 + 5 FOR 4 + SOME_FUNC(arg1, arg2))")
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
-        self.validate_identity(
-            "SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)"
-        )
+        self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
 
         self.validate_all(
             "CREATE TABLE x (a INT SERIAL)",
@@ -165,9 +145,7 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss",
-            read={
-                "postgres": "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss"
-            },
+            read={"postgres": "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss"},
         )
         self.validate_all(
             "SELECT m.name FROM manufacturers AS m LEFT JOIN LATERAL GET_PRODUCT_NAMES(m.id) AS pname ON TRUE WHERE pname IS NULL",

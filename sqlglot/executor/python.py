@@ -26,11 +26,7 @@ class PythonExecutor:
         while queue:
             node = queue.pop()
             context = self.context(
-                {
-                    name: table
-                    for dep in node.dependencies
-                    for name, table in contexts[dep].tables.items()
-                }
+                {name: table for dep in node.dependencies for name, table in contexts[dep].tables.items()}
             )
             running.add(node)
 
@@ -151,9 +147,7 @@ class PythonExecutor:
             return self.context({name: table for name in ctx.tables})
 
         for name, join in step.joins.items():
-            join_context = self.context(
-                {**join_context.tables, name: context.tables[name]}
-            )
+            join_context = self.context({**join_context.tables, name: context.tables[name]})
 
             if join.get("source_key"):
                 table = self.hash_join(join, source, name, join_context)
@@ -247,9 +241,7 @@ class PythonExecutor:
 
         if step.operands:
             source_table = context.tables[source]
-            operand_table = Table(
-                source_table.columns + self.table(step.operands).columns
-            )
+            operand_table = Table(source_table.columns + self.table(step.operands).columns)
 
             for reader, ctx in context:
                 operand_table.append(reader.row + ctx.eval_tuple(operands))

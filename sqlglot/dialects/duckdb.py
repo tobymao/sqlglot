@@ -63,10 +63,7 @@ def _sort_array_reverse(args):
 
 
 def _struct_pack_sql(self, expression):
-    args = [
-        self.binary(e, ":=") if isinstance(e, exp.EQ) else self.sql(e)
-        for e in expression.expressions
-    ]
+    args = [self.binary(e, ":=") if isinstance(e, exp.EQ) else self.sql(e) for e in expression.expressions]
     return f"STRUCT_PACK({', '.join(args)})"
 
 

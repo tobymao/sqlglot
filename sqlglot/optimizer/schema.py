@@ -57,9 +57,7 @@ class MappingSchema(Schema):
 
         for forbidden in self.forbidden_args:
             if table.text(forbidden):
-                raise ValueError(
-                    f"Schema doesn't support {forbidden}. Received: {table.sql()}"
-                )
+                raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
         return list(_nested_get(self.schema, *zip(self.supported_table_args, args)))
 
 

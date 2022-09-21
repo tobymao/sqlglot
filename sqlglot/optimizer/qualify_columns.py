@@ -226,9 +226,7 @@ def _expand_stars(scope, resolver):
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
-        elif isinstance(expression, exp.Column) and isinstance(
-            expression.this, exp.Star
-        ):
+        elif isinstance(expression, exp.Column) and isinstance(expression.this, exp.Star):
             tables = [expression.table]
             _add_except_columns(expression.this, tables, except_columns)
             _add_replace_columns(expression.this, tables, replace_columns)
@@ -245,9 +243,7 @@ def _expand_stars(scope, resolver):
                 if name not in except_columns.get(table_id, set()):
                     alias_ = replace_columns.get(table_id, {}).get(name, name)
                     column = exp.column(name, table)
-                    new_selections.append(
-                        alias(column, alias_) if alias_ != name else column
-                    )
+                    new_selections.append(alias(column, alias_) if alias_ != name else column)
 
     scope.expression.set("expressions", new_selections)
 
@@ -280,9 +276,7 @@ def _qualify_outputs(scope):
     """Ensure all output columns are aliased"""
     new_selections = []
 
-    for i, (selection, aliased_column) in enumerate(
-        itertools.zip_longest(scope.selects, scope.outer_column_list)
-    ):
+    for i, (selection, aliased_column) in enumerate(itertools.zip_longest(scope.selects, scope.outer_column_list)):
         if isinstance(selection, exp.Column):
             # convoluted setter because a simple selection.replace(alias) would require a copy
             alias_ = alias(exp.column(""), alias=selection.name)
@@ -302,11 +296,7 @@ def _qualify_outputs(scope):
 
 
 def _check_unknown_tables(scope):
-    if (
-        scope.external_columns
-        and not scope.is_unnest
-        and not scope.is_correlated_subquery
-    ):
+    if scope.external_columns and not scope.is_unnest and not scope.is_correlated_subquery:
         raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
 
 
@@ -334,20 +324,14 @@ class _Resolver:
             (str) table name
         """
         if self._unambiguous_columns is None:
-            self._unambiguous_columns = self._get_unambiguous_columns(
-                self._get_all_source_columns()
-            )
+            self._unambiguous_columns = self._get_unambiguous_columns(self._get_all_source_columns())
         return self._unambiguous_columns.get(column_name)
 
     @property
     def all_columns(self):
         """All available columns of all sources in this scope"""
         if self._all_columns is None:
-            self._all_columns = set(
-                column
-                for columns in self._get_all_source_columns().values()
-                for column in columns
-            )
+            self._all_columns = set(column for columns in self._get_all_source_columns().values() for column in columns)
         return self._all_columns
 
     def get_source_columns(self, name):
@@ -369,9 +353,7 @@ class _Resolver:
 
     def _get_all_source_columns(self):
         if self._source_columns is None:
-            self._source_columns = {
-                k: self.get_source_columns(k) for k in self.scope.selected_sources
-            }
+            self._source_columns = {k: self.get_source_columns(k) for k in self.scope.selected_sources}
         return self._source_columns
 
     def _get_unambiguous_columns(self, source_columns):
@@ -389,9 +371,7 @@ class _Resolver:
         source_columns = list(source_columns.items())
 
         first_table, first_columns = source_columns[0]
-        unambiguous_columns = {
-            col: first_table for col in self._find_unique_columns(first_columns)
-        }
+        unambiguous_columns = {col: first_table for col in self._find_unique_columns(first_columns)}
         all_columns = set(unambiguous_columns)
 
         for table, columns in source_columns[1:]:

@@ -54,25 +54,15 @@ class _Dialect(type):
         klass.generator_class = getattr(klass, "Generator", Generator)
 
         klass.tokenizer = klass.tokenizer_class()
-        klass.quote_start, klass.quote_end = list(
-            klass.tokenizer_class._QUOTES.items()
-        )[0]
-        klass.identifier_start, klass.identifier_end = list(
-            klass.tokenizer_class._IDENTIFIERS.items()
-        )[0]
+        klass.quote_start, klass.quote_end = list(klass.tokenizer_class._QUOTES.items())[0]
+        klass.identifier_start, klass.identifier_end = list(klass.tokenizer_class._IDENTIFIERS.items())[0]
 
-        if (
-            klass.tokenizer_class._BIT_STRINGS
-            and exp.BitString not in klass.generator_class.TRANSFORMS
-        ):
+        if klass.tokenizer_class._BIT_STRINGS and exp.BitString not in klass.generator_class.TRANSFORMS:
             bs_start, bs_end = list(klass.tokenizer_class._BIT_STRINGS.items())[0]
             klass.generator_class.TRANSFORMS[
                 exp.BitString
             ] = lambda self, e: f"{bs_start}{int(self.sql(e, 'this')):b}{bs_end}"
-        if (
-            klass.tokenizer_class._HEX_STRINGS
-            and exp.HexString not in klass.generator_class.TRANSFORMS
-        ):
+        if klass.tokenizer_class._HEX_STRINGS and exp.HexString not in klass.generator_class.TRANSFORMS:
             hs_start, hs_end = list(klass.tokenizer_class._HEX_STRINGS.items())[0]
             klass.generator_class.TRANSFORMS[
                 exp.HexString
@@ -140,9 +130,7 @@ class Dialect(metaclass=_Dialect):
         return self.parser(**opts).parse(self.tokenizer.tokenize(sql), sql)
 
     def parse_into(self, expression_type, sql, **opts):
-        return self.parser(**opts).parse_into(
-            expression_type, self.tokenizer.tokenize(sql), sql
-        )
+        return self.parser(**opts).parse_into(expression_type, self.tokenizer.tokenize(sql), sql)
 
     def generate(self, expression, **opts):
         return self.generator(**opts).generate(expression)
@@ -182,9 +170,7 @@ class Dialect(metaclass=_Dialect):
 
 
 def rename_func(name):
-    return (
-        lambda self, expression: f"{name}({csv(*[self.sql(e) for e in expression.args.values()])})"
-    )
+    return lambda self, expression: f"{name}({csv(*[self.sql(e) for e in expression.args.values()])})"
 
 
 def approx_count_distinct_sql(self, expression):
@@ -278,8 +264,7 @@ def format_time_lambda(exp_class, dialect, default=None):
         return exp_class(
             this=list_get(args, 0),
             format=Dialect[dialect].format_time(
-                list_get(args, 1)
-                or (Dialect[dialect].time_format if default is True else default)
+                list_get(args, 1) or (Dialect[dialect].time_format if default is True else default)
             ),
         )
 

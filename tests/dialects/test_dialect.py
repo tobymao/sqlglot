@@ -36,9 +36,7 @@ class Validator(unittest.TestCase):
         for read_dialect, read_sql in (read or {}).items():
             with self.subTest(f"{read_dialect} -> {sql}"):
                 self.assertEqual(
-                    parse_one(read_sql, read_dialect).sql(
-                        self.dialect, unsupported_level=ErrorLevel.IGNORE
-                    ),
+                    parse_one(read_sql, read_dialect).sql(self.dialect, unsupported_level=ErrorLevel.IGNORE),
                     sql,
                 )
 
@@ -46,9 +44,7 @@ class Validator(unittest.TestCase):
             with self.subTest(f"{sql} -> {write_dialect}"):
                 if write_sql is UnsupportedError:
                     with self.assertRaises(UnsupportedError):
-                        expression.sql(
-                            write_dialect, unsupported_level=ErrorLevel.RAISE
-                        )
+                        expression.sql(write_dialect, unsupported_level=ErrorLevel.RAISE)
                 else:
                     self.assertEqual(
                         expression.sql(
@@ -671,12 +667,8 @@ class TestDialect(Validator):
     def test_joined_tables(self):
         self.validate_identity("SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)")
         self.validate_identity("SELECT * FROM (tbl1 JOIN tbl2 JOIN tbl3)")
-        self.validate_identity(
-            "SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)"
-        )
-        self.validate_identity(
-            "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)"
-        )
+        self.validate_identity("SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)")
+        self.validate_identity("SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)")
 
         self.validate_all(
             "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
@@ -809,9 +801,7 @@ class TestDialect(Validator):
         )
 
     def test_operators(self):
-        self.validate_identity(
-            "some.column LIKE 'foo' || another.column || 'bar' || LOWER(x)"
-        )
+        self.validate_identity("some.column LIKE 'foo' || another.column || 'bar' || LOWER(x)")
         self.validate_identity("some.column LIKE 'foo' + another.column + 'bar'")
 
         self.validate_all(

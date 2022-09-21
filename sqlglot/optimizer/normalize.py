@@ -22,18 +22,14 @@ def normalize(expression, dnf=False, max_distance=128):
     """
     expression = simplify(expression)
 
-    expression = while_changing(
-        expression, lambda e: distributive_law(e, dnf, max_distance)
-    )
+    expression = while_changing(expression, lambda e: distributive_law(e, dnf, max_distance))
     return simplify(expression)
 
 
 def normalized(expression, dnf=False):
     ancestor, root = (exp.And, exp.Or) if dnf else (exp.Or, exp.And)
 
-    return not any(
-        connector.find_ancestor(ancestor) for connector in expression.find_all(root)
-    )
+    return not any(connector.find_ancestor(ancestor) for connector in expression.find_all(root))
 
 
 def normalization_distance(expression, dnf=False):
@@ -54,9 +50,7 @@ def normalization_distance(expression, dnf=False):
     Returns:
         int: difference
     """
-    return sum(_predicate_lengths(expression, dnf)) - (
-        len(list(expression.find_all(exp.Connector))) + 1
-    )
+    return sum(_predicate_lengths(expression, dnf)) - (len(list(expression.find_all(exp.Connector))) + 1)
 
 
 def _predicate_lengths(expression, dnf):
@@ -73,11 +67,7 @@ def _predicate_lengths(expression, dnf):
     left, right = expression.args.values()
 
     if isinstance(expression, exp.And if dnf else exp.Or):
-        x = [
-            a + b
-            for a in _predicate_lengths(left, dnf)
-            for b in _predicate_lengths(right, dnf)
-        ]
+        x = [a + b for a in _predicate_lengths(left, dnf) for b in _predicate_lengths(right, dnf)]
         return x
     return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
 
@@ -102,9 +92,7 @@ def distributive_law(expression, dnf, max_distance):
         to_func = exp.and_ if to_exp == exp.And else exp.or_
 
         if isinstance(a, to_exp) and isinstance(b, to_exp):
-            if len(tuple(a.find_all(exp.Connector))) > len(
-                tuple(b.find_all(exp.Connector))
-            ):
+            if len(tuple(a.find_all(exp.Connector))) > len(tuple(b.find_all(exp.Connector))):
                 return _distribute(a, b, from_func, to_func)
             return _distribute(b, a, from_func, to_func)
         if isinstance(a, to_exp):

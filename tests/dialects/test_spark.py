@@ -44,7 +44,7 @@ class TestSpark(Validator):
             write={
                 "presto": "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
-                "spark": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
+                "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
         )
         self.validate_all(
@@ -52,7 +52,7 @@ class TestSpark(Validator):
             write={
                 "presto": "CREATE TABLE test WITH (TABLE_FORMAT = 'ICEBERG', FORMAT = 'PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test USING ICEBERG STORED AS PARQUET AS SELECT 1",
-                "spark": "CREATE TABLE test USING ICEBERG STORED AS PARQUET AS SELECT 1",
+                "spark": "CREATE TABLE test USING ICEBERG USING PARQUET AS SELECT 1",
             },
         )
         self.validate_all(
@@ -86,7 +86,7 @@ COMMENT 'Test comment: blah'
 PARTITIONED BY (
   date STRING
 )
-STORED AS ICEBERG
+USING ICEBERG
 TBLPROPERTIES (
   'x' = '1'
 )""",

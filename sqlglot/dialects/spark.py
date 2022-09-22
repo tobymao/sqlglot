@@ -82,6 +82,7 @@ class Spark(Hive):
 
         TRANSFORMS = {
             **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort}},
+            exp.FileFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),

@@ -130,7 +130,6 @@ class TokenType(AutoName):
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     DIV = auto()
-    DECLARE = auto()
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()

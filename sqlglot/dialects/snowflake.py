@@ -142,7 +142,6 @@ class Snowflake(Dialect):
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
-            "TIMESTAMP": TokenType.TIMESTAMP,
         }
 
     class Generator(Generator):

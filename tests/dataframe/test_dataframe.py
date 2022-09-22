@@ -15,6 +15,7 @@ class TestDataframe(unittest.TestCase):
         from pyspark.sql import SparkSession
         from pyspark.sql import types
         from sqlglot.dataframe.session import SparkSession as SqlglotSparkSession
+        from sqlglot.dataframe import types as sqlglotSparkTypes
         # This is for test `test_branching_root_dataframes`
         config = SparkConf().setAll([('spark.sql.analyzer.failAmbiguousSelfJoin', 'false')])
         cls.spark = (
@@ -26,12 +27,19 @@ class TestDataframe(unittest.TestCase):
             .getOrCreate()
         )
         cls.sqlglot = SqlglotSparkSession()
-        employee_schema = types.StructType([
+        spark_employee_schema = types.StructType([
             types.StructField('employee_id', types.IntegerType(), False),
             types.StructField('fname', types.StringType(), False),
             types.StructField('lname', types.StringType(), False),
             types.StructField('age', types.IntegerType(), False),
             types.StructField('store_id', types.IntegerType(), False),
+        ])
+        sqlglot_employee_schema = sqlglotSparkTypes.StructType([
+            sqlglotSparkTypes.StructField('employee_id', sqlglotSparkTypes.IntegerType(), False),
+            sqlglotSparkTypes.StructField('fname', sqlglotSparkTypes.StringType(), False),
+            sqlglotSparkTypes.StructField('lname', sqlglotSparkTypes.StringType(), False),
+            sqlglotSparkTypes.StructField('age', sqlglotSparkTypes.IntegerType(), False),
+            sqlglotSparkTypes.StructField('store_id', sqlglotSparkTypes.IntegerType(), False),
         ])
         employee_data = [
             (1, "Jack", "Shephard", 37, 1),
@@ -40,43 +48,58 @@ class TestDataframe(unittest.TestCase):
             (4, "Claire", "Littleton", 27, 2),
             (5, "Hugo", "Reyes", 29, 100),
         ]
-        cls.df_employee = cls.spark.createDataFrame(data=employee_data, schema=employee_schema)
+        cls.df_employee = cls.spark.createDataFrame(data=employee_data, schema=spark_employee_schema)
+        cls.dfs_employee = cls.sqlglot.createDataFrame(data=employee_data, schema=sqlglot_employee_schema)
         cls.df_employee.createOrReplaceTempView("employee")
 
-        store_schema = types.StructType([
+        spark_store_schema = types.StructType([
             types.StructField("store_id", types.IntegerType(), False),
             types.StructField("store_name", types.StringType(), False),
             types.StructField("district_id", types.IntegerType(), False),
             types.StructField("num_sales", types.IntegerType(), False),
         ])
-
+        sqlglot_store_schema = sqlglotSparkTypes.StructType([
+            sqlglotSparkTypes.StructField("store_id", sqlglotSparkTypes.IntegerType(), False),
+            sqlglotSparkTypes.StructField("store_name", sqlglotSparkTypes.StringType(), False),
+            sqlglotSparkTypes.StructField("district_id", sqlglotSparkTypes.IntegerType(), False),
+            sqlglotSparkTypes.StructField("num_sales", sqlglotSparkTypes.IntegerType(), False),
+        ])
         store_data = [
             (1, "Hydra", 1, 37),
             (2, "Arrow", 2, 2000),
         ]
-        cls.df_store = cls.spark.createDataFrame(data=store_data, schema=store_schema)
+        cls.df_store = cls.spark.createDataFrame(data=store_data, schema=spark_store_schema)
+        cls.dfs_store = cls.sqlglot.createDataFrame(data=store_data, schema=sqlglot_store_schema)
         cls.df_store.createOrReplaceTempView("store")
 
-        district_schema = types.StructType([
+        spark_district_schema = types.StructType([
             types.StructField("district_id", types.IntegerType(), False),
             types.StructField("district_name", types.StringType(), False),
             types.StructField("manager_name", types.StringType(), False),
         ])
-
+        sqlglot_district_schema = sqlglotSparkTypes.StructType([
+            sqlglotSparkTypes.StructField("district_id", sqlglotSparkTypes.IntegerType(), False),
+            sqlglotSparkTypes.StructField("district_name", sqlglotSparkTypes.StringType(), False),
+            sqlglotSparkTypes.StructField("manager_name", sqlglotSparkTypes.StringType(), False),
+        ])
         district_data = [
             (1, "Temple", "Dogen"),
             (2, "Lighthouse", "Jacob"),
         ]
-        cls.df_district = cls.spark.createDataFrame(data=district_data, schema=district_schema)
+        cls.df_district = cls.spark.createDataFrame(data=district_data, schema=spark_district_schema)
+        cls.dfs_district = cls.sqlglot.createDataFrame(data=district_data, schema=sqlglot_district_schema)
         cls.df_district.createOrReplaceTempView("district")
 
     def setUp(self) -> None:
         self.df_spark_store = self.df_store.alias('df_store')
         self.df_spark_employee = self.df_employee.alias('df_employee')
         self.df_spark_district = self.df_district.alias('df_district')
-        self.df_sqlglot_store = self.sqlglot.read.table('store')
-        self.df_sqlglot_employee = self.sqlglot.read.table('employee')
-        self.df_sqlglot_district = self.sqlglot.read.table('district')
+        self.df_sqlglot_store = self.dfs_store.alias('store')
+        self.df_sqlglot_employee = self.dfs_employee.alias('employee')
+        self.df_sqlglot_district = self.dfs_district.alias('district')
+        # self.df_sqlglot_store = self.sqlglot.read.table('store')
+        # self.df_sqlglot_employee = self.sqlglot.read.table('employee')
+        # self.df_sqlglot_district = self.sqlglot.read.table('district')
 
 
     @classmethod
@@ -1414,12 +1437,16 @@ class TestDataframe(unittest.TestCase):
         self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(dfs))
 
     def test_repartition_by_num(self):
+        """
+        The results are different when doing the repartition on a table created using VALUES in SQL.
+        So I just use the views instead for these tests
+        """
         df = (
             self.df_spark_employee.repartition(63)
         )
 
         dfs = (
-            self.df_sqlglot_employee.repartition(63)
+            self.sqlglot.read.table("employee").repartition(63)
         )
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
@@ -1428,24 +1455,30 @@ class TestDataframe(unittest.TestCase):
         self.assertEqual(spark_num_partitions, sqlglot_num_partitions)
 
     def test_repartition_name_only(self):
+        """
+        We use the view here to help ensure the explain plans are similar enough to compare
+        """
         df = (
             self.df_spark_employee.repartition("age")
         )
 
         dfs = (
-            self.df_sqlglot_employee.repartition("age")
+            self.sqlglot.read.table("employee").repartition("age")
         )
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(df))
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(dfs))
 
     def test_repartition_num_and_multiple_names(self):
+        """
+        We use the view here to help ensure the explain plans are similar enough to compare
+        """
         df = (
             self.df_spark_employee.repartition(53, "age", "fname")
         )
 
         dfs = (
-            self.df_sqlglot_employee.repartition(53, "age", "fname")
+            self.sqlglot.read.table("employee").repartition(53, "age", "fname")
         )
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()

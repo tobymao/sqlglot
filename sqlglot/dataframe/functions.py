@@ -18,10 +18,8 @@ def col(column_name: t.Union["ColumnOrName", t.Any]) -> "Column":
 
 
 def lit(value: t.Optional[t.Any] = None) -> "Column":
-    if value is None:
-        return Column(glotexp.Null())
     if isinstance(value, str):
-        return Column(glotexp.Literal(this=str(value), is_string=isinstance(value, str)))
+        return Column(glotexp.Literal(this=str(value), is_string=True))
     return Column(value)
 
 

@@ -21,19 +21,8 @@ class Column:
         elif isinstance(expression, Column):
             expression = expression.expression
         self.expression = expression
-        if isinstance(self.expression, (int, float, bool)):
-            self.expression = exp.Column(this=exp.Literal(this=str(expression).lower(), is_string=False))
-        elif isinstance(self.expression, Iterable):
-            expressions = [exp.Literal(this=str(x).lower(), is_string=False) for x in self.expression]
-            self.expression = exp.Column(this=exp.Array(expressions=expressions))
-        elif isinstance(self.expression, datetime.datetime):
-            datetime_literal = exp.Literal(this=self.expression.strftime("%Y-%m-%d %H:%M:%S"), is_string=True)
-            self.expression = exp.Column(this=exp.StrToTime(this=datetime_literal,
-                                                            format=exp.Literal(this='YYYY-MM-DD HH:MM:SS', is_string=True)))
-        elif isinstance(self.expression, datetime.date):
-            date_literal = exp.Literal(this=self.expression.strftime("%Y-%m-%d"), is_string=True)
-            self.expression = exp.Column(this=exp.StrToDate(this=date_literal,
-                                                            format=exp.Literal(this="YYYY-MM-DD", is_string=True)))
+        if self.expression is None or isinstance(self.expression, (int, float, bool, dict, Iterable, datetime.date)):
+            self.expression = self._lit(expression).expression
 
     def __repr__(self):
         return repr(self.expression)
@@ -127,8 +116,26 @@ class Column:
     def _lit(cls, value: t.Optional[t.Any] = None) -> "Column":
         if value is None:
             return cls(exp.Null())
-        if isinstance(value, str):
-            return cls(exp.Literal(this=str(value), is_string=isinstance(value, str)))
+        if isinstance(value, (str, int, bool, float)):
+            value_formatted = str(value).lower() if isinstance(value, bool) else str(value)
+            return cls(exp.Literal(this=value_formatted, is_string=isinstance(value, str)))
+        if isinstance(value, dict):
+            columns = [
+                cls._lit(v).alias(k).expression
+                for k, v in value.items()
+            ]
+            return cls(exp.Struct(expressions=columns))
+        if isinstance(value, Iterable):
+            expressions = [cls._lit(x).expression for x in value]
+            return cls(exp.Column(this=exp.Array(expressions=expressions)))
+        if isinstance(value, datetime.datetime):
+            datetime_literal = exp.Literal(this=value.strftime("%Y-%m-%d %H:%M:%S"), is_string=True)
+            return cls(exp.Column(this=exp.StrToTime(this=datetime_literal,
+                                                     format=exp.Literal(this='YYYY-MM-DD HH:MM:SS', is_string=True))))
+        if isinstance(value, datetime.date):
+            date_literal = exp.Literal(this=value.strftime("%Y-%m-%d"), is_string=True)
+            return cls(exp.Column(this=exp.StrToDate(this=date_literal,
+                                                     format=exp.Literal(this="YYYY-MM-DD", is_string=True))))
         return cls(value)
 
     @classmethod

@@ -75,6 +75,7 @@ class TokenType(AutoName):
     JSON = auto()
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
+    TIMESTAMPLTZ = auto()
     DATETIME = auto()
     DATE = auto()
     UUID = auto()
@@ -247,6 +248,7 @@ class TokenType(AutoName):
     WINDOW = auto()
     WITH = auto()
     WITH_TIME_ZONE = auto()
+    WITH_LOCAL_TIME_ZONE = auto()
     WITHIN_GROUP = auto()
     WITHOUT_TIME_ZONE = auto()
     UNIQUE = auto()
@@ -520,6 +522,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "WHERE": TokenType.WHERE,
         "WITH": TokenType.WITH,
         "WITH TIME ZONE": TokenType.WITH_TIME_ZONE,
+        "WITH LOCAL TIME ZONE": TokenType.WITH_LOCAL_TIME_ZONE,
         "WITHIN GROUP": TokenType.WITHIN_GROUP,
         "WITHOUT TIME ZONE": TokenType.WITHOUT_TIME_ZONE,
         "ARRAY": TokenType.ARRAY,

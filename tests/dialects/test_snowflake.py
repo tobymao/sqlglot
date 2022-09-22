@@ -175,3 +175,36 @@ class TestSnowflake(Validator):
                 "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) IGNORE NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1"
             },
         )
+
+    def test_timestamps(self):
+        self.validate_all(
+            "SELECT CAST(a AS TIMESTAMP_NTZ(9))",
+            write={
+                "snowflake": "SELECT CAST(a AS TIMESTAMP(9))",
+            },
+        )
+        # TODO: fix this test, should be TIMESTAMP_LTZ
+        self.validate_all(
+            "SELECT a::TIMESTAMP WITH LOCAL TIME ZONE",
+            write={
+                "snowflake": "SELECT CAST(a AS TIMESTAMPLTZ)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT('month', a)",
+            write={
+                "snowflake": "SELECT EXTRACT('month' FROM a)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(month FROM a)",
+            write={
+                "snowflake": "SELECT EXTRACT(month FROM a)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_PART('month', a)",
+            write={
+                "snowflake": "SELECT DATE_PART('month', a)",
+            },
+        )

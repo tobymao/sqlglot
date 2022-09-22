@@ -1688,6 +1688,7 @@ class DataType(Expression):
         INTERVAL = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
+        TIMESTAMPLTZ = auto()
         DATE = auto()
         DATETIME = auto()
         ARRAY = auto()

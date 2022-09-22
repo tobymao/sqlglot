@@ -122,6 +122,11 @@ class Snowflake(Dialect):
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
+            "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
+            "TIMESTAMPNTZ": TokenType.TIMESTAMP,
+            "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
+            "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
+            "TIMESTAMP": TokenType.TIMESTAMP,
         }
 
     class Generator(Generator):
@@ -130,6 +135,9 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP_TZ",
+            exp.DataType.Type.TIMESTAMP: "TIMESTAMP_NTZ",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP_LTZ",
         }
 
         def except_op(self, expression):

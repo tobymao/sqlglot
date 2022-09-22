@@ -120,17 +120,6 @@ class Snowflake(Dialect):
             ),
         }
 
-        def _parse_extract(self):
-            this = self._parse_var() or self._parse_type()
-
-            if self._match(TokenType.FROM):
-                return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
-
-            if not self._match(TokenType.COMMA):
-                self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
-
-            return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
-
     class Tokenizer(Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPE = "\\"

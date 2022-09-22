@@ -4,7 +4,7 @@ from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType
 
 
-class TransactSQL(Dialect):
+class TSQL(Dialect):
     null_ordering = "nulls_are_small"
     time_format = "'yyyy-mm-dd hh:mm:ss'"
 

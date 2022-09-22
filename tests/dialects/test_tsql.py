@@ -1,16 +1,16 @@
 from tests.dialects.test_dialect import Validator
 
 
-class TestTransactSQL(Validator):
-    dialect = "transactsql"
+class TestTSQL(Validator):
+    dialect = "tsql"
 
-    def test_transactsql(self):
+    def test_tsql(self):
         self.validate_identity('SELECT "x"."y" FROM foo')
 
         self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={
-                "transactsql": 'SELECT CAST("a"."b" AS SMALLINT) FROM foo',
+                "tsql": 'SELECT CAST("a"."b" AS SMALLINT) FROM foo',
                 "spark": "SELECT CAST(`a`.`b` AS SHORT) FROM foo",
             },
         )

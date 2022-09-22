@@ -228,6 +228,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%Y-%m-%dT%H:%i:%S')",
+                "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH:MI:SS')",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')",
             },
         )
@@ -237,6 +238,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d')",
+                "redshift": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "spark": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
             },
         )
@@ -246,6 +248,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME(x, '%y')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%y')",
+                "redshift": "TO_TIMESTAMP(x, 'YY')",
                 "spark": "TO_TIMESTAMP(x, 'yy')",
             },
         )
@@ -287,6 +290,7 @@ class TestDialect(Validator):
                 "duckdb": "STRFTIME(x, '%Y-%m-%d')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
+                "redshift": "TO_CHAR(x, 'YYYY-MM-DD')",
             },
         )
         self.validate_all(
@@ -295,6 +299,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST(x AS TEXT)",
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
+                "redshift": "CAST(x AS TEXT)",
             },
         )
         self.validate_all(

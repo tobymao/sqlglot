@@ -72,8 +72,6 @@ class Generator:
 
     STRUCT_DELIMITER = ("<", ">")
 
-    COLUMN_CONSTRAINT_ORDER = {}
-
     ROOT_PROPERTIES = [
         exp.AutoIncrementProperty,
         exp.CharacterSetProperty,
@@ -303,17 +301,10 @@ class Generator:
     def columndef_sql(self, expression):
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        constraints = expression.args.get("constraints")
+        constraints = self.expressions(expression, key="constraints", sep=" ", flat=True)
+
         if not constraints:
             return f"{column} {kind}"
-
-        constraints = " ".join(
-            self.sql(constraint)
-            for constraint in sorted(
-                constraints,
-                key=lambda c: self.COLUMN_CONSTRAINT_ORDER.get(c.args["kind"].__class__, 0),
-            )
-        )
         return f"{column} {kind} {constraints}"
 
     def columnconstraint_sql(self, expression):
@@ -339,6 +330,9 @@ class Generator:
     def defaultcolumnconstraint_sql(self, expression):
         default = self.sql(expression, "this")
         return f"DEFAULT {default}"
+
+    def generatedasidentitycolumnconstraint_sql(self, expression):
+        return f"GENERATED {'ALWAYS' if expression.this else 'BY DEFAULT'} AS IDENTITY"
 
     def notnullcolumnconstraint_sql(self, _):
         return "NOT NULL"
@@ -909,7 +903,7 @@ class Generator:
         return f"UNIQUE ({columns})"
 
     def if_sql(self, expression):
-        return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
+        return self.case_sql(exp.Case(ifs=[expression.copy()], default=expression.args.get("false")))
 
     def in_sql(self, expression):
         query = expression.args.get("query")

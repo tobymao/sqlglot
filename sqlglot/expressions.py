@@ -582,35 +582,44 @@ class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 
 
-class AutoIncrementColumnConstraint(Expression):
+class ColumnConstraintKind(Expression):
     pass
 
 
-class CheckColumnConstraint(Expression):
+class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
 
-class CollateColumnConstraint(Expression):
+class CheckColumnConstraint(ColumnConstraintKind):
     pass
 
 
-class CommentColumnConstraint(Expression):
+class CollateColumnConstraint(ColumnConstraintKind):
     pass
 
 
-class DefaultColumnConstraint(Expression):
+class CommentColumnConstraint(ColumnConstraintKind):
     pass
 
 
-class NotNullColumnConstraint(Expression):
+class DefaultColumnConstraint(ColumnConstraintKind):
     pass
 
 
-class PrimaryKeyColumnConstraint(Expression):
+class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
+    # this: True -> ALWAYS, this: False -> BY DEFAULT
+    arg_types = {"this": True, "expression": False}
+
+
+class NotNullColumnConstraint(ColumnConstraintKind):
     pass
 
 
-class UniqueColumnConstraint(Expression):
+class PrimaryKeyColumnConstraint(ColumnConstraintKind):
+    pass
+
+
+class UniqueColumnConstraint(ColumnConstraintKind):
     pass
 
 
@@ -1690,6 +1699,9 @@ class DataType(Expression):
         NULLABLE = auto()
         HLLSKETCH = auto()
         SUPER = auto()
+        SERIAL = auto()
+        SMALLSERIAL = auto()
+        BIGSERIAL = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):
@@ -2308,6 +2320,10 @@ class Pow(Func):
 
 class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
+
+
+class ApproxQuantile(Quantile):
+    pass
 
 
 class Reduce(Func):

@@ -62,7 +62,3 @@ class SQLite(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
         }
-
-        COLUMN_CONSTRAINT_ORDER = {
-            exp.AutoIncrementColumnConstraint: 1,
-        }

@@ -89,6 +89,9 @@ class Parser:
         TokenType.GEOMETRY,
         TokenType.HLLSKETCH,
         TokenType.SUPER,
+        TokenType.SERIAL,
+        TokenType.SMALLSERIAL,
+        TokenType.BIGSERIAL,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -104,6 +107,7 @@ class Parser:
     ID_VAR_TOKENS = {
         TokenType.VAR,
         TokenType.ALTER,
+        TokenType.ALWAYS,
         TokenType.BEGIN,
         TokenType.BOTH,
         TokenType.BUCKET,
@@ -122,6 +126,8 @@ class Parser:
         TokenType.FOR,
         TokenType.FORMAT,
         TokenType.FUNCTION,
+        TokenType.GENERATED,
+        TokenType.IDENTITY,
         TokenType.IF,
         TokenType.INDEX,
         TokenType.ISNULL,
@@ -1681,7 +1687,6 @@ class Parser:
         return self.expression(exp.ColumnDef, this=this, kind=kind, constraints=constraints)
 
     def _parse_column_constraint(self):
-        kind = None
         this = None
 
         if self._match(TokenType.CONSTRAINT):
@@ -1697,7 +1702,7 @@ class Parser:
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
             kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_field())
-        elif self._match(TokenType.NOT) and self._match(TokenType.NULL):
+        elif self._match_pair(TokenType.NOT, TokenType.NULL):
             kind = exp.NotNullColumnConstraint()
         elif self._match(TokenType.SCHEMA_COMMENT):
             kind = self.expression(exp.CommentColumnConstraint, this=self._parse_string())
@@ -1705,8 +1710,14 @@ class Parser:
             kind = exp.PrimaryKeyColumnConstraint()
         elif self._match(TokenType.UNIQUE):
             kind = exp.UniqueColumnConstraint()
-
-        if kind is None:
+        elif self._match(TokenType.GENERATED):
+            if self._match(TokenType.BY_DEFAULT):
+                kind = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=False)
+            else:
+                self._match(TokenType.ALWAYS)
+                kind = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
+            self._match_pair(TokenType.ALIAS, TokenType.IDENTITY)
+        else:
             return None
 
         return self.expression(exp.ColumnConstraint, this=this, kind=kind)

@@ -62,7 +62,7 @@ class Generator:
     }
 
     NULL_ORDERING_SUPPORTED = True
-
+    # dict[exp.DataType.Type, str]
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -387,7 +387,11 @@ class Generator:
 
     def datatype_sql(self, expression):
         type_value = expression.this
+        # print(f'\ndatatype_sql{type_value}|{type(type_value)}|{type_value.value}|')
+        # for k, v in self.TYPE_MAPPING.items():
+        #     print(f'\n-> {k}|{type(k)}|{v} => {type_value == k}')
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
+        # print(f'\ntype_sql{type_sql}')
         nested = ""
         interior = self.expressions(expression, flat=True)
         if interior:

@@ -178,33 +178,40 @@ class TestSnowflake(Validator):
 
     def test_timestamps(self):
         self.validate_all(
-            "SELECT CAST(a AS TIMESTAMP_NTZ(9))",
+            "SELECT CAST(a AS TIMESTAMP)",
             write={
-                "snowflake": "SELECT CAST(a AS TIMESTAMP(9))",
+                "snowflake": "SELECT CAST(a AS TIMESTAMPNTZ)",
             },
         )
-        # TODO: fix this test, should be TIMESTAMP_LTZ
+        self.validate_all(
+            "SELECT a::TIMESTAMP_LTZ(9)",
+            write={
+                "snowflake": "SELECT CAST(a AS TIMESTAMPLTZ(9))",
+            },
+        )
+        self.validate_all(
+            "SELECT a::TIMESTAMPLTZ",
+            write={
+                "snowflake": "SELECT CAST(a AS TIMESTAMPLTZ)",
+            },
+        )
         self.validate_all(
             "SELECT a::TIMESTAMP WITH LOCAL TIME ZONE",
             write={
                 "snowflake": "SELECT CAST(a AS TIMESTAMPLTZ)",
             },
         )
+        self.validate_identity("SELECT EXTRACT(month FROM a)")
         self.validate_all(
             "SELECT EXTRACT('month', a)",
             write={
                 "snowflake": "SELECT EXTRACT('month' FROM a)",
             },
         )
+        self.validate_all("SELECT DATE_PART('month', a)")
         self.validate_all(
-            "SELECT EXTRACT(month FROM a)",
+            "SELECT DATE_PART(month FROM a::DATETIME)",
             write={
-                "snowflake": "SELECT EXTRACT(month FROM a)",
-            },
-        )
-        self.validate_all(
-            "SELECT DATE_PART('month', a)",
-            write={
-                "snowflake": "SELECT DATE_PART('month', a)",
+                "snowflake": "SELECT EXTRACT(month FROM CAST(a AS DATETIME))",
             },
         )

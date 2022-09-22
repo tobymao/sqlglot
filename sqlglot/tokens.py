@@ -564,6 +564,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "BYTEA": TokenType.BINARY,
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
+        "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
         "UNIQUE": TokenType.UNIQUE,

@@ -106,6 +106,11 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP": _snowflake_to_timestamp,
         }
 
+        FUNCTION_PARSERS = {
+            **Parser.FUNCTION_PARSERS,
+            "DATE_PART": lambda self: self._parse_extract(),
+        }
+
         COLUMN_OPERATORS = {
             **Parser.COLUMN_OPERATORS,
             TokenType.COLON: lambda self, this, path: self.expression(
@@ -115,6 +120,17 @@ class Snowflake(Dialect):
             ),
         }
 
+        def _parse_extract(self):
+            this = self._parse_var() or self._parse_type()
+
+            if self._match(TokenType.FROM):
+                return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
+
+            if not self._match(TokenType.COMMA):
+                self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
+
+            return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
+
     class Tokenizer(Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPE = "\\"
@@ -122,10 +138,11 @@ class Snowflake(Dialect):
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
+            "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
+            "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
-            "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
-            "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
+            "TIMESTAMP": TokenType.TIMESTAMP,
         }
 
     class Generator(Generator):
@@ -134,7 +151,11 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
-            exp.DataType.Type.TIMESTAMP: "TIMESTAMP_NTZ",
+        }
+
+        TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
+            exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 
         def except_op(self, expression):

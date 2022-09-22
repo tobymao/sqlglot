@@ -92,6 +92,13 @@ class Parser:
         TokenType.SERIAL,
         TokenType.SMALLSERIAL,
         TokenType.BIGSERIAL,
+        TokenType.XML,
+        TokenType.UNIQUEIDENTIFIER,
+        TokenType.MONEY,
+        TokenType.SMALLMONEY,
+        TokenType.ROWVERSION,
+        TokenType.IMAGE,
+        TokenType.SQL_VARIANT,
         *NESTED_TYPE_TOKENS,
     }
 

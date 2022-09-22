@@ -48,14 +48,6 @@ class TestSpark(Validator):
             },
         )
         self.validate_all(
-            "CREATE TABLE test USING ICEBERG STORED AS PARQUET AS SELECT 1",
-            write={
-                "presto": "CREATE TABLE test WITH (TABLE_FORMAT = 'ICEBERG', FORMAT = 'PARQUET') AS SELECT 1",
-                "hive": "CREATE TABLE test USING ICEBERG STORED AS PARQUET AS SELECT 1",
-                "spark": "CREATE TABLE test USING ICEBERG USING PARQUET AS SELECT 1",
-            },
-        )
-        self.validate_all(
             """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG TBLPROPERTIES('x' = '1')""",
             write={
                 "presto": """CREATE TABLE blah (

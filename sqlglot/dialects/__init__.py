@@ -14,3 +14,4 @@ from sqlglot.dialects.sqlite import SQLite
 from sqlglot.dialects.starrocks import StarRocks
 from sqlglot.dialects.tableau import Tableau
 from sqlglot.dialects.trino import Trino
+from sqlglot.dialects.tsql import TSQL

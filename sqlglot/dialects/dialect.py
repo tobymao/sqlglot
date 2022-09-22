@@ -27,6 +27,7 @@ class Dialects(str, Enum):
     STARROCKS = "starrocks"
     TABLEAU = "tableau"
     TRINO = "trino"
+    TSQL = "tsql"
 
 
 class _Dialect(type):

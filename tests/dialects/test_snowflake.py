@@ -208,7 +208,12 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT EXTRACT('month' FROM a)",
             },
         )
-        self.validate_all("SELECT DATE_PART('month', a)")
+        self.validate_all(
+            "SELECT DATE_PART('month', a)",
+            write={
+                "snowflake": "SELECT EXTRACT('month' FROM a)",
+            },
+        )
         self.validate_all(
             "SELECT DATE_PART(month FROM a::DATETIME)",
             write={

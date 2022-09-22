@@ -173,7 +173,7 @@ class TestPresto(Validator):
             write={
                 "presto": "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
-                "spark": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
+                "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
         )
         self.validate_all(
@@ -181,7 +181,7 @@ class TestPresto(Validator):
             write={
                 "presto": "CREATE TABLE test WITH (FORMAT = 'PARQUET', X = '1', Z = '2') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('X' = '1', 'Z' = '2') AS SELECT 1",
-                "spark": "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('X' = '1', 'Z' = '2') AS SELECT 1",
+                "spark": "CREATE TABLE test USING PARQUET TBLPROPERTIES ('X' = '1', 'Z' = '2') AS SELECT 1",
             },
         )
         self.validate_all(

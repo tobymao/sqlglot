@@ -1,6 +1,7 @@
 import unittest
 
 from sqlglot.dataframe.session import SparkSession
+from sqlglot.dataframe import types
 
 
 class TestDataframeWindow(unittest.TestCase):
@@ -33,3 +34,26 @@ class TestDataframeWindow(unittest.TestCase):
         df = self.spark.createDataFrame([[1, 'test']], "cola: INT, colb: STRING")
         self.assertEqual("SELECT CAST(cola AS INT) AS `cola`, CAST(colb AS STRING) AS `colb` FROM (VALUES (1, 'test')) AS tab(cola, colb)",
                          df.sql(pretty=False))
+
+    def test_typed_schema_basic(self):
+        schema = types.StructType([
+            types.StructField("cola", types.IntegerType()),
+            types.StructField("colb", types.StringType()),
+        ])
+        df = self.spark.createDataFrame([[1, 'test']], schema)
+        self.assertEqual(
+            "SELECT CAST(cola AS integer) AS `cola`, CAST(colb AS string) AS `colb` FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+            df.sql(pretty=False))
+
+    def test_typed_schema_nested(self):
+        schema = types.StructType([
+            types.StructField("cola", types.StructType([
+                types.StructField("sub_cola", types.IntegerType()),
+                types.StructField("sub_colb", types.StringType()),
+            ]))
+        ])
+        df = self.spark.createDataFrame([[{"sub_cola": 1, "sub_colb": 'test'}]], schema)
+        self.assertEqual(
+            "SELECT CAST(cola AS struct<sub_cola:integer, sub_colb:string>) AS `cola` FROM (VALUES (STRUCT(1 AS `sub_cola`, 'test' AS `sub_colb`))) AS tab(cola)",
+            df.sql(pretty=False)
+        )

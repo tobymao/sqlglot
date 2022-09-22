@@ -6,6 +6,7 @@ from sqlglot import expressions as exp
 from sqlglot.dataframe.dataframe_reader import DataFrameReader
 from sqlglot.dataframe import functions as F
 from sqlglot.dataframe.operations import Operation
+from sqlglot.dataframe.types import StructType
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.dataframe import DataFrame
@@ -22,9 +23,8 @@ class SparkSession:
     def read(self) -> "DataFrameReader":
         return DataFrameReader(self)
 
-    @classmethod
     @property
-    def random_name(cls) -> str:
+    def random_name(self) -> str:
         return f"a{str(uuid.uuid4())[:8]}"
 
     @property
@@ -60,7 +60,7 @@ class SparkSession:
     def createDataFrame(
             self,
             data: t.Iterable[t.Union[t.Dict[str, t.Any], t.Iterable[t.Any]]],
-            schema: t.Optional[t.Union[str, t.List[str]]] = None,
+            schema: t.Optional[t.Union[str, t.List[str], "StructType"]] = None,
             samplingRatio: t.Optional[float] = None,
             verifySchema: bool = False,
     ) -> "DataFrame":
@@ -68,8 +68,21 @@ class SparkSession:
 
         if samplingRatio is not None or verifySchema:
             raise NotImplementedError("Sampling Ration and Verify Schema are not supported")
-        if schema is not None and (not isinstance(schema, (str, list)) or (isinstance(schema, list) and not isinstance(schema[0], str))):
+        if schema is not None and (not isinstance(schema, (StructType, str, list)) or (isinstance(schema, list) and not isinstance(schema[0], str))):
             raise NotImplementedError("Only schema of either list or string of list supported")
+
+        if schema is not None:
+            if isinstance(schema, str):
+                col_name_type_strs = [x.strip() for x in schema.split(",")]
+                col_name_type_pairs = [(name_type_str.split(':')[0].strip(), name_type_str.split(':')[1].strip()) for name_type_str in col_name_type_strs]
+            elif isinstance(schema, StructType):
+                col_name_type_pairs = [(struct_field.name, struct_field.dataType.simpleString()) for struct_field in schema]
+            else:
+                col_name_type_pairs = [(x.strip(), None) for x in schema]
+        elif isinstance(data[0], dict):
+            col_name_type_pairs = [(col_name.strip(), None) for col_name in data[0].keys()]
+        else:
+            col_name_type_pairs = [(f"_{i}", None) for i in range(1, len(data[0]) + 1)]
 
         data_expressions = [
             exp.Tuple(
@@ -77,17 +90,6 @@ class SparkSession:
             )
             for row in data
         ]
-
-        if schema is not None:
-            if isinstance(schema, str):
-                col_name_type_strs = [x.strip() for x in schema.split(",")]
-                col_name_type_pairs = [(name_type_str.split(':')[0].strip(), name_type_str.split(':')[1].strip()) for name_type_str in col_name_type_strs]
-            else:
-                col_name_type_pairs = [(x.strip(), None) for x in schema]
-        elif isinstance(data[0], dict):
-            col_name_type_pairs = [(col_name.strip(), None) for col_name in data[0].keys()]
-        else:
-            col_name_type_pairs = [(f"_{i}", None) for i in range(1, len(data_expressions[0].expressions) + 1)]
 
         sel_columns = [
             F.col(name).cast(data_type).alias(name).expression if data_type is not None else F.col(name).expression

@@ -21,6 +21,8 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
         test_datetime = SF.lit(datetime.datetime(2022, 1, 1, 1, 1, 1))
         self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
+        test_dict = SF.lit({"cola": 1, "colb": 'test'})
+        self.assertEqual("STRUCT(1 AS `cola`, 'test' AS `colb`)", test_dict.sql())
 
     def test_col(self):
         test_col = SF.col("cola")
@@ -35,12 +37,14 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("10.1", test_float.sql())
         test_bool = SF.col(True)
         self.assertEqual("true", test_bool.sql())
-        test_array = SF.col([1, 2, 3])
-        self.assertEqual("ARRAY(1, 2, 3)", test_array.sql())
+        test_array = SF.col([1, 2, '3'])
+        self.assertEqual("ARRAY(1, 2, '3')", test_array.sql())
         test_date = SF.col(datetime.date(2022, 1, 1))
         self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
         test_datetime = SF.col(datetime.datetime(2022, 1, 1, 1, 1, 1))
         self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
+        test_dict = SF.col({"cola": 1, "colb": 'test'})
+        self.assertEqual("STRUCT(1 AS `cola`, 'test' AS `colb`)", test_dict.sql())
 
     def test_asc(self):
         asc_str = SF.asc("cola")

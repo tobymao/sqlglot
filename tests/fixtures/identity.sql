@@ -48,7 +48,6 @@ a.b.C()
 a['x'].b.C()
 a.B()
 a['x'].C()
-int.1
 int.x
 map.x
 x IN (-1, 1)

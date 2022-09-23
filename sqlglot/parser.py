@@ -1449,11 +1449,7 @@ class Parser:
 
         index = self._index
         type_token = self._parse_types()
-
-        if type_token and self._curr and self._curr.token_type == TokenType.DOT:
-            this = None
-        else:
-            this = self._parse_column()
+        this = self._parse_column()
 
         if type_token:
             if this:

@@ -577,6 +577,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATETIME": TokenType.DATETIME,
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
+        "VARIANT": TokenType.VARIANT,
     }
 
     WHITE_SPACE = {

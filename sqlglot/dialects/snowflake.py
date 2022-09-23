@@ -1,8 +1,8 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
-    inline_array_sql,
     format_time_lambda,
+    inline_array_sql,
     rename_func,
 )
 from sqlglot.expressions import Literal

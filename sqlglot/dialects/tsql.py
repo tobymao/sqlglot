@@ -24,7 +24,6 @@ class TSQL(Dialect):
             "MONEY": TokenType.MONEY,
             "SMALLMONEY": TokenType.SMALLMONEY,
             "ROWVERSION": TokenType.ROWVERSION,
-            "SQL_VARIANT": TokenType.SQL_VARIANT,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "XML": TokenType.XML,
             "SQL_VARIANT": TokenType.VARIANT,

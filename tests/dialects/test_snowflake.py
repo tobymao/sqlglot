@@ -223,6 +223,13 @@ class TestSnowflake(Validator):
 
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")
+        self.validate_all(
+            "SELECT a::VARIANT",
+            write={
+                "snowflake": "SELECT CAST(a AS VARIANT)",
+                "tsql": "SELECT CAST(a AS SQL_VARIANT)",
+            },
+        )
         self.validate_identity("SELECT CAST(a AS ARRAY)")
         self.validate_all(
             "ARRAY_CONSTRUCT(0, 1, 2)",

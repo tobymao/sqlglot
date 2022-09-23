@@ -912,14 +912,18 @@ class Properties(Expression):
 
     @staticmethod
     def _convert_value(value):
+        if value is None:
+            return NULL
         if isinstance(value, Expression):
             return value
+        if isinstance(value, bool):
+            return Boolean(this=value)
         if isinstance(value, str):
             return Literal.string(value)
         if isinstance(value, numbers.Number):
             return Literal.number(value)
         if isinstance(value, list):
-            return Tuple(expressions=[_convert_value(v) for v in value])
+            return Tuple(expressions=[Properties._convert_value(v) for v in value])
         raise ValueError(f"Unsupported type '{type(value)}' for value '{value}'")
 
 

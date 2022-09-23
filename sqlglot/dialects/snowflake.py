@@ -1,5 +1,10 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect, format_time_lambda, rename_func
+from sqlglot.dialects.dialect import (
+    Dialect,
+    inline_array_sql,
+    format_time_lambda,
+    rename_func,
+)
 from sqlglot.expressions import Literal
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
@@ -147,7 +152,7 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
-            exp.Array: lambda self, e: f"[{', '.join([self.sql(c) for c in e.expressions])}]",
+            exp.Array: inline_array_sql,
         }
 
         TYPE_MAPPING = {

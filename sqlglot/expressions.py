@@ -7,7 +7,7 @@ from copy import deepcopy
 from enum import auto
 
 from sqlglot.errors import ParseError
-from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
+from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list, list_get
 
 
 class _Expression(type):
@@ -344,7 +344,7 @@ class Expression(metaclass=_Expression):
 
         return indent + left + right
 
-    def transform(self, fun, *args, copy=True, **kwargs):
+    def transform(self, fun, *args, copy=True, allow_removals=False, **kwargs):
         """
         Recursively visits all tree nodes (excluding already transformed ones)
         and applies the given transformation function to each node.
@@ -362,14 +362,18 @@ class Expression(metaclass=_Expression):
         new_node = fun(node, *args, **kwargs)
 
         if new_node is None:
-            raise ValueError("A transformed node cannot be None")
+            if not allow_removals:
+                raise ValueError("A transformed node cannot be None")
+            return new_node
         if not isinstance(new_node, Expression):
             return new_node
         if new_node is not node:
             new_node.parent = node.parent
             return new_node
 
-        replace_children(new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs))
+        replace_children(
+            new_node, lambda child: child.transform(fun, *args, copy=False, allow_removals=allow_removals, **kwargs)
+        )
         return new_node
 
     def replace(self, expression):
@@ -3009,7 +3013,7 @@ def replace_children(expression, fun):
             else:
                 new_child_nodes.append(cn)
 
-        expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
+        expression.args[k] = new_child_nodes if is_list_arg else list_get(new_child_nodes, 0)
 
 
 def column_table_names(expression):

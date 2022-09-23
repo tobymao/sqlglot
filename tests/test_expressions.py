@@ -247,6 +247,16 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(expression.transform(fun).sql(), "SELECT a, b FROM x")
 
+    def test_transform_node_removal(self):
+        expression = parse_one("SELECT a, b FROM x")
+
+        def fun(node):
+            if isinstance(node, exp.Column) and node.name == "b":
+                return None
+            return node
+
+        self.assertEqual(expression.transform(fun, allow_removals=True).sql(), "SELECT a FROM x")
+
     def test_replace(self):
         expression = parse_one("SELECT a, b FROM x")
         expression.find(exp.Column).replace(parse_one("c"))

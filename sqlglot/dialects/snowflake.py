@@ -104,6 +104,7 @@ class Snowflake(Dialect):
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
+            "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
@@ -137,6 +138,7 @@ class Snowflake(Dialect):
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
+            "VARIANT": TokenType.SQL_VARIANT,
         }
 
     class Generator(Generator):
@@ -145,11 +147,13 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
+            exp.Array: lambda self, e: f"[{', '.join([self.sql(c) for c in e.expressions])}]",
         }
 
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
+            exp.DataType.Type.SQL_VARIANT: "VARIANT",
         }
 
         def except_op(self, expression):

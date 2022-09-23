@@ -66,6 +66,9 @@ class TestDuckDB(Validator):
     def test_duckdb(self):
         self.validate_all(
             "LIST_VALUE(0, 1, 2)",
+            read={
+                "spark": "ARRAY(0, 1, 2)",
+            },
             write={
                 "bigquery": "[0, 1, 2]",
                 "duckdb": "LIST_VALUE(0, 1, 2)",

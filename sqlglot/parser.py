@@ -81,6 +81,7 @@ class Parser:
         TokenType.INTERVAL,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
+        TokenType.TIMESTAMPLTZ,
         TokenType.DATETIME,
         TokenType.DATE,
         TokenType.DECIMAL,
@@ -92,6 +93,13 @@ class Parser:
         TokenType.SERIAL,
         TokenType.SMALLSERIAL,
         TokenType.BIGSERIAL,
+        TokenType.XML,
+        TokenType.UNIQUEIDENTIFIER,
+        TokenType.MONEY,
+        TokenType.SMALLMONEY,
+        TokenType.ROWVERSION,
+        TokenType.IMAGE,
+        TokenType.SQL_VARIANT,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -233,6 +241,7 @@ class Parser:
     TIMESTAMPS = {
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
+        TokenType.TIMESTAMPLTZ,
     }
 
     SET_OPERATIONS = {
@@ -1497,12 +1506,19 @@ class Parser:
 
         if type_token in self.TIMESTAMPS:
             tz = self._match(TokenType.WITH_TIME_ZONE) or type_token == TokenType.TIMESTAMPTZ
-            self._match(TokenType.WITHOUT_TIME_ZONE)
             if tz:
                 return exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPTZ,
                     expressions=expressions,
                 )
+            ltz = self._match(TokenType.WITH_LOCAL_TIME_ZONE) or type_token == TokenType.TIMESTAMPLTZ
+            if ltz:
+                return exp.DataType(
+                    this=exp.DataType.Type.TIMESTAMPLTZ,
+                    expressions=expressions,
+                )
+            self._match(TokenType.WITHOUT_TIME_ZONE)
+
             return exp.DataType(
                 this=exp.DataType.Type.TIMESTAMP,
                 expressions=expressions,
@@ -1845,8 +1861,11 @@ class Parser:
     def _parse_extract(self):
         this = self._parse_var() or self._parse_type()
 
-        if not self._match(TokenType.FROM):
-            self.raise_error("Expected FROM after EXTRACT", self._prev)
+        if self._match(TokenType.FROM):
+            return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
+
+        if not self._match(TokenType.COMMA):
+            self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
 
         return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
 

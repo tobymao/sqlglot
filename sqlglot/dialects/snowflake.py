@@ -106,6 +106,11 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP": _snowflake_to_timestamp,
         }
 
+        FUNCTION_PARSERS = {
+            **Parser.FUNCTION_PARSERS,
+            "DATE_PART": lambda self: self._parse_extract(),
+        }
+
         COLUMN_OPERATORS = {
             **Parser.COLUMN_OPERATORS,
             TokenType.COLON: lambda self, this, path: self.expression(
@@ -122,6 +127,10 @@ class Snowflake(Dialect):
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
+            "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
+            "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
+            "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
+            "TIMESTAMPNTZ": TokenType.TIMESTAMP,
         }
 
     class Generator(Generator):
@@ -130,6 +139,11 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
+        }
+
+        TYPE_MAPPING = {
+            **Generator.TYPE_MAPPING,
+            exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 
         def except_op(self, expression):

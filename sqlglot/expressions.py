@@ -1,4 +1,5 @@
 import inspect
+import numbers
 import re
 import sys
 from collections import deque
@@ -843,10 +844,6 @@ class Ordered(Expression):
     arg_types = {"this": True, "desc": True, "nulls_first": True}
 
 
-class Properties(Expression):
-    arg_types = {"expressions": True}
-
-
 class Property(Expression):
     arg_types = {"this": True, "value": True}
 
@@ -889,6 +886,42 @@ class SchemaCommentProperty(Property):
 
 class AnonymousProperty(Property):
     pass
+
+
+class Properties(Expression):
+    arg_types = {"expressions": True}
+
+    PROPERTY_KEY_MAPPING = {
+        "AUTO_INCREMENT": AutoIncrementProperty,
+        "CHARACTER_SET": CharacterSetProperty,
+        "COLLATE": CollateProperty,
+        "COMMENT": SchemaCommentProperty,
+        "ENGINE": EngineProperty,
+        "FORMAT": FileFormatProperty,
+        "LOCATION": LocationProperty,
+        "PARTITIONED_BY": PartitionedByProperty,
+        "TABLE_FORMAT": TableFormatProperty,
+    }
+
+    @classmethod
+    def from_dict(cls, properties_dict):
+        expressions = []
+        for key, value in properties_dict.items():
+            property_cls = cls.PROPERTY_KEY_MAPPING.get(key.upper(), AnonymousProperty)
+            expressions.append(property_cls(this=Literal.string(key), value=cls._convert_value(value)))
+        return cls(expressions=expressions)
+
+    @staticmethod
+    def _convert_value(value):
+        if isinstance(value, Expression):
+            return value
+        if isinstance(value, str):
+            return Literal.string(value)
+        if isinstance(value, numbers.Number):
+            return Literal.number(value)
+        if isinstance(value, list):
+            return Tuple(expressions=[_convert_value(v) for v in value])
+        raise ValueError(f"Unsupported type '{type(value)}' for value '{value}'")
 
 
 class Qualify(Expression):
@@ -1562,15 +1595,7 @@ class Select(Subqueryable, Expression):
         )
         properties_expression = None
         if properties:
-            properties_str = " ".join(
-                [f"{k} = '{v}'" if isinstance(v, str) else f"{k} = {v}" for k, v in properties.items()]
-            )
-            properties_expression = maybe_parse(
-                properties_str,
-                into=Properties,
-                dialect=dialect,
-                **opts,
-            )
+            properties_expression = Properties.from_dict(properties)
 
         return Create(
             this=table_expression,
@@ -1688,6 +1713,7 @@ class DataType(Expression):
         INTERVAL = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
+        TIMESTAMPLTZ = auto()
         DATE = auto()
         DATETIME = auto()
         ARRAY = auto()
@@ -1702,6 +1728,13 @@ class DataType(Expression):
         SERIAL = auto()
         SMALLSERIAL = auto()
         BIGSERIAL = auto()
+        XML = auto()
+        UNIQUEIDENTIFIER = auto()
+        MONEY = auto()
+        SMALLMONEY = auto()
+        ROWVERSION = auto()
+        IMAGE = auto()
+        SQL_VARIANT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):

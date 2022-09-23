@@ -27,6 +27,7 @@ class Dialects(str, Enum):
     STARROCKS = "starrocks"
     TABLEAU = "tableau"
     TRINO = "trino"
+    TSQL = "tsql"
 
 
 class _Dialect(type):
@@ -170,7 +171,15 @@ class Dialect(metaclass=_Dialect):
 
 
 def rename_func(name):
-    return lambda self, expression: f"{name}({csv(*[self.sql(e) for e in expression.args.values()])})"
+    def _rename(self, expression):
+        args = (
+            self.expressions(expression, flat=True)
+            if isinstance(expression, exp.Func) and expression.is_var_len_args
+            else csv(*[self.sql(e) for e in expression.args.values()])
+        )
+        return f"{name}({args})"
+
+    return _rename
 
 
 def approx_count_distinct_sql(self, expression):

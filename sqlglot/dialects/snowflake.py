@@ -143,7 +143,6 @@ class Snowflake(Dialect):
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
-            "VARIANT": TokenType.SQL_VARIANT,
         }
 
     class Generator(Generator):
@@ -158,7 +157,6 @@ class Snowflake(Dialect):
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
-            exp.DataType.Type.SQL_VARIANT: "VARIANT",
         }
 
         def except_op(self, expression):

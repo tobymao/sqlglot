@@ -94,7 +94,7 @@ class TokenType(AutoName):
     SMALLMONEY = auto()
     ROWVERSION = auto()
     IMAGE = auto()
-    SQL_VARIANT = auto()
+    VARIANT = auto()
 
     # keywords
     ADD_FILE = auto()

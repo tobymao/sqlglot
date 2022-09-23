@@ -27,6 +27,7 @@ class TSQL(Dialect):
             "SQL_VARIANT": TokenType.SQL_VARIANT,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "XML": TokenType.XML,
+            "SQL_VARIANT": TokenType.VARIANT,
         }
 
     class Generator(Generator):
@@ -35,4 +36,5 @@ class TSQL(Dialect):
             exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.DECIMAL: "NUMERIC",
+            exp.DataType.Type.VARIANT: "SQL_VARIANT",
         }

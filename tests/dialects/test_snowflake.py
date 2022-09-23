@@ -143,6 +143,19 @@ class TestSnowflake(Validator):
                 "snowflake": r"SELECT 'a \' \\ \\t \\x21 z $ '",
             },
         )
+        self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
+        self.validate_all(
+            "SELECT RLIKE(a, b)",
+            write={
+                "snowflake": "SELECT REGEXP_LIKE(a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
+            write={
+                "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

@@ -155,6 +155,7 @@ class Parser:
         TokenType.REFERENCES,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
+        TokenType.SEED,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.STORED,
@@ -1199,6 +1200,7 @@ class Parser:
         percent = None
         rows = None
         size = None
+        seed = None
 
         self._match_l_paren()
 
@@ -1220,6 +1222,11 @@ class Parser:
 
         self._match_r_paren()
 
+        if self._match(TokenType.SEED):
+            self._match_l_paren()
+            seed = self._parse_number()
+            self._match_r_paren()
+
         return self.expression(
             exp.TableSample,
             method=method,
@@ -1229,6 +1236,7 @@ class Parser:
             percent=percent,
             rows=rows,
             size=size,
+            seed=seed,
         )
 
     def _parse_where(self):

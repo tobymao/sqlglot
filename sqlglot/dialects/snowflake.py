@@ -110,11 +110,17 @@ class Snowflake(Dialect):
             "IFF": exp.If.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
+            "RLIKE": exp.RegexpLike.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
             **Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_extract(),
+        }
+
+        FUNC_TOKENS = {
+            *Parser.FUNC_TOKENS,
+            TokenType.RLIKE,
         }
 
         COLUMN_OPERATORS = {
@@ -143,6 +149,7 @@ class Snowflake(Dialect):
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
+            "SAMPLE": TokenType.TABLE_SAMPLE,
         }
 
     class Generator(Generator):

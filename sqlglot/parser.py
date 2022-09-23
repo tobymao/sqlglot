@@ -155,6 +155,7 @@ class Parser:
         TokenType.REFERENCES,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
+        TokenType.SEED,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.STORED,
@@ -1204,6 +1205,7 @@ class Parser:
         percent = None
         rows = None
         size = None
+        seed = None
 
         self._match_l_paren()
 
@@ -1225,6 +1227,11 @@ class Parser:
 
         self._match_r_paren()
 
+        if self._match(TokenType.SEED):
+            self._match_l_paren()
+            seed = self._parse_number()
+            self._match_r_paren()
+
         return self.expression(
             exp.TableSample,
             method=method,
@@ -1234,6 +1241,7 @@ class Parser:
             percent=percent,
             rows=rows,
             size=size,
+            seed=seed,
         )
 
     def _parse_pivot(self):
@@ -1617,6 +1625,9 @@ class Parser:
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
             return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
+
+        if self._match_pair(TokenType.DOT, TokenType.NUMBER):
+            return exp.Literal.number(f"0.{self._prev.text}")
 
         if self._match(TokenType.L_PAREN):
             query = self._parse_select()

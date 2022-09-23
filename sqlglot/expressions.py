@@ -1643,6 +1643,7 @@ class TableSample(Expression):
         "percent": False,
         "rows": False,
         "size": False,
+        "seed": False,
     }
 
 
@@ -2381,7 +2382,7 @@ class Reduce(Func):
 
 
 class RegexpLike(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "flag": False}
 
 
 class RegexpSplit(Func):

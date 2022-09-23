@@ -841,6 +841,14 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "POSITION(' ' in x)",
+            write={
+                "duckdb": "STRPOS(x, ' ')",
+                "presto": "STRPOS(x, ' ')",
+                "spark": "LOCATE(' ', x)",
+            },
+        )
+        self.validate_all(
             "STR_POSITION(x, 'a')",
             write={
                 "duckdb": "STRPOS(x, 'a')",

@@ -69,7 +69,7 @@ def ensure_schema(schema):
 
 
 def fs_get(table):
-    name = table.this.name.upper()
+    name = table.this.name
 
     if name.upper() == "READ_CSV":
         with csv_reader(table) as reader:

@@ -2372,7 +2372,7 @@ class Reduce(Func):
 
 
 class RegexpLike(Func):
-    arg_types = {"this": True, "expression": True, "parameters": False}
+    arg_types = {"this": True, "expression": True, "flag": False}
 
 
 class RegexpSplit(Func):

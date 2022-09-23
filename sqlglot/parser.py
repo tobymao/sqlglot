@@ -155,6 +155,7 @@ class Parser:
         TokenType.REFERENCES,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
+        TokenType.SEED,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.STORED,

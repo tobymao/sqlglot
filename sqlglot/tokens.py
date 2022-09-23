@@ -580,7 +580,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
         "VARIANT": TokenType.VARIANT,
-        "SAMPLE": TokenType.TABLE_SAMPLE,
     }
 
     WHITE_SPACE = {

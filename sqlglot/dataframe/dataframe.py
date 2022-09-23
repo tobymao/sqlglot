@@ -10,6 +10,7 @@ from sqlglot.helper import ensure_list
 from sqlglot.dataframe.operations import Operation, operation
 from sqlglot.dataframe.dataframe_na_functions import DataFrameNaFunctions
 from sqlglot.dataframe.transforms import ORDERED_TRANSFORMS
+from sqlglot.dataframe.dataframe_writer import DataFrameWriter
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.session import SparkSession
@@ -32,6 +33,13 @@ class DataFrame:
     def __getitem__(self, column_name: str) -> "Column":
         column_name = f"{self.branch_id}.{column_name}"
         return Column(column_name)
+
+    def __copy__(self):
+        return self.copy()
+
+    @property
+    def write(self):
+        return DataFrameWriter(self)
 
     @property
     def latest_cte_name(self) -> str:

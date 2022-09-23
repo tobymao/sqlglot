@@ -97,9 +97,6 @@ class TestDataframe(unittest.TestCase):
         self.df_sqlglot_store = self.dfs_store.alias('store')
         self.df_sqlglot_employee = self.dfs_employee.alias('employee')
         self.df_sqlglot_district = self.dfs_district.alias('district')
-        # self.df_sqlglot_store = self.sqlglot.read.table('store')
-        # self.df_sqlglot_employee = self.sqlglot.read.table('employee')
-        # self.df_sqlglot_district = self.sqlglot.read.table('district')
 
 
     @classmethod

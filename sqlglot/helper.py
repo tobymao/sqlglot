@@ -100,7 +100,7 @@ def csv_reader(table):
     Returns a csv reader given the expression READ_CSV(name, ['delimiter', '|', ...])
 
     Args:
-        table (exp.Table): An anonymous function READ_CSV disguised as a table expression
+        table (exp.Table): A table expression with an anonymous function READ_CSV in it
 
     Returns:
         A python csv reader.

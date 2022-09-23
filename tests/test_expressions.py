@@ -224,9 +224,6 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(actual_expression_2.sql(dialect="presto"), "IF(c - 2 > 0, c - 2, b)")
         self.assertIs(actual_expression_2, expression)
 
-        with self.assertRaises(ValueError):
-            parse_one("a").transform(lambda n: None)
-
     def test_transform_no_infinite_recursion(self):
         expression = parse_one("a")
 
@@ -246,6 +243,35 @@ class TestExpressions(unittest.TestCase):
             return node
 
         self.assertEqual(expression.transform(fun).sql(), "SELECT a, b FROM x")
+
+    def test_transform_node_removal(self):
+        expression = parse_one("SELECT a, b FROM x")
+
+        def remove_column_b(node):
+            if isinstance(node, exp.Column) and node.name == "b":
+                return None
+            return node
+
+        self.assertEqual(expression.transform(remove_column_b).sql(), "SELECT a FROM x")
+        self.assertEqual(expression.transform(lambda _: None), None)
+
+        expression = parse_one("CAST(x AS FLOAT)")
+
+        def remove_non_list_arg(node):
+            if isinstance(node, exp.DataType):
+                return None
+            return node
+
+        self.assertEqual(expression.transform(remove_non_list_arg).sql(), "CAST(x AS )")
+
+        expression = parse_one("SELECT a, b FROM x")
+
+        def remove_all_columns(node):
+            if isinstance(node, exp.Column):
+                return None
+            return node
+
+        self.assertEqual(expression.transform(remove_all_columns).sql(), "SELECT FROM x")
 
     def test_replace(self):
         expression = parse_one("SELECT a, b FROM x")

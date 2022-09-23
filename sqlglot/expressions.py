@@ -7,7 +7,7 @@ from copy import deepcopy
 from enum import auto
 
 from sqlglot.errors import ParseError
-from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
+from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list, list_get
 
 
 class _Expression(type):
@@ -351,7 +351,8 @@ class Expression(metaclass=_Expression):
 
         Args:
             fun (function): a function which takes a node as an argument and returns a
-                new transformed node or the same node without modifications.
+                new transformed node or the same node without modifications. If the function
+                returns None, then the corresponding node will be removed from the syntax tree.
             copy (bool): if set to True a new tree instance is constructed, otherwise the tree is
                 modified in place.
 
@@ -361,9 +362,7 @@ class Expression(metaclass=_Expression):
         node = self.copy() if copy else self
         new_node = fun(node, *args, **kwargs)
 
-        if new_node is None:
-            raise ValueError("A transformed node cannot be None")
-        if not isinstance(new_node, Expression):
+        if new_node is None or not isinstance(new_node, Expression):
             return new_node
         if new_node is not node:
             new_node.parent = node.parent
@@ -3009,7 +3008,7 @@ def replace_children(expression, fun):
             else:
                 new_child_nodes.append(cn)
 
-        expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
+        expression.args[k] = new_child_nodes if is_list_arg else list_get(new_child_nodes, 0)
 
 
 def column_table_names(expression):

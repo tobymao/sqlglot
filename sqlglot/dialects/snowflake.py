@@ -104,11 +104,17 @@ class Snowflake(Dialect):
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
+            "RLIKE": exp.RegexpLike.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
             **Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_extract(),
+        }
+
+        FUNC_TOKENS = {
+            *Parser.FUNC_TOKENS,
+            TokenType.RLIKE,
         }
 
         COLUMN_OPERATORS = {

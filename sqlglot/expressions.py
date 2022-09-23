@@ -1742,7 +1742,7 @@ class DataType(Expression):
         SMALLMONEY = auto()
         ROWVERSION = auto()
         IMAGE = auto()
-        SQL_VARIANT = auto()
+        VARIANT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):

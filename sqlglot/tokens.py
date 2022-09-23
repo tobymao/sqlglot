@@ -94,7 +94,7 @@ class TokenType(AutoName):
     SMALLMONEY = auto()
     ROWVERSION = auto()
     IMAGE = auto()
-    SQL_VARIANT = auto()
+    VARIANT = auto()
 
     # keywords
     ADD_FILE = auto()
@@ -579,6 +579,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATETIME": TokenType.DATETIME,
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
+        "VARIANT": TokenType.VARIANT,
         "SAMPLE": TokenType.TABLE_SAMPLE,
     }
 

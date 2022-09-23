@@ -108,7 +108,7 @@ class DuckDB(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Array: lambda self, e: f"LIST_VALUE({self.expressions(e, flat=True)})",
+            exp.Array: rename_func("LIST_VALUE"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),

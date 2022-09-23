@@ -8,6 +8,7 @@ SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
 1.1E10
 1.12e-10
 -11.023E7 * 3
+0.2
 (1 * 2) / (3 - 5)
 ((TRUE))
 ''
@@ -47,6 +48,7 @@ a.b.C()
 a['x'].b.C()
 a.B()
 a['x'].C()
+int.1
 int.x
 map.x
 x IN (-1, 1)

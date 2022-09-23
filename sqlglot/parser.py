@@ -1449,7 +1449,11 @@ class Parser:
 
         index = self._index
         type_token = self._parse_types()
-        this = self._parse_column()
+
+        if type_token and self._curr and self._curr.token_type == TokenType.DOT:
+            this = None
+        else:
+            this = self._parse_column()
 
         if type_token:
             if this:
@@ -1576,6 +1580,9 @@ class Parser:
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
             return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
+
+        if self._match_pair(TokenType.DOT, TokenType.NUMBER):
+            return exp.Literal.number(f"0.{self._prev.text}")
 
         if self._match(TokenType.L_PAREN):
             query = self._parse_select()

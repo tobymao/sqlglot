@@ -123,6 +123,12 @@ class Snowflake(Dialect):
     class Tokenizer(Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPE = "\\"
+
+        SINGLE_TOKENS = {
+            **Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.DOLLAR,  # needed to break for quotes
+        }
+
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,

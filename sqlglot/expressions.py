@@ -1674,6 +1674,10 @@ class Star(Expression):
         return "*"
 
 
+class Parameter(Expression):
+    pass
+
+
 class Placeholder(Expression):
     arg_types = {}
 

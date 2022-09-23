@@ -114,6 +114,9 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("SELECT FROM x ORDER BY")
 
+    def test_parameter(self):
+        self.assertEqual(parse_one("SELECT @x, @@x, @1").sql(), "SELECT @x, @@x, @1")
+
     def test_annotations(self):
         expression = parse_one(
             """

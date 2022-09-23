@@ -324,6 +324,7 @@ class Parser:
         TokenType.TRUE: lambda *_: exp.Boolean(this=True),
         TokenType.FALSE: lambda *_: exp.Boolean(this=False),
         TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
+        TokenType.PARAMETER: lambda self, _: exp.Parameter(this=self._parse_var() or self._parse_primary()),
         TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
         TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
         TokenType.INTRODUCER: lambda self, token: self.expression(

@@ -54,7 +54,6 @@ class _Dialect(type):
         klass.parser_class = getattr(klass, "Parser", Parser)
         klass.generator_class = getattr(klass, "Generator", Generator)
 
-        klass.tokenizer = klass.tokenizer_class()
         klass.quote_start, klass.quote_end = list(klass.tokenizer_class._QUOTES.items())[0]
         klass.identifier_start, klass.identifier_end = list(klass.tokenizer_class._IDENTIFIERS.items())[0]
 
@@ -96,7 +95,6 @@ class Dialect(metaclass=_Dialect):
     tokenizer_class = None
     parser_class = None
     generator_class = None
-    tokenizer = None
 
     @classmethod
     def get_or_raise(cls, dialect):
@@ -138,6 +136,12 @@ class Dialect(metaclass=_Dialect):
 
     def transpile(self, code, **opts):
         return self.generate(self.parse(code), **opts)
+
+    @property
+    def tokenizer(self):
+        if not hasattr(self, "_tokenizer"):
+            self._tokenizer = self.tokenizer_class()
+        return self._tokenizer
 
     def parser(self, **opts):
         return self.parser_class(

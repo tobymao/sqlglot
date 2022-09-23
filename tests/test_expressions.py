@@ -414,3 +414,34 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("heLLO()").sql(normalize_functions=None), "heLLO()")
         self.assertEqual(parse_one("SUM(x)").sql(normalize_functions="lower"), "sum(x)")
         self.assertEqual(parse_one("sum(x)").sql(normalize_functions="upper"), "SUM(x)")
+
+    def test_properties_from_dict(self):
+        self.assertEqual(
+            exp.Properties.from_dict(
+                {
+                    "FORMAT": "parquet",
+                    "PARTITIONED_BY": [exp.to_identifier("a"), exp.to_identifier("b")],
+                    "custom": 1,
+                    "TABLE_FORMAT": exp.to_identifier("test_format"),
+                    "ENGINE": None,
+                    "COLLATE": True,
+                }
+            ),
+            exp.Properties(
+                expressions=[
+                    exp.FileFormatProperty(this=exp.Literal.string("FORMAT"), value=exp.Literal.string("parquet")),
+                    exp.PartitionedByProperty(
+                        this=exp.Literal.string("PARTITIONED_BY"),
+                        value=exp.Tuple(expressions=[exp.to_identifier("a"), exp.to_identifier("b")]),
+                    ),
+                    exp.AnonymousProperty(this=exp.Literal.string("custom"), value=exp.Literal.number(1)),
+                    exp.TableFormatProperty(
+                        this=exp.Literal.string("TABLE_FORMAT"), value=exp.to_identifier("test_format")
+                    ),
+                    exp.EngineProperty(this=exp.Literal.string("ENGINE"), value=exp.NULL),
+                    exp.CollateProperty(this=exp.Literal.string("COLLATE"), value=exp.TRUE),
+                ]
+            ),
+        )
+
+        self.assertRaises(ValueError, exp.Properties.from_dict, {"FORMAT": {"key": "value"}})

@@ -99,7 +99,7 @@ class Parser:
         TokenType.SMALLMONEY,
         TokenType.ROWVERSION,
         TokenType.IMAGE,
-        TokenType.SQL_VARIANT,
+        TokenType.VARIANT,
         *NESTED_TYPE_TOKENS,
     }
 

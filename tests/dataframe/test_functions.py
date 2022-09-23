@@ -382,9 +382,9 @@ class TestDataframeFunctions(unittest.TestCase):
 
     def test_var_samp(self):
         col_str = SF.var_samp("cola")
-        self.assertEqual("VAR_SAMP(cola)", col_str.sql())
+        self.assertEqual("VARIANCE(cola)", col_str.sql())
         col = SF.var_samp(SF.col("cola"))
-        self.assertEqual("VAR_SAMP(cola)", col.sql())
+        self.assertEqual("VARIANCE(cola)", col.sql())
 
     def test_var_pop(self):
         col_str = SF.var_pop("cola")

@@ -344,14 +344,15 @@ class Expression(metaclass=_Expression):
 
         return indent + left + right
 
-    def transform(self, fun, *args, copy=True, allow_removals=False, **kwargs):
+    def transform(self, fun, *args, copy=True, **kwargs):
         """
         Recursively visits all tree nodes (excluding already transformed ones)
         and applies the given transformation function to each node.
 
         Args:
             fun (function): a function which takes a node as an argument and returns a
-                new transformed node or the same node without modifications.
+                new transformed node or the same node without modifications. If the function
+                returns None, then the corresponding node will be removed from the syntax tree.
             copy (bool): if set to True a new tree instance is constructed, otherwise the tree is
                 modified in place.
 
@@ -361,19 +362,13 @@ class Expression(metaclass=_Expression):
         node = self.copy() if copy else self
         new_node = fun(node, *args, **kwargs)
 
-        if new_node is None:
-            if not allow_removals:
-                raise ValueError("A transformed node cannot be None")
-            return new_node
-        if not isinstance(new_node, Expression):
+        if new_node is None or not isinstance(new_node, Expression):
             return new_node
         if new_node is not node:
             new_node.parent = node.parent
             return new_node
 
-        replace_children(
-            new_node, lambda child: child.transform(fun, *args, copy=False, allow_removals=allow_removals, **kwargs)
-        )
+        replace_children(new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs))
         return new_node
 
     def replace(self, expression):

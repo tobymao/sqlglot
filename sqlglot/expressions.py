@@ -1646,6 +1646,16 @@ class TableSample(Expression):
     }
 
 
+class Pivot(Expression):
+    arg_types = {
+        "this": False,
+        "agg_func": True,
+        # "pivot": True,
+        "value": True,
+        "expressions": True,
+    }
+
+
 class Window(Expression):
     arg_types = {
         "this": True,

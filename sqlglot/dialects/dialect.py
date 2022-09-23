@@ -245,6 +245,11 @@ def no_tablesample_sql(self, expression):
     return self.sql(expression.this)
 
 
+def no_pivot_sql(self, expression):
+    self.unsupported("PIVOT unsupported")
+    return self.sql(expression)
+
+
 def no_trycast_sql(self, expression):
     return self.cast_sql(expression)
 

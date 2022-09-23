@@ -225,6 +225,7 @@ class TokenType(AutoName):
     ROW = auto()
     ROWS = auto()
     SCHEMA_COMMENT = auto()
+    SEED = auto()
     SELECT = auto()
     SEPARATOR = auto()
     SET = auto()
@@ -502,6 +503,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ROLLUP": TokenType.ROLLUP,
         "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,
+        "SEED": TokenType.SEED,
         "SELECT": TokenType.SELECT,
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
@@ -577,6 +579,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATETIME": TokenType.DATETIME,
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
+        "SAMPLE": TokenType.TABLE_SAMPLE,
     }
 
     WHITE_SPACE = {

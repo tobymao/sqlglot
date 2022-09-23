@@ -1643,6 +1643,7 @@ class TableSample(Expression):
         "percent": False,
         "rows": False,
         "size": False,
+        "seed": False,
     }
 
 

@@ -151,6 +151,12 @@ class TestSnowflake(Validator):
             },
 
         )
+        self.validate_all(
+            "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
+            write={
+                "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
+            },
+        )
 
 
     def test_null_treatment(self):

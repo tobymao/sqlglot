@@ -281,7 +281,7 @@ def variance(col: "ColumnOrName") -> "Column":
 
 
 def var_samp(col: "ColumnOrName") -> "Column":
-    return Column.invoke_expression_over_column(col, glotexp.VarianceSamp)
+    return Column.invoke_expression_over_column(col, glotexp.Variance)
 
 
 def var_pop(col: "ColumnOrName") -> "Column":
@@ -337,6 +337,8 @@ def approxCountDistinct(col: "ColumnOrName", rsd: t.Optional[float] = None) -> "
 
 
 def approx_count_distinct(col: "ColumnOrName", rsd: t.Optional[float] = None) -> "Column":
+    if rsd is None:
+        return Column.invoke_expression_over_column(col, glotexp.ApproxDistinct)
     return Column.invoke_expression_over_column(col, glotexp.ApproxDistinct, accuracy=Column.ensure_col(rsd).expression)
 
 

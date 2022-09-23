@@ -40,6 +40,7 @@ def parse(sql, read=None, **opts):
         typing.List[Expression]: the list of parsed syntax trees.
     """
     dialect = Dialect.get_or_raise(read)()
+    dialect.reset_tokenizer()
     return dialect.parse(sql, **opts)
 
 
@@ -60,6 +61,7 @@ def parse_one(sql, read=None, into=None, **opts):
     """
 
     dialect = Dialect.get_or_raise(read)()
+    dialect.reset_tokenizer()
 
     if into:
         result = dialect.parse_into(into, sql, **opts)

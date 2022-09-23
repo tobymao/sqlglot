@@ -174,7 +174,7 @@ def rename_func(name):
     def _rename(self, expression):
         args = (
             self.expressions(expression, flat=True)
-            if expression.args.get("expressions")
+            if isinstance(expression, exp.Func) and expression.is_var_len_args
             else csv(*[self.sql(e) for e in expression.args.values()])
         )
         return f"{name}({args})"

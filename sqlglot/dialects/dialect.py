@@ -106,7 +106,10 @@ class Dialect(metaclass=_Dialect):
         if not result:
             raise ValueError(f"Unknown dialect '{dialect}'")
         return result
-
+    
+    def reset_tokenizer(self):
+        self.tokenizer = Tokenizer(identifier=self.identifier,escape=self.escape)
+        
     @classmethod
     def format_time(cls, expression):
         if isinstance(expression, str):

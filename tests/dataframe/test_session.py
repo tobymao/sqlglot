@@ -1,6 +1,7 @@
 import unittest
 
 from sqlglot.dataframe.session import SparkSession
+from sqlglot.dataframe import functions as F
 from sqlglot.dataframe import types
 
 
@@ -55,5 +56,40 @@ class TestDataframeWindow(unittest.TestCase):
         df = self.spark.createDataFrame([[{"sub_cola": 1, "sub_colb": 'test'}]], schema)
         self.assertEqual(
             "SELECT CAST(cola AS struct<sub_cola:int, sub_colb:string>) AS `cola` FROM (VALUES (STRUCT(1 AS `sub_cola`, 'test' AS `sub_colb`))) AS tab(cola)",
+            df.sql(pretty=False)
+        )
+
+    def test_sql_select_only(self):
+        # TODO: Do exact matches once CTE names are deterministic
+        query = "SELECT cola, colb FROM table"
+        df = self.spark.sql(query)
+        self.assertIn(
+            "SELECT cola, colb FROM table",
+            df.sql(pretty=False)
+        )
+
+    def test_sql_with_aggs(self):
+        # TODO: Do exact matches once CTE names are deterministic
+        query = "SELECT cola, colb FROM table"
+        df = self.spark.sql(query).groupBy(F.col("cola")).agg(F.sum("colb"))
+        result = df.sql(pretty=False)
+        self.assertIn(
+            "SELECT cola, colb FROM table",
+            result
+        )
+        self.assertIn(
+            "SUM(colb)",
+            result
+        )
+        self.assertIn(
+            "GROUP BY cola",
+            result
+        )
+
+    def test_sql_non_select(self):
+        query = "CREATE TABLE new_table AS SELECT cola, colb FROM table"
+        df = self.spark.sql(query)
+        self.assertEqual(
+            "CREATE TABLE new_table AS SELECT cola, colb FROM table",
             df.sql(pretty=False)
         )

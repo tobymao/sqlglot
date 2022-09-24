@@ -5,12 +5,10 @@ import typing as t
 from sqlglot import expressions as exp
 from sqlglot.dataframe.column import Column
 from sqlglot.dataframe import functions as F
-from sqlglot.dataframe.util import ensure_strings, convert_join_type, ensure_columns
 from sqlglot.helper import ensure_list
 from sqlglot.dataframe.operations import Operation, operation
-from sqlglot.dataframe.dataframe_na_functions import DataFrameNaFunctions
 from sqlglot.dataframe.transforms import ORDERED_TRANSFORMS
-from sqlglot.dataframe.dataframe_writer import DataFrameWriter
+from sqlglot.dataframe.readwriter import DataFrameWriter
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.session import SparkSession
@@ -48,6 +46,7 @@ class DataFrame:
         return self.expression.ctes[-1].alias
 
     def sql(self, **kwargs) -> str:
+        # kwargs = {**{"dialect": "spark",}, **kwargs}
         df = self._resolve_pending_hints()
         expression = df.expression.copy()
         for transform in ORDERED_TRANSFORMS:
@@ -56,7 +55,7 @@ class DataFrame:
                                               known_ids=df.spark.known_ids,
                                               known_branch_ids=df.spark.known_branch_ids,
                                               known_sequence_ids=df.spark.known_sequence_ids)
-        return expression.sql(dialect="spark", **{'pretty': True, **kwargs})
+        return expression.sql(**{"dialect": "spark", "pretty": True, **kwargs})
 
     def copy(self, **kwargs) -> "DataFrame":
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
@@ -64,7 +63,7 @@ class DataFrame:
 
     def _create_cte_from_expression(self, expression: exp.Expression, branch_id: t.Optional[str] = None,
                                     sequence_id: t.Optional[str] = None, **kwargs) -> t.Tuple[exp.CTE, str]:
-        name = self.spark.random_name
+        name = self.spark._random_name
         expression_to_cte = expression.copy()
         expression_to_cte.set("with", None)
         cte = exp.Select().with_(name, as_=expression_to_cte, **kwargs).ctes[0]
@@ -74,8 +73,7 @@ class DataFrame:
 
     def _ensure_list_of_columns(self, cols: t.Union[str, t.Iterable[str], Column, t.Iterable[Column]]) -> t.List[Column]:
         columns = ensure_list(cols)
-        columns = ensure_strings(columns)
-        columns = ensure_columns(columns)
+        columns = Column.ensure_cols(columns)
         return columns
 
     @classmethod
@@ -128,14 +126,14 @@ class DataFrame:
 
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> "DataFrame":
-        cols = ensure_columns(cols)
+        cols = Column.ensure_cols(cols)
         kwargs["append"] = kwargs.get("append", False)
         return self.copy(expression=self.expression.select(*[x.expression for x in cols], **kwargs))
 
     @operation(Operation.NO_OP)
     def alias(self, name: str, **kwargs) -> "DataFrame":
-        sequence_id = self.spark.random_sequence_id
-        self.spark.add_alias_to_mapping(name, sequence_id)
+        sequence_id = self.spark._random_sequence_id
+        self.spark._add_alias_to_mapping(name, sequence_id)
         return self._convert_leaf_to_cte(sequence_id=sequence_id)
 
     @operation(Operation.WHERE)
@@ -144,7 +142,7 @@ class DataFrame:
 
     @operation(Operation.GROUP_BY)
     def groupBy(self, *cols, **kwargs) -> "DataFrame":
-        cols = ensure_columns(cols)
+        cols = Column.ensure_cols(cols)
         df_copy = self.copy(expression=self.expression.group_by(*[x.expression for x in cols]), group_by_columns=cols)
         return df_copy
 
@@ -158,7 +156,7 @@ class DataFrame:
         other_df = other_df._convert_leaf_to_cte()
         pre_join_self_latest_cte_name = self.latest_cte_name
         columns = self._ensure_list_of_columns(on)
-        join_type = convert_join_type(how)
+        join_type = how.replace("_", " ")
         if isinstance(columns[0].expression, exp.Column):
             join_columns = columns
             join_clause = functools.reduce(lambda x, y: x & y, [
@@ -391,7 +389,7 @@ class DataFrame:
         hint_name = hint_name.upper()
         hint_expression = exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
         new_df = self.copy()
-        if hint_name in self.spark.join_hint_names:
+        if hint_name in self.spark._join_hint_names:
             new_df.pending_join_hints.append(hint_expression)
         else:
             new_df.pending_select_hints.append(hint_expression)
@@ -400,17 +398,36 @@ class DataFrame:
     @operation(Operation.NO_OP)
     def hint(self, name: str, *parameters: t.Optional[t.Union[int, str]]) -> "DataFrame":
         parameters = ensure_list(parameters)
-        parameters = ensure_columns(parameters) if parameters else ensure_columns([self.branch_id])
+        parameters = Column.ensure_cols(parameters) if parameters else Column.ensure_cols([self.branch_id])
         return self._hint(name, parameters)
 
     @operation(Operation.NO_OP)
     def repartition(self, numPartitions: t.Union[int, str], *cols: t.Union[int, str]) -> "DataFrame":
-        num_partitions = ensure_columns([numPartitions])
-        cols = ensure_columns(ensure_list(cols))
+        num_partitions = Column.ensure_cols([numPartitions])
+        cols = Column.ensure_cols(ensure_list(cols))
         args = num_partitions + cols
         return self._hint("repartition", args)
 
     @operation(Operation.NO_OP)
     def coalesce(self, numPartitions: int) -> "DataFrame":
-        num_partitions = ensure_columns([numPartitions])
+        num_partitions = Column.ensure_cols([numPartitions])
         return self._hint("coalesce", num_partitions)
+
+
+class DataFrameNaFunctions:
+    def __init__(self, df: "DataFrame"):
+        self.df = df
+
+    def drop(self, how: str = "any", thresh: t.Optional[int] = None,
+             subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None) -> "DataFrame":
+        return self.df.dropna(how=how, thresh=thresh, subset=subset)
+
+    def fill(self,
+             value: t.Union[int, bool, float, str, t.Dict[str, t.Any]],
+             subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None) -> "DataFrame":
+        return self.df.fillna(value=value, subset=subset)
+
+    def replace(self, to_replace: t.Union[bool, int, float, str, t.List, t.Dict],
+                value: t.Optional[t.Union[bool, int, float, str, t.List]] = None,
+                subset: t.Optional[t.Union[str, t.List[str]]] = None) -> "DataFrame":
+        return self.df.replace(to_replace=to_replace, value=value, subset=subset)

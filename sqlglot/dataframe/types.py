@@ -1,5 +1,6 @@
 import typing as t
 
+
 class DataType:
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"

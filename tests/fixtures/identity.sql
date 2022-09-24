@@ -262,6 +262,7 @@ SELECT a FROM test TABLESAMPLE SYSTEM (75)
 SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q'))
 SELECT a FROM test PIVOT(SOMEAGG(x, y, z) FOR q IN (1))
 SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) PIVOT(MAX(b) FOR c IN ('d'))
+SELECT a FROM (SELECT a, b FROM test) PIVOT(SUM(x) FOR y IN ('z', 'q'))
 SELECT a FROM test UNPIVOT(x FOR y IN (z, q)) AS x
 SELECT a FROM test UNPIVOT(x FOR y IN (z, q)) AS x
 SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE(0.1)

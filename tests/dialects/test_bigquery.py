@@ -236,3 +236,10 @@ class TestBigQuery(Validator):
                 "snowflake": "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a NULLS FIRST LIMIT 10",
             },
         )
+        self.validate_all(
+            "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
+            write={
+                "bigquery": "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) AS e FOR c IN ('x', 'y'))",
+            },
+
+        )

@@ -113,6 +113,10 @@ class Column:
         return cls(value)
 
     @classmethod
+    def ensure_cols(cls, args: t.List[t.Union[int, str, "Column"]]) -> t.List["Column"]:
+        return [cls.ensure_col(x) if not isinstance(x, Column) else x for x in args]
+
+    @classmethod
     def _lit(cls, value: t.Optional[t.Any] = None) -> "Column":
         if value is None:
             return cls(exp.Null())

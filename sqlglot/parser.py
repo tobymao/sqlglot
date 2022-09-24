@@ -1147,10 +1147,12 @@ class Parser:
         if schema:
             return self._parse_schema(this=this)
 
-        pivot = self._parse_pivot()
-        if pivot:
-            pivot.set("this", this)
-            this = pivot
+        while True:
+            pivot = self._parse_pivot()
+            if pivot:
+                this.append("pivots", pivot)
+            else:
+                break
 
         if self.alias_post_tablesample:
             table_sample = self._parse_table_sample()

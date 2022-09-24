@@ -1030,6 +1030,7 @@ class Subqueryable:
 QUERY_MODIFIERS = {
     "laterals": False,
     "joins": False,
+    "pivots": False,
     "where": False,
     "group": False,
     "having": False,
@@ -1051,6 +1052,7 @@ class Table(Expression):
         "catalog": False,
         "laterals": False,
         "joins": False,
+        "pivots": False,
     }
 
 

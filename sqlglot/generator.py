@@ -535,7 +535,8 @@ class Generator:
 
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
-        return f"{table}{laterals}{joins}"
+        pivots = self.expressions(expression, key="pivots", sep="")
+        return f"{table}{laterals}{joins}{pivots}"
 
     def tablesample_sql(self, expression):
         if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):
@@ -716,6 +717,7 @@ class Generator:
             *sqls,
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
+            *[self.sql(sql) for sql in expression.args.get("pivots", [])],
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),

@@ -34,13 +34,13 @@ def _date_add_sql(data_type, kind):
 
 
 def _subquery_to_unnest_if_values(self, expression):
-    if not isinstance(expression.args.get("this"), exp.Values):
+    if not isinstance(expression.this, exp.Values):
         return self.subquery_sql(expression)
-    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.args["this"].find_all(exp.Tuple)]
+    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.this.find_all(exp.Tuple)]
     structs = []
     for row in rows:
         aliases = [
-            exp.Alias(this=value, alias=column_name)
+            exp.alias_(value, column_name)
             for value, column_name in zip(row, expression.args["alias"].args["columns"])
         ]
         structs.append(exp.Struct(expressions=aliases))

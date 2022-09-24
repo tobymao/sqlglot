@@ -45,8 +45,7 @@ class DataFrame:
             return self.expression.find(exp.Table).alias_or_name
         return self.expression.ctes[-1].alias
 
-    def sql(self, **kwargs) -> str:
-        # kwargs = {**{"dialect": "spark",}, **kwargs}
+    def sql(self, dialect="spark", **kwargs) -> str:
         df = self._resolve_pending_hints()
         expression = df.expression.copy()
         for transform in ORDERED_TRANSFORMS:
@@ -55,7 +54,7 @@ class DataFrame:
                                               known_ids=df.spark.known_ids,
                                               known_branch_ids=df.spark.known_branch_ids,
                                               known_sequence_ids=df.spark.known_sequence_ids)
-        return expression.sql(**{"dialect": "spark", "pretty": True, **kwargs})
+        return expression.sql(**{"dialect": dialect, "pretty": True, **kwargs})
 
     def copy(self, **kwargs) -> "DataFrame":
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
@@ -109,7 +108,7 @@ class DataFrame:
 
     def _resolve_pending_hints(self) -> "DataFrame":
         expression = self.expression.copy()
-        hint_expression = expression.args.get("hint", exp.Hint(expressions=[]))
+        hint_expression = expression.args.get("hint") or exp.Hint(expressions=[])
         for hint in self.pending_select_hints:
             hint_expression.args.get("expressions").append(hint)
         expression_without_cte = expression.copy()

@@ -2,14 +2,13 @@ import typing as t
 import uuid
 from collections import defaultdict
 
+import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.readwriter import DataFrameReader
 from sqlglot.dataframe import functions as F
+from sqlglot.dataframe.dataframe import DataFrame
 from sqlglot.dataframe.operations import Operation
 from sqlglot.dataframe.types import StructType
-
-if t.TYPE_CHECKING:
-    from sqlglot.dataframe.dataframe import DataFrame
 
 
 class SparkSession:
@@ -86,7 +85,12 @@ class SparkSession:
             last_op=Operation.FROM,
         )
 
-    #Add .sql method
+    def sql(self, sqlQuery: str) -> "DataFrame":
+        expression = sqlglot.parse_one(sqlQuery, read="spark")
+        df = DataFrame(self, expression, branch_id=self._random_branch_id, sequence_id=self._random_sequence_id)
+        if isinstance(expression, exp.Select):
+            df = df._convert_leaf_to_cte()
+        return df
 
     @property
     def _random_name(self) -> str:

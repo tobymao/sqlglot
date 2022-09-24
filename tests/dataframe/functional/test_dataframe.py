@@ -3,124 +3,13 @@ import unittest
 
 from pyspark.sql import functions as F
 from sqlglot.dataframe import functions as SF
+from tests.dataframe.functional.dataframe_validator import DataFrameValidator
 
 if t.TYPE_CHECKING:
     from pyspark.sql import DataFrame as SparkDataFrame
 
 
-class TestDataframe(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from pyspark import SparkConf
-        from pyspark.sql import SparkSession
-        from pyspark.sql import types
-        from sqlglot.dataframe.session import SparkSession as SqlglotSparkSession
-        from sqlglot.dataframe import types as sqlglotSparkTypes
-        # This is for test `test_branching_root_dataframes`
-        config = SparkConf().setAll([('spark.sql.analyzer.failAmbiguousSelfJoin', 'false')])
-        cls.spark = (
-            SparkSession
-            .builder
-            .master("local[*]")
-            .appName("Unit-tests")
-            .config(conf=config)
-            .getOrCreate()
-        )
-        cls.sqlglot = SqlglotSparkSession()
-        spark_employee_schema = types.StructType([
-            types.StructField('employee_id', types.IntegerType(), False),
-            types.StructField('fname', types.StringType(), False),
-            types.StructField('lname', types.StringType(), False),
-            types.StructField('age', types.IntegerType(), False),
-            types.StructField('store_id', types.IntegerType(), False),
-        ])
-        sqlglot_employee_schema = sqlglotSparkTypes.StructType([
-            sqlglotSparkTypes.StructField('employee_id', sqlglotSparkTypes.IntegerType(), False),
-            sqlglotSparkTypes.StructField('fname', sqlglotSparkTypes.StringType(), False),
-            sqlglotSparkTypes.StructField('lname', sqlglotSparkTypes.StringType(), False),
-            sqlglotSparkTypes.StructField('age', sqlglotSparkTypes.IntegerType(), False),
-            sqlglotSparkTypes.StructField('store_id', sqlglotSparkTypes.IntegerType(), False),
-        ])
-        employee_data = [
-            (1, "Jack", "Shephard", 37, 1),
-            (2, "John", "Locke", 65, 1),
-            (3, "Kate", "Austen", 37, 2),
-            (4, "Claire", "Littleton", 27, 2),
-            (5, "Hugo", "Reyes", 29, 100),
-        ]
-        cls.df_employee = cls.spark.createDataFrame(data=employee_data, schema=spark_employee_schema)
-        cls.dfs_employee = cls.sqlglot.createDataFrame(data=employee_data, schema=sqlglot_employee_schema)
-        cls.df_employee.createOrReplaceTempView("employee")
-
-        spark_store_schema = types.StructType([
-            types.StructField("store_id", types.IntegerType(), False),
-            types.StructField("store_name", types.StringType(), False),
-            types.StructField("district_id", types.IntegerType(), False),
-            types.StructField("num_sales", types.IntegerType(), False),
-        ])
-        sqlglot_store_schema = sqlglotSparkTypes.StructType([
-            sqlglotSparkTypes.StructField("store_id", sqlglotSparkTypes.IntegerType(), False),
-            sqlglotSparkTypes.StructField("store_name", sqlglotSparkTypes.StringType(), False),
-            sqlglotSparkTypes.StructField("district_id", sqlglotSparkTypes.IntegerType(), False),
-            sqlglotSparkTypes.StructField("num_sales", sqlglotSparkTypes.IntegerType(), False),
-        ])
-        store_data = [
-            (1, "Hydra", 1, 37),
-            (2, "Arrow", 2, 2000),
-        ]
-        cls.df_store = cls.spark.createDataFrame(data=store_data, schema=spark_store_schema)
-        cls.dfs_store = cls.sqlglot.createDataFrame(data=store_data, schema=sqlglot_store_schema)
-        cls.df_store.createOrReplaceTempView("store")
-
-        spark_district_schema = types.StructType([
-            types.StructField("district_id", types.IntegerType(), False),
-            types.StructField("district_name", types.StringType(), False),
-            types.StructField("manager_name", types.StringType(), False),
-        ])
-        sqlglot_district_schema = sqlglotSparkTypes.StructType([
-            sqlglotSparkTypes.StructField("district_id", sqlglotSparkTypes.IntegerType(), False),
-            sqlglotSparkTypes.StructField("district_name", sqlglotSparkTypes.StringType(), False),
-            sqlglotSparkTypes.StructField("manager_name", sqlglotSparkTypes.StringType(), False),
-        ])
-        district_data = [
-            (1, "Temple", "Dogen"),
-            (2, "Lighthouse", "Jacob"),
-        ]
-        cls.df_district = cls.spark.createDataFrame(data=district_data, schema=spark_district_schema)
-        cls.dfs_district = cls.sqlglot.createDataFrame(data=district_data, schema=sqlglot_district_schema)
-        cls.df_district.createOrReplaceTempView("district")
-
-    def setUp(self) -> None:
-        self.df_spark_store = self.df_store.alias('df_store')
-        self.df_spark_employee = self.df_employee.alias('df_employee')
-        self.df_spark_district = self.df_district.alias('df_district')
-        self.df_sqlglot_store = self.dfs_store.alias('store')
-        self.df_sqlglot_employee = self.dfs_employee.alias('employee')
-        self.df_sqlglot_district = self.dfs_district.alias('district')
-
-
-    @classmethod
-    def get_explain_plan(cls, df: "SparkDataFrame", mode: str = "extended") -> str:
-        return df._sc._jvm.PythonSQLUtils.explainString(df._jdf.queryExecution(), mode)
-
-    @classmethod
-    def compare_spark_with_sqlglot(cls, df_spark, df_sqlglot, no_empty=True, skip_schema_compare=False) -> t.Tuple["SparkDataFrame", "SparkDataFrame"]:
-        def compare_schemas(schema_1, schema_2):
-            for schema in [schema_1, schema_2]:
-                for struct_field in schema.fields:
-                    struct_field.metadata = {}
-            assert schema_1 == schema_2
-        df_sqlglot = cls.spark.sql(df_sqlglot.sql())
-        df_spark_results = df_spark.collect()
-        df_sqlglot_results = df_sqlglot.collect()
-        if not skip_schema_compare:
-            compare_schemas(df_spark.schema, df_sqlglot.schema)
-        assert df_spark_results == df_sqlglot_results
-        if no_empty:
-            assert len(df_spark_results) != 0
-            assert len(df_sqlglot_results) != 0
-        return df_spark, df_sqlglot
-
+class TestDataframeFunc(DataFrameValidator):
     def test_simple_select(self):
         df_employee = self.df_spark_employee.select(F.col("employee_id"))
         dfs_employee = self.df_sqlglot_employee.select(SF.col("employee_id"))

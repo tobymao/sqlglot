@@ -33,6 +33,21 @@ def _date_add_sql(data_type, kind):
     return func
 
 
+def _subquery_to_unnest_if_values(self, expression):
+    if not isinstance(expression.this, exp.Values):
+        return self.subquery_sql(expression)
+    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.this.find_all(exp.Tuple)]
+    structs = []
+    for row in rows:
+        aliases = [
+            exp.alias_(value, column_name)
+            for value, column_name in zip(row, expression.args["alias"].args["columns"])
+        ]
+        structs.append(exp.Struct(expressions=aliases))
+    unnest_exp = exp.Unnest(expressions=[exp.Array(expressions=structs)])
+    return self.unnest_sql(unnest_exp)
+
+
 class BigQuery(Dialect):
     unnest_column_only = True
 
@@ -91,6 +106,7 @@ class BigQuery(Dialect):
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.VariancePop: rename_func("VAR_POP"),
+            exp.Subquery: _subquery_to_unnest_if_values,
         }
 
         TYPE_MAPPING = {

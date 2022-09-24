@@ -566,9 +566,8 @@ class Generator:
         unpivot = expression.args.get("unpivot")
         direction = "UNPIVOT" if unpivot else "PIVOT"
         summary = self.sql(expression, "summary")
-        value = self.sql(expression, "value")
-        expressions = self.expressions(expression, flat=True)
-        return f"{this} {direction}({summary} FOR {value} IN ({expressions}))"
+        field = self.sql(expression, "field")
+        return f"{this} {direction}({summary} FOR {field})"
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"

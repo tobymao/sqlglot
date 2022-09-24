@@ -150,6 +150,7 @@ class Parser:
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
         TokenType.PERCENT,
+        TokenType.PIVOT,
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.REFERENCES,
@@ -168,6 +169,7 @@ class Parser:
         TokenType.TRUE,
         TokenType.UNBOUNDED,
         TokenType.UNIQUE,
+        TokenType.UNPIVOT,
         TokenType.PROPERTIES,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
@@ -1247,6 +1249,8 @@ class Parser:
         )
 
     def _parse_pivot(self):
+        index = self._index
+
         if self._match(TokenType.PIVOT):
             unpivot = False
         elif self._match(TokenType.UNPIVOT):
@@ -1255,10 +1259,12 @@ class Parser:
             return None
 
         summary = None
-        value = None
-        expressions = None
+        field = None
 
-        self._match_l_paren()
+        if not self._match(TokenType.L_PAREN):
+            self._retreat(index)
+            return None
+
         if unpivot:
             summary = self._parse_column()
         else:
@@ -1272,16 +1278,14 @@ class Parser:
         if not self._match(TokenType.IN):
             self.raise_error("Expecting IN")
 
-        self._match_l_paren()
-        expressions = self._parse_csv(self._parse_expression)
-        self._match_r_paren()
+        field = self._parse_in(value)
+
         self._match_r_paren()
 
         return self.expression(
             exp.Pivot,
             summary=summary,
-            value=value,
-            expressions=expressions,
+            field=field,
             unpivot=unpivot,
         )
 

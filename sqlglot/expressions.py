@@ -1653,8 +1653,7 @@ class Pivot(Expression):
     arg_types = {
         "this": False,
         "summary": True,
-        "value": True,
-        "expressions": True,
+        "field": True,
         "unpivot": True,
     }
 

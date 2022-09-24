@@ -248,6 +248,7 @@ class TokenType(AutoName):
     UNCACHE = auto()
     UNION = auto()
     UNNEST = auto()
+    UNPIVOT = auto()
     UPDATE = auto()
     USE = auto()
     USING = auto()
@@ -525,6 +526,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TRUNCATE": TokenType.TRUNCATE,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
+        "UNPIVOT": TokenType.UNPIVOT,
         "UNNEST": TokenType.UNNEST,
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,

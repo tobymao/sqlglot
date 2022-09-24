@@ -1650,10 +1650,10 @@ class TableSample(Expression):
 class Pivot(Expression):
     arg_types = {
         "this": False,
-        "agg_func": True,
-        # "pivot": True,
+        "summary": True,
         "value": True,
         "expressions": True,
+        "unpivot": True,
     }
 
 

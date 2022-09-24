@@ -33,8 +33,6 @@ class Generator:
             Default: "upper"
         alias_post_tablesample (bool): if the table alias comes after tablesample
             Default: False
-        alias_post_pivot (bool): if the table alias comes after pivot
-            Default: False
         unsupported_level (ErrorLevel): determines the generator's behavior when it encounters
             unsupported expressions. Default ErrorLevel.WARN.
         null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
@@ -564,10 +562,12 @@ class Generator:
 
     def pivot_sql(self, expression):
         this = self.sql(expression, "this")
-        agg_func = self.sql(expression, "agg_func")
+        unpivot = expression.args.get("unpivot")
+        direction = "UNPIVOT" if unpivot else "PIVOT"
+        summary = self.sql(expression, "summary")
         value = self.sql(expression, "value")
         expressions = self.expressions(expression, flat=True)
-        return f"{this} PIVOT({agg_func} FOR {value} IN ({expressions}))"
+        return f"{this} {direction}({summary} FOR {value} IN ({expressions}))"
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"

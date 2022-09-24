@@ -1245,20 +1245,22 @@ class Parser:
         )
 
     def _parse_pivot(self):
-        """
-            PIVOT ( <aggregate_function> ( <pivot_column> )
-            FOR <value_column> IN ( <pivot_value_1> [ , <pivot_value_2> ... ] ) )
-        """
-        if not self._match(TokenType.PIVOT):
+        if self._match(TokenType.PIVOT):
+            unpivot = False
+        elif self._match(TokenType.UNPIVOT):
+            unpivot = True
+        else:
             return None
 
-        agg_func = None
-        # pivot = None
+        summary = None
         value = None
         expressions = None
 
         self._match_l_paren()
-        agg_func = self._parse_function()
+        if unpivot:
+            summary = self._parse_column()
+        else:
+            summary = self._parse_function()
 
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
@@ -1273,12 +1275,13 @@ class Parser:
         self._match_r_paren()
         self._match_r_paren()
 
-        return self.expression(exp.Pivot,
-            agg_func=agg_func,
+        return self.expression(
+            exp.Pivot,
+            summary=summary,
             value=value,
             expressions=expressions,
+            unpivot=unpivot,
         )
-
 
     def _parse_where(self):
         if not self._match(TokenType.WHERE):
@@ -2244,7 +2247,6 @@ class Parser:
 
     def _match_r_paren(self):
         if not self._match(TokenType.R_PAREN):
-            raise
             self.raise_error("Expecting )")
 
     def _replace_columns_with_dots(self, this):

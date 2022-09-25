@@ -40,8 +40,7 @@ def _subquery_to_unnest_if_values(self, expression):
     structs = []
     for row in rows:
         aliases = [
-            exp.alias_(value, column_name)
-            for value, column_name in zip(row, expression.args["alias"].args["columns"])
+            exp.alias_(value, column_name) for value, column_name in zip(row, expression.args["alias"].args["columns"])
         ]
         structs.append(exp.Struct(expressions=aliases))
     unnest_exp = exp.Unnest(expressions=[exp.Array(expressions=structs)])

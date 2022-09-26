@@ -211,10 +211,10 @@ class Expression(metaclass=_Expression):
         Returns:
             the parent node
         """
-        ancestor = self.parent
-        while ancestor and not isinstance(ancestor.parent, expression_types):
-            ancestor = ancestor.parent
-        return ancestor
+        expression = self
+        while expression and not isinstance(expression.parent, expression_types):
+            expression = expression.parent
+        return expression
 
     @property
     def parent_select(self):

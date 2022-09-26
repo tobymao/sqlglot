@@ -1136,9 +1136,13 @@ class Parser:
         table = (not schema and self._parse_function()) or self._parse_id_var(False)
 
         while self._match(TokenType.DOT):
-            catalog = db
-            db = table
-            table = self._parse_id_var()
+            if catalog:
+                # This allows nesting the table in arbitrarily many dot expressions if needed
+                table = self.expression(exp.Dot, this=table, expression=self._parse_id_var())
+            else:
+                catalog = db
+                db = table
+                table = self._parse_id_var()
 
         if not table:
             self.raise_error("Expected table name")

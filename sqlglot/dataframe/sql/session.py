@@ -4,19 +4,20 @@ from collections import defaultdict
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.dataframe.readwriter import DataFrameReader
-from sqlglot.dataframe import functions as F
-from sqlglot.dataframe.dataframe import DataFrame
-from sqlglot.dataframe.operations import Operation
-from sqlglot.dataframe.types import StructType
+from sqlglot.dataframe.sql.readwriter import DataFrameReader
+from sqlglot.dataframe.sql import functions as F
+from sqlglot.dataframe.sql.dataframe import DataFrame
+from sqlglot.dataframe.sql.operations import Operation
+from sqlglot.dataframe.sql.types import StructType
 
 
 class SparkSession:
+    known_ids: t.ClassVar[t.Set[str]] = set()
+    known_branch_ids: t.ClassVar[t.Set[str]] = set()
+    known_sequence_ids: t.ClassVar[t.Set[str]] = set()
+
     def __init__(self):
         self.name_to_sequence_id_mapping = defaultdict(list)
-        self.known_ids = set()
-        self.known_branch_ids = set()
-        self.known_sequence_ids = set()
 
     @property
     def read(self) -> "DataFrameReader":
@@ -29,7 +30,7 @@ class SparkSession:
             samplingRatio: t.Optional[float] = None,
             verifySchema: bool = False,
     ) -> "DataFrame":
-        from sqlglot.dataframe.dataframe import DataFrame
+        from sqlglot.dataframe.sql.dataframe import DataFrame
 
         if samplingRatio is not None or verifySchema:
             raise NotImplementedError("Sampling Ration and Verify Schema are not supported")

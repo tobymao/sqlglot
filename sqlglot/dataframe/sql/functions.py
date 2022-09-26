@@ -3,11 +3,11 @@ from itertools import chain
 import typing as t
 
 from sqlglot import expressions as glotexp
-from sqlglot.dataframe.column import Column
+from sqlglot.dataframe.sql.column import Column
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.dataframe import DataFrame
-    from sqlglot.dataframe._typing import ColumnOrName, ColumnOrPrimitive
+    from sqlglot.dataframe.sql.dataframe import DataFrame
+    from sqlglot.dataframe.sql._typing import ColumnOrName, ColumnOrPrimitive
 
 
 _flatten = chain.from_iterable

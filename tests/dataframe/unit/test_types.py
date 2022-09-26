@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot.dataframe import types
+from sqlglot.dataframe.sql import types
 
 
 class TestDataframeTypes(unittest.TestCase):

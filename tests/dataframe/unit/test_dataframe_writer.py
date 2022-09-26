@@ -1,7 +1,7 @@
 import unittest
 
-from sqlglot.dataframe.session import SparkSession
-from sqlglot.dataframe import types
+from sqlglot.dataframe.sql.session import SparkSession
+from sqlglot.dataframe.sql import types
 
 
 class TestDataFrameWriter(unittest.TestCase):

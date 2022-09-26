@@ -4,7 +4,7 @@ from enum import IntEnum
 
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.dataframe import DataFrame
+    from sqlglot.dataframe.sql.dataframe import DataFrame
 
 
 class Operation(IntEnum):

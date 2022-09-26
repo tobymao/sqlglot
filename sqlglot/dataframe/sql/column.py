@@ -5,10 +5,11 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.dataframe.window import WindowSpec
+from sqlglot.dataframe.sql.window import WindowSpec
+from sqlglot.dataframe.sql.types import DataType
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe._typing import ColumnOrName, ColumnOrPrimitive, DateTimeLiteral, DecimalLiteral, Literals, Primitives
+    from sqlglot.dataframe.sql._typing import ColumnOrName, ColumnOrPrimitive, DateTimeLiteral, DecimalLiteral, Literals, Primitives
 
 
 flatten = chain.from_iterable
@@ -23,6 +24,8 @@ class Column:
         self.expression = expression
         if self.expression is None or isinstance(self.expression, (int, float, bool, dict, Iterable, datetime.date)):
             self.expression = self._lit(expression).expression
+        if isinstance(self.expression, exp.Star):
+            self.expression = exp.Column(this=expression)
 
     def __repr__(self):
         return repr(self.expression)
@@ -195,7 +198,7 @@ class Column:
 
     @classmethod
     def ensure_literal(cls, value) -> "Column":
-        from sqlglot.dataframe.functions import lit
+        from sqlglot.dataframe.sql.functions import lit
         if isinstance(value, cls):
             value = value.expression
         if not isinstance(value, exp.Literal):
@@ -238,7 +241,7 @@ class Column:
     desc_nulls_last = desc
 
     def when(self, condition: "Column", value: t.Any) -> "Column":
-        from sqlglot.dataframe.functions import when
+        from sqlglot.dataframe.sql.functions import when
         column_with_if = when(condition, value)
         if not isinstance(self.expression, exp.Case):
             return column_with_if
@@ -247,7 +250,7 @@ class Column:
         return new_column
 
     def otherwise(self, value: t.Any) -> "Column":
-        from sqlglot.dataframe.functions import lit
+        from sqlglot.dataframe.sql.functions import lit
         true_value = value if isinstance(value, Column) else lit(value)
         new_column = self.copy()
         new_column.expression.args["default"] = true_value.column_expression
@@ -261,11 +264,13 @@ class Column:
         new_expression = exp.Not(this=exp.Is(this=self.column_expression, expression=exp.Null()))
         return Column(new_expression)
 
-    def cast(self, dataType: str):
+    def cast(self, dataType: t.Union[str, "DataType"]):
         """
         Functionality Difference: PySpark cast accepts a datatype instance of the datatype class
         Sqlglot doesn't currently replicate this class so it only accepts a string
         """
+        if isinstance(dataType, DataType):
+            dataType = dataType.simpleString()
         new_expression = exp.Cast(this=self.column_expression, to=dataType)
         return Column(new_expression)
 

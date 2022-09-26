@@ -3,10 +3,10 @@ import sys
 import typing as t
 
 from sqlglot import expressions as exp
-from sqlglot.dataframe import functions as F
+from sqlglot.dataframe.sql import functions as F
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe._typing import ColumnOrName
+    from sqlglot.dataframe.sql._typing import ColumnOrName
 
 flatten = chain.from_iterable
 
@@ -51,7 +51,7 @@ class WindowSpec:
         return self.expression.sql(dialect="spark", **kwargs)
 
     def partitionBy(self, *cols: t.Union["ColumnOrName", t.List["ColumnOrName"]]) -> "WindowSpec":
-        from sqlglot.dataframe.column import Column
+        from sqlglot.dataframe.sql.column import Column
 
         cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
         expressions = [Column.ensure_col(x).expression for x in cols]
@@ -63,7 +63,7 @@ class WindowSpec:
         return window_spec
 
     def orderBy(self, *cols: t.Union["ColumnOrName", t.List["ColumnOrName"]]) -> "WindowSpec":
-        from sqlglot.dataframe.column import Column
+        from sqlglot.dataframe.sql.column import Column
 
         cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
         expressions = [Column.ensure_col(x).expression for x in cols]

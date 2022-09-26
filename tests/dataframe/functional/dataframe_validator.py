@@ -17,8 +17,8 @@ class DataFrameValidator(unittest.TestCase):
         from pyspark import SparkConf
         from pyspark.sql import SparkSession
         from pyspark.sql import types
-        from sqlglot.dataframe.session import SparkSession as SqlglotSparkSession
-        from sqlglot.dataframe import types as sqlglotSparkTypes
+        from sqlglot.dataframe.sql.session import SparkSession as SqlglotSparkSession
+        from sqlglot.dataframe.sql import types as sqlglotSparkTypes
         # This is for test `test_branching_root_dataframes`
         config = SparkConf().setAll([('spark.sql.analyzer.failAmbiguousSelfJoin', 'false')])
         cls.spark = (

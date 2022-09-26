@@ -3,15 +3,15 @@ import functools
 import typing as t
 
 from sqlglot import expressions as exp
-from sqlglot.dataframe.column import Column
-from sqlglot.dataframe import functions as F
+from sqlglot.dataframe.sql.column import Column
+from sqlglot.dataframe.sql import functions as F
 from sqlglot.helper import ensure_list
-from sqlglot.dataframe.operations import Operation, operation
-from sqlglot.dataframe.transforms import ORDERED_TRANSFORMS
-from sqlglot.dataframe.readwriter import DataFrameWriter
+from sqlglot.dataframe.sql.operations import Operation, operation
+from sqlglot.dataframe.sql.transforms import ORDERED_TRANSFORMS
+from sqlglot.dataframe.sql.readwriter import DataFrameWriter
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.session import SparkSession
+    from sqlglot.dataframe.sql.session import SparkSession
 
 
 class DataFrame:
@@ -44,6 +44,10 @@ class DataFrame:
         if len(self.expression.ctes) == 0:
             return self.expression.find(exp.Table).alias_or_name
         return self.expression.ctes[-1].alias
+
+    def cache(self) -> "DataFrame":
+        print("DataFrame Cache is not yet supported")
+        return self
 
     def sql(self, dialect="spark", **kwargs) -> str:
         df = self._resolve_pending_hints()
@@ -98,6 +102,9 @@ class DataFrame:
         new_expression = exp.Select()
         new_expression = df._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
         sel_columns = df._get_outer_select_columns(cte_expression)
+        star_columns = [col for col in sel_columns if isinstance(col.expression.this, exp.Star)]
+        if len(star_columns) > 0:
+            sel_columns = star_columns[:1]
         new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
         return df.copy(expression=new_expression, sequence_id=sequence_id)
 
@@ -131,9 +138,14 @@ class DataFrame:
 
     @operation(Operation.NO_OP)
     def alias(self, name: str, **kwargs) -> "DataFrame":
-        sequence_id = self.spark._random_sequence_id
-        self.spark._add_alias_to_mapping(name, sequence_id)
-        return self._convert_leaf_to_cte(sequence_id=sequence_id)
+        new_sequence_id = self.spark._random_sequence_id
+        df = self.copy()
+        for join_hint in df.pending_join_hints:
+            for expression in join_hint.expressions:
+                if expression.alias_or_name == self.sequence_id:
+                    expression.set("this", Column.ensure_col(new_sequence_id).expression)
+        df.spark._add_alias_to_mapping(name, new_sequence_id)
+        return df._convert_leaf_to_cte(sequence_id=new_sequence_id)
 
     @operation(Operation.WHERE)
     def where(self, column: t.Union[Column, bool], **kwargs) -> "DataFrame":
@@ -142,7 +154,7 @@ class DataFrame:
     @operation(Operation.GROUP_BY)
     def groupBy(self, *cols, **kwargs) -> "DataFrame":
         cols = Column.ensure_cols(cols)
-        df_copy = self.copy(expression=self.expression.group_by(*[x.expression for x in cols]), group_by_columns=cols)
+        df_copy = self.copy(expression=self.expression.group_by(*[x.column_expression for x in cols]), group_by_columns=cols)
         return df_copy
 
     @operation(Operation.SELECT)
@@ -198,7 +210,7 @@ class DataFrame:
         col_and_ascending = list(zip(cols, ascending))
         order_by_columns = [
             exp.Ordered(this=col.expression, desc=not asc)
-            if i not in pre_ordered_col_indexes else cols[i].expression
+            if i not in pre_ordered_col_indexes else cols[i].column_expression
             for i, (col, asc) in enumerate(col_and_ascending)
         ]
         return self.copy(expression=self.expression.order_by(*order_by_columns))
@@ -287,7 +299,7 @@ class DataFrame:
         Possibility for improvement: Use `typeof` function to get the type of the column
         and check if it matches the type of the value provided. If not then make it null.
         """
-        from sqlglot.dataframe.functions import lit
+        from sqlglot.dataframe.sql.functions import lit
         values = None
         columns = None
         new_df = self.copy()
@@ -325,7 +337,7 @@ class DataFrame:
     def replace(self, to_replace: t.Union[bool, int, float, str, t.List, t.Dict],
                 value: t.Optional[t.Union[bool, int, float, str, t.List]] = None,
                 subset: t.Optional[t.Union[str, t.List[str]]] = None) -> "DataFrame":
-        from sqlglot.dataframe.functions import lit
+        from sqlglot.dataframe.sql.functions import lit
         old_values = None
         subset = ensure_list(subset)
         new_df = self.copy()
@@ -397,7 +409,7 @@ class DataFrame:
     @operation(Operation.NO_OP)
     def hint(self, name: str, *parameters: t.Optional[t.Union[int, str]]) -> "DataFrame":
         parameters = ensure_list(parameters)
-        parameters = Column.ensure_cols(parameters) if parameters else Column.ensure_cols([self.branch_id])
+        parameters = Column.ensure_cols(parameters) if parameters else Column.ensure_cols([self.sequence_id])
         return self._hint(name, parameters)
 
     @operation(Operation.NO_OP)

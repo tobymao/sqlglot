@@ -389,6 +389,7 @@ class Parser:
     FUNCTION_PARSERS = {
         "CONVERT": lambda self: self._parse_convert(),
         "EXTRACT": lambda self: self._parse_extract(),
+        "POSITION": lambda self: self._parse_position(),
         "SUBSTRING": lambda self: self._parse_substring(),
         "TRIM": lambda self: self._parse_trim(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
@@ -1906,6 +1907,12 @@ class Parser:
         else:
             to = None
         return self.expression(exp.Cast, this=this, to=to)
+
+    def _parse_position(self):
+        substr = self._parse_bitwise()
+        if self._match(TokenType.IN):
+            string = self._parse_bitwise()
+        return self.expression(exp.StrPosition, this=string, substr=substr)
 
     def _parse_substring(self):
         # Postgres supports the form: substring(string [from int] [for int])

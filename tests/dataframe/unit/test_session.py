@@ -1,8 +1,8 @@
 import unittest
 
-from sqlglot.dataframe.session import SparkSession
-from sqlglot.dataframe import functions as F
-from sqlglot.dataframe import types
+from sqlglot.dataframe.sql.session import SparkSession
+from sqlglot.dataframe.sql import functions as F
+from sqlglot.dataframe.sql import types
 
 
 class TestDataframeWindow(unittest.TestCase):

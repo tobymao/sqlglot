@@ -1,7 +1,7 @@
 import unittest
 
-from sqlglot.dataframe import functions as F
-from sqlglot.dataframe.window import Window, WindowSpec
+from sqlglot.dataframe.sql import functions as F
+from sqlglot.dataframe.sql.window import Window, WindowSpec
 
 
 class TestDataframeWindow(unittest.TestCase):

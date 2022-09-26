@@ -1,8 +1,8 @@
 import datetime
 import unittest
 
-from sqlglot.dataframe import functions as F
-from sqlglot.dataframe.window import Window
+from sqlglot.dataframe.sql import functions as F
+from sqlglot.dataframe.sql.window import Window
 
 
 class TestDataframeColumn(unittest.TestCase):

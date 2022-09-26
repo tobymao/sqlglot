@@ -2,7 +2,7 @@ import typing as t
 import unittest
 
 from pyspark.sql import functions as F
-from sqlglot.dataframe import functions as SF
+from sqlglot.dataframe.sql import functions as SF
 from tests.dataframe.functional.dataframe_validator import DataFrameValidator
 
 if t.TYPE_CHECKING:

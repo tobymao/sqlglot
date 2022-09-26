@@ -2,7 +2,7 @@ import datetime
 import unittest
 
 from sqlglot import expressions as exp
-from sqlglot.dataframe import functions as SF
+from sqlglot.dataframe.sql import functions as SF
 
 
 class TestDataframeFunctions(unittest.TestCase):

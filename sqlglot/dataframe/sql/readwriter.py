@@ -4,8 +4,8 @@ from copy import copy
 from sqlglot import expressions as exp
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.dataframe import DataFrame
-    from sqlglot.dataframe.session import SparkSession
+    from sqlglot.dataframe.sql.dataframe import DataFrame
+    from sqlglot.dataframe.sql.session import SparkSession
 
 
 class DataFrameReader:
@@ -13,7 +13,7 @@ class DataFrameReader:
         self.spark = spark
 
     def table(self, table_name: str) -> "DataFrame":
-        from sqlglot.dataframe.dataframe import DataFrame
+        from sqlglot.dataframe.sql.dataframe import DataFrame
 
         return DataFrame(self.spark, exp.Select().from_(table_name).select("*"),
                          branch_id=self.spark._random_branch_id,

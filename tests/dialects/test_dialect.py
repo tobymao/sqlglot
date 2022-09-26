@@ -844,6 +844,7 @@ class TestDialect(Validator):
             "POSITION(' ' in x)",
             write={
                 "duckdb": "STRPOS(x, ' ')",
+                "postgres": "STRPOS(x, ' ')",
                 "presto": "STRPOS(x, ' ')",
                 "spark": "LOCATE(' ', x)",
             },
@@ -852,6 +853,7 @@ class TestDialect(Validator):
             "STR_POSITION(x, 'a')",
             write={
                 "duckdb": "STRPOS(x, 'a')",
+                "postgres": "STRPOS(x, 'a')",
                 "presto": "STRPOS(x, 'a')",
                 "spark": "LOCATE('a', x)",
             },

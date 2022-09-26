@@ -84,6 +84,20 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(column.parent_select, exp.Select)
         self.assertIsNone(column.find_ancestor(exp.Join))
 
+    def test_find_ancestor_with_parent(self):
+        expression = parse_one(
+            "select user_func2(user_func1(a)) as a, sum(b) from foo group by user_func2(user_func1(a))"
+        )
+        group_by = expression.find(exp.Group)
+        self.assertIsInstance(group_by, exp.Group)
+        column = group_by.find(exp.Column)
+        self.assertIsInstance(column, exp.Column)
+        anon_func = column.find_ancestor_with_parent(exp.Group)
+        self.assertIsInstance(anon_func, exp.Anonymous)
+        self.assertEqual(anon_func, expression.expressions[0].this)
+        missing_parent = column.find_ancestor_with_parent(exp.Star)
+        self.assertIsNone(missing_parent)
+
     def test_alias_or_name(self):
         expression = parse_one("SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz")
         self.assertEqual(

@@ -201,21 +201,6 @@ class Expression(metaclass=_Expression):
             ancestor = ancestor.parent
         return ancestor
 
-    def find_ancestor_with_parent(self, *expression_types):
-        """
-        Returns a nearest parent with a parent matching expression_types
-
-        Args:
-            expression_types (type): the expression type(s) to match
-
-        Returns:
-            the parent node
-        """
-        expression = self
-        while expression and not isinstance(expression.parent, expression_types):
-            expression = expression.parent
-        return expression
-
     @property
     def parent_select(self):
         """

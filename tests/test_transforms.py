@@ -16,8 +16,8 @@ class TestTime(unittest.TestCase):
         )
         self.validate(
             unalias_group,
-            "SELECT TO_DATE(the_date) AS the_date, COUNT(*) AS the_count FROM x GROUP BY TO_DATE(the_date)",
-            "SELECT TO_DATE(the_date) AS the_date, COUNT(*) AS the_count FROM x GROUP BY TO_DATE(the_date)",
+            "SELECT TO_DATE(the_date) AS the_date, CUSTOM_UDF(other_col) AS other_col, last_col AS aliased_last, COUNT(*) AS the_count FROM x GROUP BY TO_DATE(the_date), CUSTOM_UDF(other_col), aliased_last",
+            "SELECT TO_DATE(the_date) AS the_date, CUSTOM_UDF(other_col) AS other_col, last_col AS aliased_last, COUNT(*) AS the_count FROM x GROUP BY TO_DATE(the_date), CUSTOM_UDF(other_col), 3",
         )
         self.validate(
             unalias_group,

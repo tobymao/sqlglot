@@ -19,11 +19,13 @@ def unalias_group(expression):
 
         expression = expression.copy()
 
-        for col in expression.find_all(exp.Column):
-            alias_index, col_expression = aliased_selects.get(col.name, (None, None))
-            group_by_expression = col.find_ancestor_with_parent(exp.Group)
-            if not col.table and alias_index and group_by_expression != col_expression:
-                col.replace(exp.Literal.number(alias_index))
+        top_level_expression = None
+        for item, parent, _ in expression.walk(bfs=False):
+            top_level_expression = item if isinstance(parent, exp.Group) else top_level_expression
+            if isinstance(item, exp.Column) and not item.table:
+                alias_index, col_expression = aliased_selects.get(item.name, (None, None))
+                if alias_index and top_level_expression != col_expression:
+                    item.replace(exp.Literal.number(alias_index))
 
     return expression
 

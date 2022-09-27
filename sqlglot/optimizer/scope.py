@@ -197,15 +197,16 @@ class Scope:
 
             named_outputs = {e.alias_or_name for e in self.expression.expressions}
 
-            self._columns = [
-                c
-                for c in columns + external_columns
+            self._columns = []
+            for column in columns + external_columns:
+                ancestor = column.find_ancestor(exp.Qualify, exp.Order, exp.Hint)
                 if (
-                    not c.find_ancestor(exp.Qualify, exp.Order, exp.Hint)
-                    or c.table
-                    or (c.name not in named_outputs and not c.find_ancestor(exp.Hint))
-                )
-            ]
+                    not ancestor
+                    or column.table
+                    or (column.name not in named_outputs and not isinstance(ancestor, exp.Hint))
+                ):
+                    self._columns.append(column)
+
         return self._columns
 
     @property

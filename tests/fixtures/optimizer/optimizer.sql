@@ -135,3 +135,8 @@ SELECT /*+ BROADCAST(`y`) */
 FROM `x` AS `x`
 JOIN `y` AS `y`
   ON `x`.`b` = `y`.`b`;
+
+SELECT AGGREGATE(ARRAY(x.a, x.b), 0, (x, acc) -> x + acc) AS sum_agg FROM x;
+SELECT
+  AGGREGATE(ARRAY("x"."a", "x"."b"), 0, ("x", "acc") -> "x" + "acc") AS "sum_agg"
+FROM "x" AS "x";

@@ -99,7 +99,7 @@ class Parser:
         TokenType.SMALLMONEY,
         TokenType.ROWVERSION,
         TokenType.IMAGE,
-        TokenType.SQL_VARIANT,
+        TokenType.VARIANT,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -155,6 +155,7 @@ class Parser:
         TokenType.REFERENCES,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
+        TokenType.SEED,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.STORED,
@@ -324,6 +325,7 @@ class Parser:
         TokenType.TRUE: lambda *_: exp.Boolean(this=True),
         TokenType.FALSE: lambda *_: exp.Boolean(this=False),
         TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
+        TokenType.PARAMETER: lambda self, _: exp.Parameter(this=self._parse_var() or self._parse_primary()),
         TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
         TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
         TokenType.INTRODUCER: lambda self, token: self.expression(
@@ -387,6 +389,7 @@ class Parser:
     FUNCTION_PARSERS = {
         "CONVERT": lambda self: self._parse_convert(),
         "EXTRACT": lambda self: self._parse_extract(),
+        "POSITION": lambda self: self._parse_position(),
         "SUBSTRING": lambda self: self._parse_substring(),
         "TRIM": lambda self: self._parse_trim(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
@@ -1133,9 +1136,13 @@ class Parser:
         table = (not schema and self._parse_function()) or self._parse_id_var(False)
 
         while self._match(TokenType.DOT):
-            catalog = db
-            db = table
-            table = self._parse_id_var()
+            if catalog:
+                # This allows nesting the table in arbitrarily many dot expressions if needed
+                table = self.expression(exp.Dot, this=table, expression=self._parse_id_var())
+            else:
+                catalog = db
+                db = table
+                table = self._parse_id_var()
 
         if not table:
             self.raise_error("Expected table name")
@@ -1198,6 +1205,7 @@ class Parser:
         percent = None
         rows = None
         size = None
+        seed = None
 
         self._match_l_paren()
 
@@ -1219,6 +1227,11 @@ class Parser:
 
         self._match_r_paren()
 
+        if self._match(TokenType.SEED):
+            self._match_l_paren()
+            seed = self._parse_number()
+            self._match_r_paren()
+
         return self.expression(
             exp.TableSample,
             method=method,
@@ -1228,6 +1241,7 @@ class Parser:
             percent=percent,
             rows=rows,
             size=size,
+            seed=seed,
         )
 
     def _parse_where(self):
@@ -1576,6 +1590,9 @@ class Parser:
         if self._match_set(self.PRIMARY_PARSERS):
             return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
 
+        if self._match_pair(TokenType.DOT, TokenType.NUMBER):
+            return exp.Literal.number(f"0.{self._prev.text}")
+
         if self._match(TokenType.L_PAREN):
             query = self._parse_select()
 
@@ -1894,6 +1911,12 @@ class Parser:
         else:
             to = None
         return self.expression(exp.Cast, this=this, to=to)
+
+    def _parse_position(self):
+        substr = self._parse_bitwise()
+        if self._match(TokenType.IN):
+            string = self._parse_bitwise()
+        return self.expression(exp.StrPosition, this=string, substr=substr)
 
     def _parse_substring(self):
         # Postgres supports the form: substring(string [from int] [for int])

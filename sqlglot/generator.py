@@ -556,7 +556,9 @@ class Generator:
         rows = self.sql(expression, "rows")
         rows = f"{rows} ROWS" if rows else ""
         size = self.sql(expression, "size")
-        return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size}){alias}"
+        seed = self.sql(expression, "seed")
+        seed = f" SEED ({seed})" if seed else ""
+        return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size}){seed}{alias}"
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"
@@ -747,6 +749,9 @@ class Generator:
 
     def structkwarg_sql(self, expression):
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
+
+    def parameter_sql(self, expression):
+        return f"@{self.sql(expression, 'this')}"
 
     def placeholder_sql(self, *_):
         return "?"

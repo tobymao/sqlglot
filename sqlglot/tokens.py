@@ -41,6 +41,7 @@ class TokenType(AutoName):
     LR_ARROW = auto()
     ANNOTATION = auto()
     DOLLAR = auto()
+    PARAMETER = auto()
 
     SPACE = auto()
     BREAK = auto()
@@ -93,7 +94,7 @@ class TokenType(AutoName):
     SMALLMONEY = auto()
     ROWVERSION = auto()
     IMAGE = auto()
-    SQL_VARIANT = auto()
+    VARIANT = auto()
 
     # keywords
     ADD_FILE = auto()
@@ -224,6 +225,7 @@ class TokenType(AutoName):
     ROW = auto()
     ROWS = auto()
     SCHEMA_COMMENT = auto()
+    SEED = auto()
     SELECT = auto()
     SEPARATOR = auto()
     SET = auto()
@@ -349,7 +351,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
         "#": TokenType.ANNOTATION,
-        "$": TokenType.DOLLAR,
+        "@": TokenType.PARAMETER,
         # used for breaking a var like x'y' but nothing else
         # the token type doesn't matter
         "'": TokenType.QUOTE,
@@ -501,6 +503,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ROLLUP": TokenType.ROLLUP,
         "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,
+        "SEED": TokenType.SEED,
         "SELECT": TokenType.SELECT,
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
@@ -576,6 +579,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATETIME": TokenType.DATETIME,
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
+        "VARIANT": TokenType.VARIANT,
     }
 
     WHITE_SPACE = {

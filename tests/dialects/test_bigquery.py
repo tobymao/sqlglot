@@ -236,3 +236,11 @@ class TestBigQuery(Validator):
                 "snowflake": "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a NULLS FIRST LIMIT 10",
             },
         )
+        self.validate_all(
+            "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+            write={
+                "spark": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
+                "snowflake": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+            },
+        )

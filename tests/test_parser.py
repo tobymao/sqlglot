@@ -21,6 +21,11 @@ class TestParser(unittest.TestCase):
 
         self.assertIsNotNone(parse_one("date").find(exp.Column))
 
+    def test_float(self):
+        self.assertEqual(parse_one(".2"), parse_one("0.2"))
+        self.assertEqual(parse_one("int 1"), parse_one("CAST(1 AS INT)"))
+        self.assertEqual(parse_one("int.5"), parse_one("CAST(0.5 AS INT)"))
+
     def test_table(self):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
         self.assertEqual(tables, ["a", "b.c", "d"])
@@ -113,6 +118,9 @@ class TestParser(unittest.TestCase):
     def test_missing_by(self):
         with self.assertRaises(ParseError):
             parse_one("SELECT FROM x ORDER BY")
+
+    def test_parameter(self):
+        self.assertEqual(parse_one("SELECT @x, @@x, @1").sql(), "SELECT @x, @@x, @1")
 
     def test_annotations(self):
         expression = parse_one(

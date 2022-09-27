@@ -7,7 +7,7 @@ from copy import deepcopy
 from enum import auto
 
 from sqlglot.errors import ParseError
-from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list
+from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list, list_get
 
 
 class _Expression(type):
@@ -351,7 +351,8 @@ class Expression(metaclass=_Expression):
 
         Args:
             fun (function): a function which takes a node as an argument and returns a
-                new transformed node or the same node without modifications.
+                new transformed node or the same node without modifications. If the function
+                returns None, then the corresponding node will be removed from the syntax tree.
             copy (bool): if set to True a new tree instance is constructed, otherwise the tree is
                 modified in place.
 
@@ -361,9 +362,7 @@ class Expression(metaclass=_Expression):
         node = self.copy() if copy else self
         new_node = fun(node, *args, **kwargs)
 
-        if new_node is None:
-            raise ValueError("A transformed node cannot be None")
-        if not isinstance(new_node, Expression):
+        if new_node is None or not isinstance(new_node, Expression):
             return new_node
         if new_node is not node:
             new_node.parent = node.parent
@@ -913,14 +912,18 @@ class Properties(Expression):
 
     @staticmethod
     def _convert_value(value):
+        if value is None:
+            return NULL
         if isinstance(value, Expression):
             return value
+        if isinstance(value, bool):
+            return Boolean(this=value)
         if isinstance(value, str):
             return Literal.string(value)
         if isinstance(value, numbers.Number):
             return Literal.number(value)
         if isinstance(value, list):
-            return Tuple(expressions=[_convert_value(v) for v in value])
+            return Tuple(expressions=[Properties._convert_value(v) for v in value])
         raise ValueError(f"Unsupported type '{type(value)}' for value '{value}'")
 
 
@@ -1640,6 +1643,7 @@ class TableSample(Expression):
         "percent": False,
         "rows": False,
         "size": False,
+        "seed": False,
     }
 
 
@@ -1673,6 +1677,10 @@ class Star(Expression):
     @property
     def name(self):
         return "*"
+
+
+class Parameter(Expression):
+    pass
 
 
 class Placeholder(Expression):
@@ -1734,7 +1742,7 @@ class DataType(Expression):
         SMALLMONEY = auto()
         ROWVERSION = auto()
         IMAGE = auto()
-        SQL_VARIANT = auto()
+        VARIANT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):
@@ -2364,7 +2372,7 @@ class Reduce(Func):
 
 
 class RegexpLike(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "flag": False}
 
 
 class RegexpSplit(Func):
@@ -3009,7 +3017,7 @@ def replace_children(expression, fun):
             else:
                 new_child_nodes.append(cn)
 
-        expression.args[k] = new_child_nodes if is_list_arg else new_child_nodes[0]
+        expression.args[k] = new_child_nodes if is_list_arg else list_get(new_child_nodes, 0)
 
 
 def column_table_names(expression):

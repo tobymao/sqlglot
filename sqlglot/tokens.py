@@ -208,6 +208,7 @@ class TokenType(AutoName):
     PARTITION_BY = auto()
     PARTITIONED_BY = auto()
     PERCENT = auto()
+    PIVOT = auto()
     PLACEHOLDER = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
@@ -247,6 +248,7 @@ class TokenType(AutoName):
     UNCACHE = auto()
     UNION = auto()
     UNNEST = auto()
+    UNPIVOT = auto()
     UPDATE = auto()
     USE = auto()
     USING = auto()
@@ -441,6 +443,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
+        "FOR": TokenType.FOR,
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
@@ -490,6 +493,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PARTITION BY": TokenType.PARTITION_BY,
         "PARTITIONED BY": TokenType.PARTITIONED_BY,
         "PERCENT": TokenType.PERCENT,
+        "PIVOT": TokenType.PIVOT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "RANGE": TokenType.RANGE,
@@ -522,6 +526,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TRUNCATE": TokenType.TRUNCATE,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
+        "UNPIVOT": TokenType.UNPIVOT,
         "UNNEST": TokenType.UNNEST,
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,

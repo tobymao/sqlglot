@@ -159,7 +159,6 @@ class Postgres(Dialect):
             "ALWAYS": TokenType.ALWAYS,
             "BY DEFAULT": TokenType.BY_DEFAULT,
             "IDENTITY": TokenType.IDENTITY,
-            "FOR": TokenType.FOR,
             "GENERATED": TokenType.GENERATED,
             "DOUBLE PRECISION": TokenType.DOUBLE,
             "BIGSERIAL": TokenType.BIGSERIAL,

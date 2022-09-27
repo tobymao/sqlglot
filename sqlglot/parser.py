@@ -131,7 +131,6 @@ class Parser:
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FOLLOWING,
-        TokenType.FOR,
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.GENERATED,
@@ -150,6 +149,7 @@ class Parser:
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
         TokenType.PERCENT,
+        TokenType.PIVOT,
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.REFERENCES,
@@ -168,6 +168,7 @@ class Parser:
         TokenType.TRUE,
         TokenType.UNBOUNDED,
         TokenType.UNIQUE,
+        TokenType.UNPIVOT,
         TokenType.PROPERTIES,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
@@ -1005,7 +1006,7 @@ class Parser:
         )
 
     def _parse_subquery(self, this):
-        return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
+        return self.expression(exp.Subquery, this=this, pivots=self._parse_pivots(), alias=self._parse_table_alias())
 
     def _parse_query_modifiers(self, this):
         if not isinstance(this, self.MODIFIABLES):
@@ -1147,7 +1148,7 @@ class Parser:
         if not table:
             self.raise_error("Expected table name")
 
-        this = self.expression(exp.Table, this=table, db=db, catalog=catalog)
+        this = self.expression(exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots())
 
         if schema:
             return self._parse_schema(this=this)
@@ -1242,6 +1243,50 @@ class Parser:
             rows=rows,
             size=size,
             seed=seed,
+        )
+
+    def _parse_pivots(self):
+        return list(iter(self._parse_pivot, None))
+
+    def _parse_pivot(self):
+        index = self._index
+
+        if self._match(TokenType.PIVOT):
+            unpivot = False
+        elif self._match(TokenType.UNPIVOT):
+            unpivot = True
+        else:
+            return None
+
+        expressions = []
+        field = None
+
+        if not self._match(TokenType.L_PAREN):
+            self._retreat(index)
+            return None
+
+        if unpivot:
+            expressions = self._parse_csv(self._parse_column)
+        else:
+            expressions = self._parse_csv(lambda: self._parse_alias(self._parse_function()))
+
+        if not self._match(TokenType.FOR):
+            self.raise_error("Expecting FOR")
+
+        value = self._parse_column()
+
+        if not self._match(TokenType.IN):
+            self.raise_error("Expecting IN")
+
+        field = self._parse_in(value)
+
+        self._match_r_paren()
+
+        return self.expression(
+            exp.Pivot,
+            expressions=expressions,
+            field=field,
+            unpivot=unpivot,
         )
 
     def _parse_where(self):

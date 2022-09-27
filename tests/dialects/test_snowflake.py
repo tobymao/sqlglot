@@ -156,6 +156,18 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
             },
         )
+        self.validate_all(
+            "SELECT a FROM test pivot",
+            write={
+                "snowflake": "SELECT a FROM test AS pivot",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM test unpivot",
+            write={
+                "snowflake": "SELECT a FROM test AS unpivot",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

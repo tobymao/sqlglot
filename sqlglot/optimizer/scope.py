@@ -195,14 +195,21 @@ class Scope:
 
             external_columns = [column for scope in self.subquery_scopes for column in scope.external_columns]
 
-            named_outputs = {e.alias_or_name for e in self.expression.expressions}
+            exclude_names = {e.alias_or_name for e in self.expression.expressions}
+
+            for column in columns + external_columns:
+                lambda_ancestor = column.find_ancestor(exp.Lambda)
+                if lambda_ancestor:
+                    exclude_names.update([expression.alias_or_name for expression in lambda_ancestor.expressions])
 
             self._columns = [
                 c
                 for c in columns + external_columns
-                if (not c.find_ancestor(exp.Qualify, exp.Order, exp.Hint, exp.Lambda)
+                if (
+                    not c.find_ancestor(exp.Qualify, exp.Order, exp.Hint, exp.Lambda)
                     or c.table
-                    or (c.name not in named_outputs and not c.find_ancestor(exp.Hint, exp.Lambda)))
+                    or (c.name not in exclude_names and not c.find_ancestor(exp.Hint))
+                )
             ]
         return self._columns
 

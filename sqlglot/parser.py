@@ -131,7 +131,7 @@ class Parser:
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FOLLOWING,
-        TokenType.FOR,
+        # TokenType.FOR,
         TokenType.FORMAT,
         TokenType.FUNCTION,
         TokenType.GENERATED,
@@ -523,6 +523,7 @@ class Parser:
             for error in self.errors:
                 logger.error(str(error))
         elif self.error_level == ErrorLevel.RAISE and self.errors:
+            # breakpoint()
             raise ParseError(concat_errors(self.errors, self.max_errors))
 
     def raise_error(self, message, token=None):
@@ -1006,7 +1007,14 @@ class Parser:
         )
 
     def _parse_subquery(self, this):
-        return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
+        # breakpoint()
+        subquery = self.expression(exp.Subquery, this=this)
+        self._parse_pivots(subquery)
+        alias = self._parse_table_alias()
+        if alias:
+            subquery.set("alias", alias)
+        return subquery
+        # return self.expression(exp.Subquery, this=this, alias=self._parse_table_alias())
 
     def _parse_query_modifiers(self, this):
         if not isinstance(this, self.MODIFIABLES):
@@ -1015,9 +1023,12 @@ class Parser:
         table = isinstance(this, exp.Table)
 
         while True:
+            pivot = self._parse_pivot()
             lateral = self._parse_lateral()
             join = self._parse_join()
             comma = None if table else self._match(TokenType.COMMA)
+            if pivot:
+                this.append("pivots", pivot)
             if lateral:
                 this.append("laterals", lateral)
             if join:
@@ -1149,12 +1160,7 @@ class Parser:
         if schema:
             return self._parse_schema(this=this)
 
-        while True:
-            pivot = self._parse_pivot()
-            if pivot:
-                this.append("pivots", pivot)
-            else:
-                break
+        self._parse_pivots(this)
 
         if self.alias_post_tablesample:
             table_sample = self._parse_table_sample()
@@ -1248,6 +1254,15 @@ class Parser:
             seed=seed,
         )
 
+    def _parse_pivots(self, this):
+        while True:
+            pivot = self._parse_pivot()
+            if pivot:
+                this.append("pivots", pivot)
+            else:
+                break
+        return this
+
     def _parse_pivot(self):
         index = self._index
 
@@ -1258,7 +1273,7 @@ class Parser:
         else:
             return None
 
-        summary = None
+        summaries = []
         field = None
 
         if not self._match(TokenType.L_PAREN):
@@ -1266,9 +1281,9 @@ class Parser:
             return None
 
         if unpivot:
-            summary = self._parse_column()
+            summaries = self._parse_csv(self._parse_column)
         else:
-            summary = self._parse_function()
+            summaries = self._parse_csv(lambda: self._parse_alias(self._parse_function()))
 
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
@@ -1284,7 +1299,7 @@ class Parser:
 
         return self.expression(
             exp.Pivot,
-            summary=summary,
+            summaries=summaries,
             field=field,
             unpivot=unpivot,
         )

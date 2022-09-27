@@ -188,6 +188,7 @@ class Generator:
         return sql
 
     def unsupported(self, message):
+
         if self.unsupported_level == ErrorLevel.IMMEDIATE:
             raise UnsupportedError(message)
         self.unsupported_messages.append(message)
@@ -565,9 +566,9 @@ class Generator:
         this = self.sql(expression, "this")
         unpivot = expression.args.get("unpivot")
         direction = "UNPIVOT" if unpivot else "PIVOT"
-        summary = self.sql(expression, "summary")
+        summaries = self.expressions(expression, key="summaries")
         field = self.sql(expression, "field")
-        return f"{this} {direction}({summary} FOR {field})"
+        return f"{this} {direction}({summaries} FOR {field})"
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"
@@ -692,6 +693,7 @@ class Generator:
     def ordered_sql(self, expression):
         desc = expression.args.get("desc")
         asc = not desc
+
         nulls_first = expression.args.get("nulls_first")
         nulls_last = not nulls_first
         nulls_are_large = self.null_ordering == "nulls_are_large"
@@ -716,7 +718,6 @@ class Generator:
             *sqls,
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
-            *[self.sql(sql) for sql in expression.args.get("pivots", [])],
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
@@ -768,10 +769,12 @@ class Generator:
 
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")
+        # breakpoint()
 
         return self.query_modifiers(
             expression,
             self.wrap(expression),
+            self.expressions(expression, key="pivots", sep=" "),
             f" AS {alias}" if alias else "",
         )
 

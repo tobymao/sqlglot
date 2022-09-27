@@ -1733,9 +1733,10 @@ class Parser:
 
             return self._parse_alias(self._parse_limit(self._parse_order(this)))
 
+        conjunction = self._parse_conjunction().transform(self._replace_lambda, {node.name for node in expressions})
         return self.expression(
             exp.Lambda,
-            this=self._parse_conjunction(),
+            this=conjunction,
             expressions=expressions,
         )
 
@@ -2275,3 +2276,9 @@ class Parser:
         elif isinstance(this, exp.Identifier):
             this = self.expression(exp.Var, this=this.name)
         return this
+
+    def _replace_lambda(self, node, lambda_variables):
+        if isinstance(node, exp.Column):
+            if node.name in lambda_variables:
+                return node.this
+        return node

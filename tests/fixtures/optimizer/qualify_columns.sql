@@ -231,3 +231,10 @@ SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b WHERE COALES
 
 SELECT b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
+
+--------------------------------------
+-- Hint with table reference
+--------------------------------------
+# dialect: spark
+SELECT /*+ BROADCAST(y) */ x.b FROM x JOIN y ON x.b = y.b;
+SELECT /*+ BROADCAST(y) */ x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;

@@ -1,8 +1,15 @@
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
+from sqlglot.helper import ensure_list
+
+ANNOTATORS = {
+    exp.Select: lambda expr, schema, annotators: _annotate_select(expr, schema, annotators),
+    exp.Literal: lambda expr, schema, annotators: _annotate_literal(expr, schema, annotators),
+    exp.Boolean: lambda expr, schema, annotators: _annotate_boolean(expr, schema, annotators),
+}
 
 
-def annotate_expression_types(expression, schema):
+def annotate_expression_types(expression, schema=None, annotators=ANNOTATORS):
     """
     Recursively infer & annotate types in an expression syntax tree against a schema.
 
@@ -17,67 +24,50 @@ def annotate_expression_types(expression, schema):
     Args:
         expression (sqlglot.Expression): Expression to annotate.
         schema (dict|sqlglot.optimizer.Schema): Database schema.
+        annotators (dict): Maps expression type to corresponding annotation function.
     Returns:
         sqlglot.Expression: expression annotated with types
     """
 
-    return TypeAnnotator(schema).annotate(expression)
+    return annotate(expression, schema, annotators)
 
 
-class TypeAnnotator:
-    """
-    TypeAnnotator provides a method for each type of expression, responsible for
-    inferring the type of the corresponding expression and then annotating it.
+def annotate(expression, schema, annotators):
+    if not expression:
+        return None
 
-    Args:
-        schema (dict|sqlglot.optimizer.Schema): Database schema.
-    """
+    # Note: maybe there are some expressions that can be allowed to *not* have a type.
+    # In this case, instead of raising we could return None instead. Other alternatives:
+    #
+    # - Always return None if there's no available annotator method (too flexible maybe?).
+    # - Provide a default annotator returning None for expressions we don't care to annotate.
 
-    ANNOTATORS = {
-        exp.Select: lambda self, expr: self._annotate_select(expr),
-        exp.Literal: lambda self, expr: self._annotate_literal(expr),
-        exp.Boolean: lambda self, expr: self._annotate_boolean(expr),
-    }
+    annotator = annotators.get(type(expression))
+    if not annotator:
+        raise OptimizeError(f"Unable to annotate expression of type: {type(expression)}")
 
-    def __init__(self, schema):
-        self.schema = schema
+    return annotator(expression, schema, annotators)
 
-    def annotate(self, expression):
-        if not expression:
-            return None
 
-        # Note: maybe there are some expressions that can be allowed to *not* have a type.
-        # In this case, instead of raising we could return None instead. Other alternatives:
-        #
-        # - Always return None if there's no available annotator method (too flexible maybe?).
-        # - Provide a default annotator returning None for expressions we don't care to annotate.
+def _annotate_select(expression, schema, annotators):
+    for value in expression.args.values():
+        for v in ensure_list(value):
+            annotate(v, schema, annotators)
 
-        annotator = self.ANNOTATORS.get(type(expression))
-        if not annotator:
-            raise OptimizeError(f"Unable to annotate expression of type: {type(expression)}")
+    return expression
 
-        return annotator(self, expression)
 
-    def _annotate_select(self, expression):
-        for arg, value in expression.args.items():
-            if isinstance(value, list):
-                expression.set(arg, [self.annotate(child_expression) for child_expression in value])
-            else:
-                expression.set(arg, self.annotate(value))
+def _annotate_literal(expression, schema, annotators):
+    if expression.is_string:
+        expression.type = exp.DataType.Type.VARCHAR
+    elif expression.is_int:
+        expression.type = exp.DataType.Type.INT
+    else:
+        expression.type = exp.DataType.Type.FLOAT
 
-        return expression
+    return expression
 
-    def _annotate_literal(self, expression):
-        if expression.is_string:
-            type_ = exp.DataType.Type.VARCHAR
-        elif expression.is_int:
-            type_ = exp.DataType.Type.INT
-        else:
-            type_ = exp.DataType.Type.FLOAT
 
-        expression.set("type", type_)
-        return expression
-
-    def _annotate_boolean(self, expression):
-        expression.set("type", exp.DataType.Type.BOOLEAN)
-        return expression
+def _annotate_boolean(expression, schema, annotators):
+    expression.type = exp.DataType.Type.BOOLEAN
+    return expression

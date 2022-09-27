@@ -30,8 +30,8 @@ class Expression(metaclass=_Expression):
     """
 
     key = None
-    arg_types = {"this": True, "type": False}
-    __slots__ = ("args", "parent", "arg_key")
+    arg_types = {"this": True}
+    __slots__ = ("args", "parent", "arg_key", "type")
 
     def __init__(self, **args):
         self.args = args
@@ -55,10 +55,6 @@ class Expression(metaclass=_Expression):
     @property
     def this(self):
         return self.args.get("this")
-
-    @property
-    def type(self):
-        return self.arg.get("type")
 
     @property
     def expression(self):

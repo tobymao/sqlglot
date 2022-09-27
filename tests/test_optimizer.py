@@ -286,7 +286,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         for sql, target_type in tests.items():
             expression = parse_one(sql)
             target_expression = parse_one(sql)
-            target_expression.find(exp.Literal).set("type", target_type)
+            target_expression.find(exp.Literal).type = target_type
             annotated_expression = annotate_expression_types(expression, None)
 
             self.assertEqual(annotated_expression, target_expression)
@@ -300,7 +300,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         for sql, target_type in tests.items():
             expression = parse_one(sql)
             target_expression = parse_one(sql)
-            target_expression.find(exp.Boolean).set("type", target_type)
+            target_expression.find(exp.Boolean).type = target_type
             annotated_expression = annotate_expression_types(expression, None)
 
             self.assertEqual(annotated_expression, target_expression)

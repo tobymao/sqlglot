@@ -1,7 +1,8 @@
 import unittest
 
-from sqlglot import optimizer, parse_one, table
+from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.annotate_expression_types import annotate_expression_types
 from sqlglot.optimizer.schema import MappingSchema, ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
@@ -271,3 +272,35 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(scopes[4].source_columns("q"), [])
         self.assertEqual(len(scopes[4].source_columns("r")), 2)
         self.assertEqual(set(c.table for c in scopes[4].source_columns("r")), {"r"})
+
+    def test_literal_type_annotation(self):
+        tests = {
+            "SELECT 5": exp.DataType.Type.INT,
+            "SELECT 5.3": exp.DataType.Type.FLOAT,
+            "SELECT 'bla'": exp.DataType.Type.VARCHAR,
+            "5": exp.DataType.Type.INT,
+            "5.3": exp.DataType.Type.FLOAT,
+            "'bla'": exp.DataType.Type.VARCHAR,
+        }
+
+        for sql, target_type in tests.items():
+            expression = parse_one(sql)
+            target_expression = parse_one(sql)
+            target_expression.find(exp.Literal).set("type", target_type)
+            annotated_expression = annotate_expression_types(expression, None)
+
+            self.assertEqual(annotated_expression, target_expression)
+
+    def test_boolean_type_annotation(self):
+        tests = {
+            "SELECT TRUE": exp.DataType.Type.BOOLEAN,
+            "FALSE": exp.DataType.Type.BOOLEAN,
+        }
+
+        for sql, target_type in tests.items():
+            expression = parse_one(sql)
+            target_expression = parse_one(sql)
+            target_expression.find(exp.Boolean).set("type", target_type)
+            annotated_expression = annotate_expression_types(expression, None)
+
+            self.assertEqual(annotated_expression, target_expression)

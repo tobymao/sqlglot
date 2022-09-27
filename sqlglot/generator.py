@@ -188,6 +188,7 @@ class Generator:
         return sql
 
     def unsupported(self, message):
+
         if self.unsupported_level == ErrorLevel.IMMEDIATE:
             raise UnsupportedError(message)
         self.unsupported_messages.append(message)
@@ -535,7 +536,8 @@ class Generator:
 
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
-        return f"{table}{laterals}{joins}"
+        pivots = self.expressions(expression, key="pivots", sep="")
+        return f"{table}{laterals}{joins}{pivots}"
 
     def tablesample_sql(self, expression):
         if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):
@@ -559,6 +561,14 @@ class Generator:
         seed = self.sql(expression, "seed")
         seed = f" SEED ({seed})" if seed else ""
         return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size}){seed}{alias}"
+
+    def pivot_sql(self, expression):
+        this = self.sql(expression, "this")
+        unpivot = expression.args.get("unpivot")
+        direction = "UNPIVOT" if unpivot else "PIVOT"
+        expressions = self.expressions(expression, key="expressions")
+        field = self.sql(expression, "field")
+        return f"{this} {direction}({expressions} FOR {field})"
 
     def tuple_sql(self, expression):
         return f"({self.expressions(expression, flat=True)})"
@@ -683,6 +693,7 @@ class Generator:
     def ordered_sql(self, expression):
         desc = expression.args.get("desc")
         asc = not desc
+
         nulls_first = expression.args.get("nulls_first")
         nulls_last = not nulls_first
         nulls_are_large = self.null_ordering == "nulls_are_large"
@@ -762,6 +773,7 @@ class Generator:
         return self.query_modifiers(
             expression,
             self.wrap(expression),
+            self.expressions(expression, key="pivots", sep=" "),
             f" AS {alias}" if alias else "",
         )
 

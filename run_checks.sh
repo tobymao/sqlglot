@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-python -m autoflake -i -r \
+python -m autoflake -i -r -c \
   --expand-star-imports \
   --remove-all-unused-imports \
   --ignore-init-module-imports \

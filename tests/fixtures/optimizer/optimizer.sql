@@ -127,3 +127,11 @@ LIMIT 1;
   FROM "y" AS "y"
 )
 LIMIT 1;
+
+# dialect: spark
+SELECT /*+ BROADCAST(y) */ x.b FROM x JOIN y ON x.b = y.b;
+SELECT /*+ BROADCAST(`y`) */
+  `x`.`b` AS `b`
+FROM `x` AS `x`
+JOIN `y` AS `y`
+  ON `x`.`b` = `y`.`b`;

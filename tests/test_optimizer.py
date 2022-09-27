@@ -304,3 +304,18 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             annotated_expression = annotate_expression_types(expression, None)
 
             self.assertEqual(annotated_expression, target_expression)
+
+    def test_cast_type_annotation(self):
+        sql = "CAST('2020-01-01' AS TIMESTAMPTZ(9))"
+
+        expression = parse_one(sql)
+        target_expression = parse_one(sql)
+
+        target_expression.type = exp.DataType.Type.TIMESTAMPTZ
+        target_expression.this.type = exp.DataType.Type.VARCHAR
+        target_expression.args["to"].type = exp.DataType.Type.TIMESTAMPTZ
+        target_expression.args["to"].expressions[0].type = exp.DataType.Type.INT
+
+        annotated_expression = annotate_expression_types(expression, None)
+
+        self.assertEqual(annotated_expression, target_expression)

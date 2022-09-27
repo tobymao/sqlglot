@@ -3,6 +3,8 @@ from sqlglot.errors import OptimizeError
 from sqlglot.helper import ensure_list
 
 ANNOTATORS = {
+    exp.Cast: lambda expr, schema, annotators: _annotate_cast(expr, schema, annotators),
+    exp.DataType: lambda expr, schema, annotators: _annotate_data_type(expr, schema, annotators),
     exp.Select: lambda expr, schema, annotators: _annotate_select(expr, schema, annotators),
     exp.Literal: lambda expr, schema, annotators: _annotate_literal(expr, schema, annotators),
     exp.Boolean: lambda expr, schema, annotators: _annotate_boolean(expr, schema, annotators),
@@ -47,6 +49,24 @@ def annotate(expression, schema, annotators):
         raise OptimizeError(f"Unable to annotate expression of type: {type(expression)}")
 
     return annotator(expression, schema, annotators)
+
+
+def _annotate_cast(expr, schema, annotators):
+    expr.type = expr.args["to"].this
+
+    annotate(expr.this, schema, annotators)
+    annotate(expr.args["to"], schema, annotators)
+
+    return expr
+
+
+def _annotate_data_type(expr, schema, annotators):
+    expr.type = expr.this
+
+    for expression in expr.expressions:
+        annotate(expression, schema, annotators)
+
+    return expr
 
 
 def _annotate_select(expression, schema, annotators):

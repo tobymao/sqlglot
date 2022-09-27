@@ -1019,12 +1019,9 @@ class Parser:
         table = isinstance(this, exp.Table)
 
         while True:
-            pivot = self._parse_pivot()
             lateral = self._parse_lateral()
             join = self._parse_join()
             comma = None if table else self._match(TokenType.COMMA)
-            if pivot:
-                this.append("pivots", pivot)
             if lateral:
                 this.append("laterals", lateral)
             if join:

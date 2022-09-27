@@ -1006,12 +1006,7 @@ class Parser:
         )
 
     def _parse_subquery(self, this):
-        subquery = self.expression(exp.Subquery, this=this)
-        self._parse_pivots(subquery)
-        alias = self._parse_table_alias()
-        if alias:
-            subquery.set("alias", alias)
-        return subquery
+        return self.expression(exp.Subquery, this=this, pivots=self._parse_pivots(), alias=self._parse_table_alias())
 
     def _parse_query_modifiers(self, this):
         if not isinstance(this, self.MODIFIABLES):
@@ -1153,12 +1148,10 @@ class Parser:
         if not table:
             self.raise_error("Expected table name")
 
-        this = self.expression(exp.Table, this=table, db=db, catalog=catalog)
+        this = self.expression(exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots())
 
         if schema:
             return self._parse_schema(this=this)
-
-        self._parse_pivots(this)
 
         if self.alias_post_tablesample:
             table_sample = self._parse_table_sample()
@@ -1252,14 +1245,8 @@ class Parser:
             seed=seed,
         )
 
-    def _parse_pivots(self, this):
-        while True:
-            pivot = self._parse_pivot()
-            if pivot:
-                this.append("pivots", pivot)
-            else:
-                break
-        return this
+    def _parse_pivots(self):
+        return list(iter(self._parse_pivot, None))
 
     def _parse_pivot(self):
         index = self._index
@@ -1271,7 +1258,7 @@ class Parser:
         else:
             return None
 
-        summaries = []
+        expressions = []
         field = None
 
         if not self._match(TokenType.L_PAREN):
@@ -1279,9 +1266,9 @@ class Parser:
             return None
 
         if unpivot:
-            summaries = self._parse_csv(self._parse_column)
+            expressions = self._parse_csv(self._parse_column)
         else:
-            summaries = self._parse_csv(lambda: self._parse_alias(self._parse_function()))
+            expressions = self._parse_csv(lambda: self._parse_alias(self._parse_function()))
 
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
@@ -1297,7 +1284,7 @@ class Parser:
 
         return self.expression(
             exp.Pivot,
-            summaries=summaries,
+            expressions=expressions,
             field=field,
             unpivot=unpivot,
         )

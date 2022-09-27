@@ -1052,6 +1052,7 @@ class Table(Expression):
         "catalog": False,
         "laterals": False,
         "joins": False,
+        "pivots": False,
     }
 
 
@@ -1651,7 +1652,7 @@ class TableSample(Expression):
 class Pivot(Expression):
     arg_types = {
         "this": False,
-        "summaries": True,
+        "expressions": True,
         "field": True,
         "unpivot": True,
     }

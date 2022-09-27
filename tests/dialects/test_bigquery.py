@@ -237,6 +237,14 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+            write={
+                "spark": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
+                "snowflake": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
             write={
                 "bigquery": "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",

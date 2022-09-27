@@ -390,6 +390,7 @@ class Parser:
     FUNCTION_PARSERS = {
         "CONVERT": lambda self: self._parse_convert(),
         "EXTRACT": lambda self: self._parse_extract(),
+        "POSITION": lambda self: self._parse_position(),
         "SUBSTRING": lambda self: self._parse_substring(),
         "TRIM": lambda self: self._parse_trim(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
@@ -1141,9 +1142,13 @@ class Parser:
         table = (not schema and self._parse_function()) or self._parse_id_var(False)
 
         while self._match(TokenType.DOT):
-            catalog = db
-            db = table
-            table = self._parse_id_var()
+            if catalog:
+                # This allows nesting the table in arbitrarily many dot expressions if needed
+                table = self.expression(exp.Dot, this=table, expression=self._parse_id_var())
+            else:
+                catalog = db
+                db = table
+                table = self._parse_id_var()
 
         if not table:
             self.raise_error("Expected table name")
@@ -1964,6 +1969,12 @@ class Parser:
         else:
             to = None
         return self.expression(exp.Cast, this=this, to=to)
+
+    def _parse_position(self):
+        substr = self._parse_bitwise()
+        if self._match(TokenType.IN):
+            string = self._parse_bitwise()
+        return self.expression(exp.StrPosition, this=string, substr=substr)
 
     def _parse_substring(self):
         # Postgres supports the form: substring(string [from int] [for int])

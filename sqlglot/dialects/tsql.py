@@ -1,6 +1,7 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
+from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
 
@@ -28,6 +29,13 @@ class TSQL(Dialect):
             "XML": TokenType.XML,
             "SQL_VARIANT": TokenType.VARIANT,
         }
+
+    class Parser(Parser):
+        def _parse_convert(self):
+            to = self._parse_types()
+            self._match(TokenType.COMMA)
+            this = self._parse_field()
+            return self.expression(exp.Cast, this=this, to=to)
 
     class Generator(Generator):
         TYPE_MAPPING = {

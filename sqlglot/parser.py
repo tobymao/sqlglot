@@ -1709,6 +1709,13 @@ class Parser:
         return self._parse_window(this)
 
     def _parse_lambda(self):
+        def replace_lambda_columns_with_identifiers(node, lambda_variables):
+            if isinstance(node, exp.Column):
+                matching_lambda_var = [x for x in lambda_variables if node.name == x.name]
+                if matching_lambda_var:
+                    return matching_lambda_var[0]
+            return node
+
         index = self._index
 
         if self._match(TokenType.L_PAREN):
@@ -1733,9 +1740,10 @@ class Parser:
 
             return self._parse_alias(self._parse_limit(self._parse_order(this)))
 
+        conjunction = self._parse_conjunction().transform(replace_lambda_columns_with_identifiers, expressions)
         return self.expression(
             exp.Lambda,
-            this=self._parse_conjunction(),
+            this=conjunction,
             expressions=expressions,
         )
 

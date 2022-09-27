@@ -4,7 +4,7 @@ from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.schema import MappingSchema, ensure_schema
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import build_scope, traverse_scope
 from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
 
 
@@ -124,21 +124,17 @@ class TestOptimizer(unittest.TestCase):
             optimizer.optimize_joins.optimize_joins,
         )
 
-    def test_eliminate_subqueries(self):
-        self.check_file(
-            "eliminate_subqueries",
-            optimizer.eliminate_subqueries.eliminate_subqueries,
-            pretty=True,
-        )
-
-    def test_merge_derived_tables(self):
+    def test_merge_subqueries(self):
         def optimize(expression, **kwargs):
             expression = optimizer.qualify_tables.qualify_tables(expression)
             expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
-            expression = optimizer.merge_derived_tables.merge_derived_tables(expression)
+            expression = optimizer.merge_subqueries.merge_subqueries(expression)
             return expression
 
-        self.check_file("merge_derived_tables", optimize, schema=self.schema)
+        self.check_file("merge_subqueries", optimize, schema=self.schema)
+
+    def test_eliminate_subqueries(self):
+        self.check_file("eliminate_subqueries", optimizer.eliminate_subqueries.eliminate_subqueries)
 
     def test_tpch(self):
         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
@@ -258,20 +254,20 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         ON s.b = r.b
         WHERE s.b > (SELECT MAX(x.a) FROM x WHERE x.b = s.b)
         """
-        scopes = traverse_scope(parse_one(sql))
-        self.assertEqual(len(scopes), 5)
-        self.assertEqual(scopes[0].expression.sql(), "SELECT x.b FROM x")
-        self.assertEqual(scopes[1].expression.sql(), "SELECT y.b FROM y")
-        self.assertEqual(scopes[2].expression.sql(), "SELECT MAX(x.a) FROM x WHERE x.b = s.b")
-        self.assertEqual(scopes[3].expression.sql(), "SELECT y.c AS b FROM y")
-        self.assertEqual(scopes[4].expression.sql(), parse_one(sql).sql())
+        for scopes in traverse_scope(parse_one(sql)), list(build_scope(parse_one(sql)).traverse()):
+            self.assertEqual(len(scopes), 5)
+            self.assertEqual(scopes[0].expression.sql(), "SELECT x.b FROM x")
+            self.assertEqual(scopes[1].expression.sql(), "SELECT y.b FROM y")
+            self.assertEqual(scopes[2].expression.sql(), "SELECT MAX(x.a) FROM x WHERE x.b = s.b")
+            self.assertEqual(scopes[3].expression.sql(), "SELECT y.c AS b FROM y")
+            self.assertEqual(scopes[4].expression.sql(), parse_one(sql).sql())
 
-        self.assertEqual(set(scopes[4].sources), {"q", "r", "s"})
-        self.assertEqual(len(scopes[4].columns), 6)
-        self.assertEqual(set(c.table for c in scopes[4].columns), {"r", "s"})
-        self.assertEqual(scopes[4].source_columns("q"), [])
-        self.assertEqual(len(scopes[4].source_columns("r")), 2)
-        self.assertEqual(set(c.table for c in scopes[4].source_columns("r")), {"r"})
+            self.assertEqual(set(scopes[4].sources), {"q", "r", "s"})
+            self.assertEqual(len(scopes[4].columns), 6)
+            self.assertEqual(set(c.table for c in scopes[4].columns), {"r", "s"})
+            self.assertEqual(scopes[4].source_columns("q"), [])
+            self.assertEqual(len(scopes[4].source_columns("r")), 2)
+            self.assertEqual(set(c.table for c in scopes[4].source_columns("r")), {"r"})
 
     def test_literal_type_annotation(self):
         tests = {

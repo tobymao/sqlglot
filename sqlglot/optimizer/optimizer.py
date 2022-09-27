@@ -1,7 +1,7 @@
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
-from sqlglot.optimizer.merge_derived_tables import merge_derived_tables
+from sqlglot.optimizer.merge_subqueries import merge_subqueries
 from sqlglot.optimizer.normalize import normalize
 from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
@@ -22,7 +22,7 @@ RULES = (
     pushdown_predicates,
     optimize_joins,
     eliminate_subqueries,
-    merge_derived_tables,
+    merge_subqueries,
     quote_identities,
 )
 

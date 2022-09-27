@@ -4,7 +4,7 @@ import time
 from sqlglot import parse_one
 from sqlglot.executor.python import PythonExecutor
 from sqlglot.optimizer import RULES, optimize
-from sqlglot.optimizer.merge_derived_tables import merge_derived_tables
+from sqlglot.optimizer.merge_subqueries import merge_subqueries
 from sqlglot.planner import Plan
 
 logger = logging.getLogger("sqlglot")
@@ -12,7 +12,7 @@ logger = logging.getLogger("sqlglot")
 OPTIMIZER_RULES = list(RULES)
 
 # The executor needs isolated table selects
-OPTIMIZER_RULES.remove(merge_derived_tables)
+OPTIMIZER_RULES.remove(merge_subqueries)
 
 
 def execute(sql, schema, read=None):

@@ -97,19 +97,32 @@ order by
    p_partkey
 limit
    100;
-WITH "_e_0" AS (
+WITH "partsupp_2" AS (
   SELECT
     "partsupp"."ps_partkey" AS "ps_partkey",
     "partsupp"."ps_suppkey" AS "ps_suppkey",
     "partsupp"."ps_supplycost" AS "ps_supplycost"
   FROM "partsupp" AS "partsupp"
-), "_e_1" AS (
+), "region_2" AS (
   SELECT
     "region"."r_regionkey" AS "r_regionkey",
     "region"."r_name" AS "r_name"
   FROM "region" AS "region"
   WHERE
     "region"."r_name" = 'EUROPE'
+), "_u_0" AS (
+  SELECT
+    MIN("partsupp"."ps_supplycost") AS "_col_0",
+    "partsupp"."ps_partkey" AS "_u_1"
+  FROM "partsupp_2" AS "partsupp"
+  CROSS JOIN "region_2" AS "region"
+  JOIN "nation" AS "nation"
+    ON "nation"."n_regionkey" = "region"."r_regionkey"
+  JOIN "supplier" AS "supplier"
+    ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+    AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+  GROUP BY
+    "partsupp"."ps_partkey"
 )
 SELECT
   "supplier"."s_acctbal" AS "s_acctbal",
@@ -121,25 +134,12 @@ SELECT
   "supplier"."s_phone" AS "s_phone",
   "supplier"."s_comment" AS "s_comment"
 FROM "part" AS "part"
-LEFT JOIN (
-  SELECT
-    MIN("partsupp"."ps_supplycost") AS "_col_0",
-    "partsupp"."ps_partkey" AS "_u_1"
-  FROM "_e_0" AS "partsupp"
-  CROSS JOIN "_e_1" AS "region"
-  JOIN "nation" AS "nation"
-    ON "nation"."n_regionkey" = "region"."r_regionkey"
-  JOIN "supplier" AS "supplier"
-    ON "supplier"."s_nationkey" = "nation"."n_nationkey"
-    AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
-  GROUP BY
-    "partsupp"."ps_partkey"
-) AS "_u_0"
+LEFT JOIN "_u_0" AS "_u_0"
   ON "part"."p_partkey" = "_u_0"."_u_1"
-CROSS JOIN "_e_1" AS "region"
+CROSS JOIN "region_2" AS "region"
 JOIN "nation" AS "nation"
   ON "nation"."n_regionkey" = "region"."r_regionkey"
-JOIN "_e_0" AS "partsupp"
+JOIN "partsupp_2" AS "partsupp"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
 JOIN "supplier" AS "supplier"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
@@ -232,11 +232,7 @@ group by
         o_orderpriority
 order by
         o_orderpriority;
-SELECT
-  "orders"."o_orderpriority" AS "o_orderpriority",
-  COUNT(*) AS "order_count"
-FROM "orders" AS "orders"
-LEFT JOIN (
+WITH "_u_0" AS (
   SELECT
     "lineitem"."l_orderkey" AS "l_orderkey"
   FROM "lineitem" AS "lineitem"
@@ -244,7 +240,12 @@ LEFT JOIN (
     "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
   GROUP BY
     "lineitem"."l_orderkey"
-) AS "_u_0"
+)
+SELECT
+  "orders"."o_orderpriority" AS "o_orderpriority",
+  COUNT(*) AS "order_count"
+FROM "orders" AS "orders"
+LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE
   "orders"."o_orderdate" < CAST('1993-10-01' AS DATE)
@@ -371,7 +372,7 @@ order by
         supp_nation,
         cust_nation,
         l_year;
-WITH "_e_0" AS (
+WITH "n1" AS (
   SELECT
     "nation"."n_nationkey" AS "n_nationkey",
     "nation"."n_name" AS "n_name"
@@ -394,9 +395,9 @@ JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 JOIN "customer" AS "customer"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-JOIN "_e_0" AS "n1"
+JOIN "n1" AS "n1"
   ON "supplier"."s_nationkey" = "n1"."n_nationkey"
-JOIN "_e_0" AS "n2"
+JOIN "n1" AS "n2"
   ON "customer"."c_nationkey" = "n2"."n_nationkey"
   AND (
     "n1"."n_name" = 'FRANCE'
@@ -654,12 +655,12 @@ group by
                 )
 order by
         value desc;
-WITH "_e_0" AS (
+WITH "supplier_2" AS (
   SELECT
     "supplier"."s_suppkey" AS "s_suppkey",
     "supplier"."s_nationkey" AS "s_nationkey"
   FROM "supplier" AS "supplier"
-), "_e_1" AS (
+), "nation_2" AS (
   SELECT
     "nation"."n_nationkey" AS "n_nationkey",
     "nation"."n_name" AS "n_name"
@@ -671,9 +672,9 @@ SELECT
   "partsupp"."ps_partkey" AS "ps_partkey",
   SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") AS "value"
 FROM "partsupp" AS "partsupp"
-JOIN "_e_0" AS "supplier"
+JOIN "supplier_2" AS "supplier"
   ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
-JOIN "_e_1" AS "nation"
+JOIN "nation_2" AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 GROUP BY
   "partsupp"."ps_partkey"
@@ -682,9 +683,9 @@ HAVING
     SELECT
       SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") * 0.0001 AS "_col_0"
     FROM "partsupp" AS "partsupp"
-    JOIN "_e_0" AS "supplier"
+    JOIN "supplier_2" AS "supplier"
       ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
-    JOIN "_e_1" AS "nation"
+    JOIN "nation_2" AS "nation"
       ON "supplier"."s_nationkey" = "nation"."n_nationkey"
   )
 ORDER BY
@@ -772,10 +773,7 @@ group by
 order by
         custdist desc,
         c_count desc;
-SELECT
-  "c_orders"."c_count" AS "c_count",
-  COUNT(*) AS "custdist"
-FROM (
+WITH "c_orders" AS (
   SELECT
     COUNT("orders"."o_orderkey") AS "c_count"
   FROM "customer" AS "customer"
@@ -784,7 +782,11 @@ FROM (
     AND NOT "orders"."o_comment" LIKE '%special%requests%'
   GROUP BY
     "customer"."c_custkey"
-) AS "c_orders"
+)
+SELECT
+  "c_orders"."c_count" AS "c_count",
+  COUNT(*) AS "custdist"
+FROM "c_orders" AS "c_orders"
 GROUP BY
   "c_orders"."c_count"
 ORDER BY
@@ -920,13 +922,7 @@ order by
         p_brand,
         p_type,
         p_size;
-SELECT
-  "part"."p_brand" AS "p_brand",
-  "part"."p_type" AS "p_type",
-  "part"."p_size" AS "p_size",
-  COUNT(DISTINCT "partsupp"."ps_suppkey") AS "supplier_cnt"
-FROM "partsupp" AS "partsupp"
-LEFT JOIN (
+WITH "_u_0" AS (
   SELECT
     "supplier"."s_suppkey" AS "s_suppkey"
   FROM "supplier" AS "supplier"
@@ -934,7 +930,14 @@ LEFT JOIN (
     "supplier"."s_comment" LIKE '%Customer%Complaints%'
   GROUP BY
     "supplier"."s_suppkey"
-) AS "_u_0"
+)
+SELECT
+  "part"."p_brand" AS "p_brand",
+  "part"."p_type" AS "p_type",
+  "part"."p_size" AS "p_size",
+  COUNT(DISTINCT "partsupp"."ps_suppkey") AS "supplier_cnt"
+FROM "partsupp" AS "partsupp"
+LEFT JOIN "_u_0" AS "_u_0"
   ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 JOIN "part" AS "part"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
@@ -973,19 +976,20 @@ where
                 where
                         l_partkey = p_partkey
         );
-SELECT
-  SUM("lineitem"."l_extendedprice") / 7.0 AS "avg_yearly"
-FROM "lineitem" AS "lineitem"
-JOIN "part" AS "part"
-  ON "part"."p_partkey" = "lineitem"."l_partkey"
-LEFT JOIN (
+WITH "_u_0" AS (
   SELECT
     0.2 * AVG("lineitem"."l_quantity") AS "_col_0",
     "lineitem"."l_partkey" AS "_u_1"
   FROM "lineitem" AS "lineitem"
   GROUP BY
     "lineitem"."l_partkey"
-) AS "_u_0"
+)
+SELECT
+  SUM("lineitem"."l_extendedprice") / 7.0 AS "avg_yearly"
+FROM "lineitem" AS "lineitem"
+JOIN "part" AS "part"
+  ON "part"."p_partkey" = "lineitem"."l_partkey"
+LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "part"."p_partkey"
 WHERE
   "lineitem"."l_quantity" < "_u_0"."_col_0"
@@ -1030,6 +1034,16 @@ order by
         o_orderdate
 limit
         100;
+WITH "_u_0" AS (
+  SELECT
+    "lineitem"."l_orderkey" AS "l_orderkey"
+  FROM "lineitem" AS "lineitem"
+  GROUP BY
+    "lineitem"."l_orderkey",
+    "lineitem"."l_orderkey"
+  HAVING
+    SUM("lineitem"."l_quantity") > 300
+)
 SELECT
   "customer"."c_name" AS "c_name",
   "customer"."c_custkey" AS "c_custkey",
@@ -1040,16 +1054,7 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-LEFT JOIN (
-  SELECT
-    "lineitem"."l_orderkey" AS "l_orderkey"
-  FROM "lineitem" AS "lineitem"
-  GROUP BY
-    "lineitem"."l_orderkey",
-    "lineitem"."l_orderkey"
-  HAVING
-    SUM("lineitem"."l_quantity") > 300
-) AS "_u_0"
+LEFT JOIN "_u_0" AS "_u_0"
   ON "orders"."o_orderkey" = "_u_0"."l_orderkey"
 JOIN "lineitem" AS "lineitem"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
@@ -1200,38 +1205,34 @@ where
         and n_name = 'CANADA'
 order by
         s_name;
-SELECT
-  "supplier"."s_name" AS "s_name",
-  "supplier"."s_address" AS "s_address"
-FROM "supplier" AS "supplier"
-LEFT JOIN (
+WITH "_u_0" AS (
+  SELECT
+    0.5 * SUM("lineitem"."l_quantity") AS "_col_0",
+    "lineitem"."l_partkey" AS "_u_1",
+    "lineitem"."l_suppkey" AS "_u_2"
+  FROM "lineitem" AS "lineitem"
+  WHERE
+    "lineitem"."l_shipdate" < CAST('1995-01-01' AS DATE)
+    AND "lineitem"."l_shipdate" >= CAST('1994-01-01' AS DATE)
+  GROUP BY
+    "lineitem"."l_partkey",
+    "lineitem"."l_suppkey"
+), "_u_3" AS (
+  SELECT
+    "part"."p_partkey" AS "p_partkey"
+  FROM "part" AS "part"
+  WHERE
+    "part"."p_name" LIKE 'forest%'
+  GROUP BY
+    "part"."p_partkey"
+), "_u_4" AS (
   SELECT
     "partsupp"."ps_suppkey" AS "ps_suppkey"
   FROM "partsupp" AS "partsupp"
-  LEFT JOIN (
-    SELECT
-      0.5 * SUM("lineitem"."l_quantity") AS "_col_0",
-      "lineitem"."l_partkey" AS "_u_1",
-      "lineitem"."l_suppkey" AS "_u_2"
-    FROM "lineitem" AS "lineitem"
-    WHERE
-      "lineitem"."l_shipdate" < CAST('1995-01-01' AS DATE)
-      AND "lineitem"."l_shipdate" >= CAST('1994-01-01' AS DATE)
-    GROUP BY
-      "lineitem"."l_partkey",
-      "lineitem"."l_suppkey"
-  ) AS "_u_0"
+  LEFT JOIN "_u_0" AS "_u_0"
     ON "_u_0"."_u_1" = "partsupp"."ps_partkey"
     AND "_u_0"."_u_2" = "partsupp"."ps_suppkey"
-  LEFT JOIN (
-    SELECT
-      "part"."p_partkey" AS "p_partkey"
-    FROM "part" AS "part"
-    WHERE
-      "part"."p_name" LIKE 'forest%'
-    GROUP BY
-      "part"."p_partkey"
-  ) AS "_u_3"
+  LEFT JOIN "_u_3" AS "_u_3"
     ON "partsupp"."ps_partkey" = "_u_3"."p_partkey"
   WHERE
     "partsupp"."ps_availqty" > "_u_0"."_col_0"
@@ -1240,7 +1241,12 @@ LEFT JOIN (
     AND NOT "_u_3"."p_partkey" IS NULL
   GROUP BY
     "partsupp"."ps_suppkey"
-) AS "_u_4"
+)
+SELECT
+  "supplier"."s_name" AS "s_name",
+  "supplier"."s_address" AS "s_address"
+FROM "supplier" AS "supplier"
+LEFT JOIN "_u_4" AS "_u_4"
   ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
 JOIN "nation" AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
@@ -1294,22 +1300,14 @@ order by
         s_name
 limit
         100;
-SELECT
-  "supplier"."s_name" AS "s_name",
-  COUNT(*) AS "numwait"
-FROM "supplier" AS "supplier"
-JOIN "lineitem" AS "lineitem"
-  ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
-LEFT JOIN (
+WITH "_u_0" AS (
   SELECT
     "l2"."l_orderkey" AS "l_orderkey",
     ARRAY_AGG("l2"."l_suppkey") AS "_u_1"
   FROM "lineitem" AS "l2"
   GROUP BY
     "l2"."l_orderkey"
-) AS "_u_0"
-  ON "_u_0"."l_orderkey" = "lineitem"."l_orderkey"
-LEFT JOIN (
+), "_u_2" AS (
   SELECT
     "l3"."l_orderkey" AS "l_orderkey",
     ARRAY_AGG("l3"."l_suppkey") AS "_u_3"
@@ -1318,7 +1316,16 @@ LEFT JOIN (
     "l3"."l_receiptdate" > "l3"."l_commitdate"
   GROUP BY
     "l3"."l_orderkey"
-) AS "_u_2"
+)
+SELECT
+  "supplier"."s_name" AS "s_name",
+  COUNT(*) AS "numwait"
+FROM "supplier" AS "supplier"
+JOIN "lineitem" AS "lineitem"
+  ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."l_orderkey" = "lineitem"."l_orderkey"
+LEFT JOIN "_u_2" AS "_u_2"
   ON "_u_2"."l_orderkey" = "lineitem"."l_orderkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
@@ -1381,29 +1388,30 @@ group by
         cntrycode
 order by
         cntrycode;
-SELECT
-  SUBSTRING("customer"."c_phone", 1, 2) AS "cntrycode",
-  COUNT(*) AS "numcust",
-  SUM("customer"."c_acctbal") AS "totacctbal"
-FROM "customer" AS "customer"
-LEFT JOIN (
+WITH "cte" AS (
+  SELECT
+    AVG("customer"."c_acctbal") AS "_col_0"
+  FROM "customer" AS "customer"
+  WHERE
+    "customer"."c_acctbal" > 0.00
+    AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
+), "_u_0" AS (
   SELECT
     "orders"."o_custkey" AS "_u_1"
   FROM "orders" AS "orders"
   GROUP BY
     "orders"."o_custkey"
-) AS "_u_0"
+)
+SELECT
+  SUBSTRING("customer"."c_phone", 1, 2) AS "cntrycode",
+  COUNT(*) AS "numcust",
+  SUM("customer"."c_acctbal") AS "totacctbal"
+FROM "customer" AS "customer"
+LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "customer"."c_custkey"
 WHERE
   "_u_0"."_u_1" IS NULL
-  AND "customer"."c_acctbal" > (
-    SELECT
-      AVG("customer"."c_acctbal") AS "_col_0"
-    FROM "customer" AS "customer"
-    WHERE
-      "customer"."c_acctbal" > 0.00
-      AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
-  )
+  AND "customer"."c_acctbal" > "cte"
   AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
 GROUP BY
   SUBSTRING("customer"."c_phone", 1, 2)

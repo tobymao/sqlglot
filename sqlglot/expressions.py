@@ -1,13 +1,17 @@
-import inspect
 import numbers
 import re
-import sys
 from collections import deque
 from copy import deepcopy
 from enum import auto
 
 from sqlglot.errors import ParseError
-from sqlglot.helper import AutoName, camel_to_snake_case, ensure_list, list_get
+from sqlglot.helper import (
+    AutoName,
+    camel_to_snake_case,
+    ensure_list,
+    list_get,
+    subclasses,
+)
 
 
 class _Expression(type):
@@ -31,12 +35,13 @@ class Expression(metaclass=_Expression):
 
     key = None
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key")
+    __slots__ = ("args", "parent", "arg_key", "type")
 
     def __init__(self, **args):
         self.args = args
         self.parent = None
         self.arg_key = None
+        self.type = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
@@ -2549,17 +2554,7 @@ def _norm_arg(arg):
     return arg.lower() if isinstance(arg, str) else arg
 
 
-def _all_functions():
-    return [
-        obj
-        for _, obj in inspect.getmembers(
-            sys.modules[__name__],
-            lambda obj: inspect.isclass(obj) and issubclass(obj, Func) and obj not in (AggFunc, Anonymous, Func),
-        )
-    ]
-
-
-ALL_FUNCTIONS = _all_functions()
+ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 
 def maybe_parse(

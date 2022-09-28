@@ -101,7 +101,6 @@ class Spark(Hive):
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             HiveMap: _map_sql,
-            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'value')}",
         }
 
     class Tokenizer(Hive.Tokenizer):

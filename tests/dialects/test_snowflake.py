@@ -268,4 +268,6 @@ class TestSnowflake(Validator):
         )
 
     def test_ddl(self):
-        self.validate_identity("CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))")
+        self.validate_identity(
+            "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
+        )

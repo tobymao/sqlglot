@@ -4,6 +4,8 @@ from sqlglot.helper import ensure_list
 
 ANNOTATORS = {
     exp.Cast: lambda expr, schema, annotators: _annotate_cast(expr, schema, annotators),
+    exp.Cache: lambda expr, schema, annotators: _annotate_cache(expr, schema, annotators),
+    exp.Uncache: lambda: None,
     exp.DataType: lambda expr, schema, annotators: _annotate_data_type(expr, schema, annotators),
     exp.Select: lambda expr, schema, annotators: _annotate_select(expr, schema, annotators),
     exp.Literal: lambda expr, schema, annotators: _annotate_literal(expr, schema, annotators),
@@ -34,6 +36,13 @@ def annotate_expression_types(expression, schema=None, annotators=ANNOTATORS):
     return annotate(expression, schema, annotators)
 
 
+# Note: CTEs can augment the schema. In the following example, we need to lookup the
+# schema to find the type of x and thus we should update our schema, after we annotate
+# the CTE, at least temporarily.
+#
+# WITH foo AS (SELECT * FROM bar) SELECT x + 3 FROM foo
+
+
 def annotate(expression, schema, annotators):
     if not expression:
         return None
@@ -56,6 +65,13 @@ def _annotate_cast(expr, schema, annotators):
 
     annotate(expr.this, schema, annotators)
     annotate(expr.args["to"], schema, annotators)
+
+    return expr
+
+
+def _annotate_cache(expr, schema, annotators):
+    annotate(expr.expression, schema, annotators)
+    annotate(expr.args.get("with"), schema, annotators)
 
     return expr
 

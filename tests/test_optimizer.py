@@ -319,3 +319,15 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         annotated_expression = annotate_expression_types(expression, None)
 
         self.assertEqual(annotated_expression, target_expression)
+
+    def test_cache_annotation(self):
+        sql = "CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1"
+
+        expression = parse_one(sql)
+        target_expression = parse_one(sql)
+
+        target_expression.expression.expressions[0].type = exp.DataType.Type.INT
+
+        annotated_expression = annotate_expression_types(expression, None)
+
+        self.assertEqual(annotated_expression, target_expression)

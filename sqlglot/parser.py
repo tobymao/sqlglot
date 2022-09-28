@@ -376,18 +376,6 @@ class Parser:
         ),
     }
 
-    TABLE_PROPERTIES = {
-        TokenType.COLLATE: exp.CollateProperty,
-        TokenType.COMMENT: exp.SchemaCommentProperty,
-        TokenType.FORMAT: exp.FileFormatProperty,
-        TokenType.TABLE_FORMAT: exp.TableFormatProperty,
-        TokenType.USING: exp.TableFormatProperty,
-    }
-
-    UDF_PROPERTIES = {
-        TokenType.LANGUAGE: exp.LanguageProperty,
-    }
-
     CONSTRAINT_PARSERS = {
         TokenType.CHECK: lambda self: self._parse_check(),
         TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
@@ -421,6 +409,15 @@ class Parser:
         "order": lambda self: self._parse_order(),
         "limit": lambda self: self._parse_limit(),
         "offset": lambda self: self._parse_offset(),
+    }
+
+    PROPERTIES = {
+        TokenType.COLLATE: exp.CollateProperty,
+        TokenType.COMMENT: exp.SchemaCommentProperty,
+        TokenType.FORMAT: exp.FileFormatProperty,
+        TokenType.TABLE_FORMAT: exp.TableFormatProperty,
+        TokenType.USING: exp.TableFormatProperty,
+        TokenType.LANGUAGE: exp.LanguageProperty,
     }
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
@@ -685,20 +682,12 @@ class Parser:
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
             return self._parse_character_set(True)
 
-        if self._match_set(self.TABLE_PROPERTIES):
-            table_property = self._prev
+        if self._match_set(self.PROPERTIES):
+            prop = self._prev
             self._match(TokenType.EQ)
             return self.expression(
-                self.TABLE_PROPERTIES[table_property.token_type],
-                this=exp.Literal.string(table_property.text),
-                value=self._parse_var_or_string(),
-            )
-
-        if self._match_set(self.UDF_PROPERTIES):
-            udf_property = self._prev
-            return self.expression(
-                self.UDF_PROPERTIES[udf_property.token_type],
-                this=exp.Literal.string(udf_property.text),
+                self.PROPERTIES[prop.token_type],
+                this=exp.Literal.string(prop.text),
                 value=self._parse_var_or_string(),
             )
 

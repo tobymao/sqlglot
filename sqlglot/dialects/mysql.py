@@ -172,8 +172,8 @@ class MySQL(Dialect):
             ),
         }
 
-        TABLE_PROPERTIES = {
-            **Parser.TABLE_PROPERTIES,
+        PROPERTIES = {
+            **Parser.PROPERTIES,
             TokenType.ENGINE: exp.EngineProperty,
         }
 

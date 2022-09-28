@@ -331,3 +331,18 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         annotated_expression = annotate_expression_types(expression, None)
 
         self.assertEqual(annotated_expression, target_expression)
+
+    def test_binary_annotation(self):
+        expression = parse_one("SELECT 0.0 + (2 + 3)")
+        target_expression = parse_one("SELECT 0.0 + (2 + 3)")
+
+        target_expression.expressions[0].type = exp.DataType.Type.DOUBLE
+        target_expression.expressions[0].left.type = exp.DataType.Type.DOUBLE
+        target_expression.expressions[0].right.type = exp.DataType.Type.INT
+        target_expression.expressions[0].right.this.type = exp.DataType.Type.INT
+        target_expression.expressions[0].right.this.left.type = exp.DataType.Type.INT
+        target_expression.expressions[0].right.this.right.type = exp.DataType.Type.INT
+
+        annotated_expression = annotate_expression_types(expression, None)
+
+        self.assertEqual(annotated_expression, target_expression)

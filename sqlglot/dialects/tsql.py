@@ -18,6 +18,7 @@ class TSQL(Dialect):
             "REAL": TokenType.FLOAT,
             "NTEXT": TokenType.TEXT,
             "SMALLDATETIME": TokenType.DATETIME,
+            "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "TIME": TokenType.TIMESTAMP,
             "VARBINARY": TokenType.BINARY,
@@ -43,5 +44,6 @@ class TSQL(Dialect):
             exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.DECIMAL: "NUMERIC",
+            exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
         }

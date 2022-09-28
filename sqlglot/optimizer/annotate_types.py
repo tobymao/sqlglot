@@ -4,13 +4,6 @@ import sys
 from sqlglot import exp
 from sqlglot.helper import ensure_list
 
-UNARY_AND_BINARY = [
-    obj
-    for _, obj in inspect.getmembers(
-        sys.modules[exp.__name__], lambda obj: inspect.isclass(obj) and issubclass(obj, (exp.Unary, exp.Binary))
-    )
-]
-
 
 def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
     """
@@ -37,7 +30,18 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
 
 class TypeAnnotator:
     ANNOTATORS = {
-        **{expr_type: lambda self, expr: self._annotate_unary_and_binary(expr) for expr_type in UNARY_AND_BINARY},
+        **{
+            expr_type: lambda self, expr: self._annotate_unary(expr)
+            for _, expr_type in inspect.getmembers(
+                sys.modules[exp.__name__], lambda obj: inspect.isclass(obj) and issubclass(obj, exp.Unary)
+            )
+        },
+        **{
+            expr_type: lambda self, expr: self._annotate_binary(expr)
+            for _, expr_type in inspect.getmembers(
+                sys.modules[exp.__name__], lambda obj: inspect.isclass(obj) and issubclass(obj, exp.Binary)
+            )
+        },
         exp.Cast: lambda self, expr: self._annotate_cast(expr),
         exp.DataType: lambda self, expr: self._annotate_data_type(expr),
         exp.Literal: lambda self, expr: self._annotate_literal(expr),
@@ -130,13 +134,21 @@ class TypeAnnotator:
     def _maybe_coerce(self, type1, type2):
         return type2 if type2 in self.coerces_to[type1] else type1
 
-    def _annotate_unary_and_binary(self, expression):
+    def _annotate_binary(self, expression):
         self._annotate_args(expression)
 
-        if isinstance(expression, (exp.Condition, exp.Predicate)) and not isinstance(expression, exp.Paren):
+        if isinstance(expression, (exp.Condition, exp.Predicate)):
             expression.type = exp.DataType.Type.BOOLEAN
-        elif isinstance(expression, exp.Binary):
+        else:
             expression.type = self._maybe_coerce(expression.left.type, expression.right.type)
+
+        return expression
+
+    def _annotate_unary(self, expression):
+        self._annotate_args(expression)
+
+        if isinstance(expression, exp.Condition) and not isinstance(expression, exp.Paren):
+            expression.type = exp.DataType.Type.BOOLEAN
         else:
             expression.type = expression.this.type
 

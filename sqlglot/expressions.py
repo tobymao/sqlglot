@@ -2555,15 +2555,6 @@ def _norm_arg(arg):
     return arg.lower() if isinstance(arg, str) else arg
 
 
-def _all_operators():
-    return [
-        obj
-        for _, obj in inspect.getmembers(
-            sys.modules[__name__], lambda obj: inspect.isclass(obj) and issubclass(obj, (Unary, Binary))
-        )
-    ]
-
-
 def _all_functions():
     return [
         obj
@@ -2574,7 +2565,6 @@ def _all_functions():
     ]
 
 
-ALL_OPERATORS = _all_operators()
 ALL_FUNCTIONS = _all_functions()
 
 

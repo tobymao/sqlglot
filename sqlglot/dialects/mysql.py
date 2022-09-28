@@ -172,6 +172,11 @@ class MySQL(Dialect):
             ),
         }
 
+        TABLE_PROPERTIES = {
+            **Parser.TABLE_PROPERTIES,
+            TokenType.ENGINE: exp.EngineProperty,
+        }
+
     class Generator(Generator):
         NULL_ORDERING_SUPPORTED = False
 
@@ -189,4 +194,14 @@ class MySQL(Dialect):
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Trim: _trim_sql,
+        }
+
+        WITH_PROPERTIES = {}
+
+        TABLE_PROPERTIES = {
+            exp.EngineProperty,
+            exp.AutoIncrementProperty,
+            exp.CharacterSetProperty,
+            exp.CollateProperty,
+            exp.SchemaCommentProperty,
         }

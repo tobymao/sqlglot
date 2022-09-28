@@ -357,9 +357,6 @@ class Parser:
     PROPERTY_PARSERS = {
         TokenType.AUTO_INCREMENT: lambda self: self._parse_auto_increment(),
         TokenType.CHARACTER_SET: lambda self: self._parse_character_set(),
-        TokenType.COLLATE: lambda self: self._parse_collate(),
-        TokenType.ENGINE: lambda self: self._parse_engine(),
-        TokenType.FORMAT: lambda self: self._parse_format(),
         TokenType.LOCATION: lambda self: self.expression(
             exp.LocationProperty,
             this=exp.Literal.string("LOCATION"),
@@ -372,8 +369,23 @@ class Parser:
         ),
         TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
         TokenType.STORED: lambda self: self._parse_stored(),
-        TokenType.TABLE_FORMAT: lambda self: self._parse_table_format(),
-        TokenType.USING: lambda self: self._parse_table_format(),
+        TokenType.RETURNS: lambda self: self.expression(
+            exp.ReturnsProperty,
+            this=exp.Literal.string("RETURNS"),
+            value=self._parse_types(),
+        ),
+    }
+
+    TABLE_PROPERTIES = {
+        TokenType.COLLATE: exp.CollateProperty,
+        TokenType.COMMENT: exp.SchemaCommentProperty,
+        TokenType.FORMAT: exp.FileFormatProperty,
+        TokenType.TABLE_FORMAT: exp.TableFormatProperty,
+        TokenType.USING: exp.TableFormatProperty,
+    }
+
+    UDF_PROPERTIES = {
+        TokenType.LANGUAGE: exp.LanguageProperty,
     }
 
     CONSTRAINT_PARSERS = {
@@ -643,7 +655,8 @@ class Parser:
         properties = None
 
         if create_token.token_type == TokenType.FUNCTION:
-            this = self._parse_var()
+            this = self._parse_user_defined_function()
+            properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
                 expression = self._parse_string()
         elif create_token.token_type == TokenType.INDEX:
@@ -672,6 +685,23 @@ class Parser:
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
             return self._parse_character_set(True)
 
+        if self._match_set(self.TABLE_PROPERTIES):
+            table_property = self._prev
+            self._match(TokenType.EQ)
+            return self.expression(
+                self.TABLE_PROPERTIES[table_property.token_type],
+                this=exp.Literal.string(table_property.text),
+                value=self._parse_var_or_string(),
+            )
+
+        if self._match_set(self.UDF_PROPERTIES):
+            udf_property = self._prev
+            return self.expression(
+                self.UDF_PROPERTIES[udf_property.token_type],
+                this=exp.Literal.string(udf_property.text),
+                value=self._parse_var_or_string(),
+            )
+
         if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var().this
             self._match(TokenType.EQ)
@@ -699,6 +729,7 @@ class Parser:
                 this=exp.Literal.string(key),
                 value=value,
             )
+
         return None
 
     def _parse_stored(self):
@@ -710,36 +741,12 @@ class Parser:
             value=exp.Literal.string(self._parse_var().name),
         )
 
-    def _parse_format(self):
-        self._match(TokenType.EQ)
-        return self.expression(
-            exp.FileFormatProperty,
-            this=exp.Literal.string("FORMAT"),
-            value=self._parse_string() or self._parse_var(),
-        )
-
-    def _parse_engine(self):
-        self._match(TokenType.EQ)
-        return self.expression(
-            exp.EngineProperty,
-            this=exp.Literal.string("ENGINE"),
-            value=self._parse_var_or_string(),
-        )
-
     def _parse_auto_increment(self):
         self._match(TokenType.EQ)
         return self.expression(
             exp.AutoIncrementProperty,
             this=exp.Literal.string("AUTO_INCREMENT"),
             value=self._parse_var() or self._parse_number(),
-        )
-
-    def _parse_collate(self):
-        self._match(TokenType.EQ)
-        return self.expression(
-            exp.CollateProperty,
-            this=exp.Literal.string("COLLATE"),
-            value=self._parse_var_or_string(),
         )
 
     def _parse_schema_comment(self):
@@ -757,14 +764,6 @@ class Parser:
             this=exp.Literal.string("CHARACTER_SET"),
             value=self._parse_var_or_string(),
             default=default,
-        )
-
-    def _parse_table_format(self):
-        self._match(TokenType.EQ)
-        return self.expression(
-            exp.TableFormatProperty,
-            this=exp.Literal.string("TABLE_FORMAT"),
-            value=self._parse_var_or_string(),
         )
 
     def _parse_properties(self, schema=None):
@@ -1707,6 +1706,22 @@ class Parser:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
         self._match_r_paren()
         return self._parse_window(this)
+
+    def _parse_user_defined_function(self):
+        this = self._parse_var()
+        if not self._match(TokenType.L_PAREN):
+            return this
+        expressions = self._parse_csv(lambda: self._parse_udf_kwarg(self._parse_id_var()))
+        self._match_r_paren()
+        return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
+
+    def _parse_udf_kwarg(self, this):
+        kind = self._parse_types()
+
+        if not kind:
+            return this
+
+        return self.expression(exp.UserDefinedFunctionKwarg, this=this, kind=kind)
 
     def _parse_lambda(self):
         index = self._index

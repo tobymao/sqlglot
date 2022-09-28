@@ -73,6 +73,7 @@ class Spark(Hive):
         }
 
     class Generator(Hive.Generator):
+
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "BYTE",

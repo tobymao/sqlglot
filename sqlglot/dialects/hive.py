@@ -53,7 +53,7 @@ def _array_sort(self, expression):
 def _property_sql(self, expression):
     key = expression.name
     value = self.sql(expression, "value")
-    return f"'{key}' = {value}"
+    return f"'{key}'={value}"
 
 
 def _str_to_unix(self, expression):
@@ -218,15 +218,6 @@ class Hive(Dialect):
         }
 
     class Generator(Generator):
-        ROOT_PROPERTIES = [
-            exp.PartitionedByProperty,
-            exp.FileFormatProperty,
-            exp.SchemaCommentProperty,
-            exp.LocationProperty,
-            exp.TableFormatProperty,
-        ]
-        WITH_PROPERTIES = [exp.AnonymousProperty]
-
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
@@ -283,6 +274,18 @@ class Hive(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
         }
+
+        WITH_PROPERTIES = {exp.AnonymousProperty}
+
+        TABLE_PROPERTIES = {
+            exp.PartitionedByProperty,
+            exp.FileFormatProperty,
+            exp.SchemaCommentProperty,
+            exp.LocationProperty,
+            exp.TableFormatProperty,
+        }
+
+        UDF_PROPERTIES = {}
 
         def with_properties(self, properties):
             return self.properties(

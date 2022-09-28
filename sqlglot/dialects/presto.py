@@ -146,13 +146,16 @@ class Presto(Dialect):
 
         STRUCT_DELIMITER = ("(", ")")
 
-        WITH_PROPERTIES = [
+        WITH_PROPERTIES = {
             exp.PartitionedByProperty,
             exp.FileFormatProperty,
-            exp.SchemaCommentProperty,
             exp.AnonymousProperty,
             exp.TableFormatProperty,
-        ]
+        }
+
+        TABLE_PROPERTIES = {
+            exp.SchemaCommentProperty,
+        }
 
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
@@ -184,7 +187,6 @@ class Presto(Dialect):
             exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.date_format}) AS DATE)",
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.dateint_format}) AS DATE)",
-            exp.FileFormatProperty: lambda self, e: self.property_sql(e),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,

@@ -149,6 +149,7 @@ class Parser:
         TokenType.OPTIMIZE,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
+        TokenType.PARTITIONED_BY,
         TokenType.PERCENT,
         TokenType.PIVOT,
         TokenType.PRECEDING,

@@ -293,3 +293,30 @@ def naked_property_sql(self, expression):
     key = expression.name
     value = self.sql(expression, "value")
     return f"{key} {value}"
+
+
+def create_with_partitions_sql(self, expression):
+    """
+    In Hive and Spark, the PARTITIONED BY property acts as an extension of a table's schema. When the
+    PARTITIONED BY value is an array of column names, they are transformed into a schema. The corresponding
+    columns are removed from the create statement.
+    """
+    has_schema = isinstance(expression.this, exp.Schema)
+    is_partitionable = expression.args.get("kind") in ("TABLE", "VIEW")
+
+    if has_schema and is_partitionable:
+        expression = expression.copy()
+        prop = expression.find(exp.PartitionedByProperty)
+        value = prop and prop.args.get("value")
+        if prop and not isinstance(value, exp.Schema):
+            schema = expression.this
+            columns = {v.name.upper() for v in value.expressions}
+            partitions = [col for col in schema.expressions if col.name.upper() in columns]
+            schema.set(
+                "expressions",
+                [e for e in schema.expressions if e not in partitions],
+            )
+            prop.replace(exp.PartitionedByProperty(this=prop.this, value=exp.Schema(expressions=partitions)))
+            expression.set("this", schema)
+
+    return self.create_sql(expression)

@@ -493,7 +493,10 @@ class Generator:
         )
 
     def property_sql(self, expression):
-        key = expression.name
+        if isinstance(expression.this, exp.Literal):
+            key = expression.this.this
+        else:
+            key = expression.name
         value = self.sql(expression, "value")
         return f"{key}={value}"
 

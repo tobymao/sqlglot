@@ -1,5 +1,9 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import no_ilike_sql, rename_func
+from sqlglot.dialects.dialect import (
+    create_with_partitions_sql,
+    no_ilike_sql,
+    rename_func,
+)
 from sqlglot.dialects.hive import Hive, HiveMap
 from sqlglot.helper import list_get
 
@@ -10,7 +14,7 @@ def _create_sql(self, e):
 
     if kind.upper() == "TABLE" and temporary is True:
         return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
-    return self.create_sql(e)
+    return create_with_partitions_sql(self, e)
 
 
 def _map_sql(self, expression):

@@ -132,6 +132,11 @@ class Snowflake(Dialect):
             ),
         }
 
+        PROPERTY_PARSERS = {
+            **Parser.PROPERTY_PARSERS,
+            TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
+        }
+
     class Tokenizer(Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPE = "\\"
@@ -150,6 +155,7 @@ class Snowflake(Dialect):
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
             "SAMPLE": TokenType.TABLE_SAMPLE,
+            # "PARTITION BY": TokenType.PARTITION_BY,
         }
 
     class Generator(Generator):
@@ -159,6 +165,7 @@ class Snowflake(Dialect):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
             exp.Array: inline_array_sql,
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
         }
 
         TYPE_MAPPING = {

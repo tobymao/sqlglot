@@ -498,7 +498,7 @@ class Generator:
 
     def partitionedbyproperty_sql(self, expression):
         value = self.sql(expression, "value")
-        return f"PARTITIONED BY {value}"
+        return f"PARTITIONED_BY={value}"
 
     def locationproperty_sql(self, expression):
         value = self.sql(expression, "value")

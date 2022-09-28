@@ -3,7 +3,6 @@ from tests.dialects.test_dialect import Validator
 
 class TestMySQL(Validator):
     dialect = "mysql"
-    maxDiff = None
 
     def test_ddl(self):
         self.validate_all(
@@ -129,11 +128,6 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CREATE TABLE z (a INT DEFAULT NULL, PRIMARY KEY(a)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'"
         )
-        # self.validate_all(
-        #     """CREATE TABLE `z` (a INT) ENGINE=InnoDB""",
-        #     write={"mysql": """CREATE TABLE `z` (a INT) ENGINE=InnoDB"""},
-        #     pretty=True,
-        # )
 
         self.validate_all(
             """

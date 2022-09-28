@@ -1,8 +1,5 @@
-import inspect
-import sys
-
 from sqlglot import exp
-from sqlglot.helper import ensure_list
+from sqlglot.helper import ensure_list, subclasses
 
 
 def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
@@ -32,15 +29,11 @@ class TypeAnnotator:
     ANNOTATORS = {
         **{
             expr_type: lambda self, expr: self._annotate_unary(expr)
-            for _, expr_type in inspect.getmembers(
-                sys.modules[exp.__name__], lambda obj: inspect.isclass(obj) and issubclass(obj, exp.Unary)
-            )
+            for expr_type in subclasses(exp.__name__, exp.Unary)
         },
         **{
             expr_type: lambda self, expr: self._annotate_binary(expr)
-            for _, expr_type in inspect.getmembers(
-                sys.modules[exp.__name__], lambda obj: inspect.isclass(obj) and issubclass(obj, exp.Binary)
-            )
+            for expr_type in subclasses(exp.__name__, exp.Binary)
         },
         exp.Cast: lambda self, expr: self._annotate_cast(expr),
         exp.DataType: lambda self, expr: self._annotate_data_type(expr),

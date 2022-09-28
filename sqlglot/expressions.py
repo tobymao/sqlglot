@@ -37,6 +37,7 @@ class Expression(metaclass=_Expression):
         self.args = args
         self.parent = None
         self.arg_key = None
+        self.type = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)

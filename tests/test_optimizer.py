@@ -320,9 +320,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         expression = parse_one("SELECT 0.0 + (2 + 3)")
         annotate_types(expression)
 
-        self.assertEqual(expression.expressions[0].type, exp.DataType.Type.DOUBLE)
-        self.assertEqual(expression.expressions[0].left.type, exp.DataType.Type.DOUBLE)
-        self.assertEqual(expression.expressions[0].right.type, exp.DataType.Type.INT)
-        self.assertEqual(expression.expressions[0].right.this.type, exp.DataType.Type.INT)
-        self.assertEqual(expression.expressions[0].right.this.left.type, exp.DataType.Type.INT)
-        self.assertEqual(expression.expressions[0].right.this.right.type, exp.DataType.Type.INT)
+        expression = expression.expressions[0]
+
+        self.assertEqual(expression.type, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expression.left.type, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expression.right.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.right.this.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.right.this.left.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.right.this.right.type, exp.DataType.Type.INT)

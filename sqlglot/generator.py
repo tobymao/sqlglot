@@ -65,18 +65,16 @@ class Generator:
 
     STRUCT_DELIMITER = ("<", ">")
 
+    ROOT_PROPERTIES = {
+        exp.ReturnsProperty,
+        exp.LanguageProperty,
+    }
+
     WITH_PROPERTIES = {
         exp.AnonymousProperty,
         exp.FileFormatProperty,
         exp.PartitionedByProperty,
         exp.TableFormatProperty,
-    }
-
-    TABLE_PROPERTIES = {}
-
-    UDF_PROPERTIES = {
-        exp.ReturnsProperty,
-        exp.LanguageProperty,
     }
 
     __slots__ = (
@@ -460,7 +458,7 @@ class Generator:
             p_class = p.__class__
             if p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
-            elif p_class in self.TABLE_PROPERTIES or p_class in self.UDF_PROPERTIES:
+            elif p_class in self.ROOT_PROPERTIES:
                 root_properties.append(p)
 
         return self.root_properties(exp.Properties(expressions=root_properties)) + self.with_properties(

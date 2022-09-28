@@ -146,15 +146,15 @@ class Presto(Dialect):
 
         STRUCT_DELIMITER = ("(", ")")
 
+        ROOT_PROPERTIES = {
+            exp.SchemaCommentProperty,
+        }
+
         WITH_PROPERTIES = {
             exp.PartitionedByProperty,
             exp.FileFormatProperty,
             exp.AnonymousProperty,
             exp.TableFormatProperty,
-        }
-
-        TABLE_PROPERTIES = {
-            exp.SchemaCommentProperty,
         }
 
         TYPE_MAPPING = {

@@ -196,12 +196,12 @@ class MySQL(Dialect):
             exp.Trim: _trim_sql,
         }
 
-        WITH_PROPERTIES = {}
-
-        TABLE_PROPERTIES = {
+        ROOT_PROPERTIES = {
             exp.EngineProperty,
             exp.AutoIncrementProperty,
             exp.CharacterSetProperty,
             exp.CollateProperty,
             exp.SchemaCommentProperty,
         }
+
+        WITH_PROPERTIES = {}

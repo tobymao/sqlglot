@@ -279,15 +279,13 @@ class Hive(Dialect):
 
         WITH_PROPERTIES = {exp.AnonymousProperty}
 
-        TABLE_PROPERTIES = {
+        ROOT_PROPERTIES = {
             exp.PartitionedByProperty,
             exp.FileFormatProperty,
             exp.SchemaCommentProperty,
             exp.LocationProperty,
             exp.TableFormatProperty,
         }
-
-        UDF_PROPERTIES = {}
 
         def with_properties(self, properties):
             return self.properties(

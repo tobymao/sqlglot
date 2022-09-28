@@ -287,3 +287,9 @@ def format_time_lambda(exp_class, dialect, default=None):
         )
 
     return _format_time
+
+
+def naked_property_sql(self, expression):
+    key = expression.name
+    value = self.sql(expression, "value")
+    return f"{key} {value}"

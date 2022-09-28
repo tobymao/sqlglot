@@ -34,7 +34,7 @@ class TestSpark(Validator):
         self.validate_all(
             "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             write={
-                "presto": "CREATE TABLE x WITH (TABLE_FORMAT = 'ICEBERG', PARTITIONED_BY = ARRAY['MONTHS'])",
+                "presto": "CREATE TABLE x WITH (TABLE_FORMAT = 'ICEBERG', PARTITIONED_BY=ARRAY['MONTHS'])",
                 "hive": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
                 "spark": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             },
@@ -56,7 +56,7 @@ class TestSpark(Validator):
 )
 COMMENT='Test comment: blah'
 WITH (
-  PARTITIONED_BY = ARRAY['date'],
+  PARTITIONED_BY=ARRAY['date'],
   FORMAT='ICEBERG',
   x='1'
 )""",

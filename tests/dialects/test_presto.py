@@ -185,9 +185,9 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY = ARRAY['y', 'z'])",
+            "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY=ARRAY['y', 'z'])",
             write={
-                "presto": "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY = ARRAY['y', 'z'])",
+                "presto": "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY=ARRAY['y', 'z'])",
                 "hive": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
                 "spark": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
             },

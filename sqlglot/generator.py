@@ -50,7 +50,6 @@ class Generator:
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.LocationProperty: lambda self, e: f"LOCATION {self.sql(e, 'value')}",
-        exp.PartitionedByProperty: lambda self, e: f"PARTITIONED_BY={self.sql(e.args['value'])}",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.LanguageProperty: lambda self, e: f"LANGUAGE {self.sql(e, 'value')}",
     }

@@ -155,7 +155,6 @@ class Snowflake(Dialect):
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
             "SAMPLE": TokenType.TABLE_SAMPLE,
-            # "PARTITION BY": TokenType.PARTITION_BY,
         }
 
     class Generator(Generator):

@@ -32,5 +32,13 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS IMAGE)")
         self.validate_identity("CAST(x AS SQL_VARIANT)")
         self.validate_identity("CAST(x AS BIT)")
-        self.validate("CAST(x AS DATETIME)", "CAST(x AS DATETIME2)", write="tsql")
-        self.validate("CAST(x AS DATETIME2)", "CAST(x AS DATETIME)", read="tsql", write="mysql")
+        self.validate_all(
+            "CAST(x AS DATETIME2)",
+            read={
+                "": "CAST(x AS DATETIME)",
+            },
+            write={
+                "mysql": "CAST(x AS DATETIME)",
+                "tsql": "CAST(x AS DATETIME2)",
+            },
+        )

@@ -217,11 +217,12 @@ class TestPresto(Validator):
             },
         )
 
-        self.validate(
+        self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
-            "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",
-            read="presto",
-            write="presto",
+            write={
+                "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",
+                "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
+            },
         )
 
     def test_quotes(self):

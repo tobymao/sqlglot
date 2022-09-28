@@ -13,9 +13,6 @@ from sqlglot import (
 class Validator(unittest.TestCase):
     dialect = None
 
-    def validate(self, sql, target, **kwargs):
-        self.assertEqual(transpile(sql, **kwargs)[0], target)
-
     def validate_identity(self, sql):
         self.assertEqual(transpile(sql, read=self.dialect, write=self.dialect)[0], sql)
 

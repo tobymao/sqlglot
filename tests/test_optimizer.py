@@ -2,7 +2,7 @@ import unittest
 
 from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.annotate_expression_types import annotate_expression_types
+from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.schema import MappingSchema, ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
@@ -276,20 +276,18 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
     def test_literal_type_annotation(self):
         tests = {
             "SELECT 5": exp.DataType.Type.INT,
-            "SELECT 5.3": exp.DataType.Type.FLOAT,
+            "SELECT 5.3": exp.DataType.Type.DOUBLE,
             "SELECT 'bla'": exp.DataType.Type.VARCHAR,
             "5": exp.DataType.Type.INT,
-            "5.3": exp.DataType.Type.FLOAT,
+            "5.3": exp.DataType.Type.DOUBLE,
             "'bla'": exp.DataType.Type.VARCHAR,
         }
 
         for sql, target_type in tests.items():
             expression = parse_one(sql)
-            target_expression = parse_one(sql)
-            target_expression.find(exp.Literal).type = target_type
-            annotated_expression = annotate_expression_types(expression, None)
+            annotated_expression = annotate_types(expression)
 
-            self.assertEqual(annotated_expression, target_expression)
+            self.assertEqual(annotated_expression.find(exp.Literal).type, target_type)
 
     def test_boolean_type_annotation(self):
         tests = {
@@ -299,50 +297,32 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
         for sql, target_type in tests.items():
             expression = parse_one(sql)
-            target_expression = parse_one(sql)
-            target_expression.find(exp.Boolean).type = target_type
-            annotated_expression = annotate_expression_types(expression, None)
+            annotated_expression = annotate_types(expression)
 
-            self.assertEqual(annotated_expression, target_expression)
+            self.assertEqual(annotated_expression.find(exp.Boolean).type, target_type)
 
     def test_cast_type_annotation(self):
-        sql = "CAST('2020-01-01' AS TIMESTAMPTZ(9))"
+        expression = parse_one("CAST('2020-01-01' AS TIMESTAMPTZ(9))")
+        annotate_types(expression)
 
-        expression = parse_one(sql)
-        target_expression = parse_one(sql)
-
-        target_expression.type = exp.DataType.Type.TIMESTAMPTZ
-        target_expression.this.type = exp.DataType.Type.VARCHAR
-        target_expression.args["to"].type = exp.DataType.Type.TIMESTAMPTZ
-        target_expression.args["to"].expressions[0].type = exp.DataType.Type.INT
-
-        annotated_expression = annotate_expression_types(expression, None)
-
-        self.assertEqual(annotated_expression, target_expression)
+        self.assertEqual(expression.type, exp.DataType.Type.TIMESTAMPTZ)
+        self.assertEqual(expression.this.type, exp.DataType.Type.VARCHAR)
+        self.assertEqual(expression.args["to"].type, exp.DataType.Type.TIMESTAMPTZ)
+        self.assertEqual(expression.args["to"].expressions[0].type, exp.DataType.Type.INT)
 
     def test_cache_annotation(self):
-        sql = "CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1"
+        expression = parse_one("CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1")
+        annotated_expression = annotate_types(expression)
 
-        expression = parse_one(sql)
-        target_expression = parse_one(sql)
-
-        target_expression.expression.expressions[0].type = exp.DataType.Type.INT
-
-        annotated_expression = annotate_expression_types(expression, None)
-
-        self.assertEqual(annotated_expression, target_expression)
+        self.assertEqual(annotated_expression.expression.expressions[0].type, exp.DataType.Type.INT)
 
     def test_binary_annotation(self):
         expression = parse_one("SELECT 0.0 + (2 + 3)")
-        target_expression = parse_one("SELECT 0.0 + (2 + 3)")
+        annotate_types(expression)
 
-        target_expression.expressions[0].type = exp.DataType.Type.DOUBLE
-        target_expression.expressions[0].left.type = exp.DataType.Type.DOUBLE
-        target_expression.expressions[0].right.type = exp.DataType.Type.INT
-        target_expression.expressions[0].right.this.type = exp.DataType.Type.INT
-        target_expression.expressions[0].right.this.left.type = exp.DataType.Type.INT
-        target_expression.expressions[0].right.this.right.type = exp.DataType.Type.INT
-
-        annotated_expression = annotate_expression_types(expression, None)
-
-        self.assertEqual(annotated_expression, target_expression)
+        self.assertEqual(expression.expressions[0].type, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expression.expressions[0].left.type, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expression.expressions[0].right.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.expressions[0].right.this.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.expressions[0].right.this.left.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.expressions[0].right.this.right.type, exp.DataType.Type.INT)

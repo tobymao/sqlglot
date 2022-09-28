@@ -61,3 +61,7 @@ WITH x_2 AS (SELECT * FROM x AS x JOIN y AS y ON x.id = y.id) SELECT x.id FROM x
 -- Root subquery
 (SELECT * FROM (SELECT * FROM x)) LIMIT 1;
 (WITH cte AS (SELECT * FROM x) SELECT * FROM cte AS cte) LIMIT 1;
+
+-- Existing duplicate CTE
+WITH y AS (SELECT a FROM x) SELECT a FROM (SELECT a FROM x) AS y JOIN y AS z;
+WITH y AS (SELECT a FROM x) SELECT a FROM y AS y JOIN y AS z;

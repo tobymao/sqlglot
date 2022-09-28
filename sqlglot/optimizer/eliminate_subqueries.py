@@ -52,8 +52,7 @@ def eliminate_subqueries(expression):
     with_ = root.expression.args.get("with")
     if with_:
         for cte in with_.expressions:
-            existing_ctes[cte.this]: cte.alias
-
+            existing_ctes[cte.this] = cte.alias
     new_ctes = []
 
     # We're adding more CTEs, but we want to maintain the DAG order.

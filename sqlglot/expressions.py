@@ -535,6 +535,14 @@ class Create(Expression):
     }
 
 
+class UserDefinedFunction(Expression):
+    arg_types = {"this": True, "expressions": False}
+
+
+class UserDefinedFunctionKwarg(Expression):
+    arg_types = {"this": True, "kind": True, "default": False}
+
+
 class CharacterSet(Expression):
     arg_types = {"this": True, "default": False}
 
@@ -889,6 +897,14 @@ class SchemaCommentProperty(Property):
 
 
 class AnonymousProperty(Property):
+    pass
+
+
+class ReturnsProperty(Property):
+    arg_types = {"this": True, "kind": True}
+
+
+class LanguageProperty(Property):
     pass
 
 

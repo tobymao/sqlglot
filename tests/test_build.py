@@ -270,7 +270,7 @@ class TestBuild(unittest.TestCase):
                 lambda: parse_one("SELECT * FROM y")
                 .assert_is(exp.Select)
                 .ctas("foo.x", properties={"format": "parquet", "y": "2"}),
-                "CREATE TABLE foo.x STORED AS PARQUET TBLPROPERTIES ('y' = '2') AS SELECT * FROM y",
+                "CREATE TABLE foo.x STORED AS PARQUET TBLPROPERTIES ('y'='2') AS SELECT * FROM y",
                 "hive",
             ),
             (lambda: and_("x=1", "y=1"), "x = 1 AND y = 1"),

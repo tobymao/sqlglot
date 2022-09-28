@@ -2,8 +2,10 @@ from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
+    create_with_partitions_sql,
     format_time_lambda,
     if_sql,
+    naked_property_sql,
     no_ilike_sql,
     no_recursive_cte_sql,
     no_safe_divide_sql,
@@ -53,7 +55,7 @@ def _array_sort(self, expression):
 def _property_sql(self, expression):
     key = expression.name
     value = self.sql(expression, "value")
-    return f"'{key}' = {value}"
+    return f"'{key}'={value}"
 
 
 def _str_to_unix(self, expression):
@@ -218,15 +220,6 @@ class Hive(Dialect):
         }
 
     class Generator(Generator):
-        ROOT_PROPERTIES = [
-            exp.PartitionedByProperty,
-            exp.FileFormatProperty,
-            exp.SchemaCommentProperty,
-            exp.LocationProperty,
-            exp.TableFormatProperty,
-        ]
-        WITH_PROPERTIES = [exp.AnonymousProperty]
-
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
@@ -255,13 +248,13 @@ class Hive(Dialect):
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
             exp.Map: _map_sql,
             HiveMap: _map_sql,
-            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e.args['value'])}",
+            exp.Create: create_with_partitions_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),
             exp.SafeDivide: no_safe_divide_sql,
-            exp.SchemaCommentProperty: lambda self, e: f"COMMENT {self.sql(e.args['value'])}",
+            exp.SchemaCommentProperty: naked_property_sql,
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
             exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
@@ -282,6 +275,17 @@ class Hive(Dialect):
             exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), _time_format(self, e))})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
+            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'value')}",
+        }
+
+        WITH_PROPERTIES = {exp.AnonymousProperty}
+
+        ROOT_PROPERTIES = {
+            exp.PartitionedByProperty,
+            exp.FileFormatProperty,
+            exp.SchemaCommentProperty,
+            exp.LocationProperty,
+            exp.TableFormatProperty,
         }
 
         def with_properties(self, properties):

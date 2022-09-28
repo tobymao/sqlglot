@@ -46,18 +46,9 @@ class Generator:
     """
 
     TRANSFORMS = {
-        exp.AnonymousProperty: lambda self, e: self.property_sql(e),
-        exp.AutoIncrementProperty: lambda self, e: f"AUTO_INCREMENT={self.sql(e, 'value')}",
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
-        exp.CollateProperty: lambda self, e: f"COLLATE={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.EngineProperty: lambda self, e: f"ENGINE={self.sql(e, 'value')}",
-        exp.FileFormatProperty: lambda self, e: f"FORMAT={self.sql(e, 'value')}",
-        exp.LocationProperty: lambda self, e: f"LOCATION {self.sql(e, 'value')}",
-        exp.PartitionedByProperty: lambda self, e: f"PARTITIONED_BY={self.sql(e.args['value'])}",
-        exp.SchemaCommentProperty: lambda self, e: f"COMMENT={self.sql(e, 'value')}",
-        exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT={self.sql(e, 'value')}",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
@@ -72,19 +63,17 @@ class Generator:
 
     STRUCT_DELIMITER = ("<", ">")
 
-    ROOT_PROPERTIES = [
-        exp.AutoIncrementProperty,
-        exp.CharacterSetProperty,
-        exp.CollateProperty,
-        exp.EngineProperty,
-        exp.SchemaCommentProperty,
-    ]
-    WITH_PROPERTIES = [
+    ROOT_PROPERTIES = {
+        exp.ReturnsProperty,
+        exp.LanguageProperty,
+    }
+
+    WITH_PROPERTIES = {
         exp.AnonymousProperty,
         exp.FileFormatProperty,
         exp.PartitionedByProperty,
         exp.TableFormatProperty,
-    ]
+    }
 
     __slots__ = (
         "time_mapping",
@@ -261,6 +250,9 @@ class Generator:
 
         if isinstance(expression, exp.Func):
             return self.function_fallback_sql(expression)
+
+        if isinstance(expression, exp.Property):
+            return self.property_sql(expression)
 
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
@@ -462,10 +454,10 @@ class Generator:
 
         for p in expression.expressions:
             p_class = p.__class__
-            if p_class in self.ROOT_PROPERTIES:
-                root_properties.append(p)
-            elif p_class in self.WITH_PROPERTIES:
+            if p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
+            elif p_class in self.ROOT_PROPERTIES:
+                root_properties.append(p)
 
         return self.root_properties(exp.Properties(expressions=root_properties)) + self.with_properties(
             exp.Properties(expressions=with_properties)
@@ -497,9 +489,24 @@ class Generator:
         )
 
     def property_sql(self, expression):
-        key = expression.name
+        if isinstance(expression.this, exp.Literal):
+            key = expression.this.this
+        else:
+            key = expression.name
         value = self.sql(expression, "value")
-        return f"{key} = {value}"
+        return f"{key}={value}"
+
+    def partitionedbyproperty_sql(self, expression):
+        value = self.sql(expression, "value")
+        return f"PARTITIONED_BY={value}"
+
+    def locationproperty_sql(self, expression):
+        value = self.sql(expression, "value")
+        return f"LOCATION {value}"
+
+    def languageproperty_sql(self, expression):
+        value = self.sql(expression, "value")
+        return f"LANGUAGE {value}"
 
     def insert_sql(self, expression):
         kind = "OVERWRITE TABLE" if expression.args.get("overwrite") else "INTO"
@@ -1150,3 +1157,13 @@ class Generator:
 
     def token_sql(self, token_type):
         return self.TOKEN_MAPPING.get(token_type, token_type.name)
+
+    def userdefinedfunction_sql(self, expression):
+        this = self.sql(expression, "this")
+        expressions = self.no_identify(lambda: self.expressions(expression))
+        return f"{this}({expressions})"
+
+    def userdefinedfunctionkwarg_sql(self, expression):
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        return f"{this} {kind}"

@@ -177,6 +177,7 @@ class TokenType(AutoName):
     IS = auto()
     ISNULL = auto()
     JOIN = auto()
+    LANGUAGE = auto()
     LATERAL = auto()
     LAZY = auto()
     LEADING = auto()
@@ -220,6 +221,7 @@ class TokenType(AutoName):
     REPLACE = auto()
     RESPECT_NULLS = auto()
     REFERENCES = auto()
+    RETURNS = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROLLUP = auto()
@@ -463,6 +465,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "IS": TokenType.IS,
         "ISNULL": TokenType.ISNULL,
         "JOIN": TokenType.JOIN,
+        "LANGUAGE": TokenType.LANGUAGE,
         "LATERAL": TokenType.LATERAL,
         "LAZY": TokenType.LAZY,
         "LEADING": TokenType.LEADING,
@@ -492,6 +495,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PARTITION": TokenType.PARTITION,
         "PARTITION BY": TokenType.PARTITION_BY,
         "PARTITIONED BY": TokenType.PARTITIONED_BY,
+        "PARTITIONED_BY": TokenType.PARTITIONED_BY,
         "PERCENT": TokenType.PERCENT,
         "PIVOT": TokenType.PIVOT,
         "PRECEDING": TokenType.PRECEDING,
@@ -502,6 +506,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "REPLACE": TokenType.REPLACE,
         "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "REFERENCES": TokenType.REFERENCES,
+        "RETURNS": TokenType.RETURNS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROLLUP": TokenType.ROLLUP,

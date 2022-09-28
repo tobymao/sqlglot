@@ -497,6 +497,10 @@ class Generator:
         value = self.sql(expression, "value")
         return f"{key}={value}"
 
+    def partitionedbyproperty_sql(self, expression):
+        value = self.sql(expression, "value")
+        return f"PARTITIONED BY {value}"
+
     def insert_sql(self, expression):
         kind = "OVERWRITE TABLE" if expression.args.get("overwrite") else "INTO"
         this = self.sql(expression, "this")
@@ -1149,7 +1153,7 @@ class Generator:
 
     def userdefinedfunction_sql(self, expression):
         this = self.sql(expression, "this")
-        expressions = self.no_identify(lambda: self.expressions(expression, key="expressions"))
+        expressions = self.no_identify(lambda: self.expressions(expression))
         return f"{this}({expressions})"
 
     def userdefinedfunctionkwarg_sql(self, expression):

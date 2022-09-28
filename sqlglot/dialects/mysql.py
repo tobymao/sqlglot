@@ -172,9 +172,9 @@ class MySQL(Dialect):
             ),
         }
 
-        PROPERTIES = {
-            **Parser.PROPERTIES,
-            TokenType.ENGINE: exp.EngineProperty,
+        PROPERTY_PARSERS = {
+            **Parser.PROPERTY_PARSERS,
+            TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
         }
 
     class Generator(Generator):

@@ -140,6 +140,7 @@ class Parser:
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
+        TokenType.LANGUAGE,
         TokenType.LEADING,
         TokenType.LOCATION,
         TokenType.NATURAL,
@@ -153,6 +154,7 @@ class Parser:
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.REFERENCES,
+        TokenType.RETURNS,
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
@@ -362,11 +364,7 @@ class Parser:
             this=exp.Literal.string("LOCATION"),
             value=self._parse_string(),
         ),
-        TokenType.PARTITIONED_BY: lambda self: self.expression(
-            exp.PartitionedByProperty,
-            this=exp.Literal.string("PARTITIONED_BY"),
-            value=self._parse_schema(),
-        ),
+        TokenType.PARTITIONED_BY: lambda self: self._parse_partitioned_by(),
         TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
         TokenType.STORED: lambda self: self._parse_stored(),
         TokenType.RETURNS: lambda self: self.expression(
@@ -374,6 +372,12 @@ class Parser:
             this=exp.Literal.string("RETURNS"),
             value=self._parse_types(),
         ),
+        TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
+        TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        TokenType.FORMAT: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+        TokenType.TABLE_FORMAT: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        TokenType.USING: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        TokenType.LANGUAGE: lambda self: self._parse_property_assignment(exp.LanguageProperty),
     }
 
     CONSTRAINT_PARSERS = {
@@ -409,15 +413,6 @@ class Parser:
         "order": lambda self: self._parse_order(),
         "limit": lambda self: self._parse_limit(),
         "offset": lambda self: self._parse_offset(),
-    }
-
-    PROPERTIES = {
-        TokenType.COLLATE: exp.CollateProperty,
-        TokenType.COMMENT: exp.SchemaCommentProperty,
-        TokenType.FORMAT: exp.FileFormatProperty,
-        TokenType.TABLE_FORMAT: exp.TableFormatProperty,
-        TokenType.USING: exp.TableFormatProperty,
-        TokenType.LANGUAGE: exp.LanguageProperty,
     }
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
@@ -660,7 +655,7 @@ class Parser:
             this = self._parse_index()
         elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
             this = self._parse_table(schema=True)
-            properties = self._parse_properties(this if isinstance(this, exp.Schema) else None)
+            properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
                 expression = self._parse_select(nested=True)
 
@@ -676,50 +671,37 @@ class Parser:
             unique=unique,
         )
 
-    def _parse_property(self, schema):
+    def _parse_property(self):
         if self._match_set(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.token_type](self)
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
             return self._parse_character_set(True)
 
-        if self._match_set(self.PROPERTIES):
-            prop = self._prev
-            self._match(TokenType.EQ)
-            return self.expression(
-                self.PROPERTIES[prop.token_type],
-                this=exp.Literal.string(prop.text),
-                value=self._parse_var_or_string(),
-            )
-
         if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var().this
             self._match(TokenType.EQ)
 
-            if key.upper() == "PARTITIONED_BY":
-                expression = exp.PartitionedByProperty
-                value = self._parse_schema() or self._parse_bracket(self._parse_field())
-
-                if schema and not isinstance(value, exp.Schema):
-                    columns = {v.name.upper() for v in value.expressions}
-                    partitions = [
-                        expression for expression in schema.expressions if expression.this.name.upper() in columns
-                    ]
-                    schema.set(
-                        "expressions",
-                        [e for e in schema.expressions if e not in partitions],
-                    )
-                    value = self.expression(exp.Schema, expressions=partitions)
-            else:
-                value = self._parse_column()
-                expression = exp.AnonymousProperty
-
             return self.expression(
-                expression,
+                exp.AnonymousProperty,
                 this=exp.Literal.string(key),
-                value=value,
+                value=self._parse_column(),
             )
 
         return None
+
+    def _parse_property_assignment(self, exp_class):
+        prop = self._prev
+        self._match(TokenType.EQ)
+        return self.expression(exp_class, this=prop.text, value=self._parse_var_or_string())
+
+    def _parse_partitioned_by(self):
+        prop = self._prev
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.PartitionedByProperty,
+            this=prop.text,
+            value=self._parse_schema() or self._parse_bracket(self._parse_field()),
+        )
 
     def _parse_stored(self):
         self._match(TokenType.ALIAS)
@@ -755,18 +737,13 @@ class Parser:
             default=default,
         )
 
-    def _parse_properties(self, schema=None):
-        """
-        Schema is included since if the table schema is defined and we later get a partition by expression
-        then we will define those columns in the partition by section and not in with the rest of the
-        columns
-        """
+    def _parse_properties(self):
         properties = []
 
         while True:
             if self._match(TokenType.WITH):
                 self._match_l_paren()
-                properties.extend(self._parse_csv(lambda: self._parse_property(schema)))
+                properties.extend(self._parse_csv(lambda: self._parse_property()))
                 self._match_r_paren()
             elif self._match(TokenType.PROPERTIES):
                 self._match_l_paren()
@@ -781,7 +758,7 @@ class Parser:
                 )
                 self._match_r_paren()
             else:
-                identified_property = self._parse_property(schema)
+                identified_property = self._parse_property()
                 if not identified_property:
                     break
                 properties.append(identified_property)
@@ -1700,11 +1677,12 @@ class Parser:
         this = self._parse_var()
         if not self._match(TokenType.L_PAREN):
             return this
-        expressions = self._parse_csv(lambda: self._parse_udf_kwarg(self._parse_id_var()))
+        expressions = self._parse_csv(self._parse_udf_kwarg)
         self._match_r_paren()
         return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
-    def _parse_udf_kwarg(self, this):
+    def _parse_udf_kwarg(self):
+        this = self._parse_id_var()
         kind = self._parse_types()
 
         if not kind:

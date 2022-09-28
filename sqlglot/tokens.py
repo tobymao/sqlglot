@@ -495,6 +495,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PARTITION": TokenType.PARTITION,
         "PARTITION BY": TokenType.PARTITION_BY,
         "PARTITIONED BY": TokenType.PARTITIONED_BY,
+        "PARTITIONED_BY": TokenType.PARTITIONED_BY,
         "PERCENT": TokenType.PERCENT,
         "PIVOT": TokenType.PIVOT,
         "PRECEDING": TokenType.PRECEDING,

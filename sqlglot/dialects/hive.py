@@ -122,6 +122,33 @@ def _index_sql(self, expression):
     return f"{this} ON TABLE {table} {columns}"
 
 
+def _create_sql(self, expression):
+    """
+    In Hive and Spark, the PARTITIONED BY property acts as an extension of a table's schema. When the
+    PARTITIONED BY value is an array of column names, they are transformed into a schema. The corresponding
+    columns are removed from the create statement.
+    """
+    schema = isinstance(expression.this, exp.Schema) and expression.this
+    properties = expression.args.get("properties")
+    is_partitionable = expression.args.get("kind") in ("TABLE", "VIEW")
+
+    if schema and properties and is_partitionable:
+        for prop in properties.expressions:
+            value = prop.args.get("value")
+            if isinstance(prop, exp.PartitionedByProperty) and value and not isinstance(value, exp.Schema):
+
+                columns = {v.name.upper() for v in value.expressions}
+
+                partitions = [col for col in schema.expressions if col.name.upper() in columns]
+                schema.set(
+                    "expressions",
+                    [e for e in schema.expressions if e not in partitions],
+                )
+                prop.set("value", exp.Schema(expressions=partitions))
+
+    return self.create_sql(expression)
+
+
 class HiveMap(exp.Map):
     is_var_len_args = True
 
@@ -247,7 +274,7 @@ class Hive(Dialect):
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
             exp.Map: _map_sql,
             HiveMap: _map_sql,
-            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e.args['value'])}",
+            exp.Create: _create_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),

@@ -32,3 +32,5 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS IMAGE)")
         self.validate_identity("CAST(x AS SQL_VARIANT)")
         self.validate_identity("CAST(x AS BIT)")
+        self.validate("CAST(x AS DATETIME)", "CAST(x AS DATETIME2)", write="tsql")
+        self.validate("CAST(x AS DATETIME2)", "CAST(x AS DATETIME)", read="tsql", write="mysql")

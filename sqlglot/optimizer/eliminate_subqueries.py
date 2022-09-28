@@ -16,6 +16,11 @@ def eliminate_subqueries(expression):
         >>> eliminate_subqueries(expression).sql()
         'WITH y AS (SELECT * FROM x) SELECT a FROM y AS y'
 
+    This also deduplicates common subqueries:
+        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT * FROM x) AS y JOIN (SELECT * FROM x) AS z")
+        >>> eliminate_subqueries(expression).sql()
+        'WITH y AS (SELECT * FROM x) SELECT a FROM y AS y JOIN y AS z'
+
     Args:
         expression (sqlglot.Expression): expression
     Returns:
@@ -84,7 +89,7 @@ def _eliminate(scope, existing_ctes, taken):
     if scope.is_union:
         return _eliminate_union(scope, existing_ctes, taken)
 
-    elif (scope.is_derived_table and not isinstance(scope.expression, (exp.Unnest, exp.Lateral))) or (
+    if (scope.is_derived_table and not isinstance(scope.expression, (exp.Unnest, exp.Lateral))) or (
         scope.is_subquery
         and not scope.is_correlated_subquery
         and not scope.expression.find_ancestor(exp.Having, exp.Join)

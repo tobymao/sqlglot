@@ -308,6 +308,18 @@ class TestBuild(unittest.TestCase):
                 lambda: exp.subquery("select x from tbl UNION select x from bar", "unioned").select("x"),
                 "SELECT x FROM (SELECT x FROM tbl UNION SELECT x FROM bar) AS unioned",
             ),
+            (
+                lambda: exp.update("tbl", {"x": None, "y": {"x": 1}}),
+                "UPDATE tbl SET x = NULL, y = MAP('x', 1)",
+            ),
+            (
+                lambda: exp.update("tbl", {"x": 1}, where="y > 0"),
+                "UPDATE tbl SET x = 1 WHERE y > 0",
+            ),
+            (
+                lambda: exp.update("tbl", {"x": 1}, from_="tbl2"),
+                "UPDATE tbl SET x = 1 FROM tbl2",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

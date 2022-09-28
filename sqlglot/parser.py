@@ -305,6 +305,7 @@ class Parser:
         exp.Condition: lambda self: self._parse_conjunction(),
         exp.Expression: lambda self: self._parse_statement(),
         exp.Properties: lambda self: self._parse_properties(),
+        exp.Where: lambda self: self._parse_where(),
         "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 

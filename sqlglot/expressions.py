@@ -907,24 +907,8 @@ class Properties(Expression):
         expressions = []
         for key, value in properties_dict.items():
             property_cls = cls.PROPERTY_KEY_MAPPING.get(key.upper(), AnonymousProperty)
-            expressions.append(property_cls(this=Literal.string(key), value=cls._convert_value(value)))
+            expressions.append(property_cls(this=Literal.string(key), value=convert(value)))
         return cls(expressions=expressions)
-
-    @staticmethod
-    def _convert_value(value):
-        if value is None:
-            return NULL
-        if isinstance(value, Expression):
-            return value
-        if isinstance(value, bool):
-            return Boolean(this=value)
-        if isinstance(value, str):
-            return Literal.string(value)
-        if isinstance(value, numbers.Number):
-            return Literal.number(value)
-        if isinstance(value, list):
-            return Tuple(expressions=[Properties._convert_value(v) for v in value])
-        raise ValueError(f"Unsupported type '{type(value)}' for value '{value}'")
 
 
 class Qualify(Expression):
@@ -2805,6 +2789,37 @@ def from_(*expressions, dialect=None, **opts):
     return Select().from_(*expressions, dialect=dialect, **opts)
 
 
+def update(table, properties, where=None, from_=None, dialect=None, **opts):
+    """
+    Creates an update statement.
+
+    Example:
+        >>> update("my_table", {"x": 1, "y": "2", "z": None}, from_="baz", where="id > 1").sql()
+        "UPDATE my_table SET x = 1, y = '2', z = NULL FROM baz WHERE id > 1"
+
+    Args:
+        *properties (Dict[str, Any]): dictionary of properties to set which are
+            auto converted to sql objects eg None -> NULL
+        where (str): sql conditional parsed into a WHERE statement
+        from_ (str): sql statement parsed into a FROM statement
+        dialect (str): the dialect used to parse the input expressions.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Update: the syntax tree for the UPDATE statement.
+    """
+    update = Update(this=maybe_parse(table, into=Table, dialect=dialect))
+    update.set(
+        "expressions",
+        [EQ(this=maybe_parse(k, dialect=dialect, **opts), expression=convert(v)) for k, v in properties.items()],
+    )
+    if from_:
+        update.set("from", maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", **opts))
+    if where:
+        update.set("where", maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", **opts))
+    return update
+
+
 def condition(expression, dialect=None, **opts):
     """
     Initialize a logical condition expression.
@@ -2992,12 +3007,13 @@ def column(col, table=None, quoted=None):
 
 
 def table_(table, db=None, catalog=None, quoted=None):
-    """
-    Build a Table.
+    """Build a Table.
+
     Args:
         table (str or Expression): column name
         db (str or Expression): db name
         catalog (str or Expression): catalog name
+
     Returns:
         Table: table instance
     """
@@ -3006,6 +3022,39 @@ def table_(table, db=None, catalog=None, quoted=None):
         db=to_identifier(db, quoted=quoted),
         catalog=to_identifier(catalog, quoted=quoted),
     )
+
+
+def convert(value):
+    """Convert a python value into an expression object.
+
+    Raises an error if a conversion is not possible.
+
+    Args:
+        value (Any): a python object
+
+    Returns:
+        Expression: the equivalent expression object
+    """
+    if isinstance(value, Expression):
+        return value
+    if value is None:
+        return NULL
+    if isinstance(value, bool):
+        return Boolean(this=value)
+    if isinstance(value, str):
+        return Literal.string(value)
+    if isinstance(value, numbers.Number):
+        return Literal.number(value)
+    if isinstance(value, tuple):
+        return Tuple(expressions=[convert(v) for v in value])
+    if isinstance(value, list):
+        return Array(expressions=[convert(v) for v in value])
+    if isinstance(value, dict):
+        return Map(
+            keys=[convert(k) for k in value.keys()],
+            values=[convert(v) for v in value.values()],
+        )
+    raise ValueError(f"Cannot convert {value}")
 
 
 def replace_children(expression, fun):

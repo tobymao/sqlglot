@@ -306,6 +306,7 @@ class Parser:
         exp.Expression: lambda self: self._parse_statement(),
         exp.Properties: lambda self: self._parse_properties(),
         exp.Where: lambda self: self._parse_where(),
+        exp.Ordered: lambda self: self._parse_ordered(),
         "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 

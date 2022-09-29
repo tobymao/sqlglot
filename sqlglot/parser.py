@@ -654,7 +654,8 @@ class Parser:
         if create_token.token_type == TokenType.FUNCTION:
             this = self._parse_user_defined_function()
             properties = self._parse_properties()
-            expression = self._parse_udf_body()
+            if self._match(TokenType.ALIAS):
+                expression = self._parse_statement()
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
@@ -742,10 +743,8 @@ class Parser:
         )
 
     def _parse_returns(self):
-        value = None
-        is_table = False
-        if self._match(TokenType.TABLE):
-            is_table = True
+        is_table = self._match(TokenType.TABLE)
+        if is_table:
             if self._match(TokenType.LT):
                 value = self.expression(
                     exp.Schema, this="TABLE", expressions=self._parse_csv(self._parse_struct_kwargs)
@@ -754,6 +753,8 @@ class Parser:
                     self.raise_error("Expecting >")
             else:
                 value = self._parse_schema("TABLE")
+        else:
+            value = None
 
         return self.expression(
             exp.ReturnsProperty,
@@ -1715,19 +1716,6 @@ class Parser:
 
         return self.expression(exp.UserDefinedFunctionKwarg, this=this, kind=kind)
 
-    def _parse_udf_body(self):
-        if not self._match(TokenType.ALIAS):
-            return None
-        expression = self._parse_string()
-        if not expression:
-            self._match(TokenType.L_PAREN)
-            if self._peek(TokenType.SELECT):
-                expression = self._parse_subquery(self._parse_select())
-            else:
-                expression = self._parse_subquery(self._parse_expression())
-            self._match(TokenType.R_PAREN)
-        return expression
-
     def _parse_lambda(self):
         index = self._index
 
@@ -2281,11 +2269,6 @@ class Parser:
     def _match_r_paren(self):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
-
-    def _peek(self, token_type):
-        if not self._curr:
-            return None
-        return self._curr.token_type == token_type
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

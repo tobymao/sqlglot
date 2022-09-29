@@ -156,6 +156,18 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
             },
         )
+        self.validate_all(
+            "SELECT a FROM test pivot",
+            write={
+                "snowflake": "SELECT a FROM test AS pivot",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM test unpivot",
+            write={
+                "snowflake": "SELECT a FROM test AS unpivot",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(
@@ -253,4 +265,9 @@ class TestSnowflake(Validator):
                 "presto": "ARRAY[0, 1, 2]",
                 "spark": "ARRAY(0, 1, 2)",
             },
+        )
+
+    def test_ddl(self):
+        self.validate_identity(
+            "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
         )

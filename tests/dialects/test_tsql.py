@@ -15,6 +15,14 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_all(
+            "CONVERT(INT, CONVERT(NUMERIC, '444.75'))",
+            write={
+                "mysql": "CAST(CAST('444.75' AS DECIMAL) AS INT)",
+                "tsql": "CAST(CAST('444.75' AS NUMERIC) AS INTEGER)",
+            },
+        )
+
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")
         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")
@@ -24,3 +32,13 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS IMAGE)")
         self.validate_identity("CAST(x AS SQL_VARIANT)")
         self.validate_identity("CAST(x AS BIT)")
+        self.validate_all(
+            "CAST(x AS DATETIME2)",
+            read={
+                "": "CAST(x AS DATETIME)",
+            },
+            write={
+                "mysql": "CAST(x AS DATETIME)",
+                "tsql": "CAST(x AS DATETIME2)",
+            },
+        )

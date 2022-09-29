@@ -13,9 +13,6 @@ from sqlglot import (
 class Validator(unittest.TestCase):
     dialect = None
 
-    def validate(self, sql, target, **kwargs):
-        self.assertEqual(transpile(sql, **kwargs)[0], target)
-
     def validate_identity(self, sql):
         self.assertEqual(transpile(sql, read=self.dialect, write=self.dialect)[0], sql)
 
@@ -258,6 +255,7 @@ class TestDialect(Validator):
                 "duckdb": "EPOCH(STRPTIME('2020-01-01', '%Y-%M-%d'))",
                 "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-mm-dd')",
                 "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%i-%d'))",
+                "starrocks": "UNIX_TIMESTAMP('2020-01-01', '%Y-%i-%d')",
             },
         )
         self.validate_all(
@@ -266,6 +264,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST('2020-01-01' AS DATE)",
                 "hive": "TO_DATE('2020-01-01')",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
+                "starrocks": "TO_DATE('2020-01-01')",
             },
         )
         self.validate_all(
@@ -341,6 +340,7 @@ class TestDialect(Validator):
                 "duckdb": "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), y)",
                 "hive": "FROM_UNIXTIME(x, y)",
                 "presto": "DATE_FORMAT(FROM_UNIXTIME(x), y)",
+                "starrocks": "FROM_UNIXTIME(x, y)",
             },
         )
         self.validate_all(
@@ -349,6 +349,7 @@ class TestDialect(Validator):
                 "duckdb": "TO_TIMESTAMP(CAST(x AS BIGINT))",
                 "hive": "FROM_UNIXTIME(x)",
                 "presto": "FROM_UNIXTIME(x)",
+                "starrocks": "FROM_UNIXTIME(x)",
             },
         )
         self.validate_all(

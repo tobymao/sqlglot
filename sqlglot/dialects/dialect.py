@@ -245,6 +245,11 @@ def no_tablesample_sql(self, expression):
     return self.sql(expression.this)
 
 
+def no_pivot_sql(self, expression):
+    self.unsupported("PIVOT unsupported")
+    return self.sql(expression)
+
+
 def no_trycast_sql(self, expression):
     return self.cast_sql(expression)
 
@@ -282,3 +287,30 @@ def format_time_lambda(exp_class, dialect, default=None):
         )
 
     return _format_time
+
+
+def create_with_partitions_sql(self, expression):
+    """
+    In Hive and Spark, the PARTITIONED BY property acts as an extension of a table's schema. When the
+    PARTITIONED BY value is an array of column names, they are transformed into a schema. The corresponding
+    columns are removed from the create statement.
+    """
+    has_schema = isinstance(expression.this, exp.Schema)
+    is_partitionable = expression.args.get("kind") in ("TABLE", "VIEW")
+
+    if has_schema and is_partitionable:
+        expression = expression.copy()
+        prop = expression.find(exp.PartitionedByProperty)
+        value = prop and prop.args.get("value")
+        if prop and not isinstance(value, exp.Schema):
+            schema = expression.this
+            columns = {v.name.upper() for v in value.expressions}
+            partitions = [col for col in schema.expressions if col.name.upper() in columns]
+            schema.set(
+                "expressions",
+                [e for e in schema.expressions if e not in partitions],
+            )
+            prop.replace(exp.PartitionedByProperty(this=prop.this, value=exp.Schema(expressions=partitions)))
+            expression.set("this", schema)
+
+    return self.create_sql(expression)

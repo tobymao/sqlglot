@@ -289,12 +289,6 @@ def format_time_lambda(exp_class, dialect, default=None):
     return _format_time
 
 
-def naked_property_sql(self, expression):
-    key = expression.name
-    value = self.sql(expression, "value")
-    return f"{key} {value}"
-
-
 def create_with_partitions_sql(self, expression):
     """
     In Hive and Spark, the PARTITIONED BY property acts as an extension of a table's schema. When the

@@ -42,13 +42,9 @@ SELECT q_2.a AS a, q.c AS c, r.c AS c FROM x AS q_2 JOIN y AS r_2 ON q_2.b = r_2
 SELECT r.b FROM (SELECT b FROM x AS x) AS q JOIN (SELECT b FROM x) AS r ON q.b = r.b;
 SELECT x_2.b AS b FROM x AS x JOIN x AS x_2 ON x.b = x_2.b;
 
--- WHERE clause in joined derived table is merged
+-- WHERE clause in joined derived table is merged to ON clause
 SELECT x.a, y.c FROM x JOIN (SELECT b, c FROM y WHERE c > 1) AS y;
-SELECT x.a AS a, y.c AS c FROM x AS x JOIN y AS y WHERE y.c > 1;
-
--- WHERE clause in outer joined derived table is merged to ON clause
-SELECT x.a, y.c FROM x LEFT JOIN (SELECT b, c FROM y WHERE c > 1) AS y;
-SELECT x.a AS a, y.c AS c FROM x AS x LEFT JOIN y AS y ON y.c > 1;
+SELECT x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON y.c > 1;
 
 -- Comma JOIN in outer query
 SELECT x.a, y.c FROM (SELECT a FROM x) AS x, (SELECT c FROM y) AS y;

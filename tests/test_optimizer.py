@@ -28,9 +28,9 @@ class TestOptimizer(unittest.TestCase):
         }
 
     def check_file(self, file, func, pretty=False, **kwargs):
-        for meta, sql, expected in load_sql_fixture_pairs(f"optimizer/{file}.sql"):
+        for i, (meta, sql, expected) in enumerate(load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1):
             dialect = meta.get("dialect")
-            with self.subTest(sql):
+            with self.subTest(f"{i}, {sql}"):
                 self.assertEqual(
                     func(parse_one(sql, read=dialect), **kwargs).sql(pretty=pretty, dialect=dialect),
                     expected,

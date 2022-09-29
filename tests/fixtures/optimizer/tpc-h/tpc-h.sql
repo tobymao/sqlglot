@@ -193,12 +193,12 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
+  AND "orders"."o_orderdate" < '1995-03-15'
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "lineitem"."l_shipdate" > '1995-03-15'
 WHERE
   "customer"."c_mktsegment" = 'BUILDING'
-  AND "lineitem"."l_shipdate" > '1995-03-15'
-  AND "orders"."o_orderdate" < '1995-03-15'
 GROUP BY
   "lineitem"."l_orderkey",
   "orders"."o_orderdate",
@@ -291,7 +291,10 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-CROSS JOIN "region" AS "region"
+  AND "orders"."o_orderdate" < CAST('1995-01-01' AS DATE)
+  AND "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
+JOIN "region" AS "region"
+  ON "region"."r_name" = 'ASIA'
 JOIN "nation" AS "nation"
   ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "supplier" AS "supplier"
@@ -300,10 +303,6 @@ JOIN "supplier" AS "supplier"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "lineitem"."l_suppkey" = "supplier"."s_suppkey"
-WHERE
-  "orders"."o_orderdate" < CAST('1995-01-01' AS DATE)
-  AND "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
-  AND "region"."r_name" = 'ASIA'
 GROUP BY
   "nation"."n_name"
 ORDER BY
@@ -390,7 +389,8 @@ SELECT
   )) AS "revenue"
 FROM "supplier" AS "supplier"
 JOIN "lineitem" AS "lineitem"
-  ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+  ON "lineitem"."l_shipdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
+  AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 JOIN "customer" AS "customer"
@@ -407,8 +407,6 @@ JOIN "n1" AS "n2"
     "n1"."n_name" = 'GERMANY'
     OR "n2"."n_name" = 'GERMANY'
   )
-WHERE
-  "lineitem"."l_shipdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
 GROUP BY
   "n1"."n_name",
   "n2"."n_name",
@@ -470,13 +468,15 @@ SELECT
       1 - "lineitem"."l_discount"
   )) AS "mkt_share"
 FROM "part" AS "part"
-CROSS JOIN "region" AS "region"
+JOIN "region" AS "region"
+  ON "region"."r_name" = 'AMERICA'
 JOIN "nation" AS "nation"
   ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "customer" AS "customer"
   ON "customer"."c_nationkey" = "nation"."n_nationkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_custkey" = "customer"."c_custkey"
+  AND "orders"."o_orderdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "part"."p_partkey" = "lineitem"."l_partkey"
@@ -485,9 +485,7 @@ JOIN "supplier" AS "supplier"
 JOIN "nation" AS "nation_2"
   ON "supplier"."s_nationkey" = "nation_2"."n_nationkey"
 WHERE
-  "orders"."o_orderdate" BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
-  AND "part"."p_type" = 'ECONOMY ANODIZED STEEL'
-  AND "region"."r_name" = 'AMERICA'
+  "part"."p_type" = 'ECONOMY ANODIZED STEEL'
 GROUP BY
   EXTRACT(year FROM "orders"."o_orderdate")
 ORDER BY
@@ -605,14 +603,13 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
-JOIN "nation" AS "nation"
-  ON "customer"."c_nationkey" = "nation"."n_nationkey"
-WHERE
-  "lineitem"."l_returnflag" = 'R'
   AND "orders"."o_orderdate" < CAST('1994-01-01' AS DATE)
   AND "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
+JOIN "lineitem" AS "lineitem"
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "lineitem"."l_returnflag" = 'R'
+JOIN "nation" AS "nation"
+  ON "customer"."c_nationkey" = "nation"."n_nationkey"
 GROUP BY
   "customer"."c_custkey",
   "customer"."c_name",
@@ -738,13 +735,12 @@ SELECT
   END) AS "low_line_count"
 FROM "orders" AS "orders"
 JOIN "lineitem" AS "lineitem"
-  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
-WHERE
-  "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
+  ON "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
   AND "lineitem"."l_receiptdate" < CAST('1995-01-01' AS DATE)
   AND "lineitem"."l_receiptdate" >= CAST('1994-01-01' AS DATE)
   AND "lineitem"."l_shipdate" < "lineitem"."l_commitdate"
   AND "lineitem"."l_shipmode" IN ('MAIL', 'SHIP')
+  AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
 GROUP BY
   "lineitem"."l_shipmode"
 ORDER BY
@@ -940,12 +936,12 @@ FROM "partsupp" AS "partsupp"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 JOIN "part" AS "part"
-  ON "part"."p_partkey" = "partsupp"."ps_partkey"
-WHERE
-  "_u_0"."s_suppkey" IS NULL
-  AND "part"."p_brand" <> 'Brand#45'
+  ON "part"."p_brand" <> 'Brand#45'
+  AND "part"."p_partkey" = "partsupp"."ps_partkey"
   AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
   AND NOT "part"."p_type" LIKE 'MEDIUM POLISHED%'
+WHERE
+  "_u_0"."s_suppkey" IS NULL
 GROUP BY
   "part"."p_brand",
   "part"."p_type",
@@ -988,13 +984,13 @@ SELECT
   SUM("lineitem"."l_extendedprice") / 7.0 AS "avg_yearly"
 FROM "lineitem" AS "lineitem"
 JOIN "part" AS "part"
-  ON "part"."p_partkey" = "lineitem"."l_partkey"
+  ON "part"."p_brand" = 'Brand#23'
+  AND "part"."p_container" = 'MED BOX'
+  AND "part"."p_partkey" = "lineitem"."l_partkey"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "part"."p_partkey"
 WHERE
   "lineitem"."l_quantity" < "_u_0"."_col_0"
-  AND "part"."p_brand" = 'Brand#23'
-  AND "part"."p_container" = 'MED BOX'
   AND NOT "_u_0"."_u_1" IS NULL;
 
 --------------------------------------
@@ -1249,10 +1245,10 @@ FROM "supplier" AS "supplier"
 LEFT JOIN "_u_4" AS "_u_4"
   ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
 JOIN "nation" AS "nation"
-  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+  ON "nation"."n_name" = 'CANADA'
+  AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 WHERE
-  "nation"."n_name" = 'CANADA'
-  AND NOT "_u_4"."ps_suppkey" IS NULL
+  NOT "_u_4"."ps_suppkey" IS NULL
 ORDER BY
   "s_name";
 
@@ -1322,23 +1318,23 @@ SELECT
   COUNT(*) AS "numwait"
 FROM "supplier" AS "supplier"
 JOIN "lineitem" AS "lineitem"
-  ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+  ON "lineitem"."l_receiptdate" > "lineitem"."l_commitdate"
+  AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."l_orderkey" = "lineitem"."l_orderkey"
 LEFT JOIN "_u_2" AS "_u_2"
   ON "_u_2"."l_orderkey" = "lineitem"."l_orderkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
+  AND "orders"."o_orderstatus" = 'F'
 JOIN "nation" AS "nation"
-  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+  ON "nation"."n_name" = 'SAUDI ARABIA'
+  AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 WHERE
   (
     "_u_2"."l_orderkey" IS NULL
     OR NOT ARRAY_ANY("_u_2"."_u_3", "_x" -> "_x" <> "lineitem"."l_suppkey")
   )
-  AND "lineitem"."l_receiptdate" > "lineitem"."l_commitdate"
-  AND "nation"."n_name" = 'SAUDI ARABIA'
-  AND "orders"."o_orderstatus" = 'F'
   AND ARRAY_ANY("_u_0"."_u_1", "_x" -> "_x" <> "lineitem"."l_suppkey")
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY

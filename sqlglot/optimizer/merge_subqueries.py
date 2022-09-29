@@ -236,7 +236,7 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
     if not where or not where.this:
         return
 
-    if isinstance(from_or_join, exp.Join) and from_or_join.side:
+    if isinstance(from_or_join, exp.Join):
         # Merge predicates from an outer join to the ON clause
         from_or_join.on(where.this, copy=False)
         from_or_join.set("on", simplify(from_or_join.args.get("on")))

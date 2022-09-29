@@ -287,9 +287,9 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "CREATE FUNCTION a() RETURNS TABLE (b INT)",
+            "CREATE FUNCTION a() RETURNS TABLE (b INT) AS 'SELECT 1'",
             write={
-                "snowflake": "CREATE FUNCTION a() RETURNS TABLE (b INT)",
-                "bigquery": "CREATE TABLE FUNCTION a() RETURNS TABLE <b INT64>",
+                "snowflake": "CREATE FUNCTION a() RETURNS TABLE (b INT) AS 'SELECT 1'",
+                "bigquery": "CREATE TABLE FUNCTION a() RETURNS TABLE <b INT64> AS SELECT 1",
             },
         )

@@ -2141,6 +2141,7 @@ class TryCast(Cast):
 
 
 class Ceil(Func):
+    arg_types = {"this": True, "decimals": False}
     _sql_names = ["CEIL", "CEILING"]
 
 
@@ -2271,7 +2272,7 @@ class Explode(Func):
 
 
 class Floor(Func):
-    pass
+    arg_types = {"this": True, "decimals": False}
 
 
 class Greatest(Func):

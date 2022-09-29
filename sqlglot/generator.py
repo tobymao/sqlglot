@@ -49,6 +49,8 @@ class Generator:
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.LanguageProperty: lambda self, e: self.naked_property(e),
+        exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
     }
 
@@ -495,18 +497,6 @@ class Generator:
             key = expression.name
         value = self.sql(expression, "value")
         return f"{key}={value}"
-
-    def partitionedbyproperty_sql(self, expression):
-        value = self.sql(expression, "value")
-        return f"PARTITIONED_BY={value}"
-
-    def locationproperty_sql(self, expression):
-        value = self.sql(expression, "value")
-        return f"LOCATION {value}"
-
-    def languageproperty_sql(self, expression):
-        value = self.sql(expression, "value")
-        return f"LANGUAGE {value}"
 
     def insert_sql(self, expression):
         kind = "OVERWRITE TABLE" if expression.args.get("overwrite") else "INTO"
@@ -1149,6 +1139,9 @@ class Generator:
         if flat:
             return f"{op} {expressions_sql}"
         return f"{self.seg(op)}{self.sep() if expressions_sql else ''}{expressions_sql}"
+
+    def naked_property(self, expression):
+        return f"{expression.name} {self.sql(expression, 'value')}"
 
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")

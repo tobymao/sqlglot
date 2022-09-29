@@ -693,16 +693,15 @@ class Parser:
         return None
 
     def _parse_property_assignment(self, exp_class):
-        prop = self._prev
+        prop = self._prev.text
         self._match(TokenType.EQ)
-        return self.expression(exp_class, this=prop.text, value=self._parse_var_or_string())
+        return self.expression(exp_class, this=prop, value=self._parse_var_or_string())
 
     def _parse_partitioned_by(self):
-        prop = self._prev
         self._match(TokenType.EQ)
         return self.expression(
             exp.PartitionedByProperty,
-            this=prop.text,
+            this=exp.Literal.string("PARTITIONED_BY"),
             value=self._parse_schema() or self._parse_bracket(self._parse_field()),
         )
 

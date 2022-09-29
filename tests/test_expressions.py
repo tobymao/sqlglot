@@ -280,6 +280,19 @@ class TestExpressions(unittest.TestCase):
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
 
+    def test_pop(self):
+        expression = parse_one("SELECT a, b FROM x")
+        expression.find(exp.Column).pop()
+        self.assertEqual(expression.sql(), "SELECT b FROM x")
+        expression.find(exp.Column).pop()
+        self.assertEqual(expression.sql(), "SELECT FROM x")
+        expression.pop()
+        self.assertEqual(expression.sql(), "SELECT FROM x")
+
+        expression = parse_one("WITH x AS (SELECT a FROM x) SELECT * FROM x")
+        expression.find(exp.With).pop()
+        self.assertEqual(expression.sql(), "SELECT * FROM x")
+
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")
         self.assertEqual(len(list(expression.walk())), 9)

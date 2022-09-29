@@ -6,7 +6,8 @@ from sqlglot.transforms import unalias_group
 
 class TestTime(unittest.TestCase):
     def validate(self, transform, sql, target):
-        self.assertEqual(parse_one(sql).transform(transform).sql(), target)
+        with self.subTest(sql):
+            self.assertEqual(parse_one(sql).transform(transform).sql(), target)
 
     def test_unalias_group(self):
         self.validate(

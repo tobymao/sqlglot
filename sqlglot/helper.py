@@ -143,3 +143,22 @@ def csv_reader(table):
         yield csv_.reader(file, delimiter=delimiter)
     finally:
         file.close()
+
+
+def find_new_name(taken, base):
+    """
+    Searches for a new name.
+
+    Args:
+        taken (Sequence[str]): set of taken names
+        base (str): base name to alter
+    """
+    if base not in taken:
+        return base
+
+    i = 2
+    new = f"{base}_{i}"
+    while new in taken:
+        i += 1
+        new = f"{base}_{i}"
+    return new

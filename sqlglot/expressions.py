@@ -389,7 +389,7 @@ class Expression(metaclass=_Expression):
             'SELECT y FROM tbl'
 
         Args:
-            expression (Expression): new node
+            expression (Expression|None): new node
 
         Returns :
             the new expression or expressions
@@ -402,6 +402,12 @@ class Expression(metaclass=_Expression):
 
         replace_children(parent, lambda child: expression if child is self else child)
         return expression
+
+    def pop(self):
+        """
+        Remove this expression from its AST.
+        """
+        self.replace(None)
 
     def assert_is(self, type_):
         """

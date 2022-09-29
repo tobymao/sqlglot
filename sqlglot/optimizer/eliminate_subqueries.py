@@ -89,11 +89,7 @@ def _eliminate(scope, existing_ctes, taken):
     if scope.is_union:
         return _eliminate_union(scope, existing_ctes, taken)
 
-    if (scope.is_derived_table and not isinstance(scope.expression, (exp.Unnest, exp.Lateral))) or (
-        scope.is_subquery
-        and not scope.is_correlated_subquery
-        and not scope.expression.find_ancestor(exp.Having, exp.Join)
-    ):
+    if scope.is_derived_table and not isinstance(scope.expression, (exp.Unnest, exp.Lateral)):
         return _eliminate_derived_table(scope, existing_ctes, taken)
 
 
@@ -140,9 +136,7 @@ def _eliminate_derived_table(scope, existing_ctes, taken):
 
     taken[name] = scope
 
-    table = exp.table_(name)
-    if not scope.is_subquery:
-        table = exp.alias_(table, alias=alias)
+    table = exp.alias_(exp.table_(name), alias=alias)
     parent.replace(table)
 
     if not duplicate_cte_alias:

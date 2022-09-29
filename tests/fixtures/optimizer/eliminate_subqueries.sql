@@ -40,7 +40,7 @@ WITH cte AS (SELECT b FROM x), cte_2 AS (SELECT a FROM cte AS cte), cte_3 AS (SE
 
 -- Subquery
 SELECT a FROM x WHERE b = (SELECT y.c FROM y);
-WITH cte AS (SELECT y.c FROM y) SELECT a FROM x WHERE b = cte;
+SELECT a FROM x WHERE b = (SELECT y.c FROM y);
 
 -- Correlated subquery
 SELECT a FROM x WHERE b = (SELECT c FROM y WHERE y.a = x.a);

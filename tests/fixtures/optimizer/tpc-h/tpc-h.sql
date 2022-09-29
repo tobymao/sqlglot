@@ -1388,14 +1388,7 @@ group by
         cntrycode
 order by
         cntrycode;
-WITH "cte" AS (
-  SELECT
-    AVG("customer"."c_acctbal") AS "_col_0"
-  FROM "customer" AS "customer"
-  WHERE
-    "customer"."c_acctbal" > 0.00
-    AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
-), "_u_0" AS (
+WITH "_u_0" AS (
   SELECT
     "orders"."o_custkey" AS "_u_1"
   FROM "orders" AS "orders"
@@ -1411,7 +1404,14 @@ LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "customer"."c_custkey"
 WHERE
   "_u_0"."_u_1" IS NULL
-  AND "customer"."c_acctbal" > "cte"
+  AND "customer"."c_acctbal" > (
+    SELECT
+      AVG("customer"."c_acctbal") AS "_col_0"
+    FROM "customer" AS "customer"
+    WHERE
+      "customer"."c_acctbal" > 0.00
+      AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
+  )
   AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
 GROUP BY
   SUBSTRING("customer"."c_phone", 1, 2)

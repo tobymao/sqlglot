@@ -532,6 +532,7 @@ class Create(Expression):
         "temporary": False,
         "replace": False,
         "unique": False,
+        "materialized": False,
     }
 
 
@@ -901,7 +902,7 @@ class AnonymousProperty(Property):
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "kind": True}
+    arg_types = {"this": True, "value": True, "is_table": False}
 
 
 class LanguageProperty(Property):
@@ -1759,6 +1760,7 @@ class DataType(Expression):
         ROWVERSION = auto()
         IMAGE = auto()
         VARIANT = auto()
+        OBJECT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):

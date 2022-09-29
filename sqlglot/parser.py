@@ -100,6 +100,7 @@ class Parser:
         TokenType.ROWVERSION,
         TokenType.IMAGE,
         TokenType.VARIANT,
+        TokenType.OBJECT,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -370,11 +371,7 @@ class Parser:
         TokenType.PARTITIONED_BY: lambda self: self._parse_partitioned_by(),
         TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
         TokenType.STORED: lambda self: self._parse_stored(),
-        TokenType.RETURNS: lambda self: self.expression(
-            exp.ReturnsProperty,
-            this=exp.Literal.string("RETURNS"),
-            value=self._parse_types(),
-        ),
+        TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
         TokenType.FORMAT: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
@@ -638,6 +635,10 @@ class Parser:
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
         unique = self._match(TokenType.UNIQUE)
+        materialized = self._match(TokenType.MATERIALIZED)
+
+        if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
+            self._match(TokenType.TABLE)
 
         create_token = self._match_set(self.CREATABLES) and self._prev
 
@@ -652,8 +653,7 @@ class Parser:
         if create_token.token_type == TokenType.FUNCTION:
             this = self._parse_user_defined_function()
             properties = self._parse_properties()
-            if self._match(TokenType.ALIAS):
-                expression = self._parse_string()
+            expression = self._parse_udf_body()
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
@@ -672,6 +672,7 @@ class Parser:
             temporary=temporary,
             replace=replace,
             unique=unique,
+            materialized=materialized,
         )
 
     def _parse_property(self):
@@ -737,6 +738,27 @@ class Parser:
             this=exp.Literal.string("CHARACTER_SET"),
             value=self._parse_var_or_string(),
             default=default,
+        )
+
+    def _parse_returns(self):
+        value = None
+        is_table = False
+        if self._match(TokenType.TABLE):
+            is_table = True
+            if self._match(TokenType.LT):
+                value = self.expression(
+                    exp.Schema, this="TABLE", expressions=self._parse_csv(self._parse_struct_kwargs)
+                )
+                if not self._match(TokenType.GT):
+                    self.raise_error("Expecting >")
+            else:
+                value = self._parse_schema("TABLE")
+
+        return self.expression(
+            exp.ReturnsProperty,
+            this=exp.Literal.string("RETURNS"),
+            value=(value or self._parse_types()),
+            is_table=is_table,
         )
 
     def _parse_properties(self):
@@ -1503,6 +1525,8 @@ class Parser:
         is_struct = type_token == TokenType.STRUCT
         expressions = None
 
+        # breakpoint()
+
         if self._match(TokenType.L_BRACKET):
             self._retreat(index)
             return None
@@ -1691,6 +1715,19 @@ class Parser:
             return this
 
         return self.expression(exp.UserDefinedFunctionKwarg, this=this, kind=kind)
+
+    def _parse_udf_body(self):
+        if not self._match(TokenType.ALIAS):
+            return None
+        expression = self._parse_string()
+        if not expression:
+            self._match(TokenType.L_PAREN)
+            if self._peek(TokenType.SELECT):
+                expression = self._parse_subquery(self._parse_select())
+            else:
+                expression = self._parse_subquery(self._parse_expression())
+            self._match(TokenType.R_PAREN)
+        return expression
 
     def _parse_lambda(self):
         index = self._index
@@ -2245,6 +2282,11 @@ class Parser:
     def _match_r_paren(self):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
+
+    def _peek(self, token_type):
+        if not self._curr:
+            return None
+        return self._curr.token_type == token_type
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

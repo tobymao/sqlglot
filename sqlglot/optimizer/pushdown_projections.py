@@ -37,7 +37,7 @@ def pushdown_projections(expression):
             parent_selections = {SELECT_ALL}
 
         if isinstance(scope.expression, exp.Union):
-            left, right = scope.union
+            left, right = scope.union_scopes
             referenced_columns[left] = parent_selections
             referenced_columns[right] = parent_selections
 

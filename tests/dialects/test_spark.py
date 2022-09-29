@@ -34,7 +34,7 @@ class TestSpark(Validator):
         self.validate_all(
             "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             write={
-                "presto": "CREATE TABLE x WITH (TABLE_FORMAT = 'ICEBERG', PARTITIONED_BY = ARRAY['MONTHS'])",
+                "presto": "CREATE TABLE x WITH (TABLE_FORMAT = 'ICEBERG', PARTITIONED_BY=ARRAY['MONTHS'])",
                 "hive": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
                 "spark": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             },
@@ -42,7 +42,7 @@ class TestSpark(Validator):
         self.validate_all(
             "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
             write={
-                "presto": "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
+                "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
             },
@@ -56,9 +56,9 @@ class TestSpark(Validator):
 )
 COMMENT='Test comment: blah'
 WITH (
-  PARTITIONED_BY = ARRAY['date'],
-  FORMAT = 'ICEBERG',
-  x = '1'
+  PARTITIONED_BY=ARRAY['date'],
+  FORMAT='ICEBERG',
+  x='1'
 )""",
                 "hive": """CREATE TABLE blah (
   col_a INT
@@ -69,7 +69,7 @@ PARTITIONED BY (
 )
 STORED AS ICEBERG
 TBLPROPERTIES (
-  'x' = '1'
+  'x'='1'
 )""",
                 "spark": """CREATE TABLE blah (
   col_a INT
@@ -80,7 +80,7 @@ PARTITIONED BY (
 )
 USING ICEBERG
 TBLPROPERTIES (
-  'x' = '1'
+  'x'='1'
 )""",
             },
             pretty=True,

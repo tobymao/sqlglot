@@ -177,6 +177,7 @@ class TokenType(AutoName):
     IS = auto()
     ISNULL = auto()
     JOIN = auto()
+    LANGUAGE = auto()
     LATERAL = auto()
     LAZY = auto()
     LEADING = auto()
@@ -208,6 +209,7 @@ class TokenType(AutoName):
     PARTITION_BY = auto()
     PARTITIONED_BY = auto()
     PERCENT = auto()
+    PIVOT = auto()
     PLACEHOLDER = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
@@ -219,6 +221,7 @@ class TokenType(AutoName):
     REPLACE = auto()
     RESPECT_NULLS = auto()
     REFERENCES = auto()
+    RETURNS = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROLLUP = auto()
@@ -247,6 +250,7 @@ class TokenType(AutoName):
     UNCACHE = auto()
     UNION = auto()
     UNNEST = auto()
+    UNPIVOT = auto()
     UPDATE = auto()
     USE = auto()
     USING = auto()
@@ -441,6 +445,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
+        "FOR": TokenType.FOR,
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
@@ -460,6 +465,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "IS": TokenType.IS,
         "ISNULL": TokenType.ISNULL,
         "JOIN": TokenType.JOIN,
+        "LANGUAGE": TokenType.LANGUAGE,
         "LATERAL": TokenType.LATERAL,
         "LAZY": TokenType.LAZY,
         "LEADING": TokenType.LEADING,
@@ -489,7 +495,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "PARTITION": TokenType.PARTITION,
         "PARTITION BY": TokenType.PARTITION_BY,
         "PARTITIONED BY": TokenType.PARTITIONED_BY,
+        "PARTITIONED_BY": TokenType.PARTITIONED_BY,
         "PERCENT": TokenType.PERCENT,
+        "PIVOT": TokenType.PIVOT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "RANGE": TokenType.RANGE,
@@ -498,6 +506,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "REPLACE": TokenType.REPLACE,
         "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "REFERENCES": TokenType.REFERENCES,
+        "RETURNS": TokenType.RETURNS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROLLUP": TokenType.ROLLUP,
@@ -522,6 +531,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TRUNCATE": TokenType.TRUNCATE,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
+        "UNPIVOT": TokenType.UNPIVOT,
         "UNNEST": TokenType.UNNEST,
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,

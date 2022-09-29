@@ -146,13 +146,16 @@ class Presto(Dialect):
 
         STRUCT_DELIMITER = ("(", ")")
 
-        WITH_PROPERTIES = [
+        ROOT_PROPERTIES = {
+            exp.SchemaCommentProperty,
+        }
+
+        WITH_PROPERTIES = {
             exp.PartitionedByProperty,
             exp.FileFormatProperty,
-            exp.SchemaCommentProperty,
             exp.AnonymousProperty,
             exp.TableFormatProperty,
-        ]
+        }
 
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
@@ -184,13 +187,11 @@ class Presto(Dialect):
             exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.date_format}) AS DATE)",
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.dateint_format}) AS DATE)",
-            exp.FileFormatProperty: lambda self, e: self.property_sql(e),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
             exp.Lateral: _explode_to_unnest_sql,
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
-            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED_BY = {self.sql(e.args['value'])}",
             exp.Quantile: _quantile_sql,
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.SafeDivide: no_safe_divide_sql,

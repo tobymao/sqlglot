@@ -421,7 +421,7 @@ class TestExpressions(unittest.TestCase):
             exp.Properties.from_dict(
                 {
                     "FORMAT": "parquet",
-                    "PARTITIONED_BY": [exp.to_identifier("a"), exp.to_identifier("b")],
+                    "PARTITIONED_BY": (exp.to_identifier("a"), exp.to_identifier("b")),
                     "custom": 1,
                     "TABLE_FORMAT": exp.to_identifier("test_format"),
                     "ENGINE": None,
@@ -445,4 +445,17 @@ class TestExpressions(unittest.TestCase):
             ),
         )
 
-        self.assertRaises(ValueError, exp.Properties.from_dict, {"FORMAT": {"key": "value"}})
+        self.assertRaises(ValueError, exp.Properties.from_dict, {"FORMAT": object})
+
+    def test_convert(self):
+        for value, expected in [
+            (1, "1"),
+            ("1", "'1'"),
+            (None, "NULL"),
+            (True, "TRUE"),
+            ((1, "2", None), "(1, '2', NULL)"),
+            ([1, "2", None], "ARRAY(1, '2', NULL)"),
+            ({"x": None}, "MAP('x', NULL)"),
+        ]:
+            with self.subTest(value):
+                self.assertEqual(exp.convert(value).sql(), expected)

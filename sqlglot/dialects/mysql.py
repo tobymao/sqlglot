@@ -172,6 +172,11 @@ class MySQL(Dialect):
             ),
         }
 
+        PROPERTY_PARSERS = {
+            **Parser.PROPERTY_PARSERS,
+            TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
+        }
+
     class Generator(Generator):
         NULL_ORDERING_SUPPORTED = False
 
@@ -190,3 +195,13 @@ class MySQL(Dialect):
             exp.StrToTime: _str_to_date_sql,
             exp.Trim: _trim_sql,
         }
+
+        ROOT_PROPERTIES = {
+            exp.EngineProperty,
+            exp.AutoIncrementProperty,
+            exp.CharacterSetProperty,
+            exp.CollateProperty,
+            exp.SchemaCommentProperty,
+        }
+
+        WITH_PROPERTIES = {}

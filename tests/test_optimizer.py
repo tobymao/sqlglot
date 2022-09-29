@@ -1,7 +1,8 @@
 import unittest
 
-from sqlglot import optimizer, parse_one, table
+from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.schema import MappingSchema, ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
@@ -271,3 +272,59 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(scopes[4].source_columns("q"), [])
         self.assertEqual(len(scopes[4].source_columns("r")), 2)
         self.assertEqual(set(c.table for c in scopes[4].source_columns("r")), {"r"})
+
+    def test_literal_type_annotation(self):
+        tests = {
+            "SELECT 5": exp.DataType.Type.INT,
+            "SELECT 5.3": exp.DataType.Type.DOUBLE,
+            "SELECT 'bla'": exp.DataType.Type.VARCHAR,
+            "5": exp.DataType.Type.INT,
+            "5.3": exp.DataType.Type.DOUBLE,
+            "'bla'": exp.DataType.Type.VARCHAR,
+        }
+
+        for sql, target_type in tests.items():
+            expression = parse_one(sql)
+            annotated_expression = annotate_types(expression)
+
+            self.assertEqual(annotated_expression.find(exp.Literal).type, target_type)
+
+    def test_boolean_type_annotation(self):
+        tests = {
+            "SELECT TRUE": exp.DataType.Type.BOOLEAN,
+            "FALSE": exp.DataType.Type.BOOLEAN,
+        }
+
+        for sql, target_type in tests.items():
+            expression = parse_one(sql)
+            annotated_expression = annotate_types(expression)
+
+            self.assertEqual(annotated_expression.find(exp.Boolean).type, target_type)
+
+    def test_cast_type_annotation(self):
+        expression = parse_one("CAST('2020-01-01' AS TIMESTAMPTZ(9))")
+        annotate_types(expression)
+
+        self.assertEqual(expression.type, exp.DataType.Type.TIMESTAMPTZ)
+        self.assertEqual(expression.this.type, exp.DataType.Type.VARCHAR)
+        self.assertEqual(expression.args["to"].type, exp.DataType.Type.TIMESTAMPTZ)
+        self.assertEqual(expression.args["to"].expressions[0].type, exp.DataType.Type.INT)
+
+    def test_cache_annotation(self):
+        expression = parse_one("CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1")
+        annotated_expression = annotate_types(expression)
+
+        self.assertEqual(annotated_expression.expression.expressions[0].type, exp.DataType.Type.INT)
+
+    def test_binary_annotation(self):
+        expression = parse_one("SELECT 0.0 + (2 + 3)")
+        annotate_types(expression)
+
+        expression = expression.expressions[0]
+
+        self.assertEqual(expression.type, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expression.left.type, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expression.right.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.right.this.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.right.this.left.type, exp.DataType.Type.INT)
+        self.assertEqual(expression.right.this.right.type, exp.DataType.Type.INT)

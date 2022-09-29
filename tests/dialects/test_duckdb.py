@@ -1,3 +1,4 @@
+from sqlglot import ErrorLevel, UnsupportedError, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -250,3 +251,10 @@ class TestDuckDB(Validator):
                 "spark": "MONTH('2021-03-01')",
             },
         )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT a FROM b PIVOT(SUM(x) FOR y IN ('z', 'q'))",
+                read="duckdb",
+                unsupported_level=ErrorLevel.IMMEDIATE,
+            )

@@ -270,7 +270,7 @@ class TestBuild(unittest.TestCase):
                 lambda: parse_one("SELECT * FROM y")
                 .assert_is(exp.Select)
                 .ctas("foo.x", properties={"format": "parquet", "y": "2"}),
-                "CREATE TABLE foo.x STORED AS PARQUET TBLPROPERTIES ('y' = '2') AS SELECT * FROM y",
+                "CREATE TABLE foo.x STORED AS PARQUET TBLPROPERTIES ('y'='2') AS SELECT * FROM y",
                 "hive",
             ),
             (lambda: and_("x=1", "y=1"), "x = 1 AND y = 1"),
@@ -307,6 +307,18 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: exp.subquery("select x from tbl UNION select x from bar", "unioned").select("x"),
                 "SELECT x FROM (SELECT x FROM tbl UNION SELECT x FROM bar) AS unioned",
+            ),
+            (
+                lambda: exp.update("tbl", {"x": None, "y": {"x": 1}}),
+                "UPDATE tbl SET x = NULL, y = MAP('x', 1)",
+            ),
+            (
+                lambda: exp.update("tbl", {"x": 1}, where="y > 0"),
+                "UPDATE tbl SET x = 1 WHERE y > 0",
+            ),
+            (
+                lambda: exp.update("tbl", {"x": 1}, from_="tbl2"),
+                "UPDATE tbl SET x = 1 FROM tbl2",
             ),
         ]:
             with self.subTest(sql):

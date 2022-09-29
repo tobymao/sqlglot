@@ -34,6 +34,14 @@ WITH x_2 AS (SELECT d FROM x), y AS (SELECT c FROM x_2 AS x) SELECT a, b FROM y 
 SELECT * FROM (SELECT * FROM (SELECT a FROM x) AS x) AS y JOIN (SELECT * FROM x) AS z ON x.a = y.a;
 WITH x_2 AS (SELECT a FROM x), y AS (SELECT * FROM x_2 AS x), z AS (SELECT * FROM x) SELECT * FROM y AS y JOIN z AS z ON x.a = y.a;
 
+-- Name conflicts with table alias
+SELECT a FROM (SELECT a FROM (SELECT a FROM x) AS y) AS z JOIN q AS y;
+WITH y AS (SELECT a FROM x), z AS (SELECT a FROM y AS y) SELECT a FROM z AS z JOIN q AS y;
+
+-- Name conflicts with existing CTE
+WITH y AS (SELECT a FROM (SELECT a FROM x) AS y) SELECT a FROM y;
+WITH y_2 AS (SELECT a FROM x), y AS (SELECT a FROM y_2 AS y) SELECT a FROM y;
+
 -- Union
 SELECT 1 AS x, 2 AS y UNION ALL SELECT 1 AS x, 2 AS y;
 WITH cte AS (SELECT 1 AS x, 2 AS y) SELECT cte.x AS x, cte.y AS y FROM cte AS cte UNION ALL SELECT cte.x AS x, cte.y AS y FROM cte AS cte;

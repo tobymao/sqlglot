@@ -204,7 +204,7 @@ class Parser:
         TokenType.DATETIME,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
-        *NESTED_TYPE_TOKENS,
+        *TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }
 

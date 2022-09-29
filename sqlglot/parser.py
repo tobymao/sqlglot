@@ -144,6 +144,7 @@ class Parser:
         TokenType.LANGUAGE,
         TokenType.LEADING,
         TokenType.LOCATION,
+        TokenType.MATERIALIZED,
         TokenType.NATURAL,
         TokenType.NEXT,
         TokenType.ONLY,

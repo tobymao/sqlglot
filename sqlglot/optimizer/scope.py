@@ -1,3 +1,4 @@
+import itertools
 from copy import copy
 from enum import Enum, auto
 
@@ -346,8 +347,10 @@ class Scope:
         Yields:
             Scope: scope instances in depth-first-search post-order
         """
-        for children in [self.cte_scopes, self.union_scopes, self.subquery_scopes, self.derived_table_scopes]:
-            yield from children
+        for child_scope in itertools.chain(
+            self.cte_scopes, self.union_scopes, self.subquery_scopes, self.derived_table_scopes
+        ):
+            yield from child_scope.traverse()
         yield self
 
 

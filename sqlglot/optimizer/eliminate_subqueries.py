@@ -2,7 +2,7 @@ import itertools
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
-from sqlglot.optimizer.scope import Scope, build_scope
+from sqlglot.optimizer.scope import build_scope
 from sqlglot.optimizer.simplify import simplify
 
 
@@ -39,16 +39,13 @@ def eliminate_subqueries(expression):
     # We don't want to create new CTEs that conflict with these names.
     taken = {}
 
+    # All CTE aliases in the root scope are taken
+    for scope in root.cte_scopes:
+        taken[scope.expression.parent.alias] = scope
+
+    # All table names are taken
     for scope in root.traverse():
-        taken.update(
-            {
-                alias: source
-                for alias, source in scope.sources.items()
-                # Don't include derived tables that we're going to convert to CTEs,
-                # since these names won't be taken for long...
-                if not isinstance(source, Scope) or not source.is_derived_table
-            }
-        )
+        taken.update({source.name: source for _, source in scope.sources.items() if isinstance(source, exp.Table)})
 
     # Map of Expression->alias
     # Existing CTES in the root expression. We'll use this for deduplication.

@@ -470,8 +470,6 @@ def _add_table_sources(scope):
         if table_name in scope.sources:
             # This is a reference to a parent source (e.g. a CTE), not an actual table.
             scope.sources[source_name] = scope.sources[table_name]
-        elif source_name in scope.sources:
-            raise OptimizeError(f"Duplicate table name: {source_name}")
         else:
             sources[source_name] = table
 

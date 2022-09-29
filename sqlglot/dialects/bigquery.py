@@ -62,7 +62,13 @@ def _create_sql(self, expression):
     if kind.upper() == "FUNCTION" and returns and returns.args.get("is_table"):
         expression = expression.copy()
         expression.set("kind", "TABLE FUNCTION")
-        if isinstance(expression.expression, (exp.Subquery, exp.Literal,)):
+        if isinstance(
+            expression.expression,
+            (
+                exp.Subquery,
+                exp.Literal,
+            ),
+        ):
             expression.set("expression", expression.expression.this)
 
         return self.create_sql(expression)

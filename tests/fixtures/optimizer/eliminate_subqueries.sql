@@ -6,6 +6,10 @@ SELECT * FROM x;
 SELECT a FROM (SELECT b FROM (SELECT c FROM x));
 WITH cte AS (SELECT c FROM x), cte_2 AS (SELECT b FROM cte AS cte) SELECT a FROM cte_2 AS cte_2;
 
+-- Joined derived table inside nested derived table
+SELECT b FROM (SELECT b FROM (SELECT b FROM x JOIN (SELECT b FROM y) AS y ON x.b = y.b));
+WITH y_2 AS (SELECT b FROM y), cte AS (SELECT b FROM x JOIN y_2 AS y ON x.b = y.b), cte_2 AS (SELECT b FROM cte AS cte) SELECT b FROM cte_2 AS cte_2;
+
 -- Aliased derived tables
 SELECT a FROM (SELECT b FROM (SELECT c FROM x) AS y) AS z;
 WITH y AS (SELECT c FROM x), z AS (SELECT b FROM y AS y) SELECT a FROM z AS z;

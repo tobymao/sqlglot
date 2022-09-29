@@ -1525,8 +1525,6 @@ class Parser:
         is_struct = type_token == TokenType.STRUCT
         expressions = None
 
-        # breakpoint()
-
         if self._match(TokenType.L_BRACKET):
             self._retreat(index)
             return None

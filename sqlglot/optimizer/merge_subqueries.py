@@ -6,7 +6,7 @@ from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.optimizer.simplify import simplify
 
 
-def merge_subqueries(expression):
+def merge_subqueries(expression, leave_tables_isolated=False):
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 
@@ -14,19 +14,26 @@ def merge_subqueries(expression):
 
     Example:
         >>> import sqlglot
-        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT x.a FROM x)")
+        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT x.a FROM x) JOIN y")
         >>> merge_subqueries(expression).sql()
-        'SELECT x.a FROM x'
+        'SELECT x.a FROM x JOIN y'
+
+    If `leave_tables_isolated` is True, this will not merge inner queries into outer
+    queries if it would result in multiple table selects in a single query:
+        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT x.a FROM x) JOIN y")
+        >>> merge_subqueries(expression, leave_tables_isolated=True).sql()
+        'SELECT a FROM (SELECT x.a FROM x) JOIN y'
 
     Inspired by https://dev.mysql.com/doc/refman/8.0/en/derived-table-optimization.html
 
     Args:
         expression (sqlglot.Expression): expression to optimize
+        leave_tables_isolated (bool):
     Returns:
         sqlglot.Expression: optimized expression
     """
-    merge_ctes(expression)
-    merge_derived_tables(expression)
+    merge_ctes(expression, leave_tables_isolated)
+    merge_derived_tables(expression, leave_tables_isolated)
     return expression
 
 
@@ -40,7 +47,7 @@ UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
 }
 
 
-def merge_ctes(expression):
+def merge_ctes(expression, leave_tables_isolated=False):
     scopes = traverse_scope(expression)
 
     # All places where we select from CTEs.
@@ -60,7 +67,7 @@ def merge_ctes(expression):
     singular_cte_selections = [v[0] for k, v in cte_selections.items() if len(v) == 1]
     for outer_scope, inner_scope, table in singular_cte_selections:
         inner_select = inner_scope.expression.unnest()
-        if _mergeable(outer_scope, inner_select):
+        if _mergeable(outer_scope, inner_select, leave_tables_isolated):
             from_or_join = table.find_ancestor(exp.From, exp.Join)
 
             node_to_replace = table
@@ -79,11 +86,11 @@ def merge_ctes(expression):
             _pop_cte(inner_scope)
 
 
-def merge_derived_tables(expression):
+def merge_derived_tables(expression, leave_tables_isolated=False):
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             inner_select = subquery.unnest()
-            if _mergeable(outer_scope, inner_select):
+            if _mergeable(outer_scope, inner_select, leave_tables_isolated):
                 alias = subquery.alias_or_name
                 from_or_join = subquery.find_ancestor(exp.From, exp.Join)
                 inner_scope = outer_scope.sources[alias]
@@ -96,13 +103,14 @@ def merge_derived_tables(expression):
                 _merge_order(outer_scope, inner_scope)
 
 
-def _mergeable(outer_scope, inner_select):
+def _mergeable(outer_scope, inner_select, leave_tables_isolated):
     """
     Return True if `inner_select` can be merged into outer query.
 
     Args:
         outer_scope (Scope)
         inner_select (exp.Select)
+        leave_tables_isolated (bool)
     Returns:
         bool: True if can be merged
     """
@@ -113,6 +121,7 @@ def _mergeable(outer_scope, inner_select):
         and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
         and inner_select.args.get("from")
         and not any(e.find(exp.AggFunc, exp.Select) for e in inner_select.expressions)
+        and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
     )
 
 

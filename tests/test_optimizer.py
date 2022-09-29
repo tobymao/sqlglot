@@ -1,4 +1,5 @@
 import unittest
+from functools import partial
 
 from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.errors import OptimizeError
@@ -29,10 +30,11 @@ class TestOptimizer(unittest.TestCase):
 
     def check_file(self, file, func, pretty=False, **kwargs):
         for i, (meta, sql, expected) in enumerate(load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1):
-            dialect = meta.get("dialect")
+            dialect = meta.pop("dialect", None)
+            func_kwargs = {**kwargs, **meta}
             with self.subTest(f"{i}, {sql}"):
                 self.assertEqual(
-                    func(parse_one(sql, read=dialect), **kwargs).sql(pretty=pretty, dialect=dialect),
+                    func(parse_one(sql, read=dialect), **func_kwargs).sql(pretty=pretty, dialect=dialect),
                     expected,
                 )
 
@@ -125,11 +127,11 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_merge_subqueries(self):
-        def optimize(expression, **kwargs):
-            expression = optimizer.qualify_tables.qualify_tables(expression)
-            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
-            expression = optimizer.merge_subqueries.merge_subqueries(expression)
-            return expression
+        optimize = partial(optimizer.optimize, rules=[
+            optimizer.qualify_tables.qualify_tables,
+            optimizer.qualify_columns.qualify_columns,
+            optimizer.merge_subqueries.merge_subqueries,
+        ])
 
         self.check_file("merge_subqueries", optimize, schema=self.schema)
 

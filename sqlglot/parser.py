@@ -1094,6 +1094,11 @@ class Parser:
         if unnest:
             return unnest
 
+        values = self._parse_derived_table_values()
+
+        if values:
+            return values
+
         subquery = self._parse_select(table=True)
 
         if subquery:
@@ -1159,6 +1164,24 @@ class Parser:
             exp.Unnest,
             expressions=expressions,
             ordinality=ordinality,
+            alias=alias,
+        )
+
+    def _parse_derived_table_values(self):
+        is_derived = self._curr is not None and self._curr.token_type == TokenType.L_PAREN
+        if not self._match(TokenType.VALUES) and not self._match_pair(TokenType.L_PAREN, TokenType.VALUES):
+            return None
+
+        expressions = self._parse_csv(self._parse_paren_enclosed_csv, self._parse_column)
+
+        if is_derived:
+            self._match_r_paren()
+
+        alias = self._parse_table_alias()
+
+        return self.expression(
+            exp.Values,
+            expressions=expressions,
             alias=alias,
         )
 
@@ -2182,12 +2205,12 @@ class Parser:
         self._match_r_paren()
         return columns
 
-    def _parse_csv(self, parse):
-        parse_result = parse()
+    def _parse_csv(self, parse, *args, **kwargs):
+        parse_result = parse(*args, **kwargs)
         items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            parse_result = parse()
+            parse_result = parse(*args, **kwargs)
             if parse_result is not None:
                 items.append(parse_result)
 
@@ -2206,6 +2229,15 @@ class Parser:
         expressions = self._parse_csv(self._parse_id_var)
         self._match_r_paren()
         return expressions
+
+    def _parse_paren_enclosed_csv(self, parse):
+        if not self._match(TokenType.L_PAREN):
+            return
+        expressions = self._parse_csv(parse)
+        self._match_r_paren()
+        return exp.Tuple(
+            expressions=expressions
+        )
 
     def _match(self, token_type):
         if not self._curr:

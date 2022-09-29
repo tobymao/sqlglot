@@ -1115,8 +1115,12 @@ class Update(Expression):
     }
 
 
-class Values(Expression):
-    arg_types = {"expressions": True}
+class Values(DerivedTable):
+    arg_types = {
+        "expressions": True,
+        "ordinality": False,
+        "alias": False,
+    }
 
 
 class Var(Expression):
@@ -2087,6 +2091,13 @@ class ApproxDistinct(AggFunc):
 class Array(Func):
     arg_types = {"expressions": False}
     is_var_len_args = True
+
+
+class NamelessArray(Array):
+    _sql_names = ["NamelessArray"]
+    @classmethod
+    def sql_name(cls):
+        return ""
 
 
 class ArrayAgg(AggFunc):

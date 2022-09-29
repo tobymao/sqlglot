@@ -5,7 +5,7 @@ from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 
-SKIP_QUALIFY = (exp.Unnest, exp.Lateral)
+SKIP_QUALIFY = (exp.Unnest, exp.Lateral, exp.Values)
 
 
 def qualify_columns(expression, schema):

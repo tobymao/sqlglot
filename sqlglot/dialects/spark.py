@@ -47,6 +47,8 @@ def _unix_to_time(self, expression):
 
 
 class Spark(Hive):
+    wrapped_derived_values = False
+
     class Parser(Hive.Parser):
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,

@@ -35,7 +35,7 @@ class TestOptimizer(unittest.TestCase):
 
             func_kwargs = {**kwargs}
             if leave_tables_isolated is not None:
-                func_kwargs["leave_tables_isolated"] = bool(leave_tables_isolated)
+                func_kwargs["leave_tables_isolated"] = leave_tables_isolated.lower() in ("true", "1")
 
             with self.subTest(f"{i}, {sql}"):
                 self.assertEqual(

@@ -2564,6 +2564,8 @@ def _norm_args(expression):
     for k, arg in expression.args.items():
         if isinstance(arg, list):
             arg = [_norm_arg(a) for a in arg]
+            if not arg:
+                arg = None
         else:
             arg = _norm_arg(arg)
 

@@ -27,6 +27,8 @@ class TestExpressions(unittest.TestCase):
             parse_one("ROW() OVER (partition BY y)"),
         )
         self.assertEqual(parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date(x)"))
+        self.assertEqual(exp.Table(pivots=[]), exp.Table())
+        self.assertNotEqual(exp.Table(pivots=[None]), exp.Table())
 
     def test_find(self):
         expression = parse_one("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")

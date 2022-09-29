@@ -655,7 +655,7 @@ class Parser:
             this = self._parse_user_defined_function()
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
-                expression = self._parse_statement()
+                expression = self._parse_select_or_expression()
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
@@ -754,12 +754,12 @@ class Parser:
             else:
                 value = self._parse_schema("TABLE")
         else:
-            value = None
+            value = self._parse_types()
 
         return self.expression(
             exp.ReturnsProperty,
             this=exp.Literal.string("RETURNS"),
-            value=(value or self._parse_types()),
+            value=value,
             is_table=is_table,
         )
 
@@ -1433,7 +1433,7 @@ class Parser:
             this = self.expression(exp.In, this=this, unnest=unnest)
         else:
             self._match_l_paren()
-            expressions = self._parse_csv(lambda: self._parse_select() or self._parse_expression())
+            expressions = self._parse_csv(self._parse_select_or_expression)
 
             if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
                 this = self.expression(exp.In, this=this, query=expressions[0])
@@ -2230,6 +2230,9 @@ class Parser:
         expressions = self._parse_csv(self._parse_id_var)
         self._match_r_paren()
         return expressions
+
+    def _parse_select_or_expression(self):
+        return self._parse_select() or self._parse_expression()
 
     def _match(self, token_type):
         if not self._curr:

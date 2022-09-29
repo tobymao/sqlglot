@@ -95,6 +95,7 @@ class TokenType(AutoName):
     ROWVERSION = auto()
     IMAGE = auto()
     VARIANT = auto()
+    OBJECT = auto()
 
     # keywords
     ADD_FILE = auto()
@@ -186,6 +187,7 @@ class TokenType(AutoName):
     LIMIT = auto()
     LOCATION = auto()
     MAP = auto()
+    MATERIALIZED = auto()
     MOD = auto()
     NATURAL = auto()
     NEXT = auto()
@@ -473,6 +475,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
         "LOCATION": TokenType.LOCATION,
+        "MATERIALIZED": TokenType.MATERIALIZED,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
         "NO ACTION": TokenType.NO_ACTION,
@@ -480,6 +483,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "NULL": TokenType.NULL,
         "NULLS FIRST": TokenType.NULLS_FIRST,
         "NULLS LAST": TokenType.NULLS_LAST,
+        "OBJECT": TokenType.OBJECT,
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
         "ONLY": TokenType.ONLY,

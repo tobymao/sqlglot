@@ -127,11 +127,14 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_merge_subqueries(self):
-        optimize = partial(optimizer.optimize, rules=[
-            optimizer.qualify_tables.qualify_tables,
-            optimizer.qualify_columns.qualify_columns,
-            optimizer.merge_subqueries.merge_subqueries,
-        ])
+        optimize = partial(
+            optimizer.optimize,
+            rules=[
+                optimizer.qualify_tables.qualify_tables,
+                optimizer.qualify_columns.qualify_columns,
+                optimizer.merge_subqueries.merge_subqueries,
+            ],
+        )
 
         self.check_file("merge_subqueries", optimize, schema=self.schema)
 

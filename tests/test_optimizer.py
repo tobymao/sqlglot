@@ -30,8 +30,13 @@ class TestOptimizer(unittest.TestCase):
 
     def check_file(self, file, func, pretty=False, **kwargs):
         for i, (meta, sql, expected) in enumerate(load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1):
-            dialect = meta.pop("dialect", None)
-            func_kwargs = {**kwargs, **meta}
+            dialect = meta.get("dialect")
+            leave_tables_isolated = meta.get("leave_tables_isolated")
+
+            func_kwargs = {**kwargs}
+            if leave_tables_isolated is not None:
+                func_kwargs["leave_tables_isolated"] = bool(leave_tables_isolated)
+
             with self.subTest(f"{i}, {sql}"):
                 self.assertEqual(
                     func(parse_one(sql, read=dialect), **func_kwargs).sql(pretty=pretty, dialect=dialect),

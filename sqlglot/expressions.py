@@ -2093,14 +2093,6 @@ class Array(Func):
     is_var_len_args = True
 
 
-class NamelessArray(Array):
-    _sql_names = ["NamelessArray"]
-
-    @classmethod
-    def sql_name(cls):
-        return ""
-
-
 class ArrayAgg(AggFunc):
     pass
 

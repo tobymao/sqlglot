@@ -1,3 +1,4 @@
+import io
 import unittest
 from functools import partial
 
@@ -334,3 +335,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.type, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.left.type, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type, exp.DataType.Type.INT)
+
+    def test_debugger(self):
+        expression = parse_one("SELECT * FROM x")
+        output = io.StringIO()
+        optimizer.optimize(expression, schema=self.schema, debug=output)
+        # Smoke check the output
+        self.assertIn("qualify_columns", output.getvalue())

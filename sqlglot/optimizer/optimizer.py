@@ -1,3 +1,4 @@
+from sqlglot.optimizer.debugger import get_debugger
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
@@ -27,7 +28,7 @@ RULES = (
 )
 
 
-def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwargs):
+def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, debug=None, **kwargs):
     """
     Rewrite a sqlglot AST into an optimized form.
 
@@ -46,6 +47,9 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
     Returns:
         sqlglot.Expression: optimized expression
     """
+    debugger = get_debugger(enable=debug is not None, file=debug)
+    debugger.record("original", expression)
+
     possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
     expression = expression.copy()
     for rule in rules:
@@ -55,4 +59,6 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
         rule_kwargs = {param: possible_kwargs[param] for param in rule_params if param in possible_kwargs}
 
         expression = rule(expression, **rule_kwargs)
+        debugger.record(rule, expression)
+
     return expression

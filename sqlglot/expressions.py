@@ -915,6 +915,14 @@ class LanguageProperty(Property):
     pass
 
 
+class ExecuteAsProperty(Property):
+    pass
+
+
+class VolatilityProperty(Property):
+    arg_types = {"this": True}
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 

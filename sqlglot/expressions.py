@@ -389,7 +389,7 @@ class Expression(metaclass=_Expression):
             'SELECT y FROM tbl'
 
         Args:
-            expression (Expression): new node
+            expression (Expression|None): new node
 
         Returns :
             the new expression or expressions
@@ -402,6 +402,12 @@ class Expression(metaclass=_Expression):
 
         replace_children(parent, lambda child: expression if child is self else child)
         return expression
+
+    def pop(self):
+        """
+        Remove this expression from its AST.
+        """
+        self.replace(None)
 
     def assert_is(self, type_):
         """
@@ -532,6 +538,7 @@ class Create(Expression):
         "temporary": False,
         "replace": False,
         "unique": False,
+        "materialized": False,
     }
 
 
@@ -901,7 +908,7 @@ class AnonymousProperty(Property):
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "kind": True}
+    arg_types = {"this": True, "value": True, "is_table": False}
 
 
 class LanguageProperty(Property):
@@ -1759,6 +1766,7 @@ class DataType(Expression):
         ROWVERSION = auto()
         IMAGE = auto()
         VARIANT = auto()
+        OBJECT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):
@@ -2141,6 +2149,7 @@ class TryCast(Cast):
 
 
 class Ceil(Func):
+    arg_types = {"this": True, "decimals": False}
     _sql_names = ["CEIL", "CEILING"]
 
 
@@ -2271,7 +2280,7 @@ class Explode(Func):
 
 
 class Floor(Func):
-    pass
+    arg_types = {"this": True, "decimals": False}
 
 
 class Greatest(Func):
@@ -2557,6 +2566,8 @@ def _norm_args(expression):
     for k, arg in expression.args.items():
         if isinstance(arg, list):
             arg = [_norm_arg(a) for a in arg]
+            if not arg:
+                arg = None
         else:
             arg = _norm_arg(arg)
 

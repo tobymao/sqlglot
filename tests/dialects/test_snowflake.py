@@ -266,8 +266,30 @@ class TestSnowflake(Validator):
                 "spark": "ARRAY(0, 1, 2)",
             },
         )
+        self.validate_all(
+            "SELECT a::OBJECT",
+            write={
+                "snowflake": "SELECT CAST(a AS OBJECT)",
+            },
+        )
 
     def test_ddl(self):
         self.validate_identity(
             "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
+        )
+        self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
+
+    def test_user_defined_functions(self):
+        self.validate_all(
+            "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS $$ SELECT 1 $$",
+            write={
+                "snowflake": "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS ' SELECT 1 '",
+            },
+        )
+        self.validate_all(
+            "CREATE FUNCTION a() RETURNS TABLE (b INT) AS 'SELECT 1'",
+            write={
+                "snowflake": "CREATE FUNCTION a() RETURNS TABLE (b INT) AS 'SELECT 1'",
+                "bigquery": "CREATE TABLE FUNCTION a() RETURNS TABLE <b INT64> AS SELECT 1",
+            },
         )

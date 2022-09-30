@@ -437,7 +437,9 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
         top = None
         for child_scope in _traverse_scope(
             scope.branch(
-                derived_table if isinstance(derived_table, (exp.Unnest, exp.Lateral, exp.Values)) else derived_table.this,
+                derived_table
+                if isinstance(derived_table, (exp.Unnest, exp.Lateral, exp.Values))
+                else derived_table.this,
                 add_sources=sources if scope_type == ScopeType.CTE else None,
                 outer_column_list=derived_table.alias_column_names,
                 scope_type=ScopeType.UNNEST if isinstance(derived_table, (exp.Unnest, exp.Values)) else scope_type,

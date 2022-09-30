@@ -2235,9 +2235,7 @@ class Parser:
             return
         expressions = self._parse_csv(parse)
         self._match_r_paren()
-        return exp.Tuple(
-            expressions=expressions
-        )
+        return exp.Tuple(expressions=expressions)
 
     def _match(self, token_type):
         if not self._curr:

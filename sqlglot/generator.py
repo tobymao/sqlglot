@@ -588,8 +588,8 @@ class Generator:
             return f"VALUES{self.seg('')}{args}"
         alias = f" AS {alias}" if alias else alias
         if self.wrapped_derived_values:
-            return f"(VALUES {args}){alias}"
-        return f"VALUES {args}{alias}"
+            return f"(VALUES{self.seg('')}{args}){alias}"
+        return f"VALUES{self.seg('')}{args}{alias}"
 
     def var_sql(self, expression):
         return self.sql(expression, "this")
@@ -808,7 +808,6 @@ class Generator:
         alias = f" AS {alias}" if alias else alias
         ordinality = " WITH ORDINALITY" if expression.args.get("ordinality") else ""
         return f"UNNEST({args}){ordinality}{alias}"
-
 
     def where_sql(self, expression):
         this = self.indent(self.sql(expression, "this"))
@@ -1161,7 +1160,6 @@ class Generator:
 
     def token_sql(self, token_type):
         return self.TOKEN_MAPPING.get(token_type, token_type.name)
-
 
     def userdefinedfunction_sql(self, expression):
         this = self.sql(expression, "this")

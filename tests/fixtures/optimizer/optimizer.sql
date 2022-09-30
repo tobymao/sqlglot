@@ -142,11 +142,15 @@ SELECT cola, colb FROM (VALUES (1, 'test'), (2, 'test2')) AS tab(cola, colb);
 SELECT
   "tab"."cola" AS "cola",
   "tab"."colb" AS "colb"
-FROM (VALUES (1, 'test'), (2, 'test2')) AS "tab"("cola", "colb");
+FROM (VALUES
+  (1, 'test'),
+  (2, 'test2')) AS "tab"("cola", "colb");
 
 # dialect: spark
 SELECT cola, colb FROM (VALUES (1, 'test'), (2, 'test2')) AS tab(cola, colb);
 SELECT
   `tab`.`cola` AS `cola`,
   `tab`.`colb` AS `colb`
-FROM VALUES (1, 'test'), (2, 'test2') AS `tab`(`cola`, `colb`);
+FROM VALUES
+  (1, 'test'),
+  (2, 'test2') AS `tab`(`cola`, `colb`);

@@ -2095,6 +2095,7 @@ class Array(Func):
 
 class NamelessArray(Array):
     _sql_names = ["NamelessArray"]
+
     @classmethod
     def sql_name(cls):
         return ""

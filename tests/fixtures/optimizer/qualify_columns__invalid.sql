@@ -5,7 +5,6 @@ SELECT z.* FROM x;
 SELECT x FROM x;
 INSERT INTO x VALUES (1, 2);
 SELECT a FROM x AS z JOIN y AS z;
-WITH z AS (SELECT * FROM x) SELECT * FROM x AS z;
 SELECT a FROM x JOIN (SELECT b FROM y WHERE y.b = x.c);
 SELECT a FROM x AS y JOIN (SELECT a FROM y) AS q ON y.a = q.a;
 SELECT q.a FROM (SELECT x.b FROM x) AS z JOIN (SELECT a FROM z) AS q ON z.b = q.a;

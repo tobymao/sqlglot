@@ -27,6 +27,8 @@ class TestExpressions(unittest.TestCase):
             parse_one("ROW() OVER (partition BY y)"),
         )
         self.assertEqual(parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date(x)"))
+        self.assertEqual(exp.Table(pivots=[]), exp.Table())
+        self.assertNotEqual(exp.Table(pivots=[None]), exp.Table())
 
     def test_find(self):
         expression = parse_one("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")
@@ -279,6 +281,19 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(expression.sql(), "SELECT c, b FROM x")
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
+
+    def test_pop(self):
+        expression = parse_one("SELECT a, b FROM x")
+        expression.find(exp.Column).pop()
+        self.assertEqual(expression.sql(), "SELECT b FROM x")
+        expression.find(exp.Column).pop()
+        self.assertEqual(expression.sql(), "SELECT FROM x")
+        expression.pop()
+        self.assertEqual(expression.sql(), "SELECT FROM x")
+
+        expression = parse_one("WITH x AS (SELECT a FROM x) SELECT * FROM x")
+        expression.find(exp.With).pop()
+        self.assertEqual(expression.sql(), "SELECT * FROM x")
 
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")

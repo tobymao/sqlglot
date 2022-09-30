@@ -122,6 +122,9 @@ class TestParser(unittest.TestCase):
     def test_parameter(self):
         self.assertEqual(parse_one("SELECT @x, @@x, @1").sql(), "SELECT @x, @@x, @1")
 
+    def test_var(self):
+        self.assertEqual(parse_one("SELECT @JOIN, @'foo'").sql(), "SELECT @JOIN, @'foo'")
+
     def test_annotations(self):
         expression = parse_one(
             """

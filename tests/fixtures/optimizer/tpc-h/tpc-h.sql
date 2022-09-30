@@ -97,25 +97,13 @@ order by
    p_partkey
 limit
    100;
-WITH "partsupp_2" AS (
-  SELECT
-    "partsupp"."ps_partkey" AS "ps_partkey",
-    "partsupp"."ps_suppkey" AS "ps_suppkey",
-    "partsupp"."ps_supplycost" AS "ps_supplycost"
-  FROM "partsupp" AS "partsupp"
-), "region_2" AS (
-  SELECT
-    "region"."r_regionkey" AS "r_regionkey",
-    "region"."r_name" AS "r_name"
-  FROM "region" AS "region"
-  WHERE
-    "region"."r_name" = 'EUROPE'
-), "_u_0" AS (
+WITH "_u_0" AS (
   SELECT
     MIN("partsupp"."ps_supplycost") AS "_col_0",
     "partsupp"."ps_partkey" AS "_u_1"
-  FROM "partsupp_2" AS "partsupp"
-  CROSS JOIN "region_2" AS "region"
+  FROM "partsupp" AS "partsupp"
+  JOIN "region" AS "region"
+    ON "region"."r_name" = 'EUROPE'
   JOIN "nation" AS "nation"
     ON "nation"."n_regionkey" = "region"."r_regionkey"
   JOIN "supplier" AS "supplier"
@@ -136,10 +124,11 @@ SELECT
 FROM "part" AS "part"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "part"."p_partkey" = "_u_0"."_u_1"
-CROSS JOIN "region_2" AS "region"
+JOIN "region" AS "region"
+  ON "region"."r_name" = 'EUROPE'
 JOIN "nation" AS "nation"
   ON "nation"."n_regionkey" = "region"."r_regionkey"
-JOIN "partsupp_2" AS "partsupp"
+JOIN "partsupp" AS "partsupp"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
 JOIN "supplier" AS "supplier"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
@@ -652,27 +641,15 @@ group by
                 )
 order by
         value desc;
-WITH "supplier_2" AS (
-  SELECT
-    "supplier"."s_suppkey" AS "s_suppkey",
-    "supplier"."s_nationkey" AS "s_nationkey"
-  FROM "supplier" AS "supplier"
-), "nation_2" AS (
-  SELECT
-    "nation"."n_nationkey" AS "n_nationkey",
-    "nation"."n_name" AS "n_name"
-  FROM "nation" AS "nation"
-  WHERE
-    "nation"."n_name" = 'GERMANY'
-)
 SELECT
   "partsupp"."ps_partkey" AS "ps_partkey",
   SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") AS "value"
 FROM "partsupp" AS "partsupp"
-JOIN "supplier_2" AS "supplier"
+JOIN "supplier" AS "supplier"
   ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
-JOIN "nation_2" AS "nation"
-  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+JOIN "nation" AS "nation"
+  ON "nation"."n_name" = 'GERMANY'
+  AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 GROUP BY
   "partsupp"."ps_partkey"
 HAVING
@@ -680,9 +657,9 @@ HAVING
     SELECT
       SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") * 0.0001 AS "_col_0"
     FROM "partsupp" AS "partsupp"
-    JOIN "supplier_2" AS "supplier"
+    JOIN "supplier" AS "supplier"
       ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
-    JOIN "nation_2" AS "nation"
+    JOIN "nation" AS "nation"
       ON "supplier"."s_nationkey" = "nation"."n_nationkey"
   )
 ORDER BY

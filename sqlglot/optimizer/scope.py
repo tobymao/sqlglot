@@ -348,7 +348,7 @@ class Scope:
             Scope: scope instances in depth-first-search post-order
         """
         for child_scope in itertools.chain(
-            self.cte_scopes, self.union_scopes, self.subquery_scopes, self.derived_table_scopes
+            self.cte_scopes, self.union_scopes, self.derived_table_scopes, self.subquery_scopes
         ):
             yield from child_scope.traverse()
         yield self
@@ -410,8 +410,8 @@ def _traverse_scope(scope):
 
 def _traverse_select(scope):
     yield from _traverse_derived_tables(scope.ctes, scope, ScopeType.CTE)
-    yield from _traverse_subqueries(scope)
     yield from _traverse_derived_tables(scope.derived_tables, scope, ScopeType.DERIVED_TABLE)
+    yield from _traverse_subqueries(scope)
     _add_table_sources(scope)
 
 

@@ -314,7 +314,7 @@ class Scope:
 
     @property
     def is_unnest(self):
-        """Determine if this scope is an unnest"""
+        """Determine if this scope is a selectless derived"""
         return self.scope_type == ScopeType.SELECTLESS_DERIVED
 
     @property

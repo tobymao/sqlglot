@@ -506,6 +506,10 @@ class DerivedTable(Expression):
         return [select.alias_or_name for select in self.selects]
 
 
+class UDTF(DerivedTable):
+    pass
+
+
 class Annotation(Expression):
     arg_types = {
         "this": True,
@@ -827,7 +831,7 @@ class Join(Expression):
         return join
 
 
-class Lateral(DerivedTable):
+class Lateral(UDTF):
     arg_types = {"this": True, "outer": False, "alias": False}
 
 
@@ -1098,7 +1102,7 @@ class Intersect(Union):
     pass
 
 
-class Unnest(DerivedTable):
+class Unnest(UDTF):
     arg_types = {
         "expressions": True,
         "ordinality": False,
@@ -1116,8 +1120,12 @@ class Update(Expression):
     }
 
 
-class Values(Expression):
-    arg_types = {"expressions": True}
+class Values(UDTF):
+    arg_types = {
+        "expressions": True,
+        "ordinality": False,
+        "alias": False,
+    }
 
 
 class Var(Expression):

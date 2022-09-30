@@ -1009,7 +1009,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT * FROM VALUES ('x'), ('y') AS t(z)",
             write={
-                "spark": "SELECT * FROM (VALUES ('x'), ('y')) AS t(z)",
+                "spark": "SELECT * FROM VALUES ('x'), ('y') AS t(z)",
             },
         )
         self.validate_all(

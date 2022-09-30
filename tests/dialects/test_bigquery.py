@@ -239,7 +239,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
             write={
-                "spark": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+                "spark": "SELECT cola, colb FROM VALUES (1, 'test') AS tab(cola, colb)",
                 "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
                 "snowflake": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
             },

@@ -39,3 +39,15 @@ SELECT "_q_0".b AS b FROM (SELECT SUM(x.b) AS b FROM x AS x GROUP BY x.a) AS "_q
 
 SELECT b FROM (SELECT a, SUM(b) AS b FROM x ORDER BY a);
 SELECT "_q_0".b AS b FROM (SELECT x.a AS a, SUM(x.b) AS b FROM x AS x ORDER BY a) AS "_q_0";
+
+SELECT x FROM (VALUES(1, 2)) AS q(x, y);
+SELECT q.x AS x FROM (VALUES (1, 2)) AS q(x, y);
+
+SELECT x FROM UNNEST([1, 2]) AS q(x, y);
+SELECT q.x AS x FROM UNNEST(ARRAY(1, 2)) AS q(x, y);
+
+WITH t1 AS (SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)]) AS "q"("cola", "colb")) SELECT cola FROM t1;
+WITH t1 AS (SELECT q.cola AS cola FROM UNNEST(ARRAY(STRUCT(1 AS cola, 'test' AS colb))) AS "q"("cola", "colb")) SELECT t1.cola AS cola FROM t1;
+
+SELECT x FROM VALUES(1, 2) AS q(x, y);
+SELECT q.x AS x FROM (VALUES (1, 2)) AS q(x, y);

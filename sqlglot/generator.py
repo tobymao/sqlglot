@@ -49,10 +49,12 @@ class Generator:
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
-        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
+        exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
+        exp.VolatilityProperty: lambda self, e: self.sql(e.name),
     }
 
     NULL_ORDERING_SUPPORTED = True
@@ -410,7 +412,9 @@ class Generator:
         this = self.sql(expression, "this")
         kind = expression.args["kind"]
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
-        return f"DROP {kind}{exists_sql}{this}"
+        temporary = " TEMPORARY" if expression.args.get("temporary") else ""
+        materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
+        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}"
 
     def except_sql(self, expression):
         return self.prepend_ctes(

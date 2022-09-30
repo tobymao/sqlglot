@@ -99,6 +99,7 @@ class BigQuery(Dialect):
             "QUALIFY": TokenType.QUALIFY,
             "UNKNOWN": TokenType.NULL,
             "WINDOW": TokenType.WINDOW,
+            "NOT DETERMINISTIC": TokenType.VOLATILE,
         }
 
     class Parser(Parser):
@@ -143,6 +144,7 @@ class BigQuery(Dialect):
             exp.Values: _derived_table_values_to_unnest,
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Create: _create_sql,
+            exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC",
         }
 
         TYPE_MAPPING = {
@@ -158,6 +160,16 @@ class BigQuery(Dialect):
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.NVARCHAR: "STRING",
+        }
+
+        ROOT_PROPERTIES = {
+            exp.LanguageProperty,
+            exp.ReturnsProperty,
+            exp.VolatilityProperty,
+        }
+
+        WITH_PROPERTIES = {
+            exp.AnonymousProperty,
         }
 
         def in_unnest_op(self, unnest):

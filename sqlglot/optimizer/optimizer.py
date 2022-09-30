@@ -43,6 +43,11 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, debug=
         db (str): specify the default database, as might be set by a `USE DATABASE db` statement
         catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
         rules (list): sequence of optimizer rules to use
+        debug (None|str|io.IOBase|True): If set, enable debug mode.
+            This will capture the incremental output of the optimizer.
+            If the value is a string, it's a filepath to which to write the output.
+            If the value is an instance of IOBase, it's a bugger to which to write the output.
+            If the value is True, the output is printed to stdout.
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
     Returns:
         sqlglot.Expression: optimized expression

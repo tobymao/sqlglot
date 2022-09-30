@@ -624,18 +624,20 @@ class Parser:
         return expression
 
     def _parse_drop(self):
-        if self._match(TokenType.TABLE):
-            kind = "TABLE"
-        elif self._match(TokenType.VIEW):
-            kind = "VIEW"
-        else:
-            self.raise_error("Expected TABLE or View")
+        temporary = self._match(TokenType.TEMPORARY) or ""
+        materialized = self._match(TokenType.MATERIALIZED) or ""
+        kind = self._match_set(self.CREATABLES) and self._prev.text
+        if not kind:
+            self.raise_error("Expected TABLE, VIEW, INDEX, FUNCTION, or PROCEDURE")
+            return
 
         return self.expression(
             exp.Drop,
             exists=self._parse_exists(),
             this=self._parse_table(schema=True),
             kind=kind,
+            temporary=temporary,
+            materialized=materialized,
         )
 
     def _parse_exists(self, not_=False):

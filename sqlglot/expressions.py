@@ -652,7 +652,13 @@ class Delete(Expression):
 
 
 class Drop(Expression):
-    arg_types = {"this": False, "kind": False, "exists": False}
+    arg_types = {
+        "this": False,
+        "kind": False,
+        "exists": False,
+        "temporary": False,
+        "materialized": False,
+    }
 
 
 class Filter(Expression):

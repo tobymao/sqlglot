@@ -409,7 +409,9 @@ class Generator:
         this = self.sql(expression, "this")
         kind = expression.args["kind"]
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
-        return f"DROP {kind}{exists_sql}{this}"
+        temporary = " TEMPORARY" if expression.args.get("temporary") else ""
+        materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
+        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}"
 
     def except_sql(self, expression):
         return self.prepend_ctes(

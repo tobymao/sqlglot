@@ -656,7 +656,13 @@ class Delete(Expression):
 
 
 class Drop(Expression):
-    arg_types = {"this": False, "kind": False, "exists": False}
+    arg_types = {
+        "this": False,
+        "kind": False,
+        "exists": False,
+        "temporary": False,
+        "materialized": False,
+    }
 
 
 class Filter(Expression):
@@ -917,6 +923,14 @@ class ReturnsProperty(Property):
 
 class LanguageProperty(Property):
     pass
+
+
+class ExecuteAsProperty(Property):
+    pass
+
+
+class VolatilityProperty(Property):
+    arg_types = {"this": True}
 
 
 class Properties(Expression):

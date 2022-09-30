@@ -136,6 +136,7 @@ class TokenType(AutoName):
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()
+    DETERMINISTIC = auto()
     DISTINCT = auto()
     DISTRIBUTE_BY = auto()
     DROP = auto()
@@ -144,6 +145,7 @@ class TokenType(AutoName):
     ENGINE = auto()
     ESCAPE = auto()
     EXCEPT = auto()
+    EXECUTE = auto()
     EXISTS = auto()
     EXPLAIN = auto()
     FALSE = auto()
@@ -167,6 +169,7 @@ class TokenType(AutoName):
     IF = auto()
     IGNORE_NULLS = auto()
     ILIKE = auto()
+    IMMUTABLE = auto()
     IN = auto()
     INDEX = auto()
     INNER = auto()
@@ -215,6 +218,7 @@ class TokenType(AutoName):
     PLACEHOLDER = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
+    PROCEDURE = auto()
     PROPERTIES = auto()
     QUALIFY = auto()
     QUOTE = auto()
@@ -238,6 +242,7 @@ class TokenType(AutoName):
     SIMILAR_TO = auto()
     SOME = auto()
     SORT_BY = auto()
+    STABLE = auto()
     STORED = auto()
     STRUCT = auto()
     TABLE_FORMAT = auto()
@@ -258,6 +263,7 @@ class TokenType(AutoName):
     USING = auto()
     VALUES = auto()
     VIEW = auto()
+    VOLATILE = auto()
     WHEN = auto()
     WHERE = auto()
     WINDOW = auto()
@@ -430,6 +436,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
+        "DETERMINISTIC": TokenType.DETERMINISTIC,
         "DISTINCT": TokenType.DISTINCT,
         "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
         "DROP": TokenType.DROP,
@@ -438,6 +445,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ENGINE": TokenType.ENGINE,
         "ESCAPE": TokenType.ESCAPE,
         "EXCEPT": TokenType.EXCEPT,
+        "EXECUTE": TokenType.EXECUTE,
         "EXISTS": TokenType.EXISTS,
         "EXPLAIN": TokenType.EXPLAIN,
         "FALSE": TokenType.FALSE,
@@ -456,6 +464,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
+        "IMMUTABLE": TokenType.IMMUTABLE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
@@ -504,6 +513,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PIVOT": TokenType.PIVOT,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
+        "PROCEDURE": TokenType.PROCEDURE,
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
@@ -522,6 +532,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SHOW": TokenType.SHOW,
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
+        "STABLE": TokenType.STABLE,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
         "TABLE_FORMAT": TokenType.TABLE_FORMAT,
@@ -542,6 +553,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "USING": TokenType.USING,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
+        "VOLATILE": TokenType.VOLATILE,
         "WHEN": TokenType.WHEN,
         "WHERE": TokenType.WHERE,
         "WITH": TokenType.WITH,

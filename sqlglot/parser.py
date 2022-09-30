@@ -126,6 +126,8 @@ class Parser:
         TokenType.CONSTRAINT,
         TokenType.DEFAULT,
         TokenType.DELETE,
+        TokenType.DETERMINISTIC,
+        TokenType.EXECUTE,
         TokenType.ENGINE,
         TokenType.ESCAPE,
         TokenType.EXPLAIN,
@@ -139,6 +141,7 @@ class Parser:
         TokenType.IF,
         TokenType.INDEX,
         TokenType.ISNULL,
+        TokenType.IMMUTABLE,
         TokenType.INTERVAL,
         TokenType.LAZY,
         TokenType.LANGUAGE,
@@ -163,6 +166,7 @@ class Parser:
         TokenType.SEED,
         TokenType.SET,
         TokenType.SHOW,
+        TokenType.STABLE,
         TokenType.STORED,
         TokenType.TABLE,
         TokenType.TABLE_FORMAT,
@@ -175,6 +179,8 @@ class Parser:
         TokenType.UNIQUE,
         TokenType.UNPIVOT,
         TokenType.PROPERTIES,
+        TokenType.PROCEDURE,
+        TokenType.VOLATILE,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }
@@ -379,6 +385,13 @@ class Parser:
         TokenType.TABLE_FORMAT: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         TokenType.USING: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         TokenType.LANGUAGE: lambda self: self._parse_property_assignment(exp.LanguageProperty),
+        TokenType.EXECUTE: lambda self: self._parse_execute_as(),
+        TokenType.DETERMINISTIC: lambda self: self.expression(
+            exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
+        ),
+        TokenType.IMMUTABLE: lambda self: self.expression(exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")),
+        TokenType.STABLE: lambda self: self.expression(exp.VolatilityProperty, this=exp.Literal.string("STABLE")),
+        TokenType.VOLATILE: lambda self: self.expression(exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")),
     }
 
     CONSTRAINT_PARSERS = {
@@ -418,7 +431,7 @@ class Parser:
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
-    CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION, TokenType.INDEX}
+    CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION, TokenType.INDEX, TokenType.PROCEDURE}
 
     STRICT_CAST = True
 
@@ -615,18 +628,20 @@ class Parser:
         return expression
 
     def _parse_drop(self):
-        if self._match(TokenType.TABLE):
-            kind = "TABLE"
-        elif self._match(TokenType.VIEW):
-            kind = "VIEW"
-        else:
-            self.raise_error("Expected TABLE or View")
+        temporary = self._match(TokenType.TEMPORARY)
+        materialized = self._match(TokenType.MATERIALIZED)
+        kind = self._match_set(self.CREATABLES) and self._prev.text
+        if not kind:
+            self.raise_error("Expected TABLE, VIEW, INDEX, FUNCTION, or PROCEDURE")
+            return
 
         return self.expression(
             exp.Drop,
             exists=self._parse_exists(),
             this=self._parse_table(schema=True),
             kind=kind,
+            temporary=temporary,
+            materialized=materialized,
         )
 
     def _parse_exists(self, not_=False):
@@ -644,14 +659,15 @@ class Parser:
         create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
-            self.raise_error("Expected TABLE, VIEW, INDEX, or FUNCTION")
+            self.raise_error("Expected TABLE, VIEW, INDEX, FUNCTION, or PROCEDURE")
+            return
 
         exists = self._parse_exists(not_=True)
         this = None
         expression = None
         properties = None
 
-        if create_token.token_type == TokenType.FUNCTION:
+        if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function()
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
@@ -747,7 +763,9 @@ class Parser:
         if is_table:
             if self._match(TokenType.LT):
                 value = self.expression(
-                    exp.Schema, this="TABLE", expressions=self._parse_csv(self._parse_struct_kwargs)
+                    exp.Schema,
+                    this="TABLE",
+                    expressions=self._parse_csv(self._parse_struct_kwargs),
                 )
                 if not self._match(TokenType.GT):
                     self.raise_error("Expecting >")
@@ -761,6 +779,14 @@ class Parser:
             this=exp.Literal.string("RETURNS"),
             value=value,
             is_table=is_table,
+        )
+
+    def _parse_execute_as(self):
+        self._match(TokenType.ALIAS)
+        return self.expression(
+            exp.ExecuteAsProperty,
+            this=exp.Literal.string("EXECUTE AS"),
+            value=self._parse_var(),
         )
 
     def _parse_properties(self):
@@ -997,7 +1023,12 @@ class Parser:
         )
 
     def _parse_subquery(self, this):
-        return self.expression(exp.Subquery, this=this, pivots=self._parse_pivots(), alias=self._parse_table_alias())
+        return self.expression(
+            exp.Subquery,
+            this=this,
+            pivots=self._parse_pivots(),
+            alias=self._parse_table_alias(),
+        )
 
     def _parse_query_modifiers(self, this):
         if not isinstance(this, self.MODIFIABLES):
@@ -1723,7 +1754,11 @@ class Parser:
         return self._parse_window(this)
 
     def _parse_user_defined_function(self):
-        this = self._parse_var()
+        this = self._parse_id_var()
+
+        while self._match(TokenType.DOT):
+            this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
+
         if not self._match(TokenType.L_PAREN):
             return this
         expressions = self._parse_csv(self._parse_udf_kwarg)

@@ -177,6 +177,8 @@ class Snowflake(Dialect):
             exp.ReturnsProperty,
             exp.LanguageProperty,
             exp.SchemaCommentProperty,
+            exp.ExecuteAsProperty,
+            exp.VolatilityProperty,
         }
 
         def except_op(self, expression):

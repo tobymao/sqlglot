@@ -293,13 +293,15 @@ class TestSnowflake(Validator):
                 "bigquery": "CREATE TABLE FUNCTION a() RETURNS TABLE <b INT64> AS SELECT 1",
             },
         )
+        self.validate_all(
+            "CREATE FUNCTION a() RETURNS INT IMMUTABLE AS 'SELECT 1'",
+            write={
+                "snowflake": "CREATE FUNCTION a() RETURNS INT IMMUTABLE AS 'SELECT 1'",
+            },
+        )
 
     def test_stored_procedures(self):
         self.validate_identity("CALL a.b.c(x, y)")
         self.validate_identity(
             "CREATE PROCEDURE a.b.c(x INT, y VARIANT) RETURNS OBJECT EXECUTE AS CALLER AS 'BEGIN SELECT 1; END;'"
         )
-        #     write={
-        #         "snowflake": """CREATE PROCEDURE "a"."b"."c"(x INT, y VARIANT) RETURNS OBJECT AS 'BEGIN SELECT 1; END;'""",
-        #     },
-        # )

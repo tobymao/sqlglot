@@ -654,6 +654,7 @@ class Parser:
 
         if not create_token:
             self.raise_error("Expected TABLE, VIEW, INDEX, FUNCTION, or PROCEDURE")
+            return
 
         exists = self._parse_exists(not_=True)
         this = None
@@ -1728,9 +1729,6 @@ class Parser:
 
         while self._match(TokenType.DOT):
             this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
-        #     if catalog:
-        #         # This allows nesting the table in arbitrarily many dot expressions if needed
-        #         table = self.expression(exp.Dot, this=table, expression=self._parse_id_var())
 
         if not self._match(TokenType.L_PAREN):
             return this

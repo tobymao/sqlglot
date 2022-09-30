@@ -506,7 +506,7 @@ class DerivedTable(Expression):
         return [select.alias_or_name for select in self.selects]
 
 
-class SelectlessDerivedTable(DerivedTable):
+class UDTF(DerivedTable):
     pass
 
 
@@ -831,7 +831,7 @@ class Join(Expression):
         return join
 
 
-class Lateral(SelectlessDerivedTable):
+class Lateral(UDTF):
     arg_types = {"this": True, "outer": False, "alias": False}
 
 
@@ -1102,7 +1102,7 @@ class Intersect(Union):
     pass
 
 
-class Unnest(SelectlessDerivedTable):
+class Unnest(UDTF):
     arg_types = {
         "expressions": True,
         "ordinality": False,
@@ -1120,7 +1120,7 @@ class Update(Expression):
     }
 
 
-class Values(SelectlessDerivedTable):
+class Values(UDTF):
     arg_types = {
         "expressions": True,
         "ordinality": False,

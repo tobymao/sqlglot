@@ -99,7 +99,7 @@ class Generator:
         "unsupported_messages",
         "null_ordering",
         "max_unsupported",
-        "wrapped_derived_values",
+        "wrap_derived_values",
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
@@ -128,7 +128,7 @@ class Generator:
         null_ordering=None,
         max_unsupported=3,
         leading_comma=False,
-        wrapped_derived_values=True,
+        wrap_derived_values=True,
     ):
         import sqlglot
 
@@ -152,7 +152,7 @@ class Generator:
         self.unsupported_messages = []
         self.max_unsupported = max_unsupported
         self.null_ordering = null_ordering
-        self.wrapped_derived_values = wrapped_derived_values
+        self.wrap_derived_values = wrap_derived_values
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
@@ -591,7 +591,7 @@ class Generator:
         if not alias:
             return f"VALUES{self.seg('')}{args}"
         alias = f" AS {alias}" if alias else alias
-        if self.wrapped_derived_values:
+        if self.wrap_derived_values:
             return f"(VALUES{self.seg('')}{args}){alias}"
         return f"VALUES{self.seg('')}{args}{alias}"
 

@@ -2229,12 +2229,12 @@ class Parser:
         self._match_r_paren()
         return columns
 
-    def _parse_csv(self, parse, *args, **kwargs):
-        parse_result = parse(*args, **kwargs)
+    def _parse_csv(self, parse):
+        parse_result = parse()
         items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            parse_result = parse(*args, **kwargs)
+            parse_result = parse()
             if parse_result is not None:
                 items.append(parse_result)
 

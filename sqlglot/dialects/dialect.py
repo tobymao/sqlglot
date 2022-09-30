@@ -77,7 +77,7 @@ class Dialect(metaclass=_Dialect):
     alias_post_tablesample = False
     normalize_functions = "upper"
     null_ordering = "nulls_are_small"
-    wrapped_derived_values = True
+    wrap_derived_values = True
 
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
@@ -170,7 +170,7 @@ class Dialect(metaclass=_Dialect):
                 "alias_post_tablesample": self.alias_post_tablesample,
                 "normalize_functions": self.normalize_functions,
                 "null_ordering": self.null_ordering,
-                "wrapped_derived_values": self.wrapped_derived_values,
+                "wrap_derived_values": self.wrap_derived_values,
                 **opts,
             }
         )

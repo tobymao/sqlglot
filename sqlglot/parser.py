@@ -1192,11 +1192,11 @@ class Parser:
         )
 
     def _parse_derived_table_values(self):
-        is_derived = self._curr is not None and self._curr.token_type == TokenType.L_PAREN
-        if not self._match(TokenType.VALUES) and not self._match_pair(TokenType.L_PAREN, TokenType.VALUES):
+        is_derived = self._match_pair(TokenType.L_PAREN, TokenType.VALUES)
+        if not is_derived and not self._match(TokenType.VALUES):
             return None
 
-        expressions = self._parse_csv(self._parse_paren_enclosed_csv, self._parse_column)
+        expressions = self._parse_csv(self._parse_value)
 
         if is_derived:
             self._match_r_paren()
@@ -2253,13 +2253,6 @@ class Parser:
         expressions = self._parse_csv(self._parse_id_var)
         self._match_r_paren()
         return expressions
-
-    def _parse_paren_enclosed_csv(self, parse):
-        if not self._match(TokenType.L_PAREN):
-            return
-        expressions = self._parse_csv(parse)
-        self._match_r_paren()
-        return exp.Tuple(expressions=expressions)
 
     def _parse_select_or_expression(self):
         return self._parse_select() or self._parse_expression()

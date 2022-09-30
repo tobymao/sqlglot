@@ -12,7 +12,7 @@ class ScopeType(Enum):
     DERIVED_TABLE = auto()
     CTE = auto()
     UNION = auto()
-    UNNEST = auto()
+    SELECTLESS_DERIVED = auto()
 
 
 class Scope:
@@ -103,7 +103,7 @@ class Scope:
                 self._raw_columns.append(node)
             elif isinstance(node, exp.Table):
                 self._tables.append(node)
-            elif isinstance(node, (exp.Unnest, exp.Lateral, exp.Values)):
+            elif isinstance(node, exp.SelectlessDerivedTable):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
@@ -315,7 +315,7 @@ class Scope:
     @property
     def is_unnest(self):
         """Determine if this scope is an unnest"""
-        return self.scope_type == ScopeType.UNNEST
+        return self.scope_type == ScopeType.SELECTLESS_DERIVED
 
     @property
     def is_correlated_subquery(self):
@@ -399,7 +399,7 @@ def _traverse_scope(scope):
         yield from _traverse_select(scope)
     elif isinstance(scope.expression, exp.Union):
         yield from _traverse_union(scope)
-    elif isinstance(scope.expression, (exp.Lateral, exp.Unnest, exp.Values)):
+    elif isinstance(scope.expression, exp.SelectlessDerivedTable):
         pass
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
@@ -437,12 +437,12 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
         top = None
         for child_scope in _traverse_scope(
             scope.branch(
-                derived_table
-                if isinstance(derived_table, (exp.Unnest, exp.Lateral, exp.Values))
-                else derived_table.this,
+                derived_table if isinstance(derived_table, exp.SelectlessDerivedTable) else derived_table.this,
                 add_sources=sources if scope_type == ScopeType.CTE else None,
                 outer_column_list=derived_table.alias_column_names,
-                scope_type=ScopeType.UNNEST if isinstance(derived_table, (exp.Unnest, exp.Values)) else scope_type,
+                scope_type=ScopeType.SELECTLESS_DERIVED
+                if isinstance(derived_table, exp.SelectlessDerivedTable)
+                else scope_type,
             )
         ):
             yield child_scope

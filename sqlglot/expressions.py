@@ -506,6 +506,10 @@ class DerivedTable(Expression):
         return [select.alias_or_name for select in self.selects]
 
 
+class SelectlessDerivedTable(DerivedTable):
+    pass
+
+
 class Annotation(Expression):
     arg_types = {
         "this": True,
@@ -827,7 +831,7 @@ class Join(Expression):
         return join
 
 
-class Lateral(DerivedTable):
+class Lateral(SelectlessDerivedTable):
     arg_types = {"this": True, "outer": False, "alias": False}
 
 
@@ -1098,7 +1102,7 @@ class Intersect(Union):
     pass
 
 
-class Unnest(DerivedTable):
+class Unnest(SelectlessDerivedTable):
     arg_types = {
         "expressions": True,
         "ordinality": False,
@@ -1116,7 +1120,7 @@ class Update(Expression):
     }
 
 
-class Values(DerivedTable):
+class Values(SelectlessDerivedTable):
     arg_types = {
         "expressions": True,
         "ordinality": False,

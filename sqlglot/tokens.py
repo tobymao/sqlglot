@@ -910,7 +910,11 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance()
             else:
                 break
-        self._add(self.KEYWORDS.get(self._text.upper(), TokenType.VAR))
+        self._add(
+            TokenType.VAR
+            if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
+            else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
+        )
 
     def _extract_string(self, delimiter):
         text = ""

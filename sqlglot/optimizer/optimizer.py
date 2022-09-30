@@ -66,4 +66,5 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, debug=
         expression = rule(expression, **rule_kwargs)
         debugger.record(rule, expression)
 
+    debugger.finalize()
     return expression

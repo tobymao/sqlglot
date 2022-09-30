@@ -637,6 +637,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "_char",
         "_end",
         "_peek",
+        "_prev_token_type",
     )
 
     def __init__(self):
@@ -657,6 +658,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._char = None
         self._end = None
         self._peek = None
+        self._prev_token_type = None
 
     def tokenize(self, sql):
         self.reset()
@@ -706,8 +708,8 @@ class Tokenizer(metaclass=_Tokenizer):
         return self.sql[self._start : self._current]
 
     def _add(self, token_type, text=None):
-        text = self._text if text is None else text
-        self.tokens.append(Token(token_type, text, self._line, self._col))
+        self._prev_token_type = token_type
+        self.tokens.append(Token(token_type, self._text if text is None else text, self._line, self._col))
 
         if token_type in self.COMMANDS and (len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON):
             self._start = self._current
@@ -912,7 +914,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 break
         self._add(
             TokenType.VAR
-            if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
+            if self._prev_token_type == TokenType.PARAMETER
             else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
         )
 

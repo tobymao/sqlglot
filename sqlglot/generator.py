@@ -99,6 +99,7 @@ class Generator:
         "unsupported_messages",
         "null_ordering",
         "max_unsupported",
+        "wrap_derived_values",
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
@@ -127,6 +128,7 @@ class Generator:
         null_ordering=None,
         max_unsupported=3,
         leading_comma=False,
+        wrap_derived_values=True,
     ):
         import sqlglot
 
@@ -150,6 +152,7 @@ class Generator:
         self.unsupported_messages = []
         self.max_unsupported = max_unsupported
         self.null_ordering = null_ordering
+        self.wrap_derived_values = wrap_derived_values
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
@@ -583,7 +586,14 @@ class Generator:
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression):
-        return f"VALUES{self.seg('')}{self.expressions(expression)}"
+        alias = self.sql(expression, "alias")
+        args = self.expressions(expression)
+        if not alias:
+            return f"VALUES{self.seg('')}{args}"
+        alias = f" AS {alias}" if alias else alias
+        if self.wrap_derived_values:
+            return f"(VALUES{self.seg('')}{args}){alias}"
+        return f"VALUES{self.seg('')}{args}{alias}"
 
     def var_sql(self, expression):
         return self.sql(expression, "this")

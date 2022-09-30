@@ -1118,6 +1118,11 @@ class Parser:
         if unnest:
             return unnest
 
+        values = self._parse_derived_table_values()
+
+        if values:
+            return values
+
         subquery = self._parse_select(table=True)
 
         if subquery:
@@ -1183,6 +1188,24 @@ class Parser:
             exp.Unnest,
             expressions=expressions,
             ordinality=ordinality,
+            alias=alias,
+        )
+
+    def _parse_derived_table_values(self):
+        is_derived = self._match_pair(TokenType.L_PAREN, TokenType.VALUES)
+        if not is_derived and not self._match(TokenType.VALUES):
+            return None
+
+        expressions = self._parse_csv(self._parse_value)
+
+        if is_derived:
+            self._match_r_paren()
+
+        alias = self._parse_table_alias()
+
+        return self.expression(
+            exp.Values,
+            expressions=expressions,
             alias=alias,
         )
 

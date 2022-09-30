@@ -5,8 +5,6 @@ from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 
-SKIP_QUALIFY = (exp.Unnest, exp.Lateral)
-
 
 def qualify_columns(expression, schema):
     """
@@ -35,7 +33,7 @@ def qualify_columns(expression, schema):
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
         _qualify_columns(scope, resolver)
-        if not isinstance(scope.expression, SKIP_QUALIFY):
+        if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver)
             _qualify_outputs(scope)
         _check_unknown_tables(scope)
@@ -50,7 +48,7 @@ def _pop_table_column_aliases(derived_tables):
     (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
     """
     for derived_table in derived_tables:
-        if isinstance(derived_table, SKIP_QUALIFY):
+        if isinstance(derived_table, exp.UDTF):
             continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
@@ -202,7 +200,7 @@ def _qualify_columns(scope, resolver):
         if not column_table:
             column_table = resolver.get_table(column_name)
 
-            if not scope.is_subquery and not scope.is_unnest:
+            if not scope.is_subquery and not scope.is_udtf:
                 if column_name not in resolver.all_columns:
                     raise OptimizeError(f"Unknown column: {column_name}")
 
@@ -296,7 +294,7 @@ def _qualify_outputs(scope):
 
 
 def _check_unknown_tables(scope):
-    if scope.external_columns and not scope.is_unnest and not scope.is_correlated_subquery:
+    if scope.external_columns and not scope.is_udtf and not scope.is_correlated_subquery:
         raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
 
 

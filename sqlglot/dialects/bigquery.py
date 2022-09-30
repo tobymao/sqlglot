@@ -33,10 +33,10 @@ def _date_add_sql(data_type, kind):
     return func
 
 
-def _subquery_to_unnest_if_values(self, expression):
-    if not isinstance(expression.this, exp.Values):
-        return self.subquery_sql(expression)
-    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.this.find_all(exp.Tuple)]
+def _derived_table_values_to_unnest(self, expression):
+    if not isinstance(expression.unnest().parent, exp.From):
+        return self.values_sql(expression)
+    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.find_all(exp.Tuple)]
     structs = []
     for row in rows:
         aliases = [
@@ -140,7 +140,7 @@ class BigQuery(Dialect):
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.VariancePop: rename_func("VAR_POP"),
-            exp.Subquery: _subquery_to_unnest_if_values,
+            exp.Values: _derived_table_values_to_unnest,
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Create: _create_sql,
         }

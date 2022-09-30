@@ -50,6 +50,7 @@ a.B()
 a['x'].C()
 int.x
 map.x
+a.b.INT(1.234)
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x IN ((1))
@@ -471,6 +472,7 @@ CREATE FUNCTION f
 CREATE FUNCTION f AS 'g'
 CREATE FUNCTION a(b INT, c VARCHAR) AS 'SELECT 1'
 CREATE FUNCTION a() LANGUAGE sql
+CREATE FUNCTION a() LANGUAGE sql RETURNS INT
 CREATE INDEX abc ON t (a)
 CREATE INDEX abc ON t (a, b, b)
 CREATE UNIQUE INDEX abc ON t (a, b, b)

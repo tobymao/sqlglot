@@ -538,6 +538,7 @@ class Create(Expression):
         "temporary": False,
         "replace": False,
         "unique": False,
+        "materialized": False,
     }
 
 
@@ -907,7 +908,7 @@ class AnonymousProperty(Property):
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "kind": True}
+    arg_types = {"this": True, "value": True, "is_table": False}
 
 
 class LanguageProperty(Property):
@@ -1769,6 +1770,7 @@ class DataType(Expression):
         ROWVERSION = auto()
         IMAGE = auto()
         VARIANT = auto()
+        OBJECT = auto()
 
     @classmethod
     def build(cls, dtype, **kwargs):
@@ -2576,6 +2578,8 @@ def _norm_args(expression):
     for k, arg in expression.args.items():
         if isinstance(arg, list):
             arg = [_norm_arg(a) for a in arg]
+            if not arg:
+                arg = None
         else:
             arg = _norm_arg(arg)
 

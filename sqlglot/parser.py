@@ -100,6 +100,7 @@ class Parser:
         TokenType.ROWVERSION,
         TokenType.IMAGE,
         TokenType.VARIANT,
+        TokenType.OBJECT,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -143,6 +144,7 @@ class Parser:
         TokenType.LANGUAGE,
         TokenType.LEADING,
         TokenType.LOCATION,
+        TokenType.MATERIALIZED,
         TokenType.NATURAL,
         TokenType.NEXT,
         TokenType.ONLY,
@@ -202,7 +204,7 @@ class Parser:
         TokenType.DATETIME,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
-        *NESTED_TYPE_TOKENS,
+        *TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }
 
@@ -370,11 +372,7 @@ class Parser:
         TokenType.PARTITIONED_BY: lambda self: self._parse_partitioned_by(),
         TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
         TokenType.STORED: lambda self: self._parse_stored(),
-        TokenType.RETURNS: lambda self: self.expression(
-            exp.ReturnsProperty,
-            this=exp.Literal.string("RETURNS"),
-            value=self._parse_types(),
-        ),
+        TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
         TokenType.FORMAT: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
@@ -638,6 +636,10 @@ class Parser:
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
         unique = self._match(TokenType.UNIQUE)
+        materialized = self._match(TokenType.MATERIALIZED)
+
+        if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
+            self._match(TokenType.TABLE)
 
         create_token = self._match_set(self.CREATABLES) and self._prev
 
@@ -653,7 +655,7 @@ class Parser:
             this = self._parse_user_defined_function()
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
-                expression = self._parse_string()
+                expression = self._parse_select_or_expression()
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
@@ -672,6 +674,7 @@ class Parser:
             temporary=temporary,
             replace=replace,
             unique=unique,
+            materialized=materialized,
         )
 
     def _parse_property(self):
@@ -737,6 +740,27 @@ class Parser:
             this=exp.Literal.string("CHARACTER_SET"),
             value=self._parse_var_or_string(),
             default=default,
+        )
+
+    def _parse_returns(self):
+        is_table = self._match(TokenType.TABLE)
+        if is_table:
+            if self._match(TokenType.LT):
+                value = self.expression(
+                    exp.Schema, this="TABLE", expressions=self._parse_csv(self._parse_struct_kwargs)
+                )
+                if not self._match(TokenType.GT):
+                    self.raise_error("Expecting >")
+            else:
+                value = self._parse_schema("TABLE")
+        else:
+            value = self._parse_types()
+
+        return self.expression(
+            exp.ReturnsProperty,
+            this=exp.Literal.string("RETURNS"),
+            value=value,
+            is_table=is_table,
         )
 
     def _parse_properties(self):
@@ -1432,7 +1456,7 @@ class Parser:
             this = self.expression(exp.In, this=this, unnest=unnest)
         else:
             self._match_l_paren()
-            expressions = self._parse_csv(lambda: self._parse_select() or self._parse_expression())
+            expressions = self._parse_csv(self._parse_select_or_expression)
 
             if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
                 this = self.expression(exp.In, this=this, query=expressions[0])
@@ -2236,6 +2260,9 @@ class Parser:
         expressions = self._parse_csv(parse)
         self._match_r_paren()
         return exp.Tuple(expressions=expressions)
+
+    def _parse_select_or_expression(self):
+        return self._parse_select() or self._parse_expression()
 
     def _match(self, token_type):
         if not self._curr:

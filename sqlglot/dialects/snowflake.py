@@ -172,6 +172,13 @@ class Snowflake(Dialect):
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 
+        ROOT_PROPERTIES = {
+            exp.PartitionedByProperty,
+            exp.ReturnsProperty,
+            exp.LanguageProperty,
+            exp.SchemaCommentProperty,
+        }
+
         def except_op(self, expression):
             if not expression.args.get("distinct", False):
                 self.unsupported("EXCEPT with All is not supported in Snowflake")

@@ -126,6 +126,7 @@ class Parser:
         TokenType.CONSTRAINT,
         TokenType.DEFAULT,
         TokenType.DELETE,
+        TokenType.DETERMINISTIC,
         TokenType.EXECUTE,
         TokenType.ENGINE,
         TokenType.ESCAPE,
@@ -140,6 +141,7 @@ class Parser:
         TokenType.IF,
         TokenType.INDEX,
         TokenType.ISNULL,
+        TokenType.IMMUTABLE,
         TokenType.INTERVAL,
         TokenType.LAZY,
         TokenType.LANGUAGE,
@@ -164,6 +166,7 @@ class Parser:
         TokenType.SEED,
         TokenType.SET,
         TokenType.SHOW,
+        TokenType.STABLE,
         TokenType.STORED,
         TokenType.TABLE,
         TokenType.TABLE_FORMAT,
@@ -177,6 +180,7 @@ class Parser:
         TokenType.UNPIVOT,
         TokenType.PROPERTIES,
         TokenType.PROCEDURE,
+        TokenType.VOLATILE,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
     }
@@ -624,8 +628,8 @@ class Parser:
         return expression
 
     def _parse_drop(self):
-        temporary = self._match(TokenType.TEMPORARY) or ""
-        materialized = self._match(TokenType.MATERIALIZED) or ""
+        temporary = self._match(TokenType.TEMPORARY)
+        materialized = self._match(TokenType.MATERIALIZED)
         kind = self._match_set(self.CREATABLES) and self._prev.text
         if not kind:
             self.raise_error("Expected TABLE, VIEW, INDEX, FUNCTION, or PROCEDURE")

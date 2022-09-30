@@ -144,9 +144,7 @@ class BigQuery(Dialect):
             exp.Subquery: _subquery_to_unnest_if_values,
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Create: _create_sql,
-            exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC"
-            if e.this.this == "IMMUTABLE"
-            else "NOT DETERMINISTIC",
+            exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC",
         }
 
         TYPE_MAPPING = {

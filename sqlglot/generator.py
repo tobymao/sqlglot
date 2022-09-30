@@ -54,7 +54,7 @@ class Generator:
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
-        exp.VolatilityProperty: lambda self, e: self.sql(e.this, "this"),
+        exp.VolatilityProperty: lambda self, e: self.sql(e.name),
     }
 
     NULL_ORDERING_SUPPORTED = True

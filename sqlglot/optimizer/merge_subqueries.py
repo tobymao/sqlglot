@@ -32,8 +32,8 @@ def merge_subqueries(expression, leave_tables_isolated=False):
     Returns:
         sqlglot.Expression: optimized expression
     """
-    merge_ctes(expression, leave_tables_isolated)
-    merge_derived_tables(expression, leave_tables_isolated)
+    expression = merge_ctes(expression, leave_tables_isolated)
+    expression = merge_derived_tables(expression, leave_tables_isolated)
     return expression
 
 
@@ -76,14 +76,14 @@ def merge_ctes(expression, leave_tables_isolated=False):
                 alias = node_to_replace.alias
             else:
                 alias = table.name
-
             _rename_inner_sources(outer_scope, inner_scope, alias)
             _merge_from(outer_scope, inner_scope, node_to_replace, alias)
-            _merge_joins(outer_scope, inner_scope, from_or_join)
             _merge_expressions(outer_scope, inner_scope, alias)
+            _merge_joins(outer_scope, inner_scope, from_or_join)
             _merge_where(outer_scope, inner_scope, from_or_join)
             _merge_order(outer_scope, inner_scope)
             _pop_cte(inner_scope)
+    return expression
 
 
 def merge_derived_tables(expression, leave_tables_isolated=False):
@@ -97,10 +97,11 @@ def merge_derived_tables(expression, leave_tables_isolated=False):
 
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
-                _merge_joins(outer_scope, inner_scope, from_or_join)
                 _merge_expressions(outer_scope, inner_scope, alias)
+                _merge_joins(outer_scope, inner_scope, from_or_join)
                 _merge_where(outer_scope, inner_scope, from_or_join)
                 _merge_order(outer_scope, inner_scope)
+    return expression
 
 
 def _mergeable(outer_scope, inner_select, leave_tables_isolated):
@@ -229,7 +230,7 @@ def _merge_expressions(outer_scope, inner_scope, alias):
             continue
         columns_to_replace = outer_columns.get(projection_name, [])
         for column in columns_to_replace:
-            column.replace(expression.unalias())
+            column.replace(expression.unalias().copy())
 
 
 def _merge_where(outer_scope, inner_scope, from_or_join):

@@ -80,10 +80,13 @@ class TestOptimizer(unittest.TestCase):
             title = meta.get("title") or f"{i}, {sql}"
             dialect = meta.get("dialect")
             leave_tables_isolated = meta.get("leave_tables_isolated")
+            unquote_values_columns = string_to_bool(meta.get("unquote_values_columns"))
 
             func_kwargs = {**kwargs}
             if leave_tables_isolated is not None:
                 func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+            if unquote_values_columns:
+                func_kwargs["unquote_values_columns"] = unquote_values_columns
 
             with self.subTest(title):
                 optimized = func(parse_one(sql, read=dialect), **func_kwargs)

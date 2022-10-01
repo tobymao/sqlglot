@@ -239,7 +239,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
             write={
-                "spark": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+                "spark": "SELECT cola, colb FROM VALUES (1, 'test') AS tab(cola, colb)",
                 "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
                 "snowflake": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
             },
@@ -253,7 +253,7 @@ class TestBigQuery(Validator):
 
     def test_user_defined_functions(self):
         self.validate_identity(
-            "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 LANGUAGE js AS 'return x*y;'"
+            "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"
         )
         self.validate_identity("CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) AS ((x + 4) / y)")
         self.validate_identity("CREATE TABLE FUNCTION a(x INT64) RETURNS TABLE <q STRING, r INT64> AS SELECT s, t")

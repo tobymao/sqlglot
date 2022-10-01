@@ -1,5 +1,4 @@
 import itertools
-from copy import copy
 from enum import Enum, auto
 
 from sqlglot import exp
@@ -12,7 +11,7 @@ class ScopeType(Enum):
     DERIVED_TABLE = auto()
     CTE = auto()
     UNION = auto()
-    UNNEST = auto()
+    UDTF = auto()
 
 
 class Scope:
@@ -70,14 +69,11 @@ class Scope:
         self._columns = None
         self._external_columns = None
 
-    def branch(self, expression, scope_type, add_sources=None, **kwargs):
+    def branch(self, expression, scope_type, chain_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
-        sources = copy(self.sources)
-        if add_sources:
-            sources.update(add_sources)
         return Scope(
             expression=expression.unnest(),
-            sources=sources,
+            sources={**self.cte_sources, **(chain_sources or {})},
             parent=self,
             scope_type=scope_type,
             **kwargs,
@@ -103,7 +99,7 @@ class Scope:
                 self._raw_columns.append(node)
             elif isinstance(node, exp.Table):
                 self._tables.append(node)
-            elif isinstance(node, (exp.Unnest, exp.Lateral)):
+            elif isinstance(node, exp.UDTF):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
@@ -247,6 +243,16 @@ class Scope:
         return self._selected_sources
 
     @property
+    def cte_sources(self):
+        """
+        Sources that are CTEs.
+
+        Returns:
+            dict[str, Scope]: Mapping of source alias to Scope
+        """
+        return {alias: scope for alias, scope in self.sources.items() if isinstance(scope, Scope) and scope.is_cte}
+
+    @property
     def selects(self):
         """
         Select expressions of this scope.
@@ -313,9 +319,9 @@ class Scope:
         return self.scope_type == ScopeType.ROOT
 
     @property
-    def is_unnest(self):
-        """Determine if this scope is an unnest"""
-        return self.scope_type == ScopeType.UNNEST
+    def is_udtf(self):
+        """Determine if this scope is a UDTF (User Defined Table Function)"""
+        return self.scope_type == ScopeType.UDTF
 
     @property
     def is_correlated_subquery(self):
@@ -348,7 +354,7 @@ class Scope:
             Scope: scope instances in depth-first-search post-order
         """
         for child_scope in itertools.chain(
-            self.cte_scopes, self.union_scopes, self.subquery_scopes, self.derived_table_scopes
+            self.cte_scopes, self.union_scopes, self.derived_table_scopes, self.subquery_scopes
         ):
             yield from child_scope.traverse()
         yield self
@@ -399,7 +405,7 @@ def _traverse_scope(scope):
         yield from _traverse_select(scope)
     elif isinstance(scope.expression, exp.Union):
         yield from _traverse_union(scope)
-    elif isinstance(scope.expression, (exp.Lateral, exp.Unnest)):
+    elif isinstance(scope.expression, exp.UDTF):
         pass
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
@@ -410,8 +416,8 @@ def _traverse_scope(scope):
 
 def _traverse_select(scope):
     yield from _traverse_derived_tables(scope.ctes, scope, ScopeType.CTE)
-    yield from _traverse_subqueries(scope)
     yield from _traverse_derived_tables(scope.derived_tables, scope, ScopeType.DERIVED_TABLE)
+    yield from _traverse_subqueries(scope)
     _add_table_sources(scope)
 
 
@@ -437,10 +443,10 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
         top = None
         for child_scope in _traverse_scope(
             scope.branch(
-                derived_table if isinstance(derived_table, (exp.Unnest, exp.Lateral)) else derived_table.this,
-                add_sources=sources if scope_type == ScopeType.CTE else None,
+                derived_table if isinstance(derived_table, exp.UDTF) else derived_table.this,
+                chain_sources=sources if scope_type == ScopeType.CTE else None,
                 outer_column_list=derived_table.alias_column_names,
-                scope_type=ScopeType.UNNEST if isinstance(derived_table, exp.Unnest) else scope_type,
+                scope_type=ScopeType.UDTF if isinstance(derived_table, exp.UDTF) else scope_type,
             )
         ):
             yield child_scope

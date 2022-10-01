@@ -49,10 +49,12 @@ class Generator:
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
-        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
+        exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
+        exp.VolatilityProperty: lambda self, e: self.sql(e.name),
     }
 
     NULL_ORDERING_SUPPORTED = True
@@ -99,6 +101,7 @@ class Generator:
         "unsupported_messages",
         "null_ordering",
         "max_unsupported",
+        "wrap_derived_values",
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
@@ -127,6 +130,7 @@ class Generator:
         null_ordering=None,
         max_unsupported=3,
         leading_comma=False,
+        wrap_derived_values=True,
     ):
         import sqlglot
 
@@ -150,6 +154,7 @@ class Generator:
         self.unsupported_messages = []
         self.max_unsupported = max_unsupported
         self.null_ordering = null_ordering
+        self.wrap_derived_values = wrap_derived_values
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
@@ -407,7 +412,9 @@ class Generator:
         this = self.sql(expression, "this")
         kind = expression.args["kind"]
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
-        return f"DROP {kind}{exists_sql}{this}"
+        temporary = " TEMPORARY" if expression.args.get("temporary") else ""
+        materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
+        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}"
 
     def except_sql(self, expression):
         return self.prepend_ctes(
@@ -583,7 +590,14 @@ class Generator:
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression):
-        return f"VALUES{self.seg('')}{self.expressions(expression)}"
+        alias = self.sql(expression, "alias")
+        args = self.expressions(expression)
+        if not alias:
+            return f"VALUES{self.seg('')}{args}"
+        alias = f" AS {alias}" if alias else alias
+        if self.wrap_derived_values:
+            return f"(VALUES{self.seg('')}{args}){alias}"
+        return f"VALUES{self.seg('')}{args}{alias}"
 
     def var_sql(self, expression):
         return self.sql(expression, "this")

@@ -1536,15 +1536,15 @@ class TestDataframeFunctions(unittest.TestCase):
 
     def test_forall(self):
         col_str = SF.forall("cola", lambda x: x.rlike("foo"))
-        self.assertEqual("FORALL(cola, x -> RLIKE(x, 'foo'))", col_str.sql())
+        self.assertEqual("FORALL(cola, x -> x RLIKE 'foo')", col_str.sql())
         col = SF.forall(SF.col("cola"), lambda x: x.rlike("foo"))
-        self.assertEqual("FORALL(cola, x -> RLIKE(x, 'foo'))", col.sql())
+        self.assertEqual("FORALL(cola, x -> x RLIKE 'foo')", col.sql())
         col_custom_name = SF.forall(
             "cola",
             lambda target: target.rlike('foo'),
             "target"
         )
-        self.assertEqual("FORALL(cola, target -> RLIKE(target, 'foo'))", col_custom_name.sql())
+        self.assertEqual("FORALL(cola, target -> target RLIKE 'foo')", col_custom_name.sql())
 
     def test_filter(self):
         col_str = SF.filter("cola", lambda x: SF.month(SF.to_date(x)) > SF.lit(6))

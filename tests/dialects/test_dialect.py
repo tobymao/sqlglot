@@ -856,7 +856,7 @@ class TestDialect(Validator):
                 "postgres": "x ILIKE '%y'",
                 "presto": "LOWER(x) LIKE '%y'",
                 "snowflake": "x ILIKE '%y'",
-                "spark": "LOWER(x) LIKE '%y'",
+                "spark": "x ILIKE '%y'",
                 "sqlite": "LOWER(x) LIKE '%y'",
                 "starrocks": "LOWER(x) LIKE '%y'",
                 "trino": "LOWER(x) LIKE '%y'",

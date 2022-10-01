@@ -79,7 +79,7 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("ENDSWITH(cola, 'test')", F.col("cola").endswith('test').sql())
 
     def test_rlike(self):
-        self.assertEqual("RLIKE(cola, 'foo')", F.col("cola").rlike("foo").sql())
+        self.assertEqual("cola RLIKE 'foo'", F.col("cola").rlike("foo").sql())
 
     def test_like(self):
         self.assertEqual("cola LIKE 'foo%'", F.col("cola").like('foo%').sql())

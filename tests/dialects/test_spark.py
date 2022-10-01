@@ -270,7 +270,7 @@ TBLPROPERTIES (
                 "duckdb": "MAP(LIST_VALUE(1), c)",
                 "presto": "MAP(ARRAY[1], c)",
                 "hive": "MAP(ARRAY(1), c)",
-                "spark": "MAP_FROM_ARRAYS(ARRAY(1), c)",
+                "spark": "MAP(ARRAY(1), c)",
             },
         )
         self.validate_all(

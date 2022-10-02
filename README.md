@@ -30,7 +30,7 @@ sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read='duckdb', write='hive')
 ```
 
 ```sql
-SELECT TO_UTC_TIMESTAMP(FROM_UNIXTIME(1618088028295 / 1000, 'yyyy-MM-dd HH:mm:ss'), 'UTC')
+SELECT FROM_UNIXTIME(1618088028295 / 1000)
 ```
 
 SQLGlot can even translate custom time formats.

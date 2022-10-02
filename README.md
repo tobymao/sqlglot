@@ -299,7 +299,7 @@ class Custom(Dialect):
         }
 
 
-Dialects["custom"]
+Dialect["custom"]
 ```
 
 ## Benchmarks

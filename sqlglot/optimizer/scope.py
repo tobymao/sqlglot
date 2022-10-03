@@ -109,35 +109,7 @@ class Scope:
             self._collect()
 
     def walk(self, bfs=True):
-        """
-        Returns a generator object which visits all nodes in this scope.
-
-        This does NOT traverse into subscopes.
-
-        Args:
-            bfs (bool): if set to True the BFS traversal order will be applied,
-                otherwise the DFS traversal will be used instead.
-
-        Yields:
-            tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key
-        """
-        # We'll use this variable to pass state into the dfs generator.
-        # Whenever we set it to True, we exclude a subtree from traversal.
-        prune = False
-
-        for node, parent, key in self.expression.walk(bfs=bfs, prune=lambda *_: prune):
-            prune = False
-
-            yield node, parent, key
-
-            if node is self.expression:
-                continue
-            elif isinstance(node, exp.CTE):
-                prune = True
-            elif isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)):
-                prune = True
-            elif isinstance(node, exp.Subqueryable):
-                prune = True
+        return walk_in_scope(self.expression, bfs=bfs)
 
     def find(self, *expression_types, bfs=True):
         """
@@ -545,3 +517,35 @@ def _traverse_subqueries(scope):
             yield child_scope
             top = child_scope
         scope.subquery_scopes.append(top)
+
+
+def walk_in_scope(expression, bfs=True):
+    """
+    Returns a generator object which visits all nodes in the syntrax tree, stopping at
+    nodes that start child scopes.
+
+    Args:
+        expression (exp.Expression):
+        bfs (bool): if set to True the BFS traversal order will be applied,
+            otherwise the DFS traversal will be used instead.
+
+    Yields:
+        tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key
+    """
+    # We'll use this variable to pass state into the dfs generator.
+    # Whenever we set it to True, we exclude a subtree from traversal.
+    prune = False
+
+    for node, parent, key in expression.walk(bfs=bfs, prune=lambda *_: prune):
+        prune = False
+
+        yield node, parent, key
+
+        if node is expression:
+            continue
+        elif isinstance(node, exp.CTE):
+            prune = True
+        elif isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)):
+            prune = True
+        elif isinstance(node, exp.Subqueryable):
+            prune = True

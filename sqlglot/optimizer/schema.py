@@ -9,12 +9,13 @@ class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
     @abc.abstractmethod
-    def column_names(self, table):
+    def column_names(self, table, only_visible):
         """
         Get the column names for a table.
 
         Args:
             table (sqlglot.expressions.Table): Table expression instance
+            only_visible (bool): Whether to include invisible columns
         Returns:
             list[str]: list of column names
         """
@@ -49,7 +50,7 @@ class MappingSchema(Schema):
 
         self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
 
-    def column_names(self, table):
+    def column_names(self, table, only_visible=False):
         if not isinstance(table.this, exp.Identifier):
             return fs_get(table)
 

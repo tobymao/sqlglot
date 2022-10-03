@@ -113,21 +113,22 @@ class TypeAnnotator:
         self.type_mapping = type_mapping or TYPE_MAPPING
 
     def annotate(self, expression):
-        return self._maybe_annotate(self._annotate_columns(expression))
-
-    def _annotate_columns(self, expression):
         scopes = traverse_scope(expression) if expression.__class__ in self.TRAVERSABLES else []
 
         for scope in scopes:
+            # First annotate the current expression's columns references
             for col in scope.columns:
                 source = scope.sources[col.table]
                 if isinstance(source, exp.Table):
                     col.type = self._convert_schema_type(source, col)
                 else:
                     matching_column = next(s for s in source.selects if col.name == s.alias)
-                    col.type = self._maybe_annotate(matching_column).type
+                    col.type = matching_column.type
 
-        return expression
+            # Then (possibly) annotate the remaining expressions
+            self._maybe_annotate(scope.expression)
+
+        return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
 
     def _convert_schema_type(self, table, column):
         schema_type = self.schema.get(table.name, {}).get(column.name)

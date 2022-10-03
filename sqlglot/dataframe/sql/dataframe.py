@@ -205,7 +205,7 @@ class DataFrame:
             return expression
         elif isinstance(expression, (exp.Insert, exp.Create)):
             select_expression = expression.expression.copy()
-            select_expression.set("with", expression.args["with"])
+            select_expression.set("with", expression.args.get("with"))
             return select_expression
         raise RuntimeError(f"Unexpected expression type: {type(expression)}")
 

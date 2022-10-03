@@ -9,7 +9,7 @@ class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
     @abc.abstractmethod
-    def column_names(self, table, only_visible):
+    def column_names(self, table, only_visible=False):
         """
         Get the column names for a table.
 

@@ -279,6 +279,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             self.assertEqual(len(scopes[4].source_columns("r")), 2)
             self.assertEqual(set(c.table for c in scopes[4].source_columns("r")), {"r"})
 
+            self.assertEqual({c.sql() for c in scopes[-1].find_all(exp.Column)}, {"r.b", "s.b"})
+            self.assertEqual(scopes[-1].find(exp.Column).sql(), "r.b")
+            self.assertEqual({c.sql() for c in scopes[0].find_all(exp.Column)}, {"x.b"})
+
     def test_literal_type_annotation(self):
         tests = {
             "SELECT 5": exp.DataType.Type.INT,

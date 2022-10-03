@@ -86,16 +86,10 @@ class Scope:
         self._derived_tables = []
         self._raw_columns = []
 
-        # We'll use this variable to pass state into the dfs generator.
-        # Whenever we set it to True, we exclude a subtree from traversal.
-        prune = False
-
-        for node, parent, _ in self.expression.dfs(prune=lambda *_: prune):
-            prune = False
-
+        for node, parent, _ in self.walk(bfs=False):
             if node is self.expression:
                 continue
-            if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
+            elif isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
                 self._raw_columns.append(node)
             elif isinstance(node, exp.Table):
                 self._tables.append(node)
@@ -103,19 +97,81 @@ class Scope:
                 self._derived_tables.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
-                prune = True
             elif isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)):
                 self._derived_tables.append(node)
-                prune = True
             elif isinstance(node, exp.Subqueryable):
                 self._subqueries.append(node)
-                prune = True
 
         self._collected = True
 
     def _ensure_collected(self):
         if not self._collected:
             self._collect()
+
+    def walk(self, bfs=True):
+        """
+        Returns a generator object which visits all nodes in this scope.
+
+        This does NOT traverse into subscopes.
+
+        Args:
+            bfs (bool): if set to True the BFS traversal order will be applied,
+                otherwise the DFS traversal will be used instead.
+
+        Yields:
+            tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key
+        """
+        # We'll use this variable to pass state into the dfs generator.
+        # Whenever we set it to True, we exclude a subtree from traversal.
+        prune = False
+
+        for node, parent, key in self.expression.walk(bfs=bfs, prune=lambda *_: prune):
+            prune = False
+
+            yield node, parent, key
+
+            if node is self.expression:
+                continue
+            elif isinstance(node, exp.CTE):
+                prune = True
+            elif isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)):
+                prune = True
+            elif isinstance(node, exp.Subqueryable):
+                prune = True
+
+    def find(self, *expression_types, bfs=True):
+        """
+        Returns the first node in this scope which matches at least one of the specified types.
+
+        This does NOT traverse into subscopes.
+
+        Args:
+            expression_types (type): the expression type(s) to match.
+            bfs (bool): True to use breadth-first search, False to use depth-first.
+
+        Returns:
+            exp.Expression: the node which matches the criteria or None if no node matching
+            the criteria was found.
+        """
+        return next(self.find_all(*expression_types, bfs=bfs), None)
+
+    def find_all(self, *expression_types, bfs=True):
+        """
+        Returns a generator object which visits all nodes in this scope and only yields those that
+        match at least one of the specified expression types.
+
+        This does NOT traverse into subscopes.
+
+        Args:
+            expression_types (type): the expression type(s) to match.
+            bfs (bool): True to use breadth-first search, False to use depth-first.
+
+        Yields:
+            exp.Expression: nodes
+        """
+        for expression, _, _ in self.walk(bfs=bfs):
+            if isinstance(expression, expression_types):
+                yield expression
 
     def replace(self, old, new):
         """

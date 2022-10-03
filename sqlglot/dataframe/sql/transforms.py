@@ -36,21 +36,6 @@ def get_matching_cte_by_name(node: exp.Expression, name: str) -> t.Optional[exp.
     return None
 
 
-def replace_alias_names_with_sequence_ids(node: exp.Expression, name_to_sequence_id_mapping: t.Dict[str, t.List[str]], **kwargs):
-    """
-    PySpark DataFrame Specific
-
-    Replaces any alias name references with the sequence ID that is used based on the name.
-    """
-    if isinstance(node, exp.Column) and node.args.get("table") is not None and node.args["table"].alias_or_name in name_to_sequence_id_mapping:
-        new_table_name = exp.Identifier(this=name_to_sequence_id_mapping[node.args["table"].alias_or_name][-1])
-        node.set("table", new_table_name)
-    if isinstance(node, exp.Column) and node.find_ancestor(exp.Hint) and node.alias_or_name in name_to_sequence_id_mapping:
-        new_hint_name = exp.Identifier(this=name_to_sequence_id_mapping[node.alias_or_name][-1])
-        node.set("this", new_hint_name)
-    return node
-
-
 def replace_branch_and_sequence_ids_with_cte_name(node: exp.Expression, known_ids: t.Set[str], known_sequence_ids: t.Set[str], **kwargs):
     """
     PySpark DataFrame Specific
@@ -107,7 +92,6 @@ def add_left_hand_table_in_join_to_ambiguous_column(node: exp.Expression, **kwar
 
 
 ORDERED_TRANSFORMS = [
-    replace_alias_names_with_sequence_ids,
     replace_branch_and_sequence_ids_with_cte_name,
     add_left_hand_table_in_join_to_ambiguous_column
 ]

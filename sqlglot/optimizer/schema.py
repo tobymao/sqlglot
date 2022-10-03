@@ -4,6 +4,26 @@ from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import csv_reader
 
+TYPE_MAPPING = {
+    "TEXT": exp.DataType.Type.TEXT,
+    "NVARCHAR": exp.DataType.Type.NVARCHAR,
+    "VARCHAR": exp.DataType.Type.VARCHAR,
+    "NCHAR": exp.DataType.Type.NCHAR,
+    "CHAR": exp.DataType.Type.CHAR,
+    "DOUBLE": exp.DataType.Type.DOUBLE,
+    "FLOAT": exp.DataType.Type.FLOAT,
+    "DECIMAL": exp.DataType.Type.DECIMAL,
+    "BIGINT": exp.DataType.Type.BIGINT,
+    "INT": exp.DataType.Type.INT,
+    "SMALLINT": exp.DataType.Type.SMALLINT,
+    "TINYINT": exp.DataType.Type.TINYINT,
+    "TIMESTAMPLTZ": exp.DataType.Type.TIMESTAMPLTZ,
+    "TIMESTAMPTZ": exp.DataType.Type.TIMESTAMPTZ,
+    "TIMESTAMP": exp.DataType.Type.TIMESTAMP,
+    "DATETIME": exp.DataType.Type.DATETIME,
+    "DATE": exp.DataType.Type.DATE,
+}
+
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""

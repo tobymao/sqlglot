@@ -1,10 +1,14 @@
 from sqlglot import exp
+from sqlglot.errors import OptimizeError
 from sqlglot.helper import ensure_list, subclasses
+from sqlglot.optimizer.schema import TYPE_MAPPING
+from sqlglot.optimizer.scope import traverse_scope
 
 
-def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
+def annotate_types(expression, schema=None, annotators=None, coerces_to=None, type_mapping=None):
     """
     Recursively infer & annotate types in an expression syntax tree against a schema.
+    Assumes that we've already executed the optimizer's qualify_columns step.
 
     (TODO -- replace this with a better example after adding some functionality)
     Example:
@@ -18,11 +22,13 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
         schema (dict|sqlglot.optimizer.Schema): Database schema.
         annotators (dict): Maps expression type to corresponding annotation function.
         coerces_to (dict): Maps expression type to set of types that it can be coerced into.
+        type_mapping (dict): Maps type (str) to an expression type (DataType). An example:
+            type_mapping["INT"] may map to exp.DataType.Type.INT
     Returns:
         sqlglot.Expression: expression annotated with types
     """
 
-    return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
+    return TypeAnnotator(schema, annotators, coerces_to, type_mapping).annotate(expression)
 
 
 class TypeAnnotator:
@@ -37,6 +43,7 @@ class TypeAnnotator:
         },
         exp.Cast: lambda self, expr: self._annotate_cast(expr),
         exp.DataType: lambda self, expr: self._annotate_data_type(expr),
+        exp.Alias: lambda self, expr: self._annotate_unary(expr),
         exp.Literal: lambda self, expr: self._annotate_literal(expr),
         exp.Boolean: lambda self, expr: self._annotate_boolean(expr),
     }
@@ -97,14 +104,45 @@ class TypeAnnotator:
         },
     }
 
-    def __init__(self, schema=None, annotators=None, coerces_to=None):
+    TRAVERSABLES = {exp.Select, exp.Union, exp.UDTF, exp.Subquery}
+
+    def __init__(self, schema=None, annotators=None, coerces_to=None, type_mapping=None):
         self.schema = schema
         self.annotators = annotators or self.ANNOTATORS
         self.coerces_to = coerces_to or self.COERCES_TO
+        self.type_mapping = type_mapping or TYPE_MAPPING
 
     def annotate(self, expression):
+        return self._maybe_annotate(self._annotate_columns(expression))
+
+    def _annotate_columns(self, expression):
+        scopes = traverse_scope(expression) if expression.__class__ in self.TRAVERSABLES else []
+
+        for scope in scopes:
+            for col in scope.columns:
+                source = scope.sources[col.table]
+                if isinstance(source, exp.Table):
+                    col.type = self._convert_schema_type(source, col)
+                else:
+                    matching_column = next(s for s in source.selects if col.name == s.alias)
+                    col.type = self._maybe_annotate(matching_column).type
+
+        return expression
+
+    def _convert_schema_type(self, table, column):
+        schema_type = self.schema.get(table.name, {}).get(column.name)
+
+        try:
+            return self.type_mapping[schema_type.upper()]
+        except:
+            # Either we have no information about col's type, or we can't map its type correctly
+            raise OptimizeError(f"Failed to infer type for column {column.sql()}")
+
+    def _maybe_annotate(self, expression):
         if not isinstance(expression, exp.Expression):
             return None
+        elif expression.type:
+            return expression  # We've already inferred the expression's type
 
         annotator = self.annotators.get(expression.__class__)
         return annotator(self, expression) if annotator else self._annotate_args(expression)
@@ -112,7 +150,7 @@ class TypeAnnotator:
     def _annotate_args(self, expression):
         for value in expression.args.values():
             for v in ensure_list(value):
-                self.annotate(v)
+                self._maybe_annotate(v)
 
         return expression
 

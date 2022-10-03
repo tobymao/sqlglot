@@ -1232,20 +1232,3 @@ def map_zip_with(
         expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value1), glotexp.Identifier(this=value2)]
     )
     return Column.invoke_anonymous_function(col1, "MAP_ZIP_WITH", col2, Column(f_expression))
-
-
-"""
-DELETE: Netflix functions
-"""
-
-
-def nf_dateint(col: "ColumnOrName") -> "Column":
-    return Column.invoke_anonymous_function(col, "NF_DATEINT")
-
-
-def nf_datediff(col1: "ColumnOrName", col2: "ColumnOrName") -> "Column":
-    return Column.invoke_anonymous_function(col1, "NF_DATEDIFF", col2)
-
-
-def nf_dateadd(col1: "ColumnOrName", amount: "Column") -> "Column":
-    return Column.invoke_anonymous_function(col1, "NF_DATEADD", amount)

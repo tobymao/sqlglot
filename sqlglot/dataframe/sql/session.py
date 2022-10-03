@@ -23,6 +23,9 @@ class SparkSession:
     def read(self) -> "DataFrameReader":
         return DataFrameReader(self)
 
+    def table(self, tableName: str) -> "DataFrame":
+        return self.read.table(tableName)
+
     def createDataFrame(
             self,
             data: t.Iterable[t.Union[t.Dict[str, t.Any], t.Iterable[t.Any]]],

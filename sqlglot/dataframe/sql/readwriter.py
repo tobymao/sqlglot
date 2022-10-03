@@ -40,11 +40,14 @@ class DataFrameWriter:
         return self.copy(_mode=saveMode)
 
     def insertInto(self, tableName: str, overwrite: t.Optional[bool] = None) -> "DataFrameWriter":
-        insert_expression = exp.Insert(
-            this=self._get_table_expression_from_name(tableName),
-            expression=self._df.expression,
-            overwrite=overwrite,
-        )
+        expression_without_cte = self._df.expression.copy()
+        expression_without_cte.set("with", None)
+        insert_expression = exp.Insert(**{
+            "this": self._get_table_expression_from_name(tableName),
+            "expression": expression_without_cte,
+            "overwrite": overwrite,
+            "with": self._df.expression.args.get("with")
+        })
         return self.copy(_df=self._df.copy(expression=insert_expression))
 
     def saveAsTable(self,

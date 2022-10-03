@@ -9,6 +9,20 @@ from sqlglot.helper import ensure_list
 from sqlglot.dataframe.sql.operations import Operation, operation
 from sqlglot.dataframe.sql.transforms import ORDERED_TRANSFORMS
 from sqlglot.dataframe.sql.readwriter import DataFrameWriter
+from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer import optimize, Schema
+from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
+from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
+from sqlglot.optimizer.merge_subqueries import merge_subqueries
+from sqlglot.optimizer.normalize import normalize
+from sqlglot.optimizer.optimize_joins import optimize_joins
+from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
+from sqlglot.optimizer.pushdown_projections import pushdown_projections
+from sqlglot.optimizer.qualify_tables import qualify_tables
+from sqlglot.optimizer.quote_identities import quote_identities
+from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
+from sqlglot.dataframe.sql.optimizer_rules import qualify_columns_and_dedup
+
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
@@ -49,8 +63,38 @@ class DataFrame:
         print("DataFrame Cache is not yet supported")
         return self
 
-    def sql(self, dialect="spark", **kwargs) -> str:
+    def _replace_alias_names_with_sequence_ids(self, df: "DataFrame" = None):
+        def replace_alias_name_with_cte_name(scope: Scope, expression: exp.Expression):
+            name = expression.table if isinstance(expression, exp.Column) else expression.name
+            for _, external_source in scope.selected_sources.values():
+                cte_source = external_source.expression.parent
+                assert (cte_source, exp.CTE)
+                cte_sequence_id = cte_source.args['sequence_id']
+                if cte_sequence_id in self.spark.name_to_sequence_id_mapping[name]:
+                    key = "table" if isinstance(expression, exp.Column) else "this"
+                    expression.set(key, cte_source.alias_or_name)
+                    break
+            return
+
+        df = (df or self).copy()
+        scopes = traverse_scope(df._select_expression)
+        for scope in scopes:
+            for column in scope.external_columns:
+                if column.table and column.table in self.spark.name_to_sequence_id_mapping:
+                    if len(scope.selected_sources) == 1:
+                        cte_source = list(scope.selected_sources.values())[0][1].expression.find_ancestor(exp.CTE)
+                        column.set("table", cte_source.alias_or_name)
+                    else:
+                        replace_alias_name_with_cte_name(scope, column)
+            if scope.expression.args.get('hint'):
+                for identifer in scope.expression.args['hint'].find_all(exp.Identifier):
+                    if identifer.name in self.spark.name_to_sequence_id_mapping:
+                        replace_alias_name_with_cte_name(scope, identifer)
+        return df
+
+    def sql(self, dialect="spark", schema: t.Union[t.Dict, Schema] = None, **kwargs) -> str:
         df = self._resolve_pending_hints()
+        df = self._replace_alias_names_with_sequence_ids(df)
         expression = df.expression.copy()
         for transform in ORDERED_TRANSFORMS:
             expression = expression.transform(transform,
@@ -58,6 +102,27 @@ class DataFrame:
                                               known_ids=df.spark.known_ids,
                                               known_branch_ids=df.spark.known_branch_ids,
                                               known_sequence_ids=df.spark.known_sequence_ids)
+        optimizer_rules = [
+            qualify_tables,
+            isolate_table_selects,
+            qualify_columns_and_dedup,
+            pushdown_projections,
+            normalize,
+            unnest_subqueries,
+            expand_multi_table_selects,
+            pushdown_predicates,
+            optimize_joins,
+            merge_subqueries,
+            quote_identities,
+        ]
+        for _ in range(0, len(expression.args.get('ctes', []))):
+            optimizer_rules.append(pushdown_projections)
+        if schema:
+            optimized_select_expression = optimize(self._select_expression, schema=schema, rules=optimizer_rules)
+            if isinstance(expression, (exp.Create, exp.Insert)):
+                expression.set("expression", optimized_select_expression)
+            else:
+                expression = optimized_select_expression
         return expression.sql(**{"dialect": dialect, "pretty": True, **kwargs})
 
     def copy(self, **kwargs) -> "DataFrame":
@@ -130,6 +195,14 @@ class DataFrame:
                          pending_select_hints=None,
                          pending_join_hints=None if join_expression else self.pending_join_hints)
 
+    @property
+    def _select_expression(self):
+        if isinstance(self.expression, exp.Select):
+            return self.expression
+        elif isinstance(self.expression, (exp.Insert, exp.Create)):
+            return self.expression.expression
+        raise RuntimeError(f"Unexpected expression type: {type(self.expression)}")
+
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> "DataFrame":
         cols = Column.ensure_cols(cols)
@@ -184,7 +257,7 @@ class DataFrame:
             ]
         self_columns = [column.set_table_name(pre_join_self_latest_cte_name, copy=True) for column in self._get_outer_select_columns(self)]
         other_columns = [column.set_table_name(other_df.latest_cte_name, copy=True) for column in self._get_outer_select_columns(other_df)]
-        all_columns = list({column.alias_or_name: column for column in join_columns + self_columns + other_columns}.values())
+        all_columns = list({column.alias_or_name if not isinstance(column.expression.this, exp.Star) else column.sql(): column for column in join_columns + self_columns + other_columns}.values())
         new_df = self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
         new_df.expression = new_df._add_ctes_to_expression(new_df.expression, other_df.expression.ctes)
         new_df.pending_join_hints.extend(other_df.pending_join_hints)

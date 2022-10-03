@@ -4,7 +4,7 @@ from functools import partial
 from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.annotate_types import annotate_types
-from sqlglot.optimizer.schema import MappingSchema, ensure_schema
+from sqlglot.optimizer.schema import MappingSchema, Schema, ensure_schema
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
 
@@ -87,6 +87,27 @@ class TestOptimizer(unittest.TestCase):
             return expression
 
         self.check_file("qualify_columns", qualify_columns, schema=self.schema)
+
+    def test_qualify_columns__with_invisible(self):
+        class SchemaWithInvisibleColumns(Schema):
+            def __init__(self, schema, visible):
+                self.schema = ensure_schema(schema)
+                self.visible = visible
+
+            def column_names(self, table, only_visible=False):
+                columns = self.schema.column_names(table)
+                if only_visible:
+                    return [col for col in columns if col in self.visible[table.name]]
+                return columns
+
+        def qualify_columns(expression, **kwargs):
+            expression = optimizer.qualify_tables.qualify_tables(expression)
+            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+            return expression
+
+        schema = SchemaWithInvisibleColumns(ensure_schema(self.schema), {"x": {"a"}, "y": {"b"}, "z": {"b"}})
+
+        self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
 
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):

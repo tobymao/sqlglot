@@ -21,7 +21,9 @@ from sqlglot.optimizer.pushdown_projections import pushdown_projections
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
+from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
 from sqlglot.dataframe.sql.optimizer_rules import qualify_columns_and_dedup
+
 
 
 if t.TYPE_CHECKING:
@@ -68,7 +70,7 @@ class DataFrame:
             name = expression.table if isinstance(expression, exp.Column) else expression.name
             for _, external_source in scope.selected_sources.values():
                 cte_source = external_source.expression.parent
-                assert (cte_source, exp.CTE)
+                assert isinstance(cte_source, exp.CTE)
                 cte_sequence_id = cte_source.args['sequence_id']
                 if cte_sequence_id in self.spark.name_to_sequence_id_mapping[name]:
                     key = "table" if isinstance(expression, exp.Column) else "this"
@@ -77,7 +79,7 @@ class DataFrame:
             return
 
         df = (df or self).copy()
-        scopes = traverse_scope(df._select_expression)
+        scopes = traverse_scope(self._select_expression(df.expression))
         for scope in scopes:
             for column in scope.external_columns:
                 if column.table and column.table in self.spark.name_to_sequence_id_mapping:
@@ -112,15 +114,17 @@ class DataFrame:
             expand_multi_table_selects,
             pushdown_predicates,
             optimize_joins,
+            eliminate_subqueries,
             merge_subqueries,
             quote_identities,
         ]
-        for _ in range(0, len(expression.args.get('ctes', []))):
-            optimizer_rules.append(pushdown_projections)
         if schema:
-            optimized_select_expression = optimize(self._select_expression, schema=schema, rules=optimizer_rules)
+            optimized_select_expression = optimize(self._select_expression(expression), schema=schema, rules=optimizer_rules)
+            optimized_select_expression_without_ctes = optimized_select_expression.copy()
+            optimized_select_expression_without_ctes.set("with", None)
             if isinstance(expression, (exp.Create, exp.Insert)):
-                expression.set("expression", optimized_select_expression)
+                expression.set("expression", optimized_select_expression_without_ctes)
+                expression.set("with", optimized_select_expression.args['with'])
             else:
                 expression = optimized_select_expression
         return expression.sql(**{"dialect": dialect, "pretty": True, **kwargs})
@@ -195,13 +199,15 @@ class DataFrame:
                          pending_select_hints=None,
                          pending_join_hints=None if join_expression else self.pending_join_hints)
 
-    @property
-    def _select_expression(self):
-        if isinstance(self.expression, exp.Select):
-            return self.expression
-        elif isinstance(self.expression, (exp.Insert, exp.Create)):
-            return self.expression.expression
-        raise RuntimeError(f"Unexpected expression type: {type(self.expression)}")
+    @classmethod
+    def _select_expression(cls, expression):
+        if isinstance(expression, exp.Select):
+            return expression
+        elif isinstance(expression, (exp.Insert, exp.Create)):
+            select_expression = expression.expression.copy()
+            select_expression.set("with", expression.args["with"])
+            return select_expression
+        raise RuntimeError(f"Unexpected expression type: {type(expression)}")
 
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> "DataFrame":
@@ -222,7 +228,10 @@ class DataFrame:
 
     @operation(Operation.WHERE)
     def where(self, column: t.Union[Column, bool], **kwargs) -> "DataFrame":
+        column = Column.ensure_col(column)
         return self.copy(expression=self.expression.where(column.expression))
+
+    filter = where
 
     @operation(Operation.GROUP_BY)
     def groupBy(self, *cols, **kwargs) -> "DataFrame":
@@ -456,6 +465,10 @@ class DataFrame:
     @operation(Operation.SELECT)
     def withColumn(self, colName: str, col: Column) -> "DataFrame":
         return self.copy().select(col.alias(colName), append=True)
+
+    @operation(Operation.SELECT)
+    def withColumnRenamed(self, existing: str, new: str):
+        return self.copy().select(exp.alias_(existing, new), append=True)
 
     @operation(Operation.SELECT)
     def drop(self, *cols: t.Union[str, "Column"]) -> "DataFrame":

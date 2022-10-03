@@ -4,26 +4,6 @@ from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import csv_reader
 
-TYPE_MAPPING = {
-    "TEXT": exp.DataType.Type.TEXT,
-    "NVARCHAR": exp.DataType.Type.NVARCHAR,
-    "VARCHAR": exp.DataType.Type.VARCHAR,
-    "NCHAR": exp.DataType.Type.NCHAR,
-    "CHAR": exp.DataType.Type.CHAR,
-    "DOUBLE": exp.DataType.Type.DOUBLE,
-    "FLOAT": exp.DataType.Type.FLOAT,
-    "DECIMAL": exp.DataType.Type.DECIMAL,
-    "BIGINT": exp.DataType.Type.BIGINT,
-    "INT": exp.DataType.Type.INT,
-    "SMALLINT": exp.DataType.Type.SMALLINT,
-    "TINYINT": exp.DataType.Type.TINYINT,
-    "TIMESTAMPLTZ": exp.DataType.Type.TIMESTAMPLTZ,
-    "TIMESTAMPTZ": exp.DataType.Type.TIMESTAMPTZ,
-    "TIMESTAMP": exp.DataType.Type.TIMESTAMP,
-    "DATETIME": exp.DataType.Type.DATETIME,
-    "DATE": exp.DataType.Type.DATE,
-}
-
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
@@ -37,6 +17,18 @@ class Schema(abc.ABC):
             table (sqlglot.expressions.Table): Table expression instance
         Returns:
             list[str]: list of column names
+        """
+
+    @abc.abstractmethod
+    def get_column_type(self, table, column):
+        """
+        Get the exp.DataType type of a column in the schema.
+
+        Args:
+            table (sqlglot.expressions.Table): The source table.
+            column (sqlglot.expressions.Column): The target column.
+        Returns:
+            sqlglot.expressions.DataType.Type: The resulting column type.
         """
 
 
@@ -53,6 +45,7 @@ class MappingSchema(Schema):
 
     def __init__(self, schema):
         self.schema = schema
+        self._type_mapping = {}
 
         depth = _dict_depth(schema)
 
@@ -69,6 +62,13 @@ class MappingSchema(Schema):
 
         self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
 
+    def get_column_type(self, table, column):
+        try:
+            schema_type = self.schema.get(table.name, {}).get(column.name).upper()
+            return self._convert_type(schema_type)
+        except:
+            raise OptimizeError(f"Failed to get type for column {column.sql()}")
+
     def column_names(self, table):
         if not isinstance(table.this, exp.Identifier):
             return fs_get(table)
@@ -79,6 +79,20 @@ class MappingSchema(Schema):
             if table.text(forbidden):
                 raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
         return list(_nested_get(self.schema, *zip(self.supported_table_args, args)))
+
+    def _convert_type(self, type_as_string):
+        """
+        Convert a type represented as a string to the corresponding exp.DataType.Type object.
+
+        Args:
+            type_as_string (str): The type we want to convert.
+        Returns:
+            sqlglot.expressions.DataType.Type: The resulting expression type.
+        """
+
+        return self._type_mapping.get(type_as_string) or self._type_mapping.setdefault(
+            type_as_string, exp.maybe_parse(type_as_string, into=exp.DataType).this
+        )
 
 
 def ensure_schema(schema):

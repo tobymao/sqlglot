@@ -1,11 +1,10 @@
 from sqlglot import exp
-from sqlglot.errors import OptimizeError
 from sqlglot.helper import ensure_list, subclasses
-from sqlglot.optimizer.schema import TYPE_MAPPING
+from sqlglot.optimizer.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 
 
-def annotate_types(expression, schema=None, annotators=None, coerces_to=None, type_mapping=None):
+def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
     """
     Recursively infer & annotate types in an expression syntax tree against a schema.
     Assumes that we've already executed the optimizer's qualify_columns step.
@@ -22,13 +21,13 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None, ty
         schema (dict|sqlglot.optimizer.Schema): Database schema.
         annotators (dict): Maps expression type to corresponding annotation function.
         coerces_to (dict): Maps expression type to set of types that it can be coerced into.
-        type_mapping (dict): Maps type (str) to an expression type (DataType). An example:
-            type_mapping["INT"] may map to exp.DataType.Type.INT
     Returns:
         sqlglot.Expression: expression annotated with types
     """
 
-    return TypeAnnotator(schema, annotators, coerces_to, type_mapping).annotate(expression)
+    schema = ensure_schema(schema)
+
+    return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
 
 
 class TypeAnnotator:
@@ -104,40 +103,30 @@ class TypeAnnotator:
         },
     }
 
-    TRAVERSABLES = {exp.Select, exp.Union, exp.UDTF, exp.Subquery}
+    TRAVERSABLES = (exp.Select, exp.Union, exp.UDTF, exp.Subquery)
 
-    def __init__(self, schema=None, annotators=None, coerces_to=None, type_mapping=None):
+    def __init__(self, schema=None, annotators=None, coerces_to=None):
         self.schema = schema
         self.annotators = annotators or self.ANNOTATORS
         self.coerces_to = coerces_to or self.COERCES_TO
-        self.type_mapping = type_mapping or TYPE_MAPPING
 
     def annotate(self, expression):
-        scopes = traverse_scope(expression) if expression.__class__ in self.TRAVERSABLES else []
+        scopes = traverse_scope(expression) if isinstance(expression, self.TRAVERSABLES) else []
 
         for scope in scopes:
             # First annotate the current expression's columns references
             for col in scope.columns:
                 source = scope.sources[col.table]
                 if isinstance(source, exp.Table):
-                    col.type = self._convert_schema_type(source, col)
+                    col.type = self.schema.get_column_type(source, col)
                 else:
-                    matching_column = next(s for s in source.selects if col.name == s.alias)
+                    matching_column = next(s for s in source.selects if col.name == s.alias_or_name)
                     col.type = matching_column.type
 
             # Then (possibly) annotate the remaining expressions
             self._maybe_annotate(scope.expression)
 
         return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
-
-    def _convert_schema_type(self, table, column):
-        schema_type = self.schema.get(table.name, {}).get(column.name)
-
-        try:
-            return self.type_mapping[schema_type.upper()]
-        except:
-            # Either we have no information about col's type, or we can't map its type correctly
-            raise OptimizeError(f"Failed to infer type for column {column.sql()}")
 
     def _maybe_annotate(self, expression):
         if not isinstance(expression, exp.Expression):
@@ -146,12 +135,15 @@ class TypeAnnotator:
             return expression  # We've already inferred the expression's type
 
         annotator = self.annotators.get(expression.__class__)
-        return annotator(self, expression) if annotator else self._annotate_args(expression)
+        return annotator(self, expression) if annotator else self._annotate_args(expression, set_type=True)
 
-    def _annotate_args(self, expression):
+    def _annotate_args(self, expression, set_type=False):
         for value in expression.args.values():
             for v in ensure_list(value):
                 self._maybe_annotate(v)
+
+        if set_type:
+            expression.type = exp.DataType.Type.UNKNOWN
 
         return expression
 

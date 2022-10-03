@@ -1,4 +1,5 @@
 import abc
+from copy import copy
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
@@ -69,17 +70,30 @@ class MappingSchema(Schema):
             raise OptimizeError(f"Invalid schema shape. Depth: {depth}")
 
         self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
+        
+    def copy(self, **kwargs):
+        kwargs = {**{"schema": copy(self.schema)}, **kwargs}
+        return MappingSchema(**kwargs)
+
+    def add_table(self, table, column_mapping, copy=False):
+        self._validate_table(table)
+        schema = self.schema.copy() if copy else self.schema
+        _nested_set(schema, [table.text(p) for p in self.supported_table_args], column_mapping)
+        return self.copy(schema=schema) if copy else self
+
+    def add_tables(self, table_mapping, copy=False):
+        schema = self
+        for table, column_mapping in table_mapping.items():
+            schema = schema.add_table(table, column_mapping, copy=copy)
+        return schema
 
     def column_names(self, table, only_visible=False):
         if not isinstance(table.this, exp.Identifier):
             return fs_get(table)
 
+        self._validate_table(table)
+
         args = tuple(table.text(p) for p in self.supported_table_args)
-
-        for forbidden in self.forbidden_args:
-            if table.text(forbidden):
-                raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
-
         columns = list(_nested_get(self.schema, *zip(self.supported_table_args, args)))
         if not only_visible or not self.visible:
             return columns
@@ -112,6 +126,14 @@ class MappingSchema(Schema):
                 raise OptimizeError(f"Failed to convert type {schema_type}")
 
         return self._type_mapping_cache[schema_type]
+
+    def _validate_table(self, table):
+        for forbidden in self.forbidden_args:
+            if table.text(forbidden):
+                raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
+        for expected in self.supported_table_args:
+            if not table.text(expected):
+                raise ValueError(f"Table is expected to have {expected}. Received: {table.sql()} ")
 
 
 def ensure_schema(schema):
@@ -146,6 +168,35 @@ def _nested_get(d, *path):
         if d is None:
             name = "table" if name == "this" else name
             raise ValueError(f"Unknown {name}")
+    return d
+
+
+def _nested_set(d, keys, value):
+    """
+    In-place set a value for a nested dictionary
+
+    Ex:
+        >>> _nested_set({}, ["top_key", "second_key"], "value")
+        {'top_key': {'second_key': 'value'}}
+        >>> _nested_set({"top_key": {"third_key": "third_value"}}, ["top_key", "second_key"], "value")
+        {'top_key': {'third_key': 'third_value', 'second_key': 'value'}}
+
+    d (dict): dictionary
+    keys (Iterable[str]): ordered iterable of keys that makeup path to value
+    value (Any): The value to set in the dictionary for the given key path
+    """
+    if not keys:
+        return
+    if len(keys) == 1:
+        d[keys[0]] = value
+        return
+    subd = d
+    for key in keys[:-1]:
+        if key not in subd:
+            subd = subd.setdefault(key, {})
+        else:
+            subd = subd[key]
+    subd[keys[-1]] = value
     return d
 
 

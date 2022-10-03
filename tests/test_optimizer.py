@@ -383,7 +383,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         """
 
         expression = annotate_types(parse_one(sql), schema=schema)
-        self.assertEqual(expression.expressions[0].type, exp.DataType.Type.TEXT)  # tbl.cola + tbl.colb + 'foo'
+        self.assertEqual(expression.expressions[0].type, exp.DataType.Type.TEXT)  # tbl.cola + tbl.colb + 'foo' AS col
 
         outer_addition = expression.expressions[0].this  # (tbl.cola + tbl.colb) + 'foo'
         self.assertEqual(outer_addition.type, exp.DataType.Type.TEXT)

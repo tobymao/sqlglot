@@ -213,21 +213,23 @@ class Expression(metaclass=_Expression):
         """
         return self.find_ancestor(Select)
 
-    def walk(self, bfs=True):
+    def walk(self, bfs=True, prune=None):
         """
         Returns a generator object which visits all nodes in this tree.
 
         Args:
             bfs (bool): if set to True the BFS traversal order will be applied,
                 otherwise the DFS traversal will be used instead.
+            prune ((node, parent, arg_key) -> bool): callable that returns True if
+                the generator should stop traversing this branch of the tree.
 
         Returns:
             the generator object.
         """
         if bfs:
-            yield from self.bfs()
+            yield from self.bfs(prune=prune)
         else:
-            yield from self.dfs()
+            yield from self.dfs(prune=prune)
 
     def dfs(self, parent=None, key=None, prune=None):
         """

@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal
 
 import sqlglot
 from sqlglot import exp, optimizer, parse_one, table
+from sqlglot.dataframe.sql import types as df_types
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.schema import MappingSchema, ensure_schema
@@ -437,9 +438,6 @@ class TestOptimizer(unittest.TestCase):
             }
         })
 
-
-
-
         schema = ensure_schema(
             MappingSchema(
                 {
@@ -454,6 +452,24 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(OptimizeError):
             ensure_schema({})
 
+        schema = MappingSchema()
+        schema.add_table(table("x"), {"a": "string"})
+        self.assertEqual(schema.schema, {
+            "x": {
+                "a": "string",
+            }
+        })
+        schema.add_table(table("y"), df_types.StructType([
+            df_types.StructField("b", df_types.StringType())
+        ]))
+        self.assertEqual(schema.schema, {
+            "x": {
+                "a": "string",
+            },
+            "y": {
+                "b": "string",
+            }
+        })
 
     def test_file_schema(self):
         expression = parse_one(

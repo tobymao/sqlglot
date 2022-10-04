@@ -50,35 +50,24 @@ class MappingSchema(Schema):
         dialect (str): The dialect to be used for custom type mappings.
     """
 
-    def __init__(self, schema, visible=None, dialect=None):
-        self.schema = schema
+    def __init__(self, schema=None, visible=None, dialect=None):
+        self.schema = schema or {}
         self.visible = visible
         self.dialect = dialect
         self._type_mapping_cache = {}
+        self.supported_table_args = []
+        self._initialize_supported_args()
 
-        depth = _dict_depth(schema)
-
-        if not depth:  # {}
-            self.supported_table_args = []
-        elif depth == 2:  # {table: {col: type}}
-            self.supported_table_args = ("this",)
-        elif depth == 3:  # {db: {table: {col: type}}}
-            self.supported_table_args = ("db", "this")
-        elif depth == 4:  # {catalog: {db: {table: {col: type}}}}
-            self.supported_table_args = ("catalog", "db", "this")
-        else:
-            raise OptimizeError(f"Invalid schema shape. Depth: {depth}")
-
-        self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
-        
     def copy(self, **kwargs):
         kwargs = {**{"schema": copy(self.schema)}, **kwargs}
         return MappingSchema(**kwargs)
 
     def add_table(self, table, column_mapping, copy=False):
         self._validate_table(table)
+        column_mapping = ensure_column_mapping(column_mapping)
         schema = self.schema.copy() if copy else self.schema
         _nested_set(schema, [table.text(p) for p in self.supported_table_args], column_mapping)
+        self._initialize_supported_args()
         return self.copy(schema=schema) if copy else self
 
     def add_tables(self, table_mapping, copy=False):
@@ -128,6 +117,8 @@ class MappingSchema(Schema):
         return self._type_mapping_cache[schema_type]
 
     def _validate_table(self, table):
+        if not self.supported_table_args and isinstance(table, exp.Table):
+            return
         for forbidden in self.forbidden_args:
             if table.text(forbidden):
                 raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
@@ -135,12 +126,39 @@ class MappingSchema(Schema):
             if not table.text(expected):
                 raise ValueError(f"Table is expected to have {expected}. Received: {table.sql()} ")
 
+    def _initialize_supported_args(self):
+        if not self.supported_table_args:
+            depth = _dict_depth(self.schema)
+
+            if not depth:  # {}
+                self.supported_table_args = []
+            elif depth == 2:  # {table: {col: type}}
+                self.supported_table_args = ("this",)
+            elif depth == 3:  # {db: {table: {col: type}}}
+                self.supported_table_args = ("db", "this")
+            elif depth == 4:  # {catalog: {db: {table: {col: type}}}}
+                self.supported_table_args = ("catalog", "db", "this")
+            else:
+                raise OptimizeError(f"Invalid schema shape. Depth: {depth}")
+
+            self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
+
 
 def ensure_schema(schema):
     if isinstance(schema, Schema):
         return schema
 
     return MappingSchema(schema)
+
+
+def ensure_column_mapping(mapping):
+    from sqlglot.dataframe.sql import types as df_types
+
+    if isinstance(mapping, df_types.StructType):
+        return {field.name: str(field.dataType) for field in mapping.fields}
+    if not isinstance(mapping, dict):
+        raise ValueError(f"Invalid mapping provided: {type(mapping)}")
+    return mapping
 
 
 def fs_get(table):

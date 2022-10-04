@@ -3143,6 +3143,60 @@ def column_table_names(expression):
     return list(dict.fromkeys(column.table for column in expression.find_all(Column)))
 
 
+def table_name(table):
+    """Get the full name of a table as a string.
+
+    Args:
+        table (exp.Table | str): Table expression node or string.
+
+    Examples:
+        >>> from sqlglot import exp, parse_one
+        >>> table_name(parse_one("select * from a.b.c").find(exp.Table))
+        'a.b.c'
+
+    Returns:
+        str: the table name
+    """
+
+    table = maybe_parse(table, into=Table)
+
+    return ".".join(
+        part
+        for part in (
+            table.text("catalog"),
+            table.text("db"),
+            table.name,
+        )
+        if part
+    )
+
+
+def replace_tables(expression, mapping):
+    """Replace all tables in expression according to the mapping.
+
+    Args:
+        expression (sqlglot.Expression): Expression node to be transformed and replaced
+        mapping (Dict[str, str]): Mapping of table names
+
+    Examples:
+        >>> from sqlglot import exp, parse_one
+        >>> replace_tables(parse_one("select * from a.b"), {"a.b": "c"}).sql()
+        'SELECT * FROM "c"'
+
+    Returns:
+        The mapped expression
+    """
+
+    def _replace_tables(node):
+        if isinstance(node, Table):
+            new_name = mapping.get(table_name(node))
+            if new_name:
+                return table_(*reversed(new_name.split(".")), quoted=True)
+        return node
+
+    return expression.transform(_replace_tables)
+
+
 TRUE = Boolean(this=True)
 FALSE = Boolean(this=False)
 NULL = Null()

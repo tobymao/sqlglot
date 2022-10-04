@@ -10,6 +10,32 @@ def _limit_sql(self, expression):
 
 
 class Oracle(Dialect):
+    # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212
+    # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+    time_mapping = {
+        "AM": "%p",  # Meridian indicator with or without periods
+        "A.M.": "%p",  # Meridian indicator with or without periods
+        "PM": "%p",  # Meridian indicator with or without periods
+        "P.M.": "%p",  # Meridian indicator with or without periods
+        "D": "%u",  # Day of week (1-7)
+        "DAY": "%A",  # name of day
+        "DD": "%d",  # day of month (1-31)
+        "DDD": "%j",  # day of year (1-366)
+        "DY": "%a",  # abbreviated name of day
+        "HH": "%I",  # Hour of day (1-12)
+        "HH12": "%I",  # alias for HH
+        "HH24": "%H",  # Hour of day (0-23)
+        "IW": "%V",  # Calendar week of year (1-52 or 1-53), as defined by the ISO 8601 standard
+        "MI": "%M",  # Minute (0-59)
+        "MM": "%m",  # Month (01-12; January = 01)
+        "MON": "%b",  # Abbreviated name of month
+        "MONTH": "%B",  # Name of month
+        "SS": "%S",  # Second (0-59)
+        "WW": "%W",  # Week of year (1-53)
+        "YY": "%y",  # 15
+        "YYYY": "%Y",  # 2015
+    }
+
     class Generator(Generator):
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
@@ -30,6 +56,9 @@ class Oracle(Dialect):
             **transforms.UNALIAS_GROUP,
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,
+            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }
 
         def query_modifiers(self, expression, *sqls):

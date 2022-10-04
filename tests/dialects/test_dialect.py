@@ -234,6 +234,8 @@ class TestDialect(Validator):
             write={
                 "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
+                "oracle": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
+                "postgres": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d')",
                 "redshift": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "spark": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
@@ -245,6 +247,8 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME(x, '%y')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%y')",
+                "oracle": "TO_TIMESTAMP(x, 'YY')",
+                "postgres": "TO_TIMESTAMP(x, 'YY')",
                 "redshift": "TO_TIMESTAMP(x, 'YY')",
                 "spark": "TO_TIMESTAMP(x, 'yy')",
             },
@@ -288,6 +292,8 @@ class TestDialect(Validator):
             write={
                 "duckdb": "STRFTIME(x, '%Y-%m-%d')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",
+                "oracle": "TO_CHAR(x, 'YYYY-MM-DD')",
+                "postgres": "TO_CHAR(x, 'YYYY-MM-DD')",
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
                 "redshift": "TO_CHAR(x, 'YYYY-MM-DD')",
             },
@@ -348,6 +354,8 @@ class TestDialect(Validator):
             write={
                 "duckdb": "TO_TIMESTAMP(CAST(x AS BIGINT))",
                 "hive": "FROM_UNIXTIME(x)",
+                "oracle": "TO_DATE('1970-01-01','YYYY-MM-DD') + (x / 86400)",
+                "postgres": "TO_TIMESTAMP(x)",
                 "presto": "FROM_UNIXTIME(x)",
                 "starrocks": "FROM_UNIXTIME(x)",
             },

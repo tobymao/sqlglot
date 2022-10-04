@@ -118,13 +118,22 @@ def _serial_to_generated(expression):
     return expression
 
 
+def _to_timestamp(args):
+    # TO_TIMESTAMP accepts either a single double argument or (text, text)
+    if len(args) == 1 and args[0].is_number:
+        # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TABLE
+        return exp.UnixToTime.from_arg_list(args)
+    # https://www.postgresql.org/docs/current/functions-formatting.html
+    return format_time_lambda(exp.StrToTime, "postgres")(args)
+
+
 class Postgres(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'YYYY-MM-DD HH24:MI:SS'"
     time_mapping = {
         "AM": "%p",
         "PM": "%p",
-        "D": "%w",  # 1-based day of week
+        "D": "%u",  # 1-based day of week
         "DD": "%d",  # day of month
         "DDD": "%j",  # zero padded day of year
         "FMDD": "%-d",  # - is no leading zero for Python; same for FM in postgres
@@ -172,7 +181,7 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **Parser.FUNCTIONS,
-            "TO_TIMESTAMP": format_time_lambda(exp.StrToTime, "postgres"),
+            "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
         }
 
@@ -211,4 +220,5 @@ class Postgres(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
+            exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
         }

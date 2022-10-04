@@ -474,3 +474,10 @@ class TestExpressions(unittest.TestCase):
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)
+
+    def test_annotation_alias(self):
+        expression = parse_one("SELECT a, b AS B, c #comment, d AS D #another_comment FROM foo")
+        self.assertEqual(
+            [e.alias_or_name for e in expression.expressions],
+            ["a", "B", "c", "D"],
+        )

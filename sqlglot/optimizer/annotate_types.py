@@ -1,7 +1,7 @@
 from sqlglot import exp
 from sqlglot.helper import ensure_list, subclasses
 from sqlglot.optimizer.schema import ensure_schema
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import Scope, traverse_scope
 
 
 def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
@@ -114,14 +114,19 @@ class TypeAnnotator:
     def annotate(self, expression):
         if isinstance(expression, self.TRAVERSABLES):
             for scope in traverse_scope(expression):
+                subscope_selects = {
+                    name: {select.alias_or_name: select for select in source.selects}
+                    for name, source in scope.sources.items()
+                    if isinstance(source, Scope)
+                }
+
                 # First annotate the current scope's columns references
                 for col in scope.columns:
                     source = scope.sources[col.table]
                     if isinstance(source, exp.Table):
                         col.type = self.schema.get_column_type(source, col)
                     else:
-                        selects = {s.alias_or_name: s for s in source.selects}
-                        col.type = selects[col.name].type
+                        col.type = subscope_selects[col.table][col.name].type
 
                 # Then (possibly) annotate the remaining expressions in the scope
                 self._maybe_annotate(scope.expression)

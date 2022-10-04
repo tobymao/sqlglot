@@ -9,11 +9,12 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
     Recursively infer & annotate types in an expression syntax tree against a schema.
     Assumes that we've already executed the optimizer's qualify_columns step.
 
-    (TODO -- replace this with a better example after adding some functionality)
     Example:
         >>> import sqlglot
-        >>> annotated_expression = annotate_types(sqlglot.parse_one('5 + 5.3'))
-        >>> annotated_expression.type
+        >>> schema = {"y": {"cola": "SMALLINT"}}
+        >>> sql = "SELECT x.cola + 2.5 AS cola FROM (SELECT y.cola AS cola FROM y AS y) AS x"
+        >>> annotated_expr = annotate_types(sqlglot.parse_one(sql), schema=schema)
+        >>> annotated_expr.expressions[0].type  # Get the type of "x.cola + 2.5 AS cola"
         <Type.DOUBLE: 'DOUBLE'>
 
     Args:
@@ -113,16 +114,16 @@ class TypeAnnotator:
     def annotate(self, expression):
         if isinstance(expression, self.TRAVERSABLES):
             for scope in traverse_scope(expression):
-                # First annotate the current expression's columns references
+                # First annotate the current scope's columns references
                 for col in scope.columns:
                     source = scope.sources[col.table]
                     if isinstance(source, exp.Table):
                         col.type = self.schema.get_column_type(source, col)
                     else:
-                        matching_column = next(s for s in source.selects if col.name == s.alias_or_name)
-                        col.type = matching_column.type
+                        selects = {s.alias_or_name: s for s in source.selects}
+                        col.type = selects[col.name].type
 
-                # Then (possibly) annotate the remaining expressions
+                # Then (possibly) annotate the remaining expressions in the scope
                 self._maybe_annotate(scope.expression)
 
         return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
@@ -130,7 +131,8 @@ class TypeAnnotator:
     def _maybe_annotate(self, expression):
         if not isinstance(expression, exp.Expression):
             return None
-        elif expression.type:
+
+        if expression.type:
             return expression  # We've already inferred the expression's type
 
         annotator = self.annotators.get(expression.__class__)

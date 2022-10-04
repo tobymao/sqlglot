@@ -12,12 +12,23 @@ class Schema(abc.ABC):
     def column_names(self, table, only_visible=False):
         """
         Get the column names for a table.
-
         Args:
             table (sqlglot.expressions.Table): Table expression instance
             only_visible (bool): Whether to include invisible columns
         Returns:
             list[str]: list of column names
+        """
+
+    @abc.abstractmethod
+    def get_column_type(self, table, column):
+        """
+        Get the exp.DataType type of a column in the schema.
+
+        Args:
+            table (sqlglot.expressions.Table): The source table.
+            column (sqlglot.expressions.Column): The target column.
+        Returns:
+            sqlglot.expressions.DataType.Type: The resulting column type.
         """
 
 
@@ -35,11 +46,14 @@ class MappingSchema(Schema):
             1. {table: set(*cols)}}
             2. {db: {table: set(*cols)}}}
             3. {catalog: {db: {table: set(*cols)}}}}
+        dialect (str): The dialect to be used for custom type mappings.
     """
 
-    def __init__(self, schema, visible=None):
+    def __init__(self, schema, visible=None, dialect=None):
         self.schema = schema
         self.visible = visible
+        self.dialect = dialect
+        self._type_mapping_cache = {}
 
         depth = _dict_depth(schema)
 
@@ -72,6 +86,32 @@ class MappingSchema(Schema):
 
         visible = _nested_get(self.visible, *zip(self.supported_table_args, args))
         return [col for col in columns if col in visible]
+
+    def get_column_type(self, table, column):
+        try:
+            schema_type = self.schema.get(table.name, {}).get(column.name).upper()
+            return self._convert_type(schema_type)
+        except:
+            raise OptimizeError(f"Failed to get type for column {column.sql()}")
+
+    def _convert_type(self, schema_type):
+        """
+        Convert a type represented as a string to the corresponding exp.DataType.Type object.
+
+        Args:
+            schema_type (str): The type we want to convert.
+        Returns:
+            sqlglot.expressions.DataType.Type: The resulting expression type.
+        """
+        if schema_type not in self._type_mapping_cache:
+            try:
+                self._type_mapping_cache[schema_type] = exp.maybe_parse(
+                    schema_type, into=exp.DataType, dialect=self.dialect
+                ).this
+            except AttributeError:
+                raise OptimizeError(f"Failed to convert type {schema_type}")
+
+        return self._type_mapping_cache[schema_type]
 
 
 def ensure_schema(schema):

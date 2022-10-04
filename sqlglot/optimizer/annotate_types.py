@@ -1,16 +1,20 @@
 from sqlglot import exp
 from sqlglot.helper import ensure_list, subclasses
+from sqlglot.optimizer.schema import ensure_schema
+from sqlglot.optimizer.scope import Scope, traverse_scope
 
 
 def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
     """
     Recursively infer & annotate types in an expression syntax tree against a schema.
+    Assumes that we've already executed the optimizer's qualify_columns step.
 
-    (TODO -- replace this with a better example after adding some functionality)
     Example:
         >>> import sqlglot
-        >>> annotated_expression = annotate_types(sqlglot.parse_one('5 + 5.3'))
-        >>> annotated_expression.type
+        >>> schema = {"y": {"cola": "SMALLINT"}}
+        >>> sql = "SELECT x.cola + 2.5 AS cola FROM (SELECT y.cola AS cola FROM y AS y) AS x"
+        >>> annotated_expr = annotate_types(sqlglot.parse_one(sql), schema=schema)
+        >>> annotated_expr.expressions[0].type  # Get the type of "x.cola + 2.5 AS cola"
         <Type.DOUBLE: 'DOUBLE'>
 
     Args:
@@ -21,6 +25,8 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
     Returns:
         sqlglot.Expression: expression annotated with types
     """
+
+    schema = ensure_schema(schema)
 
     return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
 
@@ -37,6 +43,7 @@ class TypeAnnotator:
         },
         exp.Cast: lambda self, expr: self._annotate_cast(expr),
         exp.DataType: lambda self, expr: self._annotate_data_type(expr),
+        exp.Alias: lambda self, expr: self._annotate_unary(expr),
         exp.Literal: lambda self, expr: self._annotate_literal(expr),
         exp.Boolean: lambda self, expr: self._annotate_boolean(expr),
     }
@@ -97,22 +104,52 @@ class TypeAnnotator:
         },
     }
 
+    TRAVERSABLES = (exp.Select, exp.Union, exp.UDTF, exp.Subquery)
+
     def __init__(self, schema=None, annotators=None, coerces_to=None):
         self.schema = schema
         self.annotators = annotators or self.ANNOTATORS
         self.coerces_to = coerces_to or self.COERCES_TO
 
     def annotate(self, expression):
+        if isinstance(expression, self.TRAVERSABLES):
+            for scope in traverse_scope(expression):
+                subscope_selects = {
+                    name: {select.alias_or_name: select for select in source.selects}
+                    for name, source in scope.sources.items()
+                    if isinstance(source, Scope)
+                }
+
+                # First annotate the current scope's columns references
+                for col in scope.columns:
+                    source = scope.sources[col.table]
+                    if isinstance(source, exp.Table):
+                        col.type = self.schema.get_column_type(source, col)
+                    else:
+                        col.type = subscope_selects[col.table][col.name].type
+
+                # Then (possibly) annotate the remaining expressions in the scope
+                self._maybe_annotate(scope.expression)
+
+        return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
+
+    def _maybe_annotate(self, expression):
         if not isinstance(expression, exp.Expression):
             return None
 
-        annotator = self.annotators.get(expression.__class__)
-        return annotator(self, expression) if annotator else self._annotate_args(expression)
+        if expression.type:
+            return expression  # We've already inferred the expression's type
 
-    def _annotate_args(self, expression):
+        annotator = self.annotators.get(expression.__class__)
+        return annotator(self, expression) if annotator else self._annotate_args(expression, set_type=True)
+
+    def _annotate_args(self, expression, set_type=False):
         for value in expression.args.values():
             for v in ensure_list(value):
-                self.annotate(v)
+                self._maybe_annotate(v)
+
+        if set_type:
+            expression.type = exp.DataType.Type.UNKNOWN
 
         return expression
 

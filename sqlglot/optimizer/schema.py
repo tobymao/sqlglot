@@ -30,10 +30,16 @@ class MappingSchema(Schema):
             1. {table: {col: type}}
             2. {db: {table: {col: type}}}
             3. {catalog: {db: {table: {col: type}}}}
+        visible (dict): Optional mapping of which columns in the schema are visible. If not provided, all columns
+            are assumed to be visible. The nesting should mirror that of the schema:
+            1. {table: set(*cols)}}
+            2. {db: {table: set(*cols)}}}
+            3. {catalog: {db: {table: set(*cols)}}}}
     """
 
-    def __init__(self, schema):
+    def __init__(self, schema, visible=None):
         self.schema = schema
+        self.visible = visible
 
         depth = _dict_depth(schema)
 
@@ -59,7 +65,13 @@ class MappingSchema(Schema):
         for forbidden in self.forbidden_args:
             if table.text(forbidden):
                 raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
-        return list(_nested_get(self.schema, *zip(self.supported_table_args, args)))
+
+        columns = list(_nested_get(self.schema, *zip(self.supported_table_args, args)))
+        if not only_visible or not self.visible:
+            return columns
+
+        visible = _nested_get(self.visible, *zip(self.supported_table_args, args))
+        return [col for col in columns if col in visible]
 
 
 def ensure_schema(schema):

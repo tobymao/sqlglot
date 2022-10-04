@@ -912,7 +912,20 @@ class Parser:
         return self.expression(exp.Tuple, expressions=expressions)
 
     def _parse_select(self, nested=False, table=False):
-        if self._match(TokenType.SELECT):
+        cte = self._parse_with()
+        if cte is not None:
+            this = self._parse_statement()
+
+            if not this:
+                self.raise_error("Failed to parse any statement following CTE")
+                return cte
+
+            if "with" in this.arg_types:
+                this.set("with", cte)
+            else:
+                self.raise_error(f"{this.key} does not support CTE")
+                this = cte
+        elif self._match(TokenType.SELECT):
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
             distinct = self._match(TokenType.DISTINCT)
@@ -940,18 +953,6 @@ class Parser:
             if from_:
                 this.set("from", from_)
             self._parse_query_modifiers(this)
-        elif (cte := self._parse_with()) is not None:
-            this = self._parse_statement()
-
-            if not this:
-                self.raise_error("Failed to parse any statement following CTE")
-                return cte
-
-            if "with" in this.arg_types:
-                this.set("with", cte)
-            else:
-                self.raise_error(f"{this.key} does not support CTE")
-                this = cte
         elif (table or nested) and self._match(TokenType.L_PAREN):
             this = self._parse_table() if table else self._parse_select(nested=True)
             self._parse_query_modifiers(this)

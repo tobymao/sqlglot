@@ -310,10 +310,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         }
 
         for sql, target_type in tests.items():
-            expression = parse_one(sql)
-            annotated_expression = annotate_types(expression)
-
-            self.assertEqual(annotated_expression.find(exp.Literal).type, target_type)
+            expression = annotate_types(parse_one(sql))
+            self.assertEqual(expression.find(exp.Literal).type, target_type)
 
     def test_boolean_type_annotation(self):
         tests = {
@@ -322,14 +320,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         }
 
         for sql, target_type in tests.items():
-            expression = parse_one(sql)
-            annotated_expression = annotate_types(expression)
-
-            self.assertEqual(annotated_expression.find(exp.Boolean).type, target_type)
+            expression = annotate_types(parse_one(sql))
+            self.assertEqual(expression.find(exp.Boolean).type, target_type)
 
     def test_cast_type_annotation(self):
-        expression = parse_one("CAST('2020-01-01' AS TIMESTAMPTZ(9))")
-        annotate_types(expression)
+        expression = annotate_types(parse_one("CAST('2020-01-01' AS TIMESTAMPTZ(9))"))
 
         self.assertEqual(expression.type, exp.DataType.Type.TIMESTAMPTZ)
         self.assertEqual(expression.this.type, exp.DataType.Type.VARCHAR)
@@ -337,16 +332,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.args["to"].expressions[0].type, exp.DataType.Type.INT)
 
     def test_cache_annotation(self):
-        expression = parse_one("CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1")
-        annotated_expression = annotate_types(expression)
-
-        self.assertEqual(annotated_expression.expression.expressions[0].type, exp.DataType.Type.INT)
+        expression = annotate_types(parse_one("CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1"))
+        self.assertEqual(expression.expression.expressions[0].type, exp.DataType.Type.INT)
 
     def test_binary_annotation(self):
-        expression = parse_one("SELECT 0.0 + (2 + 3)")
-        annotate_types(expression)
-
-        expression = expression.expressions[0]
+        expression = annotate_types(parse_one("SELECT 0.0 + (2 + 3)")).expressions[0]
 
         self.assertEqual(expression.type, exp.DataType.Type.DOUBLE)
         self.assertEqual(expression.left.type, exp.DataType.Type.DOUBLE)
@@ -354,3 +344,74 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.type, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.left.type, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type, exp.DataType.Type.INT)
+
+    def test_derived_tables_column_annotation(self):
+        schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+        sql = """
+            SELECT a.cola AS cola
+            FROM (
+                SELECT x.cola + y.cola AS cola
+                FROM (
+                    SELECT x.cola AS cola
+                    FROM x AS x
+                ) AS x
+                JOIN (
+                    SELECT y.cola AS cola
+                    FROM y AS y
+                ) AS y
+            ) AS a
+        """
+
+        expression = annotate_types(parse_one(sql), schema=schema)
+        self.assertEqual(expression.expressions[0].type, exp.DataType.Type.FLOAT)  # a.cola AS cola
+
+        addition_alias = expression.args["from"].expressions[0].this.expressions[0]
+        self.assertEqual(addition_alias.type, exp.DataType.Type.FLOAT)  # x.cola + y.cola AS cola
+
+        addition = addition_alias.this
+        self.assertEqual(addition.type, exp.DataType.Type.FLOAT)
+        self.assertEqual(addition.this.type, exp.DataType.Type.INT)
+        self.assertEqual(addition.expression.type, exp.DataType.Type.FLOAT)
+
+    def test_cte_column_annotation(self):
+        schema = {"x": {"cola": "CHAR"}, "y": {"colb": "TEXT"}}
+        sql = """
+            WITH tbl AS (
+                SELECT x.cola + 'bla' AS cola, y.colb AS colb
+                FROM (
+                    SELECT x.cola AS cola
+                    FROM x AS x
+                ) AS x
+                JOIN (
+                    SELECT y.colb AS colb
+                    FROM y AS y
+                ) AS y
+            )
+            SELECT tbl.cola + tbl.colb + 'foo' AS col
+            FROM tbl AS tbl
+        """
+
+        expression = annotate_types(parse_one(sql), schema=schema)
+        self.assertEqual(expression.expressions[0].type, exp.DataType.Type.TEXT)  # tbl.cola + tbl.colb + 'foo' AS col
+
+        outer_addition = expression.expressions[0].this  # (tbl.cola + tbl.colb) + 'foo'
+        self.assertEqual(outer_addition.type, exp.DataType.Type.TEXT)
+        self.assertEqual(outer_addition.left.type, exp.DataType.Type.TEXT)
+        self.assertEqual(outer_addition.right.type, exp.DataType.Type.VARCHAR)
+
+        inner_addition = expression.expressions[0].this.left  # tbl.cola + tbl.colb
+        self.assertEqual(inner_addition.left.type, exp.DataType.Type.VARCHAR)
+        self.assertEqual(inner_addition.right.type, exp.DataType.Type.TEXT)
+
+        cte_select = expression.args["with"].expressions[0].this
+        self.assertEqual(cte_select.expressions[0].type, exp.DataType.Type.VARCHAR)  # x.cola + 'bla' AS cola
+        self.assertEqual(cte_select.expressions[1].type, exp.DataType.Type.TEXT)  # y.colb AS colb
+
+        cte_select_addition = cte_select.expressions[0].this  # x.cola + 'bla'
+        self.assertEqual(cte_select_addition.type, exp.DataType.Type.VARCHAR)
+        self.assertEqual(cte_select_addition.left.type, exp.DataType.Type.CHAR)
+        self.assertEqual(cte_select_addition.right.type, exp.DataType.Type.VARCHAR)
+
+        # Check that x.cola AS cola and y.colb AS colb have types CHAR and TEXT, respectively
+        for d, t in zip(cte_select.find_all(exp.Subquery), [exp.DataType.Type.CHAR, exp.DataType.Type.TEXT]):
+            self.assertEqual(d.this.expressions[0].this.type, t)

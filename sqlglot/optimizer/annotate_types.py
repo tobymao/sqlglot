@@ -111,20 +111,19 @@ class TypeAnnotator:
         self.coerces_to = coerces_to or self.COERCES_TO
 
     def annotate(self, expression):
-        scopes = traverse_scope(expression) if isinstance(expression, self.TRAVERSABLES) else []
+        if isinstance(expression, self.TRAVERSABLES):
+            for scope in traverse_scope(expression):
+                # First annotate the current expression's columns references
+                for col in scope.columns:
+                    source = scope.sources[col.table]
+                    if isinstance(source, exp.Table):
+                        col.type = self.schema.get_column_type(source, col)
+                    else:
+                        matching_column = next(s for s in source.selects if col.name == s.alias_or_name)
+                        col.type = matching_column.type
 
-        for scope in scopes:
-            # First annotate the current expression's columns references
-            for col in scope.columns:
-                source = scope.sources[col.table]
-                if isinstance(source, exp.Table):
-                    col.type = self.schema.get_column_type(source, col)
-                else:
-                    matching_column = next(s for s in source.selects if col.name == s.alias_or_name)
-                    col.type = matching_column.type
-
-            # Then (possibly) annotate the remaining expressions
-            self._maybe_annotate(scope.expression)
+                # Then (possibly) annotate the remaining expressions
+                self._maybe_annotate(scope.expression)
 
         return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
 

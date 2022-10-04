@@ -318,6 +318,8 @@ class Parser:
         exp.Properties: lambda self: self._parse_properties(),
         exp.Where: lambda self: self._parse_where(),
         exp.Ordered: lambda self: self._parse_ordered(),
+        exp.Having: lambda self: self._parse_having(),
+        exp.With: lambda self: self._parse_with(),
         "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 
@@ -910,7 +912,20 @@ class Parser:
         return self.expression(exp.Tuple, expressions=expressions)
 
     def _parse_select(self, nested=False, table=False):
-        if self._match(TokenType.SELECT):
+        cte = self._parse_with()
+        if cte:
+            this = self._parse_statement()
+
+            if not this:
+                self.raise_error("Failed to parse any statement following CTE")
+                return cte
+
+            if "with" in this.arg_types:
+                this.set("with", cte)
+            else:
+                self.raise_error(f"{this.key} does not support CTE")
+                this = cte
+        elif self._match(TokenType.SELECT):
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
             distinct = self._match(TokenType.DISTINCT)
@@ -938,39 +953,6 @@ class Parser:
             if from_:
                 this.set("from", from_)
             self._parse_query_modifiers(this)
-        elif self._match(TokenType.WITH):
-            recursive = self._match(TokenType.RECURSIVE)
-
-            expressions = []
-
-            while True:
-                expressions.append(self._parse_cte())
-
-                if not self._match(TokenType.COMMA):
-                    break
-
-            cte = self.expression(
-                exp.With,
-                expressions=expressions,
-                recursive=recursive,
-            )
-            this = self._parse_statement()
-
-            if not this:
-                self.raise_error("Failed to parse any statement following CTE")
-                return cte
-
-            if "with" in this.arg_types:
-                this.set(
-                    "with",
-                    self.expression(
-                        exp.With,
-                        expressions=expressions,
-                        recursive=recursive,
-                    ),
-                )
-            else:
-                self.raise_error(f"{this.key} does not support CTE")
         elif (table or nested) and self._match(TokenType.L_PAREN):
             this = self._parse_table() if table else self._parse_select(nested=True)
             self._parse_query_modifiers(this)
@@ -985,6 +967,26 @@ class Parser:
             this = None
 
         return self._parse_set_operations(this) if this else None
+
+    def _parse_with(self):
+        if not self._match(TokenType.WITH):
+            return None
+
+        recursive = self._match(TokenType.RECURSIVE)
+
+        expressions = []
+
+        while True:
+            expressions.append(self._parse_cte())
+
+            if not self._match(TokenType.COMMA):
+                break
+
+        return self.expression(
+            exp.With,
+            expressions=expressions,
+            recursive=recursive,
+        )
 
     def _parse_cte(self):
         alias = self._parse_table_alias()

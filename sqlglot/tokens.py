@@ -262,6 +262,7 @@ class TokenType(AutoName):
     USE = auto()
     USING = auto()
     VALUES = auto()
+    VACUUM = auto()
     VIEW = auto()
     VOLATILE = auto()
     WHEN = auto()
@@ -551,6 +552,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
+        "VACUUM": TokenType.VACUUM,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "VOLATILE": TokenType.VOLATILE,
@@ -629,6 +631,7 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.SHOW,
         TokenType.TRUNCATE,
         TokenType.USE,
+        TokenType.VACUUM,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

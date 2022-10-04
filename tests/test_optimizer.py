@@ -88,6 +88,15 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("qualify_columns", qualify_columns, schema=self.schema)
 
+    def test_qualify_columns__with_invisible(self):
+        def qualify_columns(expression, **kwargs):
+            expression = optimizer.qualify_tables.qualify_tables(expression)
+            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+            return expression
+
+        schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
+        self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
+
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
             with self.subTest(sql):

@@ -41,11 +41,13 @@ class MappingSchema(Schema):
             1. {table: {col: type}}
             2. {db: {table: {col: type}}}
             3. {catalog: {db: {table: {col: type}}}}
+        dialect (str): The dialect to be used for custom type mappings.
     """
 
-    def __init__(self, schema):
+    def __init__(self, schema, dialect=None):
         self.schema = schema
-        self._type_mapping = {}
+        self.dialect = dialect
+        self._type_mapping_cache = {}
 
         depth = _dict_depth(schema)
 
@@ -80,19 +82,24 @@ class MappingSchema(Schema):
                 raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
         return list(_nested_get(self.schema, *zip(self.supported_table_args, args)))
 
-    def _convert_type(self, type_as_string):
+    def _convert_type(self, schema_type):
         """
         Convert a type represented as a string to the corresponding exp.DataType.Type object.
 
         Args:
-            type_as_string (str): The type we want to convert.
+            schema_type (str): The type we want to convert.
         Returns:
             sqlglot.expressions.DataType.Type: The resulting expression type.
         """
+        if schema_type not in self._type_mapping_cache:
+            try:
+                self._type_mapping_cache[schema_type] = exp.maybe_parse(
+                    schema_type, into=exp.DataType, dialect=self.dialect
+                ).this
+            except AttributeError:
+                raise OptimizeError(f"Failed to convert type {schema_type}")
 
-        return self._type_mapping.get(type_as_string) or self._type_mapping.setdefault(
-            type_as_string, exp.maybe_parse(type_as_string, into=exp.DataType).this
-        )
+        return self._type_mapping_cache[schema_type]
 
 
 def ensure_schema(schema):

@@ -518,6 +518,10 @@ class Annotation(Expression):
         "expression": True,
     }
 
+    @property
+    def alias(self):
+        return self.expression.alias_or_name
+
 
 class Cache(Expression):
     arg_types = {

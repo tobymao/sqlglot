@@ -913,7 +913,7 @@ class Parser:
 
     def _parse_select(self, nested=False, table=False):
         cte = self._parse_with()
-        if cte is not None:
+        if cte:
             this = self._parse_statement()
 
             if not this:

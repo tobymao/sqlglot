@@ -246,7 +246,7 @@ class Scope:
         table only becomes a selected source if it's included in a FROM or JOIN clause.
 
         Returns:
-            dict[str, (exp.Table|exp.Subquery, exp.Table|Scope)]: selected sources and nodes
+            dict[str, (exp.Table|exp.Select, exp.Table|Scope)]: selected sources and nodes
         """
         if self._selected_sources is None:
             referenced_names = []

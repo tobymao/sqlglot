@@ -67,15 +67,15 @@ def merge_ctes(expression, leave_tables_isolated=False):
     singular_cte_selections = [v[0] for k, v in cte_selections.items() if len(v) == 1]
     for outer_scope, inner_scope, table in singular_cte_selections:
         inner_select = inner_scope.expression.unnest()
-        if _mergeable(outer_scope, inner_select, leave_tables_isolated):
-            from_or_join = table.find_ancestor(exp.From, exp.Join)
-
+        from_or_join = table.find_ancestor(exp.From, exp.Join)
+        if _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
             node_to_replace = table
             if isinstance(node_to_replace.parent, exp.Alias):
                 node_to_replace = node_to_replace.parent
                 alias = node_to_replace.alias
             else:
                 alias = table.name
+
             _rename_inner_sources(outer_scope, inner_scope, alias)
             _merge_from(outer_scope, inner_scope, node_to_replace, alias)
             _merge_expressions(outer_scope, inner_scope, alias)
@@ -90,9 +90,9 @@ def merge_derived_tables(expression, leave_tables_isolated=False):
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             inner_select = subquery.unnest()
-            if _mergeable(outer_scope, inner_select, leave_tables_isolated):
+            from_or_join = subquery.find_ancestor(exp.From, exp.Join)
+            if _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
                 alias = subquery.alias_or_name
-                from_or_join = subquery.find_ancestor(exp.From, exp.Join)
                 inner_scope = outer_scope.sources[alias]
 
                 _rename_inner_sources(outer_scope, inner_scope, alias)
@@ -104,7 +104,7 @@ def merge_derived_tables(expression, leave_tables_isolated=False):
     return expression
 
 
-def _mergeable(outer_scope, inner_select, leave_tables_isolated):
+def _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
     """
     Return True if `inner_select` can be merged into outer query.
 
@@ -112,6 +112,7 @@ def _mergeable(outer_scope, inner_select, leave_tables_isolated):
         outer_scope (Scope)
         inner_select (exp.Select)
         leave_tables_isolated (bool)
+        from_or_join (exp.From|exp.Join)
     Returns:
         bool: True if can be merged
     """
@@ -123,6 +124,16 @@ def _mergeable(outer_scope, inner_select, leave_tables_isolated):
         and inner_select.args.get("from")
         and not any(e.find(exp.AggFunc, exp.Select) for e in inner_select.expressions)
         and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
+        and not (
+            isinstance(from_or_join, exp.Join)
+            and inner_select.args.get("where")
+            and from_or_join.side in {"FULL", "LEFT"}
+        )
+        and not (
+            isinstance(from_or_join, exp.From)
+            and inner_select.args.get("where")
+            and any(j.side in {"FULL", "RIGHT"} for j in outer_scope.expression.args.get("joins", []))
+        )
     )
 
 

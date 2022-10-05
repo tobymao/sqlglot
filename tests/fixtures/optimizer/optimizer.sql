@@ -182,16 +182,22 @@ WITH "m" AS (
   FROM "m"
   WHERE
     "m"."a" = 1
+), "o" AS (
+  SELECT
+    "m"."a" AS "a",
+    "m"."b" AS "b"
+  FROM "m"
+  WHERE
+    "m"."a" = 2
 )
 SELECT
   "n"."a" AS "a",
   "n"."b" AS "b",
-  "m"."b" AS "b"
+  "o"."b" AS "b"
 FROM "n"
-FULL JOIN "m"
-  ON "m"."a" = 2
-  AND "n"."a" = "m"."a"
+FULL JOIN "o"
+  ON "n"."a" = "o"."a"
 JOIN "n" AS "n2"
   ON "n"."a" = "n2"."a"
 WHERE
-  "m"."b" > 0;
+  "o"."b" > 0;

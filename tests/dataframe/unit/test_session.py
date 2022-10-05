@@ -5,35 +5,35 @@ from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql import types
 
 
-class TestDataframeWindow(unittest.TestCase):
+class TestDataframeSession(unittest.TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUp(cls) -> None:
         cls.spark = SparkSession()
 
     def test_cdf_one_row(self):
         df = self.spark.createDataFrame([[1, 2]], ["cola", "colb"])
-        self.assertEqual("SELECT cola, colb FROM (VALUES (1, 2)) AS tab(cola, colb)", df.sql(pretty=False))
+        self.assertEqual("SELECT `a1`.`cola` AS `cola`, `a1`.`colb` AS `colb` FROM (VALUES (1, 2)) AS `a1`(`cola`, `colb`)", df.sql(pretty=False))
 
     def test_cdf_multiple_rows(self):
         df = self.spark.createDataFrame([[1, 2], [3, 4], [None, 6]], ["cola", "colb"])
-        self.assertEqual("SELECT cola, colb FROM (VALUES (1, 2), (3, 4), (NULL, 6)) AS tab(cola, colb)", df.sql(pretty=False))
+        self.assertEqual("SELECT `a1`.`cola` AS `cola`, `a1`.`colb` AS `colb` FROM (VALUES (1, 2), (3, 4), (NULL, 6)) AS `a1`(`cola`, `colb`)", df.sql(pretty=False))
 
     def test_cdf_no_schema(self):
         df = self.spark.createDataFrame([[1, 2], [3, 4], [None, 6]])
-        self.assertEqual("SELECT _1, _2 FROM (VALUES (1, 2), (3, 4), (NULL, 6)) AS tab(_1, _2)", df.sql(pretty=False))
+        self.assertEqual("SELECT `a1`.`_1` AS `_1`, `a1`.`_2` AS `_2` FROM (VALUES (1, 2), (3, 4), (NULL, 6)) AS `a1`(`_1`, `_2`)", df.sql(pretty=False))
 
     def test_cdf_row_mixed_primitives(self):
         df = self.spark.createDataFrame([[1, 10.1, 'test', False, None]])
-        self.assertEqual("SELECT _1, _2, _3, _4, _5 FROM (VALUES (1, 10.1, 'test', false, NULL)) AS tab(_1, _2, _3, _4, _5)",
+        self.assertEqual("SELECT `a1`.`_1` AS `_1`, `a1`.`_2` AS `_2`, `a1`.`_3` AS `_3`, `a1`.`_4` AS `_4`, `a1`.`_5` AS `_5` FROM (VALUES (1, 10.1, 'test', false, NULL)) AS `a1`(`_1`, `_2`, `_3`, `_4`, `_5`)",
                          df.sql(pretty=False))
 
     def test_cdf_dict_rows(self):
         df = self.spark.createDataFrame([{"cola": 1, "colb": "test"}, {"cola": 2, "colb": "test2"}])
-        self.assertEqual("SELECT cola, colb FROM (VALUES (1, 'test'), (2, 'test2')) AS tab(cola, colb)", df.sql(pretty=False))
+        self.assertEqual("SELECT `a1`.`cola` AS `cola`, `a1`.`colb` AS `colb` FROM (VALUES (1, 'test'), (2, 'test2')) AS `a1`(`cola`, `colb`)", df.sql(pretty=False))
 
     def test_cdf_str_schema(self):
         df = self.spark.createDataFrame([[1, 'test']], "cola: INT, colb: STRING")
-        self.assertEqual("SELECT CAST(cola AS INT) AS `cola`, CAST(colb AS STRING) AS `colb` FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+        self.assertEqual("SELECT CAST(`a1`.`cola` AS INT) AS `cola`, CAST(`a1`.`colb` AS STRING) AS `colb` FROM (VALUES (1, 'test')) AS `a1`(`cola`, `colb`)",
                          df.sql(pretty=False))
 
     def test_typed_schema_basic(self):
@@ -43,7 +43,7 @@ class TestDataframeWindow(unittest.TestCase):
         ])
         df = self.spark.createDataFrame([[1, 'test']], schema)
         self.assertEqual(
-            "SELECT CAST(cola AS int) AS `cola`, CAST(colb AS string) AS `colb` FROM (VALUES (1, 'test')) AS tab(cola, colb)",
+            "SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS string) AS `colb` FROM (VALUES (1, 'test')) AS `a1`(`cola`, `colb`)",
             df.sql(pretty=False))
 
     def test_typed_schema_nested(self):
@@ -55,7 +55,7 @@ class TestDataframeWindow(unittest.TestCase):
         ])
         df = self.spark.createDataFrame([[{"sub_cola": 1, "sub_colb": 'test'}]], schema)
         self.assertEqual(
-            "SELECT CAST(cola AS struct<sub_cola:int, sub_colb:string>) AS `cola` FROM (VALUES (STRUCT(1 AS `sub_cola`, 'test' AS `sub_colb`))) AS tab(cola)",
+            "SELECT CAST(`a1`.`cola` AS struct<sub_cola:int, sub_colb:string>) AS `cola` FROM (VALUES (STRUCT(1 AS `sub_cola`, 'test' AS `sub_colb`))) AS `a1`(`cola`)",
             df.sql(pretty=False)
         )
 
@@ -63,16 +63,18 @@ class TestDataframeWindow(unittest.TestCase):
         # TODO: Do exact matches once CTE names are deterministic
         query = "SELECT cola, colb FROM table"
         df = self.spark.sql(query)
+        self.spark.add_table("table", {"cola": "string", "colb": "string"})
         self.assertIn(
-            "SELECT cola, colb FROM table",
+            "SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`",
             df.sql(pretty=False)
         )
 
     def test_sql_with_aggs(self):
         # TODO: Do exact matches once CTE names are deterministic
         query = "SELECT cola, colb FROM table"
+        self.spark.add_table("table", {"cola": "string", "colb": "string"})
         df = self.spark.sql(query).groupBy(F.col("cola")).agg(F.sum("colb"))
-        result = df.sql(pretty=False)
+        result = df.sql(pretty=False, optimize=False)
         self.assertIn(
             "SELECT cola, colb FROM table",
             result
@@ -89,7 +91,8 @@ class TestDataframeWindow(unittest.TestCase):
     def test_sql_non_select(self):
         query = "CREATE TABLE new_table AS SELECT cola, colb FROM table"
         df = self.spark.sql(query)
+        self.spark.add_table("table", {"cola": "string", "colb": "string"})
         self.assertEqual(
             "CREATE TABLE new_table AS SELECT cola, colb FROM table",
-            df.sql(pretty=False)
+            df.sql(pretty=False, optimize=False)
         )

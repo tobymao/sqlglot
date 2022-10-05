@@ -9,6 +9,11 @@ from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql.dataframe import DataFrame
 from sqlglot.dataframe.sql.operations import Operation
 from sqlglot.dataframe.sql.types import StructType
+from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
+from sqlglot.optimizer.schema import MappingSchema
+
+if t.TYPE_CHECKING:
+    from sqlglot.dataframe.sql._typing import SchemaInput
 
 
 class SparkSession:
@@ -18,18 +23,29 @@ class SparkSession:
 
     def __init__(self):
         self.name_to_sequence_id_mapping = defaultdict(list)
+        self.schema = MappingSchema()
+        self.incrementing_id = 1
 
     @property
     def read(self) -> "DataFrameReader":
         return DataFrameReader(self)
 
-    def table(self, tableName: str) -> "DataFrame":
-        return self.read.table(tableName)
+    def add_table(self, table: t.Union[exp.Table, str], schema: "SchemaInput") -> None:
+        table = exp.Table.from_str(table) if isinstance(table, str) else table
+        column_mapping = get_column_mapping_from_schema_input(schema)
+        self.schema.add_table(table, column_mapping)
+
+    def add_tables(self, table_column_mapping: t.Dict[t.Union[exp.Table, str], "SchemaInput"]) -> None:
+        for table, schema in table_column_mapping.items():
+            self.add_table(table, schema)
+
+    def table(self, tableName: str, schema: "SchemaInput") -> "DataFrame":
+        return self.read.table(tableName, schema)
 
     def createDataFrame(
             self,
             data: t.Iterable[t.Union[t.Dict[str, t.Any], t.Iterable[t.Any]]],
-            schema: t.Optional[t.Union[str, t.List[str], "StructType"]] = None,
+            schema: t.Optional["SchemaInput"] = None,
             samplingRatio: t.Optional[float] = None,
             verifySchema: bool = False,
     ) -> "DataFrame":
@@ -41,17 +57,11 @@ class SparkSession:
             raise NotImplementedError("Only schema of either list or string of list supported")
 
         if schema is not None:
-            if isinstance(schema, str):
-                col_name_type_strs = [x.strip() for x in schema.split(",")]
-                col_name_type_pairs = [(name_type_str.split(':')[0].strip(), name_type_str.split(':')[1].strip()) for name_type_str in col_name_type_strs]
-            elif isinstance(schema, StructType):
-                col_name_type_pairs = [(struct_field.name, struct_field.dataType.simpleString()) for struct_field in schema]
-            else:
-                col_name_type_pairs = [(x.strip(), None) for x in schema]
+            column_mapping = get_column_mapping_from_schema_input(schema)
         elif isinstance(data[0], dict):
-            col_name_type_pairs = [(col_name.strip(), None) for col_name in data[0].keys()]
+            column_mapping = {col_name.strip(): None for col_name in data[0].keys()}
         else:
-            col_name_type_pairs = [(f"_{i}", None) for i in range(1, len(data[0]) + 1)]
+            column_mapping = {f"_{i}": None for i in range(1, len(data[0]) + 1)}
 
         data_expressions = [
             exp.Tuple(
@@ -62,7 +72,7 @@ class SparkSession:
 
         sel_columns = [
             F.col(name).cast(data_type).alias(name).expression if data_type is not None else F.col(name).expression
-            for name, data_type in col_name_type_pairs
+            for name, data_type in column_mapping.items()
         ]
 
         select_kwargs = {
@@ -73,8 +83,8 @@ class SparkSession:
                         expressions=data_expressions
                     ),
                     alias=exp.TableAlias(
-                        this=exp.Identifier(this='tab'),
-                        columns=[exp.Identifier(this=col_name) for col_name, _ in col_name_type_pairs]
+                        this=exp.Identifier(this=self._auto_incrementing_name),
+                        columns=[exp.Identifier(this=col_name) for col_name in column_mapping.keys()]
                     )
                 )]
             )
@@ -95,6 +105,12 @@ class SparkSession:
         if isinstance(expression, exp.Select):
             df = df._convert_leaf_to_cte()
         return df
+
+    @property
+    def _auto_incrementing_name(self) -> str:
+        name = f"a{self.incrementing_id}"
+        self.incrementing_id += 1
+        return name
 
     @property
     def _random_name(self) -> str:

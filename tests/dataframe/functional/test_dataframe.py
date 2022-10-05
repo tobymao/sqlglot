@@ -1,12 +1,8 @@
 import typing as t
-import unittest
 
 from pyspark.sql import functions as F
 from sqlglot.dataframe.sql import functions as SF
 from tests.dataframe.functional.dataframe_validator import DataFrameValidator
-
-if t.TYPE_CHECKING:
-    from pyspark.sql import DataFrame as SparkDataFrame
 
 
 class TestDataframeFunc(DataFrameValidator):
@@ -79,7 +75,7 @@ class TestDataframeFunc(DataFrameValidator):
             )
         )
 
-        self.compare_spark_with_sqlglot(df, dfs)
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
     def test_case_when_no_otherwise(self):
         df = (
@@ -100,7 +96,7 @@ class TestDataframeFunc(DataFrameValidator):
             )
         )
 
-        self.compare_spark_with_sqlglot(df, dfs)
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
     def test_where_clause_single(self):
         df_employee = self.df_spark_employee.where(F.col("age") == F.lit(37))
@@ -221,7 +217,7 @@ class TestDataframeFunc(DataFrameValidator):
     def test_group_by(self):
         df_employee = self.df_spark_employee.groupBy(self.df_spark_employee.age).agg(F.min(self.df_spark_employee.employee_id))
         dfs_employee = self.df_sqlglot_employee.groupBy(self.df_sqlglot_employee.age).agg(SF.min(self.df_sqlglot_employee.employee_id))
-        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+        self.compare_spark_with_sqlglot(df_employee, dfs_employee, skip_schema_compare=True)
 
     def test_group_by_where_non_aggregate(self):
         df_employee = (
@@ -670,7 +666,7 @@ class TestDataframeFunc(DataFrameValidator):
             .orderBy(SF.col("district_id"))
         )
 
-        self.compare_spark_with_sqlglot(df, dfs)
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
     def test_order_by_array_bool(self):
         df = (
@@ -945,7 +941,7 @@ class TestDataframeFunc(DataFrameValidator):
             .dropna(how="all")
         )
 
-        self.compare_spark_with_sqlglot(df, dfs)
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
     def test_dropna_thresh(self):
         df = (
@@ -960,7 +956,7 @@ class TestDataframeFunc(DataFrameValidator):
             .dropna(how="any", thresh=2)
         )
 
-        self.compare_spark_with_sqlglot(df, dfs)
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
     def test_dropna_subset(self):
         df = (
@@ -975,7 +971,7 @@ class TestDataframeFunc(DataFrameValidator):
             .dropna(thresh=1, subset="the_age")
         )
 
-        self.compare_spark_with_sqlglot(df, dfs)
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
     def test_dropna_na_function(self):
         df = (
@@ -1132,6 +1128,19 @@ class TestDataframeFunc(DataFrameValidator):
         )
 
         self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_with_column_existing_name(self):
+        df = (
+            self.df_spark_employee
+            .withColumn("fname", F.lit("blah"))
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .withColumn("fname", SF.lit("blah"))
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
     def test_drop_column_single(self):
         df = (
@@ -1332,7 +1341,7 @@ class TestDataframeFunc(DataFrameValidator):
         )
 
         dfs = (
-            self.sqlglot.read.table("employee").repartition(63)
+            self.sqlglot.read.table("employee", self.sqlglot_employee_schema).repartition(63)
         )
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
@@ -1349,7 +1358,7 @@ class TestDataframeFunc(DataFrameValidator):
         )
 
         dfs = (
-            self.sqlglot.read.table("employee").repartition("age")
+            self.sqlglot.read.table("employee", self.sqlglot_employee_schema).repartition("age")
         )
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(df))
@@ -1364,7 +1373,7 @@ class TestDataframeFunc(DataFrameValidator):
         )
 
         dfs = (
-            self.sqlglot.read.table("employee").repartition(53, "age", "fname")
+            self.sqlglot.read.table("employee", self.sqlglot_employee_schema).repartition(53, "age", "fname")
         )
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()

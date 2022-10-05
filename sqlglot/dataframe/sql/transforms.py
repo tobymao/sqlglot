@@ -25,7 +25,7 @@ def is_in_cte(node: exp.Expression) -> bool:
 
 def has_join(node: exp.Expression) -> bool:
     root_select = node.parent_select
-    return root_select.find(exp.Join) is not None
+    return root_select.args.get('joins') is not None
 
 
 def get_matching_cte_by_name(node: exp.Expression, name: str) -> t.Optional[exp.CTE]:
@@ -55,7 +55,7 @@ def replace_branch_and_sequence_ids_with_cte_name(node: exp.Expression, known_id
             ctes = [get_matching_cte_by_name(node, table.alias_or_name) for table in table_expressions]
             if ctes and ctes[0].args["branch_id"] == ctes[1].args["branch_id"]:
                 assert len(ctes) == 2
-                node.set("this", exp.Identifier(this=ctes[0].alias_or_name))
+                node.set("this", ctes[0].alias_or_name)
                 return node
         for cte in root_select.ctes:
             if this_cte_name is not None and this_cte_name == cte.alias_or_name:
@@ -66,7 +66,7 @@ def replace_branch_and_sequence_ids_with_cte_name(node: exp.Expression, known_id
                 latest_cte_name = cte.alias_or_name
             elif this_id == sequence_id:
                 latest_cte_name = cte.alias_or_name
-        node.set("this", exp.Identifier(this=latest_cte_name))
+        node.set("this", latest_cte_name)
     return node
 
 

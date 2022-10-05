@@ -6,24 +6,12 @@ from sqlglot import expressions as exp
 from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.helper import ensure_list
+from sqlglot.dataframe.sql.group import GroupedData
 from sqlglot.dataframe.sql.operations import Operation, operation
 from sqlglot.dataframe.sql.transforms import ORDERED_TRANSFORMS
 from sqlglot.dataframe.sql.readwriter import DataFrameWriter
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.optimizer import optimize, Schema
-from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
-from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
-from sqlglot.optimizer.merge_subqueries import merge_subqueries
-from sqlglot.optimizer.normalize import normalize
-from sqlglot.optimizer.optimize_joins import optimize_joins
-from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
-from sqlglot.optimizer.pushdown_projections import pushdown_projections
-from sqlglot.optimizer.qualify_tables import qualify_tables
-from sqlglot.optimizer.quote_identities import quote_identities
-from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
-from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
-from sqlglot.dataframe.sql.optimizer_rules import qualify_columns_and_dedup
-
+from sqlglot.optimizer import optimize as optimize_func
 
 
 if t.TYPE_CHECKING:
@@ -31,13 +19,13 @@ if t.TYPE_CHECKING:
 
 
 class DataFrame:
-    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.NO_OP, group_by_columns: t.List[Column] = None, pending_join_hints: t.List[exp.Expression] = None, pending_select_hints: t.List[exp.Expression] = None, **kwargs):
+    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.NO_OP, pending_join_hints: t.List[exp.Expression] = None, pending_select_hints: t.List[exp.Expression] = None, **kwargs):
         self.spark = spark
         self.expression = expression
         self.branch_id = branch_id
         self.sequence_id = sequence_id
         self.last_op = last_op
-        self.group_by_columns = group_by_columns or None
+        # self.group_by_columns = group_by_columns or None
         self.pending_join_hints = pending_join_hints or []
         self.pending_select_hints = pending_select_hints or []
 
@@ -50,6 +38,10 @@ class DataFrame:
 
     def __copy__(self):
         return self.copy()
+
+    @property
+    def sparkSession(self):
+        return self.spark
 
     @property
     def write(self):
@@ -94,7 +86,7 @@ class DataFrame:
                         replace_alias_name_with_cte_name(scope, identifer)
         return df
 
-    def sql(self, dialect="spark", schema: t.Union[t.Dict, Schema] = None, **kwargs) -> str:
+    def sql(self, dialect="spark", optimize=True, **kwargs) -> str:
         df = self._resolve_pending_hints()
         df = self._replace_alias_names_with_sequence_ids(df)
         expression = df.expression.copy()
@@ -104,22 +96,8 @@ class DataFrame:
                                               known_ids=df.spark.known_ids,
                                               known_branch_ids=df.spark.known_branch_ids,
                                               known_sequence_ids=df.spark.known_sequence_ids)
-        optimizer_rules = [
-            qualify_tables,
-            isolate_table_selects,
-            qualify_columns_and_dedup,
-            pushdown_projections,
-            normalize,
-            unnest_subqueries,
-            expand_multi_table_selects,
-            pushdown_predicates,
-            optimize_joins,
-            eliminate_subqueries,
-            merge_subqueries,
-            quote_identities,
-        ]
-        if schema:
-            optimized_select_expression = optimize(self._select_expression(expression), schema=schema, rules=optimizer_rules)
+        if optimize:
+            optimized_select_expression = optimize_func(self._select_expression(expression), schema=self.spark.schema)
             optimized_select_expression_without_ctes = optimized_select_expression.copy()
             optimized_select_expression_without_ctes.set("with", None)
             if isinstance(expression, (exp.Create, exp.Insert)):
@@ -234,15 +212,13 @@ class DataFrame:
     filter = where
 
     @operation(Operation.GROUP_BY)
-    def groupBy(self, *cols, **kwargs) -> "DataFrame":
+    def groupBy(self, *cols, **kwargs) -> "GroupedData":
         cols = Column.ensure_cols(cols)
-        df_copy = self.copy(expression=self.expression.group_by(*[x.column_expression for x in cols]), group_by_columns=cols)
-        return df_copy
+        return GroupedData(self, cols)
 
     @operation(Operation.SELECT)
-    def agg(self, col: Column, **kwargs) -> "DataFrame":
-        cols = self.group_by_columns + [col]
-        return self.select.__wrapped__(self, *cols, **kwargs)
+    def agg(self, *exprs, **kwargs) -> "DataFrame":
+        return self.groupBy().agg(*exprs)
 
     @operation(Operation.FROM)
     def join(self, other_df: "DataFrame", on: t.Union[str, t.List[str], Column, t.List[Column]], how: str = 'inner', **kwargs) -> "DataFrame":

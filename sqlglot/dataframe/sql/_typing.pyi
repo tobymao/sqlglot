@@ -8,3 +8,4 @@ ColumnOrPrimitive = t.TypeVar("ColumnOrPrimitive", bound=t.Union["Column", str, 
 DateTimeLiteral = t.Union[datetime.datetime, datetime.date]
 Literals = Primitives
 DecimalLiteral = decimal.Decimal
+SchemaInput = t.TypeVar("SchemaInput", bound=t.Union[str, t.List[str], "StructType", t.Dict[str, str]])

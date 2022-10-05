@@ -30,14 +30,14 @@ class DataFrameValidator(unittest.TestCase):
             .getOrCreate()
         )
         cls.sqlglot = SqlglotSparkSession()
-        spark_employee_schema = types.StructType([
+        cls.spark_employee_schema = types.StructType([
             types.StructField('employee_id', types.IntegerType(), False),
             types.StructField('fname', types.StringType(), False),
             types.StructField('lname', types.StringType(), False),
             types.StructField('age', types.IntegerType(), False),
             types.StructField('store_id', types.IntegerType(), False),
         ])
-        sqlglot_employee_schema = sqlglotSparkTypes.StructType([
+        cls.sqlglot_employee_schema = sqlglotSparkTypes.StructType([
             sqlglotSparkTypes.StructField('employee_id', sqlglotSparkTypes.IntegerType(), False),
             sqlglotSparkTypes.StructField('fname', sqlglotSparkTypes.StringType(), False),
             sqlglotSparkTypes.StructField('lname', sqlglotSparkTypes.StringType(), False),
@@ -51,17 +51,17 @@ class DataFrameValidator(unittest.TestCase):
             (4, "Claire", "Littleton", 27, 2),
             (5, "Hugo", "Reyes", 29, 100),
         ]
-        cls.df_employee = cls.spark.createDataFrame(data=employee_data, schema=spark_employee_schema)
-        cls.dfs_employee = cls.sqlglot.createDataFrame(data=employee_data, schema=sqlglot_employee_schema)
+        cls.df_employee = cls.spark.createDataFrame(data=employee_data, schema=cls.spark_employee_schema)
+        cls.dfs_employee = cls.sqlglot.createDataFrame(data=employee_data, schema=cls.sqlglot_employee_schema)
         cls.df_employee.createOrReplaceTempView("employee")
 
-        spark_store_schema = types.StructType([
+        cls.spark_store_schema = types.StructType([
             types.StructField("store_id", types.IntegerType(), False),
             types.StructField("store_name", types.StringType(), False),
             types.StructField("district_id", types.IntegerType(), False),
             types.StructField("num_sales", types.IntegerType(), False),
         ])
-        sqlglot_store_schema = sqlglotSparkTypes.StructType([
+        cls.sqlglot_store_schema = sqlglotSparkTypes.StructType([
             sqlglotSparkTypes.StructField("store_id", sqlglotSparkTypes.IntegerType(), False),
             sqlglotSparkTypes.StructField("store_name", sqlglotSparkTypes.StringType(), False),
             sqlglotSparkTypes.StructField("district_id", sqlglotSparkTypes.IntegerType(), False),
@@ -71,16 +71,16 @@ class DataFrameValidator(unittest.TestCase):
             (1, "Hydra", 1, 37),
             (2, "Arrow", 2, 2000),
         ]
-        cls.df_store = cls.spark.createDataFrame(data=store_data, schema=spark_store_schema)
-        cls.dfs_store = cls.sqlglot.createDataFrame(data=store_data, schema=sqlglot_store_schema)
+        cls.df_store = cls.spark.createDataFrame(data=store_data, schema=cls.spark_store_schema)
+        cls.dfs_store = cls.sqlglot.createDataFrame(data=store_data, schema=cls.sqlglot_store_schema)
         cls.df_store.createOrReplaceTempView("store")
 
-        spark_district_schema = types.StructType([
+        cls.spark_district_schema = types.StructType([
             types.StructField("district_id", types.IntegerType(), False),
             types.StructField("district_name", types.StringType(), False),
             types.StructField("manager_name", types.StringType(), False),
         ])
-        sqlglot_district_schema = sqlglotSparkTypes.StructType([
+        cls.sqlglot_district_schema = sqlglotSparkTypes.StructType([
             sqlglotSparkTypes.StructField("district_id", sqlglotSparkTypes.IntegerType(), False),
             sqlglotSparkTypes.StructField("district_name", sqlglotSparkTypes.StringType(), False),
             sqlglotSparkTypes.StructField("manager_name", sqlglotSparkTypes.StringType(), False),
@@ -89,8 +89,8 @@ class DataFrameValidator(unittest.TestCase):
             (1, "Temple", "Dogen"),
             (2, "Lighthouse", "Jacob"),
         ]
-        cls.df_district = cls.spark.createDataFrame(data=district_data, schema=spark_district_schema)
-        cls.dfs_district = cls.sqlglot.createDataFrame(data=district_data, schema=sqlglot_district_schema)
+        cls.df_district = cls.spark.createDataFrame(data=district_data, schema=cls.spark_district_schema)
+        cls.dfs_district = cls.sqlglot.createDataFrame(data=district_data, schema=cls.sqlglot_district_schema)
         cls.df_district.createOrReplaceTempView("district")
 
     def setUp(self) -> None:
@@ -109,16 +109,16 @@ class DataFrameValidator(unittest.TestCase):
                     struct_field.metadata = {}
             assert schema_1 == schema_2
 
-        df_sqlglot = cls.spark.sql(df_sqlglot.sql())
+        actual_df_sqlglot = cls.spark.sql(df_sqlglot.sql())
+        df_sqlglot_results = actual_df_sqlglot.collect()
         df_spark_results = df_spark.collect()
-        df_sqlglot_results = df_sqlglot.collect()
         if not skip_schema_compare:
-            compare_schemas(df_spark.schema, df_sqlglot.schema)
+            compare_schemas(df_spark.schema, actual_df_sqlglot.schema)
         assert df_spark_results == df_sqlglot_results
         if no_empty:
             assert len(df_spark_results) != 0
             assert len(df_sqlglot_results) != 0
-        return df_spark, df_sqlglot
+        return df_spark, actual_df_sqlglot
 
     @classmethod
     def get_explain_plan(cls, df: "SparkDataFrame", mode: str = "extended") -> str:

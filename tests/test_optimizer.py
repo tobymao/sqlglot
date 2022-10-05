@@ -449,9 +449,6 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(schema.column_names(table("x")), ["a"])
 
-        with self.assertRaises(OptimizeError):
-            ensure_schema({})
-
         schema = MappingSchema()
         schema.add_table(table("x"), {"a": "string"})
         self.assertEqual(schema.schema, {

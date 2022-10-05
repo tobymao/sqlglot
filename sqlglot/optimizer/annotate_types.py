@@ -41,6 +41,10 @@ class TypeAnnotator:
             expr_type: lambda self, expr: self._annotate_binary(expr)
             for expr_type in subclasses(exp.__name__, exp.Binary)
         },
+        **{
+            expr_type: lambda self, expr: self._annotate_function(expr)
+            for expr_type in subclasses(exp.__name__, exp.Func)
+        },
         exp.Cast: lambda self, expr: self._annotate_cast(expr),
         exp.DataType: lambda self, expr: self._annotate_data_type(expr),
         exp.Alias: lambda self, expr: self._annotate_unary(expr),
@@ -104,6 +108,78 @@ class TypeAnnotator:
         },
     }
 
+    FUNCTION_TYPES = {
+        exp.Anonymous: exp.DataType.Type.UNKNOWN,
+        exp.ApproxDistinct: exp.DataType.Type.BIGINT,
+        exp.Avg: exp.DataType.Type.DOUBLE,
+        exp.Ceil: exp.DataType.Type.INT,
+        exp.Count: exp.DataType.Type.BIGINT,
+        exp.CurrentDate: exp.DataType.Type.DATE,
+        exp.CurrentDatetime: exp.DataType.Type.DATETIME,
+        exp.CurrentTime: exp.DataType.Type.TIMESTAMP,
+        exp.CurrentTimestamp: exp.DataType.Type.TIMESTAMP,
+        exp.DateAdd: exp.DataType.Type.DATE,
+        exp.DateSub: exp.DataType.Type.DATE,
+        exp.DateDiff: exp.DataType.Type.INT,
+        exp.DatetimeAdd: exp.DataType.Type.DATETIME,
+        exp.DatetimeSub: exp.DataType.Type.DATETIME,
+        exp.DatetimeDiff: exp.DataType.Type.INT,
+        exp.Extract: exp.DataType.Type.INT,
+        exp.TimestampAdd: exp.DataType.Type.TIMESTAMP,
+        exp.TimestampSub: exp.DataType.Type.TIMESTAMP,
+        exp.TimestampDiff: exp.DataType.Type.INT,
+        exp.TimeAdd: exp.DataType.Type.TIMESTAMP,
+        exp.TimeSub: exp.DataType.Type.TIMESTAMP,
+        exp.TimeDiff: exp.DataType.Type.INT,
+        exp.DateStrToDate: exp.DataType.Type.DATE,
+        exp.DateToDateStr: exp.DataType.Type.VARCHAR,
+        exp.DateToDi: exp.DataType.Type.INT,
+        exp.Day: exp.DataType.Type.TINYINT,
+        exp.DiToDate: exp.DataType.Type.DATE,
+        exp.Exp: exp.DataType.Type.DOUBLE,
+        exp.Floor: exp.DataType.Type.INT,
+        exp.If: exp.DataType.Type.BOOLEAN,
+        exp.Initcap: exp.DataType.Type.VARCHAR,
+        exp.Length: exp.DataType.Type.BIGINT,
+        exp.Levenshtein: exp.DataType.Type.INT,
+        exp.Ln: exp.DataType.Type.DOUBLE,
+        exp.Log: exp.DataType.Type.DOUBLE,
+        exp.Log2: exp.DataType.Type.DOUBLE,
+        exp.Log10: exp.DataType.Type.DOUBLE,
+        exp.Lower: exp.DataType.Type.VARCHAR,
+        exp.Month: exp.DataType.Type.TINYINT,
+        exp.Pow: exp.DataType.Type.DOUBLE,
+        exp.Quantile: exp.DataType.Type.DOUBLE,
+        exp.ApproxQuantile: exp.DataType.Type.DOUBLE,
+        exp.RegexpLike: exp.DataType.Type.BOOLEAN,
+        exp.Round: exp.DataType.Type.DOUBLE,
+        exp.SafeDivide: exp.DataType.Type.DOUBLE,
+        exp.Substring: exp.DataType.Type.VARCHAR,
+        exp.StrPosition: exp.DataType.Type.INT,
+        exp.StrToDate: exp.DataType.Type.DATE,
+        exp.StrToTime: exp.DataType.Type.TIMESTAMP,
+        exp.Sqrt: exp.DataType.Type.DOUBLE,
+        exp.Stddev: exp.DataType.Type.DOUBLE,
+        exp.StddevPop: exp.DataType.Type.DOUBLE,
+        exp.StddevSamp: exp.DataType.Type.DOUBLE,
+        exp.TimeToStr: exp.DataType.Type.VARCHAR,
+        exp.TimeToTimeStr: exp.DataType.Type.VARCHAR,
+        exp.TimeStrToDate: exp.DataType.Type.DATE,
+        exp.TimeStrToTime: exp.DataType.Type.TIMESTAMP,
+        exp.Trim: exp.DataType.Type.VARCHAR,
+        exp.TsOrDsToDateStr: exp.DataType.Type.VARCHAR,
+        exp.TsOrDsToDate: exp.DataType.Type.DATE,
+        exp.TsOrDiToDi: exp.DataType.Type.INT,
+        exp.UnixToStr: exp.DataType.Type.VARCHAR,
+        exp.UnixToTime: exp.DataType.Type.TIMESTAMP,
+        exp.UnixToTimeStr: exp.DataType.Type.VARCHAR,
+        exp.Upper: exp.DataType.Type.VARCHAR,
+        exp.Variance: exp.DataType.Type.DOUBLE,
+        exp.VariancePop: exp.DataType.Type.DOUBLE,
+        exp.Week: exp.DataType.Type.TINYINT,
+        exp.Year: exp.DataType.Type.TINYINT,
+    }
+
     TRAVERSABLES = (exp.Select, exp.Union, exp.UDTF, exp.Subquery)
 
     def __init__(self, schema=None, annotators=None, coerces_to=None):
@@ -120,7 +196,7 @@ class TypeAnnotator:
                     if isinstance(source, Scope)
                 }
 
-                # First annotate the current scope's columns references
+                # First annotate the current scope's column references
                 for col in scope.columns:
                     source = scope.sources[col.table]
                     if isinstance(source, exp.Table):
@@ -162,6 +238,9 @@ class TypeAnnotator:
         return self._annotate_args(expression)
 
     def _maybe_coerce(self, type1, type2):
+        if exp.DataType.Type.UNKNOWN in (type1, type2):
+            return exp.DataType.Type.UNKNOWN  # We propagate the UNKNOWN type upwards if found
+
         return type2 if type2 in self.coerces_to[type1] else type1
 
     def _annotate_binary(self, expression):
@@ -183,6 +262,10 @@ class TypeAnnotator:
             expression.type = expression.this.type
 
         return expression
+
+    def _annotate_function(self, expression):
+        expression.type = self.FUNCTION_TYPES.get(expression.__class__) or exp.DataType.Type.UNKNOWN
+        return self._annotate_args(expression)
 
     def _annotate_literal(self, expression):
         if expression.is_string:

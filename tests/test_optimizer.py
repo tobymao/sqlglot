@@ -429,7 +429,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(concat_expr.right.type, exp.DataType.Type.VARCHAR)  # TRIM(x.colb)
         self.assertEqual(concat_expr.right.this.type, exp.DataType.Type.CHAR)  # x.colb
 
-    def test_unknown_type_propagation(self):
+    def test_unknown_annotation(self):
         schema = {"x": {"cola": "VARCHAR"}}
         sql = "SELECT x.cola || SOME_ANONYMOUS_FUNC(x.cola) AS col FROM x AS x"
 
@@ -441,3 +441,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(concat_expr.left.type, exp.DataType.Type.VARCHAR)  # x.cola
         self.assertEqual(concat_expr.right.type, exp.DataType.Type.UNKNOWN)  # SOME_ANONYMOUS_FUNC(x.cola)
         self.assertEqual(concat_expr.right.expressions[0].type, exp.DataType.Type.VARCHAR)  # x.cola (arg)
+
+    def test_null_annotation(self):
+        expression = annotate_types(parse_one("SELECT NULL + 2 AS col")).expressions[0].this
+        self.assertEqual(expression.left.type, exp.DataType.Type.NULL)
+        self.assertEqual(expression.right.type, exp.DataType.Type.INT)

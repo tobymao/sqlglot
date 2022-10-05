@@ -56,7 +56,16 @@ class MappingSchema(Schema):
         self.dialect = dialect
         self._type_mapping_cache = {}
         self.supported_table_args = []
-        self._initialize_supported_args()
+        self.forbidden_args = []
+        if schema:
+            self._initialize_supported_args()
+
+    def _get_table_args_from_table(self, table):
+        if table.args.get("catalog") is not None:
+            return "catalog", "db", "this"
+        if table.args.get("db") is not None:
+            return "db", "this"
+        return "this",
 
     def copy(self, **kwargs):
         kwargs = {**{"schema": copy(self.schema)}, **kwargs}
@@ -66,9 +75,10 @@ class MappingSchema(Schema):
         self._validate_table(table)
         column_mapping = ensure_column_mapping(column_mapping)
         schema = self.schema.copy() if copy else self.schema
-        _nested_set(schema, [table.text(p) for p in self.supported_table_args], column_mapping)
-        self._initialize_supported_args()
-        return self.copy(schema=schema) if copy else self
+        _nested_set(schema, [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)], column_mapping)
+        schema_obj = self.copy(schema=schema) if copy else self
+        schema_obj._initialize_supported_args()
+        return schema_obj
 
     def add_tables(self, table_mapping, copy=False):
         schema = self

@@ -446,3 +446,14 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         expression = annotate_types(parse_one("SELECT NULL + 2 AS col")).expressions[0].this
         self.assertEqual(expression.left.type, exp.DataType.Type.NULL)
         self.assertEqual(expression.right.type, exp.DataType.Type.INT)
+
+    def test_null_coercion(self):
+        sql = "SELECT NULL || SOME_ANONYMOUS_FUNC() AS result"
+
+        concat_expr_alias = annotate_types(parse_one(sql)).expressions[0]
+        self.assertEqual(concat_expr_alias.type, exp.DataType.Type.NULL)
+
+        concat_expr = concat_expr_alias.this
+        self.assertEqual(concat_expr.type, exp.DataType.Type.NULL)
+        self.assertEqual(concat_expr.left.type, exp.DataType.Type.NULL)
+        self.assertEqual(concat_expr.right.type, exp.DataType.Type.UNKNOWN)

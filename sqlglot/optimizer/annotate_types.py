@@ -226,10 +226,10 @@ class TypeAnnotator:
 
     def _maybe_coerce(self, type1, type2):
         # We propagate the NULL / UNKNOWN types upwards if found
-        if exp.DataType.Type.UNKNOWN in (type1, type2):
-            return exp.DataType.Type.UNKNOWN
         if exp.DataType.Type.NULL in (type1, type2):
             return exp.DataType.Type.NULL
+        if exp.DataType.Type.UNKNOWN in (type1, type2):
+            return exp.DataType.Type.UNKNOWN
 
         return type2 if type2 in self.coerces_to[type1] else type1
 

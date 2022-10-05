@@ -154,3 +154,44 @@ SELECT
 FROM VALUES
   (1, 'test'),
   (2, 'test2') AS `tab`(`cola`, `colb`);
+
+WITH m AS (
+  SELECT a, b FROM (VALUES (1, 2)) AS a1(a, b)
+), n AS (
+  SELECT a, b FROM m WHERE m.a = 1
+), o AS (
+  SELECT a, b FROM m WHERE m.a = 2
+) SELECT
+    n.a,
+    n.b,
+    o.b
+FROM n
+FULL OUTER JOIN o ON n.a = o.a
+CROSS JOIN n AS n2
+WHERE o.b > 0 AND n.a = n2.a;
+WITH "m" AS (
+  SELECT
+    "a1"."a" AS "a",
+    "a1"."b" AS "b"
+  FROM (VALUES
+    (1, 2)) AS "a1"("a", "b")
+), "n" AS (
+  SELECT
+    "m"."a" AS "a",
+    "m"."b" AS "b"
+  FROM "m"
+  WHERE
+    "m"."a" = 1
+)
+SELECT
+  "n"."a" AS "a",
+  "n"."b" AS "b",
+  "m"."b" AS "b"
+FROM "n"
+FULL JOIN "m"
+  ON "m"."a" = 2
+  AND "n"."a" = "m"."a"
+JOIN "n" AS "n2"
+  ON "n"."a" = "n2"."a"
+WHERE
+  "m"."b" > 0;

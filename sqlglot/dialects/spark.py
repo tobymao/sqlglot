@@ -47,8 +47,6 @@ def _unix_to_time(self, expression):
 
 
 class Spark(Hive):
-    wrap_derived_values = False
-
     class Parser(Hive.Parser):
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,
@@ -79,7 +77,6 @@ class Spark(Hive):
         }
 
     class Generator(Hive.Generator):
-
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "BYTE",
@@ -104,6 +101,8 @@ class Spark(Hive):
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             HiveMap: _map_sql,
         }
+
+        WRAP_DERIVED_VALUES = False
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

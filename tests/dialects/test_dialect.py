@@ -712,6 +712,7 @@ class TestDialect(Validator):
             "SELECT * FROM a UNION SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
                 "presto": "SELECT * FROM a UNION SELECT * FROM b",
                 "spark": "SELECT * FROM a UNION SELECT * FROM b",
@@ -727,6 +728,7 @@ class TestDialect(Validator):
             "SELECT * FROM a UNION ALL SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a UNION ALL SELECT * FROM b",
                 "duckdb": "SELECT * FROM a UNION ALL SELECT * FROM b",
                 "presto": "SELECT * FROM a UNION ALL SELECT * FROM b",
                 "spark": "SELECT * FROM a UNION ALL SELECT * FROM b",

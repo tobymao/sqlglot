@@ -46,3 +46,5 @@ class ClickHouse(Dialect):
             exp.Array: inline_array_sql,
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
         }
+
+        EXPLICIT_UNION = True

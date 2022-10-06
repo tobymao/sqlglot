@@ -337,12 +337,28 @@ class TestBuild(unittest.TestCase):
                 "SELECT * FROM foo UNION SELECT * FROM bla",
             ),
             (
+                lambda: parse_one("SELECT * FROM foo").union("SELECT * FROM bla"),
+                "SELECT * FROM foo UNION SELECT * FROM bla",
+            ),
+            (
                 lambda: intersect("SELECT * FROM foo", "SELECT * FROM bla"),
+                "SELECT * FROM foo INTERSECT SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("SELECT * FROM foo").intersect("SELECT * FROM bla"),
                 "SELECT * FROM foo INTERSECT SELECT * FROM bla",
             ),
             (
                 lambda: except_("SELECT * FROM foo", "SELECT * FROM bla"),
                 "SELECT * FROM foo EXCEPT SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("SELECT * FROM foo").except_("SELECT * FROM bla"),
+                "SELECT * FROM foo EXCEPT SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("(SELECT * FROM foo)").union("SELECT * FROM bla"),
+                "(SELECT * FROM foo) UNION SELECT * FROM bla",
             ),
         ]:
             with self.subTest(sql):

@@ -33,11 +33,6 @@ def _date_add_sql(data_type, kind):
     return func
 
 
-def _date_diff_sql(self, expression):
-    unit_sql = self.sql(expression.args.get("unit", "DAY"))
-    return f"DATE_DIFF({self.sql(expression, 'this')}, {self.sql(expression, 'expression')}, {unit_sql})"
-
-
 def _derived_table_values_to_unnest(self, expression):
     if not isinstance(expression.unnest().parent, exp.From):
         return self.values_sql(expression)
@@ -140,7 +135,7 @@ class BigQuery(Dialect):
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
-            exp.DateDiff: _date_diff_sql,
+            exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.ILike: no_ilike_sql,
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),

@@ -450,11 +450,21 @@ class TestHive(Validator):
         )
         self.validate_all(
             "MAP(a, b, c, d)",
+            read={
+                "": "VAR_MAP(a, b, c, d)",
+                "clickhouse": "MAP(a, b, c, d)",
+                "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
+                "hive": "MAP(a, b, c, d)",
+                "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
+                "spark": "MAP(a, b, c, d)",
+            },
             write={
+                "": "MAP(ARRAY(a, c), ARRAY(b, d))",
+                "clickhouse": "MAP(a, b, c, d)",
                 "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
                 "hive": "MAP(a, b, c, d)",
-                "spark": "MAP_FROM_ARRAYS(ARRAY(a, c), ARRAY(b, d))",
+                "spark": "MAP(a, b, c, d)",
             },
         )
         self.validate_all(
@@ -463,7 +473,7 @@ class TestHive(Validator):
                 "duckdb": "MAP(LIST_VALUE(a), LIST_VALUE(b))",
                 "presto": "MAP(ARRAY[a], ARRAY[b])",
                 "hive": "MAP(a, b)",
-                "spark": "MAP_FROM_ARRAYS(ARRAY(a), ARRAY(b))",
+                "spark": "MAP(a, b)",
             },
         )
         self.validate_all(

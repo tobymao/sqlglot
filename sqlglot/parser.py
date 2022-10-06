@@ -8,6 +8,18 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 logger = logging.getLogger("sqlglot")
 
 
+def parse_var_map(args):
+    keys = []
+    values = []
+    for i in range(0, len(args), 2):
+        keys.append(args[i])
+        values.append(args[i + 1])
+    return exp.VarMap(
+        keys=exp.Array(expressions=keys),
+        values=exp.Array(expressions=values),
+    )
+
+
 class Parser:
     """
     Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
@@ -48,6 +60,7 @@ class Parser:
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
         ),
+        "VAR_MAP": parse_var_map,
     }
 
     NO_PAREN_FUNCTIONS = {

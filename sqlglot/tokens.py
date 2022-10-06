@@ -104,6 +104,7 @@ class TokenType(AutoName):
     ALL = auto()
     ALTER = auto()
     ANALYZE = auto()
+    ANTI = auto()
     ANY = auto()
     ARRAY = auto()
     ASC = auto()
@@ -236,6 +237,7 @@ class TokenType(AutoName):
     SCHEMA_COMMENT = auto()
     SEED = auto()
     SELECT = auto()
+    SEMI = auto()
     SEPARATOR = auto()
     SET = auto()
     SHOW = auto()
@@ -407,6 +409,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ALTER": TokenType.ALTER,
         "ANALYZE": TokenType.ANALYZE,
         "AND": TokenType.AND,
+        "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
@@ -529,6 +532,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ROWS": TokenType.ROWS,
         "SEED": TokenType.SEED,
         "SELECT": TokenType.SELECT,
+        "SEMI": TokenType.SEMI,
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
         "SOME": TokenType.SOME,

@@ -135,6 +135,7 @@ class BigQuery(Dialect):
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
+            exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.ILike: no_ilike_sql,
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),

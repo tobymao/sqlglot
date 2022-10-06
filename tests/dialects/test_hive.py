@@ -247,7 +247,7 @@ class TestHive(Validator):
                 "presto": "DATE_DIFF('day', CAST(SUBSTR(CAST(b AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST(a AS VARCHAR), 1, 10) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
                 "spark": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
-                "": "DATE_DIFF(TS_OR_DS_TO_DATE(a), TS_OR_DS_TO_DATE(b))",
+                "": "DATEDIFF(TS_OR_DS_TO_DATE(a), TS_OR_DS_TO_DATE(b))",
             },
         )
         self.validate_all(
@@ -295,7 +295,7 @@ class TestHive(Validator):
                 "presto": "DATE_DIFF('day', CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST(CAST(SUBSTR(CAST(y AS VARCHAR), 1, 10) AS DATE) AS VARCHAR), 1, 10) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
                 "spark": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
-                "": "DATE_DIFF(TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE(y)), TS_OR_DS_TO_DATE(x))",
+                "": "DATEDIFF(TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE(y)), TS_OR_DS_TO_DATE(x))",
             },
         )
         self.validate_all(

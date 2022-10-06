@@ -8,6 +8,18 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 logger = logging.getLogger("sqlglot")
 
 
+def parse_var_map(args):
+    keys = []
+    values = []
+    for i in range(0, len(args), 2):
+        keys.append(args[i])
+        values.append(args[i + 1])
+    return exp.VarMap(
+        keys=exp.Array(expressions=keys),
+        values=exp.Array(expressions=values),
+    )
+
+
 class Parser:
     """
     Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
@@ -48,6 +60,7 @@ class Parser:
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
         ),
+        "VAR_MAP": parse_var_map,
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -117,6 +130,7 @@ class Parser:
         TokenType.VAR,
         TokenType.ALTER,
         TokenType.ALWAYS,
+        TokenType.ANTI,
         TokenType.BEGIN,
         TokenType.BOTH,
         TokenType.BUCKET,
@@ -164,6 +178,7 @@ class Parser:
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
+        TokenType.SEMI,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.STABLE,
@@ -273,6 +288,8 @@ class Parser:
         TokenType.INNER,
         TokenType.OUTER,
         TokenType.CROSS,
+        TokenType.SEMI,
+        TokenType.ANTI,
     }
 
     COLUMN_OPERATORS = {
@@ -1593,7 +1610,7 @@ class Parser:
             elif nested:
                 expressions = self._parse_csv(self._parse_types)
             else:
-                expressions = self._parse_csv(self._parse_number)
+                expressions = self._parse_csv(self._parse_type)
 
             if not expressions:
                 self._retreat(index)

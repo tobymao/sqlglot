@@ -48,8 +48,9 @@ class Generator:
     TRANSFORMS = {
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
-        exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+        exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
+        exp.VarMap: lambda self, e: f"MAP({self.sql(e.args['keys'])}, {self.sql(e.args['values'])})",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
@@ -57,7 +58,12 @@ class Generator:
         exp.VolatilityProperty: lambda self, e: self.sql(e.name),
     }
 
+    # whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
+    # always do union distinct or union all
+    EXPLICIT_UNION = False
+    # wrap derived values in parens, usually standard but spark doesn't support it
+    WRAP_DERIVED_VALUES = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -101,7 +107,6 @@ class Generator:
         "unsupported_messages",
         "null_ordering",
         "max_unsupported",
-        "wrap_derived_values",
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
@@ -130,7 +135,6 @@ class Generator:
         null_ordering=None,
         max_unsupported=3,
         leading_comma=False,
-        wrap_derived_values=True,
     ):
         import sqlglot
 
@@ -154,7 +158,6 @@ class Generator:
         self.unsupported_messages = []
         self.max_unsupported = max_unsupported
         self.null_ordering = null_ordering
-        self.wrap_derived_values = wrap_derived_values
         self._indent = indent
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
@@ -595,7 +598,7 @@ class Generator:
         if not alias:
             return f"VALUES{self.seg('')}{args}"
         alias = f" AS {alias}" if alias else alias
-        if self.wrap_derived_values:
+        if self.WRAP_DERIVED_VALUES:
             return f"(VALUES{self.seg('')}{args}){alias}"
         return f"VALUES{self.seg('')}{args}{alias}"
 
@@ -803,7 +806,9 @@ class Generator:
         )
 
     def union_op(self, expression):
-        return f"UNION{'' if expression.args.get('distinct') else ' ALL'}"
+        kind = " DISTINCT" if self.EXPLICIT_UNION else ""
+        kind = kind if expression.args.get("distinct") else " ALL"
+        return f"UNION{kind}"
 
     def unnest_sql(self, expression):
         args = self.expressions(expression, flat=True)

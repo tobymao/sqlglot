@@ -166,9 +166,6 @@ FROM VALUES
   (1, 'test'),
   (2, 'test2') AS `tab`(`cola`, `colb`);
 
-WITH m AS (SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS a1(a, b)), n AS (SELECT a, b FROM m WHERE m.a = 1), o AS (SELECT a, b FROM m WHERE m.a = 3) SELECT n.a, n.b, n.a, o.b FROM n FULL OUTER JOIN o ON n.a = o.a;
-WITH m AS (SELECT "a1"."a" AS "a", "a1"."b" AS "b" FROM (VALUES (1, 2)) AS "a1"("a", "b")), n AS (SELECT a, b FROM m WHERE m.a = 1), o AS (SELECT a, b FROM m WHERE m.a = 2) SELECT n.a, n.b, n.a, o.b FROM n FULL OUTER JOIN o ON n.a = o.a;
-
 # title: complex CTE dependencies
 WITH m AS (
   SELECT a, b FROM (VALUES (1, 2)) AS a1(a, b)

@@ -2049,9 +2049,7 @@ class Parser:
         if self._match(TokenType.IN):
             args.append(self._parse_bitwise())
 
-        # Make it so that needle comes before haystack in args
-        args[0], args[1] = args[1], args[0]
-
+        # Note: we're parsing in order needle, haystack, position
         this = exp.StrPosition.from_arg_list(args)
         self.validate_expression(this, args)
 

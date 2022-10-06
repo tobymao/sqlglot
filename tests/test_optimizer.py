@@ -137,7 +137,7 @@ class TestOptimizer(unittest.TestCase):
             expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
             return expression
 
-        self.check_file("qualify_columns", qualify_columns, schema=self.schema)
+        self.check_file("qualify_columns", qualify_columns, execute=True, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):
         def qualify_columns(expression, **kwargs):

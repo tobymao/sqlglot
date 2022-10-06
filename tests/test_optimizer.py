@@ -1,6 +1,10 @@
 import unittest
 from functools import partial
 
+import duckdb
+from pandas.testing import assert_frame_equal
+
+import sqlglot
 from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -11,6 +15,35 @@ from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
 
 class TestOptimizer(unittest.TestCase):
     maxDiff = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.conn = duckdb.connect()
+        cls.conn.execute(
+            """
+        CREATE TABLE x (a INT, b INT);
+        CREATE TABLE y (b INT, c INT);
+        CREATE TABLE z (b INT, c INT);
+        
+        INSERT INTO x VALUES (1, 1);
+        INSERT INTO x VALUES (2, 2);
+        INSERT INTO x VALUES (2, 2);
+        INSERT INTO x VALUES (3, 3);
+        INSERT INTO x VALUES (null, null);
+        
+        INSERT INTO y VALUES (2, 2);
+        INSERT INTO y VALUES (2, 2);
+        INSERT INTO y VALUES (3, 3);
+        INSERT INTO y VALUES (4, 4);
+        INSERT INTO y VALUES (null, null);
+        
+        INSERT INTO y VALUES (3, 3);
+        INSERT INTO y VALUES (3, 3);
+        INSERT INTO y VALUES (4, 4);
+        INSERT INTO y VALUES (5, 5);
+        INSERT INTO y VALUES (null, null);
+        """
+        )
 
     def setUp(self):
         self.schema = {
@@ -28,8 +61,9 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
-    def check_file(self, file, func, pretty=False, **kwargs):
+    def check_file(self, file, func, pretty=False, execute=False, **kwargs):
         for i, (meta, sql, expected) in enumerate(load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1):
+            title = meta.get("title") or f"{i}, {sql}"
             dialect = meta.get("dialect")
             leave_tables_isolated = meta.get("leave_tables_isolated")
 
@@ -37,11 +71,19 @@ class TestOptimizer(unittest.TestCase):
             if leave_tables_isolated is not None:
                 func_kwargs["leave_tables_isolated"] = leave_tables_isolated.lower() in ("true", "1")
 
-            with self.subTest(f"{i}, {sql}"):
+            optimized = func(parse_one(sql, read=dialect), **func_kwargs)
+
+            with self.subTest(title):
                 self.assertEqual(
-                    func(parse_one(sql, read=dialect), **func_kwargs).sql(pretty=pretty, dialect=dialect),
+                    optimized.sql(pretty=pretty, dialect=dialect),
                     expected,
                 )
+
+            if execute:
+                with self.subTest(f"(execute) {title}"):
+                    df1 = self.conn.execute(sqlglot.transpile(sql, read=dialect, write="duckdb")[0]).df()
+                    df2 = self.conn.execute(optimized.sql(pretty=pretty, dialect="duckdb")).df()
+                    assert_frame_equal(df1, df2)
 
     def test_optimize(self):
         schema = {
@@ -150,7 +192,7 @@ class TestOptimizer(unittest.TestCase):
             ],
         )
 
-        self.check_file("merge_subqueries", optimize, schema=self.schema)
+        self.check_file("merge_subqueries", optimize, execute=True, schema=self.schema)
 
     def test_eliminate_subqueries(self):
         self.check_file("eliminate_subqueries", optimizer.eliminate_subqueries.eliminate_subqueries)

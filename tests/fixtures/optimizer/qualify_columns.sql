@@ -34,6 +34,9 @@ SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x AS x WHERE x.a > 1 AND x.b > 1 GROU
 SELECT a AS j, b FROM x ORDER BY j;
 SELECT x.a AS j, x.b AS b FROM x AS x ORDER BY j;
 
+SELECT a AS j, b AS a FROM x ORDER BY 1;
+SELECT x.a AS j, x.b AS a FROM x AS x ORDER BY x.a;
+
 SELECT a AS j, b FROM x GROUP BY j;
 SELECT x.a AS j, x.b AS b FROM x AS x GROUP BY x.a;
 
@@ -41,7 +44,7 @@ SELECT a, b FROM x GROUP BY 1, 2;
 SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
 
 SELECT a, b FROM x ORDER BY 1, 2;
-SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a, b;
+SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a, x.b;
 
 SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS "_col_0", DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);

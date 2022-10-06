@@ -1,9 +1,8 @@
 from sqlglot import exp
-
-from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql, rename_func
+from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
 from sqlglot.generator import Generator
-from sqlglot.parser import Parser, parse_var_map
 from sqlglot.helper import csv
+from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer, TokenType
 
 

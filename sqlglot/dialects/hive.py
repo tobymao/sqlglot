@@ -11,38 +11,12 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     rename_func,
     struct_extract_sql,
+    var_map_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import csv, list_get
-from sqlglot.parser import Parser
+from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer
-
-
-def _parse_map(args):
-    keys = []
-    values = []
-    for i in range(0, len(args), 2):
-        keys.append(args[i])
-        values.append(args[i + 1])
-    return HiveMap(
-        keys=exp.Array(expressions=keys),
-        values=exp.Array(expressions=values),
-    )
-
-
-def _map_sql(self, expression):
-    keys = expression.args["keys"]
-    values = expression.args["values"]
-
-    if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
-        self.unsupported("Cannot convert array columns into map use SparkSQL instead.")
-        return f"MAP({self.sql(keys)}, {self.sql(values)})"
-
-    args = []
-    for key, value in zip(keys.expressions, values.expressions):
-        args.append(self.sql(key))
-        args.append(self.sql(value))
-    return f"MAP({csv(*args)})"
 
 
 def _array_sort(self, expression):
@@ -120,10 +94,6 @@ def _index_sql(self, expression):
     table = self.sql(expression, "table")
     columns = self.sql(expression, "columns")
     return f"{this} ON TABLE {table} {columns}"
-
-
-class HiveMap(exp.Map):
-    is_var_len_args = True
 
 
 class Hive(Dialect):
@@ -206,7 +176,7 @@ class Hive(Dialect):
                 position=list_get(args, 2),
             ),
             "LOG": (lambda args: exp.Log.from_arg_list(args) if len(args) > 1 else exp.Ln.from_arg_list(args)),
-            "MAP": _parse_map,
+            "MAP": parse_var_map,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
             "PERCENTILE": exp.Quantile.from_arg_list,
             "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
@@ -245,8 +215,8 @@ class Hive(Dialect):
             exp.Join: _unnest_to_explode_sql,
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
-            exp.Map: _map_sql,
-            HiveMap: _map_sql,
+            exp.Map: var_map_sql,
+            exp.VarMap: var_map_sql,
             exp.Create: create_with_partitions_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),

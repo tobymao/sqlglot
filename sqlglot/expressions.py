@@ -2382,6 +2382,11 @@ class Map(Func):
     arg_types = {"keys": True, "values": True}
 
 
+class VarMap(Func):
+    arg_types = {"keys": True, "values": True}
+    is_var_len_args = True
+
+
 class Max(AggFunc):
     pass
 

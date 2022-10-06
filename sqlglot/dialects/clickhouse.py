@@ -1,7 +1,7 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect, inline_array_sql
+from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
 from sqlglot.generator import Generator
-from sqlglot.parser import Parser
+from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer, TokenType
 
 
@@ -25,6 +25,11 @@ class ClickHouse(Dialect):
         }
 
     class Parser(Parser):
+        FUNCTIONS = {
+            **Parser.FUNCTIONS,
+            "MAP": parse_var_map,
+        }
+
         def _parse_table(self, schema=False):
             this = super()._parse_table(schema)
 
@@ -45,6 +50,8 @@ class ClickHouse(Dialect):
             **Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
+            exp.Map: var_map_sql,
+            exp.VarMap: var_map_sql,
         }
 
         EXPLICIT_UNION = True

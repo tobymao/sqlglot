@@ -93,6 +93,7 @@ class MappingSchema(Schema):
         self._initialize_supported_args()
 
     def column_names(self, table, only_visible=False):
+        table = ensure_table(table)
         if not isinstance(table.this, exp.Identifier):
             return fs_get(table)
 

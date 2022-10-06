@@ -56,12 +56,16 @@ def simplify_not(expression):
     NOT (x AND y) -> NOT x OR NOT y
     """
     if isinstance(expression, exp.Not):
+        if isinstance(expression.this, exp.Null):
+            return NULL
         if isinstance(expression.this, exp.Paren):
             condition = expression.this.unnest()
             if isinstance(condition, exp.And):
                 return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
             if isinstance(condition, exp.Or):
                 return exp.and_(exp.not_(condition.left), exp.not_(condition.right))
+            if isinstance(condition, exp.Null):
+                return NULL
         if always_true(expression.this):
             return FALSE
         if expression.this == FALSE:

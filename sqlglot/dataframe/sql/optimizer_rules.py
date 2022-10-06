@@ -1,6 +1,6 @@
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.schema import ensure_schema
+from sqlglot.schema import ensure_schema
 from sqlglot.optimizer.scope import traverse_scope
 from sqlglot.optimizer.qualify_columns import _pop_table_column_aliases, _Resolver, _expand_using, _expand_group_by, _expand_order_by, _qualify_columns, _qualify_outputs, _add_except_columns, _add_replace_columns
 

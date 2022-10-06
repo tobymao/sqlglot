@@ -1,6 +1,8 @@
 import typing as t
 import unittest
 
+import sqlglot
+
 if t.TYPE_CHECKING:
     from pyspark.sql import DataFrame as SparkDataFrame
 
@@ -92,6 +94,9 @@ class DataFrameValidator(unittest.TestCase):
         cls.df_district = cls.spark.createDataFrame(data=district_data, schema=cls.spark_district_schema)
         cls.dfs_district = cls.sqlglot.createDataFrame(data=district_data, schema=cls.sqlglot_district_schema)
         cls.df_district.createOrReplaceTempView("district")
+        sqlglot.schema.register_table_structure(cls.sqlglot_employee_schema, "employee")
+        sqlglot.schema.register_table_structure(cls.sqlglot_store_schema, "store")
+        sqlglot.schema.register_table_structure(cls.sqlglot_district_schema, "district")
 
     def setUp(self) -> None:
         self.df_spark_store = self.df_store.alias('df_store')

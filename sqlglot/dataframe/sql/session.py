@@ -10,7 +10,7 @@ from sqlglot.dataframe.sql.dataframe import DataFrame
 from sqlglot.dataframe.sql.operations import Operation
 from sqlglot.dataframe.sql.types import StructType
 from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
-from sqlglot.optimizer.schema import MappingSchema
+from sqlglot.schema import MappingSchema
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import SchemaInput
@@ -30,17 +30,8 @@ class SparkSession:
     def read(self) -> "DataFrameReader":
         return DataFrameReader(self)
 
-    def add_table(self, table: t.Union[exp.Table, str], schema: "SchemaInput") -> None:
-        table = exp.Table.from_str(table) if isinstance(table, str) else table
-        column_mapping = get_column_mapping_from_schema_input(schema)
-        self.schema.add_table(table, column_mapping)
-
-    def add_tables(self, table_column_mapping: t.Dict[t.Union[exp.Table, str], "SchemaInput"]) -> None:
-        for table, schema in table_column_mapping.items():
-            self.add_table(table, schema)
-
-    def table(self, tableName: str, schema: "SchemaInput") -> "DataFrame":
-        return self.read.table(tableName, schema)
+    def table(self, tableName: str) -> "DataFrame":
+        return self.read.table(tableName)
 
     def createDataFrame(
             self,

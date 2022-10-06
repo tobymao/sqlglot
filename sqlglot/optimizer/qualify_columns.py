@@ -2,7 +2,7 @@ import itertools
 
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.schema import ensure_schema
+from sqlglot.schema import ensure_schema
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
 

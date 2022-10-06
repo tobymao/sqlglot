@@ -1,13 +1,22 @@
 import abc
 from copy import copy
 
-from sqlglot import exp
+from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import csv_reader
+from sqlglot.helper import csv_reader, ensure_table
 
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
+
+    @abc.abstractmethod
+    def add_table(self, table):
+        """
+        Registers the table to be a known schema to be accessed later. Some implementing classes may
+        require column information to also be provided
+        Args:
+            table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
+        """
 
     @abc.abstractmethod
     def column_names(self, table, only_visible=False):
@@ -57,6 +66,7 @@ class MappingSchema(Schema):
         self._type_mapping_cache = {}
         self.supported_table_args = []
         self.forbidden_args = []
+        self.last_table_added = None
         if schema:
             self._initialize_supported_args()
 
@@ -71,20 +81,18 @@ class MappingSchema(Schema):
         kwargs = {**{"schema": copy(self.schema)}, **kwargs}
         return MappingSchema(**kwargs)
 
-    def add_table(self, table, column_mapping, copy=False):
+    def add_table(self, table):
+        table = ensure_table(table)
         self._validate_table(table)
-        column_mapping = ensure_column_mapping(column_mapping)
-        schema = self.schema.copy() if copy else self.schema
-        _nested_set(schema, [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)], column_mapping)
-        schema_obj = self.copy(schema=schema) if copy else self
-        schema_obj._initialize_supported_args()
-        return schema_obj
+        self.last_table_added = table
 
-    def add_tables(self, table_mapping, copy=False):
-        schema = self
-        for table, column_mapping in table_mapping.items():
-            schema = schema.add_table(table, column_mapping, copy=copy)
-        return schema
+    def register_table_structure(self, table_structure, table=None):
+        table = ensure_table(table) or self.last_table_added
+        self._validate_table(table)
+        column_mapping = ensure_column_mapping(table_structure)
+        _nested_set(self.schema, [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)],
+                    column_mapping)
+        self._initialize_supported_args()
 
     def column_names(self, table, only_visible=False):
         if not isinstance(table.this, exp.Identifier):
@@ -164,11 +172,17 @@ def ensure_schema(schema):
 def ensure_column_mapping(mapping):
     from sqlglot.dataframe.sql import types as df_types
 
-    if isinstance(mapping, df_types.StructType):
-        return {field.name: str(field.dataType) for field in mapping.fields}
-    if not isinstance(mapping, dict):
-        raise ValueError(f"Invalid mapping provided: {type(mapping)}")
-    return mapping
+    if isinstance(mapping, dict):
+        return mapping
+    elif isinstance(mapping, str):
+        col_name_type_strs = [x.strip() for x in mapping.split(",")]
+        return {name_type_str.split(':')[0].strip(): name_type_str.split(':')[1].strip() for name_type_str in
+                col_name_type_strs}
+    elif isinstance(mapping, df_types.StructType):
+        return {struct_field.name: struct_field.dataType.simpleString() for struct_field in mapping}
+    elif isinstance(mapping, list):
+        return {x.strip(): None for x in mapping}
+    raise ValueError(f"Invalid mapping provided: {type(mapping)}")
 
 
 def fs_get(table):

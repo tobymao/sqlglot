@@ -1,5 +1,6 @@
 import unittest
 
+import sqlglot
 from sqlglot.dataframe.sql.session import SparkSession
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql import types
@@ -63,7 +64,7 @@ class TestDataframeSession(unittest.TestCase):
         # TODO: Do exact matches once CTE names are deterministic
         query = "SELECT cola, colb FROM table"
         df = self.spark.sql(query)
-        self.spark.add_table("table", {"cola": "string", "colb": "string"})
+        sqlglot.schema.register_table_structure({"cola": "string", "colb": "string"}, "table")
         self.assertIn(
             "SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`",
             df.sql(pretty=False)
@@ -72,7 +73,7 @@ class TestDataframeSession(unittest.TestCase):
     def test_sql_with_aggs(self):
         # TODO: Do exact matches once CTE names are deterministic
         query = "SELECT cola, colb FROM table"
-        self.spark.add_table("table", {"cola": "string", "colb": "string"})
+        sqlglot.schema.register_table_structure({"cola": "string", "colb": "string"}, "table")
         df = self.spark.sql(query).groupBy(F.col("cola")).agg(F.sum("colb"))
         result = df.sql(pretty=False, optimize=False)
         self.assertIn(
@@ -91,7 +92,7 @@ class TestDataframeSession(unittest.TestCase):
     def test_sql_non_select(self):
         query = "CREATE TABLE new_table AS SELECT cola, colb FROM table"
         df = self.spark.sql(query)
-        self.spark.add_table("table", {"cola": "string", "colb": "string"})
+        sqlglot.schema.register_table_structure({"cola": "string", "colb": "string"}, "table")
         self.assertEqual(
             "CREATE TABLE new_table AS SELECT cola, colb FROM table",
             df.sql(pretty=False, optimize=False)

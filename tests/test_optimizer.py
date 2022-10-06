@@ -9,7 +9,7 @@ from sqlglot import exp, optimizer, parse_one, table
 from sqlglot.dataframe.sql import types as df_types
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.annotate_types import annotate_types
-from sqlglot.optimizer.schema import MappingSchema, ensure_schema
+from sqlglot.schema import MappingSchema, ensure_schema
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from tests.helpers import (
     TPCH_SCHEMA,
@@ -247,11 +247,11 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(table("x2"))
         with self.assertRaises(ValueError):
-            schema.add_table(table("y", db="db"), {"b": "string"})
+            schema.register_table_structure({"b": "string"}, table("y", db="db"))
         with self.assertRaises(ValueError):
-            schema.add_table(table("y", db="db", catalog="c"), {"b": "string"})
+            schema.register_table_structure({"b": "string"}, table("y", db="db", catalog="c"))
 
-        schema.add_table(table("y"), {"b": "string"})
+        schema.register_table_structure({"b": "string"}, table("y"))
         schema_with_y = {
             "x": {
                 "a": "uint64",
@@ -261,7 +261,9 @@ class TestOptimizer(unittest.TestCase):
             }
         }
         self.assertEqual(schema.schema, schema_with_y)
-        new_schema = schema.add_table(table("z"), {"c": "string"}, copy=True)
+
+        new_schema = schema.copy()
+        new_schema.register_table_structure({"c": "string"}, table("z"))
         self.assertEqual(schema.schema, schema_with_y)
         self.assertEqual(new_schema.schema, {
             "x": {
@@ -274,7 +276,8 @@ class TestOptimizer(unittest.TestCase):
                 "c": "string",
             }
         })
-        schema.add_tables({table("m"): {"d": "string"}, table("n"): {"e": "string"}})
+        schema.register_table_structure({"d": "string"}, table("m"))
+        schema.register_table_structure({"e": "string"}, table("n"))
         schema_with_m_n = {
             "x": {
                 "a": "uint64",
@@ -290,7 +293,9 @@ class TestOptimizer(unittest.TestCase):
             }
         }
         self.assertEqual(schema.schema, schema_with_m_n)
-        new_schema = schema.add_tables({table("o"): {"f": "string"}, table("p"): {"g": "string"}}, copy=True)
+        new_schema = schema.copy()
+        new_schema.register_table_structure({"f": "string"}, table("o"))
+        new_schema.register_table_structure({"g": "string"}, table("p"))
         self.assertEqual(schema.schema, schema_with_m_n)
         self.assertEqual(new_schema.schema, {
             "x": {
@@ -332,11 +337,11 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(table("x2", db="db"))
         with self.assertRaises(ValueError):
-            schema.add_table(table("y"), {"b": "string"})
+            schema.register_table_structure({"b": "string"}, table("y"))
         with self.assertRaises(ValueError):
-            schema.add_table(table("y", db="db", catalog="c"), {"b": "string"})
+            schema.register_table_structure({"b": "string"}, table("y", db="db", catalog="c"))
 
-        schema.add_table(table("y", db="db"), {"b": "string"})
+        schema.register_table_structure({"b": "string"}, table("y", db="db"))
         self.assertEqual(schema.schema, {
             "db": {
                 "x": {
@@ -371,11 +376,11 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(table("x2", db="db"))
         with self.assertRaises(ValueError):
-            schema.add_table(table("x"), {"b": "string"})
+            schema.register_table_structure({"b": "string"}, table("x"))
         with self.assertRaises(ValueError):
-            schema.add_table(table("x", db="db"), {"b": "string"})
+            schema.register_table_structure({"b": "string"}, table("x", db="db"))
 
-        schema.add_table(table("y", db="db", catalog="c"), {"a": "string", "b": "int"})
+        schema.register_table_structure({"a": "string", "b": "int"}, table("y", db="db", catalog="c"))
         self.assertEqual(schema.schema, {
                 "c": {
                     "db": {
@@ -389,7 +394,7 @@ class TestOptimizer(unittest.TestCase):
                     }
                 }
         })
-        schema.add_table(table("z", db="db2", catalog="c"), {"c": "string", "d": "int"})
+        schema.register_table_structure({"c": "string", "d": "int"}, table("z", db="db2", catalog="c"))
         self.assertEqual(schema.schema, {
             "c": {
                 "db": {
@@ -409,7 +414,7 @@ class TestOptimizer(unittest.TestCase):
                 }
             }
         })
-        schema.add_table(table("m", db="db2", catalog="c2"), {"e": "string", "f": "int"})
+        schema.register_table_structure({"e": "string", "f": "int"}, table("m", db="db2", catalog="c2"))
         self.assertEqual(schema.schema, {
             "c": {
                 "db": {
@@ -450,15 +455,15 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(schema.column_names(table("x")), ["a"])
 
         schema = MappingSchema()
-        schema.add_table(table("x"), {"a": "string"})
+        schema.register_table_structure({"a": "string"}, table("x"))
         self.assertEqual(schema.schema, {
             "x": {
                 "a": "string",
             }
         })
-        schema.add_table(table("y"), df_types.StructType([
+        schema.register_table_structure(df_types.StructType([
             df_types.StructField("b", df_types.StringType())
-        ]))
+        ]), table("y"))
         self.assertEqual(schema.schema, {
             "x": {
                 "a": "string",

@@ -172,11 +172,10 @@ class BigQuery(Dialect):
             exp.AnonymousProperty,
         }
 
+        EXPLICIT_UNION = True
+
         def in_unnest_op(self, unnest):
             return self.sql(unnest)
-
-        def union_op(self, expression):
-            return f"UNION{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

@@ -428,6 +428,69 @@ class Expression(metaclass=_Expression):
         assert isinstance(self, type_)
         return self
 
+    def union(self, expr, distinct=True, dialect=None, **opts):
+        """
+        Builds a UNION expression.
+
+        Example:
+            >>> import sqlglot
+            >>> sqlglot.parse_one("SELECT * FROM foo").union("SELECT * FROM bla").sql()
+            'SELECT * FROM foo UNION SELECT * FROM bla'
+
+        Args:
+            expr (str or Expression): the SQL code string.
+                If an `Expression` instance is passed, it will be used as-is.
+            distinct (bool): set the DISTINCT flag if and only if this is true.
+            dialect (str): the dialect used to parse the input expression.
+            opts (kwargs): other options to use to parse the input expressions.
+        Returns:
+            Union: the Union expression.
+        """
+        expr = maybe_parse(sql_or_expression=expr, dialect=dialect, **opts)
+        return Union(this=self, expression=expr, distinct=distinct)
+
+    def intersect(self, expr, distinct=True, dialect=None, **opts):
+        """
+        Builds an INTERSECT expression.
+
+        Example:
+            >>> import sqlglot
+            >>> sqlglot.parse_one("SELECT * FROM foo").intersect("SELECT * FROM bla").sql()
+            'SELECT * FROM foo INTERSECT SELECT * FROM bla'
+
+        Args:
+            expr (str or Expression): the SQL code string.
+                If an `Expression` instance is passed, it will be used as-is.
+            distinct (bool): set the DISTINCT flag if and only if this is true.
+            dialect (str): the dialect used to parse the input expression.
+            opts (kwargs): other options to use to parse the input expressions.
+        Returns:
+            Intersect: the Intersect expression
+        """
+        expr = maybe_parse(sql_or_expression=expr, dialect=dialect, **opts)
+        return Intersect(this=self, expression=expr, distinct=distinct)
+
+    def except_(self, expr, distinct=True, dialect=None, **opts):
+        """
+        Builds an EXCEPT expression.
+
+        Example:
+            >>> import sqlglot
+            >>> sqlglot.parse_one("SELECT * FROM foo").except_("SELECT * FROM bla").sql()
+            'SELECT * FROM foo EXCEPT SELECT * FROM bla'
+
+        Args:
+            expr (str or Expression): the SQL code string.
+                If an `Expression` instance is passed, it will be used as-is.
+            distinct (bool): set the DISTINCT flag if and only if this is true.
+            dialect (str): the dialect used to parse the input expression.
+            opts (kwargs): other options to use to parse the input expressions.
+        Returns:
+            Except: the Except expression
+        """
+        expr = maybe_parse(sql_or_expression=expr, dialect=dialect, **opts)
+        return Except(this=self, expression=expr, distinct=distinct)
+
 
 class Condition(Expression):
     def and_(self, *expressions, dialect=None, **opts):
@@ -2795,6 +2858,81 @@ def _wrap_operator(expression):
     return expression
 
 
+def union(left, right, distinct=True, dialect=None, **opts):
+    """
+    Initializes a syntax tree from one UNION expression.
+
+    Example:
+        >>> union("SELECT * FROM foo", "SELECT * FROM bla").sql()
+        'SELECT * FROM foo UNION SELECT * FROM bla'
+
+    Args:
+        left (str or Expression): the SQL code string corresponding to the left-hand side.
+            If an `Expression` instance is passed, it will be used as-is.
+        right (str or Expression): the SQL code string corresponding to the right-hand side.
+            If an `Expression` instance is passed, it will be used as-is.
+        distinct (bool): set the DISTINCT flag if and only if this is true.
+        dialect (str): the dialect used to parse the input expression.
+        opts (kwargs): other options to use to parse the input expressions.
+    Returns:
+        Union: the syntax tree for the UNION expression.
+    """
+    left = maybe_parse(sql_or_expression=left, dialect=dialect, **opts)
+    right = maybe_parse(sql_or_expression=right, dialect=dialect, **opts)
+
+    return left.union(right, distinct=distinct)
+
+
+def intersect(left, right, distinct=True, dialect=None, **opts):
+    """
+    Initializes a syntax tree from one INTERSECT expression.
+
+    Example:
+        >>> intersect("SELECT * FROM foo", "SELECT * FROM bla").sql()
+        'SELECT * FROM foo INTERSECT SELECT * FROM bla'
+
+    Args:
+        left (str or Expression): the SQL code string corresponding to the left-hand side.
+            If an `Expression` instance is passed, it will be used as-is.
+        right (str or Expression): the SQL code string corresponding to the right-hand side.
+            If an `Expression` instance is passed, it will be used as-is.
+        distinct (bool): set the DISTINCT flag if and only if this is true.
+        dialect (str): the dialect used to parse the input expression.
+        opts (kwargs): other options to use to parse the input expressions.
+    Returns:
+        Intersect: the syntax tree for the INTERSECT expression.
+    """
+    left = maybe_parse(sql_or_expression=left, dialect=dialect, **opts)
+    right = maybe_parse(sql_or_expression=right, dialect=dialect, **opts)
+
+    return left.intersect(right, distinct=distinct)
+
+
+def except_(left, right, distinct=True, dialect=None, **opts):
+    """
+    Initializes a syntax tree from one EXCEPT expression.
+
+    Example:
+        >>> except_("SELECT * FROM foo", "SELECT * FROM bla").sql()
+        'SELECT * FROM foo EXCEPT SELECT * FROM bla'
+
+    Args:
+        left (str or Expression): the SQL code string corresponding to the left-hand side.
+            If an `Expression` instance is passed, it will be used as-is.
+        right (str or Expression): the SQL code string corresponding to the right-hand side.
+            If an `Expression` instance is passed, it will be used as-is.
+        distinct (bool): set the DISTINCT flag if and only if this is true.
+        dialect (str): the dialect used to parse the input expression.
+        opts (kwargs): other options to use to parse the input expressions.
+    Returns:
+        Except: the syntax tree for the EXCEPT statement.
+    """
+    left = maybe_parse(sql_or_expression=left, dialect=dialect, **opts)
+    right = maybe_parse(sql_or_expression=right, dialect=dialect, **opts)
+
+    return left.except_(right, distinct=distinct)
+
+
 def select(*expressions, dialect=None, **opts):
     """
     Initializes a syntax tree from one or multiple SELECT expressions.
@@ -3001,7 +3139,7 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
             If an Expression instance is passed, this is used as-is.
         alias (str or Identifier): the alias name to use. If the name has
             special characters it is quoted.
-        table (boolean): create a table alias, default false
+        table (bool): create a table alias, default false
         dialect (str): the dialect used to parse the input expression.
         **opts: other options to use to parse the input expressions.
 

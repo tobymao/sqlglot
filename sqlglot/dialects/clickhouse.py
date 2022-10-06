@@ -16,6 +16,7 @@ class ClickHouse(Dialect):
             **Tokenizer.KEYWORDS,
             "NULLABLE": TokenType.NULLABLE,
             "FINAL": TokenType.FINAL,
+            "DATETIME64": TokenType.DATETIME,
             "INT8": TokenType.TINYINT,
             "INT16": TokenType.SMALLINT,
             "INT32": TokenType.INT,
@@ -44,6 +45,7 @@ class ClickHouse(Dialect):
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.NULLABLE: "Nullable",
+            exp.DataType.Type.DATETIME: "DateTime64",
         }
 
         TRANSFORMS = {

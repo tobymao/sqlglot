@@ -320,6 +320,7 @@ class Parser:
         exp.Ordered: lambda self: self._parse_ordered(),
         exp.Having: lambda self: self._parse_having(),
         exp.With: lambda self: self._parse_with(),
+        exp.Column: lambda self: self._parse_column(),
         "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 

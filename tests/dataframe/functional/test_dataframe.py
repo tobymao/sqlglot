@@ -1,6 +1,8 @@
 import typing as t
 
 from pyspark.sql import functions as F
+
+import sqlglot
 from sqlglot.dataframe.sql import functions as SF
 from tests.dataframe.functional.dataframe_validator import DataFrameValidator
 
@@ -10,6 +12,16 @@ class TestDataframeFunc(DataFrameValidator):
         df_employee = self.df_spark_employee.select(F.col("employee_id"))
         dfs_employee = self.df_sqlglot_employee.select(SF.col("employee_id"))
         self.compare_spark_with_sqlglot(df_employee, dfs_employee)
+
+    def test_simple_select_from_table(self):
+        df = (
+            self.df_spark_employee.repartition(63)
+        )
+        dfs = (
+            self.sqlglot.read.table("employee").repartition(63)
+        )
+        sqlglot.schema.register_table_structure(self.sqlglot_employee_schema)
+        self.compare_spark_with_sqlglot(df, dfs)
 
     def test_simple_select_df_attribute(self):
         df_employee = self.df_spark_employee.select(self.df_spark_employee.employee_id)
@@ -1341,8 +1353,9 @@ class TestDataframeFunc(DataFrameValidator):
         )
 
         dfs = (
-            self.sqlglot.read.table("employee", self.sqlglot_employee_schema).repartition(63)
+            self.sqlglot.read.table("employee").repartition(63)
         )
+        sqlglot.schema.register_table_structure(self.sqlglot_employee_schema)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
         sqlglot_num_partitions = dfs.rdd.getNumPartitions()
@@ -1358,8 +1371,9 @@ class TestDataframeFunc(DataFrameValidator):
         )
 
         dfs = (
-            self.sqlglot.read.table("employee", self.sqlglot_employee_schema).repartition("age")
+            self.sqlglot.read.table("employee").repartition("age")
         )
+        sqlglot.schema.register_table_structure(self.sqlglot_employee_schema)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(df))
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(dfs))
@@ -1373,8 +1387,9 @@ class TestDataframeFunc(DataFrameValidator):
         )
 
         dfs = (
-            self.sqlglot.read.table("employee", self.sqlglot_employee_schema).repartition(53, "age", "fname")
+            self.sqlglot.read.table("employee").repartition(53, "age", "fname")
         )
+        sqlglot.schema.register_table_structure(self.sqlglot_employee_schema)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
         sqlglot_num_partitions = dfs.rdd.getNumPartitions()

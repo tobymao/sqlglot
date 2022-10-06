@@ -1,6 +1,6 @@
 from sqlglot import exp
 from sqlglot.helper import ensure_list, subclasses
-from sqlglot.optimizer.schema import ensure_schema
+from sqlglot.schema import ensure_schema
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
 

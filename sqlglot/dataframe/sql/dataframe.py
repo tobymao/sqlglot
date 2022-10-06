@@ -97,7 +97,7 @@ class DataFrame:
                                               known_branch_ids=df.spark.known_branch_ids,
                                               known_sequence_ids=df.spark.known_sequence_ids)
         if optimize:
-            optimized_select_expression = optimize_func(self._select_expression(expression), schema=self.spark.schema)
+            optimized_select_expression = optimize_func(self._select_expression(expression))
             optimized_select_expression_without_ctes = optimized_select_expression.copy()
             optimized_select_expression_without_ctes.set("with", None)
             if isinstance(expression, (exp.Create, exp.Insert)):

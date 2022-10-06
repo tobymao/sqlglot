@@ -51,6 +51,9 @@ class ClickHouse(Dialect):
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.NULLABLE: "Nullable",
             exp.DataType.Type.DATETIME: "DateTime64",
+            exp.DataType.Type.MAP: "Map",
+            exp.DataType.Type.ARRAY: "Array",
+            exp.DataType.Type.STRUCT: "Tuple",
         }
 
         TRANSFORMS = {

@@ -82,6 +82,24 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "CAST(MAP('a', '1') AS MAP(TEXT, TEXT))",
+            write={
+                "clickhouse": "CAST(map('a', '1') AS Map(TEXT, TEXT))",
+            },
+        )
+        self.validate_all(
+            "CAST(ARRAY(1, 2) AS ARRAY<TINYINT>)",
+            write={
+                "clickhouse": "CAST([1, 2] AS Array(TINYINT))",
+            },
+        )
+        self.validate_all(
+            "CAST((1, 2) AS STRUCT<a: TINYINT, b: TINYINT>)",
+            write={
+                "clickhouse": "CAST((1, 2) AS Tuple(a TINYINT, b TINYINT))",
+            },
+        )
+        self.validate_all(
             "CAST(a AS DATETIME)",
             write={
                 "postgres": "CAST(a AS TIMESTAMP)",

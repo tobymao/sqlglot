@@ -945,10 +945,13 @@ class Generator:
     def in_sql(self, expression):
         query = expression.args.get("query")
         unnest = expression.args.get("unnest")
+        field = expression.args.get("field")
         if query:
             in_sql = self.wrap(query)
         elif unnest:
             in_sql = self.in_unnest_op(unnest)
+        elif field:
+            in_sql = self.sql(field)
         else:
             in_sql = f"({self.expressions(expression, flat=True)})"
         return f"{self.sql(expression, 'this')} IN {in_sql}"

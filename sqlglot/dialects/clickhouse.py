@@ -5,6 +5,11 @@ from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer, TokenType
 
 
+def _lower_func(sql):
+    index = sql.index("(")
+    return sql[:index].lower() + sql[index:]
+
+
 class ClickHouse(Dialect):
     normalize_functions = None
     null_ordering = "nulls_are_last"
@@ -52,8 +57,8 @@ class ClickHouse(Dialect):
             **Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
-            exp.Map: var_map_sql,
-            exp.VarMap: var_map_sql,
+            exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
         }
 
         EXPLICIT_UNION = True

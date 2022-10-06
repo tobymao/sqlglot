@@ -452,7 +452,7 @@ class TestHive(Validator):
             "MAP(a, b, c, d)",
             read={
                 "": "VAR_MAP(a, b, c, d)",
-                "clickhouse": "MAP(a, b, c, d)",
+                "clickhouse": "map(a, b, c, d)",
                 "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
                 "hive": "MAP(a, b, c, d)",
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
@@ -460,7 +460,7 @@ class TestHive(Validator):
             },
             write={
                 "": "MAP(ARRAY(a, c), ARRAY(b, d))",
-                "clickhouse": "MAP(a, b, c, d)",
+                "clickhouse": "map(a, b, c, d)",
                 "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
                 "hive": "MAP(a, b, c, d)",

@@ -28,10 +28,6 @@ SELECT a + b FROM x;
 SELECT x.a + x.b AS "_col_0" FROM x AS x;
 
 # execute: false
-SELECT a + b FROM x;
-SELECT x.a + x.b AS "_col_0" FROM x AS x;
-
-# execute: false
 SELECT a, SUM(b) FROM x WHERE a > 1 AND b > 1 GROUP BY a;
 SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
 

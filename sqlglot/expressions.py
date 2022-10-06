@@ -2459,7 +2459,7 @@ class Substring(Func):
 
 
 class StrPosition(Func):
-    arg_types = {"this": True, "substr": True, "position": False}
+    arg_types = {"substr": True, "this": True, "position": False}
 
 
 class StrToDate(Func):

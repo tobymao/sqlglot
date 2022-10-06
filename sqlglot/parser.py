@@ -2044,10 +2044,16 @@ class Parser:
         return self.expression(exp.Cast, this=this, to=to)
 
     def _parse_position(self):
-        substr = self._parse_bitwise()
+        args = self._parse_csv(self._parse_bitwise)
+
         if self._match(TokenType.IN):
-            string = self._parse_bitwise()
-        return self.expression(exp.StrPosition, this=string, substr=substr)
+            args.append(self._parse_bitwise())
+
+        # Note: we're parsing in order needle, haystack, position
+        this = exp.StrPosition.from_arg_list(args)
+        self.validate_expression(this, args)
+
+        return this
 
     def _parse_substring(self):
         # Postgres supports the form: substring(string [from int] [for int])

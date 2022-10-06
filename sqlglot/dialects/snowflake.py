@@ -164,6 +164,7 @@ class Snowflake(Dialect):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
             exp.Array: inline_array_sql,
+            exp.StrPosition: rename_func("POSITION"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
         }
 

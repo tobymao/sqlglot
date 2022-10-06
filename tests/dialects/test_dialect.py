@@ -858,15 +858,28 @@ class TestDialect(Validator):
                 "postgres": "STRPOS(x, ' ')",
                 "presto": "STRPOS(x, ' ')",
                 "spark": "LOCATE(' ', x)",
+                "clickhouse": "position(x, ' ')",
+                "snowflake": "POSITION(' ', x)",
             },
         )
         self.validate_all(
-            "STR_POSITION(x, 'a')",
+            "STR_POSITION('a', x)",
             write={
                 "duckdb": "STRPOS(x, 'a')",
                 "postgres": "STRPOS(x, 'a')",
                 "presto": "STRPOS(x, 'a')",
                 "spark": "LOCATE('a', x)",
+                "clickhouse": "position(x, 'a')",
+                "snowflake": "POSITION('a', x)",
+            },
+        )
+        self.validate_all(
+            "POSITION('a', x, 3)",
+            write={
+                "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
+                "spark": "LOCATE('a', x, 3)",
+                "clickhouse": "position(x, 'a', 3)",
+                "snowflake": "POSITION('a', x, 3)",
             },
         )
         self.validate_all(

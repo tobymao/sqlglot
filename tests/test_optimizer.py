@@ -10,7 +10,12 @@ from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.schema import MappingSchema, ensure_schema
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
-from tests.helpers import TPCH_SCHEMA, load_sql_fixture_pairs, load_sql_fixtures
+from tests.helpers import (
+    TPCH_SCHEMA,
+    load_sql_fixture_pairs,
+    load_sql_fixtures,
+    string_to_bool,
+)
 
 
 class TestOptimizer(unittest.TestCase):
@@ -69,7 +74,7 @@ class TestOptimizer(unittest.TestCase):
 
             func_kwargs = {**kwargs}
             if leave_tables_isolated is not None:
-                func_kwargs["leave_tables_isolated"] = leave_tables_isolated.lower() in ("true", "1")
+                func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
             optimized = func(parse_one(sql, read=dialect), **func_kwargs)
 
@@ -79,7 +84,11 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                 )
 
-            if execute:
+            should_execute = meta.get("execute")
+            if should_execute is None:
+                should_execute = execute
+
+            if string_to_bool(should_execute):
                 with self.subTest(f"(execute) {title}"):
                     df1 = self.conn.execute(sqlglot.transpile(sql, read=dialect, write="duckdb")[0]).df()
                     df2 = self.conn.execute(optimized.sql(pretty=pretty, dialect="duckdb")).df()
@@ -92,7 +101,7 @@ class TestOptimizer(unittest.TestCase):
             "z": {"a": "INT", "c": "INT"},
         }
 
-        self.check_file("optimizer", optimizer.optimize, pretty=True, schema=schema)
+        self.check_file("optimizer", optimizer.optimize, pretty=True, execute=True, schema=schema)
 
     def test_isolate_table_selects(self):
         self.check_file(

@@ -23,7 +23,6 @@ class SparkSession:
 
     def __init__(self):
         self.name_to_sequence_id_mapping = defaultdict(list)
-        self.schema = MappingSchema()
         self.incrementing_id = 1
 
     @property

@@ -130,6 +130,7 @@ class Parser:
         TokenType.VAR,
         TokenType.ALTER,
         TokenType.ALWAYS,
+        TokenType.ANTI,
         TokenType.BEGIN,
         TokenType.BOTH,
         TokenType.BUCKET,
@@ -177,6 +178,7 @@ class Parser:
         TokenType.ROWS,
         TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
+        TokenType.SEMI,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.STABLE,
@@ -286,6 +288,8 @@ class Parser:
         TokenType.INNER,
         TokenType.OUTER,
         TokenType.CROSS,
+        TokenType.SEMI,
+        TokenType.ANTI,
     }
 
     COLUMN_OPERATORS = {

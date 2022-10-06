@@ -1,6 +1,18 @@
 import unittest
 
-from sqlglot import and_, condition, exp, from_, not_, or_, parse_one, select
+from sqlglot import (
+    and_,
+    condition,
+    except_,
+    exp,
+    from_,
+    intersect,
+    not_,
+    or_,
+    parse_one,
+    select,
+    union,
+)
 
 
 class TestBuild(unittest.TestCase):
@@ -319,6 +331,38 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: exp.update("tbl", {"x": 1}, from_="tbl2"),
                 "UPDATE tbl SET x = 1 FROM tbl2",
+            ),
+            (
+                lambda: union("SELECT * FROM foo", "SELECT * FROM bla"),
+                "SELECT * FROM foo UNION SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("SELECT * FROM foo").union("SELECT * FROM bla"),
+                "SELECT * FROM foo UNION SELECT * FROM bla",
+            ),
+            (
+                lambda: intersect("SELECT * FROM foo", "SELECT * FROM bla"),
+                "SELECT * FROM foo INTERSECT SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("SELECT * FROM foo").intersect("SELECT * FROM bla"),
+                "SELECT * FROM foo INTERSECT SELECT * FROM bla",
+            ),
+            (
+                lambda: except_("SELECT * FROM foo", "SELECT * FROM bla"),
+                "SELECT * FROM foo EXCEPT SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("SELECT * FROM foo").except_("SELECT * FROM bla"),
+                "SELECT * FROM foo EXCEPT SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("(SELECT * FROM foo)").union("SELECT * FROM bla"),
+                "(SELECT * FROM foo) UNION SELECT * FROM bla",
+            ),
+            (
+                lambda: parse_one("(SELECT * FROM foo)").union("SELECT * FROM bla", distinct=False),
+                "(SELECT * FROM foo) UNION ALL SELECT * FROM bla",
             ),
         ]:
             with self.subTest(sql):

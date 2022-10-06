@@ -856,6 +856,8 @@ class TestDialect(Validator):
                 "postgres": "STRPOS(x, ' ')",
                 "presto": "STRPOS(x, ' ')",
                 "spark": "LOCATE(' ', x)",
+                "clickhouse": "POSITION(x, ' ')",
+                "snowflake": "POSITION(' ', x)",
             },
         )
         self.validate_all(
@@ -865,6 +867,8 @@ class TestDialect(Validator):
                 "postgres": "STRPOS(x, 'a')",
                 "presto": "STRPOS(x, 'a')",
                 "spark": "LOCATE('a', x)",
+                "clickhouse": "POSITION(x, 'a')",
+                "snowflake": "POSITION('a', x)",
             },
         )
         self.validate_all(

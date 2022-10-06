@@ -7,7 +7,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.expressions import Literal
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import csv, list_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -164,6 +164,7 @@ class Snowflake(Dialect):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
             exp.Array: inline_array_sql,
+            exp.StrPosition: lambda self, e: f"POSITION({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
         }
 

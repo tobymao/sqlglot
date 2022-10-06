@@ -2074,7 +2074,7 @@ class Distinct(Expression):
 
 
 class In(Predicate):
-    arg_types = {"this": True, "expressions": False, "query": False, "unnest": False}
+    arg_types = {"this": True, "expressions": False, "query": False, "unnest": False, "function": False}
 
 
 class TimeUnit(Expression):

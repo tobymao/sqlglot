@@ -10,12 +10,13 @@ class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
     @abc.abstractmethod
-    def add_table(self, table):
+    def add_table(self, table, column_mapping=None):
         """
         Registers the table to be a known schema to be accessed later. Some implementing classes may
         require column information to also be provided
         Args:
             table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
+            column_mapping (dict|str|sqlglot.dataframe.sql.types.StructType|list): A column mapping that describes the structure of the table
         """
 
     @abc.abstractmethod
@@ -81,15 +82,12 @@ class MappingSchema(Schema):
         kwargs = {**{"schema": copy(self.schema)}, **kwargs}
         return MappingSchema(**kwargs)
 
-    def add_table(self, table):
+    def add_table(self, table, column_mapping=None):
+        if column_mapping is None:
+            return
         table = ensure_table(table)
         self._validate_table(table)
-        self.last_table_added = table
-
-    def register_table_structure(self, table_structure, table=None):
-        table = ensure_table(table) or self.last_table_added
-        self._validate_table(table)
-        column_mapping = ensure_column_mapping(table_structure)
+        column_mapping = ensure_column_mapping(column_mapping)
         _nested_set(self.schema, [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)],
                     column_mapping)
         self._initialize_supported_args()

@@ -360,6 +360,10 @@ class TestBuild(unittest.TestCase):
                 lambda: parse_one("(SELECT * FROM foo)").union("SELECT * FROM bla"),
                 "(SELECT * FROM foo) UNION SELECT * FROM bla",
             ),
+            (
+                lambda: parse_one("(SELECT * FROM foo)").union("SELECT * FROM bla", distinct=False),
+                "(SELECT * FROM foo) UNION ALL SELECT * FROM bla",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

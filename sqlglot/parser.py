@@ -1514,7 +1514,7 @@ class Parser:
 
             self._match_r_paren()
         else:
-            this = self.expression(exp.In, this=this, function=self._parse_field())
+            this = self.expression(exp.In, this=this, field=self._parse_field())
 
         return this
 

@@ -769,13 +769,20 @@ group by
 order by
         custdist desc,
         c_count desc;
-WITH "c_orders" AS (
+WITH "orders_2" AS (
+  SELECT
+    "orders"."o_orderkey" AS "o_orderkey",
+    "orders"."o_custkey" AS "o_custkey",
+    "orders"."o_comment" AS "o_comment"
+  FROM "orders" AS "orders"
+  WHERE
+    NOT "orders"."o_comment" LIKE '%special%requests%'
+), "c_orders" AS (
   SELECT
     COUNT("orders"."o_orderkey") AS "c_count"
   FROM "customer" AS "customer"
-  LEFT JOIN "orders" AS "orders"
+  LEFT JOIN "orders_2" AS "orders"
     ON "customer"."c_custkey" = "orders"."o_custkey"
-    AND NOT "orders"."o_comment" LIKE '%special%requests%'
   GROUP BY
     "customer"."c_custkey"
 )

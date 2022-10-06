@@ -23,3 +23,9 @@ class TestClickhouse(Validator):
                 "clickhouse": "CAST(1 AS Nullable(BIGINT))",
             },
         )
+        self.validate_all(
+            "CAST(1 AS Nullable(DateTime64(6, 'UTC')))",
+            write={
+                "clickhouse": "CAST(1 AS Nullable(DateTime64(6, 'UTC')))",
+            },
+        )

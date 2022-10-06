@@ -1606,7 +1606,7 @@ class Parser:
             elif nested:
                 expressions = self._parse_csv(self._parse_types)
             else:
-                expressions = self._parse_csv(self._parse_number)
+                expressions = self._parse_csv(self._parse_type)
 
             if not expressions:
                 self._retreat(index)

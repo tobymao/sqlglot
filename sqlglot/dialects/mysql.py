@@ -189,7 +189,6 @@ class MySQL(Dialect):
             exp.TryCast: no_trycast_sql,
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
-            exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.DateTrunc: _date_trunc_sql,
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.StrToDate: _str_to_date_sql,

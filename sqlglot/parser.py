@@ -1504,8 +1504,7 @@ class Parser:
         unnest = self._parse_unnest()
         if unnest:
             this = self.expression(exp.In, this=this, unnest=unnest)
-        else:
-            self._match_l_paren()
+        elif self._match(TokenType.L_PAREN):
             expressions = self._parse_csv(self._parse_select_or_expression)
 
             if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
@@ -1514,6 +1513,9 @@ class Parser:
                 this = self.expression(exp.In, this=this, expressions=expressions)
 
             self._match_r_paren()
+        else:
+            this = self.expression(exp.In, this=this, field=self._parse_field())
+
         return this
 
     def _parse_between(self, this):

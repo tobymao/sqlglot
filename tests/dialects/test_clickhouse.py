@@ -8,6 +8,7 @@ class TestClickhouse(Validator):
         self.validate_identity("dictGet(x, 'y')")
         self.validate_identity("SELECT * FROM x FINAL")
         self.validate_identity("SELECT * FROM x AS y FINAL")
+        self.validate_identity("'a' IN mapKeys(map('a', 1, 'b', 2))")
 
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",

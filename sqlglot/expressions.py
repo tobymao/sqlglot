@@ -3150,7 +3150,7 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     alias = to_identifier(alias, quoted=quoted)
     alias = TableAlias(this=alias) if table else alias
 
-    if "alias" in exp.arg_types:
+    if "alias" in exp.arg_types and not isinstance(exp, Window):
         exp = exp.copy()
         exp.set("alias", alias)
         return exp

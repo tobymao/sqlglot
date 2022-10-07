@@ -1333,6 +1333,7 @@ class Select(Subqueryable):
             *expressions (str or Expression): the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
                 If another `Expression` instance is passed, it will be wrapped in a `Group`.
+                If nothing is passed in then a group by is not applied to the expression
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Group` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
@@ -1342,6 +1343,8 @@ class Select(Subqueryable):
         Returns:
             Select: the modified expression.
         """
+        if not expressions:
+            return self if not copy else self.copy()
         return _apply_child_list_builder(
             *expressions,
             instance=self,

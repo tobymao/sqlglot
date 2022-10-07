@@ -226,45 +226,6 @@ class TestDataframeFunc(DataFrameValidator):
         dfs_employee = self.df_sqlglot_employee.where(self.df_sqlglot_employee['age'] * SF.lit(.5) == self.df_sqlglot_employee['age'] / SF.lit(2))
         self.compare_spark_with_sqlglot(df_employee, dfs_employee)
 
-    def test_group_by(self):
-        df_employee = self.df_spark_employee.groupBy(self.df_spark_employee.age).agg(F.min(self.df_spark_employee.employee_id))
-        dfs_employee = self.df_sqlglot_employee.groupBy(self.df_sqlglot_employee.age).agg(SF.min(self.df_sqlglot_employee.employee_id))
-        self.compare_spark_with_sqlglot(df_employee, dfs_employee, skip_schema_compare=True)
-
-    def test_group_by_where_non_aggregate(self):
-        df_employee = (
-            self
-            .df_spark_employee
-            .groupBy(self.df_spark_employee.age)
-            .agg(F.min(self.df_spark_employee.employee_id).alias("min_employee_id"))
-            .where(F.col("age") > F.lit(50))
-        )
-        dfs_employee = (
-            self
-            .df_sqlglot_employee
-            .groupBy(self.df_sqlglot_employee.age)
-            .agg(SF.min(self.df_sqlglot_employee.employee_id).alias("min_employee_id"))
-            .where(SF.col("age") > SF.lit(50))
-        )
-        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
-
-    def test_group_by_where_aggregate_like_having(self):
-        df_employee = (
-            self
-            .df_spark_employee
-            .groupBy(self.df_spark_employee.age)
-            .agg(F.min(self.df_spark_employee.employee_id).alias("min_employee_id"))
-            .where(F.col("min_employee_id") > F.lit(1))
-        )
-        dfs_employee = (
-            self
-            .df_sqlglot_employee
-            .groupBy(self.df_sqlglot_employee.age)
-            .agg(SF.min(self.df_sqlglot_employee.employee_id).alias("min_employee_id"))
-            .where(SF.col("min_employee_id") > SF.lit(1))
-        )
-        self.compare_spark_with_sqlglot(df_employee, dfs_employee)
-
     def test_join_inner(self):
         df_joined = (
             self.df_spark_employee

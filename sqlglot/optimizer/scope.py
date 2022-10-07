@@ -320,7 +320,7 @@ class Scope:
         Hints that exist in the scope that reference tables
 
         Returns:
-            list[exp.JoinHint]: Table hints that are referenced within the scope
+            list[exp.JoinHint]: Join hints that are referenced within the scope
         """
         if self._join_hints is None:
             return []

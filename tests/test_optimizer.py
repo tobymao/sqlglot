@@ -466,3 +466,53 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         # Check that x.cola AS cola and y.colb AS colb have types CHAR and TEXT, respectively
         for d, t in zip(cte_select.find_all(exp.Subquery), [exp.DataType.Type.CHAR, exp.DataType.Type.TEXT]):
             self.assertEqual(d.this.expressions[0].this.type, t)
+
+    def test_function_annotation(self):
+        schema = {"x": {"cola": "VARCHAR", "colb": "CHAR"}}
+        sql = "SELECT x.cola || TRIM(x.colb) AS col FROM x AS x"
+
+        concat_expr_alias = annotate_types(parse_one(sql), schema=schema).expressions[0]
+        self.assertEqual(concat_expr_alias.type, exp.DataType.Type.VARCHAR)
+
+        concat_expr = concat_expr_alias.this
+        self.assertEqual(concat_expr.type, exp.DataType.Type.VARCHAR)
+        self.assertEqual(concat_expr.left.type, exp.DataType.Type.VARCHAR)  # x.cola
+        self.assertEqual(concat_expr.right.type, exp.DataType.Type.VARCHAR)  # TRIM(x.colb)
+        self.assertEqual(concat_expr.right.this.type, exp.DataType.Type.CHAR)  # x.colb
+
+    def test_unknown_annotation(self):
+        schema = {"x": {"cola": "VARCHAR"}}
+        sql = "SELECT x.cola || SOME_ANONYMOUS_FUNC(x.cola) AS col FROM x AS x"
+
+        concat_expr_alias = annotate_types(parse_one(sql), schema=schema).expressions[0]
+        self.assertEqual(concat_expr_alias.type, exp.DataType.Type.UNKNOWN)
+
+        concat_expr = concat_expr_alias.this
+        self.assertEqual(concat_expr.type, exp.DataType.Type.UNKNOWN)
+        self.assertEqual(concat_expr.left.type, exp.DataType.Type.VARCHAR)  # x.cola
+        self.assertEqual(concat_expr.right.type, exp.DataType.Type.UNKNOWN)  # SOME_ANONYMOUS_FUNC(x.cola)
+        self.assertEqual(concat_expr.right.expressions[0].type, exp.DataType.Type.VARCHAR)  # x.cola (arg)
+
+    def test_null_annotation(self):
+        expression = annotate_types(parse_one("SELECT NULL + 2 AS col")).expressions[0].this
+        self.assertEqual(expression.left.type, exp.DataType.Type.NULL)
+        self.assertEqual(expression.right.type, exp.DataType.Type.INT)
+
+        # NULL <op> UNKNOWN should yield NULL
+        sql = "SELECT NULL || SOME_ANONYMOUS_FUNC() AS result"
+
+        concat_expr_alias = annotate_types(parse_one(sql)).expressions[0]
+        self.assertEqual(concat_expr_alias.type, exp.DataType.Type.NULL)
+
+        concat_expr = concat_expr_alias.this
+        self.assertEqual(concat_expr.type, exp.DataType.Type.NULL)
+        self.assertEqual(concat_expr.left.type, exp.DataType.Type.NULL)
+        self.assertEqual(concat_expr.right.type, exp.DataType.Type.UNKNOWN)
+
+    def test_nullable_annotation(self):
+        nullable = exp.DataType.build("NULLABLE", expressions=exp.DataType.build("BOOLEAN"))
+        expression = annotate_types(parse_one("NULL AND FALSE"))
+
+        self.assertEqual(expression.type, nullable)
+        self.assertEqual(expression.left.type, exp.DataType.Type.NULL)
+        self.assertEqual(expression.right.type, exp.DataType.Type.BOOLEAN)

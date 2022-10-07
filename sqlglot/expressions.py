@@ -556,14 +556,6 @@ class UserDefinedFunctionKwarg(Expression):
     arg_types = {"this": True, "kind": True, "default": False}
 
 
-class TableLiteral(Expression):
-    arg_types = {
-        "argument": True,
-        "quoted": True,
-        "expression": False,
-    }
-
-
 class CharacterSet(Expression):
     arg_types = {"this": True, "default": False}
 

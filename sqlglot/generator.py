@@ -532,10 +532,6 @@ class Generator:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def table_sql(self, expression):
-        table_literal = expression.args.get("this")
-        if isinstance(table_literal, exp.TableLiteral):
-            return self.table_literal_sql(table_literal)
-
         table = ".".join(
             part
             for part in [

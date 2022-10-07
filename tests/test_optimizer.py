@@ -97,7 +97,7 @@ class TestOptimizer(unittest.TestCase):
     def test_optimize(self):
         schema = {
             "x": {"a": "INT", "b": "INT"},
-            "y": {"a": "INT", "b": "INT"},
+            "y": {"b": "INT", "c": "INT"},
             "z": {"a": "INT", "c": "INT"},
         }
 

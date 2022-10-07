@@ -1,6 +1,28 @@
 Changelog
 =========
 
+v6.3.0
+------
+
+Changes:
+
+- New: Snowflake [table literals](https://docs.snowflake.com/en/sql-reference/literals-table.html)
+
+- New: Anti and semi joins
+
+- New: Vacuum as a command
+
+- New: Stored procedures
+
+- New: Reweriting derived tables as CTES
+
+- Improvement: Various clickhouse improvements
+
+- Improvement: Optimizer predicate pushdown
+
+- Breaking: DATE\_DIFF default renamed to DATEDIFF
+
+
 v6.2.0
 ------
 

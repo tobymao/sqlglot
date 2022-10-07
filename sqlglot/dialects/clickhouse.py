@@ -14,7 +14,6 @@ class ClickHouse(Dialect):
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
-            "NULLABLE": TokenType.NULLABLE,
             "FINAL": TokenType.FINAL,
             "INT8": TokenType.TINYINT,
             "INT16": TokenType.SMALLINT,

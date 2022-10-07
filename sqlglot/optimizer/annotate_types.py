@@ -240,10 +240,10 @@ class TypeAnnotator:
         right_type = expression.right.type
 
         if isinstance(expression, (exp.And, exp.Or)):
-            if (left_type, right_type) == (exp.DataType.Type.NULL, exp.DataType.Type.NULL):
+            if left_type == exp.DataType.Type.NULL and right_type == exp.DataType.Type.NULL:
                 expression.type = exp.DataType.Type.NULL
             elif exp.DataType.Type.NULL in (left_type, right_type):
-                expression.type = exp.DataType(this=exp.DataType.Type.NULLABLE, expressions=[exp.DataType.Type.BOOLEAN])
+                expression.type = exp.DataType.build("NULLABLE", expressions=exp.DataType.build("BOOLEAN"))
             else:
                 expression.type = exp.DataType.Type.BOOLEAN
         elif isinstance(expression, (exp.Condition, exp.Predicate)):

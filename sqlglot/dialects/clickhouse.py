@@ -29,6 +29,7 @@ class ClickHouse(Dialect):
             "INT64": TokenType.BIGINT,
             "FLOAT32": TokenType.FLOAT,
             "FLOAT64": TokenType.DOUBLE,
+            "TUPLE": TokenType.STRUCT,
         }
 
     class Parser(Parser):

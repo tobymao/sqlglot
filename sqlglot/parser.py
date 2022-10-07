@@ -2058,6 +2058,10 @@ class Parser:
 
         return this
 
+    def _parse_join_hint(self, func_name):
+        args = self._parse_csv(self._parse_table)
+        return exp.JoinHint(this=func_name.upper(), expressions=args)
+
     def _parse_substring(self):
         # Postgres supports the form: substring(string [from int] [for int])
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6

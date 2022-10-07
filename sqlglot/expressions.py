@@ -766,6 +766,10 @@ class Hint(Expression):
     arg_types = {"expressions": True}
 
 
+class JoinHint(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
 class Identifier(Expression):
     arg_types = {"this": True, "quoted": False}
 

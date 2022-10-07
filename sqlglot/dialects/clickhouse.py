@@ -29,6 +29,7 @@ class ClickHouse(Dialect):
             "INT64": TokenType.BIGINT,
             "FLOAT32": TokenType.FLOAT,
             "FLOAT64": TokenType.DOUBLE,
+            "TUPLE": TokenType.STRUCT,
         }
 
     class Parser(Parser):
@@ -55,6 +56,12 @@ class ClickHouse(Dialect):
             exp.DataType.Type.MAP: "Map",
             exp.DataType.Type.ARRAY: "Array",
             exp.DataType.Type.STRUCT: "Tuple",
+            exp.DataType.Type.TINYINT: "Int8",
+            exp.DataType.Type.SMALLINT: "Int16",
+            exp.DataType.Type.INT: "Int32",
+            exp.DataType.Type.BIGINT: "Int64",
+            exp.DataType.Type.FLOAT: "Float32",
+            exp.DataType.Type.DOUBLE: "Float64",
         }
 
         TRANSFORMS = {

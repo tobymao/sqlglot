@@ -9,6 +9,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM x FINAL")
         self.validate_identity("SELECT * FROM x AS y FINAL")
         self.validate_identity("'a' IN mapKeys(map('a', 1, 'b', 2))")
+        self.validate_identity("CAST((1, 2) AS Tuple(a Int8, b Int16))")
 
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
@@ -21,7 +22,7 @@ class TestClickhouse(Validator):
         self.validate_all(
             "CAST(1 AS NULLABLE(Int64))",
             write={
-                "clickhouse": "CAST(1 AS Nullable(BIGINT))",
+                "clickhouse": "CAST(1 AS Nullable(Int64))",
             },
         )
         self.validate_all(

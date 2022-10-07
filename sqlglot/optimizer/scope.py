@@ -68,6 +68,7 @@ class Scope:
         self._selected_sources = None
         self._columns = None
         self._external_columns = None
+        self._table_hints = None
 
     def branch(self, expression, scope_type, chain_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
@@ -85,14 +86,17 @@ class Scope:
         self._subqueries = []
         self._derived_tables = []
         self._raw_columns = []
+        self._table_hints = []
 
         for node, parent, _ in self.walk(bfs=False):
             if node is self.expression:
                 continue
             elif isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
                 self._raw_columns.append(node)
-            elif isinstance(node, exp.Table):
+            elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.TableHint):
                 self._tables.append(node)
+            elif isinstance(node, exp.TableHint):
+                self._table_hints.append(node)
             elif isinstance(node, exp.UDTF):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.CTE):
@@ -309,6 +313,18 @@ class Scope:
         if self._external_columns is None:
             self._external_columns = [c for c in self.columns if c.table not in self.selected_sources]
         return self._external_columns
+
+    @property
+    def table_hints(self):
+        """
+        Hints that exist in the scope that reference tables
+
+        Returns:
+            list[exp.TableHint]: Table hints that are referenced within the scope
+        """
+        if self._table_hints is None:
+            return []
+        return self._table_hints
 
     def source_columns(self, source_name):
         """

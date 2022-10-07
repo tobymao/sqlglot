@@ -44,6 +44,7 @@ UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
     "joins",
     "where",
     "order",
+    "hint",
 }
 
 
@@ -82,6 +83,7 @@ def merge_ctes(expression, leave_tables_isolated=False):
             _merge_joins(outer_scope, inner_scope, from_or_join)
             _merge_where(outer_scope, inner_scope, from_or_join)
             _merge_order(outer_scope, inner_scope)
+            _merge_hints(outer_scope, inner_scope)
             _pop_cte(inner_scope)
     return expression
 
@@ -101,6 +103,7 @@ def merge_derived_tables(expression, leave_tables_isolated=False):
                 _merge_joins(outer_scope, inner_scope, from_or_join)
                 _merge_where(outer_scope, inner_scope, from_or_join)
                 _merge_order(outer_scope, inner_scope)
+                _merge_hints(outer_scope, inner_scope)
     return expression
 
 
@@ -181,6 +184,12 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
     """
     new_subquery = inner_scope.expression.args.get("from").expressions[0]
     node_to_replace.replace(new_subquery)
+    for table_hint in outer_scope.table_hints:
+        tables = table_hint.find_all(exp.Table)
+        for table in tables:
+            if table.alias_or_name == node_to_replace.alias_or_name:
+                new_value = new_subquery.this if isinstance(new_subquery, exp.Alias) else new_subquery
+                table.replace(new_value)
     outer_scope.remove_source(alias)
     outer_scope.add_source(new_subquery.alias_or_name, inner_scope.sources[new_subquery.alias_or_name])
 
@@ -282,6 +291,17 @@ def _merge_order(outer_scope, inner_scope):
         return
 
     outer_scope.expression.set("order", inner_scope.expression.args.get("order"))
+
+
+def _merge_hints(outer_scope, inner_scope):
+    inner_scope_hint = inner_scope.expression.args.get("hint")
+    if not inner_scope_hint:
+        return
+    outer_scope_hint = outer_scope.expression.args.get("hint")
+    if outer_scope_hint:
+        outer_scope_hint.args['expressions'].extend(inner_scope_hint.expressions)
+    else:
+        outer_scope.expression.set("hint", inner_scope_hint)
 
 
 def _pop_cte(inner_scope):

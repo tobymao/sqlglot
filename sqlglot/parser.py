@@ -2056,9 +2056,9 @@ class Parser:
 
         return this
 
-    def _parse_table_hint(self, func_name):
+    def _parse_join_hint(self, func_name):
         args = self._parse_csv(self._parse_table)
-        return exp.TableHint(this=func_name.upper(), expressions=args)
+        return exp.JoinHint(this=func_name.upper(), expressions=args)
 
     def _parse_substring(self):
         # Postgres supports the form: substring(string [from int] [for int])

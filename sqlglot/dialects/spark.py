@@ -79,14 +79,14 @@ class Spark(Hive):
 
         FUNCTION_PARSERS = {
             **Parser.FUNCTION_PARSERS,
-            "BROADCAST": lambda self: self._parse_table_hint("BROADCAST"),
-            "BROADCASTJOIN": lambda self: self._parse_table_hint("BROADCASTJOIN"),
-            "MAPJOIN": lambda self: self._parse_table_hint("MAPJOIN"),
-            "MERGE": lambda self: self._parse_table_hint("MERGE"),
-            "SHUFFLEMERGE": lambda self: self._parse_table_hint("SHUFFLEMERGE"),
-            "MERGEJOIN": lambda self: self._parse_table_hint("MERGEJOIN"),
-            "SHUFFLE_HASH": lambda self: self._parse_table_hint("SHUFFLE_HASH"),
-            "SHUFFLE_REPLICATE_NL": lambda self: self._parse_table_hint("SHUFFLE_REPLICATE_NL"),
+            "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
+            "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
+            "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
+            "MERGE": lambda self: self._parse_join_hint("MERGE"),
+            "SHUFFLEMERGE": lambda self: self._parse_join_hint("SHUFFLEMERGE"),
+            "MERGEJOIN": lambda self: self._parse_join_hint("MERGEJOIN"),
+            "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
+            "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
     class Generator(Hive.Generator):

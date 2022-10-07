@@ -184,8 +184,8 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
     """
     new_subquery = inner_scope.expression.args.get("from").expressions[0]
     node_to_replace.replace(new_subquery)
-    for table_hint in outer_scope.table_hints:
-        tables = table_hint.find_all(exp.Table)
+    for join_hint in outer_scope.join_hints:
+        tables = join_hint.find_all(exp.Table)
         for table in tables:
             if table.alias_or_name == node_to_replace.alias_or_name:
                 new_table = new_subquery.this if isinstance(new_subquery, exp.Alias) else new_subquery

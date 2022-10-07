@@ -766,7 +766,7 @@ class Hint(Expression):
     arg_types = {"expressions": True}
 
 
-class TableHint(Expression):
+class JoinHint(Expression):
     arg_types = {"this": True, "expressions": True}
 
 

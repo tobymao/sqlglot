@@ -2,16 +2,18 @@ from copy import copy
 import functools
 import typing as t
 
+import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.helper import ensure_list
 from sqlglot.dataframe.sql.group import GroupedData
 from sqlglot.dataframe.sql.operations import Operation, operation
-from sqlglot.dataframe.sql.transforms import ORDERED_TRANSFORMS
+from sqlglot.dataframe.sql.sanitize import sanitize
 from sqlglot.dataframe.sql.readwriter import DataFrameWriter
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.optimizer import optimize as optimize_func
+from sqlglot.optimizer.qualify_columns import qualify_columns
 
 
 if t.TYPE_CHECKING:
@@ -57,45 +59,9 @@ class DataFrame:
         print("DataFrame Cache is not yet supported")
         return self
 
-    def _replace_alias_names_with_sequence_ids(self, df: "DataFrame" = None):
-        def replace_alias_name_with_cte_name(scope: Scope, expression: exp.Expression):
-            name = expression.table if isinstance(expression, exp.Column) else expression.name
-            for _, external_source in scope.selected_sources.values():
-                cte_source = external_source.expression.parent
-                assert isinstance(cte_source, exp.CTE)
-                cte_sequence_id = cte_source.args['sequence_id']
-                if cte_sequence_id in self.spark.name_to_sequence_id_mapping[name]:
-                    key = "table" if isinstance(expression, exp.Column) else "this"
-                    expression.set(key, cte_source.alias_or_name)
-                    break
-            return
-
-        df = (df or self).copy()
-        scopes = traverse_scope(self._select_expression(df.expression))
-        for scope in scopes:
-            for column in scope.external_columns:
-                if column.table and column.table in self.spark.name_to_sequence_id_mapping:
-                    if len(scope.selected_sources) == 1:
-                        cte_source = list(scope.selected_sources.values())[0][1].expression.find_ancestor(exp.CTE)
-                        column.set("table", cte_source.alias_or_name)
-                    else:
-                        replace_alias_name_with_cte_name(scope, column)
-            if scope.expression.args.get('hint'):
-                for identifer in scope.expression.args['hint'].find_all(exp.Identifier):
-                    if identifer.name in self.spark.name_to_sequence_id_mapping:
-                        replace_alias_name_with_cte_name(scope, identifer)
-        return df
-
     def sql(self, dialect="spark", optimize=True, **kwargs) -> str:
         df = self._resolve_pending_hints()
-        df = self._replace_alias_names_with_sequence_ids(df)
         expression = df.expression.copy()
-        for transform in ORDERED_TRANSFORMS:
-            expression = expression.transform(transform,
-                                              name_to_sequence_id_mapping=df.spark.name_to_sequence_id_mapping,
-                                              known_ids=df.spark.known_ids,
-                                              known_branch_ids=df.spark.known_branch_ids,
-                                              known_sequence_ids=df.spark.known_sequence_ids)
         if optimize:
             optimized_select_expression = optimize_func(self._select_expression(expression))
             optimized_select_expression_without_ctes = optimized_select_expression.copy()
@@ -125,6 +91,16 @@ class DataFrame:
         columns = ensure_list(cols)
         columns = Column.ensure_cols(columns)
         return columns
+
+    def _ensure_and_sanitize_cols(self, cols):
+        cols = self._ensure_list_of_columns(cols)
+        sanitize(self.spark, self.expression, cols)
+        return cols
+
+    def _ensure_and_sanitize_col(self, col):
+        col = Column.ensure_col(col)
+        sanitize(self.spark, self.expression, col)
+        return col
 
     @classmethod
     def _add_ctes_to_expression(cls, expression: exp.Expression, ctes: t.List[exp.CTE]) -> exp.Expression:
@@ -161,21 +137,29 @@ class DataFrame:
         return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
     def _resolve_pending_hints(self) -> "DataFrame":
+        if not self.pending_join_hints and not self.pending_select_hints:
+            return self.copy()
         expression = self.expression.copy()
         hint_expression = expression.args.get("hint") or exp.Hint(expressions=[])
         for hint in self.pending_select_hints:
             hint_expression.args.get("expressions").append(hint)
-        expression_without_cte = expression.copy()
-        expression_without_cte.args.pop("with", None)
-        join_expression = expression_without_cte.find(exp.Join)
-        if join_expression:
+
+        join_tables = get_tables_from_expression_with_join(self.expression)
+        if join_tables:
             for hint in self.pending_join_hints:
+                for branch_id_expression in hint.expressions:
+                    branch_id = branch_id_expression.alias_or_name
+                    matching_ctes = [cte for cte in reversed(self.expression.ctes) if cte.args["sequence_id"] == branch_id]
+                    for matching_cte in matching_ctes:
+                        if matching_cte.alias_or_name in [join_table.alias_or_name for join_table in join_tables]:
+                            branch_id_expression.set("this", matching_cte.args['alias'].this)
+                            break
                 hint_expression.args.get("expressions").append(hint)
         if hint_expression.expressions:
             expression.set("hint", hint_expression)
         return self.copy(expression=expression,
                          pending_select_hints=None,
-                         pending_join_hints=None if join_expression else self.pending_join_hints)
+                         pending_join_hints=None if join_tables else self.pending_join_hints)
 
     @classmethod
     def _select_expression(cls, expression):
@@ -189,9 +173,25 @@ class DataFrame:
 
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> "DataFrame":
-        cols = Column.ensure_cols(cols)
+        cols = self._ensure_and_sanitize_cols(cols)
         kwargs["append"] = kwargs.get("append", False)
-        return self.copy(expression=self.expression.select(*[x.expression for x in cols], **kwargs))
+        if self.expression.args.get("joins"):
+            ambiguous_cols = [col for col in cols if not col.column_expression.table]
+            if ambiguous_cols:
+                join_table_identifiers = [x.this for x in get_tables_from_expression_with_join(self.expression)]
+                cte_names_in_join = [x.this for x in join_table_identifiers]
+                for ambiguous_col in ambiguous_cols:
+                    ctes_with_column = [cte for cte in self.expression.ctes if cte.alias_or_name in cte_names_in_join and ambiguous_col.alias_or_name in cte.args['this'].named_selects]
+                    # If the select column does not specify a table and there is a join
+                    # then we assume they are referring to the left table
+                    if len(ctes_with_column) > 1:
+                        table_identifier = self.expression.args['from'].args['expressions'][0].this
+                    else:
+                        table_identifier = ctes_with_column[0].args['alias'].this
+                    ambiguous_col.expression.set("table", table_identifier)
+        expression = self.expression.select(*[x.expression for x in cols], **kwargs)
+        qualify_columns(expression, sqlglot.schema)
+        return self.copy(expression=expression, **kwargs)
 
     @operation(Operation.NO_OP)
     def alias(self, name: str, **kwargs) -> "DataFrame":
@@ -206,28 +206,29 @@ class DataFrame:
 
     @operation(Operation.WHERE)
     def where(self, column: t.Union[Column, bool], **kwargs) -> "DataFrame":
-        column = Column.ensure_col(column)
+        column = self._ensure_and_sanitize_col(column)
         return self.copy(expression=self.expression.where(column.expression))
 
     filter = where
 
     @operation(Operation.GROUP_BY)
     def groupBy(self, *cols, **kwargs) -> "GroupedData":
-        cols = Column.ensure_cols(cols)
+        cols = self._ensure_and_sanitize_cols(cols)
         return GroupedData(self, cols)
 
     @operation(Operation.SELECT)
     def agg(self, *exprs, **kwargs) -> "DataFrame":
-        return self.groupBy().agg(*exprs)
+        cols = self._ensure_and_sanitize_cols(exprs)
+        return self.groupBy().agg(*cols)
 
     @operation(Operation.FROM)
     def join(self, other_df: "DataFrame", on: t.Union[str, t.List[str], Column, t.List[Column]], how: str = 'inner', **kwargs) -> "DataFrame":
         other_df = other_df._convert_leaf_to_cte()
         pre_join_self_latest_cte_name = self.latest_cte_name
-        columns = self._ensure_list_of_columns(on)
+        columns = self._ensure_and_sanitize_cols(on)
         join_type = how.replace("_", " ")
         if isinstance(columns[0].expression, exp.Column):
-            join_columns = columns
+            join_columns = [Column(x).set_table_name(pre_join_self_latest_cte_name) for x in columns]
             join_clause = functools.reduce(lambda x, y: x & y, [
                 col.copy().set_table_name(pre_join_self_latest_cte_name) == col.copy().set_table_name(other_df.latest_cte_name)
                 for col in columns
@@ -242,7 +243,8 @@ class DataFrame:
             ]
         self_columns = [column.set_table_name(pre_join_self_latest_cte_name, copy=True) for column in self._get_outer_select_columns(self)]
         other_columns = [column.set_table_name(other_df.latest_cte_name, copy=True) for column in self._get_outer_select_columns(other_df)]
-        all_columns = list({column.alias_or_name if not isinstance(column.expression.this, exp.Star) else column.sql(): column for column in join_columns + self_columns + other_columns}.values())
+        column_value_mapping = {column.alias_or_name if not isinstance(column.expression.this, exp.Star) else column.sql(): column for column in other_columns + self_columns + join_columns}
+        all_columns = [column_value_mapping[name] for name in {x.alias_or_name: None for x in join_columns + self_columns + other_columns}]
         new_df = self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
         new_df.expression = new_df._add_ctes_to_expression(new_df.expression, other_df.expression.ctes)
         new_df.pending_join_hints.extend(other_df.pending_join_hints)
@@ -257,7 +259,7 @@ class DataFrame:
         has irregular behavior and can result in runtime errors. Users shouldn't be mixing the two anyways so this
         is unlikely to come up.
         """
-        cols = self._ensure_list_of_columns(cols)
+        cols = self._ensure_and_sanitize_cols(cols)
         pre_ordered_col_indexes = [x for x in [i if isinstance(col.expression, exp.Ordered) else None for i, col in enumerate(cols)] if x is not None]
         if ascending is None:
             ascending = [True] * len(cols)
@@ -323,7 +325,7 @@ class DataFrame:
         new_df = self.copy()
         all_columns = self._get_outer_select_columns(new_df.expression)
         if subset:
-            null_check_columns = self._ensure_list_of_columns(subset)
+            null_check_columns = self._ensure_and_sanitize_cols(subset)
         else:
             null_check_columns = all_columns
         if thresh is None:
@@ -368,9 +370,9 @@ class DataFrame:
         }
         if isinstance(value, dict):
             values = value.values()
-            columns = self._ensure_list_of_columns(list(value.keys()))
+            columns = self._ensure_and_sanitize_cols(list(value.keys()))
         if not columns:
-            columns = self._ensure_list_of_columns(subset) if subset else all_columns
+            columns = self._ensure_and_sanitize_cols(subset) if subset else all_columns
         if not values:
             values = [value] * len(columns)
         values = [lit(value) for value in values]
@@ -405,7 +407,7 @@ class DataFrame:
             for column in all_columns
         }
 
-        columns = self._ensure_list_of_columns(subset) if subset else all_columns
+        columns = self._ensure_and_sanitize_cols(subset) if subset else all_columns
         if isinstance(to_replace, dict):
             old_values = list(to_replace.keys())
             new_values = list(to_replace.values())
@@ -440,6 +442,7 @@ class DataFrame:
 
     @operation(Operation.SELECT)
     def withColumn(self, colName: str, col: Column) -> "DataFrame":
+        col = self._ensure_and_sanitize_col(col)
         return self.copy().select(col.alias(colName), append=True)
 
     @operation(Operation.SELECT)
@@ -449,7 +452,7 @@ class DataFrame:
     @operation(Operation.SELECT)
     def drop(self, *cols: t.Union[str, "Column"]) -> "DataFrame":
         all_columns = self._get_outer_select_columns(self.expression)
-        drop_cols = self._ensure_list_of_columns(cols)
+        drop_cols = self._ensure_and_sanitize_cols(cols)
         new_columns = [col for col in all_columns if
                        col.alias_or_name not in [drop_column.alias_or_name for drop_column in drop_cols]]
         return self.copy().select(*new_columns, append=False)
@@ -471,13 +474,13 @@ class DataFrame:
     @operation(Operation.NO_OP)
     def hint(self, name: str, *parameters: t.Optional[t.Union[int, str]]) -> "DataFrame":
         parameters = ensure_list(parameters)
-        parameters = Column.ensure_cols(parameters) if parameters else Column.ensure_cols([self.sequence_id])
+        parameters = self._ensure_and_sanitize_cols(parameters) if parameters else Column.ensure_cols([self.sequence_id])
         return self._hint(name, parameters)
 
     @operation(Operation.NO_OP)
     def repartition(self, numPartitions: t.Union[int, str], *cols: t.Union[int, str]) -> "DataFrame":
         num_partitions = Column.ensure_cols([numPartitions])
-        cols = Column.ensure_cols(ensure_list(cols))
+        cols = self._ensure_and_sanitize_cols(cols)
         args = num_partitions + cols
         return self._hint("repartition", args)
 

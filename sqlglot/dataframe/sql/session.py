@@ -10,7 +10,6 @@ from sqlglot.dataframe.sql.dataframe import DataFrame
 from sqlglot.dataframe.sql.operations import Operation
 from sqlglot.dataframe.sql.types import StructType
 from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
-from sqlglot.schema import MappingSchema
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import SchemaInput
@@ -20,9 +19,9 @@ class SparkSession:
     known_ids: t.ClassVar[t.Set[str]] = set()
     known_branch_ids: t.ClassVar[t.Set[str]] = set()
     known_sequence_ids: t.ClassVar[t.Set[str]] = set()
+    name_to_sequence_id_mapping: t.ClassVar[t.Dict[str, t.List[str]]] = defaultdict(list)
 
     def __init__(self):
-        self.name_to_sequence_id_mapping = defaultdict(list)
         self.incrementing_id = 1
 
     @property

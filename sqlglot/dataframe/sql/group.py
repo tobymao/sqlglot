@@ -17,11 +17,12 @@ class GroupedData:
 
     @operation(Operation.SELECT)
     def agg(self, *exprs: t.Union[Column, t.Dict[str, str]]) -> "DataFrame":
+        cols = exprs
         if isinstance(exprs[0], dict):
             cols = [Column(f"{agg_func}({column_name})")
                        for column_name, agg_func in exprs[0].items()]
-        else:
-            cols = Column.ensure_cols(exprs)
+
+        cols = self._df._ensure_and_sanitize_cols(cols)
 
         expression = (
             self

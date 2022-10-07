@@ -106,23 +106,22 @@ class DataFrameValidator(unittest.TestCase):
         self.df_sqlglot_employee = self.dfs_employee.alias('employee')
         self.df_sqlglot_district = self.dfs_district.alias('district')
 
-    @classmethod
-    def compare_spark_with_sqlglot(cls, df_spark, df_sqlglot, no_empty=True, skip_schema_compare=False) -> t.Tuple["SparkDataFrame", "SparkDataFrame"]:
+    def compare_spark_with_sqlglot(self, df_spark, df_sqlglot, no_empty=True, skip_schema_compare=False) -> t.Tuple["SparkDataFrame", "SparkDataFrame"]:
         def compare_schemas(schema_1, schema_2):
             for schema in [schema_1, schema_2]:
                 for struct_field in schema.fields:
                     struct_field.metadata = {}
-            assert schema_1 == schema_2
+            self.assertEqual(schema_1, schema_2)
 
-        actual_df_sqlglot = cls.spark.sql(df_sqlglot.sql())
+        actual_df_sqlglot = self.spark.sql(df_sqlglot.sql())
         df_sqlglot_results = actual_df_sqlglot.collect()
         df_spark_results = df_spark.collect()
         if not skip_schema_compare:
             compare_schemas(df_spark.schema, actual_df_sqlglot.schema)
-        assert df_spark_results == df_sqlglot_results
+        self.assertEqual(df_spark_results, df_sqlglot_results)
         if no_empty:
-            assert len(df_spark_results) != 0
-            assert len(df_sqlglot_results) != 0
+            self.assertNotEqual(len(df_spark_results), 0)
+            self.assertNotEqual(len(df_sqlglot_results), 0)
         return df_spark, actual_df_sqlglot
 
     @classmethod

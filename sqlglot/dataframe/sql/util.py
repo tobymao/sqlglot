@@ -1,5 +1,6 @@
 import typing as t
 
+from sqlglot import expressions as exp
 from sqlglot.dataframe.sql import types
 
 if t.TYPE_CHECKING:
@@ -16,3 +17,12 @@ def get_column_mapping_from_schema_input(schema: "SchemaInput") -> t.Dict[str, s
     elif isinstance(schema, types.StructType):
         return {struct_field.name: struct_field.dataType.simpleString() for struct_field in schema}
     return {x.strip(): None for x in schema}
+
+
+def get_tables_from_expression_with_join(expression: exp.Select) -> t.List[exp.Table]:
+    if not expression.args.get("joins"):
+        return []
+
+    left_table = expression.args['from'].args['expressions'][0]
+    other_tables = [join.this for join in expression.args['joins']]
+    return [left_table] + other_tables

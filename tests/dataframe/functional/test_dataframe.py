@@ -15,12 +15,12 @@ class TestDataframeFunc(DataFrameValidator):
 
     def test_simple_select_from_table(self):
         df = (
-            self.df_spark_employee.repartition(63)
-        )
-        dfs = (
-            self.sqlglot.read.table("employee").repartition(63)
+            self.df_spark_employee
         )
         sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
+        dfs = (
+            self.sqlglot.read.table("employee")
+        )
         self.compare_spark_with_sqlglot(df, dfs)
 
     def test_simple_select_df_attribute(self):
@@ -1352,10 +1352,10 @@ class TestDataframeFunc(DataFrameValidator):
             self.df_spark_employee.repartition(63)
         )
 
+        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         dfs = (
             self.sqlglot.read.table("employee").repartition(63)
         )
-        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
         sqlglot_num_partitions = dfs.rdd.getNumPartitions()
@@ -1370,10 +1370,10 @@ class TestDataframeFunc(DataFrameValidator):
             self.df_spark_employee.repartition("age")
         )
 
+        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         dfs = (
             self.sqlglot.read.table("employee").repartition("age")
         )
-        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(df))
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(dfs))
@@ -1386,10 +1386,10 @@ class TestDataframeFunc(DataFrameValidator):
             self.df_spark_employee.repartition(53, "age", "fname")
         )
 
+        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         dfs = (
             self.sqlglot.read.table("employee").repartition(53, "age", "fname")
         )
-        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
         sqlglot_num_partitions = dfs.rdd.getNumPartitions()

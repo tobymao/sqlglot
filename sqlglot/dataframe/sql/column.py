@@ -5,8 +5,8 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.dataframe.sql.window import WindowSpec
 from sqlglot.dataframe.sql.types import DataType
+from sqlglot.dataframe.sql.window import WindowSpec
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import ColumnOrName, ColumnOrPrimitive, DateTimeLiteral, DecimalLiteral, Literals, Primitives
@@ -24,8 +24,6 @@ class Column:
         self.expression = expression
         if self.expression is None or isinstance(self.expression, (int, float, bool, dict, Iterable, datetime.date)):
             self.expression = self._lit(expression).expression
-        if isinstance(self.expression, exp.Star):
-            self.expression = exp.Column(this=expression)
 
     def __repr__(self):
         return repr(self.expression)
@@ -183,7 +181,7 @@ class Column:
         return isinstance(self.expression, exp.Column)
 
     @property
-    def column_expression(self) -> exp.Expression:
+    def column_expression(self) -> exp.Column:
         if self.is_alias:
             return self.expression.args["this"]
         return self.expression

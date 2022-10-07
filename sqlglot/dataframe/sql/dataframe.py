@@ -443,6 +443,12 @@ class DataFrame:
     @operation(Operation.SELECT)
     def withColumn(self, colName: str, col: Column) -> "DataFrame":
         col = self._ensure_and_sanitize_col(col)
+        existing_col_names = self.expression.named_selects
+        existing_col_index = existing_col_names.index(colName) if colName in existing_col_names else None
+        if existing_col_index:
+            expression = self.expression.copy()
+            expression.expressions[existing_col_index] = col.expression
+            return self.copy(expression=expression)
         return self.copy().select(col.alias(colName), append=True)
 
     @operation(Operation.SELECT)

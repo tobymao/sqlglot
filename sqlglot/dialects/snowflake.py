@@ -116,11 +116,13 @@ class Snowflake(Dialect):
         FUNCTION_PARSERS = {
             **Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_extract(),
+            "TABLE": lambda self: self._parse_table_literal(),
         }
 
         FUNC_TOKENS = {
             *Parser.FUNC_TOKENS,
             TokenType.RLIKE,
+            TokenType.TABLE,
         }
 
         COLUMN_OPERATORS = {
@@ -136,6 +138,22 @@ class Snowflake(Dialect):
             **Parser.PROPERTY_PARSERS,
             TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
         }
+
+        def _parse_table_literal(self):
+            if self._curr.token_type in [TokenType.DOLLAR, TokenType.COLON]:
+                this = self._curr.text + self._next.text
+                quoted = False
+                self._advance(2)
+            elif self._curr.token_type is TokenType.PLACEHOLDER:
+                this = self._curr.text
+                quoted = False
+                self._advance(1)
+            elif self._curr.token_type is TokenType.STRING:
+                this = self._curr.text
+                quoted = True
+                self._advance(1)
+
+            return self.expression(exp.TableLiteral, argument=this, quoted=quoted)
 
     class Tokenizer(Tokenizer):
         QUOTES = ["'", "$$"]
@@ -190,3 +208,13 @@ class Snowflake(Dialect):
             if not expression.args.get("distinct", False):
                 self.unsupported("INTERSECT with All is not supported in Snowflake")
             return super().intersect_op(expression)
+
+        def table_literal_sql(self, expression):
+            argument = expression.args.get("argument")
+
+            if expression.args.get("quoted"):
+                sql_text = f"TABLE({self.quote_start}{argument}{self.quote_end})"
+            else:
+                sql_text = f"TABLE({argument})"
+
+            return sql_text

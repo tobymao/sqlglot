@@ -168,3 +168,22 @@ FROM (
     SELECT /*+ BROADCAST(m), MERGE(m, n) */ m.a, n.c FROM (SELECT x.a, x.b FROM x) AS m JOIN (SELECT y.b, y.c FROM y) AS n ON m.b = n.b
 ) AS subquery;
 SELECT /*+ BROADCAST(x), MERGE(x, y) */ x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# title: Subquery Test
+# dialect: spark
+SELECT /*+ BROADCAST(x) */
+  x.a,
+  x.c
+FROM (
+  SELECT
+    x.a,
+    x.c
+  FROM (
+    SELECT
+      x.a,
+      COUNT(1) AS c
+    FROM x
+    GROUP BY x.a
+  ) AS x
+) AS x;
+SELECT /*+ BROADCAST(x) */ x.a AS a, x.c AS c FROM (SELECT x.a AS a, COUNT(1) AS c FROM x AS x GROUP BY x.a) AS x;

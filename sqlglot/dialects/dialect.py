@@ -77,7 +77,6 @@ class Dialect(metaclass=_Dialect):
     alias_post_tablesample = False
     normalize_functions = "upper"
     null_ordering = "nulls_are_small"
-    wrap_derived_values = True
 
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
@@ -170,7 +169,6 @@ class Dialect(metaclass=_Dialect):
                 "alias_post_tablesample": self.alias_post_tablesample,
                 "normalize_functions": self.normalize_functions,
                 "null_ordering": self.null_ordering,
-                "wrap_derived_values": self.wrap_derived_values,
                 **opts,
             }
         )
@@ -269,6 +267,21 @@ def struct_extract_sql(self, expression):
     this = self.sql(expression, "this")
     struct_key = self.sql(exp.Identifier(this=expression.expression, quoted=True))
     return f"{this}.{struct_key}"
+
+
+def var_map_sql(self, expression):
+    keys = expression.args["keys"]
+    values = expression.args["values"]
+
+    if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
+        self.unsupported("Cannot convert array columns into map.")
+        return f"MAP({self.sql(keys)}, {self.sql(values)})"
+
+    args = []
+    for key, value in zip(keys.expressions, values.expressions):
+        args.append(self.sql(key))
+        args.append(self.sql(value))
+    return f"MAP({csv(*args)})"
 
 
 def format_time_lambda(exp_class, dialect, default=None):

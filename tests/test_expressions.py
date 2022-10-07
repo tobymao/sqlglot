@@ -115,6 +115,21 @@ class TestExpressions(unittest.TestCase):
             ["first", "second", "third"],
         )
 
+    def test_table_name(self):
+        self.assertEqual(exp.table_name(parse_one("a", into=exp.Table)), "a")
+        self.assertEqual(exp.table_name(parse_one("a.b", into=exp.Table)), "a.b")
+        self.assertEqual(exp.table_name(parse_one("a.b.c", into=exp.Table)), "a.b.c")
+        self.assertEqual(exp.table_name("a.b.c"), "a.b.c")
+
+    def test_replace_tables(self):
+        self.assertEqual(
+            exp.replace_tables(
+                parse_one("select * from a join b join c.a join d.a join e.a"),
+                {"a": "a1", "b": "b.a", "c.a": "c.a2", "d.a": "d2"},
+            ).sql(),
+            'SELECT * FROM "a1" JOIN "b"."a" JOIN "c"."a2" JOIN "d2" JOIN e.a',
+        )
+
     def test_named_selects(self):
         expression = parse_one("SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz")
         self.assertEqual(expression.named_selects, ["a", "B", "e", "*", "zz", "z"])
@@ -474,3 +489,10 @@ class TestExpressions(unittest.TestCase):
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)
+
+    def test_annotation_alias(self):
+        expression = parse_one("SELECT a, b AS B, c #comment, d AS D #another_comment FROM foo")
+        self.assertEqual(
+            [e.alias_or_name for e in expression.expressions],
+            ["a", "B", "c", "D"],
+        )

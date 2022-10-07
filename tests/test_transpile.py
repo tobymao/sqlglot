@@ -338,7 +338,7 @@ class TestTranspile(unittest.TestCase):
                 unsupported_level=level,
             )
 
-        error = "Cannot convert array columns into map use SparkSQL instead."
+        error = "Cannot convert array columns into map."
 
         unsupported(ErrorLevel.WARN)
         assert_logger_contains("\n".join([error] * 4), logger, level="warning")

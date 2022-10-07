@@ -8,7 +8,9 @@ from sqlglot.expressions import (
     and_,
     column,
     condition,
+    except_,
     from_,
+    intersect,
     maybe_parse,
     not_,
     or_,
@@ -16,11 +18,12 @@ from sqlglot.expressions import (
     subquery,
 )
 from sqlglot.expressions import table_ as table
+from sqlglot.expressions import union
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
-__version__ = "6.2.8"
+__version__ = "6.2.10"
 
 pretty = False
 

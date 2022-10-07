@@ -104,6 +104,7 @@ class TokenType(AutoName):
     ALL = auto()
     ALTER = auto()
     ANALYZE = auto()
+    ANTI = auto()
     ANY = auto()
     ARRAY = auto()
     ASC = auto()
@@ -236,6 +237,7 @@ class TokenType(AutoName):
     SCHEMA_COMMENT = auto()
     SEED = auto()
     SELECT = auto()
+    SEMI = auto()
     SEPARATOR = auto()
     SET = auto()
     SHOW = auto()
@@ -262,6 +264,7 @@ class TokenType(AutoName):
     USE = auto()
     USING = auto()
     VALUES = auto()
+    VACUUM = auto()
     VIEW = auto()
     VOLATILE = auto()
     WHEN = auto()
@@ -406,6 +409,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ALTER": TokenType.ALTER,
         "ANALYZE": TokenType.ANALYZE,
         "AND": TokenType.AND,
+        "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
@@ -528,6 +532,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ROWS": TokenType.ROWS,
         "SEED": TokenType.SEED,
         "SELECT": TokenType.SELECT,
+        "SEMI": TokenType.SEMI,
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
         "SOME": TokenType.SOME,
@@ -551,6 +556,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
+        "VACUUM": TokenType.VACUUM,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "VOLATILE": TokenType.VOLATILE,
@@ -629,6 +635,7 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.SHOW,
         TokenType.TRUNCATE,
         TokenType.USE,
+        TokenType.VACUUM,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

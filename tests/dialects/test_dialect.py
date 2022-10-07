@@ -82,6 +82,24 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "CAST(MAP('a', '1') AS MAP(TEXT, TEXT))",
+            write={
+                "clickhouse": "CAST(map('a', '1') AS Map(TEXT, TEXT))",
+            },
+        )
+        self.validate_all(
+            "CAST(ARRAY(1, 2) AS ARRAY<TINYINT>)",
+            write={
+                "clickhouse": "CAST([1, 2] AS Array(TINYINT))",
+            },
+        )
+        self.validate_all(
+            "CAST((1, 2) AS STRUCT<a: TINYINT, b: TINYINT>)",
+            write={
+                "clickhouse": "CAST((1, 2) AS Tuple(a TINYINT, b TINYINT))",
+            },
+        )
+        self.validate_all(
             "CAST(a AS DATETIME)",
             write={
                 "postgres": "CAST(a AS TIMESTAMP)",
@@ -234,6 +252,8 @@ class TestDialect(Validator):
             write={
                 "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
+                "oracle": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
+                "postgres": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d')",
                 "redshift": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "spark": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
@@ -245,6 +265,8 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME(x, '%y')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%y')",
+                "oracle": "TO_TIMESTAMP(x, 'YY')",
+                "postgres": "TO_TIMESTAMP(x, 'YY')",
                 "redshift": "TO_TIMESTAMP(x, 'YY')",
                 "spark": "TO_TIMESTAMP(x, 'yy')",
             },
@@ -288,6 +310,8 @@ class TestDialect(Validator):
             write={
                 "duckdb": "STRFTIME(x, '%Y-%m-%d')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",
+                "oracle": "TO_CHAR(x, 'YYYY-MM-DD')",
+                "postgres": "TO_CHAR(x, 'YYYY-MM-DD')",
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
                 "redshift": "TO_CHAR(x, 'YYYY-MM-DD')",
             },
@@ -348,6 +372,8 @@ class TestDialect(Validator):
             write={
                 "duckdb": "TO_TIMESTAMP(CAST(x AS BIGINT))",
                 "hive": "FROM_UNIXTIME(x)",
+                "oracle": "TO_DATE('1970-01-01','YYYY-MM-DD') + (x / 86400)",
+                "postgres": "TO_TIMESTAMP(x)",
                 "presto": "FROM_UNIXTIME(x)",
                 "starrocks": "FROM_UNIXTIME(x)",
             },
@@ -704,6 +730,7 @@ class TestDialect(Validator):
             "SELECT * FROM a UNION SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
                 "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
                 "presto": "SELECT * FROM a UNION SELECT * FROM b",
                 "spark": "SELECT * FROM a UNION SELECT * FROM b",
@@ -719,6 +746,7 @@ class TestDialect(Validator):
             "SELECT * FROM a UNION ALL SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a UNION ALL SELECT * FROM b",
+                "clickhouse": "SELECT * FROM a UNION ALL SELECT * FROM b",
                 "duckdb": "SELECT * FROM a UNION ALL SELECT * FROM b",
                 "presto": "SELECT * FROM a UNION ALL SELECT * FROM b",
                 "spark": "SELECT * FROM a UNION ALL SELECT * FROM b",
@@ -848,15 +876,28 @@ class TestDialect(Validator):
                 "postgres": "STRPOS(x, ' ')",
                 "presto": "STRPOS(x, ' ')",
                 "spark": "LOCATE(' ', x)",
+                "clickhouse": "position(x, ' ')",
+                "snowflake": "POSITION(' ', x)",
             },
         )
         self.validate_all(
-            "STR_POSITION(x, 'a')",
+            "STR_POSITION('a', x)",
             write={
                 "duckdb": "STRPOS(x, 'a')",
                 "postgres": "STRPOS(x, 'a')",
                 "presto": "STRPOS(x, 'a')",
                 "spark": "LOCATE('a', x)",
+                "clickhouse": "position(x, 'a')",
+                "snowflake": "POSITION('a', x)",
+            },
+        )
+        self.validate_all(
+            "POSITION('a', x, 3)",
+            write={
+                "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
+                "spark": "LOCATE('a', x, 3)",
+                "clickhouse": "position(x, 'a', 3)",
+                "snowflake": "POSITION('a', x, 3)",
             },
         )
         self.validate_all(

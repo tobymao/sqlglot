@@ -326,6 +326,7 @@ class Python(Dialect):
             exp.Alias: lambda self, e: self.sql(e.this),
             exp.Array: inline_array_sql,
             exp.And: lambda self, e: self.binary(e, "and"),
+            exp.Boolean: lambda self, e: "True" if e.this else "False",
             exp.Cast: _cast_py,
             exp.Column: _column_py,
             exp.EQ: lambda self, e: self.binary(e, "=="),

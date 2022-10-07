@@ -247,7 +247,7 @@ class TestHive(Validator):
                 "presto": "DATE_DIFF('day', CAST(SUBSTR(CAST(b AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST(a AS VARCHAR), 1, 10) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
                 "spark": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
-                "": "DATE_DIFF(TS_OR_DS_TO_DATE(a), TS_OR_DS_TO_DATE(b))",
+                "": "DATEDIFF(TS_OR_DS_TO_DATE(a), TS_OR_DS_TO_DATE(b))",
             },
         )
         self.validate_all(
@@ -295,7 +295,7 @@ class TestHive(Validator):
                 "presto": "DATE_DIFF('day', CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST(CAST(SUBSTR(CAST(y AS VARCHAR), 1, 10) AS DATE) AS VARCHAR), 1, 10) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
                 "spark": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
-                "": "DATE_DIFF(TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE(y)), TS_OR_DS_TO_DATE(x))",
+                "": "DATEDIFF(TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE(y)), TS_OR_DS_TO_DATE(x))",
             },
         )
         self.validate_all(
@@ -450,11 +450,21 @@ class TestHive(Validator):
         )
         self.validate_all(
             "MAP(a, b, c, d)",
+            read={
+                "": "VAR_MAP(a, b, c, d)",
+                "clickhouse": "map(a, b, c, d)",
+                "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
+                "hive": "MAP(a, b, c, d)",
+                "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
+                "spark": "MAP(a, b, c, d)",
+            },
             write={
+                "": "MAP(ARRAY(a, c), ARRAY(b, d))",
+                "clickhouse": "map(a, b, c, d)",
                 "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
                 "hive": "MAP(a, b, c, d)",
-                "spark": "MAP_FROM_ARRAYS(ARRAY(a, c), ARRAY(b, d))",
+                "spark": "MAP(a, b, c, d)",
             },
         )
         self.validate_all(
@@ -463,7 +473,7 @@ class TestHive(Validator):
                 "duckdb": "MAP(LIST_VALUE(a), LIST_VALUE(b))",
                 "presto": "MAP(ARRAY[a], ARRAY[b])",
                 "hive": "MAP(a, b)",
-                "spark": "MAP_FROM_ARRAYS(ARRAY(a), ARRAY(b))",
+                "spark": "MAP(a, b)",
             },
         )
         self.validate_all(

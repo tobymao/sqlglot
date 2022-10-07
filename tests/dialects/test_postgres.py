@@ -67,6 +67,7 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT SUBSTRING('bla' + 'foo' || 'bar' FROM 3 - 1 + 5 FOR 4 + SOME_FUNC(arg1, arg2))")
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
+        self.validate_identity("SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')")
 
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",

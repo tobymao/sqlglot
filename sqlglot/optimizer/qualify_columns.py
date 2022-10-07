@@ -31,8 +31,8 @@ def qualify_columns(expression, schema):
         _pop_table_column_aliases(scope.derived_tables)
         _expand_using(scope, resolver)
         _expand_group_by(scope, resolver)
-        _expand_order_by(scope)
         _qualify_columns(scope, resolver)
+        _expand_order_by(scope)
         if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver)
             _qualify_outputs(scope)
@@ -235,7 +235,7 @@ def _expand_stars(scope, resolver):
         for table in tables:
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
-            columns = resolver.get_source_columns(table)
+            columns = resolver.get_source_columns(table, only_visible=True)
             table_id = id(table)
             for name in columns:
                 if name not in except_columns.get(table_id, set()):
@@ -332,7 +332,7 @@ class _Resolver:
             self._all_columns = set(column for columns in self._get_all_source_columns().values() for column in columns)
         return self._all_columns
 
-    def get_source_columns(self, name):
+    def get_source_columns(self, name, only_visible=False):
         """Resolve the source columns for a given source `name`"""
         if name not in self.scope.sources:
             raise OptimizeError(f"Unknown table: {name}")
@@ -342,7 +342,7 @@ class _Resolver:
         # If referencing a table, return the columns from the schema
         if isinstance(source, exp.Table):
             try:
-                return self.schema.column_names(source)
+                return self.schema.column_names(source, only_visible)
             except Exception as e:
                 raise OptimizeError(str(e)) from e
 

@@ -1,6 +1,7 @@
 from copy import copy
 import functools
 import typing as t
+import zlib
 
 import sqlglot
 from sqlglot import expressions as exp
@@ -71,11 +72,30 @@ class DataFrame:
                 expression.set("with", optimized_select_expression.args['with'])
             else:
                 expression = optimized_select_expression
+        expression = self._replace_cte_names_with_hashes(expression)
         return expression.sql(**{"dialect": dialect, "pretty": True, **kwargs})
 
     def copy(self, **kwargs) -> "DataFrame":
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
         return DataFrame(**kwargs)
+
+    def _replace_cte_names_with_hashes(self, expression: t.Union[exp.Select, exp.Create, exp.Insert]):
+        def _replace_old_id_with_new(node):
+            if isinstance(node, exp.Identifier) and node.alias_or_name == old_name_id.alias_or_name:
+                node = node.replace(new_hashed_id)
+            return node
+
+        expression = expression.copy()
+        ctes = expression.expression.ctes if isinstance(expression, exp.Create) else expression.ctes
+        for cte in ctes:
+            old_name_id = cte.args['alias'].this
+            new_hashed_id = exp.to_identifier(self._create_hash_from_expression(cte.this), quoted=old_name_id.args['quoted'])
+            cte.set("alias", exp.TableAlias(this=new_hashed_id))
+            expression = expression.transform(_replace_old_id_with_new)
+        return expression
+
+
+
 
     def _create_cte_from_expression(self, expression: exp.Expression, branch_id: t.Optional[str] = None,
                                     sequence_id: t.Optional[str] = None, **kwargs) -> t.Tuple[exp.CTE, str]:
@@ -160,6 +180,11 @@ class DataFrame:
         return self.copy(expression=expression,
                          pending_select_hints=None,
                          pending_join_hints=None if join_tables else self.pending_join_hints)
+
+    @classmethod
+    def _create_hash_from_expression(cls, expression: exp.Select):
+        value = expression.sql(dialect="spark").encode("utf-8")
+        return f"t{zlib.crc32(value)}"[:6]
 
     @classmethod
     def _select_expression(cls, expression):

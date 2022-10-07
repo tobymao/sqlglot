@@ -1857,7 +1857,8 @@ class DataType(Expression):
         IMAGE = auto()
         VARIANT = auto()
         OBJECT = auto()
-        UNKNOWN = auto()  # Sentinel value, useful for the optimizer
+        NULL = auto()
+        UNKNOWN = auto()  # Sentinel value, useful for type annotation
 
     @classmethod
     def build(cls, dtype, **kwargs):

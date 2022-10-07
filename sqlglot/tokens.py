@@ -583,6 +583,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "INT8": TokenType.BIGINT,
         "DECIMAL": TokenType.DECIMAL,
         "MAP": TokenType.MAP,
+        "NULLABLE": TokenType.NULLABLE,
         "NUMBER": TokenType.DECIMAL,
         "NUMERIC": TokenType.DECIMAL,
         "FIXED": TokenType.DECIMAL,

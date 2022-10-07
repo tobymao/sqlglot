@@ -90,13 +90,13 @@ class TestDialect(Validator):
         self.validate_all(
             "CAST(ARRAY(1, 2) AS ARRAY<TINYINT>)",
             write={
-                "clickhouse": "CAST([1, 2] AS Array(TINYINT))",
+                "clickhouse": "CAST([1, 2] AS Array(Int8))",
             },
         )
         self.validate_all(
-            "CAST((1, 2) AS STRUCT<a: TINYINT, b: TINYINT>)",
+            "CAST((1, 2) AS STRUCT<a: TINYINT, b: SMALLINT, c: INT, d: BIGINT>)",
             write={
-                "clickhouse": "CAST((1, 2) AS Tuple(a TINYINT, b TINYINT))",
+                "clickhouse": "CAST((1, 2) AS Tuple(a Int8, b Int16, c Int32, d Int64))",
             },
         )
         self.validate_all(
@@ -188,7 +188,7 @@ class TestDialect(Validator):
             "CAST(a AS DOUBLE)",
             write={
                 "bigquery": "CAST(a AS FLOAT64)",
-                "clickhouse": "CAST(a AS DOUBLE)",
+                "clickhouse": "CAST(a AS Float64)",
                 "duckdb": "CAST(a AS DOUBLE)",
                 "mysql": "CAST(a AS DOUBLE)",
                 "hive": "CAST(a AS DOUBLE)",

@@ -357,7 +357,6 @@ class Parser:
         TokenType.NULL: lambda *_: exp.Null(),
         TokenType.TRUE: lambda *_: exp.Boolean(this=True),
         TokenType.FALSE: lambda *_: exp.Boolean(this=False),
-        TokenType.PLACEHOLDER: lambda *_: exp.Placeholder(),
         TokenType.PARAMETER: lambda self, _: exp.Parameter(this=self._parse_var() or self._parse_primary()),
         TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
         TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
@@ -2274,6 +2273,9 @@ class Parser:
     def _parse_placeholder(self):
         if self._match(TokenType.PLACEHOLDER):
             return exp.Placeholder()
+        elif self._match(TokenType.COLON):
+            self._advance()
+            return exp.Placeholder(this=self._prev.text)
         return None
 
     def _parse_except(self):

@@ -121,6 +121,7 @@ class Snowflake(Dialect):
         FUNC_TOKENS = {
             *Parser.FUNC_TOKENS,
             TokenType.RLIKE,
+            TokenType.TABLE,
         }
 
         COLUMN_OPERATORS = {
@@ -143,7 +144,7 @@ class Snowflake(Dialect):
 
         SINGLE_TOKENS = {
             **Tokenizer.SINGLE_TOKENS,
-            "$": TokenType.DOLLAR,  # needed to break for quotes
+            "$": TokenType.PARAMETER,  # needed to break for quotes
         }
 
         KEYWORDS = {
@@ -165,6 +166,7 @@ class Snowflake(Dialect):
             exp.UnixToTime: _unix_to_time,
             exp.Array: inline_array_sql,
             exp.StrPosition: rename_func("POSITION"),
+            exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
         }
 

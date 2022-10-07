@@ -218,7 +218,26 @@ WHERE
 
 # title: Broadcast hint
 # dialect: spark
-WITH m AS (SELECT x.a, x.b FROM x), n AS (SELECT y.b, y.c FROM y), joined as (SELECT /*+ BROADCAST(n) */ m.a, n.c FROM m JOIN n ON m.b = n.b) SELECT joined.a, joined.c FROM joined;
+WITH m AS (
+  SELECT
+    x.a,
+    x.b
+  FROM x
+), n AS (
+  SELECT
+    y.b,
+    y.c
+  FROM y
+), joined as (
+  SELECT /*+ BROADCAST(n) */
+    m.a,
+    n.c
+  FROM m JOIN n ON m.b = n.b
+)
+SELECT
+  joined.a,
+  joined.c
+FROM joined;
 SELECT /*+ BROADCAST(`y`) */
   `x`.`a` AS `a`,
   `y`.`c` AS `c`
@@ -228,7 +247,27 @@ JOIN `y` AS `y`
 
 # title: Mix Table and Column Hints
 # dialect: spark
-WITH m AS (SELECT x.a, x.b FROM x), n AS (SELECT y.b, y.c FROM y), joined as (SELECT /*+ BROADCAST(m), MERGE(m, n) */ m.a, n.c FROM m JOIN n ON m.b = n.b) SELECT /*+ COALESCE(3) */ joined.a, joined.c FROM joined;
+WITH m AS (
+  SELECT
+    x.a,
+    x.b
+  FROM x
+), n AS (
+  SELECT
+    y.b,
+    y.c
+  FROM y
+), joined as (
+  SELECT /*+ BROADCAST(m), MERGE(m, n) */
+    m.a,
+    n.c
+  FROM m JOIN n ON m.b = n.b
+)
+SELECT
+  /*+ COALESCE(3) */
+  joined.a,
+  joined.c
+FROM joined;
 SELECT /*+ COALESCE(3),
   BROADCAST(`x`),
   MERGE(`x`, `y`) */

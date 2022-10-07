@@ -431,14 +431,6 @@ class Parser:
         "TRIM": lambda self: self._parse_trim(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "TRY_CAST": lambda self: self._parse_cast(False),
-        "BROADCAST": lambda self: self._parse_table_hint("BROADCAST"),
-        "BROADCASTJOIN": lambda self: self._parse_table_hint("BROADCASTJOIN"),
-        "MAPJOIN": lambda self: self._parse_table_hint("MAPJOIN"),
-        "MERGE": lambda self: self._parse_table_hint("MERGE"),
-        "SHUFFLEMERGE": lambda self: self._parse_table_hint("SHUFFLEMERGE"),
-        "MERGEJOIN": lambda self: self._parse_table_hint("MERGEJOIN"),
-        "SHUFFLE_HASH": lambda self: self._parse_table_hint("SHUFFLE_HASH"),
-        "SHUFFLE_REPLICATE_NL": lambda self: self._parse_table_hint("SHUFFLE_REPLICATE_NL"),
     }
 
     QUERY_MODIFIER_PARSERS = {

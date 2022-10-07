@@ -188,8 +188,8 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
         tables = table_hint.find_all(exp.Table)
         for table in tables:
             if table.alias_or_name == node_to_replace.alias_or_name:
-                new_value = new_subquery.this if isinstance(new_subquery, exp.Alias) else new_subquery
-                table.replace(new_value)
+                new_table = new_subquery.this if isinstance(new_subquery, exp.Alias) else new_subquery
+                table.set("this", exp.to_identifier(new_table.alias_or_name))
     outer_scope.remove_source(alias)
     outer_scope.add_source(new_subquery.alias_or_name, inner_scope.sources[new_subquery.alias_or_name])
 
@@ -299,7 +299,8 @@ def _merge_hints(outer_scope, inner_scope):
         return
     outer_scope_hint = outer_scope.expression.args.get("hint")
     if outer_scope_hint:
-        outer_scope_hint.args["expressions"].extend(inner_scope_hint.expressions)
+        for hint_expression in inner_scope_hint.expressions:
+            outer_scope_hint.append("expressions", hint_expression)
     else:
         outer_scope.expression.set("hint", inner_scope_hint)
 

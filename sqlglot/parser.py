@@ -1726,7 +1726,7 @@ class Parser:
     def _parse_field(self, any_token=False):
         return self._parse_primary() or self._parse_function() or self._parse_id_var(any_token)
 
-    def _parse_function(self):
+    def _parse_function(self, functions=None):
         if not self._curr:
             return None
 
@@ -1762,7 +1762,9 @@ class Parser:
                 self._match_r_paren()
                 return this
 
-            function = self.FUNCTIONS.get(upper)
+            if functions is None:
+                functions = self.FUNCTIONS
+            function = functions.get(upper)
             args = self._parse_csv(self._parse_lambda)
 
             if function:

@@ -1797,7 +1797,7 @@ class Parameter(Expression):
 
 
 class Placeholder(Expression):
-    arg_types = {}
+    arg_types = {"this": False}
 
 
 class Null(Condition):

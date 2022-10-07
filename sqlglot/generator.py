@@ -782,8 +782,8 @@ class Generator:
     def parameter_sql(self, expression):
         return f"@{self.sql(expression, 'this')}"
 
-    def placeholder_sql(self, *_):
-        return "?"
+    def placeholder_sql(self, expression):
+        return f":{expression.name}" if expression.name else "?"
 
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")

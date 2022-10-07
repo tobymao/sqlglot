@@ -144,7 +144,7 @@ class Snowflake(Dialect):
 
         SINGLE_TOKENS = {
             **Tokenizer.SINGLE_TOKENS,
-            "$": TokenType.PARAMETER,  # needed to break for quotes
+            "$": TokenType.PARAMETER,
         }
 
         KEYWORDS = {

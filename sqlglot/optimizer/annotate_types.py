@@ -236,10 +236,20 @@ class TypeAnnotator:
     def _annotate_binary(self, expression):
         self._annotate_args(expression)
 
-        if isinstance(expression, (exp.Condition, exp.Predicate)):
+        left_type = expression.left.type
+        right_type = expression.right.type
+
+        if isinstance(expression, (exp.And, exp.Or)):
+            if (left_type, right_type) == (exp.DataType.Type.NULL, exp.DataType.Type.NULL):
+                expression.type = exp.DataType.Type.NULL
+            elif exp.DataType.Type.NULL in (left_type, right_type):
+                expression.type = exp.DataType(this=exp.DataType.Type.NULLABLE, expressions=[exp.DataType.Type.BOOLEAN])
+            else:
+                expression.type = exp.DataType.Type.BOOLEAN
+        elif isinstance(expression, (exp.Condition, exp.Predicate)):
             expression.type = exp.DataType.Type.BOOLEAN
         else:
-            expression.type = self._maybe_coerce(expression.left.type, expression.right.type)
+            expression.type = self._maybe_coerce(left_type, right_type)
 
         return expression
 

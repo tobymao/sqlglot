@@ -457,3 +457,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(concat_expr.type, exp.DataType.Type.NULL)
         self.assertEqual(concat_expr.left.type, exp.DataType.Type.NULL)
         self.assertEqual(concat_expr.right.type, exp.DataType.Type.UNKNOWN)
+
+    def test_nullable_annotation(self):
+        nullable = exp.DataType(this=exp.DataType.Type.NULLABLE, expressions=[exp.DataType.Type.BOOLEAN])
+        expression = annotate_types(parse_one("NULL AND FALSE"))
+
+        self.assertEqual(expression.type, nullable)
+        self.assertEqual(expression.left.type, exp.DataType.Type.NULL)
+        self.assertEqual(expression.right.type, exp.DataType.Type.BOOLEAN)

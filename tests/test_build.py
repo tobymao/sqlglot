@@ -1,6 +1,7 @@
 import unittest
 
 from sqlglot import (
+    alias,
     and_,
     condition,
     except_,
@@ -363,6 +364,22 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: parse_one("(SELECT * FROM foo)").union("SELECT * FROM bla", distinct=False),
                 "(SELECT * FROM foo) UNION ALL SELECT * FROM bla",
+            ),
+            (
+                lambda: alias(parse_one("LAG(x) OVER (PARTITION BY y)"), "a"),
+                "LAG(x) OVER (PARTITION BY y) AS a",
+            ),
+            (
+                lambda: alias(parse_one("LAG(x) OVER (ORDER BY z)"), "a"),
+                "LAG(x) OVER (ORDER BY z) AS a",
+            ),
+            (
+                lambda: alias(parse_one("LAG(x) OVER (PARTITION BY y ORDER BY z)"), "a"),
+                "LAG(x) OVER (PARTITION BY y ORDER BY z) AS a",
+            ),
+            (
+                lambda: alias(parse_one("LAG(x) OVER ()"), "a"),
+                "LAG(x) OVER () AS a",
             ),
         ]:
             with self.subTest(sql):

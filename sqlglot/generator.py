@@ -1191,4 +1191,3 @@ class Generator:
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)
         return f"{this}({expressions})"
-

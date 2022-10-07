@@ -126,56 +126,56 @@ TBLPROPERTIES (
             write={
                 "spark": "SELECT /*+ BROADCAST(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
         self.validate_all(
             "SELECT /*+ BROADCASTJOIN(table) */ cola FROM table",
             write={
                 "spark": "SELECT /*+ BROADCASTJOIN(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
         self.validate_all(
             "SELECT /*+ MAPJOIN(table) */ cola FROM table",
             write={
                 "spark": "SELECT /*+ MAPJOIN(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
         self.validate_all(
             "SELECT /*+ MERGE(table) */ cola FROM table",
             write={
                 "spark": "SELECT /*+ MERGE(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
         self.validate_all(
             "SELECT /*+ SHUFFLEMERGE(table) */ cola FROM table",
             write={
                 "spark": "SELECT /*+ SHUFFLEMERGE(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
         self.validate_all(
             "SELECT /*+ MERGEJOIN(table) */ cola FROM table",
             write={
                 "spark": "SELECT /*+ MERGEJOIN(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
         self.validate_all(
             "SELECT /*+ SHUFFLE_HASH(table) */ cola FROM table",
             write={
                 "spark": "SELECT /*+ SHUFFLE_HASH(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
         self.validate_all(
             "SELECT /*+ SHUFFLE_REPLICATE_NL(table) */ cola FROM table",
             write={
                 "spark": "SELECT /*+ SHUFFLE_REPLICATE_NL(table) */ cola FROM table",
                 "bigquery": "SELECT cola FROM table",
-            }
+            },
         )
 
     def test_spark(self):

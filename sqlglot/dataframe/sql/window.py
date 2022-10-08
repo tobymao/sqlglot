@@ -1,14 +1,14 @@
-from itertools import chain
+from __future__ import annotations
+
 import sys
 import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql import functions as F
+from sqlglot.helper import flatten
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import ColumnOrName
-
-flatten = chain.from_iterable
 
 
 class Window:
@@ -24,19 +24,19 @@ class Window:
     currentRow: int = 0
 
     @classmethod
-    def partitionBy(cls, *cols: t.Union["ColumnOrName", t.List["ColumnOrName"]]) -> "WindowSpec":
+    def partitionBy(cls, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
         return WindowSpec().partitionBy(*cols)
 
     @classmethod
-    def orderBy(cls, *cols: t.Union["ColumnOrName", t.List["ColumnOrName"]]) -> "WindowSpec":
+    def orderBy(cls, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
         return WindowSpec().orderBy(*cols)
 
     @classmethod
-    def rowsBetween(cls, start: int, end: int) -> "WindowSpec":
+    def rowsBetween(cls, start: int, end: int) -> WindowSpec:
         return WindowSpec().rowsBetween(start, end)
 
     @classmethod
-    def rangeBetween(cls, start: int, end: int) -> "WindowSpec":
+    def rangeBetween(cls, start: int, end: int) -> WindowSpec:
         return WindowSpec().rangeBetween(start, end)
 
 
@@ -50,7 +50,7 @@ class WindowSpec:
     def sql(self, **kwargs) -> str:
         return self.expression.sql(dialect="spark", **kwargs)
 
-    def partitionBy(self, *cols: t.Union["ColumnOrName", t.List["ColumnOrName"]]) -> "WindowSpec":
+    def partitionBy(self, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
         from sqlglot.dataframe.sql.column import Column
 
         cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
@@ -62,7 +62,7 @@ class WindowSpec:
             window_spec.expression.args["partition_by"].extend(expressions)
         return window_spec
 
-    def orderBy(self, *cols: t.Union["ColumnOrName", t.List["ColumnOrName"]]) -> "WindowSpec":
+    def orderBy(self, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
         from sqlglot.dataframe.sql.column import Column
 
         cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
@@ -94,7 +94,7 @@ class WindowSpec:
             }}
         return kwargs
 
-    def rowsBetween(self, start: int, end: int) -> "WindowSpec":
+    def rowsBetween(self, start: int, end: int) -> WindowSpec:
         window_spec = self.copy()
         spec = self._calc_start_end(start, end)
         spec["kind"] = "ROWS"
@@ -104,7 +104,7 @@ class WindowSpec:
         })
         return window_spec
 
-    def rangeBetween(self, start: int, end: int) -> "WindowSpec":
+    def rangeBetween(self, start: int, end: int) -> WindowSpec:
         window_spec = self.copy()
         spec = self._calc_start_end(start, end)
         spec["kind"] = "RANGE"

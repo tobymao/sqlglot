@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 
 from sqlglot import expressions as exp
@@ -7,7 +9,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import SchemaInput
 
 
-def get_column_mapping_from_schema_input(schema: "SchemaInput") -> t.Dict[str, str]:
+def get_column_mapping_from_schema_input(schema: SchemaInput) -> t.Dict[str, str]:
     if isinstance(schema, dict):
         return schema
     elif isinstance(schema, str):

@@ -102,17 +102,17 @@ class ByteType(DataType):
 
 
 class IntegerType(DataType):
-    def __str__(self):
+    def __str__(self) -> str:
         return "int"
 
 
 class LongType(DataType):
-    def __str__(self):
+    def __str__(self) -> str:
         return "bigint"
 
 
 class ShortType(DataType):
-    def __str__(self):
+    def __str__(self) -> str:
         return "smallint"
 
 
@@ -121,7 +121,7 @@ class ArrayType(DataType):
         self.elementType = elementType
         self.containsNull = containsNull
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ArrayType({self.elementType, str(self.containsNull)}"
 
     def simpleString(self) -> str:
@@ -197,7 +197,7 @@ class StructType(DataType):
     def __len__(self) -> int:
         return len(self.fields)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"StructType({', '.join(str(field) for field in self)})"
 
     def simpleString(self) -> str:

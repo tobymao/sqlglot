@@ -163,3 +163,4 @@ class TestPostgres(Validator):
                 "postgres": "SELECT p1.id, p2.id, v1, v2 FROM polygons p1, polygons p2, LATERAL VERTICES(p1.poly) v1, LATERAL VERTICES(p2.poly) v2 WHERE (v1 <-> v2) < 10 AND p1.id != p2.id",
             },
         )
+        self.validate_identity("COMMENT ON TABLE mytable IS 'this'")

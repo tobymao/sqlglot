@@ -123,6 +123,7 @@ class TokenType(AutoName):
     CLUSTER_BY = auto()
     COLLATE = auto()
     COMMENT = auto()
+    COMMENT_ON = auto()
     COMMIT = auto()
     CONSTRAINT = auto()
     CREATE = auto()
@@ -629,6 +630,7 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.ANALYZE,
         TokenType.BEGIN,
         TokenType.CALL,
+        TokenType.COMMENT_ON,
         TokenType.COMMIT,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,

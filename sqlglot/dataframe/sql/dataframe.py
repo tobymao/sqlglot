@@ -22,15 +22,13 @@ if t.TYPE_CHECKING:
 
 
 class DataFrame:
-    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.INIT, pending_join_hints: t.List[exp.Expression] = None, pending_select_hints: t.List[exp.Expression] = None, **kwargs):
+    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str = None, sequence_id: str = None, last_op: t.Optional[Operation] = Operation.INIT, pending_hints: t.List[exp.Expression] = None, **kwargs):
         self.spark = spark
         self.expression = expression
-        self.branch_id = branch_id
-        self.sequence_id = sequence_id
+        self.branch_id = branch_id or self.spark._random_branch_id
+        self.sequence_id = sequence_id or self.spark._random_sequence_id
         self.last_op = last_op
-        # self.group_by_columns = group_by_columns or None
-        self.pending_join_hints = pending_join_hints or []
-        self.pending_select_hints = pending_select_hints or []
+        self.pending_hints = pending_hints or []
 
     def __getattr__(self, column_name: str) -> "Column":
         return self[column_name]
@@ -61,6 +59,14 @@ class DataFrame:
                 raise RuntimeError(f"Could not find an alias name for this expression: {self.expression}")
             return table_alias.alias_or_name
         return self.expression.ctes[-1].alias
+    
+    @property
+    def pending_join_hints(self):
+        return [hint for hint in self.pending_hints if isinstance(hint, exp.JoinHint)]
+    
+    @property
+    def pending_partition_hints(self):
+        return [hint for hint in self.pending_hints if isinstance(hint, exp.Anonymous)]
 
     def cache(self) -> "DataFrame":
         print("DataFrame Cache is not yet supported")
@@ -92,7 +98,7 @@ class DataFrame:
             return node
 
         expression = expression.copy()
-        ctes = expression.expression.ctes if isinstance(expression, exp.Create) else expression.ctes
+        ctes = expression.expression.ctes if isinstance(expression, (exp.Create, exp.Insert)) else expression.ctes
         for cte in ctes:
             old_name_id = cte.args['alias'].this
             new_hashed_id = exp.to_identifier(self._create_hash_from_expression(cte.this), quoted=old_name_id.args['quoted'])
@@ -163,29 +169,36 @@ class DataFrame:
         return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
     def _resolve_pending_hints(self) -> "DataFrame":
-        if not self.pending_join_hints and not self.pending_select_hints:
+        if not self.pending_join_hints and not self.pending_partition_hints:
             return self.copy()
-        expression = self.expression.copy()
+        df = self.copy()
+        expression = df.expression
         hint_expression = expression.args.get("hint") or exp.Hint(expressions=[])
-        for hint in self.pending_select_hints:
+        for hint in df.pending_partition_hints:
             hint_expression.args.get("expressions").append(hint)
+            df.pending_hints.remove(hint)
 
-        join_tables = get_tables_from_expression_with_join(self.expression)
+        join_tables = get_tables_from_expression_with_join(expression)
         if join_tables:
-            for hint in self.pending_join_hints:
-                for branch_id_expression in hint.expressions:
-                    branch_id = branch_id_expression.alias_or_name
-                    matching_ctes = [cte for cte in reversed(self.expression.ctes) if cte.args["sequence_id"] == branch_id]
-                    for matching_cte in matching_ctes:
-                        if matching_cte.alias_or_name in [join_table.alias_or_name for join_table in join_tables]:
-                            branch_id_expression.set("this", matching_cte.args['alias'].this)
-                            break
+            for hint in df.pending_join_hints:
+                for sequence_id_expression in hint.expressions:
+                    sequence_id_or_name = sequence_id_expression.alias_or_name
+                    sequence_ids_to_match = [sequence_id_or_name]
+                    if sequence_id_or_name in df.spark.name_to_sequence_id_mapping:
+                        sequence_ids_to_match = df.spark.name_to_sequence_id_mapping[sequence_id_or_name]
+                    matching_ctes = [cte for cte in reversed(expression.ctes) if cte.args["sequence_id"] in sequence_ids_to_match]
+                    if matching_ctes:
+                        for matching_cte in matching_ctes:
+                            if matching_cte.alias_or_name in [join_table.alias_or_name for join_table in join_tables]:
+                                sequence_id_expression.set("this", matching_cte.args['alias'].this)
+                                df.pending_hints.remove(hint)
+                                break
                 hint_expression.args.get("expressions").append(hint)
         if hint_expression.expressions:
             expression.set("hint", hint_expression)
-        return self.copy(expression=expression,
-                         pending_select_hints=None,
-                         pending_join_hints=None if join_tables else self.pending_join_hints)
+        return df
+        # return self.copy(expression=expression, pending_hints=None,
+        #                  pending_join_hints=None if join_tables else self.pending_join_hints)
 
     @classmethod
     def _create_hash_from_expression(cls, expression: exp.Select):
@@ -278,8 +291,7 @@ class DataFrame:
         all_columns = [column_value_mapping[name] for name in {x.alias_or_name: None for x in join_columns + self_columns + other_columns}]
         new_df = self.copy(expression=self.expression.join(other_df.latest_cte_name, on=join_clause.expression, join_type=join_type))
         new_df.expression = new_df._add_ctes_to_expression(new_df.expression, other_df.expression.ctes)
-        new_df.pending_join_hints.extend(other_df.pending_join_hints)
-        new_df.pending_select_hints.extend(other_df.pending_select_hints)
+        new_df.pending_hints.extend(other_df.pending_hints)
         new_df = new_df.select.__wrapped__(new_df, *all_columns)
         return new_df
 
@@ -500,18 +512,27 @@ class DataFrame:
 
     def _hint(self, hint_name: str, args: t.List["Column"]) -> "DataFrame":
         hint_name = hint_name.upper()
-        hint_expression = exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
-        new_df = self.copy()
-        if hint_name in self.spark._join_hint_names:
-            new_df.pending_join_hints.append(hint_expression)
+        if hint_name in {
+            "BROADCAST",
+            "BROADCASTJOIN",
+            "MAPJOIN",
+            "MERGE",
+            "SHUFFLEMERGE",
+            "MERGEJOIN",
+            "SHUFFLE_HASH",
+            "SHUFFLE_REPLICATE_NL",
+        }:
+            hint_expression = exp.JoinHint(this=hint_name, expressions=[exp.to_table(parameter.alias_or_name) for parameter in args])
         else:
-            new_df.pending_select_hints.append(hint_expression)
+            hint_expression = exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
+        new_df = self.copy()
+        new_df.pending_hints.append(hint_expression)
         return new_df
 
     @operation(Operation.NO_OP)
     def hint(self, name: str, *parameters: t.Optional[t.Union[int, str]]) -> "DataFrame":
         parameters = ensure_list(parameters)
-        parameters = self._ensure_and_sanitize_cols(parameters) if parameters else Column.ensure_cols([self.sequence_id])
+        parameters = self._ensure_list_of_columns(parameters) if parameters else Column.ensure_cols([self.sequence_id])
         return self._hint(name, parameters)
 
     @operation(Operation.NO_OP)

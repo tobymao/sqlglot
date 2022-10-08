@@ -206,8 +206,7 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
         tables = join_hint.find_all(exp.Table)
         for table in tables:
             if table.alias_or_name == node_to_replace.alias_or_name:
-                new_table = new_subquery.this if isinstance(new_subquery, exp.Alias) else new_subquery
-                table.set("this", exp.to_identifier(new_table.alias_or_name))
+                table.set("this", exp.to_identifier(new_subquery.alias_or_name))
     outer_scope.remove_source(alias)
     outer_scope.add_source(new_subquery.alias_or_name, inner_scope.sources[new_subquery.alias_or_name])
 

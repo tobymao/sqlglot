@@ -35,7 +35,7 @@ def ensure_table(value):
     if value is None or isinstance(value, exp.Table):
         return value
     if isinstance(value, str):
-        return exp.Table.from_str(value)
+        return exp.to_table(value)
     raise ValueError(f"Invalid type provided for a table: {type(value)}")
 
 

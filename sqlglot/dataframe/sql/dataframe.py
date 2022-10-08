@@ -356,6 +356,33 @@ class DataFrame:
     unionAll = union
 
     @operation(Operation.FROM)
+    def unionByName(self, other: "DataFrame", allowMissingColumns: bool = False):
+        l_columns = self.columns
+        r_columns = other.columns
+        if not allowMissingColumns:
+            l_expressions = l_columns
+            r_expressions = l_columns
+        else:
+            l_expressions = []
+            r_expressions = []
+            r_columns_unused = copy(r_columns)
+            for l_column in l_columns:
+                l_expressions.append(l_column)
+                if l_column in r_columns:
+                    r_expressions.append(l_column)
+                    r_columns_unused.remove(l_column)
+                else:
+                    r_expressions.append(exp.alias_(exp.Null(), l_column))
+            for r_column in r_columns_unused:
+                l_expressions.append(exp.alias_(exp.Null(), r_column))
+                r_expressions.append(r_column)
+        r_df = other.copy()._convert_leaf_to_cte().select(*self._ensure_list_of_columns(r_expressions))
+        l_df = self.copy()
+        if allowMissingColumns:
+            l_df = l_df._convert_leaf_to_cte().select(*self._ensure_list_of_columns(l_expressions))
+        return l_df._set_operation(exp.Union, r_df, False)
+
+    @operation(Operation.FROM)
     def intersect(self, other: "DataFrame") -> "DataFrame":
         return self._set_operation(exp.Intersect, other, True)
 

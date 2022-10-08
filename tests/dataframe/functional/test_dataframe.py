@@ -656,6 +656,48 @@ class TestDataframeFunc(DataFrameValidator):
 
         self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
 
+    def test_union_by_name(self):
+        df = (
+            self.df_spark_employee.select(F.col("employee_id"), F.col("fname"), F.col("lname"))
+            .unionByName(
+                self.df_spark_store.select(F.col("store_name").alias("lname"), F.col("store_id").alias("employee_id"), F.col("store_name").alias("fname"))
+            )
+        )
+
+        dfs = (
+            self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("fname"), SF.col("lname"))
+            .unionByName(
+                self.df_sqlglot_store.select(SF.col("store_name").alias("lname"),
+                                             SF.col("store_id").alias("employee_id"),
+                                             SF.col("store_name").alias("fname"))
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_union_by_name_allow_missing(self):
+        df = (
+            self.df_spark_employee.select(F.col("age"), F.col("employee_id"), F.col("fname"), F.col("lname"))
+            .unionByName(
+                self.df_spark_store.select(F.col("store_name").alias("lname"), F.col("store_id").alias("employee_id"),
+                                           F.col("store_name").alias("fname"), F.col("num_sales")),
+                allowMissingColumns=True
+            )
+        )
+
+        dfs = (
+            self.df_sqlglot_employee.select(SF.col("age"), SF.col("employee_id"), SF.col("fname"), SF.col("lname"))
+            .unionByName(
+                self.df_sqlglot_store.select(SF.col("store_name").alias("lname"),
+                                             SF.col("store_id").alias("employee_id"),
+                                             SF.col("store_name").alias("fname"),
+                                             SF.col("num_sales")),
+                allowMissingColumns=True
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
     def test_order_by_default(self):
         df = (
             self.df_spark_store

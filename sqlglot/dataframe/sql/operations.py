@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 import functools
 from enum import IntEnum
@@ -23,7 +25,7 @@ class Operation(IntEnum):
 def operation(op: Operation):
     def decorator(func: t.Callable):
         @functools.wraps(func)
-        def wrapper(self: "DataFrame", *args, **kwargs):
+        def wrapper(self: DataFrame, *args, **kwargs):
             if self.last_op == Operation.INIT:
                 self = self._convert_leaf_to_cte()
                 self.last_op = Operation.NO_OP
@@ -31,7 +33,7 @@ def operation(op: Operation):
             new_op = op if op != Operation.NO_OP else last_op
             if new_op < last_op or (last_op == new_op and new_op == Operation.SELECT):
                 self = self._convert_leaf_to_cte()
-            df: t.Union["DataFrame", "GroupedData"] = func(self, *args, **kwargs)
+            df: t.Union[DataFrame, GroupedData] = func(self, *args, **kwargs)
             df.last_op = new_op
             return df
         wrapper.__wrapped__ = func

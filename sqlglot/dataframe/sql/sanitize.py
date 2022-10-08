@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 
 from sqlglot import expressions as exp
@@ -11,9 +13,9 @@ if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
 
 
-def sanitize(spark: "SparkSession",
+def sanitize(spark: SparkSession,
              expression_context: exp.Select,
-             expressions: t.List["SANITIZE_INPUT"]):
+             expressions: t.List[SANITIZE_INPUT]):
     expressions = ensure_list(expressions)
     expressions = _ensure_expressions(expressions)
     for expression in expressions:
@@ -23,7 +25,7 @@ def sanitize(spark: "SparkSession",
             replace_branch_and_sequence_ids_with_cte_name(spark, expression_context, identifier)
 
 
-def replace_alias_name_with_cte_name(spark: "SparkSession", expression_context: exp.Select, id: exp.Identifier):
+def replace_alias_name_with_cte_name(spark: SparkSession, expression_context: exp.Select, id: exp.Identifier):
     if id.alias_or_name in spark.name_to_sequence_id_mapping:
         for cte in reversed(expression_context.ctes):
             if cte.args["sequence_id"] in spark.name_to_sequence_id_mapping[id.alias_or_name]:
@@ -31,7 +33,7 @@ def replace_alias_name_with_cte_name(spark: "SparkSession", expression_context: 
                 break
 
 
-def replace_branch_and_sequence_ids_with_cte_name(spark: "SparkSession",
+def replace_branch_and_sequence_ids_with_cte_name(spark: SparkSession,
                                                   expression_context: exp.Select,
                                                   id: exp.Identifier):
     if id.alias_or_name in spark.known_ids:
@@ -57,7 +59,7 @@ def _set_alias_name(id: exp.Identifier, name: str):
     id.set("this", name)
 
 
-def _ensure_expressions(values: t.List["SANITIZE_INPUT"]) -> t.List[exp.Expression]:
+def _ensure_expressions(values: t.List[SANITIZE_INPUT]) -> t.List[exp.Expression]:
     values = ensure_list(values)
     results = []
     for value in values:

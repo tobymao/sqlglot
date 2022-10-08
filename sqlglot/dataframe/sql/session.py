@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 import uuid
 from collections import defaultdict
@@ -7,7 +9,6 @@ from sqlglot import expressions as exp
 from sqlglot.dataframe.sql.readwriter import DataFrameReader
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql.dataframe import DataFrame
-from sqlglot.dataframe.sql.operations import Operation
 from sqlglot.dataframe.sql.types import StructType
 from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
 
@@ -24,26 +25,26 @@ class SparkSession:
     def __init__(self):
         self.incrementing_id = 1
 
-    def __getattr__(self, name: str) -> "SparkSession":
+    def __getattr__(self, name: str) -> SparkSession:
         return self
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> SparkSession:
         return self
 
     @property
-    def read(self) -> "DataFrameReader":
+    def read(self) -> DataFrameReader:
         return DataFrameReader(self)
 
-    def table(self, tableName: str) -> "DataFrame":
+    def table(self, tableName: str) -> DataFrame:
         return self.read.table(tableName)
 
     def createDataFrame(
             self,
             data: t.Iterable[t.Union[t.Dict[str, t.Any], t.Iterable[t.Any]]],
-            schema: t.Optional["SchemaInput"] = None,
+            schema: t.Optional[SchemaInput] = None,
             samplingRatio: t.Optional[float] = None,
             verifySchema: bool = False,
-    ) -> "DataFrame":
+    ) -> DataFrame:
         from sqlglot.dataframe.sql.dataframe import DataFrame
 
         if samplingRatio is not None or verifySchema:
@@ -88,7 +89,7 @@ class SparkSession:
         sel_expression = exp.Select(**select_kwargs)
         return DataFrame(self, sel_expression)
 
-    def sql(self, sqlQuery: str) -> "DataFrame":
+    def sql(self, sqlQuery: str) -> DataFrame:
         expression = sqlglot.parse_one(sqlQuery, read="spark")
         df = DataFrame(self, expression)
         if isinstance(expression, exp.Select):
@@ -106,7 +107,7 @@ class SparkSession:
         return f"a{str(uuid.uuid4())[:8]}"
 
     @property
-    def _random_branch_id(self):
+    def _random_branch_id(self) -> str:
         id = self._random_id
         self.known_branch_ids.add(id)
         return id

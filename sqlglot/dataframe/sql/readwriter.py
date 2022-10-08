@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 from copy import copy
 
@@ -7,14 +9,13 @@ from sqlglot import expressions as exp
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.dataframe import DataFrame
     from sqlglot.dataframe.sql.session import SparkSession
-    from sqlglot.dataframe.sql._typing import SchemaInput
 
 
 class DataFrameReader:
-    def __init__(self, spark: "SparkSession"):
+    def __init__(self, spark: SparkSession):
         self.spark = spark
 
-    def table(self, tableName: str) -> "DataFrame":
+    def table(self, tableName: str) -> DataFrame:
         from sqlglot.dataframe.sql.dataframe import DataFrame
 
         sqlglot.schema.add_table(tableName)
@@ -22,13 +23,13 @@ class DataFrameReader:
 
 
 class DataFrameWriter:
-    def __init__(self, df: "DataFrame", spark: "SparkSession" = None, mode: str = None, by_name: bool = False):
+    def __init__(self, df: DataFrame, spark: SparkSession = None, mode: str = None, by_name: bool = False):
         self._df = df
         self._spark = spark or df.spark
         self._mode = mode
         self._by_name = by_name
 
-    def copy(self, **kwargs) -> "DataFrameWriter":
+    def copy(self, **kwargs) -> DataFrameWriter:
         kwargs = {
             **{k: copy(v) for k, v in vars(self).copy().items()},
             **kwargs
@@ -38,14 +39,14 @@ class DataFrameWriter:
     def sql(self, **kwargs) -> str:
         return self._df.sql(**kwargs)
 
-    def mode(self, saveMode: t.Optional[str]) -> "DataFrameWriter":
+    def mode(self, saveMode: t.Optional[str]) -> DataFrameWriter:
         return self.copy(_mode=saveMode)
 
     @property
     def byName(self):
         return self.copy(by_name=True)
 
-    def insertInto(self, tableName: str, overwrite: t.Optional[bool] = None) -> "DataFrameWriter":
+    def insertInto(self, tableName: str, overwrite: t.Optional[bool] = None) -> DataFrameWriter:
         df = self._df.copy()
         if self._by_name:
             columns = sqlglot.schema.column_names(tableName, only_visible=True)

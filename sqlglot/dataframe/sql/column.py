@@ -1,18 +1,17 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 import datetime
-from itertools import chain
 import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql.types import DataType
 from sqlglot.dataframe.sql.window import WindowSpec
+from sqlglot.helper import flatten
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import ColumnOrName, ColumnOrPrimitive, DateTimeLiteral, DecimalLiteral, Literals, Primitives
-
-
-flatten = chain.from_iterable
 
 
 class Column:
@@ -31,94 +30,94 @@ class Column:
     def __hash__(self):
         return hash(self.expression)
 
-    def __eq__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __eq__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.EQ, other)
 
-    def __ne__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __ne__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.NEQ, other)
 
-    def __gt__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __gt__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.GT, other)
 
-    def __ge__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __ge__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.GTE, other)
 
-    def __lt__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __lt__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.LT, other)
 
-    def __le__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __le__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.LTE, other)
 
-    def __and__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __and__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.And, other)
 
-    def __or__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __or__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.Or, other)
 
-    def __mod__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __mod__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.Mod, other)
 
-    def __add__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __add__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.Add, other)
 
-    def __sub__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __sub__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.Sub, other)
 
-    def __mul__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __mul__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.Mul, other)
 
-    def __truediv__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __truediv__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.Div, other)
 
-    def __div__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __div__(self, other: ColumnOrPrimitive) -> Column:
         return self.binary_op(exp.Div, other)
 
-    def __neg__(self) -> "Column":
+    def __neg__(self) -> Column:
         return self.unary_op(exp.Neg)
 
-    def __radd__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __radd__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.Add, other)
 
-    def __rsub__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __rsub__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.Sub, other)
 
-    def __rmul__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __rmul__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.Mul, other)
 
-    def __rdiv__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __rdiv__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.Div, other)
 
-    def __rtruediv__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __rtruediv__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.Div, other)
 
-    def __rmod__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __rmod__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.Mod, other)
 
-    def __pow__(self, power: "ColumnOrPrimitive", modulo=None):
+    def __pow__(self, power: ColumnOrPrimitive, modulo=None):
         return Column(exp.Pow(this=self.expression, power=Column(power).expression))
 
-    def __rpow__(self, power: "ColumnOrPrimitive"):
+    def __rpow__(self, power: ColumnOrPrimitive):
         return Column(exp.Pow(this=Column(power).expression, power=self.expression))
 
     def __invert__(self):
         return self.unary_op(exp.Not)
 
-    def __rand__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __rand__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.And, other)
 
-    def __ror__(self, other: "ColumnOrPrimitive") -> "Column":
+    def __ror__(self, other: ColumnOrPrimitive) -> Column:
         return self.inverse_binary_op(exp.Or, other)
 
     @classmethod
-    def ensure_col(cls, value: t.Union["ColumnOrName", int, float]):
+    def ensure_col(cls, value: t.Union[ColumnOrName, int, float]):
         return cls(value)
 
     @classmethod
-    def ensure_cols(cls, args: t.List[t.Union[int, str, "Column"]]) -> t.List["Column"]:
+    def ensure_cols(cls, args: t.List[t.Union[int, str, Column]]) -> t.List[Column]:
         return [cls.ensure_col(x) if not isinstance(x, Column) else x for x in args]
 
     @classmethod
-    def _lit(cls, value: t.Optional[t.Any] = None) -> "Column":
+    def _lit(cls, value: t.Optional[t.Any] = None) -> Column:
         if value is None:
             return cls(exp.Null())
         if isinstance(value, (str, int, bool, float)):
@@ -144,7 +143,7 @@ class Column:
         return cls(value)
 
     @classmethod
-    def invoke_anonymous_function(cls, column: t.Union["ColumnOrName", None], func_name: str, *args) -> "Column":
+    def invoke_anonymous_function(cls, column: t.Union[ColumnOrName, None], func_name: str, *args) -> Column:
         column = [cls.ensure_col(column)] if column is not None else []
         args = [cls.ensure_col(arg) for arg in args]
         expressions = [x.expression for x in column + args]
@@ -152,8 +151,8 @@ class Column:
         return Column(new_expression)
 
     @classmethod
-    def invoke_expression_over_column(cls, column: t.Union["ColumnOrName", None], callable_expression: t.Callable,
-                                      **kwargs) -> "Column":
+    def invoke_expression_over_column(cls, column: t.Union[ColumnOrName, None], callable_expression: t.Callable,
+                                      **kwargs) -> Column:
         column = cls.ensure_col(column) if column is not None else None
         new_expression = (
             callable_expression(this=column.column_expression, **kwargs)
@@ -162,14 +161,14 @@ class Column:
         )
         return Column(new_expression)
 
-    def binary_op(self, clazz: t.Callable, other: "Column", **kwargs) -> "Column":
+    def binary_op(self, clazz: t.Callable, other: Column, **kwargs) -> Column:
         return Column(clazz(this=self.column_expression, expression=Column(other).column_expression, **kwargs))
 
-    def inverse_binary_op(self, clazz: t.Callable, other: "Column", **kwargs) -> "Column":
+    def inverse_binary_op(self, clazz: t.Callable, other: Column, **kwargs) -> Column:
         return Column(clazz(this=Column(other).column_expression, expression=self.column_expression, **kwargs))
 
 
-    def unary_op(self, clazz: t.Callable, **kwargs) -> "Column":
+    def unary_op(self, clazz: t.Callable, **kwargs) -> Column:
         return Column(clazz(this=self.column_expression, **kwargs))
 
     @property
@@ -195,7 +194,7 @@ class Column:
         return self.expression.alias_or_name
 
     @classmethod
-    def ensure_literal(cls, value) -> "Column":
+    def ensure_literal(cls, value) -> Column:
         from sqlglot.dataframe.sql.functions import lit
         if isinstance(value, cls):
             value = value.expression
@@ -203,42 +202,42 @@ class Column:
             return lit(value)
         return Column(value)
 
-    def copy(self) -> "Column":
+    def copy(self) -> Column:
         return Column(self.expression.copy())
 
-    def set_table_name(self, table_name: str, copy=False) -> "Column":
+    def set_table_name(self, table_name: str, copy=False) -> Column:
         expression = self.expression.copy() if copy else self.expression
         expression.set("table", exp.Identifier(this=table_name))
         return Column(expression)
 
-    def sql(self, **kwargs) -> "Column":
+    def sql(self, **kwargs) -> Column:
         return self.expression.sql(dialect="spark", **kwargs)
 
-    def alias(self, name: str) -> "Column":
+    def alias(self, name: str) -> Column:
         new_expression = exp.Alias(alias=exp.Identifier(this=name, quoted=True), this=self.column_expression)
         return Column(new_expression)
 
-    def asc(self) -> "Column":
+    def asc(self) -> Column:
         new_expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=True)
         return Column(new_expression)
 
-    def desc(self) -> "Column":
+    def desc(self) -> Column:
         new_expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=False)
         return Column(new_expression)
 
     asc_nulls_first = asc
 
-    def asc_nulls_last(self) -> "Column":
+    def asc_nulls_last(self) -> Column:
         new_expression = exp.Ordered(this=self.column_expression, desc=False, nulls_first=False)
         return Column(new_expression)
 
-    def desc_nulls_first(self) -> "Column":
+    def desc_nulls_first(self) -> Column:
         new_expression = exp.Ordered(this=self.column_expression, desc=True, nulls_first=True)
         return Column(new_expression)
 
     desc_nulls_last = desc
 
-    def when(self, condition: "Column", value: t.Any) -> "Column":
+    def when(self, condition: Column, value: t.Any) -> Column:
         from sqlglot.dataframe.sql.functions import when
         column_with_if = when(condition, value)
         if not isinstance(self.expression, exp.Case):
@@ -247,18 +246,18 @@ class Column:
         new_column.expression.args["ifs"].extend(column_with_if.expression.args["ifs"])
         return new_column
 
-    def otherwise(self, value: t.Any) -> "Column":
+    def otherwise(self, value: t.Any) -> Column:
         from sqlglot.dataframe.sql.functions import lit
         true_value = value if isinstance(value, Column) else lit(value)
         new_column = self.copy()
         new_column.expression.args["default"] = true_value.column_expression
         return new_column
 
-    def isNull(self) -> "Column":
+    def isNull(self) -> Column:
         new_expression = exp.Is(this=self.column_expression, expression=exp.Null())
         return Column(new_expression)
 
-    def isNotNull(self) -> "Column":
+    def isNotNull(self) -> Column:
         new_expression = exp.Not(this=exp.Is(this=self.column_expression, expression=exp.Null()))
         return Column(new_expression)
 
@@ -272,15 +271,15 @@ class Column:
         new_expression = exp.Cast(this=self.column_expression, to=dataType)
         return Column(new_expression)
 
-    def startswith(self, value: t.Union[str, "Column"]) -> "Column":
+    def startswith(self, value: t.Union[str, Column]) -> Column:
         value = self._lit(value) if not isinstance(value, Column) else value
         return self.invoke_anonymous_function(self, "STARTSWITH", value)
 
-    def endswith(self, value: t.Union[str, "Column"]) -> "Column":
+    def endswith(self, value: t.Union[str, Column]) -> Column:
         value = self._lit(value) if not isinstance(value, Column) else value
         return self.invoke_anonymous_function(self, "ENDSWITH", value)
 
-    def rlike(self, regexp: str) -> "Column":
+    def rlike(self, regexp: str) -> Column:
         return self.invoke_expression_over_column(self, exp.RegexpLike, expression=self._lit(regexp).expression)
 
     def like(self, other: str):
@@ -289,7 +288,7 @@ class Column:
     def ilike(self, other: str):
         return self.invoke_expression_over_column(self, exp.ILike, expression=self._lit(other).expression)
 
-    def substr(self, startPos: t.Union[int, "Column"], length: t.Union[int, "Column"]) -> "Column":
+    def substr(self, startPos: t.Union[int, Column], length: t.Union[int, Column]) -> Column:
         startPos = self._lit(startPos) if not isinstance(startPos, Column) else startPos
         length = self._lit(length) if not isinstance(length, Column) else length
         return Column.invoke_expression_over_column(self, exp.Substring, start=startPos.expression, length=length.expression)
@@ -301,16 +300,16 @@ class Column:
 
     def between(
         self,
-        lowerBound: t.Union["Column", "Literals", "DateTimeLiteral", "DecimalLiteral"],
-        upperBound: t.Union["Column", "Literals", "DateTimeLiteral", "DecimalLiteral"],
-    ) -> "Column":
+        lowerBound: t.Union[Column, "Literals", "DateTimeLiteral", "DecimalLiteral"],
+        upperBound: t.Union[Column, "Literals", "DateTimeLiteral", "DecimalLiteral"],
+    ) -> Column:
         lower_bound_exp = self._lit(lowerBound) if not isinstance(lowerBound, Column) else lowerBound
         upper_bound_exp = self._lit(upperBound) if not isinstance(upperBound, Column) else upperBound
         return Column(exp.Between(this=self.column_expression,
                                   low=lower_bound_exp.expression,
                                   high=upper_bound_exp.expression))
 
-    def over(self, window: "WindowSpec") -> "Column":
+    def over(self, window: WindowSpec) -> Column:
         window_args = window.expression.args
         window_args["this"] = self.column_expression
         return Column(exp.Window(**window_args))

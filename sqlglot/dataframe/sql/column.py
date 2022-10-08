@@ -18,7 +18,7 @@ flatten = chain.from_iterable
 class Column:
     def __init__(self, expression: t.Union[t.Any, exp.Expression]):
         if isinstance(expression, str):
-            expression = sqlglot.parse_one(expression)
+            expression = sqlglot.parse_one(expression, read="spark")
         elif isinstance(expression, Column):
             expression = expression.expression
         self.expression = expression

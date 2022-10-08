@@ -80,17 +80,11 @@ class SparkSession:
         }
 
         sel_expression = exp.Select(**select_kwargs)
-        return DataFrame(
-            spark=self,
-            expression=sel_expression,
-            branch_id=self._random_branch_id,
-            sequence_id=self._random_sequence_id,
-            last_op=Operation.INIT,
-        )
+        return DataFrame(self, sel_expression)
 
     def sql(self, sqlQuery: str) -> "DataFrame":
         expression = sqlglot.parse_one(sqlQuery, read="spark")
-        df = DataFrame(self, expression, branch_id=self._random_branch_id, sequence_id=self._random_sequence_id)
+        df = DataFrame(self, expression)
         if isinstance(expression, exp.Select):
             df = df._convert_leaf_to_cte()
         return df

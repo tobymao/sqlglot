@@ -1203,12 +1203,6 @@ class Table(Expression):
         "pivots": False,
     }
 
-    @classmethod
-    def from_str(cls, value):
-        table_parts = value.split(".")
-        catalog, db, table_name = [Identifier(this=x) if x is not None else x for x in [None] * (3 - len(table_parts)) + table_parts]
-        return cls(this=table_name, db=db, catalog=catalog)
-
 
 class Union(Subqueryable):
     arg_types = {

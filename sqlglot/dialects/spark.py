@@ -1,8 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import (
-    create_with_partitions_sql,
-    rename_func,
-)
+from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser

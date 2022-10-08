@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import typing as t
 import functools
+import typing as t
 from enum import IntEnum
-
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.dataframe import DataFrame
@@ -36,6 +35,8 @@ def operation(op: Operation):
             df: t.Union[DataFrame, GroupedData] = func(self, *args, **kwargs)
             df.last_op = new_op
             return df
+
         wrapper.__wrapped__ = func
         return wrapper
+
     return decorator

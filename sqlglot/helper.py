@@ -32,6 +32,7 @@ def ensure_list(value):
 
 def ensure_table(value):
     from sqlglot import expressions as exp
+
     if value is None or isinstance(value, exp.Table):
         return value
     if isinstance(value, str):

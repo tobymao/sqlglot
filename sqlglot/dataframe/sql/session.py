@@ -6,9 +6,9 @@ from collections import defaultdict
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.dataframe.sql.readwriter import DataFrameReader
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql.dataframe import DataFrame
+from sqlglot.dataframe.sql.readwriter import DataFrameReader
 from sqlglot.dataframe.sql.types import StructType
 from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
 
@@ -39,17 +39,20 @@ class SparkSession:
         return self.read.table(tableName)
 
     def createDataFrame(
-            self,
-            data: t.Iterable[t.Union[t.Dict[str, t.Any], t.Iterable[t.Any]]],
-            schema: t.Optional[SchemaInput] = None,
-            samplingRatio: t.Optional[float] = None,
-            verifySchema: bool = False,
+        self,
+        data: t.Iterable[t.Union[t.Dict[str, t.Any], t.Iterable[t.Any]]],
+        schema: t.Optional[SchemaInput] = None,
+        samplingRatio: t.Optional[float] = None,
+        verifySchema: bool = False,
     ) -> DataFrame:
         from sqlglot.dataframe.sql.dataframe import DataFrame
 
         if samplingRatio is not None or verifySchema:
             raise NotImplementedError("Sampling Ration and Verify Schema are not supported")
-        if schema is not None and (not isinstance(schema, (StructType, str, list)) or (isinstance(schema, list) and not isinstance(schema[0], str))):
+        if schema is not None and (
+            not isinstance(schema, (StructType, str, list))
+            or (isinstance(schema, list) and not isinstance(schema[0], str))
+        ):
             raise NotImplementedError("Only schema of either list or string of list supported")
 
         if schema is not None:
@@ -72,18 +75,18 @@ class SparkSession:
         ]
 
         select_kwargs = {
-            'expressions': sel_columns,
-            'from': exp.From(
-                expressions=[exp.Subquery(
-                    this=exp.Values(
-                        expressions=data_expressions
-                    ),
-                    alias=exp.TableAlias(
-                        this=exp.Identifier(this=self._auto_incrementing_name),
-                        columns=[exp.Identifier(this=col_name) for col_name in column_mapping.keys()]
+            "expressions": sel_columns,
+            "from": exp.From(
+                expressions=[
+                    exp.Subquery(
+                        this=exp.Values(expressions=data_expressions),
+                        alias=exp.TableAlias(
+                            this=exp.Identifier(this=self._auto_incrementing_name),
+                            columns=[exp.Identifier(this=col_name) for col_name in column_mapping.keys()],
+                        ),
                     )
-                )]
-            )
+                ]
+            ),
         }
 
         sel_expression = exp.Select(**select_kwargs)
@@ -126,12 +129,7 @@ class SparkSession:
 
     @property
     def _join_hint_names(self) -> t.Set[str]:
-        return {
-            "BROADCAST",
-            "MERGE",
-            "SHUFFLE_HASH",
-            "SHUFFLE_REPLICATE_NL"
-        }
+        return {"BROADCAST", "MERGE", "SHUFFLE_HASH", "SHUFFLE_REPLICATE_NL"}
 
     def _add_alias_to_mapping(self, name: str, sequence_id: str):
         self.name_to_sequence_id_mapping[name].append(sequence_id)

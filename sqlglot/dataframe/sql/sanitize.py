@@ -13,9 +13,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
 
 
-def sanitize(spark: SparkSession,
-             expression_context: exp.Select,
-             expressions: t.List[SANITIZE_INPUT]):
+def sanitize(spark: SparkSession, expression_context: exp.Select, expressions: t.List[SANITIZE_INPUT]):
     expressions = ensure_list(expressions)
     expressions = _ensure_expressions(expressions)
     for expression in expressions:
@@ -33,9 +31,9 @@ def replace_alias_name_with_cte_name(spark: SparkSession, expression_context: ex
                 break
 
 
-def replace_branch_and_sequence_ids_with_cte_name(spark: SparkSession,
-                                                  expression_context: exp.Select,
-                                                  id: exp.Identifier):
+def replace_branch_and_sequence_ids_with_cte_name(
+    spark: SparkSession, expression_context: exp.Select, id: exp.Identifier
+):
     if id.alias_or_name in spark.known_ids:
         # Check if we have a join and if both the tables in that join share a common branch id
         # If so we need to have this reference the left table by default unless the id is a sequence

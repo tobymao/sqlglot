@@ -1,6 +1,5 @@
-import sqlglot
-
 from pyspark.sql import functions as F
+
 from sqlglot.dataframe.sql import functions as SF
 from tests.dataframe.functional.dataframe_validator import DataFrameValidator
 

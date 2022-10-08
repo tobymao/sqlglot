@@ -21,7 +21,7 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
         test_datetime = SF.lit(datetime.datetime(2022, 1, 1, 1, 1, 1))
         self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
-        test_dict = SF.lit({"cola": 1, "colb": 'test'})
+        test_dict = SF.lit({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS `cola`, 'test' AS `colb`)", test_dict.sql())
 
     def test_col(self):
@@ -37,13 +37,13 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("10.1", test_float.sql())
         test_bool = SF.col(True)
         self.assertEqual("true", test_bool.sql())
-        test_array = SF.col([1, 2, '3'])
+        test_array = SF.col([1, 2, "3"])
         self.assertEqual("ARRAY(1, 2, '3')", test_array.sql())
         test_date = SF.col(datetime.date(2022, 1, 1))
         self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
         test_datetime = SF.col(datetime.datetime(2022, 1, 1, 1, 1, 1))
         self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
-        test_dict = SF.col({"cola": 1, "colb": 'test'})
+        test_dict = SF.col({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS `cola`, 'test' AS `colb`)", test_dict.sql())
 
     def test_asc(self):
@@ -250,7 +250,6 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("LOG1P(cola)", col_str.sql())
         col = SF.log1p(SF.col("cola"))
         self.assertEqual("LOG1P(cola)", col.sql())
-
 
     def test_log2(self):
         col_str = SF.log2("cola")
@@ -639,7 +638,7 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("STRUCT(cola, colb, colc)", col.sql())
         col_single = SF.struct("cola")
         self.assertEqual("STRUCT(cola)", col_single.sql())
-        col_list = SF.struct(['cola', 'colb', 'colc'])
+        col_list = SF.struct(["cola", "colb", "colc"])
         self.assertEqual("STRUCT(cola, colb, colc)", col_list.sql())
 
     def test_greatest(self):
@@ -719,9 +718,9 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("CURRENT_TIMESTAMP()", col.sql())
 
     def test_date_format(self):
-        col_str = SF.date_format("cola", 'MM/dd/yyy')
+        col_str = SF.date_format("cola", "MM/dd/yyy")
         self.assertEqual("DATE_FORMAT(cola, 'MM/dd/yyy')", col_str.sql())
-        col = SF.date_format(SF.col("cola"), 'MM/dd/yyy')
+        col = SF.date_format(SF.col("cola"), "MM/dd/yyy")
         self.assertEqual("DATE_FORMAT(cola, 'MM/dd/yyy')", col.sql())
 
     def test_year(self):
@@ -918,7 +917,9 @@ class TestDataframeFunctions(unittest.TestCase):
         col_no_start_time = SF.window("cola", "2 minutes 30 seconds", "30 seconds")
         self.assertEqual("WINDOW(cola, '2 minutes 30 seconds', '30 seconds')", col_no_start_time.sql())
         col_no_slide = SF.window("cola", "2 minutes 30 seconds", startTime="15 seconds")
-        self.assertEqual("WINDOW(cola, '2 minutes 30 seconds', '2 minutes 30 seconds', '15 seconds')", col_no_slide.sql())
+        self.assertEqual(
+            "WINDOW(cola, '2 minutes 30 seconds', '2 minutes 30 seconds', '15 seconds')", col_no_slide.sql()
+        )
 
     def test_session_window(self):
         col_str = SF.session_window("cola", "5 seconds")
@@ -1133,17 +1134,17 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("SPLIT(cola, '[ABC]')", col_no_limit.sql())
 
     def test_regexp_extract(self):
-        col_str = SF.regexp_extract("cola", r'(\d+)-(\d+)', 1)
+        col_str = SF.regexp_extract("cola", r"(\d+)-(\d+)", 1)
         self.assertEqual("REGEXP_EXTRACT(cola, '(\\\d+)-(\\\d+)', 1)", col_str.sql())
-        col = SF.regexp_extract(SF.col("cola"), r'(\d+)-(\d+)', 1)
+        col = SF.regexp_extract(SF.col("cola"), r"(\d+)-(\d+)", 1)
         self.assertEqual("REGEXP_EXTRACT(cola, '(\\\d+)-(\\\d+)', 1)", col.sql())
-        col_no_idx = SF.regexp_extract(SF.col("cola"), r'(\d+)-(\d+)')
+        col_no_idx = SF.regexp_extract(SF.col("cola"), r"(\d+)-(\d+)")
         self.assertEqual("REGEXP_EXTRACT(cola, '(\\\d+)-(\\\d+)')", col_no_idx.sql())
 
     def test_regexp_replace(self):
-        col_str = SF.regexp_replace("cola", r'(\d+)', '--')
+        col_str = SF.regexp_replace("cola", r"(\d+)", "--")
         self.assertEqual("REGEXP_REPLACE(cola, '(\\\d+)', '--')", col_str.sql())
-        col = SF.regexp_replace(SF.col("cola"), r'(\d+)', '--')
+        col = SF.regexp_replace(SF.col("cola"), r"(\d+)", "--")
         self.assertEqual("REGEXP_REPLACE(cola, '(\\\d+)', '--')", col.sql())
 
     def test_initcap(self):
@@ -1503,22 +1504,19 @@ class TestDataframeFunctions(unittest.TestCase):
             lambda accumulator, target: accumulator + target,
             lambda accumulator: accumulator * 2,
             "accumulator",
-            "target"
+            "target",
         )
-        self.assertEqual("AGGREGATE(cola, 0, (accumulator, target) -> accumulator + target, accumulator -> accumulator * 2)", col_custom_names.sql())
-
+        self.assertEqual(
+            "AGGREGATE(cola, 0, (accumulator, target) -> accumulator + target, accumulator -> accumulator * 2)",
+            col_custom_names.sql(),
+        )
 
     def test_transform(self):
         col_str = SF.transform("cola", lambda x: x * 2)
         self.assertEqual("TRANSFORM(cola, x -> x * 2)", col_str.sql())
         col = SF.transform(SF.col("cola"), lambda x, i: x * i)
         self.assertEqual("TRANSFORM(cola, (x, i) -> x * i)", col.sql())
-        col_custom_names = SF.transform(
-            "cola",
-            lambda target, row_count: target * row_count,
-            "target",
-            "row_count"
-        )
+        col_custom_names = SF.transform("cola", lambda target, row_count: target * row_count, "target", "row_count")
 
         self.assertEqual("TRANSFORM(cola, (target, row_count) -> target * row_count)", col_custom_names.sql())
 
@@ -1527,11 +1525,7 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("EXISTS(cola, x -> x % 2 = 0)", col_str.sql())
         col = SF.exists(SF.col("cola"), lambda x: x % 2 == 0)
         self.assertEqual("EXISTS(cola, x -> x % 2 = 0)", col.sql())
-        col_custom_name = SF.exists(
-            "cola",
-            lambda target: target > 0,
-            "target"
-        )
+        col_custom_name = SF.exists("cola", lambda target: target > 0, "target")
         self.assertEqual("EXISTS(cola, target -> target > 0)", col_custom_name.sql())
 
     def test_forall(self):
@@ -1539,11 +1533,7 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("FORALL(cola, x -> x RLIKE 'foo')", col_str.sql())
         col = SF.forall(SF.col("cola"), lambda x: x.rlike("foo"))
         self.assertEqual("FORALL(cola, x -> x RLIKE 'foo')", col.sql())
-        col_custom_name = SF.forall(
-            "cola",
-            lambda target: target.rlike('foo'),
-            "target"
-        )
+        col_custom_name = SF.forall("cola", lambda target: target.rlike("foo"), "target")
         self.assertEqual("FORALL(cola, target -> target RLIKE 'foo')", col_custom_name.sql())
 
     def test_filter(self):
@@ -1552,13 +1542,12 @@ class TestDataframeFunctions(unittest.TestCase):
         col = SF.filter(SF.col("cola"), lambda x, i: SF.month(SF.to_date(x)) > SF.lit(i))
         self.assertEqual("FILTER(cola, (x, i) -> MONTH(TO_DATE(x)) > i)", col.sql())
         col_custom_names = SF.filter(
-            "cola",
-            lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count),
-            "target",
-            "row_count"
+            "cola", lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count), "target", "row_count"
         )
 
-        self.assertEqual("FILTER(cola, (target, row_count) -> MONTH(TO_DATE(target)) > row_count)", col_custom_names.sql())
+        self.assertEqual(
+            "FILTER(cola, (target, row_count) -> MONTH(TO_DATE(target)) > row_count)", col_custom_names.sql()
+        )
 
     def test_zip_with(self):
         col_str = SF.zip_with("cola", "colb", lambda x, y: SF.concat_ws("_", x, y))

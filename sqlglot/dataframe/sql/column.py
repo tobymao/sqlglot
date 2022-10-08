@@ -1,17 +1,24 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 import datetime
 import typing as t
+from collections.abc import Iterable
 
 import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql.types import DataType
-from sqlglot.dataframe.sql.window import WindowSpec
 from sqlglot.helper import flatten
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql._typing import ColumnOrName, ColumnOrPrimitive, DateTimeLiteral, DecimalLiteral, Literals, Primitives
+    from sqlglot.dataframe.sql._typing import (
+        ColumnOrName,
+        ColumnOrPrimitive,
+        DateTimeLiteral,
+        DecimalLiteral,
+        Literals,
+        Primitives,
+    )
+    from sqlglot.dataframe.sql.window import WindowSpec
 
 
 class Column:
@@ -124,22 +131,25 @@ class Column:
             value_formatted = str(value).lower() if isinstance(value, bool) else str(value)
             return cls(exp.Literal(this=value_formatted, is_string=isinstance(value, str)))
         if isinstance(value, dict):
-            columns = [
-                cls._lit(v).alias(k).expression
-                for k, v in value.items()
-            ]
+            columns = [cls._lit(v).alias(k).expression for k, v in value.items()]
             return cls(exp.Struct(expressions=columns))
         if isinstance(value, Iterable):
             expressions = [cls._lit(x).expression for x in value]
             return cls(exp.Column(this=exp.Array(expressions=expressions)))
         if isinstance(value, datetime.datetime):
             datetime_literal = exp.Literal(this=value.strftime("%Y-%m-%d %H:%M:%S"), is_string=True)
-            return cls(exp.Column(this=exp.StrToTime(this=datetime_literal,
-                                                     format=exp.Literal(this='YYYY-MM-DD HH:MM:SS', is_string=True))))
+            return cls(
+                exp.Column(
+                    this=exp.StrToTime(
+                        this=datetime_literal, format=exp.Literal(this="YYYY-MM-DD HH:MM:SS", is_string=True)
+                    )
+                )
+            )
         if isinstance(value, datetime.date):
             date_literal = exp.Literal(this=value.strftime("%Y-%m-%d"), is_string=True)
-            return cls(exp.Column(this=exp.StrToDate(this=date_literal,
-                                                     format=exp.Literal(this="YYYY-MM-DD", is_string=True))))
+            return cls(
+                exp.Column(this=exp.StrToDate(this=date_literal, format=exp.Literal(this="YYYY-MM-DD", is_string=True)))
+            )
         return cls(value)
 
     @classmethod
@@ -151,8 +161,9 @@ class Column:
         return Column(new_expression)
 
     @classmethod
-    def invoke_expression_over_column(cls, column: t.Union[ColumnOrName, None], callable_expression: t.Callable,
-                                      **kwargs) -> Column:
+    def invoke_expression_over_column(
+        cls, column: t.Union[ColumnOrName, None], callable_expression: t.Callable, **kwargs
+    ) -> Column:
         column = cls.ensure_col(column) if column is not None else None
         new_expression = (
             callable_expression(this=column.column_expression, **kwargs)
@@ -166,7 +177,6 @@ class Column:
 
     def inverse_binary_op(self, clazz: t.Callable, other: Column, **kwargs) -> Column:
         return Column(clazz(this=Column(other).column_expression, expression=self.column_expression, **kwargs))
-
 
     def unary_op(self, clazz: t.Callable, **kwargs) -> Column:
         return Column(clazz(this=self.column_expression, **kwargs))
@@ -196,6 +206,7 @@ class Column:
     @classmethod
     def ensure_literal(cls, value) -> Column:
         from sqlglot.dataframe.sql.functions import lit
+
         if isinstance(value, cls):
             value = value.expression
         if not isinstance(value, exp.Literal):
@@ -239,6 +250,7 @@ class Column:
 
     def when(self, condition: Column, value: t.Any) -> Column:
         from sqlglot.dataframe.sql.functions import when
+
         column_with_if = when(condition, value)
         if not isinstance(self.expression, exp.Case):
             return column_with_if
@@ -248,6 +260,7 @@ class Column:
 
     def otherwise(self, value: t.Any) -> Column:
         from sqlglot.dataframe.sql.functions import lit
+
         true_value = value if isinstance(value, Column) else lit(value)
         new_column = self.copy()
         new_column.expression.args["default"] = true_value.column_expression
@@ -291,7 +304,9 @@ class Column:
     def substr(self, startPos: t.Union[int, Column], length: t.Union[int, Column]) -> Column:
         startPos = self._lit(startPos) if not isinstance(startPos, Column) else startPos
         length = self._lit(length) if not isinstance(length, Column) else length
-        return Column.invoke_expression_over_column(self, exp.Substring, start=startPos.expression, length=length.expression)
+        return Column.invoke_expression_over_column(
+            self, exp.Substring, start=startPos.expression, length=length.expression
+        )
 
     def isin(self, *cols: t.Union["Primitives", t.Iterable["Primitives"]]):
         cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
@@ -305,9 +320,9 @@ class Column:
     ) -> Column:
         lower_bound_exp = self._lit(lowerBound) if not isinstance(lowerBound, Column) else lowerBound
         upper_bound_exp = self._lit(upperBound) if not isinstance(upperBound, Column) else upperBound
-        return Column(exp.Between(this=self.column_expression,
-                                  low=lower_bound_exp.expression,
-                                  high=upper_bound_exp.expression))
+        return Column(
+            exp.Between(this=self.column_expression, low=lower_bound_exp.expression, high=upper_bound_exp.expression)
+        )
 
     def over(self, window: WindowSpec) -> Column:
         window_args = window.expression.args

@@ -24,6 +24,12 @@ class SparkSession:
     def __init__(self):
         self.incrementing_id = 1
 
+    def __getattr__(self, name: str) -> "SparkSession":
+        return self
+
+    def __call__(self, *args, **kwargs):
+        return self
+
     @property
     def read(self) -> "DataFrameReader":
         return DataFrameReader(self)

@@ -1147,6 +1147,36 @@ class TestDataframeFunc(DataFrameValidator):
 
         self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
 
+    def test_with_column_renamed(self):
+        df = (
+            self.df_spark_employee
+            .withColumnRenamed("fname", "first_name")
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .withColumnRenamed("fname", "first_name")
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_with_column_renamed(self):
+        df = (
+            self
+            .df_spark_employee
+            .select(F.col("fname").alias("first_name"))
+            .withColumnRenamed("first_name", "first_name_again")
+        )
+
+        dfs = (
+            self
+            .df_sqlglot_employee
+            .select(SF.col("fname").alias("first_name"))
+            .withColumnRenamed("first_name", "first_name_again")
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
+
     def test_drop_column_single(self):
         df = (
             self.df_spark_employee

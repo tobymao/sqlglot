@@ -479,37 +479,69 @@ class TestDataframeFunc(DataFrameValidator):
         )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
 
-    # def test_join_select_and_select_start(self):
-    #     """
-    #     This test does not work. The problem is that I am select *
-    #     from one of the tables and then not having a select at the end.
-    #     Therefore I return the store_id from the main branch table (as spark expects)
-    #     but then I can't tell spark to not include that column from the table that we are
-    #     doing the * against since I don't know the other columns in order to explicitly include then.
-    #
-    #     If only SQL supported something like `* EXCEPT col_a, col_b` or something
-    #     """
-    #     df = (
-    #         self.df_spark_employee
-    #         .select(F.col("fname"), F.col("lname"), F.col("age"), F.col("store_id"))
-    #         .join(
-    #             self.df_spark_store,
-    #             "store_id",
-    #             "inner"
-    #         )
-    #     )
-    #
-    #     dfs = (
-    #         self.df_sqlglot_employee
-    #         .select(SF.col("fname"), SF.col("lname"), SF.col("age"), SF.col("store_id"))
-    #         .join(
-    #             self.df_sqlglot_store,
-    #             "store_id",
-    #             "inner"
-    #         )
-    #     )
-    #
-    #     self.compare_spark_with_sqlglot(df, dfs)
+    def test_triple_join(self):
+        df = (
+            self.df_employee
+            .join(
+                self.df_store,
+                on=self.df_employee.employee_id == self.df_store.store_id
+            )
+            .join(
+                self.df_district,
+                on=self.df_store.store_id == self.df_district.district_id
+            )
+            .select(
+                self.df_employee.employee_id,
+                self.df_store.store_id,
+                self.df_district.district_id,
+                self.df_employee.fname,
+                self.df_store.store_name,
+                self.df_district.district_name
+            )
+        )
+        dfs = (
+            self.dfs_employee
+            .join(
+                self.dfs_store,
+                on=self.dfs_employee.employee_id == self.dfs_store.store_id
+            )
+            .join(
+                self.dfs_district,
+                on=self.dfs_store.store_id == self.dfs_district.district_id
+            )
+            .select(
+                self.dfs_employee.employee_id,
+                self.dfs_store.store_id,
+                self.dfs_district.district_id,
+                self.dfs_employee.fname,
+                self.dfs_store.store_name,
+                self.dfs_district.district_name
+            )
+        )
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_join_select_and_select_start(self):
+        df = (
+            self.df_spark_employee
+            .select(F.col("fname"), F.col("lname"), F.col("age"), F.col("store_id"))
+            .join(
+                self.df_spark_store,
+                "store_id",
+                "inner"
+            )
+        )
+
+        dfs = (
+            self.df_sqlglot_employee
+            .select(SF.col("fname"), SF.col("lname"), SF.col("age"), SF.col("store_id"))
+            .join(
+                self.df_sqlglot_store,
+                "store_id",
+                "inner"
+            )
+        )
+
+        self.compare_spark_with_sqlglot(df, dfs)
 
     def test_branching_root_dataframes(self):
         """

@@ -22,7 +22,7 @@ if t.TYPE_CHECKING:
 
 
 class DataFrame:
-    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.NO_OP, pending_join_hints: t.List[exp.Expression] = None, pending_select_hints: t.List[exp.Expression] = None, **kwargs):
+    def __init__(self, spark: "SparkSession", expression: exp.Select, branch_id: str, sequence_id: str, last_op: t.Optional[Operation] = Operation.INIT, pending_join_hints: t.List[exp.Expression] = None, pending_select_hints: t.List[exp.Expression] = None, **kwargs):
         self.spark = spark
         self.expression = expression
         self.branch_id = branch_id
@@ -53,7 +53,13 @@ class DataFrame:
     @property
     def latest_cte_name(self) -> str:
         if len(self.expression.ctes) == 0:
-            return self.expression.find(exp.Table).alias_or_name
+            from_exp = self.expression.args['from']
+            if from_exp.alias_or_name:
+                return from_exp.alias_or_name
+            table_alias = from_exp.find(exp.TableAlias)
+            if not table_alias:
+                raise RuntimeError(f"Could not find an alias name for this expression: {self.expression}")
+            return table_alias.alias_or_name
         return self.expression.ctes[-1].alias
 
     def cache(self) -> "DataFrame":

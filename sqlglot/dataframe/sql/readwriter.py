@@ -20,7 +20,7 @@ class DataFrameReader:
         sqlglot.schema.add_table(tableName)
         return DataFrame(self.spark, exp.Select().from_(tableName).select(*sqlglot.schema.column_names(tableName)),
                          branch_id=self.spark._random_branch_id,
-                         sequence_id=self.spark._random_sequence_id)._convert_leaf_to_cte()
+                         sequence_id=self.spark._random_sequence_id)
 
 
 class DataFrameWriter:

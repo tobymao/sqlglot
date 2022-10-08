@@ -85,7 +85,7 @@ class SparkSession:
             expression=sel_expression,
             branch_id=self._random_branch_id,
             sequence_id=self._random_sequence_id,
-            last_op=Operation.FROM,
+            last_op=Operation.INIT,
         )
 
     def sql(self, sqlQuery: str) -> "DataFrame":

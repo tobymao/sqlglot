@@ -20,8 +20,8 @@ from sqlglot.expressions import (
 from sqlglot.expressions import table_ as table
 from sqlglot.expressions import union
 from sqlglot.generator import Generator
-from sqlglot.schema import MappingSchema
 from sqlglot.parser import Parser
+from sqlglot.schema import MappingSchema
 from sqlglot.tokens import Tokenizer, TokenType
 
 __version__ = "7.1.3"

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from inspect import signature
 import typing as t
+from inspect import signature
 
 from sqlglot import expressions as glotexp
 from sqlglot.dataframe.sql.column import Column
 from sqlglot.helper import flatten as _flatten
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql.dataframe import DataFrame
     from sqlglot.dataframe.sql._typing import ColumnOrName, ColumnOrPrimitive
+    from sqlglot.dataframe.sql.dataframe import DataFrame
 
 
 def col(column_name: t.Union[ColumnOrName, t.Any]) -> Column:
@@ -24,14 +24,16 @@ def lit(value: t.Optional[t.Any] = None) -> Column:
 
 def greatest(*cols: ColumnOrName) -> Column:
     cols = [Column.ensure_col(col) for col in cols]
-    return Column.invoke_expression_over_column(cols[0], glotexp.Greatest,
-                                          expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None)
+    return Column.invoke_expression_over_column(
+        cols[0], glotexp.Greatest, expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None
+    )
 
 
 def least(*cols: ColumnOrName) -> Column:
     cols = [Column.ensure_col(col) for col in cols]
-    return Column.invoke_expression_over_column(cols[0], glotexp.Least,
-                                          expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None)
+    return Column.invoke_expression_over_column(
+        cols[0], glotexp.Least, expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None
+    )
 
 
 def count_distinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:
@@ -148,6 +150,7 @@ def cbrt(col: ColumnOrName) -> Column:
 
 def ceil(col: ColumnOrName) -> Column:
     return Column.invoke_expression_over_column(col, glotexp.Ceil)
+
 
 def cos(col: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col, "COS")
@@ -343,7 +346,9 @@ def approx_count_distinct(col: ColumnOrName, rsd: t.Optional[float] = None) -> C
 
 def coalesce(*cols: ColumnOrName) -> Column:
     cols = [Column.ensure_col(col) for col in cols]
-    return Column.invoke_expression_over_column(cols[0], glotexp.Coalesce, expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None)
+    return Column.invoke_expression_over_column(
+        cols[0], glotexp.Coalesce, expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None
+    )
 
 
 def corr(col1: ColumnOrName, col2: ColumnOrName) -> Column:
@@ -430,9 +435,7 @@ def bround(col: ColumnOrName, scale: int = None) -> Column:
 
 def shiftleft(col: ColumnOrName, numBits: int) -> Column:
     return Column.invoke_expression_over_column(
-        col,
-        glotexp.BitwiseLeftShift,
-        expression=Column.ensure_col(numBits).expression
+        col, glotexp.BitwiseLeftShift, expression=Column.ensure_col(numBits).expression
     )
 
 
@@ -442,9 +445,7 @@ def shiftLeft(col: ColumnOrName, numBits: int) -> Column:
 
 def shiftright(col: ColumnOrName, numBits: int) -> Column:
     return Column.invoke_expression_over_column(
-        col,
-        glotexp.BitwiseRightShift,
-        expression=Column.ensure_col(numBits).expression
+        col, glotexp.BitwiseRightShift, expression=Column.ensure_col(numBits).expression
     )
 
 
@@ -453,11 +454,7 @@ def shiftRight(col: ColumnOrName, numBits: int) -> Column:
 
 
 def shiftrightunsigned(col: ColumnOrName, numBits: int) -> Column:
-    return Column.invoke_anonymous_function(
-        col,
-        "SHIFTRIGHTUNSIGNED",
-        numBits
-    )
+    return Column.invoke_anonymous_function(col, "SHIFTRIGHTUNSIGNED", numBits)
 
 
 def shiftRightUnsigned(col: ColumnOrName, numBits: int) -> Column:
@@ -643,14 +640,22 @@ def timestamp_seconds(col: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col, "TIMESTAMP_SECONDS")
 
 
-def window(timeColumn: ColumnOrName, windowDuration: str,
-           slideDuration: t.Optional[str] = None, startTime: t.Optional[str] = None) -> Column:
+def window(
+    timeColumn: ColumnOrName,
+    windowDuration: str,
+    slideDuration: t.Optional[str] = None,
+    startTime: t.Optional[str] = None,
+) -> Column:
     if slideDuration is not None and startTime is not None:
-        return Column.invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration), lit(slideDuration), lit(startTime))
+        return Column.invoke_anonymous_function(
+            timeColumn, "WINDOW", lit(windowDuration), lit(slideDuration), lit(startTime)
+        )
     if slideDuration is not None:
         return Column.invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration), lit(slideDuration))
     if startTime is not None:
-        return Column.invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration), lit(windowDuration), lit(startTime))
+        return Column.invoke_anonymous_function(
+            timeColumn, "WINDOW", lit(windowDuration), lit(windowDuration), lit(startTime)
+        )
     return Column.invoke_anonymous_function(timeColumn, "WINDOW", lit(windowDuration))
 
 
@@ -735,7 +740,9 @@ def trim(col: ColumnOrName) -> Column:
 
 def concat_ws(sep: str, *cols: ColumnOrName) -> Column:
     cols = [Column(col) for col in cols]
-    return Column.invoke_expression_over_column(None, glotexp.ConcatWs, expressions=[x.expression for x in [lit(sep)] + list(cols)])
+    return Column.invoke_expression_over_column(
+        None, glotexp.ConcatWs, expressions=[x.expression for x in [lit(sep)] + list(cols)]
+    )
 
 
 def decode(col: ColumnOrName, charset: str) -> Column:
@@ -758,18 +765,17 @@ def instr(col: ColumnOrName, substr: str) -> Column:
     return Column.invoke_anonymous_function(col, "INSTR", lit(substr))
 
 
-def overlay(src: ColumnOrName,
-            replace: ColumnOrName,
-            pos: t.Union[ColumnOrName, int],
-            len: t.Union[ColumnOrName, int] = None) -> Column:
+def overlay(
+    src: ColumnOrName, replace: ColumnOrName, pos: t.Union[ColumnOrName, int], len: t.Union[ColumnOrName, int] = None
+) -> Column:
     if len is not None:
         return Column.invoke_anonymous_function(src, "OVERLAY", replace, pos, len)
     return Column.invoke_anonymous_function(src, "OVERLAY", replace, pos)
 
 
-def sentences(string: ColumnOrName,
-              language: t.Optional[ColumnOrName] = None,
-              country: t.Optional[ColumnOrName] = None) -> Column:
+def sentences(
+    string: ColumnOrName, language: t.Optional[ColumnOrName] = None, country: t.Optional[ColumnOrName] = None
+) -> Column:
     if language is not None and country is not None:
         return Column.invoke_anonymous_function(string, "SENTENCES", language, country)
     if language is not None:
@@ -788,7 +794,9 @@ def substring_index(str: ColumnOrName, delim: str, count: int) -> Column:
 
 
 def levenshtein(left: ColumnOrName, right: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(left, glotexp.Levenshtein, expression=Column.ensure_col(right).expression)
+    return Column.invoke_expression_over_column(
+        left, glotexp.Levenshtein, expression=Column.ensure_col(right).expression
+    )
 
 
 def locate(substr: str, str: ColumnOrName, pos: int = None) -> Column:
@@ -811,7 +819,9 @@ def repeat(col: ColumnOrName, n: int) -> Column:
 
 def split(str: ColumnOrName, pattern: str, limit: t.Optional[int] = None) -> Column:
     if limit is not None:
-        return Column.invoke_expression_over_column(str, glotexp.Split, expression=lit(pattern).expression, limit=lit(limit).expression)
+        return Column.invoke_expression_over_column(
+            str, glotexp.Split, expression=lit(pattern).expression, limit=lit(limit).expression
+        )
     return Column.invoke_expression_over_column(str, glotexp.Split, expression=lit(pattern).expression)
 
 
@@ -869,7 +879,9 @@ def array(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
 
 def create_map(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
     cols = list(_flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols
-    return Column.invoke_expression_over_column(None, glotexp.Map, keys=array(cols[::2]).expression, values=array(cols[1::2]).expression)
+    return Column.invoke_expression_over_column(
+        None, glotexp.Map, keys=array(cols[::2]).expression, values=array(cols[1::2]).expression
+    )
 
 
 def map_from_arrays(col1: ColumnOrName, col2: ColumnOrName) -> Column:
@@ -881,13 +893,11 @@ def array_contains(col: ColumnOrName, value: ColumnOrPrimitive) -> Column:
     return Column.invoke_expression_over_column(col, glotexp.ArrayContains, expression=value.expression)
 
 
-def arrays_overlap(col1: ColumnOrName,  col2: ColumnOrName) -> Column:
+def arrays_overlap(col1: ColumnOrName, col2: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col1, "ARRAYS_OVERLAP", Column.ensure_col(col2))
 
 
-def slice(
-    x: ColumnOrName, start: t.Union[ColumnOrName, int], length: t.Union[ColumnOrName, int]
-) -> Column:
+def slice(x: ColumnOrName, start: t.Union[ColumnOrName, int], length: t.Union[ColumnOrName, int]) -> Column:
     start = start if isinstance(start, Column) else lit(start)
     length = length if isinstance(length, Column) else lit(length)
     return Column.invoke_anonymous_function(x, "SLICE", start, length)
@@ -1064,13 +1074,11 @@ def array_zip(*cols: ColumnOrName) -> Column:
 def map_concat(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
     cols = list(flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols
     if len(cols) == 1:
-       return Column.invoke_anonymous_function(cols[0], "MAP_CONCAT")
+        return Column.invoke_anonymous_function(cols[0], "MAP_CONCAT")
     return Column.invoke_anonymous_function(cols[0], "MAP_CONCAT", *cols[1:])
 
 
-def sequence(
-    start: ColumnOrName, stop: ColumnOrName, step: t.Optional[ColumnOrName] = None
-) -> Column:
+def sequence(start: ColumnOrName, stop: ColumnOrName, step: t.Optional[ColumnOrName] = None) -> Column:
     if step is not None:
         return Column.invoke_anonymous_function(start, "SEQUENCE", stop, step)
     return Column.invoke_anonymous_function(start, "SEQUENCE", stop)
@@ -1088,20 +1096,21 @@ def from_csv(
     return Column.invoke_anonymous_function(col, "FROM_CSV", schema)
 
 
-def aggregate(col: ColumnOrName,
-              initialValue: ColumnOrName,
-              merge: t.Callable[[Column, Column], Column],
-              finish: t.Optional[t.Callable[[Column], Column]] = None,
-              accumulator_name: str = "acc",
-              target_row_name: str = "x") -> Column:
+def aggregate(
+    col: ColumnOrName,
+    initialValue: ColumnOrName,
+    merge: t.Callable[[Column, Column], Column],
+    finish: t.Optional[t.Callable[[Column], Column]] = None,
+    accumulator_name: str = "acc",
+    target_row_name: str = "x",
+) -> Column:
     merge_exp = glotexp.Lambda(
         this=merge(Column(accumulator_name), Column(target_row_name)).expression,
-        expressions=[glotexp.Identifier(this=accumulator_name), glotexp.Identifier(this=target_row_name)]
+        expressions=[glotexp.Identifier(this=accumulator_name), glotexp.Identifier(this=target_row_name)],
     )
     if finish is not None:
         finish_exp = glotexp.Lambda(
-            this=finish(Column(accumulator_name)).expression,
-            expressions=[glotexp.Identifier(this=accumulator_name)]
+            this=finish(Column(accumulator_name)).expression, expressions=[glotexp.Identifier(this=accumulator_name)]
         )
         return Column.invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp), Column(finish_exp))
     return Column.invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp))
@@ -1120,25 +1129,20 @@ def transform(
         columns.append(Column(row_count_name))
         expressions.append(glotexp.Identifier(this=row_count_name))
 
-    f_expression = glotexp.Lambda(
-        this=f(*columns).expression,
-        expressions=expressions
-    )
+    f_expression = glotexp.Lambda(this=f(*columns).expression, expressions=expressions)
     return Column.invoke_anonymous_function(col, "TRANSFORM", Column(f_expression))
 
 
 def exists(col: ColumnOrName, f: t.Callable[[Column], Column], target_row_name: str = "x") -> Column:
     f_expression = glotexp.Lambda(
-        this=f(Column(target_row_name)).expression,
-        expressions=[glotexp.Identifier(this=target_row_name)]
+        this=f(Column(target_row_name)).expression, expressions=[glotexp.Identifier(this=target_row_name)]
     )
     return Column.invoke_anonymous_function(col, "EXISTS", Column(f_expression))
 
 
 def forall(col: ColumnOrName, f: t.Callable[[Column], Column], target_row_name: str = "x") -> Column:
     f_expression = glotexp.Lambda(
-        this=f(Column(target_row_name)).expression,
-        expressions=[glotexp.Identifier(this=target_row_name)]
+        this=f(Column(target_row_name)).expression, expressions=[glotexp.Identifier(this=target_row_name)]
     )
 
     return Column.invoke_anonymous_function(col, "FORALL", Column(f_expression))
@@ -1148,7 +1152,7 @@ def filter(
     col: ColumnOrName,
     f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]],
     target_row_name: str = "x",
-    row_count_name: str = "i"
+    row_count_name: str = "i",
 ) -> Column:
     num_arguments = len(signature(f).parameters)
     expressions = [glotexp.Identifier(this=target_row_name)]
@@ -1157,10 +1161,7 @@ def filter(
         columns.append(Column(row_count_name))
         expressions.append(glotexp.Identifier(this=row_count_name))
 
-    f_expression = glotexp.Lambda(
-        this=f(*columns).expression,
-        expressions=expressions
-    )
+    f_expression = glotexp.Lambda(this=f(*columns).expression, expressions=expressions)
     return Column.invoke_anonymous_function(col, "FILTER", Column(f_expression))
 
 
@@ -1173,61 +1174,56 @@ def zip_with(
 ) -> Column:
     f_expression = glotexp.Lambda(
         this=f(Column(left_name), Column(right_name)).expression,
-        expressions=[glotexp.Identifier(this=left_name), glotexp.Identifier(this=right_name)]
+        expressions=[glotexp.Identifier(this=left_name), glotexp.Identifier(this=right_name)],
     )
 
     return Column.invoke_anonymous_function(left, "ZIP_WITH", right, Column(f_expression))
 
 
 def transform_keys(
-    col: ColumnOrName,
-    f: t.Union[t.Callable[[Column, Column], Column]],
-    key_name: str = "k",
-    value_name: str = "v"
+    col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]], key_name: str = "k", value_name: str = "v"
 ) -> Column:
     f_expression = glotexp.Lambda(
         this=f(Column(key_name), Column(value_name)).expression,
-        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)]
+        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)],
     )
     return Column.invoke_anonymous_function(col, "TRANSFORM_KEYS", Column(f_expression))
 
 
 def transform_values(
-    col: ColumnOrName,
-    f: t.Union[t.Callable[[Column, Column], Column]],
-    key_name: str = "k",
-    value_name: str = "v"
+    col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]], key_name: str = "k", value_name: str = "v"
 ) -> Column:
     f_expression = glotexp.Lambda(
         this=f(Column(key_name), Column(value_name)).expression,
-        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)]
+        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)],
     )
     return Column.invoke_anonymous_function(col, "TRANSFORM_VALUES", Column(f_expression))
 
 
 def map_filter(
-    col: ColumnOrName,
-    f: t.Union[t.Callable[[Column, Column], Column]],
-    key_name: str = "k",
-    value_name: str = "v"
+    col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]], key_name: str = "k", value_name: str = "v"
 ) -> Column:
     f_expression = glotexp.Lambda(
         this=f(Column(key_name), Column(value_name)).expression,
-        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)]
+        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value_name)],
     )
     return Column.invoke_anonymous_function(col, "MAP_FILTER", Column(f_expression))
 
 
 def map_zip_with(
-        col1: ColumnOrName,
-        col2: ColumnOrName,
-        f: t.Union[t.Callable[[Column, Column, Column], Column]],
-        key_name: str = "k",
-        value1: str = "v1",
-        value2: str = "v2",
+    col1: ColumnOrName,
+    col2: ColumnOrName,
+    f: t.Union[t.Callable[[Column, Column, Column], Column]],
+    key_name: str = "k",
+    value1: str = "v1",
+    value2: str = "v2",
 ) -> Column:
     f_expression = glotexp.Lambda(
         this=f(Column(key_name), Column(value1), Column(value2)).expression,
-        expressions=[glotexp.Identifier(this=key_name), glotexp.Identifier(this=value1), glotexp.Identifier(this=value2)]
+        expressions=[
+            glotexp.Identifier(this=key_name),
+            glotexp.Identifier(this=value1),
+            glotexp.Identifier(this=value2),
+        ],
     )
     return Column.invoke_anonymous_function(col1, "MAP_ZIP_WITH", col2, Column(f_expression))

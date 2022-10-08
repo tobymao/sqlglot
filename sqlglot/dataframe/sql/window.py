@@ -70,46 +70,47 @@ class WindowSpec:
         window_spec = self.copy()
         if window_spec.expression.args.get("order") is None:
             window_spec.expression.args["order"] = exp.Order(expressions=[])
-        window_spec.expression.args["order"].args['expressions'].extend(expressions)
+        window_spec.expression.args["order"].args["expressions"].extend(expressions)
         return window_spec
 
     def _calc_start_end(self, start: int, end: int) -> t.Dict[str, t.Union[str, int]]:
-        kwargs = {
-            "start_side": None,
-            "end_side": None
-        }
+        kwargs = {"start_side": None, "end_side": None}
         if start == Window.currentRow:
             kwargs["start"] = "CURRENT ROW"
         else:
-            kwargs = {**kwargs, **{
-                "start_side": "PRECEDING",
-                "start": "UNBOUNDED" if start <= Window.unboundedPreceding else F.lit(start).expression
-            }}
+            kwargs = {
+                **kwargs,
+                **{
+                    "start_side": "PRECEDING",
+                    "start": "UNBOUNDED" if start <= Window.unboundedPreceding else F.lit(start).expression,
+                },
+            }
         if end == Window.currentRow:
             kwargs["end"] = "CURRENT ROW"
         else:
-            kwargs = {**kwargs, **{
-                "end_side": "FOLLOWING",
-                "end": "UNBOUNDED" if end >= Window.unboundedFollowing else F.lit(end).expression
-            }}
+            kwargs = {
+                **kwargs,
+                **{
+                    "end_side": "FOLLOWING",
+                    "end": "UNBOUNDED" if end >= Window.unboundedFollowing else F.lit(end).expression,
+                },
+            }
         return kwargs
 
     def rowsBetween(self, start: int, end: int) -> WindowSpec:
         window_spec = self.copy()
         spec = self._calc_start_end(start, end)
         spec["kind"] = "ROWS"
-        window_spec.expression.args["spec"] = exp.WindowSpec(**{
-            **window_spec.expression.args.get("spec", exp.WindowSpec()).args,
-            **spec
-        })
+        window_spec.expression.args["spec"] = exp.WindowSpec(
+            **{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec}
+        )
         return window_spec
 
     def rangeBetween(self, start: int, end: int) -> WindowSpec:
         window_spec = self.copy()
         spec = self._calc_start_end(start, end)
         spec["kind"] = "RANGE"
-        window_spec.expression.args["spec"] = exp.WindowSpec(**{
-            **window_spec.expression.args.get("spec", exp.WindowSpec()).args,
-            **spec
-        })
+        window_spec.expression.args["spec"] = exp.WindowSpec(
+            **{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec}
+        )
         return window_spec

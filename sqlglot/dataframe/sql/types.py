@@ -157,11 +157,9 @@ class MapType(DataType):
 
 
 class StructField(DataType):
-    def __init__(self,
-                 name: str,
-                 dataType: DataType,
-                 nullable: bool = True,
-                 metadata: t.Optional[t.Dict[str, t.Any]] = None):
+    def __init__(
+        self, name: str, dataType: DataType, nullable: bool = True, metadata: t.Optional[t.Dict[str, t.Any]] = None
+    ):
         self.name = name
         self.dataType = dataType
         self.nullable = nullable

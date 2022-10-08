@@ -76,7 +76,7 @@ class MappingSchema(Schema):
             return "catalog", "db", "this"
         if table.args.get("db") is not None:
             return "db", "this"
-        return "this",
+        return ("this",)
 
     def copy(self, **kwargs):
         kwargs = {**{"schema": copy(self.schema)}, **kwargs}
@@ -88,8 +88,11 @@ class MappingSchema(Schema):
         table = ensure_table(table)
         self._validate_table(table)
         column_mapping = ensure_column_mapping(column_mapping)
-        _nested_set(self.schema, [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)],
-                    column_mapping)
+        _nested_set(
+            self.schema,
+            [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)],
+            column_mapping,
+        )
         self._initialize_supported_args()
 
     def column_names(self, table, only_visible=False):
@@ -175,8 +178,10 @@ def ensure_column_mapping(mapping):
         return mapping
     elif isinstance(mapping, str):
         col_name_type_strs = [x.strip() for x in mapping.split(",")]
-        return {name_type_str.split(':')[0].strip(): name_type_str.split(':')[1].strip() for name_type_str in
-                col_name_type_strs}
+        return {
+            name_type_str.split(":")[0].strip(): name_type_str.split(":")[1].strip()
+            for name_type_str in col_name_type_strs
+        }
     elif isinstance(mapping, df_types.StructType):
         return {struct_field.name: struct_field.dataType.simpleString() for struct_field in mapping}
     elif isinstance(mapping, list):

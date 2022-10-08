@@ -25,16 +25,14 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("cola >= 1", (F.col("cola") >= 1).sql())
 
     def test_and(self):
-        self.assertEqual("cola = colb AND colc = cold", (
-            (F.col("cola") == F.col("colb"))
-            & (F.col("colc") == F.col("cold"))
-        ).sql())
+        self.assertEqual(
+            "cola = colb AND colc = cold", ((F.col("cola") == F.col("colb")) & (F.col("colc") == F.col("cold"))).sql()
+        )
 
     def test_or(self):
-        self.assertEqual("cola = colb OR colc = cold", (
-                (F.col("cola") == F.col("colb"))
-                | (F.col("colc") == F.col("cold"))
-        ).sql())
+        self.assertEqual(
+            "cola = colb OR colc = cold", ((F.col("cola") == F.col("colb")) | (F.col("colc") == F.col("cold"))).sql()
+        )
 
     def test_mod(self):
         self.assertEqual("cola % 2", (F.col("cola") % 2).sql())
@@ -73,19 +71,19 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("NOT cola", (~F.col("cola")).sql())
 
     def test_startswith(self):
-        self.assertEqual("STARTSWITH(cola, 'test')", F.col("cola").startswith('test').sql())
+        self.assertEqual("STARTSWITH(cola, 'test')", F.col("cola").startswith("test").sql())
 
     def test_endswith(self):
-        self.assertEqual("ENDSWITH(cola, 'test')", F.col("cola").endswith('test').sql())
+        self.assertEqual("ENDSWITH(cola, 'test')", F.col("cola").endswith("test").sql())
 
     def test_rlike(self):
         self.assertEqual("cola RLIKE 'foo'", F.col("cola").rlike("foo").sql())
 
     def test_like(self):
-        self.assertEqual("cola LIKE 'foo%'", F.col("cola").like('foo%').sql())
+        self.assertEqual("cola LIKE 'foo%'", F.col("cola").like("foo%").sql())
 
     def test_ilike(self):
-        self.assertEqual("cola ILIKE 'foo%'", F.col("cola").ilike('foo%').sql())
+        self.assertEqual("cola ILIKE 'foo%'", F.col("cola").ilike("foo%").sql())
 
     def test_substring(self):
         self.assertEqual("SUBSTRING(cola, 2, 3)", F.col("cola").substr(2, 3).sql())
@@ -115,13 +113,18 @@ class TestDataframeColumn(unittest.TestCase):
     def test_when_otherwise(self):
         self.assertEqual("CASE WHEN cola = 1 THEN 2 END", F.when(F.col("cola") == 1, 2).sql())
         self.assertEqual("CASE WHEN cola = 1 THEN 2 END", F.col("cola").when(F.col("cola") == 1, 2).sql())
-        self.assertEqual("CASE WHEN cola = 1 THEN 2 WHEN colb = 2 THEN 3 END", (
-            F.when(F.col("cola") == 1, 2).when(F.col("colb") == 2, 3)
-        ).sql())
-        self.assertEqual("CASE WHEN cola = 1 THEN 2 WHEN colb = 2 THEN 3 END",
-                         F.col("cola").when(F.col("cola") == 1, 2).when(F.col("colb") == 2, 3).sql())
-        self.assertEqual("CASE WHEN cola = 1 THEN 2 WHEN colb = 2 THEN 3 ELSE 4 END",
-                         F.when(F.col("cola") == 1, 2).when(F.col("colb") == 2, 3).otherwise(4).sql())
+        self.assertEqual(
+            "CASE WHEN cola = 1 THEN 2 WHEN colb = 2 THEN 3 END",
+            (F.when(F.col("cola") == 1, 2).when(F.col("colb") == 2, 3)).sql(),
+        )
+        self.assertEqual(
+            "CASE WHEN cola = 1 THEN 2 WHEN colb = 2 THEN 3 END",
+            F.col("cola").when(F.col("cola") == 1, 2).when(F.col("colb") == 2, 3).sql(),
+        )
+        self.assertEqual(
+            "CASE WHEN cola = 1 THEN 2 WHEN colb = 2 THEN 3 ELSE 4 END",
+            F.when(F.col("cola") == 1, 2).when(F.col("colb") == 2, 3).otherwise(4).sql(),
+        )
 
     def test_is_null(self):
         self.assertEqual("cola IS NULL", F.col("cola").isNull().sql())
@@ -138,18 +141,28 @@ class TestDataframeColumn(unittest.TestCase):
     def test_between(self):
         self.assertEqual("cola BETWEEN 1 AND 3", F.col("cola").between(1, 3).sql())
         self.assertEqual("cola BETWEEN 10.1 AND 12.1", F.col("cola").between(10.1, 12.1).sql())
-        self.assertEqual("cola BETWEEN TO_DATE('2022-01-01', 'YYYY-MM-DD') AND TO_DATE('2022-03-01', 'YYYY-MM-DD')",
-                         F.col("cola").between(datetime.date(2022, 1, 1), datetime.date(2022, 3, 1)).sql())
-        self.assertEqual("cola BETWEEN TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS') "
-                         "AND TO_TIMESTAMP('2022-03-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')",
-                         F.col("cola").between(datetime.datetime(2022, 1, 1, 1, 1, 1),
-                                               datetime.datetime(2022, 3, 1, 1, 1, 1)).sql())
+        self.assertEqual(
+            "cola BETWEEN TO_DATE('2022-01-01', 'YYYY-MM-DD') AND TO_DATE('2022-03-01', 'YYYY-MM-DD')",
+            F.col("cola").between(datetime.date(2022, 1, 1), datetime.date(2022, 3, 1)).sql(),
+        )
+        self.assertEqual(
+            "cola BETWEEN TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS') "
+            "AND TO_TIMESTAMP('2022-03-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')",
+            F.col("cola").between(datetime.datetime(2022, 1, 1, 1, 1, 1), datetime.datetime(2022, 3, 1, 1, 1, 1)).sql(),
+        )
 
     def test_over(self):
-        over_rows = F.sum("cola").over(Window.partitionBy("colb").orderBy("colc").rowsBetween(1, Window.unboundedFollowing))
-        self.assertEqual("SUM(cola) OVER (PARTITION BY colb ORDER BY colc ROWS BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING)",
-                         over_rows.sql())
-        over_range = F.sum("cola").over(Window.partitionBy("colb").orderBy("colc").rangeBetween(1, Window.unboundedFollowing))
-        self.assertEqual("SUM(cola) OVER (PARTITION BY colb ORDER BY colc RANGE BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING)",
-                         over_range.sql())
-
+        over_rows = F.sum("cola").over(
+            Window.partitionBy("colb").orderBy("colc").rowsBetween(1, Window.unboundedFollowing)
+        )
+        self.assertEqual(
+            "SUM(cola) OVER (PARTITION BY colb ORDER BY colc ROWS BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING)",
+            over_rows.sql(),
+        )
+        over_range = F.sum("cola").over(
+            Window.partitionBy("colb").orderBy("colc").rangeBetween(1, Window.unboundedFollowing)
+        )
+        self.assertEqual(
+            "SUM(cola) OVER (PARTITION BY colb ORDER BY colc RANGE BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING)",
+            over_range.sql(),
+        )

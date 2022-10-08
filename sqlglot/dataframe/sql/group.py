@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql import functions as F
+from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql.operations import Operation, operation
 
 if t.TYPE_CHECKING:
@@ -24,20 +24,12 @@ class GroupedData:
     def agg(self, *exprs: t.Union[Column, t.Dict[str, str]]) -> DataFrame:
         cols = exprs
         if isinstance(exprs[0], dict):
-            cols = [Column(f"{agg_func}({column_name})")
-                       for column_name, agg_func in exprs[0].items()]
+            cols = [Column(f"{agg_func}({column_name})") for column_name, agg_func in exprs[0].items()]
 
         cols = self._df._ensure_and_sanitize_cols(cols)
 
-        expression = (
-            self
-            ._df
-            .expression
-            .group_by(*[x.expression for x in self.group_by_cols])
-            .select(
-                *[x.expression for x in self.group_by_cols + cols],
-                append=False
-            )
+        expression = self._df.expression.group_by(*[x.expression for x in self.group_by_cols]).select(
+            *[x.expression for x in self.group_by_cols + cols], append=False
         )
         return self._df.copy(expression=expression)
 

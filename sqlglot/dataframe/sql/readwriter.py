@@ -30,10 +30,7 @@ class DataFrameWriter:
         self._by_name = by_name
 
     def copy(self, **kwargs) -> DataFrameWriter:
-        kwargs = {
-            **{k: copy(v) for k, v in vars(self).copy().items()},
-            **kwargs
-        }
+        kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
         return DataFrameWriter(**{k[1:] if k.startswith("_") else k: v for k, v in kwargs.items()})
 
     def sql(self, **kwargs) -> str:
@@ -53,18 +50,17 @@ class DataFrameWriter:
             df = df._convert_leaf_to_cte().select(*columns)
         expression_without_cte = df.expression.copy()
         expression_without_cte.set("with", None)
-        insert_expression = exp.Insert(**{
-            "this": exp.to_table(tableName),
-            "expression": expression_without_cte,
-            "overwrite": overwrite,
-            "with": df.expression.args.get("with")
-        })
+        insert_expression = exp.Insert(
+            **{
+                "this": exp.to_table(tableName),
+                "expression": expression_without_cte,
+                "overwrite": overwrite,
+                "with": df.expression.args.get("with"),
+            }
+        )
         return self.copy(_df=df.copy(expression=insert_expression))
 
-    def saveAsTable(self,
-                    name: str,
-                    format: t.Optional[str] = None,
-                    mode: t.Optional[str] = None):
+    def saveAsTable(self, name: str, format: t.Optional[str] = None, mode: t.Optional[str] = None):
         if format is not None:
             raise NotImplementedError("Providing Format in the save as table is not supported")
         exists, replace, mode = None, None, mode or str(self._mode)

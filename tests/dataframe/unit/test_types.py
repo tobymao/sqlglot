@@ -59,7 +59,12 @@ class TestDataframeTypes(unittest.TestCase):
         self.assertEqual("cola:int", types.StructField("cola", types.IntegerType()).simpleString())
 
     def test_struct_type(self):
-        self.assertEqual("struct<cola:int, colb:string>", types.StructType([
-            types.StructField("cola", types.IntegerType()),
-            types.StructField("colb", types.StringType()),
-        ]).simpleString())
+        self.assertEqual(
+            "struct<cola:int, colb:string>",
+            types.StructType(
+                [
+                    types.StructField("cola", types.IntegerType()),
+                    types.StructField("colb", types.StringType()),
+                ]
+            ).simpleString(),
+        )

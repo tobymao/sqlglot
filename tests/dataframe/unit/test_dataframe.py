@@ -1,8 +1,8 @@
 import unittest
 
 from sqlglot import expressions as exp
-from sqlglot.dataframe.sql.dataframe import DataFrame
 from sqlglot.dataframe.sql import types
+from sqlglot.dataframe.sql.dataframe import DataFrame
 from sqlglot.dataframe.sql.session import SparkSession
 
 
@@ -10,13 +10,15 @@ class TestDataframeColumn(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.spark = SparkSession()
-        cls.employee_schema = types.StructType([
-            types.StructField('employee_id', types.IntegerType(), False),
-            types.StructField('fname', types.StringType(), False),
-            types.StructField('lname', types.StringType(), False),
-            types.StructField('age', types.IntegerType(), False),
-            types.StructField('store_id', types.IntegerType(), False),
-        ])
+        cls.employee_schema = types.StructType(
+            [
+                types.StructField("employee_id", types.IntegerType(), False),
+                types.StructField("fname", types.StringType(), False),
+                types.StructField("lname", types.StringType(), False),
+                types.StructField("age", types.IntegerType(), False),
+                types.StructField("store_id", types.IntegerType(), False),
+            ]
+        )
         employee_data = [
             (1, "Jack", "Shephard", 37, 1),
             (2, "John", "Locke", 65, 1),

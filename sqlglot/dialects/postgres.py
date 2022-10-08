@@ -167,6 +167,7 @@ class Postgres(Dialect):
             **Tokenizer.KEYWORDS,
             "ALWAYS": TokenType.ALWAYS,
             "BY DEFAULT": TokenType.BY_DEFAULT,
+            "COMMENT ON": TokenType.COMMENT_ON,
             "IDENTITY": TokenType.IDENTITY,
             "GENERATED": TokenType.GENERATED,
             "DOUBLE PRECISION": TokenType.DOUBLE,

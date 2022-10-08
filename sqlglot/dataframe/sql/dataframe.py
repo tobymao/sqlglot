@@ -68,28 +68,9 @@ class DataFrame:
     def pending_partition_hints(self):
         return [hint for hint in self.pending_hints if isinstance(hint, exp.Anonymous)]
 
-    def cache(self) -> "DataFrame":
-        print("DataFrame Cache is not yet supported")
-        return self
-
-    def sql(self, dialect="spark", optimize=True, **kwargs) -> str:
-        df = self._resolve_pending_hints()
-        expression = df.expression.copy()
-        if optimize:
-            optimized_select_expression = optimize_func(self._select_expression(expression))
-            optimized_select_expression_without_ctes = optimized_select_expression.copy()
-            optimized_select_expression_without_ctes.set("with", None)
-            if isinstance(expression, (exp.Create, exp.Insert)):
-                expression.set("expression", optimized_select_expression_without_ctes)
-                expression.set("with", optimized_select_expression.args['with'])
-            else:
-                expression = optimized_select_expression
-        expression = self._replace_cte_names_with_hashes(expression)
-        return expression.sql(**{"dialect": dialect, "pretty": True, **kwargs})
-
-    def copy(self, **kwargs) -> "DataFrame":
-        kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
-        return DataFrame(**kwargs)
+    @property
+    def columns(self) -> t.List[str]:
+        return self.expression.named_selects
 
     def _replace_cte_names_with_hashes(self, expression: t.Union[exp.Select, exp.Create, exp.Insert]):
         def _replace_old_id_with_new(node):
@@ -105,9 +86,6 @@ class DataFrame:
             cte.set("alias", exp.TableAlias(this=new_hashed_id))
             expression = expression.transform(_replace_old_id_with_new)
         return expression
-
-
-
 
     def _create_cte_from_expression(self, expression: exp.Expression, branch_id: t.Optional[str] = None,
                                     sequence_id: t.Optional[str] = None, **kwargs) -> t.Tuple[exp.CTE, str]:
@@ -134,21 +112,6 @@ class DataFrame:
         sanitize(self.spark, self.expression, col)
         return col
 
-    @classmethod
-    def _add_ctes_to_expression(cls, expression: exp.Expression, ctes: t.List[exp.CTE]) -> exp.Expression:
-        expression = expression.copy()
-        with_expression = expression.args.get("with")
-        if with_expression:
-            existing_ctes = with_expression.args["expressions"]
-            existsing_cte_names = [x.alias_or_name for x in existing_ctes]
-            for cte in ctes:
-                if cte.alias_or_name not in existsing_cte_names:
-                    existing_ctes.append(cte)
-        else:
-            existing_ctes = ctes
-        expression.set("with", exp.With(expressions=existing_ctes))
-        return expression
-
     def _convert_leaf_to_cte(self, sequence_id: t.Optional[str] = None) -> "DataFrame":
         df = self._resolve_pending_hints()
         sequence_id = sequence_id or df.sequence_id
@@ -162,11 +125,6 @@ class DataFrame:
             sel_columns = star_columns[:1]
         new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
         return df.copy(expression=new_expression, sequence_id=sequence_id)
-
-    @classmethod
-    def _get_outer_select_columns(cls, item: t.Union[exp.Expression, "DataFrame"]) -> t.List[Column]:
-        expression = item.expression if isinstance(item, DataFrame) else item
-        return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
     def _resolve_pending_hints(self) -> "DataFrame":
         if not self.pending_join_hints and not self.pending_partition_hints:
@@ -197,8 +155,56 @@ class DataFrame:
         if hint_expression.expressions:
             expression.set("hint", hint_expression)
         return df
-        # return self.copy(expression=expression, pending_hints=None,
-        #                  pending_join_hints=None if join_tables else self.pending_join_hints)
+
+    def _hint(self, hint_name: str, args: t.List["Column"]) -> "DataFrame":
+        hint_name = hint_name.upper()
+        if hint_name in {
+            "BROADCAST",
+            "BROADCASTJOIN",
+            "MAPJOIN",
+            "MERGE",
+            "SHUFFLEMERGE",
+            "MERGEJOIN",
+            "SHUFFLE_HASH",
+            "SHUFFLE_REPLICATE_NL",
+        }:
+            hint_expression = exp.JoinHint(this=hint_name, expressions=[exp.to_table(parameter.alias_or_name) for parameter in args])
+        else:
+            hint_expression = exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
+        new_df = self.copy()
+        new_df.pending_hints.append(hint_expression)
+        return new_df
+
+    def _set_operation(self, clazz: t.Callable, other: "DataFrame", distinct: bool):
+        other_df = other._convert_leaf_to_cte()
+        base_expression = self.expression.copy()
+        base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
+        all_ctes = base_expression.ctes
+        other_df.expression.set("with", None)
+        base_expression.set("with", None)
+        operation = clazz(this=base_expression, distinct=distinct, expression=other_df.expression)
+        operation.set("with", exp.With(expressions=all_ctes))
+        return self.copy(expression=operation)._convert_leaf_to_cte()
+
+    @classmethod
+    def _add_ctes_to_expression(cls, expression: exp.Expression, ctes: t.List[exp.CTE]) -> exp.Expression:
+        expression = expression.copy()
+        with_expression = expression.args.get("with")
+        if with_expression:
+            existing_ctes = with_expression.args["expressions"]
+            existsing_cte_names = [x.alias_or_name for x in existing_ctes]
+            for cte in ctes:
+                if cte.alias_or_name not in existsing_cte_names:
+                    existing_ctes.append(cte)
+        else:
+            existing_ctes = ctes
+        expression.set("with", exp.With(expressions=existing_ctes))
+        return expression
+
+    @classmethod
+    def _get_outer_select_columns(cls, item: t.Union[exp.Expression, "DataFrame"]) -> t.List[Column]:
+        expression = item.expression if isinstance(item, DataFrame) else item
+        return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
 
     @classmethod
     def _create_hash_from_expression(cls, expression: exp.Select):
@@ -214,6 +220,29 @@ class DataFrame:
             select_expression.set("with", expression.args.get("with"))
             return select_expression
         raise RuntimeError(f"Unexpected expression type: {type(expression)}")
+
+    def sql(self, dialect="spark", optimize=True, **kwargs) -> str:
+        df = self._resolve_pending_hints()
+        expression = df.expression.copy()
+        if optimize:
+            optimized_select_expression = optimize_func(self._select_expression(expression))
+            optimized_select_expression_without_ctes = optimized_select_expression.copy()
+            optimized_select_expression_without_ctes.set("with", None)
+            if isinstance(expression, (exp.Create, exp.Insert)):
+                expression.set("expression", optimized_select_expression_without_ctes)
+                expression.set("with", optimized_select_expression.args['with'])
+            else:
+                expression = optimized_select_expression
+        expression = self._replace_cte_names_with_hashes(expression)
+        return expression.sql(**{"dialect": dialect, "pretty": True, **kwargs})
+
+    def cache(self) -> "DataFrame":
+        print("DataFrame Cache is not yet supported")
+        return self
+
+    def copy(self, **kwargs) -> "DataFrame":
+        kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
+        return DataFrame(**kwargs)
 
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> "DataFrame":
@@ -319,17 +348,6 @@ class DataFrame:
         return self.copy(expression=self.expression.order_by(*order_by_columns))
 
     sort = orderBy
-
-    def _set_operation(self, clazz: t.Callable, other: "DataFrame", distinct: bool):
-        other_df = other._convert_leaf_to_cte()
-        base_expression = self.expression.copy()
-        base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
-        all_ctes = base_expression.ctes
-        other_df.expression.set("with", None)
-        base_expression.set("with", None)
-        operation = clazz(this=base_expression, distinct=distinct, expression=other_df.expression)
-        operation.set("with", exp.With(expressions=all_ctes))
-        return self.copy(expression=operation)._convert_leaf_to_cte()
 
     @operation(Operation.FROM)
     def union(self, other: "DataFrame") -> "DataFrame":
@@ -496,7 +514,16 @@ class DataFrame:
 
     @operation(Operation.SELECT)
     def withColumnRenamed(self, existing: str, new: str):
-        return self.copy().select(exp.alias_(existing, new), append=True)
+        expression = self.expression.copy()
+        existing_columns = [expression for expression in expression.expressions if expression.alias_or_name == existing]
+        if not existing_columns:
+            raise ValueError("Tried to rename a column that doesn't exist")
+        for existing_column in existing_columns:
+            if isinstance(existing_column, exp.Column):
+                existing_column.replace(exp.alias_(existing_column.copy(), new))
+            else:
+                existing_column.set("alias", exp.to_identifier(new))
+        return self.copy(expression=expression)
 
     @operation(Operation.SELECT)
     def drop(self, *cols: t.Union[str, "Column"]) -> "DataFrame":
@@ -509,25 +536,6 @@ class DataFrame:
     @operation(Operation.LIMIT)
     def limit(self, num: int) -> "DataFrame":
         return self.copy(expression=self.expression.limit(num))
-
-    def _hint(self, hint_name: str, args: t.List["Column"]) -> "DataFrame":
-        hint_name = hint_name.upper()
-        if hint_name in {
-            "BROADCAST",
-            "BROADCASTJOIN",
-            "MAPJOIN",
-            "MERGE",
-            "SHUFFLEMERGE",
-            "MERGEJOIN",
-            "SHUFFLE_HASH",
-            "SHUFFLE_REPLICATE_NL",
-        }:
-            hint_expression = exp.JoinHint(this=hint_name, expressions=[exp.to_table(parameter.alias_or_name) for parameter in args])
-        else:
-            hint_expression = exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
-        new_df = self.copy()
-        new_df.pending_hints.append(hint_expression)
-        return new_df
 
     @operation(Operation.NO_OP)
     def hint(self, name: str, *parameters: t.Optional[t.Union[int, str]]) -> "DataFrame":

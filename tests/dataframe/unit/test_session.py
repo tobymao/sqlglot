@@ -97,3 +97,7 @@ class TestDataframeSession(unittest.TestCase):
             "CREATE TABLE new_table AS SELECT cola, colb FROM table",
             df.sql(pretty=False, optimize=False)
         )
+
+    def test_session_create_builder_patterns(self):
+        spark = SparkSession()
+        self.assertEqual(spark.builder.appName('abc').getOrCreate(), spark)

@@ -22,17 +22,18 @@ class DataFrameReader:
 
 
 class DataFrameWriter:
-    def __init__(self, df: "DataFrame", spark: "SparkSession" = None, mode: str = None):
+    def __init__(self, df: "DataFrame", spark: "SparkSession" = None, mode: str = None, by_name: bool = False):
         self._df = df
         self._spark = spark or df.spark
         self._mode = mode
+        self._by_name = by_name
 
     def copy(self, **kwargs) -> "DataFrameWriter":
         kwargs = {
             **{k: copy(v) for k, v in vars(self).copy().items()},
             **kwargs
         }
-        return DataFrameWriter(**{k.replace("_", ""): v for k, v in kwargs.items()})
+        return DataFrameWriter(**{k[1:] if k.startswith("_") else k: v for k, v in kwargs.items()})
 
     def sql(self, **kwargs) -> str:
         return self._df.sql(**kwargs)
@@ -40,16 +41,24 @@ class DataFrameWriter:
     def mode(self, saveMode: t.Optional[str]) -> "DataFrameWriter":
         return self.copy(_mode=saveMode)
 
+    @property
+    def byName(self):
+        return self.copy(by_name=True)
+
     def insertInto(self, tableName: str, overwrite: t.Optional[bool] = None) -> "DataFrameWriter":
-        expression_without_cte = self._df.expression.copy()
+        df = self._df.copy()
+        if self._by_name:
+            columns = sqlglot.schema.column_names(tableName, only_visible=True)
+            df = df._convert_leaf_to_cte().select(*columns)
+        expression_without_cte = df.expression.copy()
         expression_without_cte.set("with", None)
         insert_expression = exp.Insert(**{
-            "this": self._get_table_expression_from_name(tableName),
+            "this": exp.to_table(tableName),
             "expression": expression_without_cte,
             "overwrite": overwrite,
-            "with": self._df.expression.args.get("with")
+            "with": df.expression.args.get("with")
         })
-        return self.copy(_df=self._df.copy(expression=insert_expression))
+        return self.copy(_df=df.copy(expression=insert_expression))
 
     def saveAsTable(self,
                     name: str,
@@ -65,19 +74,10 @@ class DataFrameWriter:
         if mode == "overwrite":
             replace = True
         ctas_expression = exp.Create(
-            this=self._get_table_expression_from_name(name),
+            this=exp.to_table(name),
             kind="TABLE",
             expression=self._df.expression,
             exists=exists,
             replace=replace,
         )
         return self.copy(_df=self._df.copy(expression=ctas_expression))
-
-    def _get_table_expression_from_name(self, name: str):
-        reference = name.split(".")
-        catalog, db, table_name = ([None] * (3 - len(reference))) + reference
-        return exp.Table(
-            this=exp.Identifier(this=table_name),
-            db=exp.Identifier(this=db) if db is not None else None,
-            catalog=exp.Identifier(this=catalog) if catalog is not None else None,
-        )

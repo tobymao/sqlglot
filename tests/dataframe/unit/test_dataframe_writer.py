@@ -1,5 +1,6 @@
 import unittest
 
+import sqlglot
 from sqlglot.dataframe.sql.session import SparkSession
 from sqlglot.dataframe.sql import types
 
@@ -17,6 +18,7 @@ class TestDataFrameWriter(unittest.TestCase):
             [[1, 2, 'test']],
             schema
         )
+        sqlglot.schema.add_table("table_name", {"colb": types.IntegerType(), "colc": types.StringType(), "cola": types.IntegerType()})
 
     def test_insertInto_full_path(self):
         self.assertEqual(
@@ -40,6 +42,12 @@ class TestDataFrameWriter(unittest.TestCase):
         self.assertEqual(
             "INSERT OVERWRITE TABLE table_name SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
             self.df.write.insertInto("table_name", overwrite=True).sql(pretty=False)
+        )
+
+    def test_insertInto_byName(self):
+        self.assertEqual(
+            "INSERT INTO table_name SELECT CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc`, CAST(`a1`.`cola` AS int) AS `cola` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
+            self.df.write.byName.insertInto("table_name").sql(pretty=False)
         )
 
     def test_saveAsTable_format(self):
@@ -81,3 +89,4 @@ class TestDataFrameWriter(unittest.TestCase):
             "CREATE OR REPLACE TABLE table_name AS SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
             self.df.write.mode("ignore").saveAsTable("table_name", mode="overwrite").sql(pretty=False),
         )
+

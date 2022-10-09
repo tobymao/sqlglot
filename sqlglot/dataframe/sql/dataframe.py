@@ -469,13 +469,11 @@ class DataFrame:
         column_names = ensure_list(subset)
         window = Window.partitionBy(*column_names).orderBy(*column_names)
         return (
-            self
-            .copy()
+            self.copy()
             .withColumn("row_num", F.row_number().over(window))
             .where(F.col("row_num") == F.lit(1))
             .drop("row_num")
         )
-
 
     @operation(Operation.FROM)
     def dropna(

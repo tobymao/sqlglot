@@ -81,8 +81,8 @@ class SparkSession:
                     exp.Subquery(
                         this=exp.Values(expressions=data_expressions),
                         alias=exp.TableAlias(
-                            this=exp.Identifier(this=self._auto_incrementing_name),
-                            columns=[exp.Identifier(this=col_name) for col_name in column_mapping.keys()],
+                            this=exp.to_identifier(self._auto_incrementing_name),
+                            columns=[exp.to_identifier(col_name) for col_name in column_mapping.keys()],
                         ),
                     )
                 ]

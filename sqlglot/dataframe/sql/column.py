@@ -218,14 +218,14 @@ class Column:
 
     def set_table_name(self, table_name: str, copy=False) -> Column:
         expression = self.expression.copy() if copy else self.expression
-        expression.set("table", exp.Identifier(this=table_name))
+        expression.set("table", exp.to_identifier(table_name))
         return Column(expression)
 
     def sql(self, **kwargs) -> Column:
         return self.expression.sql(dialect="spark", **kwargs)
 
     def alias(self, name: str) -> Column:
-        new_expression = exp.Alias(alias=exp.Identifier(this=name, quoted=True), this=self.column_expression)
+        new_expression = exp.Alias(alias=exp.to_identifier(name, quoted=True), this=self.column_expression)
         return Column(new_expression)
 
     def asc(self) -> Column:

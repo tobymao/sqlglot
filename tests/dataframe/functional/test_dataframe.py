@@ -690,6 +690,26 @@ class TestDataframeFunc(DataFrameValidator):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
+    def test_union_distinct(self):
+        df_unioned = self.df_spark_employee.select(F.col("employee_id"), F.col("age")).union(
+            self.df_spark_employee.select(F.col("employee_id"), F.col("age"))
+        ).distinct()
+
+        dfs_unioned = self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("age")).union(
+            self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("age"))
+        ).distinct()
+        self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
+
+    def test_drop_duplicates_no_subset(self):
+        df = self.df_spark_employee.select("age").dropDuplicates()
+        dfs = self.df_sqlglot_employee.select("age").dropDuplicates()
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_drop_duplicates_subset(self):
+        df = self.df_spark_employee.dropDuplicates(["age"])
+        dfs = self.df_sqlglot_employee.dropDuplicates(["age"])
+        self.compare_spark_with_sqlglot(df, dfs)
+
     def test_drop_na_default(self):
         df = self.df_spark_employee.select(F.when(F.col("age") < F.lit(50), F.col("age")).alias("the_age")).dropna()
 

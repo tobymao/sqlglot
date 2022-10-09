@@ -14,6 +14,7 @@ from sqlglot.dataframe.sql.operations import Operation, operation
 from sqlglot.dataframe.sql.readwriter import DataFrameWriter
 from sqlglot.dataframe.sql.sanitize import sanitize
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
+from sqlglot.dataframe.sql.window import Window
 from sqlglot.helper import ensure_list
 from sqlglot.optimizer import optimize as optimize_func
 from sqlglot.optimizer.qualify_columns import qualify_columns
@@ -81,6 +82,10 @@ class DataFrame:
     @property
     def columns(self) -> t.List[str]:
         return self.expression.named_selects
+
+    @property
+    def na(self) -> DataFrameNaFunctions:
+        return DataFrameNaFunctions(self)
 
     def _replace_cte_names_with_hashes(self, expression: t.Union[exp.Select, exp.Create, exp.Insert]):
         def _replace_old_id_with_new(node):
@@ -457,9 +462,20 @@ class DataFrame:
         expression.set("distinct", exp.Distinct())
         return self.copy(expression=expression)
 
-    @property
-    def na(self) -> DataFrameNaFunctions:
-        return DataFrameNaFunctions(self)
+    @operation(Operation.SELECT)
+    def dropDuplicates(self, subset: t.Optional[t.List[str]] = None):
+        if not subset:
+            return self.distinct()
+        column_names = ensure_list(subset)
+        window = Window.partitionBy(*column_names).orderBy(*column_names)
+        return (
+            self
+            .copy()
+            .withColumn("row_num", F.row_number().over(window))
+            .where(F.col("row_num") == F.lit(1))
+            .drop("row_num")
+        )
+
 
     @operation(Operation.FROM)
     def dropna(

@@ -691,13 +691,17 @@ class TestDataframeFunc(DataFrameValidator):
         self.compare_spark_with_sqlglot(df, dfs)
 
     def test_union_distinct(self):
-        df_unioned = self.df_spark_employee.select(F.col("employee_id"), F.col("age")).union(
+        df_unioned = (
             self.df_spark_employee.select(F.col("employee_id"), F.col("age"))
-        ).distinct()
+            .union(self.df_spark_employee.select(F.col("employee_id"), F.col("age")))
+            .distinct()
+        )
 
-        dfs_unioned = self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("age")).union(
+        dfs_unioned = (
             self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("age"))
-        ).distinct()
+            .union(self.df_sqlglot_employee.select(SF.col("employee_id"), SF.col("age")))
+            .distinct()
+        )
         self.compare_spark_with_sqlglot(df_unioned, dfs_unioned)
 
     def test_drop_duplicates_no_subset(self):

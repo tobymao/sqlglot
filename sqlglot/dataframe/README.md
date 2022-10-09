@@ -172,3 +172,7 @@ finally:
     cs.close()
 ctx.close()
 ```
+
+# Unsupportable Operations
+
+Any operation that lacks a way to represent it in SQL cannot be supported by this tool. An example of this would be rdd operations. Since the DataFrame API though is mostly modeled around SQL concepts most operations can be supported.

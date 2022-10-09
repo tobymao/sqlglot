@@ -405,6 +405,12 @@ class Generator:
             )
         return f"{type_sql}{nested}"
 
+    def directory_sql(self, expression):
+        local = "LOCAL " if expression.args.get("local") else ""
+        row_format = self.sql(expression, "row_format")
+        row_format = f" {row_format}" if row_format else ""
+        return f"{local}DIRECTORY {self.sql(expression, 'this')}{row_format}"
+
     def delete_sql(self, expression):
         this = self.sql(expression, "this")
         where_sql = self.sql(expression, "where")
@@ -513,13 +519,19 @@ class Generator:
         return f"{key}={value}"
 
     def insert_sql(self, expression):
-        kind = "OVERWRITE TABLE" if expression.args.get("overwrite") else "INTO"
-        this = self.sql(expression, "this")
+        overwrite = expression.args.get("overwrite")
+
+        if isinstance(expression.this, exp.Directory):
+            this = "OVERWRITE " if overwrite else "INTO "
+        else:
+            this = "OVERWRITE TABLE " if overwrite else "INTO "
+
+        this = f"{this}{self.sql(expression, 'this')}"
         exists = " IF EXISTS " if expression.args.get("exists") else " "
         partition_sql = self.sql(expression, "partition") if expression.args.get("partition") else ""
         expression_sql = self.sql(expression, "expression")
         sep = self.sep() if partition_sql else ""
-        sql = f"INSERT {kind} {this}{exists}{partition_sql}{sep}{expression_sql}"
+        sql = f"INSERT {this}{exists}{partition_sql}{sep}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression):
@@ -533,6 +545,21 @@ class Generator:
 
     def introducer_sql(self, expression):
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
+
+    def rowformat_sql(self, expression):
+        fields = expression.args.get("fields")
+        fields = f" FIELDS TERMINATED BY {fields}" if fields else ""
+        escaped = expression.args.get("escaped")
+        escaped = f" ESCAPED BY {escaped}" if escaped else ""
+        items = expression.args.get("collection_items")
+        items = f" COLLECTION ITEMS TERMINATED BY {items}" if items else ""
+        keys = expression.args.get("map_keys")
+        keys = f" MAP KEYS TERMINATED BY {keys}" if keys else ""
+        lines = expression.args.get("lines")
+        lines = f" LINES TERMINATED BY {lines}" if lines else ""
+        null = expression.args.get("null")
+        null = f" NULL DEFINED AS {null}" if null else ""
+        return f"ROW FORMAT DELIMITED{fields}{escaped}{items}{keys}{lines}{null}"
 
     def table_sql(self, expression):
         table = ".".join(
@@ -687,6 +714,19 @@ class Generator:
             text = text.replace(self.quote_end, self._escaped_quote_end)
             return f"{self.quote_start}{text}{self.quote_end}"
         return text
+
+    def loaddata_sql(self, expression):
+        local = " LOCAL" if expression.args.get("local") else ""
+        inpath = f" INPATH {self.sql(expression, 'inpath')}"
+        overwrite = " OVERWRITE" if expression.args.get("overwrite") else ""
+        this = f" INTO TABLE {self.sql(expression, 'this')}"
+        partition = self.sql(expression, "partition")
+        partition = f" {partition}" if partition else ""
+        input_format = self.sql(expression, "input_format")
+        input_format = f" INPUTFORMAT {input_format}" if input_format else ""
+        serde = self.sql(expression, "serde")
+        serde = f" SERDE {serde}" if serde else ""
+        return f"LOAD DATA{local}{inpath}{overwrite}{this}{partition}{input_format}{serde}"
 
     def null_sql(self, *_):
         return "NULL"

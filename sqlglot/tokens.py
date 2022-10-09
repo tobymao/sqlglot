@@ -134,13 +134,13 @@ class TokenType(AutoName):
     CURRENT_ROW = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
-    DIV = auto()
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()
     DETERMINISTIC = auto()
     DISTINCT = auto()
     DISTRIBUTE_BY = auto()
+    DIV = auto()
     DROP = auto()
     ELSE = auto()
     END = auto()
@@ -190,6 +190,8 @@ class TokenType(AutoName):
     LEFT = auto()
     LIKE = auto()
     LIMIT = auto()
+    LOAD_DATA = auto()
+    LOCAL = auto()
     LOCATION = auto()
     MAP = auto()
     MATERIALIZED = auto()
@@ -437,13 +439,13 @@ class Tokenizer(metaclass=_Tokenizer):
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
-        "DIV": TokenType.DIV,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
         "DETERMINISTIC": TokenType.DETERMINISTIC,
         "DISTINCT": TokenType.DISTINCT,
         "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
+        "DIV": TokenType.DIV,
         "DROP": TokenType.DROP,
         "ELSE": TokenType.ELSE,
         "END": TokenType.END,
@@ -488,6 +490,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
+        "LOAD DATA": TokenType.LOAD_DATA,
+        "LOCAL": TokenType.LOCAL,
         "LOCATION": TokenType.LOCATION,
         "MATERIALIZED": TokenType.MATERIALIZED,
         "NATURAL": TokenType.NATURAL,

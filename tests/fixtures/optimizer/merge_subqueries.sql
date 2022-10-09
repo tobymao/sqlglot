@@ -187,3 +187,38 @@ FROM (
   ) AS x
 ) AS x;
 SELECT /*+ BROADCAST(x) */ x.a AS a, x.c AS c FROM (SELECT x.a AS a, COUNT(1) AS c FROM x AS x GROUP BY x.a) AS x;
+
+# title: Test preventing merge of window expressions
+with t1 as (
+  SELECT
+    x.a,
+    x.b,
+    ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) as row_num
+  FROM
+    x
+)
+SELECT
+  t1.a,
+  t1.b
+FROM
+  t1
+WHERE
+  row_num = 1;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.a AS a, t1.b AS b FROM t1 WHERE t1.row_num = 1;
+
+# title: Test allow merging of window functions if not in where
+with t1 as (
+  SELECT
+    x.a,
+    x.b,
+    ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) as row_num
+  FROM
+    x
+)
+SELECT
+  t1.a,
+  t1.b,
+  t1.row_num
+FROM
+  t1;
+SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x;

@@ -741,6 +741,11 @@ class Check(Expression):
     pass
 
 
+class Directory(Expression):
+    # https://spark.apache.org/docs/3.0.0-preview/sql-ref-syntax-dml-insert-overwrite-directory-hive.html
+    arg_types = {"this": True, "local": False, "row_format": False}
+
+
 class ForeignKey(Expression):
     arg_types = {
         "expressions": True,
@@ -802,6 +807,18 @@ class Insert(Expression):
 # https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html
 class Introducer(Expression):
     arg_types = {"this": True, "expression": True}
+
+
+class LoadData(Expression):
+    arg_types = {
+        "this": True,
+        "local": False,
+        "overwrite": False,
+        "inpath": True,
+        "partition": False,
+        "input_format": False,
+        "serde": False,
+    }
 
 
 class Partition(Expression):
@@ -1035,6 +1052,18 @@ class Qualify(Expression):
 
 class Reference(Expression):
     arg_types = {"this": True, "expressions": True}
+
+
+class RowFormat(Expression):
+    # https://cwiki.apache.org/confluence/display/hive/languagemanual+dml
+    arg_types = {
+        "fields": False,
+        "escaped": False,
+        "collection_items": False,
+        "map_keys": False,
+        "lines": False,
+        "null": False,
+    }
 
 
 class Tuple(Expression):

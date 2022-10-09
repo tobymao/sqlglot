@@ -160,6 +160,7 @@ class Parser:
         TokenType.LAZY,
         TokenType.LANGUAGE,
         TokenType.LEADING,
+        TokenType.LOCAL,
         TokenType.LOCATION,
         TokenType.MATERIALIZED,
         TokenType.NATURAL,
@@ -344,6 +345,7 @@ class Parser:
         TokenType.CREATE: lambda self: self._parse_create(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.INSERT: lambda self: self._parse_insert(),
+        TokenType.LOAD_DATA: lambda self: self._parse_load_data(),
         TokenType.UPDATE: lambda self: self._parse_update(),
         TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.CACHE: lambda self: self._parse_cache(),
@@ -838,15 +840,65 @@ class Parser:
 
     def _parse_insert(self):
         overwrite = self._match(TokenType.OVERWRITE)
-        self._match(TokenType.INTO)
-        self._match(TokenType.TABLE)
+        local = self._match(TokenType.LOCAL)
+        if self._match_text("DIRECTORY"):
+            this = self.expression(
+                exp.Directory,
+                this=self._parse_var_or_string(),
+                local=local,
+                row_format=self._parse_row_format(),
+            )
+        else:
+            self._match(TokenType.INTO)
+            self._match(TokenType.TABLE)
+            this = self._parse_table(schema=True)
         return self.expression(
             exp.Insert,
-            this=self._parse_table(schema=True),
+            this=this,
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_select(nested=True),
             overwrite=overwrite,
+        )
+
+    def _parse_row_format(self):
+        if not self._match_pair(TokenType.ROW, TokenType.FORMAT):
+            return None
+
+        self._match_text("DELIMITED")
+
+        kwargs = {}
+
+        if self._match_text("FIELDS", "TERMINATED", "BY"):
+            kwargs["fields"] = self._parse_string()
+            if self._match_text("ESCAPED", "BY"):
+                kwargs["escaped"] = self._parse_string()
+        if self._match_text("COLLECTION", "ITEMS", "TERMINATED", "BY"):
+            kwargs["collection_items"] = self._parse_string()
+        if self._match_text("MAP", "KEYS", "TERMINATED", "BY"):
+            kwargs["map_keys"] = self._parse_string()
+        if self._match_text("LINES", "TERMINATED", "BY"):
+            kwargs["lines"] = self._parse_string()
+        if self._match_text("NULL", "DEFINED", "AS"):
+            kwargs["null"] = self._parse_string()
+        return self.expression(exp.RowFormat, **kwargs)
+
+    def _parse_load_data(self):
+        local = self._match(TokenType.LOCAL)
+        self._match_text("INPATH")
+        inpath = self._parse_string()
+        overwrite = self._match(TokenType.OVERWRITE)
+        self._match_pair(TokenType.INTO, TokenType.TABLE)
+
+        return self.expression(
+            exp.LoadData,
+            this=self._parse_id_var(),
+            local=local,
+            overwrite=overwrite,
+            inpath=inpath,
+            partition=self._parse_partition(),
+            input_format=self._match_text("INPUTFORMAT") and self._parse_string(),
+            serde=self._match_text("SERDE") and self._parse_string(),
         )
 
     def _parse_delete(self):
@@ -2365,6 +2417,16 @@ class Parser:
     def _match_r_paren(self):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
+
+    def _match_text(self, *texts):
+        index = self._index
+        for text in texts:
+            if self._curr and self._curr.text.upper() == text:
+                self._advance()
+            else:
+                self._retreat(index)
+                return False
+        return True
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

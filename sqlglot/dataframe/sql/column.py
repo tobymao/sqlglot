@@ -196,7 +196,7 @@ class Column:
         return self.expression
 
     @property
-    def alias_or_name(self):
+    def alias_or_name(self) -> str:
         if isinstance(self.expression, exp.Null):
             return "NULL"
         if isinstance(self.expression.this, exp.Star):
@@ -225,7 +225,7 @@ class Column:
         return self.expression.sql(dialect="spark", **kwargs)
 
     def alias(self, name: str) -> Column:
-        new_expression = exp.Alias(alias=exp.to_identifier(name, quoted=True), this=self.column_expression)
+        new_expression = exp.alias_(self.column_expression, name)
         return Column(new_expression)
 
     def asc(self) -> Column:
@@ -263,7 +263,7 @@ class Column:
 
         true_value = value if isinstance(value, Column) else lit(value)
         new_column = self.copy()
-        new_column.expression.args["default"] = true_value.column_expression
+        new_column.expression.set("default", true_value.column_expression)
         return new_column
 
     def isNull(self) -> Column:

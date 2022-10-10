@@ -56,10 +56,9 @@ class WindowSpec:
         cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
         expressions = [Column.ensure_col(x).expression for x in cols]
         window_spec = self.copy()
-        if window_spec.expression.args.get("partition_by") is None:
-            window_spec.expression.args["partition_by"] = expressions
-        else:
-            window_spec.expression.args["partition_by"].extend(expressions)
+        partition_by_expressions = window_spec.expression.args.get("partition_by", [])
+        partition_by_expressions.extend(expressions)
+        window_spec.expression.set("partition_by", partition_by_expressions)
         return window_spec
 
     def orderBy(self, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
@@ -69,8 +68,10 @@ class WindowSpec:
         expressions = [Column.ensure_col(x).expression for x in cols]
         window_spec = self.copy()
         if window_spec.expression.args.get("order") is None:
-            window_spec.expression.args["order"] = exp.Order(expressions=[])
-        window_spec.expression.args["order"].args["expressions"].extend(expressions)
+            window_spec.expression.set("order", exp.Order(expressions=[]))
+        order_by = window_spec.expression.args["order"].expressions
+        order_by.extend(expressions)
+        window_spec.expression.args["order"].set("expressions", order_by)
         return window_spec
 
     def _calc_start_end(self, start: int, end: int) -> t.Dict[str, t.Union[str, int]]:

@@ -9,6 +9,7 @@ import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql.column import Column
+from sqlglot.dataframe.sql import const
 from sqlglot.dataframe.sql.group import GroupedData
 from sqlglot.dataframe.sql.normalize import normalize
 from sqlglot.dataframe.sql.operations import Operation, operation
@@ -65,7 +66,7 @@ class DataFrame:
 
     @property
     def latest_cte_name(self) -> str:
-        if len(self.expression.ctes) == 0:
+        if not self.expression.ctes:
             from_exp = self.expression.args["from"]
             if from_exp.alias_or_name:
                 return from_exp.alias_or_name
@@ -145,9 +146,6 @@ class DataFrame:
         new_expression = exp.Select()
         new_expression = df._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
         sel_columns = df._get_outer_select_columns(cte_expression)
-        star_columns = [col for col in sel_columns if isinstance(col.expression.this, exp.Star)]
-        if len(star_columns) > 0:
-            sel_columns = star_columns[:1]
         new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
         return df.copy(expression=new_expression, sequence_id=sequence_id)
 
@@ -185,16 +183,7 @@ class DataFrame:
 
     def _hint(self, hint_name: str, args: t.List[Column]) -> DataFrame:
         hint_name = hint_name.upper()
-        if hint_name in {
-            "BROADCAST",
-            "BROADCASTJOIN",
-            "MAPJOIN",
-            "MERGE",
-            "SHUFFLEMERGE",
-            "MERGEJOIN",
-            "SHUFFLE_HASH",
-            "SHUFFLE_REPLICATE_NL",
-        }:
+        if hint_name in const.JOIN_HINTS:
             hint_expression = exp.JoinHint(
                 this=hint_name, expressions=[exp.to_table(parameter.alias_or_name) for parameter in args]
             )
@@ -614,7 +603,7 @@ class DataFrame:
 
         columns = self._ensure_and_normalize_cols(subset) if subset else all_columns
         if isinstance(to_replace, dict):
-            old_values = list(to_replace.keys())
+            old_values = list(to_replace)
             new_values = list(to_replace.values())
         elif not old_values and isinstance(to_replace, list):
             assert isinstance(value, list), "value must be a list since the replacements are a list"

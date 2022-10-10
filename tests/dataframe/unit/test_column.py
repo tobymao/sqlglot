@@ -136,7 +136,7 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("CAST(cola AS INT)", F.col("cola").cast("INT").sql())
 
     def test_alias(self):
-        self.assertEqual("cola AS `new_name`", F.col("cola").alias("new_name").sql())
+        self.assertEqual("cola AS new_name", F.col("cola").alias("new_name").sql())
 
     def test_between(self):
         self.assertEqual("cola BETWEEN 1 AND 3", F.col("cola").between(1, 3).sql())

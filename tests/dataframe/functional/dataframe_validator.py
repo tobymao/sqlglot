@@ -130,7 +130,8 @@ class DataFrameValidator(unittest.TestCase):
                     struct_field.metadata = {}
             self.assertEqual(schema_1, schema_2)
 
-        actual_df_sqlglot = self.spark.sql(df_sqlglot.sql())
+        for statement in df_sqlglot.sql():
+            actual_df_sqlglot = self.spark.sql(statement)
         df_sqlglot_results = actual_df_sqlglot.collect()
         df_spark_results = df_spark.collect()
         if not skip_schema_compare:

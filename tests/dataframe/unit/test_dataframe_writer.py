@@ -1,92 +1,89 @@
-import unittest
-
 import sqlglot
-from sqlglot.dataframe.sql import types
-from sqlglot.dataframe.sql.session import SparkSession
+from unittest import mock
+
+from sqlglot.schema import MappingSchema
+
+from tests.dataframe.unit.dataframe_sql_validator import DataFrameSQLValidator
 
 
-class TestDataFrameWriter(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        spark = SparkSession()
-        schema = types.StructType(
-            [
-                types.StructField("cola", types.IntegerType()),
-                types.StructField("colb", types.IntegerType()),
-                types.StructField("colc", types.StringType()),
-            ]
-        )
-        cls.df = spark.createDataFrame([[1, 2, "test"]], schema)
-        sqlglot.schema.add_table(
-            "table_name", {"colb": types.IntegerType(), "colc": types.StringType(), "cola": types.IntegerType()}
-        )
-
+class TestDataFrameWriter(DataFrameSQLValidator):
     def test_insertInto_full_path(self):
-        self.assertEqual(
-            "INSERT INTO catalog.db.table_name SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.insertInto("catalog.db.table_name").sql(pretty=False),
-        )
+        df = self.df_employee.write.insertInto("catalog.db.table_name")
+        expected = "INSERT INTO catalog.db.table_name SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
     def test_insertInto_db_table(self):
-        self.assertEqual(
-            "INSERT INTO db.table_name SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.insertInto("db.table_name").sql(pretty=False),
-        )
+        df = self.df_employee.write.insertInto("db.table_name")
+        expected = "INSERT INTO db.table_name SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
     def test_insertInto_table(self):
-        self.assertEqual(
-            "INSERT INTO table_name SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.insertInto("table_name").sql(pretty=False),
-        )
+        df = self.df_employee.write.insertInto("table_name")
+        expected = "INSERT INTO table_name SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
     def test_insertInto_overwrite(self):
-        self.assertEqual(
-            "INSERT OVERWRITE TABLE table_name SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.insertInto("table_name", overwrite=True).sql(pretty=False),
-        )
+        df = self.df_employee.write.insertInto("table_name", overwrite=True)
+        expected = "INSERT OVERWRITE TABLE table_name SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
+    @mock.patch("sqlglot.schema", MappingSchema())
     def test_insertInto_byName(self):
-        self.assertEqual(
-            "INSERT INTO table_name SELECT CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc`, CAST(`a1`.`cola` AS int) AS `cola` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.byName.insertInto("table_name").sql(pretty=False),
-        )
+        sqlglot.schema.add_table("table_name", {"employee_id": "INT"})
+        df = self.df_employee.write.byName.insertInto("table_name")
+        expected = "INSERT INTO table_name SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
+
+    def test_insertInto_cache(self):
+        df = self.df_employee.cache().write.insertInto("table_name")
+        expected_statements = [
+            "DROP VIEW IF EXISTS t35612",
+            "CACHE LAZY TABLE t35612 OPTIONS('storageLevel' = 'MEMORY_AND_DISK') AS SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)",
+            "INSERT INTO table_name SELECT `t35612`.`employee_id` AS `employee_id`, `t35612`.`fname` AS `fname`, `t35612`.`lname` AS `lname`, `t35612`.`age` AS `age`, `t35612`.`store_id` AS `store_id` FROM `t35612` AS `t35612`",
+        ]
+        self.compare_sql(df, expected_statements)
 
     def test_saveAsTable_format(self):
         with self.assertRaises(NotImplementedError):
-            self.df.write.saveAsTable("table_name", format="parquet").sql(pretty=False)
+            self.df_employee.write.saveAsTable("table_name", format="parquet").sql(pretty=False)[0]
 
     def test_saveAsTable_append(self):
-        self.assertEqual(
-            "INSERT INTO table_name SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.saveAsTable("table_name", mode="append").sql(pretty=False),
-        )
+        df = self.df_employee.write.saveAsTable("table_name", mode="append")
+        expected = "INSERT INTO table_name SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
     def test_saveAsTable_overwrite(self):
-        self.assertEqual(
-            "CREATE OR REPLACE TABLE table_name AS SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.saveAsTable("table_name", mode="overwrite").sql(pretty=False),
-        )
+        df = self.df_employee.write.saveAsTable("table_name", mode="overwrite")
+        expected = "CREATE OR REPLACE TABLE table_name AS SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
     def test_saveAsTable_error(self):
-        self.assertEqual(
-            "CREATE TABLE table_name AS SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.saveAsTable("table_name", mode="error").sql(pretty=False),
-        )
+        df = self.df_employee.write.saveAsTable("table_name", mode="error")
+        expected = "CREATE TABLE table_name AS SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
-    def test_saveAsTable_error(self):
-        self.assertEqual(
-            "CREATE TABLE IF NOT EXISTS table_name AS SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.saveAsTable("table_name", mode="ignore").sql(pretty=False),
-        )
+    def test_saveAsTable_ignore(self):
+        df = self.df_employee.write.saveAsTable("table_name", mode="ignore")
+        expected = "CREATE TABLE IF NOT EXISTS table_name AS SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
     def test_mode_standalone(self):
-        self.assertEqual(
-            "CREATE TABLE IF NOT EXISTS table_name AS SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.mode("ignore").saveAsTable("table_name").sql(pretty=False),
-        )
+        df = self.df_employee.write.mode("ignore").saveAsTable("table_name")
+        expected = "CREATE TABLE IF NOT EXISTS table_name AS SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
 
     def test_mode_override(self):
-        self.assertEqual(
-            "CREATE OR REPLACE TABLE table_name AS SELECT CAST(`a1`.`cola` AS int) AS `cola`, CAST(`a1`.`colb` AS int) AS `colb`, CAST(`a1`.`colc` AS string) AS `colc` FROM (VALUES (1, 2, 'test')) AS `a1`(`cola`, `colb`, `colc`)",
-            self.df.write.mode("ignore").saveAsTable("table_name", mode="overwrite").sql(pretty=False),
-        )
+        df = self.df_employee.write.mode("ignore").saveAsTable("table_name", mode="overwrite")
+        expected = "CREATE OR REPLACE TABLE table_name AS SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
+        self.compare_sql(df, expected)
+
+    def test_saveAsTable_cache(self):
+        df = self.df_employee.cache().write.saveAsTable("table_name")
+        expected_statements = [
+            "DROP VIEW IF EXISTS t35612",
+            "CACHE LAZY TABLE t35612 OPTIONS('storageLevel' = 'MEMORY_AND_DISK') AS SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)",
+            "CREATE TABLE table_name AS SELECT `t35612`.`employee_id` AS `employee_id`, `t35612`.`fname` AS `fname`, `t35612`.`lname` AS `lname`, `t35612`.`age` AS `age`, `t35612`.`store_id` AS `store_id` FROM `t35612` AS `t35612`",
+        ]
+        self.compare_sql(df, expected_statements)
+
+

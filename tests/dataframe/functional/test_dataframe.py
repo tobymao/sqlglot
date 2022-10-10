@@ -1,6 +1,5 @@
 from pyspark.sql import functions as F
 
-import sqlglot
 from sqlglot.dataframe.sql import functions as SF
 from tests.dataframe.functional.dataframe_validator import DataFrameValidator
 
@@ -13,7 +12,6 @@ class TestDataframeFunc(DataFrameValidator):
 
     def test_simple_select_from_table(self):
         df = self.df_spark_employee
-        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         dfs = self.sqlglot.read.table("employee")
         self.compare_spark_with_sqlglot(df, dfs)
 
@@ -1016,7 +1014,6 @@ class TestDataframeFunc(DataFrameValidator):
         """
         df = self.df_spark_employee.repartition(63)
 
-        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         dfs = self.sqlglot.read.table("employee").repartition(63)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
@@ -1030,7 +1027,6 @@ class TestDataframeFunc(DataFrameValidator):
         """
         df = self.df_spark_employee.repartition("age")
 
-        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         dfs = self.sqlglot.read.table("employee").repartition("age")
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         self.assertIn("RepartitionByExpression [age", self.get_explain_plan(df))
@@ -1042,7 +1038,6 @@ class TestDataframeFunc(DataFrameValidator):
         """
         df = self.df_spark_employee.repartition(53, "age", "fname")
 
-        sqlglot.schema.add_table("employee", self.sqlglot_employee_schema)
         dfs = self.sqlglot.read.table("employee").repartition(53, "age", "fname")
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
@@ -1060,3 +1055,21 @@ class TestDataframeFunc(DataFrameValidator):
         sqlglot_num_partitions = dfs.rdd.getNumPartitions()
         self.assertEqual(spark_num_partitions, 3)
         self.assertEqual(spark_num_partitions, sqlglot_num_partitions)
+
+    def test_cache_select(self):
+        df_employee = self.df_spark_employee.groupBy("store_id").agg(F.countDistinct("employee_id").alias("num_employees")).cache()
+        df_joined = df_employee.join(self.df_spark_store, on="store_id").select(self.df_spark_store.store_id, df_employee.num_employees)
+        dfs_employee = self.df_sqlglot_employee.groupBy("store_id").agg(SF.countDistinct("employee_id").alias("num_employees")).cache()
+        dfs_joined = dfs_employee.join(self.df_sqlglot_store, on="store_id").select(self.df_sqlglot_store.store_id, dfs_employee.num_employees)
+        self.compare_spark_with_sqlglot(df_joined, dfs_joined)
+
+    def test_persist_select(self):
+        df_employee = self.df_spark_employee.groupBy("store_id").agg(
+            F.countDistinct("employee_id").alias("num_employees")).persist()
+        df_joined = df_employee.join(self.df_spark_store, on="store_id").select(self.df_spark_store.store_id,
+                                                                                df_employee.num_employees)
+        dfs_employee = self.df_sqlglot_employee.groupBy("store_id").agg(
+            SF.countDistinct("employee_id").alias("num_employees")).persist()
+        dfs_joined = dfs_employee.join(self.df_sqlglot_store, on="store_id").select(self.df_sqlglot_store.store_id,
+                                                                                    dfs_employee.num_employees)
+        self.compare_spark_with_sqlglot(df_joined, dfs_joined)

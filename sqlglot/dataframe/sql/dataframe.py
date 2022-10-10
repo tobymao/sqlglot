@@ -13,6 +13,7 @@ from sqlglot.dataframe.sql.group import GroupedData
 from sqlglot.dataframe.sql.operations import Operation, operation
 from sqlglot.dataframe.sql.readwriter import DataFrameWriter
 from sqlglot.dataframe.sql.sanitize import sanitize
+from sqlglot.dataframe.sql.transforms import replace_id_value
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.dataframe.sql.window import Window
 from sqlglot.helper import ensure_list
@@ -21,6 +22,7 @@ from sqlglot.optimizer.qualify_columns import qualify_columns
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
+    from sqlglot.dataframe.sql._typing import OutputExpressionContainer
 
 
 class DataFrame:
@@ -32,6 +34,7 @@ class DataFrame:
         sequence_id: str = None,
         last_op: t.Optional[Operation] = Operation.INIT,
         pending_hints: t.List[exp.Expression] = None,
+        output_expression_container: OutputExpressionContainer = exp.Select(),
         **kwargs,
     ):
         self.spark = spark
@@ -40,6 +43,7 @@ class DataFrame:
         self.sequence_id = sequence_id or self.spark._random_sequence_id
         self.last_op = last_op
         self.pending_hints = pending_hints or []
+        self.output_expression_container = output_expression_container
 
     def __getattr__(self, column_name: str) -> Column:
         return self[column_name]
@@ -88,20 +92,17 @@ class DataFrame:
         return DataFrameNaFunctions(self)
 
     def _replace_cte_names_with_hashes(self, expression: t.Union[exp.Select, exp.Create, exp.Insert]):
-        def _replace_old_id_with_new(node):
-            if isinstance(node, exp.Identifier) and node.alias_or_name == old_name_id.alias_or_name:
-                node = node.replace(new_hashed_id)
-            return node
-
         expression = expression.copy()
         ctes = expression.expression.ctes if isinstance(expression, (exp.Create, exp.Insert)) else expression.ctes
+        replacement_mapping = {}
         for cte in ctes:
             old_name_id = cte.args["alias"].this
             new_hashed_id = exp.to_identifier(
                 self._create_hash_from_expression(cte.this), quoted=old_name_id.args["quoted"]
             )
+            replacement_mapping[old_name_id] = new_hashed_id
             cte.set("alias", exp.TableAlias(this=new_hashed_id))
-            expression = expression.transform(_replace_old_id_with_new)
+            expression = expression.transform(replace_id_value, replacement_mapping)
         return expression
 
     def _create_cte_from_expression(
@@ -151,9 +152,9 @@ class DataFrame:
         return df.copy(expression=new_expression, sequence_id=sequence_id)
 
     def _resolve_pending_hints(self) -> DataFrame:
-        if not self.pending_join_hints and not self.pending_partition_hints:
-            return self.copy()
         df = self.copy()
+        if not self.pending_hints:
+            return df
         expression = df.expression
         hint_expression = expression.args.get("hint") or exp.Hint(expressions=[])
         for hint in df.pending_partition_hints:
@@ -214,6 +215,11 @@ class DataFrame:
         operation.set("with", exp.With(expressions=all_ctes))
         return self.copy(expression=operation)._convert_leaf_to_cte()
 
+    def _cache(self, storage_level: str):
+        df = self._convert_leaf_to_cte()
+        df.expression.ctes[-1].set("cache_storage_level", storage_level)
+        return df
+
     @classmethod
     def _add_ctes_to_expression(cls, expression: exp.Expression, ctes: t.List[exp.CTE]) -> exp.Expression:
         expression = expression.copy()
@@ -249,24 +255,70 @@ class DataFrame:
             return select_expression
         raise RuntimeError(f"Unexpected expression type: {type(expression)}")
 
-    def sql(self, dialect="spark", optimize=True, **kwargs) -> str:
-        df = self._resolve_pending_hints()
-        expression = df.expression.copy()
-        if optimize:
-            optimized_select_expression = optimize_func(self._select_expression(expression))
-            optimized_select_expression_without_ctes = optimized_select_expression.copy()
-            optimized_select_expression_without_ctes.set("with", None)
-            if isinstance(expression, (exp.Create, exp.Insert)):
-                expression.set("expression", optimized_select_expression_without_ctes)
-                expression.set("with", optimized_select_expression.args["with"])
+    def _get_select_expressions(self) -> t.List[t.Tuple[t.Union[exp.Cache, OutputExpressionContainer], exp.Select]]:
+        select_expressions = []
+        main_select_ctes = []
+        for cte in self._select_expression(self.expression).ctes:
+            cache_storage_level = cte.args.get("cache_storage_level")
+            if cache_storage_level:
+                select_expression = cte.this.copy()
+                select_expression.set("with", exp.With(expressions=copy(main_select_ctes)))
+                select_expression.set("cte_alias_name", cte.alias_or_name)
+                select_expression.set("cache_storage_level", cache_storage_level)
+                select_expressions.append((exp.Cache, select_expression))
             else:
-                expression = optimized_select_expression
-        expression = self._replace_cte_names_with_hashes(expression)
-        return expression.sql(**{"dialect": dialect, "pretty": True, **kwargs})
+                main_select_ctes.append(cte)
+        main_select = self.expression.copy()
+        if main_select_ctes:
+            main_select.set("with", exp.With(expressions=main_select_ctes))
+        select_expressions.append((type(self.output_expression_container), main_select))
+        return select_expressions
 
-    def cache(self) -> DataFrame:
-        print("DataFrame Cache is not yet supported")
-        return self
+    def sql(self, dialect="spark", optimize=True, **kwargs) -> t.List[str]:
+        df = self._resolve_pending_hints()
+        select_expressions = df._get_select_expressions()
+        output_expressions = []
+        replacement_mapping = {}
+        for expression_type, select_expression in select_expressions:
+            select_expression = select_expression.transform(replace_id_value, replacement_mapping)
+            if optimize:
+                select_expression = optimize_func(select_expression)
+            select_expression = df._replace_cte_names_with_hashes(select_expression)
+
+            # temporary hack to remove extra CTE that was replaced with table until removing unused CTEs is added
+            # to optimizer
+            filtered_ctes = [cte for cte in select_expression.ctes if cte.alias_or_name not in {x.alias_or_name for x in replacement_mapping.values()}]
+            with_expr = exp.With(expressions=filtered_ctes) if filtered_ctes else None
+            select_expression.set("with", with_expr)
+
+            if expression_type == exp.Cache:
+                cache_table_name = df._create_hash_from_expression(select_expression)
+                cache_table = exp.to_table(cache_table_name)
+                original_alias_name = select_expression.args['cte_alias_name']
+                replacement_mapping[exp.to_identifier(original_alias_name)] = exp.to_identifier(cache_table_name)
+                sqlglot.schema.add_table(cache_table_name, select_expression.named_selects)
+                cache_storage_level = select_expression.args['cache_storage_level']
+                options = [exp.Literal(this='storageLevel', is_string=True), exp.Literal(this=cache_storage_level, is_string=True)]
+                expression = exp.Cache(this=cache_table, expression=select_expression, lazy=True, options=options)
+                # We will drop the "view" if it exists before running the cache table
+                output_expressions.append(exp.Drop(this=cache_table, exists=True, kind="VIEW"))
+            elif expression_type == exp.Create:
+                expression = df.output_expression_container.copy()
+                expression.set("expression", select_expression)
+            elif expression_type == exp.Insert:
+                expression = df.output_expression_container.copy()
+                select_without_ctes = select_expression.copy()
+                select_without_ctes.set("with", None)
+                expression.set("expression", select_without_ctes)
+                if select_expression.ctes:
+                    expression.set("with", exp.With(expressions=select_expression.ctes))
+            elif expression_type == exp.Select:
+                expression = select_expression
+            else:
+                raise ValueError(f"Invalid expression type: {expression_type}")
+            output_expressions.append(expression)
+
+        return [expression.sql(**{"dialect": dialect, "pretty": True, **kwargs}) for expression in output_expressions]
 
     def copy(self, **kwargs) -> DataFrame:
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
@@ -651,6 +703,17 @@ class DataFrame:
     def coalesce(self, numPartitions: int) -> DataFrame:
         num_partitions = Column.ensure_cols([numPartitions])
         return self._hint("coalesce", num_partitions)
+
+    @operation(Operation.NO_OP)
+    def cache(self) -> DataFrame:
+        return self._cache(storage_level='MEMORY_AND_DISK')
+
+    @operation(Operation.NO_OP)
+    def persist(self, storageLevel: str = 'MEMORY_AND_DISK_SER') -> DataFrame:
+        """
+        Storage Level Options: https://spark.apache.org/docs/3.0.0-preview/sql-ref-syntax-aux-cache-cache-table.html
+        """
+        return self._cache(storageLevel)
 
 
 class DataFrameNaFunctions:

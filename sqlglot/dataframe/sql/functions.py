@@ -43,7 +43,7 @@ def count_distinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:
     return Column(glotexp.Count(this=glotexp.Distinct(this=cols[0].expression)))
 
 
-def countDistinct(col: Column, *cols: ColumnOrName) -> Column:
+def countDistinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:
     return count_distinct(col, *cols)
 
 
@@ -1106,11 +1106,11 @@ def aggregate(
 ) -> Column:
     merge_exp = glotexp.Lambda(
         this=merge(Column(accumulator_name), Column(target_row_name)).expression,
-        expressions=[glotexp.to_identifier(accumulator_name), glotexp.to_identifier(target_row_name)],
+        expressions=[glotexp.to_identifier(accumulator_name, quoted=_lambda_quoted(accumulator_name)), glotexp.to_identifier(target_row_name, quoted=_lambda_quoted(target_row_name))],
     )
     if finish is not None:
         finish_exp = glotexp.Lambda(
-            this=finish(Column(accumulator_name)).expression, expressions=[glotexp.Identifier(this=accumulator_name)]
+            this=finish(Column(accumulator_name)).expression, expressions=[glotexp.to_identifier(accumulator_name, quoted=_lambda_quoted(accumulator_name))]
         )
         return Column.invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp), Column(finish_exp))
     return Column.invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp))
@@ -1123,11 +1123,11 @@ def transform(
     row_count_name: str = "i",
 ) -> Column:
     num_arguments = len(signature(f).parameters)
-    expressions = [glotexp.to_identifier(target_row_name)]
+    expressions = [glotexp.to_identifier(target_row_name, quoted=_lambda_quoted(target_row_name))]
     columns = [Column(target_row_name)]
     if num_arguments > 1:
         columns.append(Column(row_count_name))
-        expressions.append(glotexp.to_identifier(row_count_name))
+        expressions.append(glotexp.to_identifier(row_count_name, quoted=_lambda_quoted(row_count_name)))
 
     f_expression = glotexp.Lambda(this=f(*columns).expression, expressions=expressions)
     return Column.invoke_anonymous_function(col, "TRANSFORM", Column(f_expression))
@@ -1135,14 +1135,14 @@ def transform(
 
 def exists(col: ColumnOrName, f: t.Callable[[Column], Column], target_row_name: str = "x") -> Column:
     f_expression = glotexp.Lambda(
-        this=f(Column(target_row_name)).expression, expressions=[glotexp.to_identifier(target_row_name)]
+        this=f(Column(target_row_name)).expression, expressions=[glotexp.to_identifier(target_row_name, quoted=_lambda_quoted(target_row_name))]
     )
     return Column.invoke_anonymous_function(col, "EXISTS", Column(f_expression))
 
 
 def forall(col: ColumnOrName, f: t.Callable[[Column], Column], target_row_name: str = "x") -> Column:
     f_expression = glotexp.Lambda(
-        this=f(Column(target_row_name)).expression, expressions=[glotexp.to_identifier(target_row_name)]
+        this=f(Column(target_row_name)).expression, expressions=[glotexp.to_identifier(target_row_name, quoted=_lambda_quoted(target_row_name))]
     )
 
     return Column.invoke_anonymous_function(col, "FORALL", Column(f_expression))
@@ -1155,11 +1155,11 @@ def filter(
     row_count_name: str = "i",
 ) -> Column:
     num_arguments = len(signature(f).parameters)
-    expressions = [glotexp.to_identifier(target_row_name)]
+    expressions = [glotexp.to_identifier(target_row_name, quoted=_lambda_quoted(target_row_name))]
     columns = [Column(target_row_name)]
     if num_arguments > 1:
         columns.append(Column(row_count_name))
-        expressions.append(glotexp.to_identifier(row_count_name))
+        expressions.append(glotexp.to_identifier(row_count_name, quoted=_lambda_quoted(row_count_name)))
 
     f_expression = glotexp.Lambda(this=f(*columns).expression, expressions=expressions)
     return Column.invoke_anonymous_function(col, "FILTER", Column(f_expression))
@@ -1174,7 +1174,7 @@ def zip_with(
 ) -> Column:
     f_expression = glotexp.Lambda(
         this=f(Column(left_name), Column(right_name)).expression,
-        expressions=[glotexp.to_identifier(left_name, quoted=False if left_name == "_" else None), glotexp.to_identifier(right_name, quoted=False if right_name == "_" else None)],
+        expressions=[glotexp.to_identifier(left_name, quoted=_lambda_quoted(left_name)), glotexp.to_identifier(right_name, quoted=_lambda_quoted(right_name))],
     )
 
     return Column.invoke_anonymous_function(left, "ZIP_WITH", right, Column(f_expression))
@@ -1185,7 +1185,7 @@ def transform_keys(
 ) -> Column:
     f_expression = glotexp.Lambda(
         this=f(Column(key_name), Column(value_name)).expression,
-        expressions=[glotexp.to_identifier(key_name, quoted=False if key_name == "_" else None), glotexp.to_identifier(value_name, quoted=False if key_name == "_" else None)],
+        expressions=[glotexp.to_identifier(key_name, quoted=_lambda_quoted(key_name)), glotexp.to_identifier(value_name, quoted=_lambda_quoted(value_name))],
     )
     return Column.invoke_anonymous_function(col, "TRANSFORM_KEYS", Column(f_expression))
 

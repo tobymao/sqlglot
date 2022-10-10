@@ -94,9 +94,19 @@ class SparkSession:
 
     def sql(self, sqlQuery: str) -> DataFrame:
         expression = sqlglot.parse_one(sqlQuery, read="spark")
-        df = DataFrame(self, expression)
         if isinstance(expression, exp.Select):
+            df = DataFrame(self, expression)
             df = df._convert_leaf_to_cte()
+        elif isinstance(expression, (exp.Create, exp.Insert)):
+            select_expression = expression.expression.copy()
+            if isinstance(expression, exp.Insert):
+                select_expression.set("with", expression.args.get("with"))
+                expression.set("with", None)
+            del expression.args['expression']
+            df = DataFrame(self, select_expression, output_expression_container=expression)
+            df = df._convert_leaf_to_cte()
+        else:
+            raise ValueError("Unknown expression type provided in the SQL. Please create an issue with the SQL.")
         return df
 
     @property

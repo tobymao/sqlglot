@@ -44,21 +44,18 @@ class DataFrameWriter:
         return self.copy(by_name=True)
 
     def insertInto(self, tableName: str, overwrite: t.Optional[bool] = None) -> DataFrameWriter:
-        df = self._df.copy()
+        output_expression_container = exp.Insert(
+            **{
+                "this": exp.to_table(tableName),
+                "overwrite": overwrite,
+            }
+        )
+        df = self._df.copy(output_expression_container=output_expression_container)
         if self._by_name:
             columns = sqlglot.schema.column_names(tableName, only_visible=True)
             df = df._convert_leaf_to_cte().select(*columns)
-        expression_without_cte = df.expression.copy()
-        expression_without_cte.set("with", None)
-        insert_expression = exp.Insert(
-            **{
-                "this": exp.to_table(tableName),
-                "expression": expression_without_cte,
-                "overwrite": overwrite,
-                "with": df.expression.args.get("with"),
-            }
-        )
-        return self.copy(_df=df.copy(expression=insert_expression))
+
+        return self.copy(_df=df)
 
     def saveAsTable(self, name: str, format: t.Optional[str] = None, mode: t.Optional[str] = None):
         if format is not None:
@@ -70,11 +67,10 @@ class DataFrameWriter:
             exists = True
         if mode == "overwrite":
             replace = True
-        ctas_expression = exp.Create(
+        output_expression_container = exp.Create(
             this=exp.to_table(name),
             kind="TABLE",
-            expression=self._df.expression,
             exists=exists,
             replace=replace,
         )
-        return self.copy(_df=self._df.copy(expression=ctas_expression))
+        return self.copy(_df=self._df.copy(output_expression_container=output_expression_container))

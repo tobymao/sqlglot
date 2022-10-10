@@ -1,6 +1,0 @@
-autoflake
-black
-duckdb
-isort
-pandas
-python-dateutil

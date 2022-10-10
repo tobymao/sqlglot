@@ -4,6 +4,7 @@ import math
 from sqlglot import alias, exp
 from sqlglot.errors import UnsupportedError
 from sqlglot.optimizer.simplify import simplify
+from sqlglot.optimizer.eliminate_joins import join_condition
 
 
 class Plan:
@@ -236,40 +237,12 @@ class Join(Step):
         step = Join()
 
         for join in joins:
-            name = join.this.alias
-            on = join.args.get("on") or exp.TRUE
-            source_key = []
-            join_key = []
-
-            # find the join keys
-            # SELECT
-            # FROM x
-            # JOIN y
-            #   ON x.a = y.b AND y.b > 1
-            #
-            # should pull y.b as the join key and x.a as the source key
-            for condition in on.flatten() if isinstance(on, exp.And) else [on]:
-                if isinstance(condition, exp.EQ):
-                    left, right = condition.unnest_operands()
-                    left_tables = exp.column_table_names(left)
-                    right_tables = exp.column_table_names(right)
-
-                    if name in left_tables and name not in right_tables:
-                        join_key.append(left)
-                        source_key.append(right)
-                        condition.replace(exp.TRUE)
-                    elif name in right_tables and name not in left_tables:
-                        join_key.append(right)
-                        source_key.append(left)
-                        condition.replace(exp.TRUE)
-
-            on = simplify(on)
-
-            step.joins[name] = {
+            source_key, join_key, condition = join_condition(join)
+            step.joins[join.this.alias_or_name] = {
                 "side": join.side,
                 "join_key": join_key,
                 "source_key": source_key,
-                "condition": None if on == exp.TRUE else on,
+                "condition": condition,
             }
 
             step.add_dependency(Scan.from_expression(join.this, ctes))

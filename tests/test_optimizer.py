@@ -191,6 +191,13 @@ class TestOptimizer(unittest.TestCase):
             optimizer.optimize_joins.optimize_joins,
         )
 
+    def test_eliminate_joins(self):
+        self.check_file(
+            "eliminate_joins",
+            optimizer.eliminate_joins.eliminate_joins,
+            pretty=True,
+        )
+
     def test_merge_subqueries(self):
         optimize = partial(
             optimizer.optimize,

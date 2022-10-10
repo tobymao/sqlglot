@@ -38,7 +38,7 @@ def merge_subqueries(expression, leave_tables_isolated=False):
 
 
 # If a derived table has these Select args, it can't be merged
-unmergeable_ARGS = set(exp.Select.arg_types) - {
+UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
     "expressions",
     "from",
     "joins",
@@ -120,27 +120,27 @@ def _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
         bool: True if can be merged
     """
 
-    def _is_a_window_expression_in_unmergeable_operation():
+    def _is_a_window_expression_in_unmergable_operation():
         window_expressions = inner_select.find_all(exp.Window)
         window_alias_names = {window.parent.alias_or_name for window in window_expressions}
         inner_select_name = inner_select.parent.alias_or_name
-        unmergeable_window_columns = [
+        unmergable_window_columns = [
             column
             for column in outer_scope.columns
             if column.find_ancestor(exp.Where, exp.Group, exp.Order, exp.Join, exp.Having, exp.AggFunc)
         ]
-        window_expressions_in_unmergeable = [
+        window_expressions_in_unmergable = [
             column
-            for column in unmergeable_window_columns
+            for column in unmergable_window_columns
             if column.table == inner_select_name and column.name in window_alias_names
         ]
-        return any(window_expressions_in_unmergeable)
+        return any(window_expressions_in_unmergable)
 
     return (
         isinstance(outer_scope.expression, exp.Select)
         and isinstance(inner_select, exp.Select)
         and isinstance(inner_select, exp.Select)
-        and not any(inner_select.args.get(arg) for arg in unmergeable_ARGS)
+        and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
         and inner_select.args.get("from")
         and not any(e.find(exp.AggFunc, exp.Select) for e in inner_select.expressions)
         and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
@@ -154,7 +154,7 @@ def _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
             and inner_select.args.get("where")
             and any(j.side in {"FULL", "RIGHT"} for j in outer_scope.expression.args.get("joins", []))
         )
-        and not _is_a_window_expression_in_unmergeable_operation()
+        and not _is_a_window_expression_in_unmergable_operation()
     )
 
 

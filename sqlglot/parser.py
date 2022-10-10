@@ -1536,6 +1536,14 @@ class Parser:
 
         if self._match_set(self.RANGE_PARSERS):
             this = self.RANGE_PARSERS[self._prev.token_type](self, this)
+        elif self._match(TokenType.ISNULL):
+            this = self.expression(exp.Is, this=this, expression=exp.Null())
+
+        # Postgres supports ISNULL and NOTNULL for conditions.
+        # Source: https://blog.andreiavram.ro/postgresql-null-composite-type/
+        if self._match(TokenType.NOTNULL):
+            this = self.expression(exp.Is, this=this, expression=exp.Null())
+            this = self.expression(exp.Not, this=this)
 
         if negate:
             this = self.expression(exp.Not, this=this)

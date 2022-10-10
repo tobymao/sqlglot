@@ -68,6 +68,7 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
         self.validate_identity("SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')")
+        self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
 
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",
@@ -163,4 +164,11 @@ class TestPostgres(Validator):
                 "postgres": "SELECT p1.id, p2.id, v1, v2 FROM polygons p1, polygons p2, LATERAL VERTICES(p1.poly) v1, LATERAL VERTICES(p2.poly) v2 WHERE (v1 <-> v2) < 10 AND p1.id != p2.id",
             },
         )
-        self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+        self.validate_all(
+            "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",
+            read={"postgres": "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE deleted NOTNULL"},
+        )
+        self.validate_all(
+            "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",
+            read={"postgres": "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted ISNULL"},
+        )

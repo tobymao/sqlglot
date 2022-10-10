@@ -135,6 +135,7 @@ class Parser:
         TokenType.BOTH,
         TokenType.BUCKET,
         TokenType.CACHE,
+        TokenType.CALL,
         TokenType.COLLATE,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,

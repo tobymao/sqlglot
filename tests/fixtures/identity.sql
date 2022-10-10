@@ -50,6 +50,7 @@ a.B()
 a['x'].C()
 int.x
 map.x
+SELECT call.x
 a.b.INT(1.234)
 x IN (-1, 1)
 x IN ('a', 'a''a')

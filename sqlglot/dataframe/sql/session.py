@@ -58,7 +58,7 @@ class SparkSession:
         if schema is not None:
             column_mapping = get_column_mapping_from_schema_input(schema)
         elif isinstance(data[0], dict):
-            column_mapping = {col_name.strip(): None for col_name in data[0].keys()}
+            column_mapping = {col_name.strip(): None for col_name in data[0]}
         else:
             column_mapping = {f"_{i}": None for i in range(1, len(data[0]) + 1)}
 
@@ -82,7 +82,7 @@ class SparkSession:
                         this=exp.Values(expressions=data_expressions),
                         alias=exp.TableAlias(
                             this=exp.to_identifier(self._auto_incrementing_name),
-                            columns=[exp.to_identifier(col_name) for col_name in column_mapping.keys()],
+                            columns=[exp.to_identifier(col_name) for col_name in column_mapping],
                         ),
                     )
                 ]

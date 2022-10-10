@@ -18,7 +18,7 @@ def col(column_name: t.Union[ColumnOrName, t.Any]) -> Column:
 
 def lit(value: t.Optional[t.Any] = None) -> Column:
     if isinstance(value, str):
-        return Column(glotexp.Literal(this=str(value), is_string=True))
+        return Column(glotexp.Literal.string(str(value)))
     return Column(value)
 
 
@@ -370,7 +370,7 @@ def first(col: ColumnOrName, ignorenulls: bool = None) -> Column:
 
 
 def grouping_id(*cols: ColumnOrName) -> Column:
-    if len(cols) == 0:
+    if not cols:
         return Column.invoke_anonymous_function(None, "GROUPING_ID")
     if len(cols) == 1:
         return Column.invoke_anonymous_function(cols[0], "GROUPING_ID")

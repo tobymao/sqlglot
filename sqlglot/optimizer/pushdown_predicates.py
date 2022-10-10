@@ -152,9 +152,11 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
                 return {}
             nodes[table] = node
         elif isinstance(node, exp.Select) and len(tables) == 1:
+            # We can't push down window expressions
+            has_window_expression = any(select for select in node.selects if select.find(exp.Window))
             # we can't push down predicates to select statements if they are referenced in
             # multiple places.
-            if not node.args.get("group") and scope_ref_count[id(source)] < 2:
+            if not node.args.get("group") and scope_ref_count[id(source)] < 2 and not has_window_expression:
                 nodes[table] = node
     return nodes
 

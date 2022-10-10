@@ -1057,19 +1057,39 @@ class TestDataframeFunc(DataFrameValidator):
         self.assertEqual(spark_num_partitions, sqlglot_num_partitions)
 
     def test_cache_select(self):
-        df_employee = self.df_spark_employee.groupBy("store_id").agg(F.countDistinct("employee_id").alias("num_employees")).cache()
-        df_joined = df_employee.join(self.df_spark_store, on="store_id").select(self.df_spark_store.store_id, df_employee.num_employees)
-        dfs_employee = self.df_sqlglot_employee.groupBy("store_id").agg(SF.countDistinct("employee_id").alias("num_employees")).cache()
-        dfs_joined = dfs_employee.join(self.df_sqlglot_store, on="store_id").select(self.df_sqlglot_store.store_id, dfs_employee.num_employees)
+        df_employee = (
+            self.df_spark_employee.groupBy("store_id")
+            .agg(F.countDistinct("employee_id").alias("num_employees"))
+            .cache()
+        )
+        df_joined = df_employee.join(self.df_spark_store, on="store_id").select(
+            self.df_spark_store.store_id, df_employee.num_employees
+        )
+        dfs_employee = (
+            self.df_sqlglot_employee.groupBy("store_id")
+            .agg(SF.countDistinct("employee_id").alias("num_employees"))
+            .cache()
+        )
+        dfs_joined = dfs_employee.join(self.df_sqlglot_store, on="store_id").select(
+            self.df_sqlglot_store.store_id, dfs_employee.num_employees
+        )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
 
     def test_persist_select(self):
-        df_employee = self.df_spark_employee.groupBy("store_id").agg(
-            F.countDistinct("employee_id").alias("num_employees")).persist()
-        df_joined = df_employee.join(self.df_spark_store, on="store_id").select(self.df_spark_store.store_id,
-                                                                                df_employee.num_employees)
-        dfs_employee = self.df_sqlglot_employee.groupBy("store_id").agg(
-            SF.countDistinct("employee_id").alias("num_employees")).persist()
-        dfs_joined = dfs_employee.join(self.df_sqlglot_store, on="store_id").select(self.df_sqlglot_store.store_id,
-                                                                                    dfs_employee.num_employees)
+        df_employee = (
+            self.df_spark_employee.groupBy("store_id")
+            .agg(F.countDistinct("employee_id").alias("num_employees"))
+            .persist()
+        )
+        df_joined = df_employee.join(self.df_spark_store, on="store_id").select(
+            self.df_spark_store.store_id, df_employee.num_employees
+        )
+        dfs_employee = (
+            self.df_sqlglot_employee.groupBy("store_id")
+            .agg(SF.countDistinct("employee_id").alias("num_employees"))
+            .persist()
+        )
+        dfs_joined = dfs_employee.join(self.df_sqlglot_store, on="store_id").select(
+            self.df_sqlglot_store.store_id, dfs_employee.num_employees
+        )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)

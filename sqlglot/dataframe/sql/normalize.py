@@ -7,13 +7,13 @@ from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.helper import ensure_list
 
-SANITIZE_INPUT = t.TypeVar("SANITIZE_INPUT", bound=t.Union[str, exp.Expression, Column])
+NORMALIZE_INPUT = t.TypeVar("NORMALIZE_INPUT", bound=t.Union[str, exp.Expression, Column])
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
 
 
-def sanitize(spark: SparkSession, expression_context: exp.Select, expressions: t.List[SANITIZE_INPUT]):
+def normalize(spark: SparkSession, expression_context: exp.Select, expressions: t.List[NORMALIZE_INPUT]):
     expressions = ensure_list(expressions)
     expressions = _ensure_expressions(expressions)
     for expression in expressions:
@@ -57,7 +57,7 @@ def _set_alias_name(id: exp.Identifier, name: str):
     id.set("this", name)
 
 
-def _ensure_expressions(values: t.List[SANITIZE_INPUT]) -> t.List[exp.Expression]:
+def _ensure_expressions(values: t.List[NORMALIZE_INPUT]) -> t.List[exp.Expression]:
     values = ensure_list(values)
     results = []
     for value in values:
@@ -68,5 +68,5 @@ def _ensure_expressions(values: t.List[SANITIZE_INPUT]) -> t.List[exp.Expression
         elif isinstance(value, exp.Expression):
             results.append(value)
         else:
-            raise ValueError(f"Got an invalid type to sanitize: {type(value)}")
+            raise ValueError(f"Got an invalid type to normalize: {type(value)}")
     return results

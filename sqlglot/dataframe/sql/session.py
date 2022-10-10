@@ -102,7 +102,7 @@ class SparkSession:
             if isinstance(expression, exp.Insert):
                 select_expression.set("with", expression.args.get("with"))
                 expression.set("with", None)
-            del expression.args['expression']
+            del expression.args["expression"]
             df = DataFrame(self, select_expression, output_expression_container=expression)
             df = df._convert_leaf_to_cte()
         else:

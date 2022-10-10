@@ -1,2 +1,7 @@
--r requirements.txt
+autoflake
+black
+duckdb
+isort
+pandas
 pyspark
+python-dateutil

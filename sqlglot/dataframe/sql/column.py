@@ -192,15 +192,15 @@ class Column:
     @property
     def column_expression(self) -> exp.Column:
         if self.is_alias:
-            return self.expression.args["this"]
+            return self.expression.this
         return self.expression
 
     @property
     def alias_or_name(self):
         if isinstance(self.expression, exp.Null):
             return "NULL"
-        if isinstance(self.expression.args.get("this"), exp.Star):
-            return self.expression.args["this"].alias_or_name
+        if isinstance(self.expression.this, exp.Star):
+            return self.expression.this.alias_or_name
         return self.expression.alias_or_name
 
     @classmethod
@@ -325,6 +325,6 @@ class Column:
         )
 
     def over(self, window: WindowSpec) -> Column:
-        window_args = window.expression.args
-        window_args["this"] = self.column_expression
-        return Column(exp.Window(**window_args))
+        window_expression = window.expression.copy()
+        window_expression.set("this", self.column_expression)
+        return Column(window_expression)

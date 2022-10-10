@@ -335,7 +335,7 @@ class DataFrame:
                         cte
                         for cte in self.expression.ctes
                         if cte.alias_or_name in cte_names_in_join
-                        and ambiguous_col.alias_or_name in cte.args["this"].named_selects
+                        and ambiguous_col.alias_or_name in cte.this.named_selects
                     ]
                     # If the select column does not specify a table and there is a join
                     # then we assume they are referring to the left table

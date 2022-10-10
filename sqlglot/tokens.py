@@ -199,6 +199,7 @@ class TokenType(AutoName):
     NATURAL = auto()
     NEXT = auto()
     NO_ACTION = auto()
+    NOTNULL = auto()
     NULL = auto()
     NULLS_FIRST = auto()
     NULLS_LAST = auto()
@@ -498,6 +499,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "NEXT": TokenType.NEXT,
         "NO ACTION": TokenType.NO_ACTION,
         "NOT": TokenType.NOT,
+        "NOTNULL": TokenType.NOTNULL,
         "NULL": TokenType.NULL,
         "NULLS FIRST": TokenType.NULLS_FIRST,
         "NULLS LAST": TokenType.NULLS_LAST,

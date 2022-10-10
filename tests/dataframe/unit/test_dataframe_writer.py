@@ -1,8 +1,7 @@
-import sqlglot
 from unittest import mock
 
+import sqlglot
 from sqlglot.schema import MappingSchema
-
 from tests.dataframe.unit.dataframe_sql_validator import DataFrameSQLValidator
 
 
@@ -85,5 +84,3 @@ class TestDataFrameWriter(DataFrameSQLValidator):
             "CREATE TABLE table_name AS SELECT `t35612`.`employee_id` AS `employee_id`, `t35612`.`fname` AS `fname`, `t35612`.`lname` AS `lname`, `t35612`.`age` AS `age`, `t35612`.`store_id` AS `store_id` FROM `t35612` AS `t35612`",
         ]
         self.compare_sql(df, expected_statements)
-
-

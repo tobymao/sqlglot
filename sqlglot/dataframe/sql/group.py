@@ -26,7 +26,7 @@ class GroupedData:
         if isinstance(exprs[0], dict):
             cols = [Column(f"{agg_func}({column_name})") for column_name, agg_func in exprs[0].items()]
 
-        cols = self._df._ensure_and_sanitize_cols(cols)
+        cols = self._df._ensure_and_normalize_cols(cols)
 
         expression = self._df.expression.group_by(*[x.expression for x in self.group_by_cols]).select(
             *[x.expression for x in self.group_by_cols + cols], append=False

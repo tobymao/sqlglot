@@ -10,9 +10,9 @@ from sqlglot import expressions as exp
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql.group import GroupedData
+from sqlglot.dataframe.sql.normalize import normalize
 from sqlglot.dataframe.sql.operations import Operation, operation
 from sqlglot.dataframe.sql.readwriter import DataFrameWriter
-from sqlglot.dataframe.sql.sanitize import sanitize
 from sqlglot.dataframe.sql.transforms import replace_id_value
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.dataframe.sql.window import Window
@@ -21,8 +21,8 @@ from sqlglot.optimizer import optimize as optimize_func
 from sqlglot.optimizer.qualify_columns import qualify_columns
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql.session import SparkSession
     from sqlglot.dataframe.sql._typing import OutputExpressionContainer
+    from sqlglot.dataframe.sql.session import SparkSession
 
 
 class DataFrame:
@@ -91,9 +91,9 @@ class DataFrame:
     def na(self) -> DataFrameNaFunctions:
         return DataFrameNaFunctions(self)
 
-    def _replace_cte_names_with_hashes(self, expression: t.Union[exp.Select, exp.Create, exp.Insert]):
+    def _replace_cte_names_with_hashes(self, expression: exp.Select):
         expression = expression.copy()
-        ctes = expression.expression.ctes if isinstance(expression, (exp.Create, exp.Insert)) else expression.ctes
+        ctes = expression.ctes
         replacement_mapping = {}
         for cte in ctes:
             old_name_id = cte.args["alias"].this
@@ -127,14 +127,14 @@ class DataFrame:
         columns = Column.ensure_cols(columns)
         return columns
 
-    def _ensure_and_sanitize_cols(self, cols):
+    def _ensure_and_normalize_cols(self, cols):
         cols = self._ensure_list_of_columns(cols)
-        sanitize(self.spark, self.expression, cols)
+        normalize(self.spark, self.expression, cols)
         return cols
 
-    def _ensure_and_sanitize_col(self, col):
+    def _ensure_and_normalize_col(self, col):
         col = Column.ensure_col(col)
-        sanitize(self.spark, self.expression, col)
+        normalize(self.spark, self.expression, col)
         return col
 
     def _convert_leaf_to_cte(self, sequence_id: t.Optional[str] = None) -> DataFrame:
@@ -245,20 +245,10 @@ class DataFrame:
         value = expression.sql(dialect="spark").encode("utf-8")
         return f"t{zlib.crc32(value)}"[:6]
 
-    @classmethod
-    def _select_expression(cls, expression: exp.Expression):
-        if isinstance(expression, exp.Select):
-            return expression
-        elif isinstance(expression, (exp.Insert, exp.Create)):
-            select_expression = expression.expression.copy()
-            select_expression.set("with", expression.args.get("with"))
-            return select_expression
-        raise RuntimeError(f"Unexpected expression type: {type(expression)}")
-
     def _get_select_expressions(self) -> t.List[t.Tuple[t.Union[exp.Cache, OutputExpressionContainer], exp.Select]]:
         select_expressions = []
         main_select_ctes = []
-        for cte in self._select_expression(self.expression).ctes:
+        for cte in self.expression.ctes:
             cache_storage_level = cte.args.get("cache_storage_level")
             if cache_storage_level:
                 select_expression = cte.this.copy()
@@ -287,18 +277,25 @@ class DataFrame:
 
             # temporary hack to remove extra CTE that was replaced with table until removing unused CTEs is added
             # to optimizer
-            filtered_ctes = [cte for cte in select_expression.ctes if cte.alias_or_name not in {x.alias_or_name for x in replacement_mapping.values()}]
+            filtered_ctes = [
+                cte
+                for cte in select_expression.ctes
+                if cte.alias_or_name not in {x.alias_or_name for x in replacement_mapping.values()}
+            ]
             with_expr = exp.With(expressions=filtered_ctes) if filtered_ctes else None
             select_expression.set("with", with_expr)
 
             if expression_type == exp.Cache:
                 cache_table_name = df._create_hash_from_expression(select_expression)
                 cache_table = exp.to_table(cache_table_name)
-                original_alias_name = select_expression.args['cte_alias_name']
+                original_alias_name = select_expression.args["cte_alias_name"]
                 replacement_mapping[exp.to_identifier(original_alias_name)] = exp.to_identifier(cache_table_name)
                 sqlglot.schema.add_table(cache_table_name, select_expression.named_selects)
-                cache_storage_level = select_expression.args['cache_storage_level']
-                options = [exp.Literal(this='storageLevel', is_string=True), exp.Literal(this=cache_storage_level, is_string=True)]
+                cache_storage_level = select_expression.args["cache_storage_level"]
+                options = [
+                    exp.Literal(this="storageLevel", is_string=True),
+                    exp.Literal(this=cache_storage_level, is_string=True),
+                ]
                 expression = exp.Cache(this=cache_table, expression=select_expression, lazy=True, options=options)
                 # We will drop the "view" if it exists before running the cache table
                 output_expressions.append(exp.Drop(this=cache_table, exists=True, kind="VIEW"))
@@ -326,7 +323,7 @@ class DataFrame:
 
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> DataFrame:
-        cols = self._ensure_and_sanitize_cols(cols)
+        cols = self._ensure_and_normalize_cols(cols)
         kwargs["append"] = kwargs.get("append", False)
         if self.expression.args.get("joins"):
             ambiguous_cols = [col for col in cols if not col.column_expression.table]
@@ -364,19 +361,19 @@ class DataFrame:
 
     @operation(Operation.WHERE)
     def where(self, column: t.Union[Column, bool], **kwargs) -> DataFrame:
-        column = self._ensure_and_sanitize_col(column)
+        column = self._ensure_and_normalize_col(column)
         return self.copy(expression=self.expression.where(column.expression))
 
     filter = where
 
     @operation(Operation.GROUP_BY)
     def groupBy(self, *cols, **kwargs) -> GroupedData:
-        cols = self._ensure_and_sanitize_cols(cols)
+        cols = self._ensure_and_normalize_cols(cols)
         return GroupedData(self, cols)
 
     @operation(Operation.SELECT)
     def agg(self, *exprs, **kwargs) -> DataFrame:
-        cols = self._ensure_and_sanitize_cols(exprs)
+        cols = self._ensure_and_normalize_cols(exprs)
         return self.groupBy().agg(*cols)
 
     @operation(Operation.FROM)
@@ -385,7 +382,7 @@ class DataFrame:
     ) -> DataFrame:
         other_df = other_df._convert_leaf_to_cte()
         pre_join_self_latest_cte_name = self.latest_cte_name
-        columns = self._ensure_and_sanitize_cols(on)
+        columns = self._ensure_and_normalize_cols(on)
         join_type = how.replace("_", " ")
         if isinstance(columns[0].expression, exp.Column):
             join_columns = [Column(x).set_table_name(pre_join_self_latest_cte_name) for x in columns]
@@ -440,7 +437,7 @@ class DataFrame:
         has irregular behavior and can result in runtime errors. Users shouldn't be mixing the two anyways so this
         is unlikely to come up.
         """
-        cols = self._ensure_and_sanitize_cols(cols)
+        cols = self._ensure_and_normalize_cols(cols)
         pre_ordered_col_indexes = [
             x
             for x in [i if isinstance(col.expression, exp.Ordered) else None for i, col in enumerate(cols)]
@@ -540,7 +537,7 @@ class DataFrame:
         new_df = self.copy()
         all_columns = self._get_outer_select_columns(new_df.expression)
         if subset:
-            null_check_columns = self._ensure_and_sanitize_cols(subset)
+            null_check_columns = self._ensure_and_normalize_cols(subset)
         else:
             null_check_columns = all_columns
         if thresh is None:
@@ -584,9 +581,9 @@ class DataFrame:
         all_column_mapping = {column.alias_or_name: column for column in all_columns}
         if isinstance(value, dict):
             values = value.values()
-            columns = self._ensure_and_sanitize_cols(list(value.keys()))
+            columns = self._ensure_and_normalize_cols(list(value.keys()))
         if not columns:
-            columns = self._ensure_and_sanitize_cols(subset) if subset else all_columns
+            columns = self._ensure_and_normalize_cols(subset) if subset else all_columns
         if not values:
             values = [value] * len(columns)
         values = [lit(value) for value in values]
@@ -615,7 +612,7 @@ class DataFrame:
         all_columns = self._get_outer_select_columns(new_df.expression)
         all_column_mapping = {column.alias_or_name: column for column in all_columns}
 
-        columns = self._ensure_and_sanitize_cols(subset) if subset else all_columns
+        columns = self._ensure_and_normalize_cols(subset) if subset else all_columns
         if isinstance(to_replace, dict):
             old_values = list(to_replace.keys())
             new_values = list(to_replace.values())
@@ -649,7 +646,7 @@ class DataFrame:
 
     @operation(Operation.SELECT)
     def withColumn(self, colName: str, col: Column) -> DataFrame:
-        col = self._ensure_and_sanitize_col(col)
+        col = self._ensure_and_normalize_col(col)
         existing_col_names = self.expression.named_selects
         existing_col_index = existing_col_names.index(colName) if colName in existing_col_names else None
         if existing_col_index:
@@ -674,7 +671,7 @@ class DataFrame:
     @operation(Operation.SELECT)
     def drop(self, *cols: t.Union[str, Column]) -> DataFrame:
         all_columns = self._get_outer_select_columns(self.expression)
-        drop_cols = self._ensure_and_sanitize_cols(cols)
+        drop_cols = self._ensure_and_normalize_cols(cols)
         new_columns = [
             col
             for col in all_columns
@@ -695,7 +692,7 @@ class DataFrame:
     @operation(Operation.NO_OP)
     def repartition(self, numPartitions: t.Union[int, str], *cols: t.Union[int, str]) -> DataFrame:
         num_partitions = Column.ensure_cols([numPartitions])
-        cols = self._ensure_and_sanitize_cols(cols)
+        cols = self._ensure_and_normalize_cols(cols)
         args = num_partitions + cols
         return self._hint("repartition", args)
 
@@ -706,10 +703,10 @@ class DataFrame:
 
     @operation(Operation.NO_OP)
     def cache(self) -> DataFrame:
-        return self._cache(storage_level='MEMORY_AND_DISK')
+        return self._cache(storage_level="MEMORY_AND_DISK")
 
     @operation(Operation.NO_OP)
-    def persist(self, storageLevel: str = 'MEMORY_AND_DISK_SER') -> DataFrame:
+    def persist(self, storageLevel: str = "MEMORY_AND_DISK_SER") -> DataFrame:
         """
         Storage Level Options: https://spark.apache.org/docs/3.0.0-preview/sql-ref-syntax-aux-cache-cache-table.html
         """

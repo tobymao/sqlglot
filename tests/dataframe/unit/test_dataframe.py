@@ -16,7 +16,7 @@ class TestDataframeColumn(DataFrameSQLValidator):
         expected_statements = [
             "DROP VIEW IF EXISTS t11623",
             "CACHE LAZY TABLE t11623 OPTIONS('storageLevel' = 'MEMORY_AND_DISK') AS SELECT CAST(`a1`.`fname` AS string) AS `fname` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)",
-            "SELECT `t11623`.`fname` AS `fname` FROM `t11623` AS `t11623`"
+            "SELECT `t11623`.`fname` AS `fname` FROM `t11623` AS `t11623`",
         ]
         self.compare_sql(df, expected_statements)
 
@@ -25,15 +25,15 @@ class TestDataframeColumn(DataFrameSQLValidator):
         expected_statements = [
             "DROP VIEW IF EXISTS t11623",
             "CACHE LAZY TABLE t11623 OPTIONS('storageLevel' = 'MEMORY_AND_DISK_SER') AS SELECT CAST(`a1`.`fname` AS string) AS `fname` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)",
-            "SELECT `t11623`.`fname` AS `fname` FROM `t11623` AS `t11623`"
+            "SELECT `t11623`.`fname` AS `fname` FROM `t11623` AS `t11623`",
         ]
         self.compare_sql(df, expected_statements)
 
     def test_persist_storagelevel(self):
-        df = self.df_employee.select("fname").persist('DISK_ONLY_2')
+        df = self.df_employee.select("fname").persist("DISK_ONLY_2")
         expected_statements = [
             "DROP VIEW IF EXISTS t11623",
             "CACHE LAZY TABLE t11623 OPTIONS('storageLevel' = 'DISK_ONLY_2') AS SELECT CAST(`a1`.`fname` AS string) AS `fname` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)",
-            "SELECT `t11623`.`fname` AS `fname` FROM `t11623` AS `t11623`"
+            "SELECT `t11623`.`fname` AS `fname` FROM `t11623` AS `t11623`",
         ]
         self.compare_sql(df, expected_statements)

@@ -172,3 +172,34 @@ class TestPostgres(Validator):
             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",
             read={"postgres": "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted ISNULL"},
         )
+        self.validate_all(
+            "'[1,2,3]'::json->2",
+            write={"postgres": "CAST('[1,2,3]' AS JSON)->'2'"},
+        )
+        self.validate_all(
+            """'{"a":1,"b":2}'::json->'b'""",
+            write={"postgres": """CAST('{"a":1,"b":2}' AS JSON)->'b'"""},
+        )
+        self.validate_all(
+            """'{"x": {"y": 1}}'::json->'x'->'y'""", write={"postgres": """CAST('{"x": {"y": 1}}' AS JSON)->'x'->'y'"""}
+        )
+        self.validate_all(
+            """'{"x": {"y": 1}}'::json->'x'::json->'y'""",
+            write={"postgres": """CAST(CAST('{"x": {"y": 1}}' AS JSON)->'x' AS JSON)->'y'"""},
+        )
+        self.validate_all(
+            """'[1,2,3]'::json->>2""",
+            write={"postgres": "CAST('[1,2,3]' AS JSON)->>'2'"},
+        )
+        self.validate_all(
+            """'{"a":1,"b":2}'::json->>'b'""",
+            write={"postgres": """CAST('{"a":1,"b":2}' AS JSON)->>'b'"""},
+        )
+        self.validate_all(
+            """'{"a":[1,2,3],"b":[4,5,6]}'::json#>'{a,2}'""",
+            write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON)#>'{a,2}'"""},
+        )
+        self.validate_all(
+            """'{"a":[1,2,3],"b":[4,5,6]}'::json#>>'{a,2}'""",
+            write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON)#>>'{a,2}'"""},
+        )

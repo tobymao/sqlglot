@@ -1648,20 +1648,6 @@ class Parser:
                 return self._parse_column()
             return type_token
 
-        # https://www.postgresql.org/docs/9.3/functions-json.html
-        while self._match_set(self.COLUMN_OPERATORS):
-            op_token = self._prev.token_type
-            op = self.COLUMN_OPERATORS.get(op_token)
-
-            if op_token == TokenType.DCOLON:
-                field = self._parse_types()
-                if not field:
-                    self.raise_error("Expected type")
-            else:
-                field = exp.Literal.string(self._parse_field().name)
-
-            this = op(self, this, field)
-
         return this
 
     def _parse_types(self):

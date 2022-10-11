@@ -296,6 +296,11 @@ class Parser:
 
     COLUMN_OPERATORS = {
         TokenType.DOT: None,
+        TokenType.DCOLON: lambda self, this, to: self.expression(
+            exp.Cast,
+            this=this,
+            to=to,
+        ),
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
             this=this,
@@ -1643,17 +1648,19 @@ class Parser:
                 return self._parse_column()
             return type_token
 
-        while self._match(TokenType.DCOLON):
-            type_token = self._parse_types()
-            if not type_token:
-                self.raise_error("Expected type")
-            this = self.expression(exp.Cast, this=this, to=type_token)
-
         # https://www.postgresql.org/docs/9.3/functions-json.html
-        if self._match_set(self.COLUMN_OPERATORS):
-            op = self.COLUMN_OPERATORS.get(self._prev.token_type)
-            field = self._parse_field()
-            this = op(self, this, exp.Literal.string(field.name))
+        while self._match_set(self.COLUMN_OPERATORS):
+            op_token = self._prev.token_type
+            op = self.COLUMN_OPERATORS.get(op_token)
+
+            if op_token == TokenType.DCOLON:
+                field = self._parse_types()
+                if not field:
+                    self.raise_error("Expected type")
+            else:
+                field = exp.Literal.string(self._parse_field().name)
+
+            this = op(self, this, field)
 
         return this
 
@@ -1744,8 +1751,15 @@ class Parser:
         this = self._parse_bracket(this)
 
         while self._match_set(self.COLUMN_OPERATORS):
-            op = self.COLUMN_OPERATORS.get(self._prev.token_type)
-            field = self._parse_star() or self._parse_function() or self._parse_id_var()
+            op_token = self._prev.token_type
+            op = self.COLUMN_OPERATORS.get(op_token)
+
+            if op_token == TokenType.DCOLON:
+                field = self._parse_types()
+                if not field:
+                    self.raise_error("Expected type")
+            else:
+                field = self._parse_star() or self._parse_function() or self._parse_id_var()
 
             if isinstance(field, exp.Func):
                 # bigquery allows function calls like x.y.count(...)
@@ -1754,7 +1768,10 @@ class Parser:
                 this = self._replace_columns_with_dots(this)
 
             if op:
-                this = op(self, this, exp.Literal.string(field.name))
+                if op_token != TokenType.DCOLON:
+                    field = exp.Literal.string(field.name)
+
+                this = op(self, this, field)
             elif isinstance(this, exp.Column) and not this.table:
                 this = self.expression(exp.Column, this=field, table=this.this)
             else:

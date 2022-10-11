@@ -1744,6 +1744,8 @@ class Parser:
                 field = self._parse_types()
                 if not field:
                     self.raise_error("Expected type")
+            elif op:
+                field = exp.Literal.string(self._advance() or self._prev.text)
             else:
                 field = self._parse_star() or self._parse_function() or self._parse_id_var()
 
@@ -1754,9 +1756,6 @@ class Parser:
                 this = self._replace_columns_with_dots(this)
 
             if op:
-                if op_token != TokenType.DCOLON:
-                    field = exp.Literal.string(field.name)
-
                 this = op(self, this, field)
             elif isinstance(this, exp.Column) and not this.table:
                 this = self.expression(exp.Column, this=field, table=this.this)

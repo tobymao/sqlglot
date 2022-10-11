@@ -1,3 +1,4 @@
+from sqlglot.optimizer.eliminate_ctes import eliminate_ctes
 from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
@@ -25,6 +26,7 @@ RULES = (
     eliminate_subqueries,
     merge_subqueries,
     eliminate_joins,
+    eliminate_ctes,
     quote_identities,
 )
 

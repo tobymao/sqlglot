@@ -4,14 +4,13 @@ import unittest
 import warnings
 
 import sqlglot
-from tests.helpers import string_to_bool
+from tests.helpers import SKIP_INTEGRATION_TESTS
 
 if t.TYPE_CHECKING:
     from pyspark.sql import DataFrame as SparkDataFrame
 
 
-@unittest.skipIf(string_to_bool(os.environ.get("SKIP_INTEGRATION", '0').lower()),
-                 "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
+@unittest.skipIf(SKIP_INTEGRATION_TESTS, "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
 class DataFrameValidator(unittest.TestCase):
     spark = None
     sqlglot = None

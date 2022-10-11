@@ -45,8 +45,8 @@ class DataFrame:
         branch_id: str = None,
         sequence_id: str = None,
         last_op: t.Optional[Operation] = Operation.INIT,
-        pending_hints: t.List[exp.Expression] = None,
-        output_expression_container: OutputExpressionContainer = None,
+        pending_hints: t.Optional[t.List[exp.Expression]] = None,
+        output_expression_container: t.Optional[OutputExpressionContainer] = None,
         **kwargs,
     ):
         self.spark = spark

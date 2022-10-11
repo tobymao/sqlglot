@@ -1541,7 +1541,7 @@ class Parser:
             this = self.expression(exp.Is, this=this, expression=exp.Null())
 
         # Postgres supports ISNULL and NOTNULL for conditions.
-        # Source: https://blog.andreiavram.ro/postgresql-null-composite-type/
+        # https://blog.andreiavram.ro/postgresql-null-composite-type/
         if self._match(TokenType.NOTNULL):
             this = self.expression(exp.Is, this=this, expression=exp.Null())
             this = self.expression(exp.Not, this=this)
@@ -2173,6 +2173,8 @@ class Parser:
             this = self.expression(exp.Filter, this=this, expression=self._parse_where())
             self._match_r_paren()
 
+        # T-SQL allows the OVER (...) syntax after WITHIN GROUP.
+        # https://learn.microsoft.com/en-us/sql/t-sql/functions/percentile-disc-transact-sql?view=sql-server-ver16
         if self._match(TokenType.WITHIN_GROUP):
             self._match_l_paren()
             this = self.expression(
@@ -2181,7 +2183,6 @@ class Parser:
                 expression=self._parse_order(),
             )
             self._match_r_paren()
-            return this
 
         # SQL spec defines an optional [ { IGNORE | RESPECT } NULLS ] OVER
         # Some dialects choose to implement and some do not.

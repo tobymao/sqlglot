@@ -381,6 +381,11 @@ class TestBuild(unittest.TestCase):
                 lambda: alias(parse_one("LAG(x) OVER ()"), "a"),
                 "LAG(x) OVER () AS a",
             ),
+            (lambda: exp.values([("1", 2)]), "VALUES ('1', 2)"),
+            (lambda: exp.values([("1", 2)], "alias"), "(VALUES ('1', 2)) AS alias"),
+            (lambda: exp.values([("1", 2), ("2", 3)]), "VALUES ('1', 2), ('2', 3)"),
+            (lambda: exp.delete("y", where="x > 1"), "DELETE FROM y WHERE x > 1"),
+            (lambda: exp.delete("y", where=exp.and_("x > 1")), "DELETE FROM y WHERE x > 1"),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

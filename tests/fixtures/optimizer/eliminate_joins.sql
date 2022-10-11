@@ -217,3 +217,29 @@ WITH y AS (
 SELECT
   x.a
 FROM x;
+
+# title: Noop - Not all grouped expressions are in outputs
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b
+  FROM y
+  GROUP BY
+    y.b,
+    y.c
+) AS y
+  ON x.b = y.b;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b
+  FROM y
+  GROUP BY
+    y.b,
+    y.c
+) AS y
+  ON x.b = y.b;

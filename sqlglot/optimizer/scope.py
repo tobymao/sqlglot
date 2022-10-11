@@ -316,6 +316,12 @@ class Scope:
 
     @property
     def unqualified_columns(self):
+        """
+        Unqualified columns in the current scope.
+
+        Returns:
+             list[exp.Column]: Unqualified columns
+        """
         return [c for c in self.columns if not c.table]
 
     @property

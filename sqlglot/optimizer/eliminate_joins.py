@@ -5,13 +5,32 @@ from sqlglot.optimizer.simplify import simplify
 
 
 def eliminate_joins(expression):
+    """
+    Remove unused joins from an expression.
+
+    Currently, this only remove LEFT JOINs when we know that the join condition
+    doesn't produce duplicate rows.
+
+    Example:
+        >>> import sqlglot
+        >>> sql = "SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b"
+        >>> expression = sqlglot.parse_one(sql)
+        >>> eliminate_joins(expression).sql()
+        'SELECT x.a FROM x'
+
+    Args:
+        expression (sqlglot.Expression): expression to optimize
+    Returns:
+        sqlglot.Expression: optimized expression
+    """
     for scope in traverse_scope(expression):
+        # If any columns in this scope aren't qualified, it's hard to determine if a join isn't used.
+        # It's probably possible to infer this from the outputs of derived tables.
+        # But for now, let's just skip this rule.
         if scope.unqualified_columns:
             continue
 
-        joins = scope.expression.args.get("joins")
-        if not joins:
-            continue
+        joins = scope.expression.args.get("joins", [])
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):
@@ -30,22 +49,21 @@ def eliminate_joins(expression):
                 id(column)
                 for column in on.find_all(exp.Column)
             )
-            used = any(
+            join_is_used = any(
                 column
                 for column in scope.source_columns(alias)
                 if id(column) not in on_clause_columns
             )
-
-            if used:
+            if join_is_used:
                 continue
 
+            # The join condition must include the entire set of unique outputs
             inner_scope = scope.sources.get(alias)
             unique_outputs = _unique_outputs(inner_scope)
-
+            if not unique_outputs:
+                continue
             _, join_keys, _ = join_condition(join)
-
             remaining_unique_outputs = unique_outputs - set(c.name for c in join_keys)
-
             if remaining_unique_outputs:
                 continue
 
@@ -61,17 +79,32 @@ def _unique_outputs(scope):
     group = scope.expression.args.get("group")
     if group:
         grouped_expressions = set(group.expressions)
+        grouped_outputs = set()
 
         unique_outputs = set()
         for select in scope.selects:
-            if select.unalias() in grouped_expressions:
+            output = select.unalias()
+            if output in grouped_expressions:
+                grouped_outputs.add(output)
                 unique_outputs.add(select.alias_or_name)
-        return unique_outputs
+
+        # All the grouped expressions must be in the output
+        if len(grouped_expressions - grouped_outputs) == 0:
+            return unique_outputs
 
     return set()
 
 
 def join_condition(join):
+    """
+    Extract the join condition from a join expression.
+
+    Args:
+        join (exp.Join)
+    Returns:
+        tuple[list[str], list[str], exp.Expression]:
+            Tuple of (source key, join key, remaining predicate)
+    """
     name = join.this.alias_or_name
     on = join.args.get("on") or exp.TRUE
     on = on.copy()
@@ -102,6 +135,6 @@ def join_condition(join):
                     condition.replace(exp.TRUE)
 
     on = simplify(on)
-    join_condition = None if on == exp.TRUE else on
+    remaining_condition = None if on == exp.TRUE else on
 
-    return source_key, join_key, join_condition
+    return source_key, join_key, remaining_condition

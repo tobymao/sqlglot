@@ -27,9 +27,9 @@ class Column:
             expression = sqlglot.parse_one(expression, read="spark")
         elif isinstance(expression, Column):
             expression = expression.expression
+        elif not isinstance(expression, exp.Expression):
+            expression = self._lit(expression).expression
         self.expression = expression
-        if self.expression is None or isinstance(self.expression, (int, float, bool, dict, Iterable, datetime.date)):
-            self.expression = self._lit(expression).expression
 
     def __repr__(self):
         return repr(self.expression)
@@ -185,9 +185,7 @@ class Column:
 
     @property
     def column_expression(self) -> exp.Column:
-        if self.is_alias:
-            return self.expression.this
-        return self.expression
+        return self.expression.unalias()
 
     @property
     def alias_or_name(self) -> str:
@@ -212,7 +210,7 @@ class Column:
         return Column(expression)
 
     def sql(self, **kwargs) -> Column:
-        return self.expression.sql(dialect="spark", **kwargs)
+        return self.expression.sql(**{"dialect": "spark", **kwargs})
 
     def alias(self, name: str) -> Column:
         new_expression = exp.alias_(self.column_expression, name)
@@ -264,7 +262,7 @@ class Column:
         new_expression = exp.Not(this=exp.Is(this=self.column_expression, expression=exp.Null()))
         return Column(new_expression)
 
-    def cast(self, dataType: t.Union[str, "DataType"]):
+    def cast(self, dataType: t.Union[str, DataType]):
         """
         Functionality Difference: PySpark cast accepts a datatype instance of the datatype class
         Sqlglot doesn't currently replicate this class so it only accepts a string
@@ -298,15 +296,15 @@ class Column:
             self, exp.Substring, start=startPos.expression, length=length.expression
         )
 
-    def isin(self, *cols: t.Union["Primitives", t.Iterable["Primitives"]]):
+    def isin(self, *cols: t.Union[Primitives, t.Iterable[Primitives]]):
         cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
         expressions = [self._lit(x).expression for x in cols]
         return Column.invoke_expression_over_column(self, exp.In, expressions=expressions)
 
     def between(
         self,
-        lowerBound: t.Union[Column, "Literals", "DateTimeLiteral", "DecimalLiteral"],
-        upperBound: t.Union[Column, "Literals", "DateTimeLiteral", "DecimalLiteral"],
+        lowerBound: t.Union[Column, Literals, DateTimeLiteral, DecimalLiteral],
+        upperBound: t.Union[Column, Literals, DateTimeLiteral, DecimalLiteral],
     ) -> Column:
         lower_bound_exp = self._lit(lowerBound) if not isinstance(lowerBound, Column) else lowerBound
         upper_bound_exp = self._lit(upperBound) if not isinstance(upperBound, Column) else upperBound

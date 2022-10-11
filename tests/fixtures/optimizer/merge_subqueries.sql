@@ -250,8 +250,9 @@ SELECT
   SUM(t1.a) AS total
 FROM
   t1
-GROUP BY t1.row_num;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, SUM(t1.a) AS total FROM t1 GROUP BY t1.row_num;
+GROUP BY t1.row_num
+ORDER BY t1.row_num;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, SUM(t1.a) AS total FROM t1 GROUP BY t1.row_num ORDER BY t1.row_num;
 
 # title: Test prevent merging of window if in order by func
 with t1 as (
@@ -267,8 +268,8 @@ SELECT
   t1.a AS a
 FROM
   t1
-ORDER BY t1.row_num;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, t1.a AS a FROM t1 ORDER BY t1.row_num;
+ORDER BY t1.row_num, t1.a;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, t1.a AS a FROM t1 ORDER BY t1.row_num, t1.a;
 
 # title: Test allow merging of window function
 with t1 as (

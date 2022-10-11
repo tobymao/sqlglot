@@ -315,6 +315,16 @@ class Scope:
         return self._external_columns
 
     @property
+    def unqualified_columns(self):
+        """
+        Unqualified columns in the current scope.
+
+        Returns:
+             list[exp.Column]: Unqualified columns
+        """
+        return [c for c in self.columns if not c.table]
+
+    @property
     def join_hints(self):
         """
         Hints that exist in the scope that reference tables

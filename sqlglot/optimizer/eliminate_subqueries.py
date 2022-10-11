@@ -8,7 +8,7 @@ from sqlglot.optimizer.simplify import simplify
 
 def eliminate_subqueries(expression):
     """
-    Rewrite subqueries as CTES, deduplicating if possible.
+    Rewrite derived tables as CTES, deduplicating if possible.
 
     Example:
         >>> import sqlglot

@@ -3041,6 +3041,30 @@ def update(table, properties, where=None, from_=None, dialect=None, **opts):
     return update
 
 
+def delete(table, where=None, dialect=None, **opts):
+    """
+    Builds a delete statement.
+
+    Example:
+        >>> delete("my_table", where="id > 1").sql()
+        'DELETE FROM my_table WHERE id > 1'
+
+    Args:
+        where (str|Condition): sql conditional parsed into a WHERE statement
+        dialect (str): the dialect used to parse the input expressions.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Delete: the syntax tree for the DELETE statement.
+    """
+    return Delete(
+        this=maybe_parse(table, into=Table, dialect=dialect, **opts),
+        where=Where(this=where)
+        if isinstance(where, Condition)
+        else maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", **opts),
+    )
+
+
 def condition(expression, dialect=None, **opts):
     """
     Initialize a logical condition expression.
@@ -3242,6 +3266,28 @@ def table_(table, db=None, catalog=None, quoted=None):
         this=to_identifier(table, quoted=quoted),
         db=to_identifier(db, quoted=quoted),
         catalog=to_identifier(catalog, quoted=quoted),
+    )
+
+
+def values(values, alias=None):
+    """Build VALUES statement.
+
+    Example:
+        >>> values([(1, '2')]).sql()
+        "VALUES (1, '2')"
+
+    Args:
+        values (list[tuple[str | Expression]]): values statements that will be converted to SQL
+        alias (str): optional alias
+        dialect (str): the dialect used to parse the input expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Values: the Values expression object
+    """
+    return Values(
+        expressions=[convert(tup) for tup in values],
+        alias=to_identifier(alias) if alias else None,
     )
 
 

@@ -1649,6 +1649,12 @@ class Parser:
                 self.raise_error("Expected type")
             this = self.expression(exp.Cast, this=this, to=type_token)
 
+        # https://www.postgresql.org/docs/9.3/functions-json.html
+        if self._match_set(self.COLUMN_OPERATORS):
+            op = self.COLUMN_OPERATORS.get(self._prev.token_type)
+            field = self._parse_field()
+            this = op(self, this, exp.Literal.string(field.name))
+
         return this
 
     def _parse_types(self):

@@ -820,9 +820,9 @@ def repeat(col: ColumnOrName, n: int) -> Column:
 def split(str: ColumnOrName, pattern: str, limit: t.Optional[int] = None) -> Column:
     if limit is not None:
         return Column.invoke_expression_over_column(
-            str, glotexp.Split, expression=lit(pattern).expression, limit=lit(limit).expression
+            str, glotexp.RegexpSplit, expression=lit(pattern).expression, limit=lit(limit).expression
         )
-    return Column.invoke_expression_over_column(str, glotexp.Split, expression=lit(pattern).expression)
+    return Column.invoke_expression_over_column(str, glotexp.RegexpSplit, expression=lit(pattern).expression)
 
 
 def regexp_extract(str: ColumnOrName, pattern: str, idx: t.Optional[int] = None) -> Column:
@@ -880,7 +880,7 @@ def array(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
 def create_map(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
     cols = list(_flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols
     return Column.invoke_expression_over_column(
-        None, glotexp.Map, keys=array(cols[::2]).expression, values=array(cols[1::2]).expression
+        None, glotexp.VarMap, keys=array(cols[::2]).expression, values=array(cols[1::2]).expression
     )
 
 

@@ -1,4 +1,5 @@
 import itertools
+from collections import defaultdict
 from enum import Enum, auto
 
 from sqlglot import exp
@@ -412,6 +413,21 @@ class Scope:
         ):
             yield from child_scope.traverse()
         yield self
+
+    def ref_count(self):
+        """
+        Count the number of times each scope in this tree is referenced.
+
+        Returns:
+            dict[int, int]: Mapping of Scope instance ID to reference count
+        """
+        scope_ref_count = defaultdict(lambda: 0)
+
+        for scope in self.traverse():
+            for _, source in scope.selected_sources.values():
+                scope_ref_count[id(source)] += 1
+
+        return scope_ref_count
 
 
 def traverse_scope(expression):

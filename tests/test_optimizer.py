@@ -198,6 +198,13 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
         )
 
+    def test_eliminate_ctes(self):
+        self.check_file(
+            "eliminate_ctes",
+            optimizer.eliminate_ctes.eliminate_ctes,
+            pretty=True,
+        )
+
     def test_merge_subqueries(self):
         optimize = partial(
             optimizer.optimize,

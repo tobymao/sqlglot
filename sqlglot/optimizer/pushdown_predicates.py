@@ -1,8 +1,6 @@
-from collections import defaultdict
-
 from sqlglot import exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import build_scope
 from sqlglot.optimizer.simplify import simplify
 
 
@@ -22,15 +20,10 @@ def pushdown_predicates(expression):
     Returns:
         sqlglot.Expression: optimized expression
     """
-    scope_ref_count = defaultdict(lambda: 0)
-    scopes = traverse_scope(expression)
-    scopes.reverse()
+    root = build_scope(expression)
+    scope_ref_count = root.ref_count()
 
-    for scope in scopes:
-        for _, source in scope.selected_sources.values():
-            scope_ref_count[id(source)] += 1
-
-    for scope in scopes:
+    for scope in reversed(list(root.traverse())):
         select = scope.expression
         where = select.args.get("where")
         if where:

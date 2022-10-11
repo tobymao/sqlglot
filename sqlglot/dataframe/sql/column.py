@@ -191,8 +191,6 @@ class Column:
 
     @property
     def alias_or_name(self) -> str:
-        if isinstance(self.expression, exp.Null):
-            return "NULL"
         return self.expression.alias_or_name
 
     @classmethod

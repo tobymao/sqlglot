@@ -82,7 +82,7 @@ def _unique_outputs(scope):
                 unique_outputs.add(select.alias_or_name)
 
         # All the grouped expressions must be in the output
-        if len(grouped_expressions - grouped_outputs) == 0:
+        if not grouped_expressions.difference(grouped_outputs):
             return unique_outputs
         else:
             return set()

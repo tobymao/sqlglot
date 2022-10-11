@@ -48,7 +48,7 @@ class SparkSession:
         from sqlglot.dataframe.sql.dataframe import DataFrame
 
         if samplingRatio is not None or verifySchema:
-            raise NotImplementedError("Sampling Ration and Verify Schema are not supported")
+            raise NotImplementedError("Sampling Ratio and Verify Schema are not supported")
         if schema is not None and (
             not isinstance(schema, (StructType, str, list))
             or (isinstance(schema, list) and not isinstance(schema[0], str))

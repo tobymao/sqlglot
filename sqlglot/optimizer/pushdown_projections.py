@@ -49,7 +49,7 @@ def pushdown_projections(expression):
             removed_indexes = _remove_unused_selections(scope, parent_selections)
             # The left union is used for column names to select and if we remove columns from the left
             # we need to also remove those same columns in the right that were at the same position
-            if scope == left_union:
+            if scope is left_union:
                 _remove_indexed_selections(right_union, removed_indexes)
 
             # Group columns by source name

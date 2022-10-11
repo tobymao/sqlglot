@@ -137,24 +137,18 @@ class Column:
             expressions = [cls._lit(x).expression for x in value]
             return cls(exp.Column(this=exp.Array(expressions=expressions)))
         if isinstance(value, datetime.datetime):
-            datetime_literal = exp.Literal(this=value.strftime("%Y-%m-%d %H:%M:%S"), is_string=True)
+            datetime_literal = exp.Literal.string(value.strftime("%Y-%m-%d %H:%M:%S"))
             return cls(
-                exp.Column(
-                    this=exp.StrToTime(
-                        this=datetime_literal, format=exp.Literal(this="YYYY-MM-DD HH:MM:SS", is_string=True)
-                    )
-                )
+                exp.Column(this=exp.StrToTime(this=datetime_literal, format=exp.Literal.string("YYYY-MM-DD HH:MM:SS")))
             )
         if isinstance(value, datetime.date):
-            date_literal = exp.Literal(this=value.strftime("%Y-%m-%d"), is_string=True)
-            return cls(
-                exp.Column(this=exp.StrToDate(this=date_literal, format=exp.Literal(this="YYYY-MM-DD", is_string=True)))
-            )
+            date_literal = exp.Literal.string(value.strftime("%Y-%m-%d"))
+            return cls(exp.Column(this=exp.StrToDate(this=date_literal, format=exp.Literal.string("YYYY-MM-DD"))))
         return cls(value)
 
     @classmethod
     def invoke_anonymous_function(cls, column: t.Union[ColumnOrName, None], func_name: str, *args) -> Column:
-        column = [cls.ensure_col(column)] if column is not None else []
+        column = [] if column is None else [cls.ensure_col(column)]
         args = [cls.ensure_col(arg) for arg in args]
         expressions = [x.expression for x in column + args]
         new_expression = exp.Anonymous(this=func_name.upper(), expressions=expressions)
@@ -164,22 +158,22 @@ class Column:
     def invoke_expression_over_column(
         cls, column: t.Union[ColumnOrName, None], callable_expression: t.Callable, **kwargs
     ) -> Column:
-        column = cls.ensure_col(column) if column is not None else None
+        column = None if column is None else cls.ensure_col(column)
         new_expression = (
-            callable_expression(this=column.column_expression, **kwargs)
-            if column is not None
-            else callable_expression(**kwargs)
+            callable_expression(**kwargs)
+            if column is None
+            else callable_expression(this=column.column_expression, **kwargs)
         )
         return Column(new_expression)
 
-    def binary_op(self, clazz: t.Callable, other: Column, **kwargs) -> Column:
-        return Column(clazz(this=self.column_expression, expression=Column(other).column_expression, **kwargs))
+    def binary_op(self, klass: t.Callable, other: Column, **kwargs) -> Column:
+        return Column(klass(this=self.column_expression, expression=Column(other).column_expression, **kwargs))
 
-    def inverse_binary_op(self, clazz: t.Callable, other: Column, **kwargs) -> Column:
-        return Column(clazz(this=Column(other).column_expression, expression=self.column_expression, **kwargs))
+    def inverse_binary_op(self, klass: t.Callable, other: Column, **kwargs) -> Column:
+        return Column(klass(this=Column(other).column_expression, expression=self.column_expression, **kwargs))
 
-    def unary_op(self, clazz: t.Callable, **kwargs) -> Column:
-        return Column(clazz(this=self.column_expression, **kwargs))
+    def unary_op(self, klass: t.Callable, **kwargs) -> Column:
+        return Column(klass(this=self.column_expression, **kwargs))
 
     @property
     def is_alias(self):
@@ -199,8 +193,6 @@ class Column:
     def alias_or_name(self) -> str:
         if isinstance(self.expression, exp.Null):
             return "NULL"
-        if isinstance(self.expression.this, exp.Star):
-            return self.expression.this.alias_or_name
         return self.expression.alias_or_name
 
     @classmethod

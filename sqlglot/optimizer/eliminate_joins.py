@@ -103,7 +103,11 @@ def _unique_outputs(scope):
 
 
 def _has_single_output_row(scope):
-    return all(isinstance(e.unalias(), exp.AggFunc) for e in scope.selects) or _is_limit_1(scope)
+    return (
+        all(isinstance(e.unalias(), exp.AggFunc) for e in scope.selects)
+        or _is_limit_1(scope)
+        or (isinstance(scope.expression, exp.Select) and not scope.expression.args.get("from"))
+    )
 
 
 def _is_limit_1(scope):

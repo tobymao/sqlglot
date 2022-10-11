@@ -285,6 +285,19 @@ SELECT
   x.a
 FROM x;
 
+# title: Cross join on derived table with no FROM clause
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    1 AS b,
+    2 AS c
+) AS y;
+SELECT
+  x.a
+FROM x;
+
 # title: Noop - cross join on non-aggregate subquery
 SELECT
   x.a

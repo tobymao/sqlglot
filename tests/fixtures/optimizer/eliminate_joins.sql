@@ -12,7 +12,7 @@ SELECT
   x.a
 FROM x;
 
-# title: Remove left join on aggregate derived table
+# title: Remove left join on grouped derived table
 SELECT
   x.a
 FROM x
@@ -22,6 +22,20 @@ LEFT JOIN (
     SUM(y.c)
   FROM y
   GROUP BY y.b
+) AS y
+  ON x.b = y.b;
+SELECT
+  x.a
+FROM x;
+
+# title: Remove left join on aggregate derived table
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    SUM(y.b) AS b
+  FROM y
 ) AS y
   ON x.b = y.b;
 SELECT

@@ -84,6 +84,11 @@ def _unique_outputs(scope):
         # All the grouped expressions must be in the output
         if len(grouped_expressions - grouped_outputs) == 0:
             return unique_outputs
+        else:
+            return set()
+
+    if all(isinstance(e.unalias(), exp.AggFunc) for e in scope.selects):
+        return set(scope.expression.named_selects)
 
     return set()
 

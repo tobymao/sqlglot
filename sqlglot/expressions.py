@@ -108,6 +108,8 @@ class Expression(metaclass=_Expression):
 
     @property
     def alias_or_name(self):
+        if isinstance(self, Null):
+            return "NULL"
         return self.alias or self.name
 
     def __deepcopy__(self, memo):

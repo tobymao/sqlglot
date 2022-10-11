@@ -507,9 +507,7 @@ class DataFrame:
 
     @operation(Operation.SELECT)
     def distinct(self) -> DataFrame:
-        expression = self.expression.copy()
-        expression.set("distinct", exp.Distinct())
-        return self.copy(expression=expression)
+        return self.copy(expression=self.expression.distinct())
 
     @operation(Operation.SELECT)
     def dropDuplicates(self, subset: t.Optional[t.List[str]] = None):

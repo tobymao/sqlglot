@@ -1,3 +1,4 @@
+from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
@@ -23,6 +24,7 @@ RULES = (
     optimize_joins,
     eliminate_subqueries,
     merge_subqueries,
+    eliminate_joins,
     quote_identities,
 )
 

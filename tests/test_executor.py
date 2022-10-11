@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import duckdb
@@ -7,11 +8,13 @@ from pandas.testing import assert_frame_equal
 from sqlglot import exp, parse_one
 from sqlglot.executor import execute
 from sqlglot.executor.python import Python
-from tests.helpers import FIXTURES_DIR, TPCH_SCHEMA, load_sql_fixture_pairs
+from tests.helpers import FIXTURES_DIR, TPCH_SCHEMA, load_sql_fixture_pairs, string_to_bool
 
 DIR = FIXTURES_DIR + "/optimizer/tpc-h/"
 
 
+@unittest.skipIf(string_to_bool(os.environ.get("SKIP_INTEGRATION", '0').lower()),
+                 "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
 class TestExecutor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

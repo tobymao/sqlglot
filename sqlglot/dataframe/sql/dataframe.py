@@ -9,7 +9,6 @@ import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql.column import Column
-from sqlglot.dataframe.sql import const
 from sqlglot.dataframe.sql.group import GroupedData
 from sqlglot.dataframe.sql.normalize import normalize
 from sqlglot.dataframe.sql.operations import Operation, operation
@@ -26,6 +25,18 @@ if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
 
 
+JOIN_HINTS = {
+    "BROADCAST",
+    "BROADCASTJOIN",
+    "MAPJOIN",
+    "MERGE",
+    "SHUFFLEMERGE",
+    "MERGEJOIN",
+    "SHUFFLE_HASH",
+    "SHUFFLE_REPLICATE_NL",
+}
+
+
 class DataFrame:
     def __init__(
         self,
@@ -35,7 +46,7 @@ class DataFrame:
         sequence_id: str = None,
         last_op: t.Optional[Operation] = Operation.INIT,
         pending_hints: t.List[exp.Expression] = None,
-        output_expression_container: OutputExpressionContainer = exp.Select(),
+        output_expression_container: OutputExpressionContainer = None,
         **kwargs,
     ):
         self.spark = spark
@@ -44,7 +55,7 @@ class DataFrame:
         self.sequence_id = sequence_id or self.spark._random_sequence_id
         self.last_op = last_op
         self.pending_hints = pending_hints or []
-        self.output_expression_container = output_expression_container
+        self.output_expression_container = output_expression_container or exp.Select()
 
     def __getattr__(self, column_name: str) -> Column:
         return self[column_name]
@@ -183,7 +194,7 @@ class DataFrame:
 
     def _hint(self, hint_name: str, args: t.List[Column]) -> DataFrame:
         hint_name = hint_name.upper()
-        if hint_name in const.JOIN_HINTS:
+        if hint_name in JOIN_HINTS:
             hint_expression = exp.JoinHint(
                 this=hint_name, expressions=[exp.to_table(parameter.alias_or_name) for parameter in args]
             )
@@ -282,8 +293,8 @@ class DataFrame:
                 sqlglot.schema.add_table(cache_table_name, select_expression.named_selects)
                 cache_storage_level = select_expression.args["cache_storage_level"]
                 options = [
-                    exp.Literal(this="storageLevel", is_string=True),
-                    exp.Literal(this=cache_storage_level, is_string=True),
+                    exp.Literal.string("storageLevel"),
+                    exp.Literal.string(cache_storage_level),
                 ]
                 expression = exp.Cache(this=cache_table, expression=select_expression, lazy=True, options=options)
                 # We will drop the "view" if it exists before running the cache table
@@ -520,8 +531,6 @@ class DataFrame:
         thresh: t.Optional[int] = None,
         subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None,
     ) -> DataFrame:
-        if self.expression.ctes[-1].find(exp.Star) is not None:
-            raise RuntimeError("Cannot use `dropna` when a * expression is used")
         minimum_non_null = thresh
         new_df = self.copy()
         all_columns = self._get_outer_select_columns(new_df.expression)

@@ -1,6 +1,6 @@
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.optimizer.simplify import simplify
 
 
@@ -8,8 +8,7 @@ def eliminate_joins(expression):
     """
     Remove unused joins from an expression.
 
-    Currently, this only remove LEFT JOINs when we know that the join condition
-    doesn't produce duplicate rows.
+    This only removes joins when we know that the join condition doesn't produce duplicate rows.
 
     Example:
         >>> import sqlglot
@@ -34,38 +33,48 @@ def eliminate_joins(expression):
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):
-            if join.side != "LEFT":
-                continue
-
-            on = join.args.get("on")
-            if not on:
-                continue
-
             alias = join.this.alias_or_name
-
-            # We need to find all columns that reference this join.
-            # But columns in the ON clause shouldn't count.
-            on_clause_columns = set(id(column) for column in on.find_all(exp.Column))
-            join_is_used = any(column for column in scope.source_columns(alias) if id(column) not in on_clause_columns)
-            if join_is_used:
-                continue
-
-            # The join condition must include the entire set of unique outputs
-            inner_scope = scope.sources.get(alias)
-            unique_outputs = _unique_outputs(inner_scope)
-            if not unique_outputs:
-                continue
-            _, join_keys, _ = join_condition(join)
-            remaining_unique_outputs = unique_outputs - set(c.name for c in join_keys)
-            if remaining_unique_outputs:
-                continue
-
-            join.pop()
-            scope.remove_source(alias)
+            if _should_eliminate_join(scope, join, alias):
+                join.pop()
+                scope.remove_source(alias)
     return expression
 
 
+def _should_eliminate_join(scope, join, alias):
+    inner_source = scope.sources.get(alias)
+    return (
+        isinstance(inner_source, Scope)
+        and not _join_is_used(scope, join, alias)
+        and (
+            (join.side == "LEFT" and _is_joined_on_all_unique_outputs(inner_source, join))
+            or (not join.args.get("on") and _has_single_output_row(inner_source))
+        )
+    )
+
+
+def _join_is_used(scope, join, alias):
+    # We need to find all columns that reference this join.
+    # But columns in the ON clause shouldn't count.
+    on = join.args.get("on")
+    if on:
+        on_clause_columns = set(id(column) for column in on.find_all(exp.Column))
+    else:
+        on_clause_columns = set()
+    return any(column for column in scope.source_columns(alias) if id(column) not in on_clause_columns)
+
+
+def _is_joined_on_all_unique_outputs(scope, join):
+    unique_outputs = _unique_outputs(scope)
+    if not unique_outputs:
+        return False
+
+    _, join_keys, _ = join_condition(join)
+    remaining_unique_outputs = unique_outputs - set(c.name for c in join_keys)
+    return not remaining_unique_outputs
+
+
 def _unique_outputs(scope):
+    """Determine output columns of `scope` that must have a unique combination per row"""
     if scope.expression.args.get("distinct"):
         return set(scope.expression.named_selects)
 
@@ -87,10 +96,23 @@ def _unique_outputs(scope):
         else:
             return set()
 
-    if all(isinstance(e.unalias(), exp.AggFunc) for e in scope.selects):
+    if _has_single_output_row(scope):
         return set(scope.expression.named_selects)
 
     return set()
+
+
+def _has_single_output_row(scope):
+    return isinstance(scope.expression, exp.Select) and (
+        all(isinstance(e.unalias(), exp.AggFunc) for e in scope.selects)
+        or _is_limit_1(scope)
+        or not scope.expression.args.get("from")
+    )
+
+
+def _is_limit_1(scope):
+    limit = scope.expression.args.get("limit")
+    return limit and limit.expression.this == "1"
 
 
 def join_condition(join):

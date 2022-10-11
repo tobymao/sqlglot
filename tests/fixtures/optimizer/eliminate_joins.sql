@@ -213,7 +213,7 @@ SELECT
 FROM x;
 
 # title: CTE
-WITH y AS (
+WITH z AS (
   SELECT DISTINCT
     y.b
   FROM y
@@ -221,9 +221,9 @@ WITH y AS (
 SELECT
   x.a
 FROM x
-LEFT JOIN y
-  ON x.b = y.b;
-WITH y AS (
+LEFT JOIN z
+  ON x.b = z.b;
+WITH z AS (
   SELECT DISTINCT
     y.b
   FROM y
@@ -257,3 +257,48 @@ LEFT JOIN (
     y.c
 ) AS y
   ON x.b = y.b;
+
+# title: Cross join on aggregate derived table
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    SUM(y.b) AS b
+  FROM y
+) AS y;
+SELECT
+  x.a
+FROM x;
+
+# title: Cross join on derived table with LIMIT 1
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  LIMIT 1
+) AS y;
+SELECT
+  x.a
+FROM x;
+
+# title: Noop - cross join on non-aggregate subquery
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    y.b
+  FROM y
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    y.b
+  FROM y
+) AS y;

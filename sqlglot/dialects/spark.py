@@ -14,6 +14,12 @@ def _create_sql(self, e):
     return create_with_partitions_sql(self, e)
 
 
+def _map_sql(self, expression):
+    keys = self.sql(expression.args["keys"])
+    values = self.sql(expression.args["values"])
+    return f"MAP_FROM_ARRAYS({keys}, {values})"
+
+
 def _str_to_date(self, expression):
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
@@ -88,7 +94,7 @@ class Spark(Hive):
         }
 
         TRANSFORMS = {
-            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort, exp.Split, exp.ILike}},
+            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort, exp.ILike}},
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
@@ -100,6 +106,7 @@ class Spark(Hive):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
             exp.Create: _create_sql,
+            exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             exp.TimestampTrunc: lambda self, e: f"DATE_TRUNC({self.sql(e, 'unit')}, {self.sql(e, 'this')})",

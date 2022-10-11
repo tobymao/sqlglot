@@ -40,7 +40,7 @@ class TestPresto(Validator):
                 "duckdb": "CAST(MAP(LIST_VALUE(1), LIST_VALUE(1)) AS MAP(INT, INT))",
                 "presto": "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INTEGER, INTEGER))",
                 "hive": "CAST(MAP(1, 1) AS MAP<INT, INT>)",
-                "spark": "CAST(MAP(1, 1) AS MAP<INT, INT>)",
+                "spark": "CAST(MAP_FROM_ARRAYS(ARRAY(1), ARRAY(1)) AS MAP<INT, INT>)",
             },
         )
         self.validate_all(
@@ -50,7 +50,7 @@ class TestPresto(Validator):
                 "duckdb": "CAST(MAP(LIST_VALUE('a', 'b', 'c'), LIST_VALUE(LIST_VALUE(1), LIST_VALUE(2), LIST_VALUE(3))) AS MAP(TEXT, INT[]))",
                 "presto": "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
                 "hive": "CAST(MAP('a', ARRAY(1), 'b', ARRAY(2), 'c', ARRAY(3)) AS MAP<STRING, ARRAY<INT>>)",
-                "spark": "CAST(MAP('a', ARRAY(1), 'b', ARRAY(2), 'c', ARRAY(3)) AS MAP<STRING, ARRAY<INT>>)",
+                "spark": "CAST(MAP_FROM_ARRAYS(ARRAY('a', 'b', 'c'), ARRAY(ARRAY(1), ARRAY(2), ARRAY(3))) AS MAP<STRING, ARRAY<INT>>)",
             },
         )
         self.validate_all(
@@ -80,7 +80,7 @@ class TestPresto(Validator):
                 "duckdb": "STR_SPLIT(x, 'a.')",
                 "presto": "SPLIT(x, 'a.')",
                 "hive": "SPLIT(x, CONCAT('\\\\Q', 'a.'))",
-                "spark": "SPLIT(x, 'a.')",
+                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a.'))",
             },
         )
         self.validate_all(
@@ -383,7 +383,7 @@ class TestPresto(Validator):
             "MAP(a, b)",
             write={
                 "hive": UnsupportedError,
-                "spark": "MAP(a, b)",
+                "spark": "MAP_FROM_ARRAYS(a, b)",
             },
         )
         self.validate_all(
@@ -391,7 +391,7 @@ class TestPresto(Validator):
             write={
                 "hive": "MAP(a, c, b, d)",
                 "presto": "MAP(ARRAY[a, b], ARRAY[c, d])",
-                "spark": "MAP(a, c, b, d)",
+                "spark": "MAP_FROM_ARRAYS(ARRAY(a, b), ARRAY(c, d))",
             },
         )
         self.validate_all(
@@ -399,7 +399,7 @@ class TestPresto(Validator):
             write={
                 "hive": "MAP('a', 'b')",
                 "presto": "MAP(ARRAY['a'], ARRAY['b'])",
-                "spark": "MAP('a', 'b')",
+                "spark": "MAP_FROM_ARRAYS(ARRAY('a'), ARRAY('b'))",
             },
         )
         self.validate_all(

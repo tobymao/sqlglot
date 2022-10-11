@@ -109,7 +109,7 @@ class TestDuckDB(Validator):
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",
                 "hive": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
-                "spark": "SPLIT(x, 'a')",
+                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
             },
         )
         self.validate_all(
@@ -118,7 +118,7 @@ class TestDuckDB(Validator):
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",
                 "hive": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
-                "spark": "SPLIT(x, 'a')",
+                "spark": "SPLIT(x, CONCAT('\\\\Q', 'a'))",
             },
         )
         self.validate_all(

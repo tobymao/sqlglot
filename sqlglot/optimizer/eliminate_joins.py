@@ -45,15 +45,8 @@ def eliminate_joins(expression):
 
             # We need to find all columns that reference this join.
             # But columns in the ON clause shouldn't count.
-            on_clause_columns = set(
-                id(column)
-                for column in on.find_all(exp.Column)
-            )
-            join_is_used = any(
-                column
-                for column in scope.source_columns(alias)
-                if id(column) not in on_clause_columns
-            )
+            on_clause_columns = set(id(column) for column in on.find_all(exp.Column))
+            join_is_used = any(column for column in scope.source_columns(alias) if id(column) not in on_clause_columns)
             if join_is_used:
                 continue
 

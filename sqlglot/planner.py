@@ -3,7 +3,6 @@ import math
 
 from sqlglot import alias, exp
 from sqlglot.errors import UnsupportedError
-from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.eliminate_joins import join_condition
 
 

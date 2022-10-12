@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import datetime
 import typing as t
-from collections.abc import Iterable
 
 import sqlglot
 from sqlglot import expressions as exp
@@ -23,13 +21,11 @@ if t.TYPE_CHECKING:
 
 class Column:
     def __init__(self, expression: t.Union[t.Any, exp.Expression]):
-        if isinstance(expression, str):
-            expression = sqlglot.parse_one(expression, read="spark")
-        elif isinstance(expression, Column):
+        if isinstance(expression, Column):
             expression = expression.expression
-        elif not isinstance(expression, exp.Expression):
+        elif not isinstance(expression, (str, exp.Expression)):
             expression = self._lit(expression).expression
-        self.expression = expression
+        self.expression = sqlglot.maybe_parse(expression, dialect="spark")
 
     def __repr__(self):
         return repr(self.expression)

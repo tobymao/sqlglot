@@ -21,10 +21,10 @@ Currently many of the common operations are covered and more functionality will 
       * Ex: ['cola', 'colb']
       * The lack of types may limit functionality in future releases
   * See [Registering Custom Schema](#registering-custom-schema-class) for information on how to skip this step if the information is stored externally
-* Add `.sql()` to your final DataFrame command to return a list of sql statements to run that command
+* Add `.sql(pretty=True)` to your final DataFrame command to return a list of sql statements to run that command
   * In most cases a single SQL statement is returned. Currently the only exception is when caching DataFrames which isn't supported in other dialects.  
   * Spark is the default output dialect. See [dialects](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects) for a full list of dialects
-  * Ex: `.sql(dialect='bigquery')`
+  * Ex: `.sql(pretty=True, dialect='bigquery')`
 
 ## Examples
 
@@ -49,7 +49,7 @@ df = (
     .agg(F.countDistinct(F.col("employee_id")).alias("num_employees")) 
 )
 
-print(df.sql())  # Spark will be the dialect used by default
+print(df.sql(pretty=True))  # Spark will be the dialect used by default
 ```
 Output:
 ```sparksql
@@ -86,7 +86,7 @@ df = (
     .agg(F.countDistinct(F.col("employee_id")).alias("num_employees")) 
 )
 
-print(df.sql())
+print(df.sql(pretty=True))
 ```
 
 ## Example Implementations

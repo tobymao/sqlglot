@@ -304,7 +304,7 @@ class DataFrame:
                 raise ValueError(f"Invalid expression type: {expression_type}")
             output_expressions.append(expression)
 
-        return [expression.sql(**{"dialect": dialect, "pretty": True, **kwargs}) for expression in output_expressions]
+        return [expression.sql(**{"dialect": dialect, **kwargs}) for expression in output_expressions]
 
     def copy(self, **kwargs) -> DataFrame:
         kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}

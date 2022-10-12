@@ -125,26 +125,10 @@ class Column:
 
     @classmethod
     def _lit(cls, value: t.Optional[t.Any] = None) -> Column:
-        if value is None:
-            return cls(exp.Null())
-        if isinstance(value, (str, int, bool, float)):
-            value_formatted = str(value).lower() if isinstance(value, bool) else str(value)
-            return cls(exp.Literal(this=value_formatted, is_string=isinstance(value, str)))
         if isinstance(value, dict):
             columns = [cls._lit(v).alias(k).expression for k, v in value.items()]
             return cls(exp.Struct(expressions=columns))
-        if isinstance(value, Iterable):
-            expressions = [cls._lit(x).expression for x in value]
-            return cls(exp.Column(this=exp.Array(expressions=expressions)))
-        if isinstance(value, datetime.datetime):
-            datetime_literal = exp.Literal.string(value.strftime("%Y-%m-%d %H:%M:%S"))
-            return cls(
-                exp.Column(this=exp.StrToTime(this=datetime_literal, format=exp.Literal.string("YYYY-MM-DD HH:MM:SS")))
-            )
-        if isinstance(value, datetime.date):
-            date_literal = exp.Literal.string(value.strftime("%Y-%m-%d"))
-            return cls(exp.Column(this=exp.StrToDate(this=date_literal, format=exp.Literal.string("YYYY-MM-DD"))))
-        return cls(value)
+        return cls(exp.convert(value))
 
     @classmethod
     def invoke_anonymous_function(cls, column: t.Union[ColumnOrName, None], func_name: str, *args) -> Column:

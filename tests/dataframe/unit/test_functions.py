@@ -14,7 +14,7 @@ class TestDataframeFunctions(unittest.TestCase):
         test_float = SF.lit(10.10)
         self.assertEqual("10.1", test_float.sql())
         test_bool = SF.lit(False)
-        self.assertEqual("false", test_bool.sql())
+        self.assertEqual("FALSE", test_bool.sql())
         test_null = SF.lit(None)
         self.assertEqual("NULL", test_null.sql())
         test_date = SF.lit(datetime.date(2022, 1, 1))
@@ -36,7 +36,7 @@ class TestDataframeFunctions(unittest.TestCase):
         test_float = SF.col(10.10)
         self.assertEqual("10.1", test_float.sql())
         test_bool = SF.col(True)
-        self.assertEqual("true", test_bool.sql())
+        self.assertEqual("TRUE", test_bool.sql())
         test_array = SF.col([1, 2, "3"])
         self.assertEqual("ARRAY(1, 2, '3')", test_array.sql())
         test_date = SF.col(datetime.date(2022, 1, 1))
@@ -517,7 +517,7 @@ class TestDataframeFunctions(unittest.TestCase):
         col = SF.first(SF.col("cola"))
         self.assertEqual("FIRST(cola)", col.sql())
         ignore_nulls = SF.first("cola", True)
-        self.assertEqual("FIRST(cola, true)", ignore_nulls.sql())
+        self.assertEqual("FIRST(cola, TRUE)", ignore_nulls.sql())
 
     def test_grouping_id(self):
         col_str = SF.grouping_id("cola", "colb")
@@ -551,7 +551,7 @@ class TestDataframeFunctions(unittest.TestCase):
         col = SF.last(SF.col("cola"))
         self.assertEqual("LAST(cola)", col.sql())
         ignore_nulls = SF.last("cola", True)
-        self.assertEqual("LAST(cola, true)", ignore_nulls.sql())
+        self.assertEqual("LAST(cola, TRUE)", ignore_nulls.sql())
 
     def test_monotonically_increasing_id(self):
         col = SF.monotonically_increasing_id()
@@ -825,7 +825,7 @@ class TestDataframeFunctions(unittest.TestCase):
         col = SF.months_between(SF.col("cola"), SF.col("colb"))
         self.assertEqual("MONTHS_BETWEEN(cola, colb)", col.sql())
         col_round_off = SF.months_between("cola", "colb", True)
-        self.assertEqual("MONTHS_BETWEEN(cola, colb, true)", col_round_off.sql())
+        self.assertEqual("MONTHS_BETWEEN(cola, colb, TRUE)", col_round_off.sql())
 
     def test_to_date(self):
         col_str = SF.to_date("cola")
@@ -1405,9 +1405,9 @@ class TestDataframeFunctions(unittest.TestCase):
 
     def test_sort_array(self):
         col_str = SF.sort_array("cola", False)
-        self.assertEqual("SORT_ARRAY(cola, false)", col_str.sql())
+        self.assertEqual("SORT_ARRAY(cola, FALSE)", col_str.sql())
         col = SF.sort_array(SF.col("cola"), False)
-        self.assertEqual("SORT_ARRAY(cola, false)", col.sql())
+        self.assertEqual("SORT_ARRAY(cola, FALSE)", col.sql())
         col_no_sort = SF.sort_array("cola")
         self.assertEqual("SORT_ARRAY(cola)", col_no_sort.sql())
 

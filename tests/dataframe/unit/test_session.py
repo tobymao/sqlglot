@@ -28,7 +28,7 @@ class TestDataframeSession(DataFrameSQLValidator):
 
     def test_cdf_row_mixed_primitives(self):
         df = self.spark.createDataFrame([[1, 10.1, "test", False, None]])
-        expected = "SELECT `a2`.`_1` AS `_1`, `a2`.`_2` AS `_2`, `a2`.`_3` AS `_3`, `a2`.`_4` AS `_4`, `a2`.`_5` AS `_5` FROM (VALUES (1, 10.1, 'test', false, NULL)) AS `a2`(`_1`, `_2`, `_3`, `_4`, `_5`)"
+        expected = "SELECT `a2`.`_1` AS `_1`, `a2`.`_2` AS `_2`, `a2`.`_3` AS `_3`, `a2`.`_4` AS `_4`, `a2`.`_5` AS `_5` FROM (VALUES (1, 10.1, 'test', FALSE, NULL)) AS `a2`(`_1`, `_2`, `_3`, `_4`, `_5`)"
         self.compare_sql(df, expected)
 
     def test_cdf_dict_rows(self):

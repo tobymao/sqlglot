@@ -71,8 +71,7 @@ def _struct_pack_sql(self, expression):
 def _datatype_sql(self, expression):
     type_value = expression.this
     if type_value == exp.DataType.Type.ARRAY:
-        interior = self.expressions(expression, flat=True)
-        return f"{interior}[]"
+        return f"{self.expressions(expression, flat=True)}[]"
     else:
         return self.datatype_sql(expression)
 

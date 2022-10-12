@@ -913,7 +913,7 @@ class Parser:
 
         return self.expression(
             exp.LoadData,
-            this=self._parse_id_var(),
+            this=self._parse_table(),
             local=local,
             overwrite=overwrite,
             inpath=inpath,

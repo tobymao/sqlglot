@@ -1,6 +1,22 @@
 Changelog
 =========
 
+v7.0.0
+------
+
+Changes:
+
+- Breaking: DISTINCT within functions now take in multiple values eg. COUNT(DISTINCT a, b).
+    exp.Distinct no longer uses `this` and now uses the expressions property
+
+- New: Expression False kwargs are now excluded from equality checks
+
+- New: Parse DESCRIBE and CREATE SCHEMA
+
+- New: DELETE and VALUES builder
+
+- New: Unused CTE and JOINS are now removed in the optimizer
+
 v6.3.0
 ------
 

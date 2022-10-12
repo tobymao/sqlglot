@@ -364,6 +364,9 @@ class Generator:
         )
         return self.prepend_ctes(expression, expression_sql)
 
+    def describe_sql(self, expression):
+        return f"DESCRIBE {self.sql(expression, 'this')}"
+
     def prepend_ctes(self, expression, sql):
         with_ = self.sql(expression, "with")
         if with_:

@@ -137,6 +137,7 @@ class TokenType(AutoName):
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()
+    DESCRIBE = auto()
     DETERMINISTIC = auto()
     DISTINCT = auto()
     DISTRIBUTE_BY = auto()
@@ -443,6 +444,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
+        "DESCRIBE": TokenType.DESCRIBE,
         "DETERMINISTIC": TokenType.DETERMINISTIC,
         "DISTINCT": TokenType.DISTINCT,
         "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
@@ -537,6 +539,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ROLLUP": TokenType.ROLLUP,
         "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,
+        "SCHEMA": TokenType.SCHEMA,
         "SEED": TokenType.SEED,
         "SELECT": TokenType.SELECT,
         "SEMI": TokenType.SEMI,

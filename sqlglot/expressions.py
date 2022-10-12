@@ -2707,7 +2707,7 @@ def _norm_args(expression):
         else:
             arg = _norm_arg(arg)
 
-        if arg is not None:
+        if arg is not None and arg is not False:
             args[k] = arg
 
     return args

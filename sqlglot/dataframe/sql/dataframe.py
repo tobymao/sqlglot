@@ -274,16 +274,6 @@ class DataFrame:
                 select_expression = optimize_func(select_expression)
             select_expression = df._replace_cte_names_with_hashes(select_expression)
 
-            # temporary hack to remove extra CTE that was replaced with table until removing unused CTEs is added
-            # to optimizer
-            filtered_ctes = [
-                cte
-                for cte in select_expression.ctes
-                if cte.alias_or_name not in {x.alias_or_name for x in replacement_mapping.values()}
-            ]
-            with_expr = exp.With(expressions=filtered_ctes) if filtered_ctes else None
-            select_expression.set("with", with_expr)
-
             if expression_type == exp.Cache:
                 cache_table_name = df._create_hash_from_expression(select_expression)
                 cache_table = exp.to_table(cache_table_name)

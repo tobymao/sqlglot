@@ -2270,6 +2270,10 @@ class Cast(Func):
     def name(self):
         return self.this.name
 
+    @property
+    def to(self):
+        return self.args["to"]
+
 
 class TryCast(Cast):
     pass

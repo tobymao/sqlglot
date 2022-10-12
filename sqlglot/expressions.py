@@ -614,6 +614,10 @@ class Create(Expression):
     }
 
 
+class Describe(Expression):
+    pass
+
+
 class UserDefinedFunction(Expression):
     arg_types = {"this": True, "expressions": False}
 
@@ -2261,6 +2265,10 @@ class Case(Func):
 
 class Cast(Func):
     arg_types = {"this": True, "to": True}
+
+    @property
+    def name(self):
+        return self.this.name
 
 
 class TryCast(Cast):

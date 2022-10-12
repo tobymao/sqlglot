@@ -141,6 +141,7 @@ class Parser:
         TokenType.CONSTRAINT,
         TokenType.DEFAULT,
         TokenType.DELETE,
+        TokenType.DESCRIBE,
         TokenType.DETERMINISTIC,
         TokenType.EXECUTE,
         TokenType.ENGINE,
@@ -178,6 +179,7 @@ class Parser:
         TokenType.REFERENCES,
         TokenType.RETURNS,
         TokenType.ROWS,
+        TokenType.SCHEMA,
         TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
         TokenType.SEMI,
@@ -349,6 +351,7 @@ class Parser:
 
     STATEMENT_PARSERS = {
         TokenType.CREATE: lambda self: self._parse_create(),
+        TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.LOAD_DATA: lambda self: self._parse_load_data(),
@@ -457,7 +460,14 @@ class Parser:
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
-    CREATABLES = {TokenType.TABLE, TokenType.VIEW, TokenType.FUNCTION, TokenType.INDEX, TokenType.PROCEDURE}
+    CREATABLES = {
+        TokenType.TABLE,
+        TokenType.VIEW,
+        TokenType.FUNCTION,
+        TokenType.INDEX,
+        TokenType.PROCEDURE,
+        TokenType.SCHEMA,
+    }
 
     STRICT_CAST = True
 
@@ -658,7 +668,7 @@ class Parser:
         materialized = self._match(TokenType.MATERIALIZED)
         kind = self._match_set(self.CREATABLES) and self._prev.text
         if not kind:
-            self.raise_error("Expected TABLE, VIEW, INDEX, FUNCTION, or PROCEDURE")
+            self.raise_error(f"Expected {self.CREATABLES}")
             return
 
         return self.expression(
@@ -685,7 +695,7 @@ class Parser:
         create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
-            self.raise_error("Expected TABLE, VIEW, INDEX, FUNCTION, or PROCEDURE")
+            self.raise_error(f"Expected {self.CREATABLES}")
             return
 
         exists = self._parse_exists(not_=True)
@@ -700,7 +710,7 @@ class Parser:
                 expression = self._parse_select_or_expression()
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
-        elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW):
+        elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW, TokenType.SCHEMA):
             this = self._parse_table(schema=True)
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
@@ -843,6 +853,11 @@ class Parser:
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None
+
+    def _parse_describe(self):
+        self._match(TokenType.TABLE)
+
+        return self.expression(exp.Describe, this=self._parse_id_var())
 
     def _parse_insert(self):
         overwrite = self._match(TokenType.OVERWRITE)

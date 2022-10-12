@@ -66,6 +66,16 @@ class TestDuckDB(Validator):
 
     def test_duckdb(self):
         self.validate_all(
+            "COL::BIGINT[]",
+            write={
+                "duckdb": "CAST(COL AS BIGINT[])",
+                "presto": "CAST(COL AS ARRAY(BIGINT))",
+                "hive": "CAST(COL AS ARRAY<BIGINT>)",
+                "spark": "CAST(COL AS ARRAY<LONG>)",
+            },
+        )
+
+        self.validate_all(
             "LIST_VALUE(0, 1, 2)",
             read={
                 "spark": "ARRAY(0, 1, 2)",

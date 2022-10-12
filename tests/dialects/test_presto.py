@@ -10,7 +10,7 @@ class TestPresto(Validator):
             "CAST(a AS ARRAY(INT))",
             write={
                 "bigquery": "CAST(a AS ARRAY<INT64>)",
-                "duckdb": "CAST(a AS ARRAY<INT>)",
+                "duckdb": "CAST(a AS INT[])",
                 "presto": "CAST(a AS ARRAY(INTEGER))",
                 "spark": "CAST(a AS ARRAY<INT>)",
             },
@@ -28,7 +28,7 @@ class TestPresto(Validator):
             "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
             write={
                 "bigquery": "CAST([1, 2] AS ARRAY<INT64>)",
-                "duckdb": "CAST(LIST_VALUE(1, 2) AS ARRAY<BIGINT>)",
+                "duckdb": "CAST(LIST_VALUE(1, 2) AS BIGINT[])",
                 "presto": "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
                 "spark": "CAST(ARRAY(1, 2) AS ARRAY<LONG>)",
             },
@@ -47,7 +47,7 @@ class TestPresto(Validator):
             "CAST(MAP(ARRAY['a','b','c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INT)))",
             write={
                 "bigquery": "CAST(MAP(['a', 'b', 'c'], [[1], [2], [3]]) AS MAP<STRING, ARRAY<INT64>>)",
-                "duckdb": "CAST(MAP(LIST_VALUE('a', 'b', 'c'), LIST_VALUE(LIST_VALUE(1), LIST_VALUE(2), LIST_VALUE(3))) AS MAP<TEXT, ARRAY<INT>>)",
+                "duckdb": "CAST(MAP(LIST_VALUE('a', 'b', 'c'), LIST_VALUE(LIST_VALUE(1), LIST_VALUE(2), LIST_VALUE(3))) AS MAP<TEXT, INT[]>)",
                 "presto": "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
                 "hive": "CAST(MAP('a', ARRAY(1), 'b', ARRAY(2), 'c', ARRAY(3)) AS MAP<STRING, ARRAY<INT>>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY('a', 'b', 'c'), ARRAY(ARRAY(1), ARRAY(2), ARRAY(3))) AS MAP<STRING, ARRAY<INT>>)",

@@ -68,6 +68,14 @@ def _struct_pack_sql(self, expression):
     return f"STRUCT_PACK({', '.join(args)})"
 
 
+def _datatype_sql(self, expression):
+    type_value = expression.this
+    if type_value == exp.DataType.Type.ARRAY:
+        return f"{self.expressions(expression, flat=True)}[]"
+    else:
+        return self.datatype_sql(expression)
+
+
 class DuckDB(Dialect):
     class Tokenizer(Tokenizer):
         KEYWORDS = {
@@ -113,6 +121,7 @@ class DuckDB(Dialect):
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.DataType: _datatype_sql,
             exp.DateAdd: _date_add,
             exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
             exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",

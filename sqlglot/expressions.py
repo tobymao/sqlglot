@@ -3240,7 +3240,7 @@ def to_table(sql_path, **kwargs):
 def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     """
     Create an Alias expression.
-    Expample:
+    Example:
         >>> alias_('foo', 'bar').sql()
         'foo AS bar'
 

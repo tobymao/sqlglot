@@ -3,7 +3,7 @@ from sqlglot.dataframe.sql.dataframe import DataFrame
 from tests.dataframe.unit.dataframe_sql_validator import DataFrameSQLValidator
 
 
-class TestDataframeColumn(DataFrameSQLValidator):
+class TestDataframe(DataFrameSQLValidator):
     def test_hash_select_expression(self):
         expression = exp.select("cola").from_("table")
         self.assertEqual("t17051", DataFrame._create_hash_from_expression(expression))

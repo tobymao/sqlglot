@@ -69,11 +69,9 @@ def _struct_pack_sql(self, expression):
 
 
 def _datatype_sql(self, expression):
-    type_value = expression.this
-    if type_value == exp.DataType.Type.ARRAY:
+    if expression.this == exp.DataType.Type.ARRAY:
         return f"{self.expressions(expression, flat=True)}[]"
-    else:
-        return self.datatype_sql(expression)
+    return self.datatype_sql(expression)
 
 
 class DuckDB(Dialect):

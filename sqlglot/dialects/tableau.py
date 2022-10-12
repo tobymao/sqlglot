@@ -1,7 +1,6 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
 from sqlglot.parser import Parser
 
 
@@ -16,7 +15,7 @@ def _coalesce_sql(self, expression):
 def _count_sql(self, expression):
     this = expression.this
     if isinstance(this, exp.Distinct):
-        return f"COUNTD({self.sql(this, 'this')})"
+        return f"COUNTD({self.expressions(this, flat=True)})"
     return f"COUNT({self.sql(expression, 'this')})"
 
 
@@ -33,5 +32,5 @@ class Tableau(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFNULL": exp.Coalesce.from_arg_list,
-            "COUNTD": lambda args: exp.Count(this=exp.Distinct(this=list_get(args, 0))),
+            "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
         }

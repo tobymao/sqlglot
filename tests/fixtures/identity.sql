@@ -148,6 +148,7 @@ SELECT 1 AS count FROM test
 SELECT 1 AS comment FROM test
 SELECT 1 AS numeric FROM test
 SELECT 1 AS number FROM test
+SELECT 1 AS number # annotation
 SELECT t.count
 SELECT DISTINCT x FROM test
 SELECT DISTINCT x, y FROM test

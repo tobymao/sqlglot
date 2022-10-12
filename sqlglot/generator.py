@@ -268,7 +268,7 @@ class Generator:
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
     def annotation_sql(self, expression):
-        return self.sql(expression, "expression")
+        return f"{self.sql(expression, 'expression')} # {expression.name.strip()}"
 
     def uncache_sql(self, expression):
         table = self.sql(expression, "this")

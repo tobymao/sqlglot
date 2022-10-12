@@ -170,8 +170,8 @@ class DataFrame:
             hint_expression.args.get("expressions").append(hint)
             df.pending_hints.remove(hint)
 
-        join_tables = get_tables_from_expression_with_join(expression)
-        if join_tables:
+        join_aliases = {join_table.alias_or_name for join_table in get_tables_from_expression_with_join(expression)}
+        if join_aliases:
             for hint in df.pending_join_hints:
                 for sequence_id_expression in hint.expressions:
                     sequence_id_or_name = sequence_id_expression.alias_or_name
@@ -181,12 +181,11 @@ class DataFrame:
                     matching_ctes = [
                         cte for cte in reversed(expression.ctes) if cte.args["sequence_id"] in sequence_ids_to_match
                     ]
-                    if matching_ctes:
-                        for matching_cte in matching_ctes:
-                            if matching_cte.alias_or_name in [join_table.alias_or_name for join_table in join_tables]:
-                                sequence_id_expression.set("this", matching_cte.args["alias"].this)
-                                df.pending_hints.remove(hint)
-                                break
+                    for matching_cte in matching_ctes:
+                        if matching_cte.alias_or_name in join_aliases:
+                            sequence_id_expression.set("this", matching_cte.args["alias"].this)
+                            df.pending_hints.remove(hint)
+                            break
                 hint_expression.args.get("expressions").append(hint)
         if hint_expression.expressions:
             expression.set("hint", hint_expression)
@@ -204,14 +203,14 @@ class DataFrame:
         new_df.pending_hints.append(hint_expression)
         return new_df
 
-    def _set_operation(self, clazz: t.Callable, other: DataFrame, distinct: bool):
+    def _set_operation(self, klass: t.Callable, other: DataFrame, distinct: bool):
         other_df = other._convert_leaf_to_cte()
         base_expression = self.expression.copy()
         base_expression = self._add_ctes_to_expression(base_expression, other_df.expression.ctes)
         all_ctes = base_expression.ctes
         other_df.expression.set("with", None)
         base_expression.set("with", None)
-        operation = clazz(this=base_expression, distinct=distinct, expression=other_df.expression)
+        operation = klass(this=base_expression, distinct=distinct, expression=other_df.expression)
         operation.set("with", exp.With(expressions=all_ctes))
         return self.copy(expression=operation)._convert_leaf_to_cte()
 
@@ -225,8 +224,8 @@ class DataFrame:
         expression = expression.copy()
         with_expression = expression.args.get("with")
         if with_expression:
-            existing_ctes = with_expression.args["expressions"]
-            existsing_cte_names = [x.alias_or_name for x in existing_ctes]
+            existing_ctes = with_expression.expressions
+            existsing_cte_names = {x.alias_or_name for x in existing_ctes}
             for cte in ctes:
                 if cte.alias_or_name not in existsing_cte_names:
                     existing_ctes.append(cte)
@@ -238,7 +237,7 @@ class DataFrame:
     @classmethod
     def _get_outer_select_columns(cls, item: t.Union[exp.Expression, DataFrame]) -> t.List[Column]:
         expression = item.expression if isinstance(item, DataFrame) else item
-        return [Column(x) for x in dict.fromkeys(expression.find(exp.Select).args.get("expressions", []))]
+        return [Column(x) for x in expression.find(exp.Select).expressions]
 
     @classmethod
     def _create_hash_from_expression(cls, expression: exp.Select):
@@ -577,7 +576,7 @@ class DataFrame:
         all_column_mapping = {column.alias_or_name: column for column in all_columns}
         if isinstance(value, dict):
             values = value.values()
-            columns = self._ensure_and_normalize_cols(list(value.keys()))
+            columns = self._ensure_and_normalize_cols(list(value))
         if not columns:
             columns = self._ensure_and_normalize_cols(subset) if subset else all_columns
         if not values:

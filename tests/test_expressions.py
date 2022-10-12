@@ -29,6 +29,7 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("TO_DATE(x)", read="hive"), parse_one("ts_or_ds_to_date(x)"))
         self.assertEqual(exp.Table(pivots=[]), exp.Table())
         self.assertNotEqual(exp.Table(pivots=[None]), exp.Table())
+        self.assertEqual(exp.DataType.build("int"), exp.DataType(this=exp.DataType.Type.INT, nested=False))
 
     def test_find(self):
         expression = parse_one("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")

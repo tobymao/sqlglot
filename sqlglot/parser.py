@@ -1892,11 +1892,10 @@ class Parser:
         if not self._match(TokenType.ARROW):
             self._retreat(index)
 
-            distinct = self._match(TokenType.DISTINCT)
-            this = self._parse_conjunction()
-
-            if distinct:
-                this = self.expression(exp.Distinct, this=this)
+            if self._match(TokenType.DISTINCT):
+                this = self.expression(exp.Distinct, expressions=self._parse_csv(self._parse_conjunction))
+            else:
+                this = self._parse_conjunction()
 
             if self._match(TokenType.IGNORE_NULLS):
                 this = self.expression(exp.IgnoreNulls, this=this)

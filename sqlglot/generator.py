@@ -1082,7 +1082,7 @@ class Generator:
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 
     def distinct_sql(self, expression):
-        this = self.sql(expression, "this")
+        this = self.expressions(expression, flat=True)
         this = f" {this}" if this else ""
 
         on = self.sql(expression, "on")

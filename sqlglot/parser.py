@@ -1678,7 +1678,7 @@ class Parser:
 
         if not nested and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             return exp.DataType(
-                this=exp.DataType.Type.ARRAY, expressions=[exp.DataType.build(type_token.value.upper())], nested=True
+                this=exp.DataType.Type.ARRAY, expressions=[exp.DataType.build(type_token.value)], nested=True
             )
 
         if self._match(TokenType.L_BRACKET):

@@ -1111,7 +1111,7 @@ class Subqueryable(Unionable):
 
     @property
     def named_selects(self):
-        raise NotImplementedError("Subqueryable objects must implement `selects`")
+        raise NotImplementedError("Subqueryable objects must implement `named_selects`")
 
     def with_(
         self,

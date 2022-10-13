@@ -1,6 +1,16 @@
 Changelog
 =========
 
+v7.1.0
+------
+
+Changes:
+
+- Improvement: Pretty generator now takes max\_text\_width which breaks segments into new lines
+- New: exp.to\_table helper to turn table names into table expression objects
+- New: int[] type parsers
+- New: annotations are now generated in sql
+
 v7.0.0
 ------
 

@@ -3196,6 +3196,25 @@ def to_identifier(alias, quoted=None):
     return identifier
 
 
+def to_table(sql_path, **kwargs):
+    """
+    Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
+    Example:
+        >>> to_table('catalog.db.table_name').sql()
+        'catalog.db.table_name'
+
+    Args:
+        sql_path(str): `[catalog].[schema].[table]` string
+    Returns:
+        Table: A table expression
+    """
+    table_parts = sql_path.split(".")
+    catalog, db, table_name = [
+        to_identifier(x) if x is not None else x for x in [None] * (3 - len(table_parts)) + table_parts
+    ]
+    return Table(this=table_name, db=db, catalog=catalog, **kwargs)
+
+
 def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     """
     Create an Alias expression.

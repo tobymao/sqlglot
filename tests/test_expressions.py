@@ -497,3 +497,17 @@ class TestExpressions(unittest.TestCase):
             [e.alias_or_name for e in expression.expressions],
             ["a", "B", "c", "D"],
         )
+
+    def test_to_table(self):
+        table_only = exp.to_table("table_name")
+        self.assertEqual(table_only.name, "table_name")
+        self.assertIsNone(table_only.args.get("db"))
+        self.assertIsNone(table_only.args.get("catalog"))
+        db_and_table = exp.to_table("db.table_name")
+        self.assertEqual(db_and_table.name, "table_name")
+        self.assertEqual(db_and_table.args.get("db"), exp.to_identifier("db"))
+        self.assertIsNone(db_and_table.args.get("catalog"))
+        catalog_db_and_table = exp.to_table("catalog.db.table_name")
+        self.assertEqual(catalog_db_and_table.name, "table_name")
+        self.assertEqual(catalog_db_and_table.args.get("db"), exp.to_identifier("db"))
+        self.assertEqual(catalog_db_and_table.args.get("catalog"), exp.to_identifier("catalog"))

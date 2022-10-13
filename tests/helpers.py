@@ -53,7 +53,7 @@ def string_to_bool(string):
     return string and string.lower() in ("true", "1")
 
 
-SKIP_INTEGRATION_TESTS = string_to_bool(os.environ.get("SKIP_INTEGRATION_TESTS", '0').lower())
+SKIP_INTEGRATION_TESTS = string_to_bool(os.environ.get("SKIP_INTEGRATION_TESTS", "0").lower())
 
 TPCH_SCHEMA = {
     "lineitem": {

@@ -1,4 +1,3 @@
-import os
 import typing as t
 import unittest
 import warnings

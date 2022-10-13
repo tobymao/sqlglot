@@ -3,7 +3,7 @@ import itertools
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import ensure_schema, MappingSchema
+from sqlglot.schema import MappingSchema, ensure_schema
 
 
 def qualify_columns(expression, schema):

@@ -1202,7 +1202,11 @@ class Union(Subqueryable, Expression):
 
     @property
     def named_selects(self):
-        return self.args["this"].unnest().named_selects
+        return self.this.unnest().named_selects
+
+    @property
+    def selects(self):
+        return self.this.unnest().selects
 
     @property
     def left(self):

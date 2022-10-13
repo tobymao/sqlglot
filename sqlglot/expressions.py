@@ -1105,6 +1105,14 @@ class Subqueryable(Unionable):
             return []
         return with_.expressions
 
+    @property
+    def selects(self):
+        raise NotImplementedError("Subqueryable objects must implement `selects`")
+
+    @property
+    def named_selects(self):
+        raise NotImplementedError("Subqueryable objects must implement `named_selects`")
+
     def with_(
         self,
         alias,

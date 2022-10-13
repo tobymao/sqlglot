@@ -3,7 +3,7 @@ import itertools
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import ensure_schema
+from sqlglot.schema import ensure_schema, MappingSchema
 
 
 def qualify_columns(expression, schema):
@@ -23,7 +23,7 @@ def qualify_columns(expression, schema):
     Returns:
         sqlglot.Expression: qualified expression
     """
-    schema = ensure_schema(schema)
+    schema = ensure_schema(schema, MappingSchema)
 
     for scope in traverse_scope(expression):
         resolver = _Resolver(scope, schema)

@@ -3355,10 +3355,10 @@ def convert(value):
         )
     if isinstance(value, datetime.datetime):
         datetime_literal = Literal.string(value.strftime("%Y-%m-%d %H:%M:%S"))
-        return StrToTime(this=datetime_literal, format=Literal.string("YYYY-MM-DD HH:MM:SS"))
+        return TimeStrToTime(this=datetime_literal)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
-        return StrToDate(this=date_literal, format=Literal.string("YYYY-MM-DD"))
+        return DateStrToDate(this=date_literal)
     raise ValueError(f"Cannot convert {value}")
 
 

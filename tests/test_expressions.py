@@ -488,8 +488,8 @@ class TestExpressions(unittest.TestCase):
             ((1, "2", None), "(1, '2', NULL)"),
             ([1, "2", None], "ARRAY(1, '2', NULL)"),
             ({"x": None}, "MAP('x', NULL)"),
-            (datetime.datetime(2022, 10, 1, 1, 1, 1), "STR_TO_TIME('2022-10-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')"),
-            (datetime.date(2022, 10, 1), "STR_TO_DATE('2022-10-01', 'YYYY-MM-DD')"),
+            (datetime.datetime(2022, 10, 1, 1, 1, 1), "CAST('2022-10-01 01:01:01' AS TIMESTAMP)"),
+            (datetime.date(2022, 10, 1), "CAST('2022-10-01' AS DATE)"),
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)

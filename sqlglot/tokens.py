@@ -931,10 +931,14 @@ class Tokenizer(metaclass=_Tokenizer):
         string_end = delimiters.get(string_start)
         text = self._extract_string(string_end)
 
-        try:
-            self._add(token_type, f"{int(text, base)}")
-        except:
+        if base is None:
             self._add(token_type, text)
+        else:
+            try:
+                self._add(token_type, f"{int(text, base)}")
+            except:
+                raise RuntimeError(f"Numeric string contains invalid characters from {self._line}:{self._start}")
+
         return True
 
     def _scan_identifier(self, identifier_end):

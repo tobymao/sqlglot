@@ -372,11 +372,7 @@ class Parser:
         TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
         TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
         TokenType.BYTE_STRING: lambda _, token: exp.ByteString(this=token.text),
-        TokenType.INTRODUCER: lambda self, token: self.expression(
-            exp.Introducer,
-            this=token.text,
-            expression=self._parse_var_or_string(),
-        ),
+        TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
     }
 
     RANGE_PARSERS = {
@@ -1876,6 +1872,17 @@ class Parser:
         expressions = self._parse_csv(self._parse_udf_kwarg)
         self._match_r_paren()
         return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
+
+    def _parse_introducer(self, token):
+        var_or_string = self._parse_var_or_string()
+        if var_or_string:
+            return self.expression(
+                exp.Introducer,
+                this=token.text,
+                expression=var_or_string,
+            )
+
+        return self.expression(exp.Identifier, this=token.text)
 
     def _parse_udf_kwarg(self):
         this = self._parse_id_var()

@@ -31,6 +31,15 @@ class TestMySQL(Validator):
                 "mysql": "_utf8mb4 'hola'",
             },
         )
+        self.validate_all(
+            "N 'some text'",
+            read={
+                "mysql": "N'some text'",
+            },
+            write={
+                "mysql": "N 'some text'",
+            },
+        )
 
     def test_hexadecimal_literal(self):
         self.validate_all(

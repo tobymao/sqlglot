@@ -69,7 +69,7 @@ class TestDuckDB(Validator):
             "CREATE TABLE IF NOT EXISTS table (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={
                 "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
-            }
+            },
         )
 
         self.validate_all(

@@ -129,7 +129,7 @@ class TestHive(Validator):
         self.validate_all(
             "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
             write={
-                "duckdb": "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER)",
+                "duckdb": "CREATE TABLE x (w TEXT)",  # Partition columns should exist in table
                 "presto": "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY=ARRAY['y', 'z'])",
                 "hive": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
                 "spark": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
@@ -144,7 +144,6 @@ class TestHive(Validator):
                 "spark": "CREATE TABLE test USING PARQUET TBLPROPERTIES ('x'='1', 'Z'='2') AS SELECT 1",
             },
         )
-
 
     def test_lateral_view(self):
         self.validate_all(

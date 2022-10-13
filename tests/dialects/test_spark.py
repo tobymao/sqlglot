@@ -56,9 +56,8 @@ class TestSpark(Validator):
             """CREATE TABLE blah (col_a INT) COMMENT "Test comment: blah" PARTITIONED BY (date STRING) STORED AS ICEBERG TBLPROPERTIES('x' = '1')""",
             write={
                 "duckdb": """CREATE TABLE blah (
-  col_a INT,
-  date VARCHAR
-)""",
+  col_a INT
+)""",  # Partition columns should exist in table
                 "presto": """CREATE TABLE blah (
   col_a INTEGER,
   date VARCHAR

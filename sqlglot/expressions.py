@@ -659,6 +659,10 @@ class HexString(Condition):
     pass
 
 
+class ByteaEscape(Condition):
+    pass
+
+
 class Column(Condition):
     arg_types = {"this": True, "table": False}
 

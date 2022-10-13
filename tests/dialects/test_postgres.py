@@ -69,6 +69,8 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
         self.validate_identity("SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')")
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+        self.validate_identity("SELECT e'\\xDEADBEEF'")
+        self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
 
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",

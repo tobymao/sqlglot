@@ -509,7 +509,7 @@ class DerivedTable(Expression):
         return [select.alias_or_name for select in self.selects]
 
 
-class Unionable:
+class Unionable(Expression):
     def union(self, expression, distinct=True, dialect=None, **opts):
         """
         Builds a UNION expression.
@@ -1200,7 +1200,7 @@ class Table(Expression):
     }
 
 
-class Union(Subqueryable, Expression):
+class Union(Subqueryable):
     arg_types = {
         "with": False,
         "this": True,
@@ -1268,7 +1268,7 @@ class Schema(Expression):
     arg_types = {"this": False, "expressions": True}
 
 
-class Select(Subqueryable, Expression):
+class Select(Subqueryable):
     arg_types = {
         "with": False,
         "expressions": False,

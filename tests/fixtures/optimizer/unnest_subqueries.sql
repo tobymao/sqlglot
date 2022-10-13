@@ -147,8 +147,7 @@ WHERE
       (
         x.a < "_u_11".a AND NOT "_u_11"."_u_12" IS NULL
       ) AND NOT "_u_11"."_u_12" IS NULL
-    )
-    AND ARRAY_ANY("_u_11"."_u_13", "_x" -> "_x" <> x.d)
+    ) AND ARRAY_ANY("_u_11"."_u_13", "_x" -> "_x" <> x.d)
   )
   AND (
     NOT "_u_14".a IS NULL AND NOT "_u_14".a IS NULL

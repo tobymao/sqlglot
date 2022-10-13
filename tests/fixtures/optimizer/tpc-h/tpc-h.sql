@@ -30,13 +30,11 @@ SELECT
   SUM("lineitem"."l_extendedprice" * (
     1 - "lineitem"."l_discount"
   )) AS "sum_disc_price",
-  SUM(
-    "lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
-    ) * (
-      1 + "lineitem"."l_tax"
-    )
-  ) AS "sum_charge",
+  SUM("lineitem"."l_extendedprice" * (
+    1 - "lineitem"."l_discount"
+  ) * (
+    1 + "lineitem"."l_tax"
+  )) AS "sum_charge",
   AVG("lineitem"."l_quantity") AS "avg_qty",
   AVG("lineitem"."l_extendedprice") AS "avg_price",
   AVG("lineitem"."l_discount") AS "avg_disc",
@@ -399,11 +397,9 @@ JOIN "customer" AS "customer"
 JOIN "n1" AS "n1"
   ON "supplier"."s_nationkey" = "n1"."n_nationkey"
 JOIN "n1" AS "n2"
-  ON "customer"."c_nationkey" = "n2"."n_nationkey"
-  AND (
+  ON "customer"."c_nationkey" = "n2"."n_nationkey" AND (
     "n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE'
-  )
-  AND (
+  ) AND (
     "n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY'
   )
 GROUP BY
@@ -457,15 +453,13 @@ order by
         o_year;
 SELECT
   EXTRACT(year FROM "orders"."o_orderdate") AS "o_year",
-  SUM(
-    CASE
-      WHEN "nation_2"."n_name" = 'BRAZIL'
-      THEN "lineitem"."l_extendedprice" * (
-          1 - "lineitem"."l_discount"
-        )
-      ELSE 0
-    END
-  ) / SUM("lineitem"."l_extendedprice" * (
+  SUM(CASE
+    WHEN "nation_2"."n_name" = 'BRAZIL'
+    THEN "lineitem"."l_extendedprice" * (
+      1 - "lineitem"."l_discount"
+    )
+    ELSE 0
+  END) / SUM("lineitem"."l_extendedprice" * (
     1 - "lineitem"."l_discount"
   )) AS "mkt_share"
 FROM "part" AS "part"
@@ -530,11 +524,9 @@ order by
 SELECT
   "nation"."n_name" AS "nation",
   EXTRACT(year FROM "orders"."o_orderdate") AS "o_year",
-  SUM(
-    "lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
-    ) - "partsupp"."ps_supplycost" * "lineitem"."l_quantity"
-  ) AS "sum_profit"
+  SUM("lineitem"."l_extendedprice" * (
+    1 - "lineitem"."l_discount"
+  ) - "partsupp"."ps_supplycost" * "lineitem"."l_quantity") AS "sum_profit"
 FROM "part" AS "part"
 JOIN "lineitem" AS "lineitem"
   ON "part"."p_partkey" = "lineitem"."l_partkey"
@@ -723,20 +715,16 @@ order by
         l_shipmode;
 SELECT
   "lineitem"."l_shipmode" AS "l_shipmode",
-  SUM(
-    CASE
-      WHEN "orders"."o_orderpriority" = '1-URGENT' OR "orders"."o_orderpriority" = '2-HIGH'
-      THEN 1
-      ELSE 0
-    END
-  ) AS "high_line_count",
-  SUM(
-    CASE
-      WHEN "orders"."o_orderpriority" <> '1-URGENT' AND "orders"."o_orderpriority" <> '2-HIGH'
-      THEN 1
-      ELSE 0
-    END
-  ) AS "low_line_count"
+  SUM(CASE
+    WHEN "orders"."o_orderpriority" = '1-URGENT' OR "orders"."o_orderpriority" = '2-HIGH'
+    THEN 1
+    ELSE 0
+  END) AS "high_line_count",
+  SUM(CASE
+    WHEN "orders"."o_orderpriority" <> '1-URGENT' AND "orders"."o_orderpriority" <> '2-HIGH'
+    THEN 1
+    ELSE 0
+  END) AS "low_line_count"
 FROM "orders" AS "orders"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
@@ -817,15 +805,13 @@ where
         and l_shipdate >= date '1995-09-01'
         and l_shipdate < date '1995-09-01' + interval '1' month;
 SELECT
-  100.00 * SUM(
-    CASE
-      WHEN "part"."p_type" LIKE 'PROMO%'
-      THEN "lineitem"."l_extendedprice" * (
-          1 - "lineitem"."l_discount"
-        )
-      ELSE 0
-    END
-  ) / SUM("lineitem"."l_extendedprice" * (
+  100.00 * SUM(CASE
+    WHEN "part"."p_type" LIKE 'PROMO%'
+    THEN "lineitem"."l_extendedprice" * (
+      1 - "lineitem"."l_discount"
+    )
+    ELSE 0
+  END) / SUM("lineitem"."l_extendedprice" * (
     1 - "lineitem"."l_discount"
   )) AS "promo_revenue"
 FROM "lineitem" AS "lineitem"
@@ -893,8 +879,7 @@ JOIN "revenue"
     SELECT
       MAX("revenue"."total_revenue") AS "_col_0"
     FROM "revenue"
-  )
-  AND "supplier"."s_suppkey" = "revenue"."supplier_no"
+  ) AND "supplier"."s_suppkey" = "revenue"."supplier_no"
 ORDER BY
   "s_suppkey";
 
@@ -1128,14 +1113,12 @@ JOIN "part" AS "part"
     AND "part"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
     AND "part"."p_size" BETWEEN 1 AND 5
-  )
-  OR (
+  ) OR (
     "part"."p_brand" = 'Brand#23'
     AND "part"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
     AND "part"."p_size" BETWEEN 1 AND 10
-  )
-  OR (
+  ) OR (
     "part"."p_brand" = 'Brand#34'
     AND "part"."p_container" IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
@@ -1151,8 +1134,7 @@ WHERE
     AND "part"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
     AND "part"."p_size" BETWEEN 1 AND 5
-  )
-  OR (
+  ) OR (
     "lineitem"."l_quantity" <= 20
     AND "lineitem"."l_quantity" >= 10
     AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON'
@@ -1161,8 +1143,7 @@ WHERE
     AND "part"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
     AND "part"."p_size" BETWEEN 1 AND 10
-  )
-  OR (
+  ) OR (
     "lineitem"."l_quantity" <= 30
     AND "lineitem"."l_quantity" >= 20
     AND "lineitem"."l_shipinstruct" = 'DELIVER IN PERSON'

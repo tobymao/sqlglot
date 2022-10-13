@@ -16,7 +16,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser, parse_var_map
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 def _array_sort(self, expression):
@@ -142,8 +142,16 @@ class Hive(Dialect):
             "BD": "DECIMAL",
         }
 
+        KEYWORDS = {
+            **Tokenizer.KEYWORDS,
+            "INPUTFORMAT": TokenType.INPUT_FORMAT,
+            "SERDE": TokenType.SERDE,
+        }
+
     class Parser(Parser):
         STRICT_CAST = False
+
+        TABLE_ALIAS_TOKENS = Parser.TABLE_ALIAS_TOKENS - {TokenType.INPUT_FORMAT, TokenType.SERDE}
 
         FUNCTIONS = {
             **Parser.FUNCTIONS,

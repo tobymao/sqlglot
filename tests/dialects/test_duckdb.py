@@ -66,6 +66,13 @@ class TestDuckDB(Validator):
 
     def test_duckdb(self):
         self.validate_all(
+            "CREATE TABLE IF NOT EXISTS table (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
+            write={
+                "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
+            },
+        )
+
+        self.validate_all(
             "COL::BIGINT[]",
             write={
                 "duckdb": "CAST(COL AS BIGINT[])",

@@ -52,6 +52,7 @@ int.x
 map.x
 SELECT call.x
 a.b.INT(1.234)
+INT(x / 100)
 x IN (-1, 1)
 x IN ('a', 'a''a')
 x IN ((1))

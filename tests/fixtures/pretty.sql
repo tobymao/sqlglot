@@ -56,14 +56,10 @@ LEFT JOIN (
 WITH cte1 AS (
   SELECT
     a,
-    z
-    AND e AS b
+    z AND e AS b
   FROM cte
   WHERE
-    x IN (1, 2, 3)
-    AND z < -1
-    OR z > 1
-    AND w = 'AND'
+    x IN (1, 2, 3) AND z < -1 OR z > 1 AND w = 'AND'
 ), cte2 AS (
   SELECT
     RANK() OVER (PARTITION BY a, b ORDER BY x DESC) AS a,
@@ -77,18 +73,12 @@ WITH cte1 AS (
       2
     UNION ALL
     SELECT
-      CASE x
-        AND 1 + 1 = 2
+      CASE x AND 1 + 1 = 2
         WHEN TRUE
-        THEN 1
-          AND 4 + 3
-          AND Z
-        WHEN x
-          AND y
+        THEN 1 AND 4 + 3 AND Z
+        WHEN x AND y
         THEN 2
-        ELSE 3
-          AND 4
-          AND g
+        ELSE 3 AND 4 AND g
       END
     UNION ALL
     SELECT
@@ -102,17 +92,11 @@ WITH cte1 AS (
     ) AS z
     UNION ALL
     SELECT
-      MAX(COALESCE(x
-          AND y, a
-          AND b
-          AND c, d
-      AND e)),
+      MAX(COALESCE(x AND y, a AND b AND c, d AND e)),
       FOO(CASE
-          WHEN a
-            AND b
-          THEN c
-            AND d
-          ELSE 3
+        WHEN a AND b
+        THEN c AND d
+        ELSE 3
       END)
     GROUP BY
       x
@@ -154,10 +138,8 @@ LEFT JOIN (
     FROM bar
     WHERE
       (
-        c > 1
-        AND d > 1
-      )
-      OR e > 1
+        c > 1 AND d > 1
+      ) OR e > 1
     GROUP BY
       a
     HAVING
@@ -165,11 +147,8 @@ LEFT JOIN (
     LIMIT 10
   ) AS z
 ) AS y
-  ON x.a = y.b
-  AND x.a > 1
-  OR (
-    x.c = y.d
-    OR x.c = y.e
+  ON x.a = y.b AND x.a > 1 OR (
+    x.c = y.d OR x.c = y.e
   );
 
 SELECT myCol1, myCol2 FROM baseTable LATERAL VIEW OUTER explode(col1) myTable1 AS myCol1 LATERAL VIEW explode(col2) myTable2 AS myCol2
@@ -184,9 +163,7 @@ EXPLODE(col1) myTable1 AS myCol1
 LATERAL VIEW
 EXPLODE(col2) myTable2 AS myCol2
 WHERE
-  a > 1
-  AND b > 2
-  OR c > 3;
+  a > 1 AND b > 2 OR c > 3;
 
 SELECT * FROM (WITH y AS ( SELECT 1 AS z) SELECT z from y) x;
 SELECT
@@ -264,3 +241,25 @@ CREATE TABLE "t_customer_account" (
   "account_no" VARCHAR(100)
 );
 
+
+SELECT
+x("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff"),
+array("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff")
+;
+SELECT
+  X(
+    "aaaaaaaaaaaaaa",
+    "bbbbbbbbbbbbb",
+    "ccccccccc",
+    "ddddddddddddd",
+    "eeeeeeeeeeeee",
+    "fffffff"
+  ),
+  ARRAY(
+    "aaaaaaaaaaaaaa",
+    "bbbbbbbbbbbbb",
+    "ccccccccc",
+    "ddddddddddddd",
+    "eeeeeeeeeeeee",
+    "fffffff"
+  );

@@ -2,7 +2,7 @@ from enum import Enum
 
 from sqlglot import exp
 from sqlglot.generator import Generator
-from sqlglot.helper import csv, list_get
+from sqlglot.helper import list_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
@@ -177,11 +177,11 @@ class Dialect(metaclass=_Dialect):
 def rename_func(name):
     def _rename(self, expression):
         args = (
-            self.expressions(expression, flat=True)
+            expression.expressions
             if isinstance(expression, exp.Func) and expression.is_var_len_args
-            else csv(*[self.sql(e) for e in expression.args.values()])
+            else expression.args.values()
         )
-        return f"{name}({args})"
+        return f"{name}({self.format_args(*args)})"
 
     return _rename
 
@@ -189,15 +189,11 @@ def rename_func(name):
 def approx_count_distinct_sql(self, expression):
     if expression.args.get("accuracy"):
         self.unsupported("APPROX_COUNT_DISTINCT does not support accuracy")
-    return f"APPROX_COUNT_DISTINCT({self.sql(expression, 'this')})"
+    return f"APPROX_COUNT_DISTINCT({self.format_args(expression.this)})"
 
 
 def if_sql(self, expression):
-    expressions = csv(
-        self.sql(expression, "this"),
-        self.sql(expression, "true"),
-        self.sql(expression, "false"),
-    )
+    expressions = self.format_args(expression.this, expression.args.get("true"), expression.args.get("false"))
     return f"IF({expressions})"
 
 
@@ -275,13 +271,13 @@ def var_map_sql(self, expression):
 
     if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
         self.unsupported("Cannot convert array columns into map.")
-        return f"MAP({self.sql(keys)}, {self.sql(values)})"
+        return f"MAP({self.format_args(keys, values)})"
 
     args = []
     for key, value in zip(keys.expressions, values.expressions):
         args.append(self.sql(key))
         args.append(self.sql(value))
-    return f"MAP({csv(*args)})"
+    return f"MAP({self.format_args(*args)})"
 
 
 def format_time_lambda(exp_class, dialect, default=None):

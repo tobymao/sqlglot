@@ -277,11 +277,13 @@ SELECT
       "fffffff"
     )
   ),
-  ARRAY(ARRAY(
-    "aaaaaaaaaaaaaa",
-    "bbbbbbbbbbbbb",
-    "ccccccccc",
-    "ddddddddddddd",
-    "eeeeeeeeeeeee",
-    "fffffff"
-  ));
+  ARRAY(
+    ARRAY(
+      "aaaaaaaaaaaaaa",
+      "bbbbbbbbbbbbb",
+      "ccccccccc",
+      "ddddddddddddd",
+      "eeeeeeeeeeeee",
+      "fffffff"
+    )
+  );

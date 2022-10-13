@@ -1200,7 +1200,7 @@ class Generator:
         return ", ".join(args)
 
     def text_width(self, args):
-        return sum(len(arg.split("\n")[0]) for arg in args)
+        return sum(len(arg) for arg in args)
 
     def format_time(self, expression):
         return format_time(self.sql(expression, "format"), self.time_mapping, self.time_trie)

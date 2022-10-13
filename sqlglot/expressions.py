@@ -659,7 +659,7 @@ class HexString(Condition):
     pass
 
 
-class ByteaEscape(Condition):
+class ByteString(Condition):
     pass
 
 

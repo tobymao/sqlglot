@@ -56,7 +56,7 @@ class TokenType(AutoName):
     VAR = auto()
     BIT_STRING = auto()
     HEX_STRING = auto()
-    BYTEA_ESCAPE = auto()
+    BYTE_STRING = auto()
 
     # types
     BOOLEAN = auto()
@@ -321,7 +321,7 @@ class _Tokenizer(type):
         klass._QUOTES = cls._delimeter_list_to_dict(klass.QUOTES)
         klass._BIT_STRINGS = cls._delimeter_list_to_dict(klass.BIT_STRINGS)
         klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
-        klass._BYTEA_ESCAPES = cls._delimeter_list_to_dict(klass.BYTEA_ESCAPES)
+        klass._BYTE_STRINGS = cls._delimeter_list_to_dict(klass.BYTE_STRINGS)
         klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
         klass._COMMENTS = dict(
             (comment, None) if isinstance(comment, str) else (comment[0], comment[1]) for comment in klass.COMMENTS
@@ -335,7 +335,7 @@ class _Tokenizer(type):
                 **{quote: TokenType.QUOTE for quote in klass._QUOTES},
                 **{bit_string: TokenType.BIT_STRING for bit_string in klass._BIT_STRINGS},
                 **{hex_string: TokenType.HEX_STRING for hex_string in klass._HEX_STRINGS},
-                **{bytea_escape: TokenType.BYTEA_ESCAPE for bytea_escape in klass._BYTEA_ESCAPES},
+                **{byte_string: TokenType.BYTE_STRING for byte_string in klass._BYTE_STRINGS},
             }.items()
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
@@ -388,7 +388,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     HEX_STRINGS = []
 
-    BYTEA_ESCAPES = []
+    BYTE_STRINGS = []
 
     IDENTIFIERS = ['"']
 
@@ -808,8 +808,6 @@ class Tokenizer(metaclass=_Tokenizer):
             return
         if self._scan_comment(word):
             return
-        if self._scan_bytea_escape():
-            return
 
         self._advance(size - 1)
         self._add(self.KEYWORDS[word.upper()])
@@ -890,14 +888,6 @@ class Tokenizer(metaclass=_Tokenizer):
         except ValueError:
             self._add(TokenType.IDENTIFIER)
 
-    def _scan_bytea_escape(self):
-        if self._char.upper() == "E" and self._peek == "'":
-            self._advance(2)
-            self._add(TokenType.BYTEA_ESCAPE, self._extract_string("'"))
-            return True
-
-        return False
-
     def _extract_value(self):
         while True:
             char = self._peek.strip()
@@ -930,6 +920,10 @@ class Tokenizer(metaclass=_Tokenizer):
             delimiters = self._BIT_STRINGS
             token_type = TokenType.BIT_STRING
             base = 2
+        elif string_start in self._BYTE_STRINGS:
+            delimiters = self._BYTE_STRINGS
+            token_type = TokenType.BYTE_STRING
+            base = None
         else:
             return False
 
@@ -939,8 +933,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
         try:
             self._add(token_type, f"{int(text, base)}")
-        except ValueError:
-            raise RuntimeError(f"Numeric string contains invalid characters from {self._line}:{self._start}")
+        except:
+            self._add(token_type, text)
         return True
 
     def _scan_identifier(self, identifier_end):

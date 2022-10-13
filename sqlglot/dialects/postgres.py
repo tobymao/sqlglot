@@ -163,7 +163,7 @@ class Postgres(Dialect):
     class Tokenizer(Tokenizer):
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
-        BYTEA_ESCAPES = [("e'", "'"), ("E'", "'")]
+        BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "ALWAYS": TokenType.ALWAYS,

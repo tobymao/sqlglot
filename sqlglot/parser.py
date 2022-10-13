@@ -371,7 +371,7 @@ class Parser:
         TokenType.PARAMETER: lambda self, _: exp.Parameter(this=self._parse_var() or self._parse_primary()),
         TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
         TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
-        TokenType.BYTEA_ESCAPE: lambda _, token: exp.ByteaEscape(this=token.text),
+        TokenType.BYTE_STRING: lambda _, token: exp.ByteString(this=token.text),
         TokenType.INTRODUCER: lambda self, token: self.expression(
             exp.Introducer,
             this=token.text,

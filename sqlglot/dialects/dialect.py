@@ -67,10 +67,10 @@ class _Dialect(type):
             klass.generator_class.TRANSFORMS[
                 exp.HexString
             ] = lambda self, e: f"{hs_start}{int(self.sql(e, 'this')):X}{hs_end}"
-        if klass.tokenizer_class._BYTEA_ESCAPES and exp.ByteaEscape not in klass.generator_class.TRANSFORMS:
-            be_start, be_end = list(klass.tokenizer_class._BYTEA_ESCAPES.items())[0]
+        if klass.tokenizer_class._BYTE_STRINGS and exp.ByteString not in klass.generator_class.TRANSFORMS:
+            be_start, be_end = list(klass.tokenizer_class._BYTE_STRINGS.items())[0]
             klass.generator_class.TRANSFORMS[
-                exp.ByteaEscape
+                exp.ByteString
             ] = lambda self, e: f"{be_start}{self.sql(e, 'this')}{be_end}"
 
         return klass

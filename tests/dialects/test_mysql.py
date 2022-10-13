@@ -8,6 +8,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
             write={
+                "duckdb": "CREATE TABLE z (a INT)",
                 "mysql": "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
                 "spark": "CREATE TABLE z (a INT) COMMENT 'x'",
             },

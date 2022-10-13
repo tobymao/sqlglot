@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_sql,
     format_time_lambda,
     no_pivot_sql,
+    no_properties_sql,
     no_safe_divide_sql,
     no_tablesample_sql,
     rename_func,
@@ -112,6 +113,8 @@ class DuckDB(Dialect):
         }
 
     class Generator(Generator):
+        STRUCT_DELIMITER = ("(", ")")
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
@@ -131,6 +134,7 @@ class DuckDB(Dialect):
             exp.JSONBExtract: arrow_json_extract_sql,
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.Pivot: no_pivot_sql,
+            exp.Properties: no_properties_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,

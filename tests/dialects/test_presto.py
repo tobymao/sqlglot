@@ -37,7 +37,7 @@ class TestPresto(Validator):
             "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INT,INT))",
             write={
                 "bigquery": "CAST(MAP([1], [1]) AS MAP<INT64, INT64>)",
-                "duckdb": "CAST(MAP(LIST_VALUE(1), LIST_VALUE(1)) AS MAP<INT, INT>)",
+                "duckdb": "CAST(MAP(LIST_VALUE(1), LIST_VALUE(1)) AS MAP(INT, INT))",
                 "presto": "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INTEGER, INTEGER))",
                 "hive": "CAST(MAP(1, 1) AS MAP<INT, INT>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY(1), ARRAY(1)) AS MAP<INT, INT>)",
@@ -47,7 +47,7 @@ class TestPresto(Validator):
             "CAST(MAP(ARRAY['a','b','c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INT)))",
             write={
                 "bigquery": "CAST(MAP(['a', 'b', 'c'], [[1], [2], [3]]) AS MAP<STRING, ARRAY<INT64>>)",
-                "duckdb": "CAST(MAP(LIST_VALUE('a', 'b', 'c'), LIST_VALUE(LIST_VALUE(1), LIST_VALUE(2), LIST_VALUE(3))) AS MAP<TEXT, INT[]>)",
+                "duckdb": "CAST(MAP(LIST_VALUE('a', 'b', 'c'), LIST_VALUE(LIST_VALUE(1), LIST_VALUE(2), LIST_VALUE(3))) AS MAP(TEXT, INT[]))",
                 "presto": "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
                 "hive": "CAST(MAP('a', ARRAY(1), 'b', ARRAY(2), 'c', ARRAY(3)) AS MAP<STRING, ARRAY<INT>>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY('a', 'b', 'c'), ARRAY(ARRAY(1), ARRAY(2), ARRAY(3))) AS MAP<STRING, ARRAY<INT>>)",
@@ -171,6 +171,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
             write={
+                "duckdb": "CREATE TABLE test AS SELECT 1",
                 "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET AS SELECT 1",
@@ -179,6 +180,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CREATE TABLE test WITH (FORMAT = 'PARQUET', X = '1', Z = '2') AS SELECT 1",
             write={
+                "duckdb": "CREATE TABLE test AS SELECT 1",
                 "presto": "CREATE TABLE test WITH (FORMAT='PARQUET', X='1', Z='2') AS SELECT 1",
                 "hive": "CREATE TABLE test STORED AS PARQUET TBLPROPERTIES ('X'='1', 'Z'='2') AS SELECT 1",
                 "spark": "CREATE TABLE test USING PARQUET TBLPROPERTIES ('X'='1', 'Z'='2') AS SELECT 1",
@@ -187,6 +189,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY=ARRAY['y', 'z'])",
             write={
+                "duckdb": "CREATE TABLE x (w TEXT, y INT, z INT)",
                 "presto": "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY=ARRAY['y', 'z'])",
                 "hive": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
                 "spark": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
@@ -195,6 +198,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CREATE TABLE x WITH (bucket_by = ARRAY['y'], bucket_count = 64) AS SELECT 1 AS y",
             write={
+                "duckdb": "CREATE TABLE x AS SELECT 1 AS y",
                 "presto": "CREATE TABLE x WITH (bucket_by=ARRAY['y'], bucket_count=64) AS SELECT 1 AS y",
                 "hive": "CREATE TABLE x TBLPROPERTIES ('bucket_by'=ARRAY('y'), 'bucket_count'=64) AS SELECT 1 AS y",
                 "spark": "CREATE TABLE x TBLPROPERTIES ('bucket_by'=ARRAY('y'), 'bucket_count'=64) AS SELECT 1 AS y",
@@ -203,6 +207,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
             write={
+                "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b TEXT))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b VARCHAR))",
                 "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT, struct_col_b STRING>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRING>)",
@@ -211,6 +216,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
             write={
+                "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b STRUCT(nested_col_a TEXT, nested_col_b TEXT)))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a INTEGER, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
                 "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a INT, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
                 "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: INT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",

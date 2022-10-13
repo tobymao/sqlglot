@@ -250,6 +250,11 @@ def no_trycast_sql(self, expression):
     return self.cast_sql(expression)
 
 
+def no_properties_sql(self, expression):
+    self.unsupported("Properties unsupported")
+    return ""
+
+
 def str_position_sql(self, expression):
     this = self.sql(expression, "this")
     substr = self.sql(expression, "substr")

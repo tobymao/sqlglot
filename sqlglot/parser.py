@@ -1693,7 +1693,7 @@ class Parser:
             elif nested:
                 expressions = self._parse_csv(self._parse_types)
             else:
-                expressions = self._parse_csv(self._parse_type)
+                expressions = self._parse_csv(self._parse_conjunction)
 
             if not expressions:
                 self._retreat(index)

@@ -168,6 +168,7 @@ class Postgres(Dialect):
             "ALWAYS": TokenType.ALWAYS,
             "BY DEFAULT": TokenType.BY_DEFAULT,
             "COMMENT ON": TokenType.COMMENT_ON,
+            "E": TokenType.INTRODUCER,
             "IDENTITY": TokenType.IDENTITY,
             "GENERATED": TokenType.GENERATED,
             "DOUBLE PRECISION": TokenType.DOUBLE,

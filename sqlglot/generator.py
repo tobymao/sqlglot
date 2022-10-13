@@ -554,7 +554,7 @@ class Generator:
         return f"INTERSECT{'' if expression.args.get('distinct') else ' ALL'}"
 
     def introducer_sql(self, expression):
-        return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
+        return f"{self.sql(expression, 'this')}{self.sql(expression, 'expression')}"
 
     def rowformat_sql(self, expression):
         fields = expression.args.get("fields")

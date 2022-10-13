@@ -500,6 +500,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LOCATION": TokenType.LOCATION,
         "MATERIALIZED": TokenType.MATERIALIZED,
         "NATURAL": TokenType.NATURAL,
+        "N": TokenType.INTRODUCER,
         "NEXT": TokenType.NEXT,
         "NO ACTION": TokenType.NO_ACTION,
         "NOT": TokenType.NOT,

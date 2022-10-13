@@ -1,4 +1,3 @@
-import os
 import unittest
 
 import duckdb
@@ -8,7 +7,12 @@ from pandas.testing import assert_frame_equal
 from sqlglot import exp, parse_one
 from sqlglot.executor import execute
 from sqlglot.executor.python import Python
-from tests.helpers import FIXTURES_DIR, TPCH_SCHEMA, load_sql_fixture_pairs, SKIP_INTEGRATION_TESTS
+from tests.helpers import (
+    FIXTURES_DIR,
+    SKIP_INTEGRATION_TESTS,
+    TPCH_SCHEMA,
+    load_sql_fixture_pairs,
+)
 
 DIR = FIXTURES_DIR + "/optimizer/tpc-h/"
 

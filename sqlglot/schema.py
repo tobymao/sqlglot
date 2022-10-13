@@ -156,7 +156,9 @@ class MutableSchema(MappingSchema):
 
     @classmethod
     def from_mapping_schema(cls, mapping_schema: MappingSchema):
-        return MutableSchema(schema=mapping_schema.schema, visible=mapping_schema.visible, dialect=mapping_schema.dialect)
+        return MutableSchema(
+            schema=mapping_schema.schema, visible=mapping_schema.visible, dialect=mapping_schema.dialect
+        )
 
     def copy(self, **kwargs):
         kwargs = {**{"schema": copy(self.schema)}, **kwargs}

@@ -102,16 +102,16 @@ class WindowSpec:
         window_spec = self.copy()
         spec = self._calc_start_end(start, end)
         spec["kind"] = "ROWS"
-        window_spec.expression.set("spec", exp.WindowSpec(
-            **{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec}
-        ))
+        window_spec.expression.set(
+            "spec", exp.WindowSpec(**{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec})
+        )
         return window_spec
 
     def rangeBetween(self, start: int, end: int) -> WindowSpec:
         window_spec = self.copy()
         spec = self._calc_start_end(start, end)
         spec["kind"] = "RANGE"
-        window_spec.expression.set("spec", exp.WindowSpec(
-            **{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec}
-        ))
+        window_spec.expression.set(
+            "spec", exp.WindowSpec(**{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec})
+        )
         return window_spec

@@ -1,7 +1,7 @@
 from sqlglot import exp
 from sqlglot.helper import ensure_list, subclasses
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import ensure_schema, MappingSchema
+from sqlglot.schema import MappingSchema, ensure_schema
 
 
 def annotate_types(expression, schema=None, annotators=None, coerces_to=None):

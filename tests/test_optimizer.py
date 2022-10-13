@@ -231,7 +231,7 @@ class TestOptimizer(unittest.TestCase):
                     "a": "uint64",
                 }
             },
-            MappingSchema
+            MappingSchema,
         )
         self.assertEqual(
             schema.column_names(
@@ -335,7 +335,7 @@ class TestOptimizer(unittest.TestCase):
                     }
                 }
             },
-            MappingSchema
+            MappingSchema,
         )
         self.assertEqual(schema.column_names(table("x", db="db")), ["a"])
         with self.assertRaises(ValueError):
@@ -378,7 +378,7 @@ class TestOptimizer(unittest.TestCase):
                     }
                 }
             },
-            MappingSchema
+            MappingSchema,
         )
         self.assertEqual(schema.column_names(table("x", db="db", catalog="c")), ["a"])
         with self.assertRaises(ValueError):
@@ -476,7 +476,7 @@ class TestOptimizer(unittest.TestCase):
                     "a": "uint64",
                 }
             },
-            MappingSchema
+            MappingSchema,
         )
         self.assertEqual(schema.column_names(table("x")), ["a"])
 

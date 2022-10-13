@@ -1,9 +1,13 @@
+import sqlglot
 from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql.dataframe import DataFrame, DataFrameNaFunctions
 from sqlglot.dataframe.sql.group import GroupedData
 from sqlglot.dataframe.sql.readwriter import DataFrameReader, DataFrameWriter
 from sqlglot.dataframe.sql.session import SparkSession
 from sqlglot.dataframe.sql.window import Window, WindowSpec
+from sqlglot.schema import MutableSchema
+
+sqlglot.schema = MutableSchema()
 
 __all__ = [
     "SparkSession",

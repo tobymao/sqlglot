@@ -1,7 +1,7 @@
 from sqlglot import exp
 from sqlglot.helper import ensure_list, subclasses
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import ensure_schema
+from sqlglot.schema import ensure_schema, MappingSchema
 
 
 def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
@@ -26,7 +26,7 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
         sqlglot.Expression: expression annotated with types
     """
 
-    schema = ensure_schema(schema)
+    schema = ensure_schema(schema, MappingSchema)
 
     return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
 

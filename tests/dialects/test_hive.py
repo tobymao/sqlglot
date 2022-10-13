@@ -564,6 +564,3 @@ class TestHive(Validator):
                 "spark": "SELECT * FROM x TABLESAMPLE(1) AS foo",
             },
         )
-        self.validate_identity("LOAD DATA INPATH 'x' INTO TABLE y INPUTFORMAT 'y' SERDE 'z'")
-        self.validate_identity("LOAD DATA INPATH 'x' INTO TABLE y SERDE 'z'")
-        self.validate_identity("LOAD DATA INPATH 'x' INTO TABLE b.y INPUTFORMAT 'y' SERDE 'z'")

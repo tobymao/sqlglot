@@ -1,3 +1,4 @@
+import datetime
 import numbers
 import re
 from collections import deque
@@ -3356,6 +3357,12 @@ def convert(value):
             keys=[convert(k) for k in value.keys()],
             values=[convert(v) for v in value.values()],
         )
+    if isinstance(value, datetime.datetime):
+        datetime_literal = Literal.string(value.strftime("%Y-%m-%d %H:%M:%S"))
+        return TimeStrToTime(this=datetime_literal)
+    if isinstance(value, datetime.date):
+        date_literal = Literal.string(value.strftime("%Y-%m-%d"))
+        return DateStrToDate(this=date_literal)
     raise ValueError(f"Cannot convert {value}")
 
 

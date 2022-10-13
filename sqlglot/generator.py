@@ -2,7 +2,7 @@ import logging
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_errors
-from sqlglot.helper import apply_index_offset, csv, ensure_list
+from sqlglot.helper import apply_index_offset, csv
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -43,14 +43,18 @@ class Generator:
             Default: 3
         leading_comma (bool): if the the comma is leading or trailing in select statements
             Default: False
+        text_width: The max number of characters in a segment before creating new lines in pretty mode.
+            The default is on the smaller end because the length only represents a segment and not the true
+            line length.
+            Default: 80
     """
 
     TRANSFORMS = {
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
-        exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
-        exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e, 'unit')})",
-        exp.VarMap: lambda self, e: f"MAP({self.sql(e.args['keys'])}, {self.sql(e.args['values'])})",
+        exp.DateAdd: lambda self, e: f"DATE_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
+        exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
+        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
+        exp.VarMap: lambda self, e: f"MAP({self.format_args(e.args['keys'], e.args['values'])})",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
@@ -111,6 +115,7 @@ class Generator:
         "_replace_backslash",
         "_escaped_quote_end",
         "_leading_comma",
+        "_text_width",
     )
 
     def __init__(
@@ -135,6 +140,7 @@ class Generator:
         null_ordering=None,
         max_unsupported=3,
         leading_comma=False,
+        text_width=80,
     ):
         import sqlglot
 
@@ -162,6 +168,7 @@ class Generator:
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
         self._leading_comma = leading_comma
+        self._text_width = text_width
 
     def generate(self, expression):
         """
@@ -1013,7 +1020,7 @@ class Generator:
         return f"REFERENCES {this}({expressions})"
 
     def anonymous_sql(self, expression):
-        args = self.indent(self.expressions(expression, flat=True), skip_first=True, skip_last=True)
+        args = self.format_args(*expression.expressions)
         return f"{self.normalize_func(self.sql(expression, 'this'))}({args})"
 
     def paren_sql(self, expression):
@@ -1051,7 +1058,9 @@ class Generator:
         if not self.pretty:
             return self.binary(expression, op)
 
-        return f"\n{op} ".join(self.sql(e) for e in expression.flatten(unnest=False))
+        sqls = tuple(self.sql(e) for e in expression.flatten(unnest=False))
+        sep = "\n" if sum(len(sql) for sql in sqls) > self._text_width else " "
+        return f"{sep}{op} ".join(sqls)
 
     def bitwiseand_sql(self, expression):
         return self.binary(expression, "&")
@@ -1171,13 +1180,20 @@ class Generator:
 
     def function_fallback_sql(self, expression):
         args = []
-        for arg_key in expression.arg_types:
-            arg_value = ensure_list(expression.args.get(arg_key) or [])
-            for a in arg_value:
-                args.append(self.sql(a))
+        for arg_value in expression.args.values():
+            if isinstance(arg_value, list):
+                for value in arg_value:
+                    args.append(value)
+            elif arg_value:
+                args.append(arg_value)
 
-        args_str = self.indent(", ".join(args), skip_first=True, skip_last=True)
-        return f"{self.normalize_func(expression.sql_name())}({args_str})"
+        return f"{self.normalize_func(expression.sql_name())}({self.format_args(*args)})"
+
+    def format_args(self, *args):
+        args = tuple(self.sql(arg) for arg in args if arg is not None)
+        if self.pretty and sum(len(arg) for arg in args) > self._text_width:
+            return self.indent("\n" + f",\n".join(args) + "\n", skip_first=True, skip_last=True)
+        return ", ".join(args)
 
     def format_time(self, expression):
         return format_time(self.sql(expression, "format"), self.time_mapping, self.time_trie)

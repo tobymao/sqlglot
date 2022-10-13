@@ -108,14 +108,11 @@ LEFT JOIN (
     ARRAY_AGG(y.b) AS _u_13
   FROM y
   WHERE
-    TRUE
-    AND TRUE
-    AND TRUE
+    TRUE AND TRUE AND TRUE
   GROUP BY
     y.a
 ) AS "_u_11"
-  ON "_u_11"."_u_12" = x.a
-  AND "_u_11"."_u_12" = x.b
+  ON "_u_11"."_u_12" = x.a AND "_u_11"."_u_12" = x.b
 LEFT JOIN (
   SELECT
     y.a AS a
@@ -131,38 +128,30 @@ WHERE
   AND NOT "_u_1"."b" IS NULL
   AND NOT "_u_2"."a" IS NULL
   AND (
-    x.a = "_u_3".b
-    AND NOT "_u_3"."_u_4" IS NULL
+    x.a = "_u_3".b AND NOT "_u_3"."_u_4" IS NULL
   )
   AND (
-    x.a > "_u_5".b
-    AND NOT "_u_5"."_u_6" IS NULL
+    x.a > "_u_5".b AND NOT "_u_5"."_u_6" IS NULL
   )
   AND (
-    None = "_u_7".a
-    AND NOT "_u_7".a IS NULL
+    None = "_u_7".a AND NOT "_u_7".a IS NULL
   )
   AND NOT (
-    x.a = "_u_8".a
-    AND NOT "_u_8".a IS NULL
+    x.a = "_u_8".a AND NOT "_u_8".a IS NULL
   )
   AND (
-    ARRAY_ANY("_u_9".a, _x -> _x = x.a)
-    AND NOT "_u_9"."_u_10" IS NULL
+    ARRAY_ANY("_u_9".a, _x -> _x = x.a) AND NOT "_u_9"."_u_10" IS NULL
   )
   AND (
     (
       (
-        x.a < "_u_11".a
-        AND NOT "_u_11"."_u_12" IS NULL
-      )
-      AND NOT "_u_11"."_u_12" IS NULL
+        x.a < "_u_11".a AND NOT "_u_11"."_u_12" IS NULL
+      ) AND NOT "_u_11"."_u_12" IS NULL
     )
     AND ARRAY_ANY("_u_11"."_u_13", "_x" -> "_x" <> x.d)
   )
   AND (
-    NOT "_u_14".a IS NULL
-    AND NOT "_u_14".a IS NULL
+    NOT "_u_14".a IS NULL AND NOT "_u_14".a IS NULL
   )
   AND x.a IN (
     SELECT
@@ -203,4 +192,3 @@ WHERE
       y.a = x.a
     OFFSET 10
   );
-

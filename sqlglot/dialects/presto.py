@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import Generator
-from sqlglot.helper import csv, list_get
+from sqlglot.helper import list_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -26,7 +26,7 @@ def _concat_ws_sql(self, expression):
     sep, *args = expression.expressions
     sep = self.sql(sep)
     if len(args) > 1:
-        return f"ARRAY_JOIN(ARRAY[{csv(*(self.sql(e) for e in args))}], {sep})"
+        return f"ARRAY_JOIN(ARRAY[{self.format_args(*args)}], {sep})"
     return f"ARRAY_JOIN({self.sql(args[0])}, {sep})"
 
 
@@ -66,7 +66,7 @@ def _no_sort_array(self, expression):
         comparator = "(a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END"
     else:
         comparator = None
-    args = csv(self.sql(expression, "this"), comparator)
+    args = self.format_args(expression.this, comparator)
     return f"ARRAY_SORT({args})"
 
 

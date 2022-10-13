@@ -28,13 +28,15 @@ SELECT
   SUM("lineitem"."l_quantity") AS "sum_qty",
   SUM("lineitem"."l_extendedprice") AS "sum_base_price",
   SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    1 - "lineitem"."l_discount"
   )) AS "sum_disc_price",
-  SUM("lineitem"."l_extendedprice" * (
+  SUM(
+    "lineitem"."l_extendedprice" * (
       1 - "lineitem"."l_discount"
     ) * (
       1 + "lineitem"."l_tax"
-  )) AS "sum_charge",
+    )
+  ) AS "sum_charge",
   AVG("lineitem"."l_quantity") AS "avg_qty",
   AVG("lineitem"."l_extendedprice") AS "avg_price",
   AVG("lineitem"."l_discount") AS "avg_disc",
@@ -186,7 +188,7 @@ limit
 SELECT
   "lineitem"."l_orderkey" AS "l_orderkey",
   SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    1 - "lineitem"."l_discount"
   )) AS "revenue",
   CAST("orders"."o_orderdate" AS TEXT) AS "o_orderdate",
   "orders"."o_shippriority" AS "o_shippriority"
@@ -286,7 +288,7 @@ order by
 SELECT
   "nation"."n_name" AS "n_name",
   SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    1 - "lineitem"."l_discount"
   )) AS "revenue"
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
@@ -377,15 +379,14 @@ WITH "n1" AS (
     "nation"."n_name" AS "n_name"
   FROM "nation" AS "nation"
   WHERE
-    "nation"."n_name" = 'FRANCE'
-    OR "nation"."n_name" = 'GERMANY'
+    "nation"."n_name" = 'FRANCE' OR "nation"."n_name" = 'GERMANY'
 )
 SELECT
   "n1"."n_name" AS "supp_nation",
   "n2"."n_name" AS "cust_nation",
   EXTRACT(year FROM "lineitem"."l_shipdate") AS "l_year",
   SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    1 - "lineitem"."l_discount"
   )) AS "revenue"
 FROM "supplier" AS "supplier"
 JOIN "lineitem" AS "lineitem"
@@ -400,12 +401,10 @@ JOIN "n1" AS "n1"
 JOIN "n1" AS "n2"
   ON "customer"."c_nationkey" = "n2"."n_nationkey"
   AND (
-    "n1"."n_name" = 'FRANCE'
-    OR "n2"."n_name" = 'FRANCE'
+    "n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE'
   )
   AND (
-    "n1"."n_name" = 'GERMANY'
-    OR "n2"."n_name" = 'GERMANY'
+    "n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY'
   )
 GROUP BY
   "n1"."n_name",
@@ -458,14 +457,16 @@ order by
         o_year;
 SELECT
   EXTRACT(year FROM "orders"."o_orderdate") AS "o_year",
-  SUM(CASE
+  SUM(
+    CASE
       WHEN "nation_2"."n_name" = 'BRAZIL'
       THEN "lineitem"."l_extendedprice" * (
           1 - "lineitem"."l_discount"
         )
       ELSE 0
-  END) / SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    END
+  ) / SUM("lineitem"."l_extendedprice" * (
+    1 - "lineitem"."l_discount"
   )) AS "mkt_share"
 FROM "part" AS "part"
 JOIN "region" AS "region"
@@ -529,9 +530,11 @@ order by
 SELECT
   "nation"."n_name" AS "nation",
   EXTRACT(year FROM "orders"."o_orderdate") AS "o_year",
-  SUM("lineitem"."l_extendedprice" * (
+  SUM(
+    "lineitem"."l_extendedprice" * (
       1 - "lineitem"."l_discount"
-  ) - "partsupp"."ps_supplycost" * "lineitem"."l_quantity") AS "sum_profit"
+    ) - "partsupp"."ps_supplycost" * "lineitem"."l_quantity"
+  ) AS "sum_profit"
 FROM "part" AS "part"
 JOIN "lineitem" AS "lineitem"
   ON "part"."p_partkey" = "lineitem"."l_partkey"
@@ -593,7 +596,7 @@ SELECT
   "customer"."c_custkey" AS "c_custkey",
   "customer"."c_name" AS "c_name",
   SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    1 - "lineitem"."l_discount"
   )) AS "revenue",
   "customer"."c_acctbal" AS "c_acctbal",
   "nation"."n_name" AS "n_name",
@@ -606,8 +609,7 @@ JOIN "orders" AS "orders"
   AND "orders"."o_orderdate" < CAST('1994-01-01' AS DATE)
   AND "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
 JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
-  AND "lineitem"."l_returnflag" = 'R'
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey" AND "lineitem"."l_returnflag" = 'R'
 JOIN "nation" AS "nation"
   ON "customer"."c_nationkey" = "nation"."n_nationkey"
 GROUP BY
@@ -721,18 +723,20 @@ order by
         l_shipmode;
 SELECT
   "lineitem"."l_shipmode" AS "l_shipmode",
-  SUM(CASE
-      WHEN "orders"."o_orderpriority" = '1-URGENT'
-        OR "orders"."o_orderpriority" = '2-HIGH'
+  SUM(
+    CASE
+      WHEN "orders"."o_orderpriority" = '1-URGENT' OR "orders"."o_orderpriority" = '2-HIGH'
       THEN 1
       ELSE 0
-  END) AS "high_line_count",
-  SUM(CASE
-      WHEN "orders"."o_orderpriority" <> '1-URGENT'
-        AND "orders"."o_orderpriority" <> '2-HIGH'
+    END
+  ) AS "high_line_count",
+  SUM(
+    CASE
+      WHEN "orders"."o_orderpriority" <> '1-URGENT' AND "orders"."o_orderpriority" <> '2-HIGH'
       THEN 1
       ELSE 0
-  END) AS "low_line_count"
+    END
+  ) AS "low_line_count"
 FROM "orders" AS "orders"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
@@ -813,14 +817,16 @@ where
         and l_shipdate >= date '1995-09-01'
         and l_shipdate < date '1995-09-01' + interval '1' month;
 SELECT
-  100.00 * SUM(CASE
+  100.00 * SUM(
+    CASE
       WHEN "part"."p_type" LIKE 'PROMO%'
       THEN "lineitem"."l_extendedprice" * (
           1 - "lineitem"."l_discount"
         )
       ELSE 0
-  END) / SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    END
+  ) / SUM("lineitem"."l_extendedprice" * (
+    1 - "lineitem"."l_discount"
   )) AS "promo_revenue"
 FROM "lineitem" AS "lineitem"
 JOIN "part" AS "part"
@@ -866,7 +872,7 @@ WITH "revenue" AS (
   SELECT
     "lineitem"."l_suppkey" AS "supplier_no",
     SUM("lineitem"."l_extendedprice" * (
-        1 - "lineitem"."l_discount"
+      1 - "lineitem"."l_discount"
     )) AS "total_revenue"
   FROM "lineitem" AS "lineitem"
   WHERE
@@ -997,8 +1003,7 @@ JOIN "part" AS "part"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "part"."p_partkey"
 WHERE
-  "lineitem"."l_quantity" < "_u_0"."_col_0"
-  AND NOT "_u_0"."_u_1" IS NULL;
+  "lineitem"."l_quantity" < "_u_0"."_col_0" AND NOT "_u_0"."_u_1" IS NULL;
 
 --------------------------------------
 -- TPC-H 18
@@ -1114,7 +1119,7 @@ where
         );
 SELECT
   SUM("lineitem"."l_extendedprice" * (
-      1 - "lineitem"."l_discount"
+    1 - "lineitem"."l_discount"
   )) AS "revenue"
 FROM "lineitem" AS "lineitem"
 JOIN "part" AS "part"
@@ -1233,8 +1238,7 @@ WITH "_u_0" AS (
     "partsupp"."ps_suppkey" AS "ps_suppkey"
   FROM "partsupp" AS "partsupp"
   LEFT JOIN "_u_0" AS "_u_0"
-    ON "_u_0"."_u_1" = "partsupp"."ps_partkey"
-    AND "_u_0"."_u_2" = "partsupp"."ps_suppkey"
+    ON "_u_0"."_u_1" = "partsupp"."ps_partkey" AND "_u_0"."_u_2" = "partsupp"."ps_suppkey"
   LEFT JOIN "_u_3" AS "_u_3"
     ON "partsupp"."ps_partkey" = "_u_3"."p_partkey"
   WHERE
@@ -1252,8 +1256,7 @@ FROM "supplier" AS "supplier"
 LEFT JOIN "_u_4" AS "_u_4"
   ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
 JOIN "nation" AS "nation"
-  ON "nation"."n_name" = 'CANADA'
-  AND "supplier"."s_nationkey" = "nation"."n_nationkey"
+  ON "nation"."n_name" = 'CANADA' AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 WHERE
   NOT "_u_4"."ps_suppkey" IS NULL
 ORDER BY
@@ -1332,8 +1335,7 @@ LEFT JOIN "_u_0" AS "_u_0"
 LEFT JOIN "_u_2" AS "_u_2"
   ON "_u_2"."l_orderkey" = "lineitem"."l_orderkey"
 JOIN "orders" AS "orders"
-  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
-  AND "orders"."o_orderstatus" = 'F'
+  ON "orders"."o_orderkey" = "lineitem"."l_orderkey" AND "orders"."o_orderstatus" = 'F'
 JOIN "nation" AS "nation"
   ON "nation"."n_name" = 'SAUDI ARABIA'
   AND "supplier"."s_nationkey" = "nation"."n_nationkey"

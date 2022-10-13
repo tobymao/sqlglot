@@ -1,7 +1,6 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
 from sqlglot.generator import Generator
-from sqlglot.helper import csv
 from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -66,7 +65,7 @@ class ClickHouse(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
-            exp.StrPosition: lambda self, e: f"position({csv(self.sql(e, 'this'), self.sql(e, 'substr'), self.sql(e, 'position'))})",
+            exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),

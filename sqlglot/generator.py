@@ -43,7 +43,7 @@ class Generator:
             Default: 3
         leading_comma (bool): if the the comma is leading or trailing in select statements
             Default: False
-        text_width: The max number of characters in a segment before creating new lines in pretty mode.
+        max_text_width: The max number of characters in a segment before creating new lines in pretty mode.
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
@@ -115,7 +115,7 @@ class Generator:
         "_replace_backslash",
         "_escaped_quote_end",
         "_leading_comma",
-        "_text_width",
+        "_max_text_width",
     )
 
     def __init__(
@@ -140,7 +140,7 @@ class Generator:
         null_ordering=None,
         max_unsupported=3,
         leading_comma=False,
-        text_width=80,
+        max_text_width=80,
     ):
         import sqlglot
 
@@ -168,7 +168,7 @@ class Generator:
         self._replace_backslash = self.escape == "\\"
         self._escaped_quote_end = self.escape + self.quote_end
         self._leading_comma = leading_comma
-        self._text_width = text_width
+        self._max_text_width = max_text_width
 
     def generate(self, expression):
         """
@@ -935,20 +935,24 @@ class Generator:
         return f"EXISTS{self.wrap(expression)}"
 
     def case_sql(self, expression):
-        this = self.indent(self.sql(expression, "this"), skip_first=True)
-        this = f" {this}" if this else ""
-        ifs = []
+        this = self.sql(expression, "this")
+        statements = [f"CASE {this}" if this else "CASE"]
 
         for e in expression.args["ifs"]:
-            ifs.append(self.indent(f"WHEN {self.sql(e, 'this')}"))
-            ifs.append(self.indent(f"THEN {self.sql(e, 'true')}"))
+            statements.append(f"WHEN {self.sql(e, 'this')}")
+            statements.append(f"THEN {self.sql(e, 'true')}")
 
-        if expression.args.get("default") is not None:
-            ifs.append(self.indent(f"ELSE {self.sql(expression, 'default')}"))
+        default = self.sql(expression, "default")
 
-        ifs = "".join(self.seg(self.indent(e, skip_first=True)) for e in ifs)
-        statement = f"CASE{this}{ifs}{self.seg('END')}"
-        return statement
+        if default:
+            statements.append(f"ELSE {default}")
+
+        statements.append("END")
+
+        if self.pretty and self.text_width(statements) > self._max_text_width:
+            return self.indent("\n".join(statements), skip_first=True, skip_last=True)
+
+        return " ".join(statements)
 
     def constraint_sql(self, expression):
         this = self.sql(expression, "this")
@@ -1059,7 +1063,7 @@ class Generator:
             return self.binary(expression, op)
 
         sqls = tuple(self.sql(e) for e in expression.flatten(unnest=False))
-        sep = "\n" if sum(len(sql) for sql in sqls) > self._text_width else " "
+        sep = "\n" if self.text_width(sqls) > self._max_text_width else " "
         return f"{sep}{op} ".join(sqls)
 
     def bitwiseand_sql(self, expression):
@@ -1191,9 +1195,12 @@ class Generator:
 
     def format_args(self, *args):
         args = tuple(self.sql(arg) for arg in args if arg is not None)
-        if self.pretty and sum(len(arg) for arg in args) > self._text_width:
+        if self.pretty and self.text_width(args) > self._max_text_width:
             return self.indent("\n" + f",\n".join(args) + "\n", skip_first=True, skip_last=True)
         return ", ".join(args)
+
+    def text_width(self, args):
+        return sum(len(arg.split("\n")[0]) for arg in args)
 
     def format_time(self, expression):
         return format_time(self.sql(expression, "format"), self.time_mapping, self.time_trie)

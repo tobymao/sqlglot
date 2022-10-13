@@ -93,11 +93,7 @@ WITH cte1 AS (
     UNION ALL
     SELECT
       MAX(COALESCE(x AND y, a AND b AND c, d AND e)),
-      FOO(CASE
-        WHEN a AND b
-        THEN c AND d
-        ELSE 3
-      END)
+      FOO(CASE WHEN a AND b THEN c AND d ELSE 3 END)
     GROUP BY
       x
     GROUPING SETS (
@@ -244,7 +240,9 @@ CREATE TABLE "t_customer_account" (
 
 SELECT
 x("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff"),
-array("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff")
+array("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff"),
+array("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff", array("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff")),
+array(array("aaaaaaaaaaaaaa", "bbbbbbbbbbbbb", "ccccccccc", "ddddddddddddd", "eeeeeeeeeeeee", "fffffff")),
 ;
 SELECT
   X(
@@ -262,4 +260,28 @@ SELECT
     "ddddddddddddd",
     "eeeeeeeeeeeee",
     "fffffff"
-  );
+  ),
+  ARRAY(
+    "aaaaaaaaaaaaaa",
+    "bbbbbbbbbbbbb",
+    "ccccccccc",
+    "ddddddddddddd",
+    "eeeeeeeeeeeee",
+    "fffffff",
+    ARRAY(
+      "aaaaaaaaaaaaaa",
+      "bbbbbbbbbbbbb",
+      "ccccccccc",
+      "ddddddddddddd",
+      "eeeeeeeeeeeee",
+      "fffffff"
+    )
+  ),
+  ARRAY(ARRAY(
+    "aaaaaaaaaaaaaa",
+    "bbbbbbbbbbbbb",
+    "ccccccccc",
+    "ddddddddddddd",
+    "eeeeeeeeeeeee",
+    "fffffff"
+  ));

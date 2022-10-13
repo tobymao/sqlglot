@@ -158,6 +158,7 @@ class Parser:
         TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.IMMUTABLE,
+        TokenType.INPUT_FORMAT,
         TokenType.INTERVAL,
         TokenType.LAZY,
         TokenType.LANGUAGE,
@@ -183,6 +184,7 @@ class Parser:
         TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
         TokenType.SEMI,
+        TokenType.SERDE,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.STABLE,
@@ -913,7 +915,7 @@ class Parser:
 
         return self.expression(
             exp.LoadData,
-            this=self._parse_id_var(),
+            this=self._parse_table(),
             local=local,
             overwrite=overwrite,
             inpath=inpath,

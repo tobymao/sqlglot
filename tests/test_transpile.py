@@ -211,7 +211,7 @@ class TestTranspile(unittest.TestCase):
         )
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="hive")
 
-        self.validate("TIME_STR_TO_TIME(x)", "CAST(x AS TIMESTAMP)", write=None)
+        self.validate("TIME_STR_TO_TIME(x)", "TIME_STR_TO_TIME(x)", write=None)
         self.validate("TIME_STR_TO_UNIX(x)", "TIME_STR_TO_UNIX(x)", write=None)
         self.validate("TIME_TO_TIME_STR(x)", "CAST(x AS TEXT)", write=None)
         self.validate("TIME_TO_STR(x, 'y')", "TIME_TO_STR(x, 'y')", write=None)

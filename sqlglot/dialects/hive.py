@@ -14,7 +14,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
 )
 from sqlglot.generator import Generator
-from sqlglot.helper import csv, list_get
+from sqlglot.helper import list_get
 from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer
 
@@ -32,7 +32,7 @@ def _property_sql(self, expression):
 
 
 def _str_to_unix(self, expression):
-    return f"UNIX_TIMESTAMP({csv(self.sql(expression, 'this'), _time_format(self, expression))})"
+    return f"UNIX_TIMESTAMP({self.format_args(expression.this, _time_format(self, expression))})"
 
 
 def _str_to_date(self, expression):
@@ -226,7 +226,7 @@ class Hive(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
-            exp.StrPosition: lambda self, e: f"LOCATE({csv(self.sql(e, 'substr'), self.sql(e, 'this'), self.sql(e, 'position'))})",
+            exp.StrPosition: lambda self, e: f"LOCATE({self.format_args(e.args.get('substr'), e.this, e.args.get('position'))})",
             exp.StrToDate: _str_to_date,
             exp.StrToTime: _str_to_time,
             exp.StrToUnix: _str_to_unix,
@@ -241,7 +241,7 @@ class Hive(Dialect):
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,
-            exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({csv(self.sql(e, 'this'), _time_format(self, e))})",
+            exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.format_args(e.this, _time_format(self, e))})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'value')}",

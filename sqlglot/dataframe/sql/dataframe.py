@@ -44,7 +44,7 @@ class DataFrame:
         expression: exp.Select,
         branch_id: str = None,
         sequence_id: str = None,
-        last_op: t.Optional[Operation] = Operation.INIT,
+        last_op: Operation = Operation.INIT,
         pending_hints: t.Optional[t.List[exp.Expression]] = None,
         output_expression_container: t.Optional[OutputExpressionContainer] = None,
         **kwargs,
@@ -358,7 +358,7 @@ class DataFrame:
     @operation(Operation.GROUP_BY)
     def groupBy(self, *cols, **kwargs) -> GroupedData:
         cols = self._ensure_and_normalize_cols(cols)
-        return GroupedData(self, cols)
+        return GroupedData(self, cols, self.last_op)
 
     @operation(Operation.SELECT)
     def agg(self, *exprs, **kwargs) -> DataFrame:

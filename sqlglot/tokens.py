@@ -56,6 +56,7 @@ class TokenType(AutoName):
     VAR = auto()
     BIT_STRING = auto()
     HEX_STRING = auto()
+    BYTE_STRING = auto()
 
     # types
     BOOLEAN = auto()
@@ -320,6 +321,7 @@ class _Tokenizer(type):
         klass._QUOTES = cls._delimeter_list_to_dict(klass.QUOTES)
         klass._BIT_STRINGS = cls._delimeter_list_to_dict(klass.BIT_STRINGS)
         klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
+        klass._BYTE_STRINGS = cls._delimeter_list_to_dict(klass.BYTE_STRINGS)
         klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
         klass._COMMENTS = dict(
             (comment, None) if isinstance(comment, str) else (comment[0], comment[1]) for comment in klass.COMMENTS
@@ -333,6 +335,7 @@ class _Tokenizer(type):
                 **{quote: TokenType.QUOTE for quote in klass._QUOTES},
                 **{bit_string: TokenType.BIT_STRING for bit_string in klass._BIT_STRINGS},
                 **{hex_string: TokenType.HEX_STRING for hex_string in klass._HEX_STRINGS},
+                **{byte_string: TokenType.BYTE_STRING for byte_string in klass._BYTE_STRINGS},
             }.items()
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
@@ -384,6 +387,8 @@ class Tokenizer(metaclass=_Tokenizer):
     BIT_STRINGS = []
 
     HEX_STRINGS = []
+
+    BYTE_STRINGS = []
 
     IDENTIFIERS = ['"']
 
@@ -799,7 +804,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if self._scan_string(word):
             return
-        if self._scan_numeric_string(word):
+        if self._scan_formatted_string(word):
             return
         if self._scan_comment(word):
             return
@@ -906,7 +911,8 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.STRING, text)
         return True
 
-    def _scan_numeric_string(self, string_start):
+    # X'1234, b'0110', E'\\\\\' etc.
+    def _scan_formatted_string(self, string_start):
         if string_start in self._HEX_STRINGS:
             delimiters = self._HEX_STRINGS
             token_type = TokenType.HEX_STRING
@@ -915,6 +921,10 @@ class Tokenizer(metaclass=_Tokenizer):
             delimiters = self._BIT_STRINGS
             token_type = TokenType.BIT_STRING
             base = 2
+        elif string_start in self._BYTE_STRINGS:
+            delimiters = self._BYTE_STRINGS
+            token_type = TokenType.BYTE_STRING
+            base = None
         else:
             return False
 
@@ -922,10 +932,14 @@ class Tokenizer(metaclass=_Tokenizer):
         string_end = delimiters.get(string_start)
         text = self._extract_string(string_end)
 
-        try:
-            self._add(token_type, f"{int(text, base)}")
-        except ValueError:
-            raise RuntimeError(f"Numeric string contains invalid characters from {self._line}:{self._start}")
+        if base is None:
+            self._add(token_type, text)
+        else:
+            try:
+                self._add(token_type, f"{int(text, base)}")
+            except:
+                raise RuntimeError(f"Numeric string contains invalid characters from {self._line}:{self._start}")
+
         return True
 
     def _scan_identifier(self, identifier_end):

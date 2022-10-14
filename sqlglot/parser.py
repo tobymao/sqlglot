@@ -1874,12 +1874,12 @@ class Parser:
         return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
     def _parse_introducer(self, token):
-        var_or_string = self._parse_primary()
-        if var_or_string:
+        literal = self._parse_primary()
+        if literal:
             return self.expression(
                 exp.Introducer,
                 this=token.text,
-                expression=var_or_string,
+                expression=literal,
             )
 
         return self.expression(exp.Identifier, this=token.text)

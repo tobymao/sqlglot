@@ -423,8 +423,11 @@ class Generator:
 
     def delete_sql(self, expression):
         this = self.sql(expression, "this")
+        using_sql = (
+            f" USING {self.expressions(expression, 'using', sep=', USING ')}" if expression.args.get("using") else ""
+        )
         where_sql = self.sql(expression, "where")
-        sql = f"DELETE FROM {this}{where_sql}"
+        sql = f"DELETE FROM {this}{using_sql}{where_sql}"
         return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression):

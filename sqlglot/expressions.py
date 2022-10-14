@@ -729,7 +729,7 @@ class Constraint(Expression):
 
 
 class Delete(Expression):
-    arg_types = {"with": False, "this": True, "where": False}
+    arg_types = {"with": False, "this": True, "using": False, "where": False}
 
 
 class Drop(Expression):

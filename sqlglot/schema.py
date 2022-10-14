@@ -8,17 +8,6 @@ from sqlglot.helper import csv_reader, ensure_table
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
-
-    @abc.abstractmethod
-    def add_table(self, table, column_mapping=None):
-        """
-        Registers the table to be a known schema to be accessed later. Some implementing classes may
-        require column information to also be provided
-        Args:
-            table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
-            column_mapping (dict|str|sqlglot.dataframe.sql.types.StructType|list): A column mapping that describes the structure of the table
-        """
-
     @abc.abstractmethod
     def column_names(self, table, only_visible=False):
         """
@@ -43,15 +32,16 @@ class Schema(abc.ABC):
         """
 
 
-class MappingSchema(Schema):
+class MutableSchema(Schema):
     """
-    Schema based on a nested mapping.
+    Based on MappingSchema but mutable so you can add tables over time.
 
     Args:
         schema (dict): Mapping in one of the following forms:
             1. {table: {col: type}}
             2. {db: {table: {col: type}}}
             3. {catalog: {db: {table: {col: type}}}}
+            4. None - Tables will be added later
         visible (dict): Optional mapping of which columns in the schema are visible. If not provided, all columns
             are assumed to be visible. The nesting should mirror that of the schema:
             1. {table: set(*cols)}}
@@ -60,17 +50,62 @@ class MappingSchema(Schema):
         dialect (str): The dialect to be used for custom type mappings.
     """
 
-    def __init__(self, schema, visible=None, dialect=None):
-        self.schema = schema
+    def __init__(self, schema=None, visible=None, dialect=None):
+        self.schema = schema or {}
         self.visible = visible
         self.dialect = dialect
         self._type_mapping_cache = {}
         self.supported_table_args = []
         self.forbidden_args = set()
-        self._initialize_supported_args()
+        if self.schema:
+            self._initialize_supported_args()
+
+    @classmethod
+    def from_mapping_schema(cls, mapping_schema):
+        return MutableSchema(
+            schema=mapping_schema.schema, visible=mapping_schema.visible, dialect=mapping_schema.dialect
+        )
+
+    def copy(self, **kwargs):
+        kwargs = {**{"schema": copy(self.schema)}, **kwargs}
+        return MutableSchema(**kwargs)
 
     def add_table(self, table, column_mapping=None):
-        raise NotImplementedError("Use `MutableSchema` if you want a to be able to add tables")
+        """
+        Registers the table to be a known schema to be accessed later.
+
+        Args:
+            table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
+            column_mapping (dict|str|sqlglot.dataframe.sql.types.StructType|list): A column mapping that describes the structure of the table
+        """
+        if column_mapping is None:
+            return
+        table = ensure_table(table)
+        self._validate_table(table)
+        column_mapping = ensure_column_mapping(column_mapping)
+        _nested_set(
+            self.schema,
+            [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)],
+            column_mapping,
+        )
+        self._initialize_supported_args()
+
+    def _get_table_args_from_table(self, table):
+        if table.args.get("catalog") is not None:
+            return "catalog", "db", "this"
+        if table.args.get("db") is not None:
+            return "db", "this"
+        return ("this",)
+
+    def _validate_table(self, table):
+        if not self.supported_table_args and isinstance(table, exp.Table):
+            return
+        for forbidden in self.forbidden_args:
+            if table.text(forbidden):
+                raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
+        for expected in self.supported_table_args:
+            if not table.text(expected):
+                raise ValueError(f"Table is expected to have {expected}. Received: {table.sql()} ")
 
     def column_names(self, table, only_visible=False):
         table = ensure_table(table)
@@ -133,16 +168,15 @@ class MappingSchema(Schema):
             self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
 
 
-class MutableSchema(MappingSchema):
+class MappingSchema(MutableSchema):
     """
-    Based on MappingSchema but mutable so you can add tables over time.
+    Schema based on a nested mapping.
 
     Args:
         schema (dict): Mapping in one of the following forms:
             1. {table: {col: type}}
             2. {db: {table: {col: type}}}
             3. {catalog: {db: {table: {col: type}}}}
-            4. None - Tables will be added later
         visible (dict): Optional mapping of which columns in the schema are visible. If not provided, all columns
             are assumed to be visible. The nesting should mirror that of the schema:
             1. {table: set(*cols)}}
@@ -150,49 +184,8 @@ class MutableSchema(MappingSchema):
             3. {catalog: {db: {table: set(*cols)}}}}
         dialect (str): The dialect to be used for custom type mappings.
     """
-
-    def __init__(self, schema=None, visible=None, dialect=None):
-        super().__init__(schema or {}, visible, dialect)
-
-    @classmethod
-    def from_mapping_schema(cls, mapping_schema: MappingSchema):
-        return MutableSchema(
-            schema=mapping_schema.schema, visible=mapping_schema.visible, dialect=mapping_schema.dialect
-        )
-
-    def copy(self, **kwargs):
-        kwargs = {**{"schema": copy(self.schema)}, **kwargs}
-        return MutableSchema(**kwargs)
-
     def add_table(self, table, column_mapping=None):
-        if column_mapping is None:
-            return
-        table = ensure_table(table)
-        self._validate_table(table)
-        column_mapping = ensure_column_mapping(column_mapping)
-        _nested_set(
-            self.schema,
-            [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)],
-            column_mapping,
-        )
-        self._initialize_supported_args()
-
-    def _get_table_args_from_table(self, table):
-        if table.args.get("catalog") is not None:
-            return "catalog", "db", "this"
-        if table.args.get("db") is not None:
-            return "db", "this"
-        return ("this",)
-
-    def _validate_table(self, table):
-        if not self.supported_table_args and isinstance(table, exp.Table):
-            return
-        for forbidden in self.forbidden_args:
-            if table.text(forbidden):
-                raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
-        for expected in self.supported_table_args:
-            if not table.text(expected):
-                raise ValueError(f"Table is expected to have {expected}. Received: {table.sql()} ")
+        raise NotImplementedError("Use `MutableSchema` if you want a to be able to add tables")
 
 
 def ensure_schema(schema, schema_klass):

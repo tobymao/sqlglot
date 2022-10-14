@@ -40,6 +40,15 @@ class TestMySQL(Validator):
                 "mysql": "N 'some text'",
             },
         )
+        self.validate_all(
+            "_latin1 x'4D7953514C'",
+            read={
+                "mysql": "_latin1 X'4D7953514C'",
+            },
+            write={
+                "mysql": "_latin1 x'4D7953514C'",
+            },
+        )
 
     def test_hexadecimal_literal(self):
         self.validate_all(

@@ -804,7 +804,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if self._scan_string(word):
             return
-        if self._scan_numeric_string(word):
+        if self._scan_formatted_string(word):
             return
         if self._scan_comment(word):
             return
@@ -911,7 +911,8 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.STRING, text)
         return True
 
-    def _scan_numeric_string(self, string_start):
+    # X'1234, b'0110', E'\\\\\' etc.
+    def _scan_formatted_string(self, string_start):
         if string_start in self._HEX_STRINGS:
             delimiters = self._HEX_STRINGS
             token_type = TokenType.HEX_STRING

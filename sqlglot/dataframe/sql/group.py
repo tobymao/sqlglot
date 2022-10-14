@@ -11,9 +11,10 @@ if t.TYPE_CHECKING:
 
 
 class GroupedData:
-    def __init__(self, df: DataFrame, group_by_cols: t.List[Column]):
+    def __init__(self, df: DataFrame, group_by_cols: t.List[Column], last_op: Operation):
         self._df = df.copy()
         self.spark = df.spark
+        self.last_op = last_op
         self.group_by_cols = group_by_cols
 
     def _get_function_applied_columns(self, func_name: str, cols: t.Tuple[str]) -> t.List[Column]:

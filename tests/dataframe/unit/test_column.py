@@ -142,12 +142,12 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("cola BETWEEN 1 AND 3", F.col("cola").between(1, 3).sql())
         self.assertEqual("cola BETWEEN 10.1 AND 12.1", F.col("cola").between(10.1, 12.1).sql())
         self.assertEqual(
-            "cola BETWEEN TO_DATE('2022-01-01', 'YYYY-MM-DD') AND TO_DATE('2022-03-01', 'YYYY-MM-DD')",
+            "cola BETWEEN TO_DATE('2022-01-01') AND TO_DATE('2022-03-01')",
             F.col("cola").between(datetime.date(2022, 1, 1), datetime.date(2022, 3, 1)).sql(),
         )
         self.assertEqual(
-            "cola BETWEEN TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS') "
-            "AND TO_TIMESTAMP('2022-03-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')",
+            "cola BETWEEN CAST('2022-01-01 01:01:01' AS TIMESTAMP) "
+            "AND CAST('2022-03-01 01:01:01' AS TIMESTAMP)",
             F.col("cola").between(datetime.datetime(2022, 1, 1, 1, 1, 1), datetime.datetime(2022, 3, 1, 1, 1, 1)).sql(),
         )
 

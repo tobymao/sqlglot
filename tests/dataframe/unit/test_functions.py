@@ -18,9 +18,9 @@ class TestDataframeFunctions(unittest.TestCase):
         test_null = SF.lit(None)
         self.assertEqual("NULL", test_null.sql())
         test_date = SF.lit(datetime.date(2022, 1, 1))
-        self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
+        self.assertEqual("TO_DATE('2022-01-01')", test_date.sql())
         test_datetime = SF.lit(datetime.datetime(2022, 1, 1, 1, 1, 1))
-        self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
+        self.assertEqual("CAST('2022-01-01 01:01:01' AS TIMESTAMP)", test_datetime.sql())
         test_dict = SF.lit({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS cola, 'test' AS colb)", test_dict.sql())
 
@@ -40,9 +40,9 @@ class TestDataframeFunctions(unittest.TestCase):
         test_array = SF.col([1, 2, "3"])
         self.assertEqual("ARRAY(1, 2, '3')", test_array.sql())
         test_date = SF.col(datetime.date(2022, 1, 1))
-        self.assertEqual("TO_DATE('2022-01-01', 'YYYY-MM-DD')", test_date.sql())
+        self.assertEqual("TO_DATE('2022-01-01')", test_date.sql())
         test_datetime = SF.col(datetime.datetime(2022, 1, 1, 1, 1, 1))
-        self.assertEqual("TO_TIMESTAMP('2022-01-01 01:01:01', 'YYYY-MM-DD HH:MM:SS')", test_datetime.sql())
+        self.assertEqual("CAST('2022-01-01 01:01:01' AS TIMESTAMP)", test_datetime.sql())
         test_dict = SF.col({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS cola, 'test' AS colb)", test_dict.sql())
 
@@ -508,8 +508,8 @@ class TestDataframeFunctions(unittest.TestCase):
         self.assertEqual("COUNT(DISTINCT cola)", col.sql())
         col_legacy = SF.countDistinct(SF.col("cola"))
         self.assertEqual("COUNT(DISTINCT cola)", col_legacy.sql())
-        with self.assertRaises(NotImplementedError):
-            SF.count_distinct(SF.col("cola"), SF.col("colb"))
+        col_multiple = SF.count_distinct(SF.col("cola"), SF.col("colb"))
+        self.assertEqual("COUNT(DISTINCT cola, colb)", col_multiple.sql())
 
     def test_first(self):
         col_str = SF.first("cola")

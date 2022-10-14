@@ -38,9 +38,7 @@ def least(*cols: ColumnOrName) -> Column:
 
 def count_distinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:
     cols = [Column.ensure_col(x) for x in [col] + list(cols)]
-    if len(cols) > 1:
-        raise NotImplementedError("Multiple columns in a count distinct is not supported")
-    return Column(glotexp.Count(this=glotexp.Distinct(this=cols[0].expression)))
+    return Column(glotexp.Count(this=glotexp.Distinct(expressions=[x.expression for x in cols])))
 
 
 def countDistinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:

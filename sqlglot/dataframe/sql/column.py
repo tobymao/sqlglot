@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import collections
 import typing as t
 
 import sqlglot
@@ -275,10 +274,7 @@ class Column:
         )
 
     def isin(self, *cols: t.Union[ColumnOrLiteral, t.Iterable[ColumnOrLiteral]]):
-        if any(isinstance(i, collections.Iterable) and not isinstance(i, str) for i in cols):
-            columns: t.Iterable[ColumnOrLiteral] = flatten(cols)  # type: ignore
-        else:
-            columns: t.Iterable[ColumnOrLiteral] = cols  # type: ignore
+        columns = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols  # type: ignore
         expressions = [self._lit(x).expression for x in columns]
         return Column.invoke_expression_over_column(self, exp.In, expressions=expressions)  # type: ignore
 

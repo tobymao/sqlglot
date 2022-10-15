@@ -1,9 +1,9 @@
 import abc
 from copy import copy
 
-from sqlglot import expressions as exp
+from sqlglot import exp
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import csv_reader, ensure_table
+from sqlglot.helper import csv_reader
 
 
 class Schema(abc.ABC):
@@ -57,7 +57,7 @@ class MutableSchema(Schema):
         self.dialect = dialect
         self._type_mapping_cache = {}
         self.supported_table_args = []
-        self.forbidden_args = set()
+        self.forbidden_table_args = set()
         if self.schema:
             self._initialize_supported_args()
 
@@ -81,7 +81,7 @@ class MutableSchema(Schema):
         """
         if column_mapping is None:
             return
-        table = ensure_table(table)
+        table = exp.ensure_table(table)
         self._validate_table(table)
         column_mapping = ensure_column_mapping(column_mapping)
         _nested_set(
@@ -101,7 +101,7 @@ class MutableSchema(Schema):
     def _validate_table(self, table):
         if not self.supported_table_args and isinstance(table, exp.Table):
             return
-        for forbidden in self.forbidden_args:
+        for forbidden in self.forbidden_table_args:
             if table.text(forbidden):
                 raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
         for expected in self.supported_table_args:
@@ -109,13 +109,13 @@ class MutableSchema(Schema):
                 raise ValueError(f"Table is expected to have {expected}. Received: {table.sql()} ")
 
     def column_names(self, table, only_visible=False):
-        table = ensure_table(table)
+        table = exp.ensure_table(table)
         if not isinstance(table.this, exp.Identifier):
             return fs_get(table)
 
         args = tuple(table.text(p) for p in self.supported_table_args)
 
-        for forbidden in self.forbidden_args:
+        for forbidden in self.forbidden_table_args:
             if table.text(forbidden):
                 raise ValueError(f"Schema doesn't support {forbidden}. Received: {table.sql()}")
 
@@ -166,7 +166,7 @@ class MutableSchema(Schema):
             else:
                 raise OptimizeError(f"Invalid schema shape. Depth: {depth}")
 
-            self.forbidden_args = {"catalog", "db", "this"} - set(self.supported_table_args)
+            self.forbidden_table_args = {"catalog", "db", "this"} - set(self.supported_table_args)
 
 
 class MappingSchema(MutableSchema):

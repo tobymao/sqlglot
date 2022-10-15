@@ -30,16 +30,6 @@ def ensure_list(value):
     return value if isinstance(value, (list, tuple, set)) else [value]
 
 
-def ensure_table(value):
-    from sqlglot import expressions as exp
-
-    if value is None or isinstance(value, exp.Table):
-        return value
-    if isinstance(value, str):
-        return exp.to_table(value)
-    raise ValueError(f"Invalid type provided for a table: {type(value)}")
-
-
 def csv(*args, sep=", "):
     return sep.join(arg for arg in args if arg)
 

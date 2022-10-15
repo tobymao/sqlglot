@@ -22,6 +22,17 @@ class Operation(IntEnum):
 
 
 def operation(op: Operation):
+    """
+    Decorator used around DataFrame methods to indicate what type of operation is being performed from the
+    ordered Operation enums. This is used to determine which operations should be performed on a CTE vs.
+    included with the previous operation.
+
+    Ex: After a user does a join we want to allow them to select which columns for the different
+    tables that they want to carry through to the following operation. If we put that join in
+    a CTE preemptively then the user would not have a chance to select which column they want
+    in cases where there is overlap in names.
+    """
+
     def decorator(func: t.Callable):
         @functools.wraps(func)
         def wrapper(self: DataFrame, *args, **kwargs):

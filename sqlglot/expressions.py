@@ -3237,6 +3237,14 @@ def to_table(sql_path, **kwargs):
     return Table(this=table_name, db=db, catalog=catalog, **kwargs)
 
 
+def ensure_table(value):
+    if value is None or isinstance(value, Table):
+        return value
+    if isinstance(value, str):
+        return to_table(value)
+    raise ValueError(f"Invalid type provided for a table: {type(value)}")
+
+
 def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     """
     Create an Alias expression.

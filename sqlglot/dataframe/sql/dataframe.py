@@ -16,7 +16,7 @@ from sqlglot.dataframe.sql.readwriter import DataFrameWriter
 from sqlglot.dataframe.sql.transforms import replace_id_value
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.dataframe.sql.window import Window
-from sqlglot.helper import ensure_list
+from sqlglot.helper import ensure_list, object_to_dict
 from sqlglot.optimizer import optimize as optimize_func
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.schema import MutableSchema
@@ -310,8 +310,7 @@ class DataFrame:
         return [expression.sql(**{"dialect": dialect, **kwargs}) for expression in output_expressions]
 
     def copy(self, **kwargs) -> DataFrame:
-        kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
-        return DataFrame(**kwargs)
+        return DataFrame(**object_to_dict(self, **kwargs))
 
     @operation(Operation.SELECT)
     def select(self, *cols, **kwargs) -> DataFrame:

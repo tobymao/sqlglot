@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import typing as t
-from copy import copy
 
 import sqlglot
 from sqlglot import expressions as exp
+from sqlglot.helper import object_to_dict
 from sqlglot.schema import MutableSchema
 
 if t.TYPE_CHECKING:
@@ -34,8 +34,9 @@ class DataFrameWriter:
         self._by_name = by_name
 
     def copy(self, **kwargs) -> DataFrameWriter:
-        kwargs = {**{k: copy(v) for k, v in vars(self).copy().items()}, **kwargs}
-        return DataFrameWriter(**{k[1:] if k.startswith("_") else k: v for k, v in kwargs.items()})
+        return DataFrameWriter(
+            **{k[1:] if k.startswith("_") else k: v for k, v in object_to_dict(self, **kwargs).items()}
+        )
 
     def sql(self, **kwargs) -> t.List[str]:
         return self._df.sql(**kwargs)

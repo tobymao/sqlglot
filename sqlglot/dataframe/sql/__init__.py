@@ -7,7 +7,7 @@ from sqlglot.dataframe.sql.session import SparkSession
 from sqlglot.dataframe.sql.window import Window, WindowSpec
 from sqlglot.schema import MutableSchema
 
-sqlglot.schema = MutableSchema()
+sqlglot.schema = MutableSchema()  # type: ignore
 
 __all__ = [
     "SparkSession",

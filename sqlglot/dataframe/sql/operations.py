@@ -33,10 +33,10 @@ def operation(op: Operation):
             if new_op < last_op or (last_op == new_op and new_op == Operation.SELECT):
                 self = self._convert_leaf_to_cte()
             df: t.Union[DataFrame, GroupedData] = func(self, *args, **kwargs)
-            df.last_op = new_op
+            df.last_op = new_op  # type: ignore
             return df
 
-        wrapper.__wrapped__ = func
+        wrapper.__wrapped__ = func  # type: ignore
         return wrapper
 
     return decorator

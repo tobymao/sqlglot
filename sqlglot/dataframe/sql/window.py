@@ -53,7 +53,7 @@ class WindowSpec:
     def partitionBy(self, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
         from sqlglot.dataframe.sql.column import Column
 
-        cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
+        cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols  # type: ignore
         expressions = [Column.ensure_col(x).expression for x in cols]
         window_spec = self.copy()
         partition_by_expressions = window_spec.expression.args.get("partition_by", [])
@@ -64,7 +64,7 @@ class WindowSpec:
     def orderBy(self, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
         from sqlglot.dataframe.sql.column import Column
 
-        cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols
+        cols = flatten(cols) if isinstance(cols[0], (list, set, tuple)) else cols  # type: ignore
         expressions = [Column.ensure_col(x).expression for x in cols]
         window_spec = self.copy()
         if window_spec.expression.args.get("order") is None:
@@ -74,8 +74,8 @@ class WindowSpec:
         window_spec.expression.args["order"].set("expressions", order_by)
         return window_spec
 
-    def _calc_start_end(self, start: int, end: int) -> t.Dict[str, t.Union[str, int]]:
-        kwargs = {"start_side": None, "end_side": None}
+    def _calc_start_end(self, start: int, end: int) -> t.Dict[str, t.Optional[t.Union[str, exp.Expression]]]:
+        kwargs: t.Dict[str, t.Optional[t.Union[str, exp.Expression]]] = {"start_side": None, "end_side": None}
         if start == Window.currentRow:
             kwargs["start"] = "CURRENT ROW"
         else:

@@ -5,10 +5,11 @@ from inspect import signature
 
 from sqlglot import expressions as glotexp
 from sqlglot.dataframe.sql.column import Column
+from sqlglot.helper import ensure_list
 from sqlglot.helper import flatten as _flatten
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql._typing import ColumnOrName, ColumnOrPrimitive
+    from sqlglot.dataframe.sql._typing import ColumnOrLiteral, ColumnOrName
     from sqlglot.dataframe.sql.dataframe import DataFrame
 
 
@@ -23,22 +24,22 @@ def lit(value: t.Optional[t.Any] = None) -> Column:
 
 
 def greatest(*cols: ColumnOrName) -> Column:
-    cols = [Column.ensure_col(col) for col in cols]
+    columns = [Column.ensure_col(col) for col in cols]
     return Column.invoke_expression_over_column(
-        cols[0], glotexp.Greatest, expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None
+        columns[0], glotexp.Greatest, expressions=[col.expression for col in columns[1:]] if len(columns) > 1 else None
     )
 
 
 def least(*cols: ColumnOrName) -> Column:
-    cols = [Column.ensure_col(col) for col in cols]
+    columns = [Column.ensure_col(col) for col in cols]
     return Column.invoke_expression_over_column(
-        cols[0], glotexp.Least, expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None
+        columns[0], glotexp.Least, expressions=[col.expression for col in columns[1:]] if len(columns) > 1 else None
     )
 
 
 def count_distinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:
-    cols = [Column.ensure_col(x) for x in [col] + list(cols)]
-    return Column(glotexp.Count(this=glotexp.Distinct(expressions=[x.expression for x in cols])))
+    columns = [Column.ensure_col(x) for x in [col] + list(cols)]
+    return Column(glotexp.Count(this=glotexp.Distinct(expressions=[x.expression for x in columns])))
 
 
 def countDistinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:
@@ -343,9 +344,9 @@ def approx_count_distinct(col: ColumnOrName, rsd: t.Optional[float] = None) -> C
 
 
 def coalesce(*cols: ColumnOrName) -> Column:
-    cols = [Column.ensure_col(col) for col in cols]
+    columns = [Column.ensure_col(col) for col in cols]
     return Column.invoke_expression_over_column(
-        cols[0], glotexp.Coalesce, expressions=[col.expression for col in cols[1:]] if len(cols) > 1 else None
+        columns[0], glotexp.Coalesce, expressions=[col.expression for col in columns[1:]] if len(columns) > 1 else None
     )
 
 
@@ -361,7 +362,7 @@ def covar_samp(col1: ColumnOrName, col2: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col1, "COVAR_SAMP", col2)
 
 
-def first(col: ColumnOrName, ignorenulls: bool = None) -> Column:
+def first(col: ColumnOrName, ignorenulls: t.Optional[bool] = None) -> Column:
     if ignorenulls is not None:
         return Column.invoke_anonymous_function(col, "FIRST", ignorenulls)
     return Column.invoke_anonymous_function(col, "FIRST")
@@ -387,7 +388,7 @@ def isnull(col: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col, "ISNULL")
 
 
-def last(col: ColumnOrName, ignorenulls: bool = None) -> Column:
+def last(col: ColumnOrName, ignorenulls: t.Optional[bool] = None) -> Column:
     if ignorenulls is not None:
         return Column.invoke_anonymous_function(col, "LAST", ignorenulls)
     return Column.invoke_anonymous_function(col, "LAST")
@@ -403,29 +404,29 @@ def nanvl(col1: ColumnOrName, col2: ColumnOrName) -> Column:
 
 def percentile_approx(
     col: ColumnOrName,
-    percentage: t.Union[ColumnOrName, float, t.List[float], t.Tuple[float]],
-    accuracy: t.Union[ColumnOrName, float] = None,
+    percentage: t.Union[ColumnOrLiteral, t.List[float], t.Tuple[float]],
+    accuracy: t.Optional[t.Union[ColumnOrLiteral]] = None,
 ) -> Column:
     if accuracy:
         return Column.invoke_anonymous_function(col, "PERCENTILE_APPROX", percentage, accuracy)
     return Column.invoke_anonymous_function(col, "PERCENTILE_APPROX", percentage)
 
 
-def rand(seed: ColumnOrPrimitive = None) -> Column:
+def rand(seed: t.Optional[ColumnOrLiteral] = None) -> Column:
     return Column.invoke_anonymous_function(seed, "RAND")
 
 
-def randn(seed: ColumnOrPrimitive = None) -> Column:
+def randn(seed: t.Optional[ColumnOrLiteral] = None) -> Column:
     return Column.invoke_anonymous_function(seed, "RANDN")
 
 
-def round(col: ColumnOrName, scale: int = None) -> Column:
+def round(col: ColumnOrName, scale: t.Optional[int] = None) -> Column:
     if scale is not None:
         return Column.invoke_anonymous_function(col, "ROUND", scale)
     return Column.invoke_anonymous_function(col, "ROUND")
 
 
-def bround(col: ColumnOrName, scale: int = None) -> Column:
+def bround(col: ColumnOrName, scale: t.Optional[int] = None) -> Column:
     if scale is not None:
         return Column.invoke_anonymous_function(col, "BROUND", scale)
     return Column.invoke_anonymous_function(col, "BROUND")
@@ -464,8 +465,7 @@ def expr(str: str) -> Column:
 
 
 def struct(col: t.Union[ColumnOrName, t.Iterable[ColumnOrName]], *cols: ColumnOrName) -> Column:
-    col = [col] if isinstance(col, (str, Column)) else col
-    columns = col + list(cols)
+    columns = ensure_list(col) + list(cols)
     expressions = [Column.ensure_col(column).expression for column in columns]
     return Column(glotexp.Struct(expressions=expressions))
 
@@ -478,7 +478,7 @@ def factorial(col: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col, "FACTORIAL")
 
 
-def lag(col: ColumnOrName, offset: t.Optional[int] = 1, default: t.Optional[t.Any] = None) -> Column:
+def lag(col: ColumnOrName, offset: t.Optional[int] = 1, default: t.Optional[ColumnOrLiteral] = None) -> Column:
     if default is not None:
         return Column.invoke_anonymous_function(col, "LAG", offset, default)
     if offset != 1:
@@ -612,26 +612,26 @@ def last_day(col: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col, "LAST_DAY")
 
 
-def from_unixtime(col: ColumnOrName, format: str = None) -> Column:
+def from_unixtime(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
     if format is not None:
         return Column.invoke_anonymous_function(col, "FROM_UNIXTIME", lit(format))
     return Column.invoke_anonymous_function(col, "FROM_UNIXTIME")
 
 
-def unix_timestamp(timestamp: t.Optional[ColumnOrName] = None, format: str = None) -> Column:
+def unix_timestamp(timestamp: t.Optional[ColumnOrName] = None, format: t.Optional[str] = None) -> Column:
     if format is not None:
         return Column.invoke_anonymous_function(timestamp, "UNIX_TIMESTAMP", lit(format))
     return Column.invoke_anonymous_function(timestamp, "UNIX_TIMESTAMP")
 
 
 def from_utc_timestamp(timestamp: ColumnOrName, tz: ColumnOrName) -> Column:
-    tz = tz if isinstance(tz, Column) else lit(tz)
-    return Column.invoke_anonymous_function(timestamp, "FROM_UTC_TIMESTAMP", tz)
+    tz_column = tz if isinstance(tz, Column) else lit(tz)
+    return Column.invoke_anonymous_function(timestamp, "FROM_UTC_TIMESTAMP", tz_column)
 
 
 def to_utc_timestamp(timestamp: ColumnOrName, tz: ColumnOrName) -> Column:
-    tz = tz if isinstance(tz, Column) else lit(tz)
-    return Column.invoke_anonymous_function(timestamp, "TO_UTC_TIMESTAMP", tz)
+    tz_column = tz if isinstance(tz, Column) else lit(tz)
+    return Column.invoke_anonymous_function(timestamp, "TO_UTC_TIMESTAMP", tz_column)
 
 
 def timestamp_seconds(col: ColumnOrName) -> Column:
@@ -658,28 +658,29 @@ def window(
 
 
 def session_window(timeColumn: ColumnOrName, gapDuration: ColumnOrName) -> Column:
-    gapDuration = gapDuration if isinstance(gapDuration, Column) else lit(gapDuration)
-    return Column.invoke_anonymous_function(timeColumn, "SESSION_WINDOW", gapDuration)
+    gap_duration_column = gapDuration if isinstance(gapDuration, Column) else lit(gapDuration)
+    return Column.invoke_anonymous_function(timeColumn, "SESSION_WINDOW", gap_duration_column)
 
 
 def crc32(col: ColumnOrName) -> Column:
-    col = col if isinstance(col, Column) else lit(col)
-    return Column.invoke_anonymous_function(col, "CRC32")
+    column = col if isinstance(col, Column) else lit(col)
+    return Column.invoke_anonymous_function(column, "CRC32")
 
 
 def md5(col: ColumnOrName) -> Column:
-    col = col if isinstance(col, Column) else lit(col)
-    return Column.invoke_anonymous_function(col, "MD5")
+    column = col if isinstance(col, Column) else lit(col)
+    return Column.invoke_anonymous_function(column, "MD5")
 
 
 def sha1(col: ColumnOrName) -> Column:
-    col = col if isinstance(col, Column) else lit(col)
-    return Column.invoke_anonymous_function(col, "SHA1")
+    column = col if isinstance(col, Column) else lit(col)
+    return Column.invoke_anonymous_function(column, "SHA1")
 
 
 def sha2(col: ColumnOrName, numBits: int) -> Column:
-    col = col if isinstance(col, Column) else lit(col)
-    return Column.invoke_anonymous_function(col, "SHA2", numBits)
+    column = col if isinstance(col, Column) else lit(col)
+    num_bits = lit(numBits)
+    return Column.invoke_anonymous_function(column, "SHA2", num_bits)
 
 
 def hash(*cols: ColumnOrName) -> Column:
@@ -694,14 +695,14 @@ def xxhash64(*cols: ColumnOrName) -> Column:
 
 def assert_true(col: ColumnOrName, errorMsg: t.Optional[ColumnOrName] = None) -> Column:
     if errorMsg is not None:
-        errorMsg = errorMsg if isinstance(errorMsg, Column) else lit(errorMsg)
-        return Column.invoke_anonymous_function(col, "ASSERT_TRUE", errorMsg)
+        error_msg_col = errorMsg if isinstance(errorMsg, Column) else lit(errorMsg)
+        return Column.invoke_anonymous_function(col, "ASSERT_TRUE", error_msg_col)
     return Column.invoke_anonymous_function(col, "ASSERT_TRUE")
 
 
 def raise_error(errorMsg: ColumnOrName) -> Column:
-    errorMsg = errorMsg if isinstance(errorMsg, Column) else lit(errorMsg)
-    return Column.invoke_anonymous_function(errorMsg, "RAISE_ERROR")
+    error_msg_col = errorMsg if isinstance(errorMsg, Column) else lit(errorMsg)
+    return Column.invoke_anonymous_function(error_msg_col, "RAISE_ERROR")
 
 
 def upper(col: ColumnOrName) -> Column:
@@ -712,15 +713,15 @@ def lower(col: ColumnOrName) -> Column:
     return Column.invoke_expression_over_column(col, glotexp.Lower)
 
 
-def ascii(col: ColumnOrPrimitive) -> Column:
+def ascii(col: ColumnOrLiteral) -> Column:
     return Column.invoke_anonymous_function(col, "ASCII")
 
 
-def base64(col: ColumnOrPrimitive) -> Column:
+def base64(col: ColumnOrLiteral) -> Column:
     return Column.invoke_anonymous_function(col, "BASE64")
 
 
-def unbase64(col: ColumnOrPrimitive) -> Column:
+def unbase64(col: ColumnOrLiteral) -> Column:
     return Column.invoke_anonymous_function(col, "UNBASE64")
 
 
@@ -737,9 +738,9 @@ def trim(col: ColumnOrName) -> Column:
 
 
 def concat_ws(sep: str, *cols: ColumnOrName) -> Column:
-    cols = [Column(col) for col in cols]
+    columns = [Column(col) for col in cols]
     return Column.invoke_expression_over_column(
-        None, glotexp.ConcatWs, expressions=[x.expression for x in [lit(sep)] + list(cols)]
+        None, glotexp.ConcatWs, expressions=[x.expression for x in [lit(sep)] + list(columns)]
     )
 
 
@@ -756,7 +757,9 @@ def format_number(col: ColumnOrName, d: int) -> Column:
 
 
 def format_string(format: str, *cols: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(lit(format), "FORMAT_STRING", *cols)
+    format_col = lit(format)
+    columns = [Column.ensure_col(x) for x in cols]
+    return Column.invoke_anonymous_function(format_col, "FORMAT_STRING", *columns)
 
 
 def instr(col: ColumnOrName, substr: str) -> Column:
@@ -764,7 +767,10 @@ def instr(col: ColumnOrName, substr: str) -> Column:
 
 
 def overlay(
-    src: ColumnOrName, replace: ColumnOrName, pos: t.Union[ColumnOrName, int], len: t.Union[ColumnOrName, int] = None
+    src: ColumnOrName,
+    replace: ColumnOrName,
+    pos: t.Union[ColumnOrName, int],
+    len: t.Optional[t.Union[ColumnOrName, int]] = None,
 ) -> Column:
     if len is not None:
         return Column.invoke_anonymous_function(src, "OVERLAY", replace, pos, len)
@@ -797,10 +803,13 @@ def levenshtein(left: ColumnOrName, right: ColumnOrName) -> Column:
     )
 
 
-def locate(substr: str, str: ColumnOrName, pos: int = None) -> Column:
+def locate(substr: str, str: ColumnOrName, pos: t.Optional[int] = None) -> Column:
+    substr_col = lit(substr)
+    pos_column = lit(pos)
+    str_column = Column.ensure_col(str)
     if pos is not None:
-        return Column.invoke_anonymous_function(lit(substr), "LOCATE", str, lit(pos))
-    return Column.invoke_anonymous_function(lit(substr), "LOCATE", str)
+        return Column.invoke_anonymous_function(substr_col, "LOCATE", str_column, pos_column)
+    return Column.invoke_anonymous_function(substr_col, "LOCATE", str_column)
 
 
 def lpad(col: ColumnOrName, len: int, pad: str) -> Column:
@@ -870,15 +879,15 @@ def translate(srcCol: ColumnOrName, matching: str, replace: str) -> Column:
 
 
 def array(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
-    cols = _flatten(cols) if not isinstance(cols[0], (str, Column)) else cols
-    cols = [Column.ensure_col(col).expression for col in cols]
+    cols = _flatten(cols) if not isinstance(cols[0], (str, Column)) else cols  # type: ignore
+    cols = [Column.ensure_col(col).expression for col in cols]  # type: ignore
     return Column.invoke_expression_over_column(None, glotexp.Array, expressions=cols)
 
 
 def create_map(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
-    cols = list(_flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols
+    cols = list(_flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols  # type: ignore
     return Column.invoke_expression_over_column(
-        None, glotexp.VarMap, keys=array(cols[::2]).expression, values=array(cols[1::2]).expression
+        None, glotexp.VarMap, keys=array(*cols[::2]).expression, values=array(*cols[1::2]).expression
     )
 
 
@@ -886,9 +895,9 @@ def map_from_arrays(col1: ColumnOrName, col2: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(col1, "MAP_FROM_ARRAYS", col2)
 
 
-def array_contains(col: ColumnOrName, value: ColumnOrPrimitive) -> Column:
-    value = value if isinstance(value, Column) else lit(value)
-    return Column.invoke_expression_over_column(col, glotexp.ArrayContains, expression=value.expression)
+def array_contains(col: ColumnOrName, value: ColumnOrLiteral) -> Column:
+    value_col = value if isinstance(value, Column) else lit(value)
+    return Column.invoke_expression_over_column(col, glotexp.ArrayContains, expression=value_col.expression)
 
 
 def arrays_overlap(col1: ColumnOrName, col2: ColumnOrName) -> Column:
@@ -896,9 +905,9 @@ def arrays_overlap(col1: ColumnOrName, col2: ColumnOrName) -> Column:
 
 
 def slice(x: ColumnOrName, start: t.Union[ColumnOrName, int], length: t.Union[ColumnOrName, int]) -> Column:
-    start = start if isinstance(start, Column) else lit(start)
-    length = length if isinstance(length, Column) else lit(length)
-    return Column.invoke_anonymous_function(x, "SLICE", start, length)
+    start_col = start if isinstance(start, Column) else lit(start)
+    length_col = length if isinstance(length, Column) else lit(length)
+    return Column.invoke_anonymous_function(x, "SLICE", start_col, length_col)
 
 
 def array_join(col: ColumnOrName, delimiter: str, null_replacement: t.Optional[str] = None) -> Column:
@@ -913,19 +922,19 @@ def concat(*cols: ColumnOrName) -> Column:
     return Column.invoke_anonymous_function(cols[0], "CONCAT", *[Column.ensure_col(x).expression for x in cols[1:]])
 
 
-def array_position(col: ColumnOrName, value: ColumnOrPrimitive) -> Column:
-    value = value if isinstance(value, Column) else lit(value)
-    return Column.invoke_anonymous_function(col, "ARRAY_POSITION", value)
+def array_position(col: ColumnOrName, value: ColumnOrLiteral) -> Column:
+    value_col = value if isinstance(value, Column) else lit(value)
+    return Column.invoke_anonymous_function(col, "ARRAY_POSITION", value_col)
 
 
-def element_at(col: ColumnOrName, value: ColumnOrPrimitive) -> Column:
-    value = value if isinstance(value, Column) else lit(value)
-    return Column.invoke_anonymous_function(col, "ELEMENT_AT", value)
+def element_at(col: ColumnOrName, value: ColumnOrLiteral) -> Column:
+    value_col = value if isinstance(value, Column) else lit(value)
+    return Column.invoke_anonymous_function(col, "ELEMENT_AT", value_col)
 
 
-def array_remove(col: ColumnOrName, value: ColumnOrPrimitive) -> Column:
-    value = value if isinstance(value, Column) else lit(value)
-    return Column.invoke_anonymous_function(col, "ARRAY_REMOVE", value)
+def array_remove(col: ColumnOrName, value: ColumnOrLiteral) -> Column:
+    value_col = value if isinstance(value, Column) else lit(value)
+    return Column.invoke_anonymous_function(col, "ARRAY_REMOVE", value_col)
 
 
 def array_distinct(col: ColumnOrName) -> Column:
@@ -975,36 +984,36 @@ def from_json(
 ) -> Column:
     schema = schema if isinstance(schema, Column) else lit(schema)
     if options is not None:
-        options = create_map([lit(x) for x in _flatten(options.items())])
-        return Column.invoke_anonymous_function(col, "FROM_JSON", schema, options)
+        options_col = create_map([lit(x) for x in _flatten(options.items())])
+        return Column.invoke_anonymous_function(col, "FROM_JSON", schema, options_col)
     return Column.invoke_anonymous_function(col, "FROM_JSON", schema)
 
 
 def to_json(col: ColumnOrName, options: t.Optional[t.Dict[str, str]] = None) -> Column:
     if options is not None:
-        options = create_map([lit(x) for x in _flatten(options.items())])
-        return Column.invoke_anonymous_function(col, "TO_JSON", options)
+        options_col = create_map([lit(x) for x in _flatten(options.items())])
+        return Column.invoke_anonymous_function(col, "TO_JSON", options_col)
     return Column.invoke_anonymous_function(col, "TO_JSON")
 
 
 def schema_of_json(col: ColumnOrName, options: t.Optional[t.Dict[str, str]] = None) -> Column:
     if options is not None:
-        options = create_map([lit(x) for x in _flatten(options.items())])
-        return Column.invoke_anonymous_function(col, "SCHEMA_OF_JSON", options)
+        options_col = create_map([lit(x) for x in _flatten(options.items())])
+        return Column.invoke_anonymous_function(col, "SCHEMA_OF_JSON", options_col)
     return Column.invoke_anonymous_function(col, "SCHEMA_OF_JSON")
 
 
 def schema_of_csv(col: ColumnOrName, options: t.Optional[t.Dict[str, str]] = None) -> Column:
     if options is not None:
-        options = create_map([lit(x) for x in _flatten(options.items())])
-        return Column.invoke_anonymous_function(col, "SCHEMA_OF_CSV", options)
+        options_col = create_map([lit(x) for x in _flatten(options.items())])
+        return Column.invoke_anonymous_function(col, "SCHEMA_OF_CSV", options_col)
     return Column.invoke_anonymous_function(col, "SCHEMA_OF_CSV")
 
 
 def to_csv(col: ColumnOrName, options: t.Optional[t.Dict[str, str]] = None) -> Column:
     if options is not None:
-        options = create_map([lit(x) for x in _flatten(options.items())])
-        return Column.invoke_anonymous_function(col, "TO_CSV", options)
+        options_col = create_map([lit(x) for x in _flatten(options.items())])
+        return Column.invoke_anonymous_function(col, "TO_CSV", options_col)
     return Column.invoke_anonymous_function(col, "TO_CSV")
 
 
@@ -1059,8 +1068,8 @@ def map_from_entries(col: ColumnOrName) -> Column:
 
 
 def array_repeat(col: ColumnOrName, count: t.Union[ColumnOrName, int]) -> Column:
-    count = count if isinstance(count, Column) else lit(count)
-    return Column.invoke_anonymous_function(col, "ARRAY_REPEAT", count)
+    count_col = count if isinstance(count, Column) else lit(count)
+    return Column.invoke_anonymous_function(col, "ARRAY_REPEAT", count_col)
 
 
 def array_zip(*cols: ColumnOrName) -> Column:
@@ -1070,10 +1079,10 @@ def array_zip(*cols: ColumnOrName) -> Column:
 
 
 def map_concat(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
-    cols = list(flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols
-    if len(cols) == 1:
-        return Column.invoke_anonymous_function(cols[0], "MAP_CONCAT")
-    return Column.invoke_anonymous_function(cols[0], "MAP_CONCAT", *cols[1:])
+    columns = list(flatten(cols)) if not isinstance(cols[0], (str, Column)) else cols  # type: ignore
+    if len(columns) == 1:
+        return Column.invoke_anonymous_function(columns[0], "MAP_CONCAT")
+    return Column.invoke_anonymous_function(columns[0], "MAP_CONCAT", *columns[1:])
 
 
 def sequence(start: ColumnOrName, stop: ColumnOrName, step: t.Optional[ColumnOrName] = None) -> Column:
@@ -1089,8 +1098,8 @@ def from_csv(
 ) -> Column:
     schema = schema if isinstance(schema, Column) else lit(schema)
     if options is not None:
-        options = create_map([lit(x) for x in _flatten(options.items())])
-        return Column.invoke_anonymous_function(col, "FROM_CSV", schema, options)
+        option_cols = create_map([lit(x) for x in _flatten(options.items())])
+        return Column.invoke_anonymous_function(col, "FROM_CSV", schema, option_cols)
     return Column.invoke_anonymous_function(col, "FROM_CSV", schema)
 
 

@@ -116,12 +116,12 @@ class DataFrameValidator(unittest.TestCase):
 
     def setUp(self) -> None:
         warnings.filterwarnings("ignore", category=ResourceWarning)
-        self.df_spark_store = self.df_store.alias("df_store")
-        self.df_spark_employee = self.df_employee.alias("df_employee")
-        self.df_spark_district = self.df_district.alias("df_district")
-        self.df_sqlglot_store = self.dfs_store.alias("store")
-        self.df_sqlglot_employee = self.dfs_employee.alias("employee")
-        self.df_sqlglot_district = self.dfs_district.alias("district")
+        self.df_spark_store = self.df_store.alias("df_store")  # type: ignore
+        self.df_spark_employee = self.df_employee.alias("df_employee")  # type: ignore
+        self.df_spark_district = self.df_district.alias("df_district")  # type: ignore
+        self.df_sqlglot_store = self.dfs_store.alias("store")  # type: ignore
+        self.df_sqlglot_employee = self.dfs_employee.alias("employee")  # type: ignore
+        self.df_sqlglot_district = self.dfs_district.alias("district")  # type: ignore
 
     def compare_spark_with_sqlglot(
         self, df_spark, df_sqlglot, no_empty=True, skip_schema_compare=False
@@ -133,7 +133,7 @@ class DataFrameValidator(unittest.TestCase):
             self.assertEqual(schema_1, schema_2)
 
         for statement in df_sqlglot.sql():
-            actual_df_sqlglot = self.spark.sql(statement)
+            actual_df_sqlglot = self.spark.sql(statement)  # type: ignore
         df_sqlglot_results = actual_df_sqlglot.collect()
         df_spark_results = df_spark.collect()
         if not skip_schema_compare:
@@ -146,4 +146,4 @@ class DataFrameValidator(unittest.TestCase):
 
     @classmethod
     def get_explain_plan(cls, df: "SparkDataFrame", mode: str = "extended") -> str:
-        return df._sc._jvm.PythonSQLUtils.explainString(df._jdf.queryExecution(), mode)
+        return df._sc._jvm.PythonSQLUtils.explainString(df._jdf.queryExecution(), mode)  # type: ignore

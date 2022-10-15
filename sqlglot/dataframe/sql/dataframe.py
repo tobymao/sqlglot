@@ -19,9 +19,10 @@ from sqlglot.dataframe.sql.window import Window
 from sqlglot.helper import ensure_list
 from sqlglot.optimizer import optimize as optimize_func
 from sqlglot.optimizer.qualify_columns import qualify_columns
+from sqlglot.schema import MutableSchema
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql._typing import OutputExpressionContainer
+    from sqlglot.dataframe.sql._typing import ColumnLiterals, OutputExpressionContainer
     from sqlglot.dataframe.sql.session import SparkSession
 
 
@@ -42,8 +43,8 @@ class DataFrame:
         self,
         spark: SparkSession,
         expression: exp.Select,
-        branch_id: str = None,
-        sequence_id: str = None,
+        branch_id: t.Optional[str] = None,
+        sequence_id: t.Optional[str] = None,
         last_op: Operation = Operation.INIT,
         pending_hints: t.Optional[t.List[exp.Expression]] = None,
         output_expression_container: t.Optional[OutputExpressionContainer] = None,
@@ -154,8 +155,7 @@ class DataFrame:
         sequence_id = sequence_id or df.sequence_id
         expression = df.expression.copy()
         cte_expression, cte_name = df._create_cte_from_expression(expression=expression, sequence_id=sequence_id)
-        new_expression = exp.Select()
-        new_expression = df._add_ctes_to_expression(new_expression, expression.ctes + [cte_expression])
+        new_expression = df._add_ctes_to_expression(exp.Select(), expression.ctes + [cte_expression])
         sel_columns = df._get_outer_select_columns(cte_expression)
         new_expression = new_expression.from_(cte_name).select(*[x.alias_or_name for x in sel_columns])
         return df.copy(expression=new_expression, sequence_id=sequence_id)
@@ -193,12 +193,11 @@ class DataFrame:
 
     def _hint(self, hint_name: str, args: t.List[Column]) -> DataFrame:
         hint_name = hint_name.upper()
-        if hint_name in JOIN_HINTS:
-            hint_expression = exp.JoinHint(
-                this=hint_name, expressions=[exp.to_table(parameter.alias_or_name) for parameter in args]
-            )
-        else:
-            hint_expression = exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
+        hint_expression = (
+            exp.JoinHint(this=hint_name, expressions=[exp.to_table(parameter.alias_or_name) for parameter in args])
+            if hint_name in JOIN_HINTS
+            else exp.Anonymous(this=hint_name, expressions=[parameter.expression for parameter in args])
+        )
         new_df = self.copy()
         new_df.pending_hints.append(hint_expression)
         return new_df
@@ -220,7 +219,7 @@ class DataFrame:
         return df
 
     @classmethod
-    def _add_ctes_to_expression(cls, expression: exp.Expression, ctes: t.List[exp.CTE]) -> exp.Expression:
+    def _add_ctes_to_expression(cls, expression: exp.Select, ctes: t.List[exp.CTE]) -> exp.Select:
         expression = expression.copy()
         with_expression = expression.args.get("with")
         if with_expression:
@@ -244,9 +243,11 @@ class DataFrame:
         value = expression.sql(dialect="spark").encode("utf-8")
         return f"t{zlib.crc32(value)}"[:6]
 
-    def _get_select_expressions(self) -> t.List[t.Tuple[t.Union[exp.Cache, OutputExpressionContainer], exp.Select]]:
-        select_expressions = []
-        main_select_ctes = []
+    def _get_select_expressions(
+        self,
+    ) -> t.List[t.Tuple[t.Union[t.Type[exp.Cache], OutputExpressionContainer], exp.Select]]:
+        select_expressions: t.List[t.Tuple[t.Union[t.Type[exp.Cache], OutputExpressionContainer], exp.Select]] = []
+        main_select_ctes: t.List[exp.CTE] = []
         for cte in self.expression.ctes:
             cache_storage_level = cte.args.get("cache_storage_level")
             if cache_storage_level:
@@ -260,14 +261,15 @@ class DataFrame:
         main_select = self.expression.copy()
         if main_select_ctes:
             main_select.set("with", exp.With(expressions=main_select_ctes))
-        select_expressions.append((type(self.output_expression_container), main_select))
+        expression_select_pair = (type(self.output_expression_container), main_select)
+        select_expressions.append(expression_select_pair)  # type: ignore
         return select_expressions
 
     def sql(self, dialect="spark", optimize=True, **kwargs) -> t.List[str]:
         df = self._resolve_pending_hints()
         select_expressions = df._get_select_expressions()
         output_expressions = []
-        replacement_mapping = {}
+        replacement_mapping: t.Dict[exp.Identifier, exp.Identifier] = {}
         for expression_type, select_expression in select_expressions:
             select_expression = select_expression.transform(replace_id_value, replacement_mapping)
             if optimize:
@@ -279,6 +281,7 @@ class DataFrame:
                 cache_table = exp.to_table(cache_table_name)
                 original_alias_name = select_expression.args["cte_alias_name"]
                 replacement_mapping[exp.to_identifier(original_alias_name)] = exp.to_identifier(cache_table_name)
+                assert isinstance(sqlglot.schema, MutableSchema)
                 sqlglot.schema.add_table(cache_table_name, select_expression.named_selects)
                 cache_storage_level = select_expression.args["cache_storage_level"]
                 options = [
@@ -350,15 +353,15 @@ class DataFrame:
 
     @operation(Operation.WHERE)
     def where(self, column: t.Union[Column, bool], **kwargs) -> DataFrame:
-        column = self._ensure_and_normalize_col(column)
-        return self.copy(expression=self.expression.where(column.expression))
+        col = self._ensure_and_normalize_col(column)
+        return self.copy(expression=self.expression.where(col.expression))
 
     filter = where
 
     @operation(Operation.GROUP_BY)
     def groupBy(self, *cols, **kwargs) -> GroupedData:
-        cols = self._ensure_and_normalize_cols(cols)
-        return GroupedData(self, cols, self.last_op)
+        columns = self._ensure_and_normalize_cols(cols)
+        return GroupedData(self, columns, self.last_op)
 
     @operation(Operation.SELECT)
     def agg(self, *exprs, **kwargs) -> DataFrame:
@@ -426,23 +429,25 @@ class DataFrame:
         has irregular behavior and can result in runtime errors. Users shouldn't be mixing the two anyways so this
         is unlikely to come up.
         """
-        cols = self._ensure_and_normalize_cols(cols)
+        columns = self._ensure_and_normalize_cols(cols)
         pre_ordered_col_indexes = [
             x
-            for x in [i if isinstance(col.expression, exp.Ordered) else None for i, col in enumerate(cols)]
+            for x in [i if isinstance(col.expression, exp.Ordered) else None for i, col in enumerate(columns)]
             if x is not None
         ]
         if ascending is None:
-            ascending = [True] * len(cols)
+            ascending = [True] * len(columns)
         elif not isinstance(ascending, list):
-            ascending = [ascending] * len(cols)
+            ascending = [ascending] * len(columns)
         ascending = [bool(x) for i, x in enumerate(ascending)]
-        assert len(cols) == len(ascending), "The length of items in ascending must equal the number of columns provided"
-        col_and_ascending = list(zip(cols, ascending))
+        assert len(columns) == len(
+            ascending
+        ), "The length of items in ascending must equal the number of columns provided"
+        col_and_ascending = list(zip(columns, ascending))
         order_by_columns = [
             exp.Ordered(this=col.expression, desc=not asc)
             if i not in pre_ordered_col_indexes
-            else cols[i].column_expression
+            else columns[i].column_expression
             for i, (col, asc) in enumerate(col_and_ascending)
         ]
         return self.copy(expression=self.expression.order_by(*order_by_columns))
@@ -518,7 +523,7 @@ class DataFrame:
         thresh: t.Optional[int] = None,
         subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None,
     ) -> DataFrame:
-        minimum_non_null = thresh
+        minimum_non_null = thresh or 0  # will be determined later if thresh is null
         new_df = self.copy()
         all_columns = self._get_outer_select_columns(new_df.expression)
         if subset:
@@ -545,7 +550,7 @@ class DataFrame:
     @operation(Operation.FROM)
     def fillna(
         self,
-        value: t.Union[int, bool, float, str, t.Dict[str, t.Any]],
+        value: t.Union[ColumnLiterals],
         subset: t.Optional[t.Union[str, t.Tuple[str, ...], t.List[str]]] = None,
     ) -> DataFrame:
         """
@@ -571,11 +576,11 @@ class DataFrame:
             columns = self._ensure_and_normalize_cols(subset) if subset else all_columns
         if not values:
             values = [value] * len(columns)
-        values = [lit(value) for value in values]
+        value_columns = [lit(value) for value in values]
 
         null_replacement_mapping = {
             column.alias_or_name: (F.when(column.isNull(), value).otherwise(column).alias(column.alias_or_name))
-            for column, value in zip(columns, values)
+            for column, value in zip(columns, value_columns)
         }
         null_replacement_mapping = {**all_column_mapping, **null_replacement_mapping}
         null_replacement_columns = [null_replacement_mapping[column.alias_or_name] for column in all_columns]
@@ -614,12 +619,12 @@ class DataFrame:
 
         replacement_mapping = {}
         for column in columns:
-            expression = None
+            expression = Column(None)
             for i, (old_value, new_value) in enumerate(zip(old_values, new_values)):
                 if i == 0:
                     expression = F.when(column == old_value, new_value)
                 else:
-                    expression = expression.when(column == old_value, new_value)
+                    expression = expression.when(column == old_value, new_value)  # type: ignore
             replacement_mapping[column.alias_or_name] = expression.otherwise(column).alias(
                 column.expression.alias_or_name
             )
@@ -669,16 +674,18 @@ class DataFrame:
         return self.copy(expression=self.expression.limit(num))
 
     @operation(Operation.NO_OP)
-    def hint(self, name: str, *parameters: t.Optional[t.Union[int, str]]) -> DataFrame:
-        parameters = ensure_list(parameters)
-        parameters = self._ensure_list_of_columns(parameters) if parameters else Column.ensure_cols([self.sequence_id])
-        return self._hint(name, parameters)
+    def hint(self, name: str, *parameters: t.Optional[t.Union[str, int]]) -> DataFrame:
+        parameter_list = ensure_list(parameters)
+        parameter_columns = (
+            self._ensure_list_of_columns(parameter_list) if parameters else Column.ensure_cols([self.sequence_id])
+        )
+        return self._hint(name, parameter_columns)
 
     @operation(Operation.NO_OP)
     def repartition(self, numPartitions: t.Union[int, str], *cols: t.Union[int, str]) -> DataFrame:
-        num_partitions = Column.ensure_cols([numPartitions])
-        cols = self._ensure_and_normalize_cols(cols)
-        args = num_partitions + cols
+        num_partitions = Column.ensure_cols(ensure_list(numPartitions))
+        columns = self._ensure_and_normalize_cols(cols)
+        args = num_partitions + columns
         return self._hint("repartition", args)
 
     @operation(Operation.NO_OP)

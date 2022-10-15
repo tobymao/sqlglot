@@ -8,6 +8,7 @@ from sqlglot.helper import csv_reader, ensure_table
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
+
     @abc.abstractmethod
     def column_names(self, table, only_visible=False):
         """
@@ -184,6 +185,7 @@ class MappingSchema(MutableSchema):
             3. {catalog: {db: {table: set(*cols)}}}}
         dialect (str): The dialect to be used for custom type mappings.
     """
+
     def add_table(self, table, column_mapping=None):
         raise NotImplementedError("Use `MutableSchema` if you want a to be able to add tables")
 

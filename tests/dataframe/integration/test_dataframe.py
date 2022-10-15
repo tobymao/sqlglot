@@ -868,7 +868,7 @@ class TestDataframeFunc(DataFrameValidator):
 
         self.compare_spark_with_sqlglot(df, dfs)
 
-    def test_with_column_renamed(self):
+    def test_with_column_renamed_double(self):
         df = self.df_spark_employee.select(F.col("fname").alias("first_name")).withColumnRenamed(
             "first_name", "first_name_again"
         )
@@ -974,7 +974,7 @@ class TestDataframeFunc(DataFrameValidator):
         self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(df))
         self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(dfs))
 
-    # Note: Add test to make sure with and without alias are the same once ids are deterministic
+    # TODO: Add test to make sure with and without alias are the same once ids are deterministic
 
     def test_broadcast_func(self):
         df_joined = self.df_spark_employee.join(

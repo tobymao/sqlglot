@@ -9,7 +9,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import SchemaInput
 
 
-def get_column_mapping_from_schema_input(schema: SchemaInput) -> t.Dict[str, str]:
+def get_column_mapping_from_schema_input(schema: SchemaInput) -> t.Dict[str, t.Optional[str]]:
     if isinstance(schema, dict):
         return schema
     elif isinstance(schema, str):
@@ -20,7 +20,7 @@ def get_column_mapping_from_schema_input(schema: SchemaInput) -> t.Dict[str, str
         }
     elif isinstance(schema, types.StructType):
         return {struct_field.name: struct_field.dataType.simpleString() for struct_field in schema}
-    return {x.strip(): None for x in schema}
+    return {x.strip(): None for x in schema}  # type: ignore
 
 
 def get_tables_from_expression_with_join(expression: exp.Select) -> t.List[exp.Table]:

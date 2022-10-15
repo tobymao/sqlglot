@@ -13,9 +13,9 @@ if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
 
 
-def normalize(spark: SparkSession, expression_context: exp.Select, expressions: t.List[NORMALIZE_INPUT]):
-    expressions = ensure_list(expressions)
-    expressions = _ensure_expressions(expressions)
+def normalize(spark: SparkSession, expression_context: exp.Select, expr: t.List[NORMALIZE_INPUT]):
+    expr = ensure_list(expr)
+    expressions = _ensure_expressions(expr)
     for expression in expressions:
         identifiers = expression.find_all(exp.Identifier)
         for identifier in identifiers:

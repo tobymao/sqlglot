@@ -13,7 +13,7 @@ from sqlglot.dataframe.sql.types import StructType
 from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql._typing import SchemaInput
+    from sqlglot.dataframe.sql._typing import ColumnLiterals, SchemaInput
 
 
 class SparkSession:
@@ -40,7 +40,7 @@ class SparkSession:
 
     def createDataFrame(
         self,
-        data: t.Iterable[t.Union[t.Dict[str, t.Any], t.Iterable[t.Any]]],
+        data: t.Sequence[t.Union[t.Dict[str, ColumnLiterals], t.List[ColumnLiterals], t.Tuple]],
         schema: t.Optional[SchemaInput] = None,
         samplingRatio: t.Optional[float] = None,
         verifySchema: bool = False,
@@ -54,7 +54,10 @@ class SparkSession:
             or (isinstance(schema, list) and not isinstance(schema[0], str))
         ):
             raise NotImplementedError("Only schema of either list or string of list supported")
+        if not data:
+            raise ValueError("Must provide data to create into a DataFrame")
 
+        column_mapping: t.Dict[str, t.Optional[str]]
         if schema is not None:
             column_mapping = get_column_mapping_from_schema_input(schema)
         elif isinstance(data[0], dict):

@@ -79,7 +79,7 @@ class MutableSchema(Schema):
         """
         if column_mapping is None:
             return
-        table = exp.ensure_table(table)
+        table = exp.to_table(table)
         self._validate_table(table)
         column_mapping = ensure_column_mapping(column_mapping)
         _nested_set(
@@ -107,7 +107,7 @@ class MutableSchema(Schema):
                 raise ValueError(f"Table is expected to have {expected}. Received: {table.sql()} ")
 
     def column_names(self, table, only_visible=False):
-        table = exp.ensure_table(table)
+        table = exp.to_table(table)
         if not isinstance(table.this, exp.Identifier):
             return fs_get(table)
 

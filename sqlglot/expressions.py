@@ -3221,28 +3221,27 @@ def to_identifier(alias, quoted=None):
 def to_table(sql_path, **kwargs):
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
+
+    If a table is passed in then that table is returned.
+
     Example:
         >>> to_table('catalog.db.table_name').sql()
         'catalog.db.table_name'
 
     Args:
-        sql_path(str): `[catalog].[schema].[table]` string
+        sql_path(str|Table): `[catalog].[schema].[table]` string
     Returns:
         Table: A table expression
     """
+    if sql_path is None or isinstance(sql_path, Table):
+        return sql_path
+    if not isinstance(sql_path, str):
+        raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
     table_parts = sql_path.split(".")
     catalog, db, table_name = [
         to_identifier(x) if x is not None else x for x in [None] * (3 - len(table_parts)) + table_parts
     ]
     return Table(this=table_name, db=db, catalog=catalog, **kwargs)
-
-
-def ensure_table(value):
-    if value is None or isinstance(value, Table):
-        return value
-    if isinstance(value, str):
-        return to_table(value)
-    raise ValueError(f"Invalid type provided for a table: {type(value)}")
 
 
 def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):

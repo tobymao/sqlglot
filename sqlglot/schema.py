@@ -1,5 +1,4 @@
 import abc
-from copy import copy
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
@@ -68,8 +67,7 @@ class MutableSchema(Schema):
         )
 
     def copy(self, **kwargs):
-        kwargs = {**{"schema": copy(self.schema)}, **kwargs}
-        return MutableSchema(**kwargs)
+        return MutableSchema(**{"schema": self.schema.copy(), **kwargs})
 
     def add_table(self, table, column_mapping=None):
         """
@@ -155,14 +153,11 @@ class MutableSchema(Schema):
         if not self.supported_table_args:
             depth = _dict_depth(self.schema)
 
+            all_args = ["this", "db", "catalog"]
             if not depth or depth == 1:  # {}
                 self.supported_table_args = []
-            elif depth == 2:  # {table: {col: type}}
-                self.supported_table_args = ("this",)
-            elif depth == 3:  # {db: {table: {col: type}}}
-                self.supported_table_args = ("db", "this")
-            elif depth == 4:  # {catalog: {db: {table: {col: type}}}}
-                self.supported_table_args = ("catalog", "db", "this")
+            elif 2 <= depth <= 4:
+                self.supported_table_args = tuple(reversed(all_args[: depth - 1]))
             else:
                 raise OptimizeError(f"Invalid schema shape. Depth: {depth}")
 

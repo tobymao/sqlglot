@@ -314,23 +314,31 @@ class TestDataframeFunc(DataFrameValidator):
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
 
     def test_join_left_outer(self):
-        df_joined = self.df_spark_employee.join(self.df_spark_store, on=["store_id"], how="left_outer").select(
-            self.df_spark_employee.employee_id,
-            self.df_spark_employee["fname"],
-            F.col("lname"),
-            F.col("age"),
-            F.col("store_id"),
-            self.df_spark_store.store_name,
-            self.df_spark_store["num_sales"],
+        df_joined = (
+            self.df_spark_employee.join(self.df_spark_store, on=["store_id"], how="left_outer")
+            .select(
+                self.df_spark_employee.employee_id,
+                self.df_spark_employee["fname"],
+                F.col("lname"),
+                F.col("age"),
+                F.col("store_id"),
+                self.df_spark_store.store_name,
+                self.df_spark_store["num_sales"],
+            )
+            .orderBy(F.col("employee_id"))
         )
-        dfs_joined = self.df_sqlglot_employee.join(self.df_sqlglot_store, on=["store_id"], how="left_outer").select(
-            self.df_sqlglot_employee.employee_id,
-            self.df_sqlglot_employee["fname"],
-            SF.col("lname"),
-            SF.col("age"),
-            SF.col("store_id"),
-            self.df_sqlglot_store.store_name,
-            self.df_sqlglot_store["num_sales"],
+        dfs_joined = (
+            self.df_sqlglot_employee.join(self.df_sqlglot_store, on=["store_id"], how="left_outer")
+            .select(
+                self.df_sqlglot_employee.employee_id,
+                self.df_sqlglot_employee["fname"],
+                SF.col("lname"),
+                SF.col("age"),
+                SF.col("store_id"),
+                self.df_sqlglot_store.store_name,
+                self.df_sqlglot_store["num_sales"],
+            )
+            .orderBy(SF.col("employee_id"))
         )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
 
@@ -1048,12 +1056,12 @@ class TestDataframeFunc(DataFrameValidator):
         self.assertIn("RepartitionByExpression [age#3, fname#1], 53", self.get_explain_plan(dfs))
 
     def test_coalesce(self):
-        df = self.df_spark_employee.coalesce(3)
-        dfs = self.df_sqlglot_employee.coalesce(3)
+        df = self.df_spark_employee.coalesce(1)
+        dfs = self.df_sqlglot_employee.coalesce(1)
         df, dfs = self.compare_spark_with_sqlglot(df, dfs)
         spark_num_partitions = df.rdd.getNumPartitions()
         sqlglot_num_partitions = dfs.rdd.getNumPartitions()
-        self.assertEqual(spark_num_partitions, 3)
+        self.assertEqual(spark_num_partitions, 1)
         self.assertEqual(spark_num_partitions, sqlglot_num_partitions)
 
     def test_cache_select(self):

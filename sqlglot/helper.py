@@ -173,14 +173,14 @@ def object_to_dict(obj, **kwargs):
     return {**{k: copy(v) for k, v in vars(obj).copy().items()}, **kwargs}
 
 
-def split_num_words(value: str, sep: str, num_words: int, fill_from_start: bool = True) -> t.List[t.Optional[str]]:
+def split_num_words(value: str, sep: str, min_num_words: int, fill_from_start: bool = True) -> t.List[t.Optional[str]]:
     """
     Perform a split on a value and return N words as a result with None used for words that don't exist.
 
     Args:
         value: The value to be split
         sep: The value to use to split on
-        num_words: The number of words that are going to be in the result
+        min_num_words: The minimum number of words that are going to be in the result
         fill_from_start: Indicates that if None values should be inserted at the start or end of the list
 
     Examples:
@@ -188,12 +188,14 @@ def split_num_words(value: str, sep: str, num_words: int, fill_from_start: bool 
         [None, 'db', 'table']
         >>> split_num_words("db.table", ".", 3, fill_from_start=False)
         ['db', 'table', None]
+        >>> split_num_words("db.table", ".", 1)
+        ['db', 'table']
     """
     words = value.split(sep)
     if fill_from_start:
         return [
-            x if x is not None else x for x in [None] * (num_words - len(words)) + words
+            x if x is not None else x for x in [None] * (min_num_words - len(words)) + words
         ]
     return [
-        x if x is not None else x for x in words + [None] * (num_words - len(words))
+        x if x is not None else x for x in words + [None] * (min_num_words - len(words))
     ]

@@ -11,8 +11,7 @@ class Schema(abc.ABC):
     @abc.abstractmethod
     def add_table(self, table, column_mapping=None):
         """
-        Registers the table to be a known schema to be accessed later. Some implementing classes may
-        require column information to also be provided
+        Register or update a table. Some implementing classes may require column information to also be provided
 
         Args:
             table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
@@ -82,8 +81,7 @@ class MappingSchema(Schema):
 
     def add_table(self, table, column_mapping=None):
         """
-        Registers the table to be a known schema to be accessed later. Allows updating the column mapping with
-        a new value later if provided.
+        Register or update a table. Updates are only performed if a new column mapping is provided.
 
         Args:
             table (sqlglot.expressions.Table|str): Table expression instance or string representing the table

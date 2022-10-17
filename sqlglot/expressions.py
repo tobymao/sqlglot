@@ -11,6 +11,7 @@ from sqlglot.helper import (
     camel_to_snake_case,
     ensure_list,
     list_get,
+    split_num_words,
     subclasses,
 )
 
@@ -3218,15 +3219,11 @@ def to_identifier(alias, quoted=None):
     return identifier
 
 
-def to_table(sql_path, **kwargs):
+def to_table(sql_path: str, **kwargs) -> Table:
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
 
     If a table is passed in then that table is returned.
-
-    Example:
-        >>> to_table('catalog.db.table_name').sql()
-        'catalog.db.table_name'
 
     Args:
         sql_path(str|Table): `[catalog].[schema].[table]` string
@@ -3237,11 +3234,30 @@ def to_table(sql_path, **kwargs):
         return sql_path
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
-    table_parts = sql_path.split(".")
+
     catalog, db, table_name = [
-        to_identifier(x) if x is not None else x for x in [None] * (3 - len(table_parts)) + table_parts
+        to_identifier(x) if x is not None else x for x in split_num_words(sql_path, ".", 3)
     ]
     return Table(this=table_name, db=db, catalog=catalog, **kwargs)
+
+
+def to_column(sql_path: str, **kwargs) -> Column:
+    """
+    Create a column from a `[schema].[table]` sql path. Schema is optional.
+
+    If a column is passed in then that column is returned.
+
+    Args:
+        sql_path: `[schema].[table]` string
+    Returns:
+        Table: A column expression
+    """
+    if sql_path is None or isinstance(sql_path, Column):
+        return sql_path
+    table_name, column_name = [
+        to_identifier(x) if x is not None else x for x in split_num_words(sql_path, ".", 2)
+    ]
+    return Column(this=column_name, table=table_name, **kwargs)
 
 
 def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):

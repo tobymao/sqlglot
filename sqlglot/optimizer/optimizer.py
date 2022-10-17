@@ -1,3 +1,4 @@
+import sqlglot
 from sqlglot.optimizer.eliminate_ctes import eliminate_ctes
 from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
@@ -43,6 +44,7 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
                 1. {table: {col: type}}
                 2. {db: {table: {col: type}}}
                 3. {catalog: {db: {table: {col: type}}}}
+            If no schema is provided then the default schema defined at `sqlgot.schema` will be used
         db (str): specify the default database, as might be set by a `USE DATABASE db` statement
         catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
         rules (list): sequence of optimizer rules to use
@@ -50,7 +52,7 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
     Returns:
         sqlglot.Expression: optimized expression
     """
-    possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
+    possible_kwargs = {"db": db, "catalog": catalog, "schema": schema or sqlglot.schema, **kwargs}
     expression = expression.copy()
     for rule in rules:
 

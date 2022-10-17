@@ -108,6 +108,8 @@ class Expression(metaclass=_Expression):
 
     @property
     def alias_or_name(self):
+        if isinstance(self, Null):
+            return "NULL"
         return self.alias or self.name
 
     def __deepcopy__(self, memo):
@@ -1327,6 +1329,7 @@ class Select(Subqueryable):
             *expressions (str or Expression): the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
                 If another `Expression` instance is passed, it will be wrapped in a `Group`.
+                If nothing is passed in then a group by is not applied to the expression
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Group` expression into a single expression.
             dialect (str): the dialect used to parse the input expression.
@@ -1336,6 +1339,8 @@ class Select(Subqueryable):
         Returns:
             Select: the modified expression.
         """
+        if not expressions:
+            return self if not copy else self.copy()
         return _apply_child_list_builder(
             *expressions,
             instance=self,
@@ -2574,7 +2579,7 @@ class SortArray(Func):
 
 
 class Split(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "limit": False}
 
 
 # Start may be omitted in the case of postgres
@@ -3216,15 +3221,22 @@ def to_identifier(alias, quoted=None):
 def to_table(sql_path, **kwargs):
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
+
+    If a table is passed in then that table is returned.
+
     Example:
         >>> to_table('catalog.db.table_name').sql()
         'catalog.db.table_name'
 
     Args:
-        sql_path(str): `[catalog].[schema].[table]` string
+        sql_path(str|Table): `[catalog].[schema].[table]` string
     Returns:
         Table: A table expression
     """
+    if sql_path is None or isinstance(sql_path, Table):
+        return sql_path
+    if not isinstance(sql_path, str):
+        raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
     table_parts = sql_path.split(".")
     catalog, db, table_name = [
         to_identifier(x) if x is not None else x for x in [None] * (3 - len(table_parts)) + table_parts
@@ -3235,7 +3247,7 @@ def to_table(sql_path, **kwargs):
 def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     """
     Create an Alias expression.
-    Expample:
+    Example:
         >>> alias_('foo', 'bar').sql()
         'foo AS bar'
 

@@ -321,7 +321,7 @@ class TestPresto(Validator):
                 "duckdb": "SELECT APPROX_COUNT_DISTINCT(a) FROM foo",
                 "presto": "SELECT APPROX_DISTINCT(a, 0.1) FROM foo",
                 "hive": "SELECT APPROX_COUNT_DISTINCT(a) FROM foo",
-                "spark": "SELECT APPROX_COUNT_DISTINCT(a) FROM foo",
+                "spark": "SELECT APPROX_COUNT_DISTINCT(a, 0.1) FROM foo",
             },
         )
         self.validate_all(
@@ -329,7 +329,7 @@ class TestPresto(Validator):
             write={
                 "presto": "SELECT APPROX_DISTINCT(a, 0.1) FROM foo",
                 "hive": UnsupportedError,
-                "spark": UnsupportedError,
+                "spark": "SELECT APPROX_COUNT_DISTINCT(a, 0.1) FROM foo",
             },
         )
         self.validate_all(

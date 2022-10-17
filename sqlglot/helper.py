@@ -3,7 +3,11 @@ import logging
 import re
 import sys
 from contextlib import contextmanager
+from copy import copy
 from enum import Enum
+from itertools import chain
+
+flatten = chain.from_iterable
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 logger = logging.getLogger("sqlglot")
@@ -162,3 +166,7 @@ def find_new_name(taken, base):
         i += 1
         new = f"{base}_{i}"
     return new
+
+
+def object_to_dict(obj, **kwargs):
+    return {**{k: copy(v) for k, v in vars(obj).copy().items()}, **kwargs}

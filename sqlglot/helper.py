@@ -2,6 +2,7 @@ import inspect
 import logging
 import re
 import sys
+import typing as t
 from contextlib import contextmanager
 from copy import copy
 from enum import Enum
@@ -170,3 +171,29 @@ def find_new_name(taken, base):
 
 def object_to_dict(obj, **kwargs):
     return {**{k: copy(v) for k, v in vars(obj).copy().items()}, **kwargs}
+
+
+def split_num_words(value: str, sep: str, num_words: int, fill_from_start: bool = True) -> t.List[t.Optional[str]]:
+    """
+    Perform a split on a value and return N words as a result with None used for words that don't exist.
+
+    Args:
+        value: The value to be split
+        sep: The value to use to split on
+        num_words: The number of words that are going to be in the result
+        fill_from_start: Indicates that if None values should be inserted at the start or end of the list
+
+    Examples:
+        >>> split_num_words("db.table", ".", 3)
+        [None, 'db', 'table']
+        >>> split_num_words("db.table", ".", 3, fill_from_start=False)
+        ['db', 'table', None]
+    """
+    words = value.split(sep)
+    if fill_from_start:
+        return [
+            x if x is not None else x for x in [None] * (num_words - len(words)) + words
+        ]
+    return [
+        x if x is not None else x for x in words + [None] * (num_words - len(words))
+    ]

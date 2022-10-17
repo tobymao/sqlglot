@@ -515,6 +515,14 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(catalog_db_and_table.args.get("db"), exp.to_identifier("db"))
         self.assertEqual(catalog_db_and_table.args.get("catalog"), exp.to_identifier("catalog"))
 
+    def test_to_column(self):
+        column_only = exp.to_column("column_name")
+        self.assertEqual(column_only.name, "column_name")
+        self.assertIsNone(column_only.args.get("table"))
+        table_and_column = exp.to_column("table_name.column_name")
+        self.assertEqual(table_and_column.name, "column_name")
+        self.assertEqual(table_and_column.args.get("table"), exp.to_identifier("table_name"))
+
     def test_union(self):
         expression = parse_one("SELECT cola, colb UNION SELECT colx, coly")
         self.assertIsInstance(expression, exp.Union)

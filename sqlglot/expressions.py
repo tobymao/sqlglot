@@ -3252,6 +3252,8 @@ def to_column(sql_path: str, **kwargs) -> Column:
     """
     if sql_path is None or isinstance(sql_path, Column):
         return sql_path
+    if not isinstance(sql_path, str):
+        raise ValueError(f"Invalid type provided for column: {type(sql_path)}")
     table_name, column_name = [to_identifier(x) for x in split_num_words(sql_path, ".", 2)]
     return Column(this=column_name, table=table_name, **kwargs)
 

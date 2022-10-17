@@ -9,7 +9,7 @@ from sqlglot.executor import execute
 from sqlglot.executor.python import Python
 from tests.helpers import (
     FIXTURES_DIR,
-    SKIP_INTEGRATION_TESTS,
+    SKIP_INTEGRATION,
     TPCH_SCHEMA,
     load_sql_fixture_pairs,
 )
@@ -17,7 +17,7 @@ from tests.helpers import (
 DIR = FIXTURES_DIR + "/optimizer/tpc-h/"
 
 
-@unittest.skipIf(SKIP_INTEGRATION_TESTS, "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
+@unittest.skipIf(SKIP_INTEGRATION, "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
 class TestExecutor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -2,8 +2,8 @@ import itertools
 
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.schema import ensure_schema
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.schema import ensure_schema
 
 
 def qualify_columns(expression, schema):
@@ -48,7 +48,7 @@ def _pop_table_column_aliases(derived_tables):
     (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
     """
     for derived_table in derived_tables:
-        if isinstance(derived_table, exp.UDTF):
+        if isinstance(derived_table.unnest(), exp.UDTF):
             continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
@@ -345,6 +345,11 @@ class _Resolver:
                 return self.schema.column_names(source, only_visible)
             except Exception as e:
                 raise OptimizeError(str(e)) from e
+
+        if isinstance(source, Scope) and isinstance(source.expression, exp.Values):
+            values_alias = source.expression.parent
+            if hasattr(values_alias, "alias_column_names"):
+                return values_alias.alias_column_names
 
         # Otherwise, if referencing another scope, return that scope's named selects
         return source.expression.named_selects

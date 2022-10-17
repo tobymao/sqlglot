@@ -287,3 +287,27 @@ SELECT
 FROM
   t1;
 SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x;
+
+# title: Values Test
+# dialect: spark
+WITH t1 AS (
+  SELECT
+    a1.cola
+  FROM
+    VALUES (1) AS a1(cola)
+), t2 AS (
+  SELECT
+    a2.cola
+  FROM
+    VALUES (1) AS a2(cola)
+)
+SELECT /*+ BROADCAST(t2) */
+  t1.cola,
+  t2.cola,
+FROM
+  t1
+  JOIN
+  t2
+  ON
+    t1.cola = t2.cola;
+SELECT /*+ BROADCAST(a2) */ a1.cola AS cola, a2.cola AS cola FROM VALUES (1) AS a1(cola) JOIN VALUES (1) AS a2(cola) ON a1.cola = a2.cola;

@@ -1,9 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import (
-    create_with_partitions_sql,
-    no_ilike_sql,
-    rename_func,
-)
+from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser
@@ -98,13 +94,14 @@ class Spark(Hive):
         }
 
         TRANSFORMS = {
-            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort}},
+            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort, exp.ILike}},
+            exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
+            exp.DateTrunc: rename_func("TRUNC"),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
-            exp.ILike: no_ilike_sql,
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
@@ -112,6 +109,8 @@ class Spark(Hive):
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
+            exp.TimestampTrunc: lambda self, e: f"DATE_TRUNC({self.sql(e, 'unit')}, {self.sql(e, 'this')})",
+            exp.VariancePop: rename_func("VAR_POP"),
         }
 
         WRAP_DERIVED_VALUES = False

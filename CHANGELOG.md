@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v8.0.0
+------
+
+Changes:
+
+- Breaking : New add\_table method in Schema ABC.
+- New: SQLGlot now supports the [PySpark](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dataframe) dataframe API. This is still relatively experimental.
+
+
 v7.1.0
 ------
 

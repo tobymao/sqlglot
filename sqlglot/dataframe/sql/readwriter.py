@@ -5,7 +5,6 @@ import typing as t
 import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.helper import object_to_dict
-from sqlglot.schema import MutableSchema
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.dataframe import DataFrame
@@ -19,7 +18,6 @@ class DataFrameReader:
     def table(self, tableName: str) -> DataFrame:
         from sqlglot.dataframe.sql.dataframe import DataFrame
 
-        assert isinstance(sqlglot.schema, MutableSchema)
         sqlglot.schema.add_table(tableName)
         return DataFrame(self.spark, exp.Select().from_(tableName).select(*sqlglot.schema.column_names(tableName)))
 
@@ -57,7 +55,6 @@ class DataFrameWriter:
         )
         df = self._df.copy(output_expression_container=output_expression_container)
         if self._by_name:
-            assert isinstance(sqlglot.schema, MutableSchema)
             columns = sqlglot.schema.column_names(tableName, only_visible=True)
             df = df._convert_leaf_to_cte().select(*columns)
 

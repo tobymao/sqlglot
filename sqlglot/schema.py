@@ -1,12 +1,22 @@
 import abc
 
-from sqlglot import exp
+from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import csv_reader
 
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
+
+    @abc.abstractmethod
+    def add_table(self, table, column_mapping=None):
+        """
+        Registers the table to be a known schema to be accessed later. Some implementing classes may
+        require column information to also be provided
+        Args:
+            table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
+            column_mapping (dict|str|sqlglot.dataframe.sql.types.StructType|list): A column mapping that describes the structure of the table
+        """
 
     @abc.abstractmethod
     def column_names(self, table, only_visible=False):
@@ -32,9 +42,9 @@ class Schema(abc.ABC):
         """
 
 
-class MutableSchema(Schema):
+class MappingSchema(Schema):
     """
-    Based on MappingSchema but mutable so you can add tables over time.
+    Schema based on a nested mapping.
 
     Args:
         schema (dict): Mapping in one of the following forms:
@@ -62,12 +72,12 @@ class MutableSchema(Schema):
 
     @classmethod
     def from_mapping_schema(cls, mapping_schema):
-        return MutableSchema(
+        return MappingSchema(
             schema=mapping_schema.schema, visible=mapping_schema.visible, dialect=mapping_schema.dialect
         )
 
     def copy(self, **kwargs):
-        return MutableSchema(**{"schema": self.schema.copy(), **kwargs})
+        return MappingSchema(**{"schema": self.schema.copy(), **kwargs})
 
     def add_table(self, table, column_mapping=None):
         """
@@ -164,32 +174,11 @@ class MutableSchema(Schema):
             self.forbidden_table_args = {"catalog", "db", "this"} - set(self.supported_table_args)
 
 
-class MappingSchema(MutableSchema):
-    """
-    Schema based on a nested mapping.
-
-    Args:
-        schema (dict): Mapping in one of the following forms:
-            1. {table: {col: type}}
-            2. {db: {table: {col: type}}}
-            3. {catalog: {db: {table: {col: type}}}}
-        visible (dict): Optional mapping of which columns in the schema are visible. If not provided, all columns
-            are assumed to be visible. The nesting should mirror that of the schema:
-            1. {table: set(*cols)}}
-            2. {db: {table: set(*cols)}}}
-            3. {catalog: {db: {table: set(*cols)}}}}
-        dialect (str): The dialect to be used for custom type mappings.
-    """
-
-    def add_table(self, table, column_mapping=None):
-        raise NotImplementedError("Use `MutableSchema` if you want a to be able to add tables")
-
-
-def ensure_schema(schema, schema_klass):
+def ensure_schema(schema):
     if isinstance(schema, Schema):
         return schema
 
-    return schema_klass(schema)
+    return MappingSchema(schema)
 
 
 def ensure_column_mapping(mapping):

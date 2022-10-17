@@ -1,7 +1,7 @@
 from unittest import mock
 
 import sqlglot
-from sqlglot.schema import MutableSchema
+from sqlglot.schema import MappingSchema
 from tests.dataframe.unit.dataframe_sql_validator import DataFrameSQLValidator
 
 
@@ -26,7 +26,7 @@ class TestDataFrameWriter(DataFrameSQLValidator):
         expected = "INSERT OVERWRITE TABLE table_name SELECT CAST(`a1`.`employee_id` AS int) AS `employee_id`, CAST(`a1`.`fname` AS string) AS `fname`, CAST(`a1`.`lname` AS string) AS `lname`, CAST(`a1`.`age` AS int) AS `age`, CAST(`a1`.`store_id` AS int) AS `store_id` FROM (VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100)) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
         self.compare_sql(df, expected)
 
-    @mock.patch("sqlglot.schema", MutableSchema())
+    @mock.patch("sqlglot.schema", MappingSchema())
     def test_insertInto_byName(self):
         sqlglot.schema.add_table("table_name", {"employee_id": "INT"})
         df = self.df_employee.write.byName.insertInto("table_name")

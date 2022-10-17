@@ -13,6 +13,7 @@ class Schema(abc.ABC):
         """
         Registers the table to be a known schema to be accessed later. Some implementing classes may
         require column information to also be provided
+
         Args:
             table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
             column_mapping (dict|str|sqlglot.dataframe.sql.types.StructType|list): A column mapping that describes the structure of the table
@@ -81,17 +82,23 @@ class MappingSchema(Schema):
 
     def add_table(self, table, column_mapping=None):
         """
-        Registers the table to be a known schema to be accessed later.
+        Registers the table to be a known schema to be accessed later. If a column mapping is provided then the
+        given table will be set with that column mapping and will overwrite if it is already defined. If no column
+        mapping is provided and the table is already defined with a column mapping then this is a no-op.
 
         Args:
             table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
             column_mapping (dict|str|sqlglot.dataframe.sql.types.StructType|list): A column mapping that describes the structure of the table
         """
-        if column_mapping is None:
-            return
         table = exp.to_table(table)
         self._validate_table(table)
         column_mapping = ensure_column_mapping(column_mapping)
+        table_args = [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)]
+        existing_column_mapping = _nested_get(
+            self.schema, *zip(self.supported_table_args, table_args), raise_on_missing=False
+        )
+        if existing_column_mapping and not column_mapping:
+            return
         _nested_set(
             self.schema,
             [table.text(p) for p in self.supported_table_args or self._get_table_args_from_table(table)],
@@ -195,6 +202,8 @@ def ensure_column_mapping(mapping):
         return {struct_field.name: struct_field.dataType.simpleString() for struct_field in mapping}
     elif isinstance(mapping, list):
         return {x.strip(): None for x in mapping}
+    elif mapping is None:
+        return {}
     raise ValueError(f"Invalid mapping provided: {type(mapping)}")
 
 
@@ -208,7 +217,7 @@ def fs_get(table):
     raise ValueError(f"Cannot read schema for {table}")
 
 
-def _nested_get(d, *path):
+def _nested_get(d, *path, raise_on_missing=True):
     """
     Get a value for a nested dictionary.
 
@@ -217,12 +226,17 @@ def _nested_get(d, *path):
         *path (tuple[str, str]): tuples of (name, key)
             `key` is the key in the dictionary to get.
             `name` is a string to use in the error if `key` isn't found.
+
+    Returns:
+        The value or None if it doesn't exist
     """
     for name, key in path:
         d = d.get(key)
         if d is None:
-            name = "table" if name == "this" else name
-            raise ValueError(f"Unknown {name}")
+            if raise_on_missing:
+                name = "table" if name == "this" else name
+                raise ValueError(f"Unknown {name}")
+            return None
     return d
 
 

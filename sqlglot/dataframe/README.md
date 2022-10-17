@@ -38,7 +38,7 @@ sqlglot.schema.add_table('employee', {
   'fname': 'STRING',
   'lname': 'STRING',
   'age': 'INT',
-})  # Register the table structure
+})  # Register the table structure prior to reading from the table
 
 spark = SparkSession()
 

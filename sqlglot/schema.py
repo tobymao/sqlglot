@@ -82,9 +82,8 @@ class MappingSchema(Schema):
 
     def add_table(self, table, column_mapping=None):
         """
-        Registers the table to be a known schema to be accessed later. If a column mapping is provided then the
-        given table will be set with that column mapping and will overwrite if it is already defined. If no column
-        mapping is provided and the table is already defined with a column mapping then this is a no-op.
+        Registers the table to be a known schema to be accessed later. Allows updating the column mapping with
+        a new value later if provided.
 
         Args:
             table (sqlglot.expressions.Table|str): Table expression instance or string representing the table

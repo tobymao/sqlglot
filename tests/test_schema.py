@@ -278,7 +278,7 @@ class TestSchema(unittest.TestCase):
             },
         )
 
-    def test_schema_add_table(self):
+    def test_schema_add_table_with_and_without_mapping(self):
         schema = MappingSchema()
         schema.add_table("test")
         self.assertEqual(schema.column_names("test"), [])

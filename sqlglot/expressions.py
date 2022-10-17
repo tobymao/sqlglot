@@ -3241,12 +3241,12 @@ def to_table(sql_path: str, **kwargs) -> Table:
 
 def to_column(sql_path: str, **kwargs) -> Column:
     """
-    Create a column from a `[schema].[table]` sql path. Schema is optional.
+    Create a column from a `[table].[column]` sql path. Schema is optional.
 
     If a column is passed in then that column is returned.
 
     Args:
-        sql_path: `[schema].[table]` string
+        sql_path: `[table].[column]` string
     Returns:
         Table: A column expression
     """

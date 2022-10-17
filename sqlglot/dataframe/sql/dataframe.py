@@ -19,7 +19,6 @@ from sqlglot.dataframe.sql.window import Window
 from sqlglot.helper import ensure_list, object_to_dict
 from sqlglot.optimizer import optimize as optimize_func
 from sqlglot.optimizer.qualify_columns import qualify_columns
-from sqlglot.schema import MutableSchema
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import ColumnLiterals, OutputExpressionContainer
@@ -268,20 +267,19 @@ class DataFrame:
     def sql(self, dialect="spark", optimize=True, **kwargs) -> t.List[str]:
         df = self._resolve_pending_hints()
         select_expressions = df._get_select_expressions()
-        output_expressions = []
+        output_expressions: t.List[t.Union[exp.Select, exp.Cache, exp.Drop]] = []
         replacement_mapping: t.Dict[exp.Identifier, exp.Identifier] = {}
         for expression_type, select_expression in select_expressions:
             select_expression = select_expression.transform(replace_id_value, replacement_mapping)
             if optimize:
                 select_expression = optimize_func(select_expression)
             select_expression = df._replace_cte_names_with_hashes(select_expression)
-
+            expression: t.Union[exp.Select, exp.Cache, exp.Drop]
             if expression_type == exp.Cache:
                 cache_table_name = df._create_hash_from_expression(select_expression)
                 cache_table = exp.to_table(cache_table_name)
                 original_alias_name = select_expression.args["cte_alias_name"]
                 replacement_mapping[exp.to_identifier(original_alias_name)] = exp.to_identifier(cache_table_name)
-                assert isinstance(sqlglot.schema, MutableSchema)
                 sqlglot.schema.add_table(cache_table_name, select_expression.named_selects)
                 cache_storage_level = select_expression.args["cache_storage_level"]
                 options = [

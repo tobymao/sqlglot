@@ -28,7 +28,7 @@ __version__ = "7.1.3"
 
 pretty = False
 
-schema = None
+schema = MappingSchema()
 
 
 def parse(sql, read=None, **opts):

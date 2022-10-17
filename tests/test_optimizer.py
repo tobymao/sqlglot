@@ -10,7 +10,7 @@ from sqlglot.dataframe.sql import types as df_types
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
-from sqlglot.schema import MappingSchema, MutableSchema, ensure_schema
+from sqlglot.schema import MappingSchema, ensure_schema
 from tests.helpers import (
     TPCH_SCHEMA,
     load_sql_fixture_pairs,
@@ -230,8 +230,7 @@ class TestOptimizer(unittest.TestCase):
                 "x": {
                     "a": "uint64",
                 }
-            },
-            MappingSchema,
+            }
         )
         self.assertEqual(
             schema.column_names(
@@ -248,13 +247,12 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(table("x2"))
 
-        mutable_schema = MutableSchema.from_mapping_schema(schema)
         with self.assertRaises(ValueError):
-            mutable_schema.add_table(table("y", db="db"), {"b": "string"})
+            schema.add_table(table("y", db="db"), {"b": "string"})
         with self.assertRaises(ValueError):
-            mutable_schema.add_table(table("y", db="db", catalog="c"), {"b": "string"})
+            schema.add_table(table("y", db="db", catalog="c"), {"b": "string"})
 
-        mutable_schema.add_table(table("y"), {"b": "string"})
+        schema.add_table(table("y"), {"b": "string"})
         schema_with_y = {
             "x": {
                 "a": "uint64",
@@ -263,13 +261,13 @@ class TestOptimizer(unittest.TestCase):
                 "b": "string",
             },
         }
-        self.assertEqual(mutable_schema.schema, schema_with_y)
+        self.assertEqual(schema.schema, schema_with_y)
 
-        new_mutable_schema = mutable_schema.copy()
-        new_mutable_schema.add_table(table("z"), {"c": "string"})
-        self.assertEqual(mutable_schema.schema, schema_with_y)
+        new_schema = schema.copy()
+        new_schema.add_table(table("z"), {"c": "string"})
+        self.assertEqual(schema.schema, schema_with_y)
         self.assertEqual(
-            new_mutable_schema.schema,
+            new_schema.schema,
             {
                 "x": {
                     "a": "uint64",
@@ -282,8 +280,8 @@ class TestOptimizer(unittest.TestCase):
                 },
             },
         )
-        mutable_schema.add_table(table("m"), {"d": "string"})
-        mutable_schema.add_table(table("n"), {"e": "string"})
+        schema.add_table(table("m"), {"d": "string"})
+        schema.add_table(table("n"), {"e": "string"})
         schema_with_m_n = {
             "x": {
                 "a": "uint64",
@@ -298,13 +296,13 @@ class TestOptimizer(unittest.TestCase):
                 "e": "string",
             },
         }
-        self.assertEqual(mutable_schema.schema, schema_with_m_n)
-        new_mutable_schema = mutable_schema.copy()
-        new_mutable_schema.add_table(table("o"), {"f": "string"})
-        new_mutable_schema.add_table(table("p"), {"g": "string"})
-        self.assertEqual(mutable_schema.schema, schema_with_m_n)
+        self.assertEqual(schema.schema, schema_with_m_n)
+        new_schema = schema.copy()
+        new_schema.add_table(table("o"), {"f": "string"})
+        new_schema.add_table(table("p"), {"g": "string"})
+        self.assertEqual(schema.schema, schema_with_m_n)
         self.assertEqual(
-            new_mutable_schema.schema,
+            new_schema.schema,
             {
                 "x": {
                     "a": "uint64",
@@ -334,8 +332,7 @@ class TestOptimizer(unittest.TestCase):
                         "a": "uint64",
                     }
                 }
-            },
-            MappingSchema,
+            }
         )
         self.assertEqual(schema.column_names(table("x", db="db")), ["a"])
         with self.assertRaises(ValueError):
@@ -347,15 +344,14 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(table("x2", db="db"))
 
-        mutable_schema = MutableSchema.from_mapping_schema(schema)
         with self.assertRaises(ValueError):
-            mutable_schema.add_table(table("y"), {"b": "string"})
+            schema.add_table(table("y"), {"b": "string"})
         with self.assertRaises(ValueError):
-            mutable_schema.add_table(table("y", db="db", catalog="c"), {"b": "string"})
+            schema.add_table(table("y", db="db", catalog="c"), {"b": "string"})
 
-        mutable_schema.add_table(table("y", db="db"), {"b": "string"})
+        schema.add_table(table("y", db="db"), {"b": "string"})
         self.assertEqual(
-            mutable_schema.schema,
+            schema.schema,
             {
                 "db": {
                     "x": {
@@ -377,8 +373,7 @@ class TestOptimizer(unittest.TestCase):
                         }
                     }
                 }
-            },
-            MappingSchema,
+            }
         )
         self.assertEqual(schema.column_names(table("x", db="db", catalog="c")), ["a"])
         with self.assertRaises(ValueError):
@@ -392,15 +387,14 @@ class TestOptimizer(unittest.TestCase):
         with self.assertRaises(ValueError):
             schema.column_names(table("x2", db="db"))
 
-        mutable_schema = MutableSchema.from_mapping_schema(schema)
         with self.assertRaises(ValueError):
-            mutable_schema.add_table(table("x"), {"b": "string"})
+            schema.add_table(table("x"), {"b": "string"})
         with self.assertRaises(ValueError):
-            mutable_schema.add_table(table("x", db="db"), {"b": "string"})
+            schema.add_table(table("x", db="db"), {"b": "string"})
 
-        mutable_schema.add_table(table("y", db="db", catalog="c"), {"a": "string", "b": "int"})
+        schema.add_table(table("y", db="db", catalog="c"), {"a": "string", "b": "int"})
         self.assertEqual(
-            mutable_schema.schema,
+            schema.schema,
             {
                 "c": {
                     "db": {
@@ -415,9 +409,9 @@ class TestOptimizer(unittest.TestCase):
                 }
             },
         )
-        mutable_schema.add_table(table("z", db="db2", catalog="c"), {"c": "string", "d": "int"})
+        schema.add_table(table("z", db="db2", catalog="c"), {"c": "string", "d": "int"})
         self.assertEqual(
-            mutable_schema.schema,
+            schema.schema,
             {
                 "c": {
                     "db": {
@@ -438,9 +432,9 @@ class TestOptimizer(unittest.TestCase):
                 }
             },
         )
-        mutable_schema.add_table(table("m", db="db2", catalog="c2"), {"e": "string", "f": "int"})
+        schema.add_table(table("m", db="db2", catalog="c2"), {"e": "string", "f": "int"})
         self.assertEqual(
-            mutable_schema.schema,
+            schema.schema,
             {
                 "c": {
                     "db": {
@@ -475,24 +469,23 @@ class TestOptimizer(unittest.TestCase):
                 "x": {
                     "a": "uint64",
                 }
-            },
-            MappingSchema,
+            }
         )
         self.assertEqual(schema.column_names(table("x")), ["a"])
 
-        mutable_schema = MutableSchema()
-        mutable_schema.add_table(table("x"), {"a": "string"})
+        schema = MappingSchema()
+        schema.add_table(table("x"), {"a": "string"})
         self.assertEqual(
-            mutable_schema.schema,
+            schema.schema,
             {
                 "x": {
                     "a": "string",
                 }
             },
         )
-        mutable_schema.add_table(table("y"), df_types.StructType([df_types.StructField("b", df_types.StringType())]))
+        schema.add_table(table("y"), df_types.StructType([df_types.StructField("b", df_types.StringType())]))
         self.assertEqual(
-            mutable_schema.schema,
+            schema.schema,
             {
                 "x": {
                     "a": "string",

@@ -193,5 +193,5 @@ def split_num_words(value: str, sep: str, min_num_words: int, fill_from_start: b
     """
     words = value.split(sep)
     if fill_from_start:
-        return [x if x is not None else x for x in [None] * (min_num_words - len(words)) + words]
-    return [x if x is not None else x for x in words + [None] * (min_num_words - len(words))]
+        return [None] * (min_num_words - len(words)) + words
+    return words + [None] * (min_num_words - len(words))

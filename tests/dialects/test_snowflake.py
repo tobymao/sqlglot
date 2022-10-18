@@ -240,9 +240,16 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_PART(month FROM a::DATETIME)",
+            "SELECT DATE_PART(month, a::DATETIME)",
             write={
                 "snowflake": "SELECT EXTRACT(month FROM CAST(a AS DATETIME))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_PART(epoch_second, foo) as ddate from table_name",
+            write={
+                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMPNTZ)) AS ddate FROM table_name",
+                "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) AS ddate FROM table_name",
             },
         )
 

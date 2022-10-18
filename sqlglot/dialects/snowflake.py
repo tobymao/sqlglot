@@ -69,6 +69,35 @@ def _unix_to_time(self, expression):
     raise ValueError("Improper scale for timestamp")
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/date_part.html
+# https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts
+def _parse_date_part(self):
+    this = self._parse_var() or self._parse_type()
+    self._match(TokenType.COMMA)
+    expression = self._parse_bitwise()
+
+    name = this.name.upper()
+    if name.startswith("EPOCH"):
+        if name.startswith("EPOCH_MILLISECOND"):
+            scale = 10**3
+        elif name.startswith("EPOCH_MICROSECOND"):
+            scale = 10**6
+        elif name.startswith("EPOCH_NANOSECOND"):
+            scale = 10**9
+        else:
+            scale = None
+
+        ts = self.expression(exp.Cast, this=expression, to=exp.DataType.build("TIMESTAMP"))
+        to_unix = self.expression(exp.TimeToUnix, this=ts)
+
+        if scale:
+            to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))
+
+        return to_unix
+
+    return self.expression(exp.Extract, this=this, expression=expression)
+
+
 class Snowflake(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
@@ -115,7 +144,7 @@ class Snowflake(Dialect):
 
         FUNCTION_PARSERS = {
             **Parser.FUNCTION_PARSERS,
-            "DATE_PART": lambda self: self._parse_extract(),
+            "DATE_PART": _parse_date_part,
         }
 
         FUNC_TOKENS = {
@@ -165,6 +194,7 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,
+            exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Array: inline_array_sql,
             exp.StrPosition: rename_func("POSITION"),
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",

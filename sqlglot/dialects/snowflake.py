@@ -76,9 +76,24 @@ def _parse_date_part(self):
     self._match(TokenType.COMMA)
     expression = self._parse_bitwise()
 
-    if this.name.upper().startswith("EPOCH"):
+    name = this.name.upper()
+    if name.startswith("EPOCH"):
+        scale = None
+
+        if name.startswith("EPOCH_MILLISECOND"):
+            scale = 10 ** 3
+        elif name.startswith("EPOCH_MICROSECOND"):
+            scale = 10 ** 6
+        elif name.startswith("EPOCH_NANOSECOND"):
+            scale = 10 ** 9
+
         ts = self.expression(exp.Cast, this=expression, to=exp.DataType.build("TIMESTAMP"))
-        return self.expression(exp.TimeToUnix, this=ts)
+        to_unix = self.expression(exp.TimeToUnix, this=ts)
+
+        if scale:
+            to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))
+
+        return to_unix
 
     return self.expression(exp.Extract, this=this, expression=expression)
 

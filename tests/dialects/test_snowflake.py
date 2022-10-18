@@ -252,6 +252,13 @@ class TestSnowflake(Validator):
                 "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) AS ddate FROM table_name",
             },
         )
+        self.validate_all(
+            "SELECT DATE_PART(epoch_milliseconds, foo) as ddate from table_name",
+            write={
+                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMPNTZ)) * 1000 AS ddate FROM table_name",
+                "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) * 1000 AS ddate FROM table_name",
+            },
+        )
 
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")

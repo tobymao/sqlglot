@@ -200,6 +200,7 @@ class Hive(Dialect):
             exp.AnonymousProperty: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
+            exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArraySize: rename_func("SIZE"),
             exp.ArraySort: _array_sort,
             exp.With: no_recursive_cte_sql,

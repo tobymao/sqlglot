@@ -172,6 +172,7 @@ class Presto(Dialect):
             **transforms.UNALIAS_GROUP,
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),
             exp.ArraySize: rename_func("CARDINALITY"),
             exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",

@@ -277,7 +277,7 @@ class TestDuckDB(Validator):
                 "spark": "CONCAT(ARRAY(1, 2), ARRAY(3, 4))",
                 "snowflake": "ARRAY_CAT([1, 2], [3, 4])",
                 "bigquery": "ARRAY_CONCAT([1, 2], [3, 4])",
-            }
+            },
         )
 
         with self.assertRaises(UnsupportedError):

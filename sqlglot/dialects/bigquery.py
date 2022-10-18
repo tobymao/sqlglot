@@ -78,6 +78,16 @@ def _create_sql(self, expression):
 
 class BigQuery(Dialect):
     unnest_column_only = True
+    time_mapping = {
+        "%M": "%-M",
+        "%d": "%-d",
+        "%m": "%-m",
+        "%y": "%-y",
+        "%H": "%-H",
+        "%I": "%-I",
+        "%S": "%-S",
+        "%j": "%-j",
+    }
 
     class Tokenizer(Tokenizer):
         QUOTES = [
@@ -113,6 +123,7 @@ class BigQuery(Dialect):
             "DATETIME_SUB": _date_add(exp.DatetimeSub),
             "TIME_SUB": _date_add(exp.TimeSub),
             "TIMESTAMP_SUB": _date_add(exp.TimestampSub),
+            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(this=list_get(args, 1), format=list_get(args, 0)),
         }
 
         NO_PAREN_FUNCTIONS = {
@@ -137,6 +148,7 @@ class BigQuery(Dialect):
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.ILike: no_ilike_sql,
+            exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),

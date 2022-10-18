@@ -1,11 +1,22 @@
 import datetime
+import inspect
 import unittest
 
 from sqlglot import expressions as exp
+from sqlglot import parse_one
 from sqlglot.dataframe.sql import functions as SF
+from sqlglot.errors import ErrorLevel
 
 
-class TestDataframeFunctions(unittest.TestCase):
+class TestFunctions(unittest.TestCase):
+    @unittest.skip("not yet fixed.")
+    def test_invoke_anonymous(self):
+        for name, func in inspect.getmembers(SF, inspect.isfunction):
+            with self.subTest(f"{name} should not invoke anonymous_function"):
+                if "invoke_anonymous_function" in inspect.getsource(func):
+                    func = parse_one(f"{name}()", read="spark", error_level=ErrorLevel.IGNORE)
+                    self.assertIsInstance(func, exp.Anonymous)
+
     def test_lit(self):
         test_str = SF.lit("test")
         self.assertEqual("'test'", test_str.sql())

@@ -1,3 +1,4 @@
+import collections
 import inspect
 import logging
 import re
@@ -6,9 +7,7 @@ import typing as t
 from contextlib import contextmanager
 from copy import copy
 from enum import Enum
-from itertools import chain
 
-flatten = chain.from_iterable
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 logger = logging.getLogger("sqlglot")
@@ -195,3 +194,26 @@ def split_num_words(value: str, sep: str, min_num_words: int, fill_from_start: b
     if fill_from_start:
         return [None] * (min_num_words - len(words)) + words
     return words + [None] * (min_num_words - len(words))
+
+
+def flatten(values: t.Iterable[t.Union[t.Iterable[t.Any], t.Any]]) -> t.Generator[t.Any, None, None]:
+    """
+    Flattens a list that can contain both iterables and non-iterable elements
+
+    Examples:
+        >>> list(flatten([[1, 2], 3]))
+        [1, 2, 3]
+        >>> list(flatten([1, 2, 3]))
+        [1, 2, 3]
+
+    Args:
+        values: The value to be flattened
+
+    Returns:
+        Yields non-iterable elements (not including str or byte as iterable)
+    """
+    for value in values:
+        if isinstance(value, collections.Iterable) and not isinstance(value, (str, bytes)):
+            yield from flatten(value)
+        else:
+            yield value

@@ -2,7 +2,7 @@ from enum import Enum
 
 from sqlglot import exp
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import flatten, list_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
@@ -181,11 +181,9 @@ class Dialect(metaclass=_Dialect):
 
 def rename_func(name):
     def _rename(self, expression):
-        args = (
-            expression.expressions
-            if isinstance(expression, exp.Func) and expression.is_var_len_args
-            else expression.args.values()
-        )
+        args = list(flatten(
+            expression.args.values()
+        ))
         return f"{name}({self.format_args(*args)})"
 
     return _rename

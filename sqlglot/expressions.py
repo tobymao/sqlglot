@@ -2249,6 +2249,11 @@ class ArrayAny(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class ArrayConcat(Func):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
 class ArrayContains(Func):
     arg_types = {"this": True, "expression": True}
 

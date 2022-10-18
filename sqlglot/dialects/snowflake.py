@@ -161,6 +161,7 @@ class Snowflake(Dialect):
     class Generator(Generator):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
+            exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time,

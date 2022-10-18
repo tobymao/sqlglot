@@ -268,6 +268,17 @@ class TestDuckDB(Validator):
                 "spark": "MONTH('2021-03-01')",
             },
         )
+        self.validate_all(
+            "ARRAY_CONCAT(LIST_VALUE(1, 2), LIST_VALUE(3, 4))",
+            write={
+                "duckdb": "ARRAY_CONCAT(LIST_VALUE(1, 2), LIST_VALUE(3, 4))",
+                "presto": "CONCAT(ARRAY[1, 2], ARRAY[3, 4])",
+                "hive": "CONCAT(ARRAY(1, 2), ARRAY(3, 4))",
+                "spark": "CONCAT(ARRAY(1, 2), ARRAY(3, 4))",
+                "snowflake": "ARRAY_CAT([1, 2], [3, 4])",
+                "bigquery": "ARRAY_CONCAT([1, 2], [3, 4])",
+            },
+        )
 
         with self.assertRaises(UnsupportedError):
             transpile(

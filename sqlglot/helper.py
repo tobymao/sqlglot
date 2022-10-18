@@ -1,8 +1,3 @@
-# Python 3.10+ requires import from abc
-try:
-    from collections import Iterable
-except ImportError:
-    from collections.abc import Iterable
 import inspect
 import logging
 import re
@@ -216,7 +211,7 @@ def flatten(values: t.Iterable[t.Union[t.Iterable[t.Any], t.Any]]) -> t.Generato
         Yields non-iterable elements (not including str or byte as iterable)
     """
     for value in values:
-        if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+        if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
             yield from flatten(value)
         else:
             yield value

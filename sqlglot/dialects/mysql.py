@@ -97,6 +97,8 @@ class MySQL(Dialect):
         "%s": "%S",
         "%S": "%S",
         "%u": "%W",
+        "%k": "%-H",
+        "%l": "%-I",
     }
 
     class Tokenizer(Tokenizer):

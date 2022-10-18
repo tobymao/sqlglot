@@ -48,7 +48,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRPTIME(x, '%y-%-m')",
             write={
-                "bigquery": "STR_TO_TIME(x, '%y-%-m')",
+                "bigquery": "PARSE_TIMESTAMP('%y-%m', x)",
                 "duckdb": "STRPTIME(x, '%y-%-m')",
                 "presto": "DATE_PARSE(x, '%y-%c')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy-M')) AS TIMESTAMP)",
@@ -61,6 +61,16 @@ class TestDuckDB(Validator):
                 "duckdb": "CAST(x AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
                 "hive": "CAST(x AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%m/%d/%y %I:%M %p', x)",
+                "duckdb": "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
+                "presto": "DATE_PARSE(x, '%c/%e/%y %l:%i %p')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:mm a')) AS TIMESTAMP)",
+                "spark": "TO_TIMESTAMP(x, 'M/d/yy h:mm a')",
             },
         )
 

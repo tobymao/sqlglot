@@ -47,6 +47,8 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
+        annotations: Whether or not to show annotations in the SQL.
+            Default: True
     """
 
     TRANSFORMS = {
@@ -116,6 +118,7 @@ class Generator:
         "_escaped_quote_end",
         "_leading_comma",
         "_max_text_width",
+        "_annotations",
     )
 
     def __init__(
@@ -141,6 +144,7 @@ class Generator:
         max_unsupported=3,
         leading_comma=False,
         max_text_width=80,
+        annotations=True,
     ):
         import sqlglot
 
@@ -169,6 +173,7 @@ class Generator:
         self._escaped_quote_end = self.escape + self.quote_end
         self._leading_comma = leading_comma
         self._max_text_width = max_text_width
+        self._annotations = annotations
 
     def generate(self, expression):
         """
@@ -275,7 +280,9 @@ class Generator:
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
     def annotation_sql(self, expression):
-        return f"{self.sql(expression, 'expression')} # {expression.name.strip()}"
+        if self._annotations:
+            return f"{self.sql(expression, 'expression')} # {expression.name.strip()}"
+        return self.sql(expression, "expression")
 
     def uncache_sql(self, expression):
         table = self.sql(expression, "this")

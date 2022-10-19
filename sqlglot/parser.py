@@ -1146,7 +1146,7 @@ class Parser:
 
     def _parse_annotation(self, expression):
         if self._match(TokenType.ANNOTATION):
-            return self.expression(exp.Annotation, this=self._prev.text, expression=expression)
+            return self.expression(exp.Annotation, this=self._prev.text.strip(), expression=expression)
 
         return expression
 

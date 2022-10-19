@@ -199,13 +199,14 @@ class Step:
 class Scan(Step):
     @classmethod
     def from_expression(cls, expression, ctes=None):
-        table = expression.this
+        table = expression
         alias_ = expression.alias
 
         if not alias_:
             raise UnsupportedError("Tables/Subqueries must be aliased. Run it through the optimizer")
 
         if isinstance(expression, exp.Subquery):
+            table = expression.this
             step = Step.from_expression(table, ctes)
             step.name = alias_
             return step

@@ -1275,7 +1275,7 @@ class Parser:
         alias = self._parse_table_alias()
 
         if alias:
-            this = self.expression(exp.Alias, this=this, alias=alias)
+            this.set("alias", alias)
 
         if not self.alias_post_tablesample:
             table_sample = self._parse_table_sample()

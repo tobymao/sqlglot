@@ -80,9 +80,10 @@ class PythonExecutor:
             source = step.source
 
             if isinstance(source, exp.Expression):
-                source = source.this.name or source.alias
+                source = source.name or source.alias
         else:
             source = step.name
+
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
 
@@ -121,7 +122,7 @@ class PythonExecutor:
         source = step.source
         alias = source.alias
 
-        with csv_reader(source.this) as reader:
+        with csv_reader(source) as reader:
             columns = next(reader)
             table = Table(columns)
             context = self.context({alias: table})

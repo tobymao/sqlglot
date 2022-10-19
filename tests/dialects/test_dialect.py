@@ -694,29 +694,6 @@ class TestDialect(Validator):
             },
         )
 
-    # https://dev.mysql.com/doc/refman/8.0/en/join.html
-    # https://www.postgresql.org/docs/current/queries-table-expressions.html
-    def test_joined_tables(self):
-        self.validate_identity("SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)")
-        self.validate_identity("SELECT * FROM (tbl1 JOIN tbl2 JOIN tbl3)")
-        self.validate_identity("SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)")
-        self.validate_identity("SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)")
-
-        self.validate_all(
-            "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
-            write={
-                "postgres": "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
-                "mysql": "SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)",
-            write={
-                "postgres": "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)",
-                "mysql": "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)",
-            },
-        )
-
     def test_lateral_subquery(self):
         self.validate_identity(
             "SELECT art FROM tbl1 INNER JOIN LATERAL (SELECT art FROM tbl2) AS tbl2 ON tbl1.art = tbl2.art"

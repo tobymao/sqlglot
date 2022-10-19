@@ -12,18 +12,16 @@ def isolate_table_selects(expression):
             if not isinstance(source, exp.Table):
                 continue
 
-            if not isinstance(source.parent, exp.Alias):
+            if not source.alias:
                 raise OptimizeError("Tables require an alias. Run qualify_tables optimization.")
 
-            parent = source.parent
-
-            parent.replace(
+            source.replace(
                 exp.select("*")
                 .from_(
-                    alias(source, source.name or parent.alias, table=True),
+                    alias(source, source.name or source.alias, table=True),
                     copy=False,
                 )
-                .subquery(parent.alias, copy=False)
+                .subquery(source.alias, copy=False)
             )
 
     return expression

@@ -281,7 +281,7 @@ class Generator:
 
     def annotation_sql(self, expression):
         if self._annotations:
-            return f"{self.sql(expression, 'expression')} # {expression.name.strip()}"
+            return f"{self.sql(expression, 'expression')} # {expression.name}"
         return self.sql(expression, "expression")
 
     def uncache_sql(self, expression):

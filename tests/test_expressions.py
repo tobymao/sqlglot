@@ -502,6 +502,7 @@ class TestExpressions(unittest.TestCase):
             ["a", "B", "c", "D"],
         )
         self.assertEqual(expression.sql(), sql)
+        self.assertEqual(expression.expressions[2].name, "comment")
         self.assertEqual(expression.sql(annotations=False), "SELECT a, b AS B, c, d AS D")
 
     def test_to_table(self):

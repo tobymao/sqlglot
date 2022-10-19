@@ -1191,7 +1191,7 @@ class Generator:
             if isinstance(arg_value, list):
                 for value in arg_value:
                     args.append(value)
-            elif arg_value:
+            else:
                 args.append(arg_value)
 
         return f"{self.normalize_func(expression.sql_name())}({self.format_args(*args)})"

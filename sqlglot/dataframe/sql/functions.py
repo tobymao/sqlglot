@@ -168,7 +168,7 @@ def csc(col: ColumnOrName) -> Column:
 
 
 def exp(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "EXP")
+    return Column.invoke_expression_over_column(col, glotexp.Exp)
 
 
 def expm1(col: ColumnOrName) -> Column:
@@ -298,11 +298,11 @@ def kurtosis(col: ColumnOrName) -> Column:
 
 
 def collect_list(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "COLLECT_LIST")
+    return Column.invoke_expression_over_column(col, glotexp.ArrayAgg)
 
 
 def collect_set(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "COLLECT_SET")
+    return Column.invoke_expression_over_column(col, glotexp.SetAgg)
 
 
 def hypot(col1: t.Union[ColumnOrName, float], col2: t.Union[ColumnOrName, float]) -> Column:
@@ -422,8 +422,8 @@ def randn(seed: t.Optional[ColumnOrLiteral] = None) -> Column:
 
 def round(col: ColumnOrName, scale: t.Optional[int] = None) -> Column:
     if scale is not None:
-        return Column.invoke_anonymous_function(col, "ROUND", scale)
-    return Column.invoke_anonymous_function(col, "ROUND")
+        return Column.invoke_expression_over_column(col, glotexp.Round, decimals=glotexp.convert(scale))
+    return Column.invoke_expression_over_column(col, glotexp.Round)
 
 
 def bround(col: ColumnOrName, scale: t.Optional[int] = None) -> Column:
@@ -734,7 +734,7 @@ def rtrim(col: ColumnOrName) -> Column:
 
 
 def trim(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "TRIM")
+    return Column.invoke_expression_over_column(col, glotexp.Trim)
 
 
 def concat_ws(sep: str, *cols: ColumnOrName) -> Column:
@@ -1018,7 +1018,7 @@ def to_csv(col: ColumnOrName, options: t.Optional[t.Dict[str, str]] = None) -> C
 
 
 def size(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "SIZE")
+    return Column.invoke_expression_over_column(col, glotexp.ArraySize)
 
 
 def array_min(col: ColumnOrName) -> Column:

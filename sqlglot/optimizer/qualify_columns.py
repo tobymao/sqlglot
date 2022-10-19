@@ -212,13 +212,12 @@ def _qualify_columns(scope, resolver):
                 column.set("table", exp.to_identifier(column_table))
 
     # Determine whether each reference in the order by clause is to a column or an alias.
-    order = scope.find(exp.Order)
-    if order is not None:
-        for column in order.find_all(exp.Column):
+    for ordered in scope.find_all(exp.Ordered):
+        for column in ordered.find_all(exp.Column):
             column_table = column.table
             column_name = column.name
 
-            if column_table or isinstance(column.parent, exp.Ordered) or column.name not in resolver.all_columns:
+            if column_table or column.parent is ordered or column_name not in resolver.all_columns:
                 continue
 
             column_table = resolver.get_table(column_name)

@@ -211,6 +211,22 @@ def _qualify_columns(scope, resolver):
             if column_table:
                 column.set("table", exp.to_identifier(column_table))
 
+    # Determine whether each reference in the order by clause is to a column or an alias.
+    for ordered in scope.find_all(exp.Ordered):
+        for column in ordered.find_all(exp.Column):
+            column_table = column.table
+            column_name = column.name
+
+            if column_table or column.parent is ordered or column_name not in resolver.all_columns:
+                continue
+
+            column_table = resolver.get_table(column_name)
+
+            if column_table is None:
+                raise OptimizeError(f"Ambiguous column: {column_name}")
+
+            column.set("table", exp.to_identifier(column_table))
+
 
 def _expand_stars(scope, resolver):
     """Expand stars to lists of column selections"""

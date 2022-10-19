@@ -72,6 +72,9 @@ SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
 SELECT a FROM x ORDER BY b;
 SELECT x.a AS a FROM x AS x ORDER BY x.b;
 
+SELECT SUM(a) AS a FROM x ORDER BY SUM(a);
+SELECT SUM(x.a) AS a FROM x AS x ORDER BY SUM(x.a);
+
 # dialect: bigquery
 SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY row_num = 1;
 SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x QUALIFY row_num = 1;

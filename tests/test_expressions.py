@@ -495,11 +495,14 @@ class TestExpressions(unittest.TestCase):
                 self.assertEqual(exp.convert(value).sql(), expected)
 
     def test_annotation_alias(self):
-        expression = parse_one("SELECT a, b AS B, c #comment, d AS D #another_comment FROM foo")
+        sql = "SELECT a, b AS B, c # comment, d AS D # another_comment FROM foo"
+        expression = parse_one(sql)
         self.assertEqual(
             [e.alias_or_name for e in expression.expressions],
             ["a", "B", "c", "D"],
         )
+        self.assertEqual(expression.sql(), sql)
+        self.assertEqual(expression.sql(annotations=False), "SELECT a, b AS B, c, d AS D")
 
     def test_to_table(self):
         table_only = exp.to_table("table_name")

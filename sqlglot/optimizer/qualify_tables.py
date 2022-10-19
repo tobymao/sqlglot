@@ -40,7 +40,7 @@ def qualify_tables(expression, db=None, catalog=None):
                     if not source.args.get("catalog"):
                         source.set("catalog", exp.to_identifier(catalog))
 
-                if not isinstance(source.parent, exp.Alias):
+                if not source.alias:
                     source.replace(
                         alias(
                             source.copy(),

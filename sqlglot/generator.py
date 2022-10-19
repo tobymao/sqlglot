@@ -581,7 +581,7 @@ class Generator:
         null = f" NULL DEFINED AS {null}" if null else ""
         return f"ROW FORMAT DELIMITED{fields}{escaped}{items}{keys}{lines}{null}"
 
-    def table_sql(self, expression):
+    def table_sql(self, expression, sep=" AS "):
         table = ".".join(
             part
             for part in [
@@ -592,13 +592,20 @@ class Generator:
             if part
         )
 
+        alias = self.sql(expression, "alias")
+        alias = f"{sep}{alias}" if alias else ""
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
         pivots = self.expressions(expression, key="pivots", sep="")
-        return f"{table}{laterals}{joins}{pivots}"
+
+        if alias and pivots:
+            pivots = f"{pivots}{alias}"
+            alias = ""
+
+        return f"{table}{alias}{laterals}{joins}{pivots}"
 
     def tablesample_sql(self, expression):
-        if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):
+        if self.alias_post_tablesample and expression.this.alias:
             this = self.sql(expression.this, "this")
             alias = f" AS {self.sql(expression.this, 'alias')}"
         else:

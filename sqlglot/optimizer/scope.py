@@ -257,12 +257,7 @@ class Scope:
             referenced_names = []
 
             for table in self.tables:
-                referenced_names.append(
-                    (
-                        table.parent.alias if isinstance(table.parent, exp.Alias) else table.name,
-                        table,
-                    )
-                )
+                referenced_names.append((table.alias_or_name, table))
             for derived_table in self.derived_tables:
                 referenced_names.append((derived_table.alias, derived_table.unnest()))
 
@@ -538,8 +533,8 @@ def _add_table_sources(scope):
     for table in scope.tables:
         table_name = table.name
 
-        if isinstance(table.parent, exp.Alias):
-            source_name = table.parent.alias
+        if table.alias:
+            source_name = table.alias
         else:
             source_name = table_name
 

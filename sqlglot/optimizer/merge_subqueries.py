@@ -70,15 +70,10 @@ def merge_ctes(expression, leave_tables_isolated=False):
         inner_select = inner_scope.expression.unnest()
         from_or_join = table.find_ancestor(exp.From, exp.Join)
         if _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
-            node_to_replace = table
-            if isinstance(node_to_replace.parent, exp.Alias):
-                node_to_replace = node_to_replace.parent
-                alias = node_to_replace.alias
-            else:
-                alias = table.name
+            alias = table.alias_or_name
 
             _rename_inner_sources(outer_scope, inner_scope, alias)
-            _merge_from(outer_scope, inner_scope, node_to_replace, alias)
+            _merge_from(outer_scope, inner_scope, table, alias)
             _merge_expressions(outer_scope, inner_scope, alias)
             _merge_joins(outer_scope, inner_scope, from_or_join)
             _merge_where(outer_scope, inner_scope, from_or_join)
@@ -179,8 +174,8 @@ def _rename_inner_sources(outer_scope, inner_scope, alias):
 
         if isinstance(source, exp.Subquery):
             source.set("alias", exp.TableAlias(this=new_alias))
-        elif isinstance(source, exp.Table) and isinstance(source.parent, exp.Alias):
-            source.parent.set("alias", new_alias)
+        elif isinstance(source, exp.Table) and source.alias:
+            source.set("alias", new_alias)
         elif isinstance(source, exp.Table):
             source.replace(exp.alias_(source.copy(), new_alias))
 

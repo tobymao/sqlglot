@@ -1199,6 +1199,7 @@ QUERY_MODIFIERS = {
 class Table(Expression):
     arg_types = {
         "this": True,
+        "alias": False,
         "db": False,
         "catalog": False,
         "laterals": False,

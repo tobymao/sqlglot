@@ -80,16 +80,11 @@ class Oracle(Dialect):
                 sep="",
             )
 
-        def alias_sql(self, expression):
-            if isinstance(expression.this, exp.Table):
-                to_sql = self.sql(expression, "alias")
-                # oracle does not allow "AS" between table and alias
-                to_sql = f" {to_sql}" if to_sql else ""
-                return f"{self.sql(expression, 'this')}{to_sql}"
-            return super().alias_sql(expression)
-
         def offset_sql(self, expression):
             return f"{super().offset_sql(expression)} ROWS"
+
+        def table_sql(self, expression):
+            return super().table_sql(expression, sep=" ")
 
     class Tokenizer(Tokenizer):
         KEYWORDS = {

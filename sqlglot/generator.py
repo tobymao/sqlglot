@@ -574,7 +574,7 @@ class Generator:
         null = f" NULL DEFINED AS {null}" if null else ""
         return f"ROW FORMAT DELIMITED{fields}{escaped}{items}{keys}{lines}{null}"
 
-    def table_sql(self, expression):
+    def table_sql(self, expression, sep=" AS "):
         table = ".".join(
             part
             for part in [
@@ -585,13 +585,20 @@ class Generator:
             if part
         )
 
+        alias = self.sql(expression, "alias")
+        alias = f"{sep}{alias}" if alias else ""
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
         pivots = self.expressions(expression, key="pivots", sep="")
-        return f"{table}{laterals}{joins}{pivots}"
+
+        if alias and pivots:
+            pivots = f"{pivots}{alias}"
+            alias = ""
+
+        return f"{table}{alias}{laterals}{joins}{pivots}"
 
     def tablesample_sql(self, expression):
-        if self.alias_post_tablesample and isinstance(expression.this, exp.Alias):
+        if self.alias_post_tablesample and expression.this.alias:
             this = self.sql(expression.this, "this")
             alias = f" AS {self.sql(expression.this, 'alias')}"
         else:
@@ -839,19 +846,7 @@ class Generator:
         return f":{expression.name}" if expression.name else "?"
 
     def subquery_sql(self, expression):
-        if not isinstance(expression.this, exp.Alias):
-            alias = self.sql(expression, "alias")
-        else:
-            # This case addresses parenthesized "join constructs"
-            # https://www.postgresql.org/docs/current/queries-table-expressions.html
-
-            alias = None
-            expression = expression.copy()
-            alias_expr = expression.this
-
-            # Substitute the alias node with the to-be-aliased node, then apply the alias on that node only
-            expression.set("this", alias_expr.this)
-            expression.this.set("this", exp.Alias(this=expression.this.this, alias=alias_expr.alias))
+        alias = self.sql(expression, "alias")
 
         return self.query_modifiers(
             expression,

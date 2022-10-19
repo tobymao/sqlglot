@@ -1120,6 +1120,9 @@ class Parser:
         )
 
     def _parse_query_modifiers(self, this):
+        if isinstance(this, exp.Alias):
+            this = this.this
+
         if not isinstance(this, self.MODIFIABLES):
             return
 

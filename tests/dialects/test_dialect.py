@@ -716,6 +716,13 @@ class TestDialect(Validator):
                 "mysql": "SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)",
             },
         )
+        self.validate_all(
+            "SELECT * FROM (table1 t1 LEFT JOIN table2 t2 ON 1 = 1)",
+            write={
+                "postgres": "SELECT * FROM (table1 AS t1 LEFT JOIN table2 AS t2 ON 1 = 1)",
+                "mysql": "SELECT * FROM (table1 AS t1 LEFT JOIN table2 AS t2 ON 1 = 1)",
+            },
+        )
 
     def test_lateral_subquery(self):
         self.validate_identity(

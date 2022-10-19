@@ -839,7 +839,19 @@ class Generator:
         return f":{expression.name}" if expression.name else "?"
 
     def subquery_sql(self, expression):
-        alias = self.sql(expression, "alias")
+        if not isinstance(expression.this, exp.Alias):
+            alias = self.sql(expression, "alias")
+        else:
+            # This case addresses parenthesized "join constructs"
+            # https://www.postgresql.org/docs/current/queries-table-expressions.html
+
+            alias = None
+            expression = expression.copy()
+            alias_expr = expression.this
+
+            # Substitute the alias node with the to-be-aliased node, then apply the alias on that node only
+            expression.set("this", alias_expr.this)
+            expression.this.set("this", exp.Alias(this=expression.this.this, alias=alias_expr.alias))
 
         return self.query_modifiers(
             expression,

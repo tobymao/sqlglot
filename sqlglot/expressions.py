@@ -3286,6 +3286,12 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     alias = to_identifier(alias, quoted=quoted)
     alias = TableAlias(this=alias) if table else alias
 
+    # We don't set the "alias" arg for Window expressions, because that would add an IDENTIFIER node in
+    # the AST, representing a "named_window" [1] construct (eg. bigquery). What we want is an ALIAS node
+    # for the complete Window expression.
+    #
+    # [1]: https://cloud.google.com/bigquery/docs/reference/standard-sql/window-function-calls
+
     if "alias" in exp.arg_types and not isinstance(exp, Window):
         exp = exp.copy()
         exp.set("alias", alias)

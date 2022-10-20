@@ -129,10 +129,10 @@ class TestExpressions(unittest.TestCase):
     def test_replace_tables(self):
         self.assertEqual(
             exp.replace_tables(
-                parse_one("select * from a join b join c.a join d.a join e.a"),
+                parse_one("select * from a AS a join b join c.a join d.a join e.a"),
                 {"a": "a1", "b": "b.a", "c.a": "c.a2", "d.a": "d2"},
             ).sql(),
-            'SELECT * FROM "a1" JOIN "b"."a" JOIN "c"."a2" JOIN "d2" JOIN e.a',
+            "SELECT * FROM a1 AS a JOIN b.a JOIN c.a2 JOIN d2 JOIN e.a",
         )
 
     def test_named_selects(self):

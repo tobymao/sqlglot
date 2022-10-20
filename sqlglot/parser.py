@@ -497,7 +497,7 @@ class Parser:
         max_errors=3,
         null_ordering=None,
     ):
-        self.error_level = error_level or ErrorLevel.RAISE
+        self.error_level = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
         self.unnest_column_only = unnest_column_only

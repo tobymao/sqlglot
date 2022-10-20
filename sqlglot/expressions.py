@@ -3499,7 +3499,7 @@ def replace_tables(expression, mapping):
     Examples:
         >>> from sqlglot import exp, parse_one
         >>> replace_tables(parse_one("select * from a.b"), {"a.b": "c"}).sql()
-        'SELECT * FROM "c"'
+        'SELECT * FROM c'
 
     Returns:
         The mapped expression
@@ -3509,7 +3509,10 @@ def replace_tables(expression, mapping):
         if isinstance(node, Table):
             new_name = mapping.get(table_name(node))
             if new_name:
-                return table_(*reversed(new_name.split(".")), quoted=True)
+                return to_table(
+                    new_name,
+                    **{k: v for k, v in node.args.items() if k not in ("this", "db", "catalog")},
+                )
         return node
 
     return expression.transform(_replace_tables)

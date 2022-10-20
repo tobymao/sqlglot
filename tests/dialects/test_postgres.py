@@ -206,3 +206,11 @@ class TestPostgres(Validator):
             """'{"a":[1,2,3],"b":[4,5,6]}'::json#>>'{a,2}'""",
             write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON)#>>'{a,2}'"""},
         )
+        self.validate_all(
+            "SELECT $$a$$",
+            write={"postgres": "SELECT 'a'"},
+        )
+        self.validate_all(
+            "SELECT $$Dianne's horse$$",
+            write={"postgres": "SELECT 'Dianne''s horse'"},
+        )

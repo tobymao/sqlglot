@@ -40,8 +40,8 @@ parser.add_argument(
     "--error-level",
     dest="error_level",
     type=str,
-    default="RAISE",
-    help="IGNORE, WARN, RAISE (default)",
+    default="IMMEDIATE",
+    help="IGNORE, WARN, RAISE, IMMEDIATE (default)",
 )
 
 

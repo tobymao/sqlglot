@@ -81,7 +81,7 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(ignore.expression(exp.Hint, y=""), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint), exp.Hint)
 
-        default = Parser()
+        default = Parser(error_level=ErrorLevel.RAISE)
         self.assertIsInstance(default.expression(exp.Hint, expressions=[""]), exp.Hint)
         default.expression(exp.Hint, y="")
         default.expression(exp.Hint)

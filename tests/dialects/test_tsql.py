@@ -71,16 +71,19 @@ class TestTSQL(Validator):
                 "spark": "LOCATE('sub', 'testsubstring')",
             },
         )
+
     def test_datename(self):
         self.validate_all(
             "SELECT DATENAME(mm,'01-01-1970')",
-            write ={
-                "spark":"SELECT DATE_FORMAT('01-01-1970', 'MMM')"
-            }
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MMM')"},
         )
         self.validate_all(
             "SELECT DATENAME(w,'01-01-1970')",
-            write ={
-                "spark":"SELECT DATE_FORMAT('01-01-1970', 'E')"
-            }
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'E')"},
+        )
+
+    def test_datepart(self):
+        self.validate_all(
+            "SELECT DATEPART(month,'01-01-1970')",
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MM')"},
         )

@@ -82,6 +82,13 @@ class TSQL(Dialect):
                     is_string=True,
                 ),
             ),
+            "DATEPART": lambda args: exp.TimeToStr(
+                this=list_get(args, 1),
+                format=exp.Literal(
+                    this=format_time(list_get(args, 0).sql(),TSQL.time_mapping),
+                    is_string=True,
+                ),
+            ),
         }
 
         def _parse_convert(self):

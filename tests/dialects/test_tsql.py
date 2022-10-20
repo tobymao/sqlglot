@@ -46,7 +46,6 @@ class TestTSQL(Validator):
             },
         )
 
-
     def test_charindex(self):
         self.validate_all(
             "CHARINDEX(x, y, 9)",

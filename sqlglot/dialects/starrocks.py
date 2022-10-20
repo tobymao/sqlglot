@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.dialect import arrow_json_extract_sql, rename_func
 from sqlglot.dialects.mysql import MySQL
 
 
@@ -14,6 +14,8 @@ class StarRocks(MySQL):
 
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
+            exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.JSONExtract: arrow_json_extract_sql,
             exp.DateDiff: rename_func("DATEDIFF"),
             exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToDate: rename_func("TO_DATE"),

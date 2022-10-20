@@ -3285,7 +3285,10 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     """
     exp = maybe_parse(expression, dialect=dialect, **opts)
     alias = to_identifier(alias, quoted=quoted)
-    alias = TableAlias(this=alias) if table else alias
+
+    if table:
+        expression.set("alias", TableAlias(this=alias))
+        return expression
 
     # We don't set the "alias" arg for Window expressions, because that would add an IDENTIFIER node in
     # the AST, representing a "named_window" [1] construct (eg. bigquery). What we want is an ALIAS node
@@ -3337,7 +3340,7 @@ def column(col, table=None, quoted=None):
     )
 
 
-def table_(table, db=None, catalog=None, quoted=None):
+def table_(table, db=None, catalog=None, quoted=None, alias=None):
     """Build a Table.
 
     Args:
@@ -3352,6 +3355,7 @@ def table_(table, db=None, catalog=None, quoted=None):
         this=to_identifier(table, quoted=quoted),
         db=to_identifier(db, quoted=quoted),
         catalog=to_identifier(catalog, quoted=quoted),
+        alias=TableAlias(this=to_identifier(alias)) if alias else None,
     )
 
 

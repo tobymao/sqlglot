@@ -123,6 +123,9 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(exp.table_name(parse_one("a.b.c", into=exp.Table)), "a.b.c")
         self.assertEqual(exp.table_name("a.b.c"), "a.b.c")
 
+    def test_table(self):
+        self.assertEqual(exp.table_("a", alias="b"), parse_one("select * from a b").find(exp.Table))
+
     def test_replace_tables(self):
         self.assertEqual(
             exp.replace_tables(

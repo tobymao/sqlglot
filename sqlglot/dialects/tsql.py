@@ -32,6 +32,11 @@ class TSQL(Dialect):
         }
 
     class Parser(Parser):
+        FUNCTIONS = {
+            **Parser.FUNCTIONS,
+            "CHARINDEX": exp.StrPosition.from_arg_list,
+        }
+
         def _parse_convert(self):
             to = self._parse_types()
             self._match(TokenType.COMMA)

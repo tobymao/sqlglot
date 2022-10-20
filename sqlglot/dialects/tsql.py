@@ -8,14 +8,7 @@ from sqlglot.time import format_time
 
 
 class TSQL(Dialect):
-    date_name_mapping = {
-        "weekday": "%A",
-        "dw": "%A",
-        "w": "%A",
-        "month": "%b",
-        "mm": "%b",
-        "m": "%b"
-    }
+    date_name_mapping = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%b", "mm": "%b", "m": "%b"}
     time_mapping = {
         "yyyy": "%Y",
         "yy": "%Y",
@@ -41,10 +34,10 @@ class TSQL(Dialect):
         "millisecond": "%f",
         "ms": "%f",
         "weekday": "%W",
-        "dw":"%W",
-        "month":"%m",
-        "mm":"%m",
-        "m":"%m"
+        "dw": "%W",
+        "month": "%m",
+        "mm": "%m",
+        "m": "%m",
     }
     null_ordering = "nulls_are_small"
     time_format = "'yyyy-mm-dd hh:mm:ss'"
@@ -78,14 +71,14 @@ class TSQL(Dialect):
             "DATENAME": lambda args: exp.TimeToStr(
                 this=list_get(args, 1),
                 format=exp.Literal(
-                    this=format_time(list_get(args, 0).sql(), {**TSQL.time_mapping,**TSQL.date_name_mapping}),
+                    this=format_time(list_get(args, 0).sql(), {**TSQL.time_mapping, **TSQL.date_name_mapping}),
                     is_string=True,
                 ),
             ),
             "DATEPART": lambda args: exp.TimeToStr(
                 this=list_get(args, 1),
                 format=exp.Literal(
-                    this=format_time(list_get(args, 0).sql(),TSQL.time_mapping),
+                    this=format_time(list_get(args, 0).sql(), TSQL.time_mapping),
                     is_string=True,
                 ),
             ),

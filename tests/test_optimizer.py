@@ -29,19 +29,19 @@ class TestOptimizer(unittest.TestCase):
         CREATE TABLE x (a INT, b INT);
         CREATE TABLE y (b INT, c INT);
         CREATE TABLE z (b INT, c INT);
-        
+
         INSERT INTO x VALUES (1, 1);
         INSERT INTO x VALUES (2, 2);
         INSERT INTO x VALUES (2, 2);
         INSERT INTO x VALUES (3, 3);
         INSERT INTO x VALUES (null, null);
-        
+
         INSERT INTO y VALUES (2, 2);
         INSERT INTO y VALUES (2, 2);
         INSERT INTO y VALUES (3, 3);
         INSERT INTO y VALUES (4, 4);
         INSERT INTO y VALUES (null, null);
-        
+
         INSERT INTO y VALUES (3, 3);
         INSERT INTO y VALUES (3, 3);
         INSERT INTO y VALUES (4, 4);
@@ -80,8 +80,8 @@ class TestOptimizer(unittest.TestCase):
 
             with self.subTest(title):
                 self.assertEqual(
-                    optimized.sql(pretty=pretty, dialect=dialect),
                     expected,
+                    optimized.sql(pretty=pretty, dialect=dialect),
                 )
 
             should_execute = meta.get("execute")
@@ -250,7 +250,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
           SELECT y.b FROM y
         ), z as (
           SELECT cola, colb FROM (VALUES(1, 'test')) AS tab(cola, colb)
-        )        
+        )
         SELECT
           r.b,
           s.b

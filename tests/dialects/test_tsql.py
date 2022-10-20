@@ -45,3 +45,30 @@ class TestTSQL(Validator):
                 "tsql": "CAST(x AS DATETIME2)",
             },
         )
+
+
+    def test_charindex(self):
+        self.validate_all(
+            "CHARINDEX(x, y, 9)",
+            write={
+                "spark": "LOCATE(x, y, 9)",
+            },
+        )
+        self.validate_all(
+            "CHARINDEX(x, y)",
+            write={
+                "spark": "LOCATE(x, y)",
+            },
+        )
+        self.validate_all(
+            "CHARINDEX('sub', 'testsubstring', 3)",
+            write={
+                "spark": "LOCATE('sub', 'testsubstring', 3)",
+            },
+        )
+        self.validate_all(
+            "CHARINDEX('sub', 'testsubstring')",
+            write={
+                "spark": "LOCATE('sub', 'testsubstring')",
+            },
+        )

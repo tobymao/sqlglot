@@ -90,6 +90,7 @@ class TSQL(Dialect):
             this = self._parse_field()
             return self.expression(exp.Cast, this=this, to=to)
 
+
     class Generator(Generator):
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,

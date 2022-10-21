@@ -2488,7 +2488,7 @@ class Least(Func):
 
 
 class Length(Func):
-    pass
+    arg_types = {"this": True}
 
 
 class Levenshtein(Func):

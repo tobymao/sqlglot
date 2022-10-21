@@ -45,3 +45,11 @@ class TestTSQL(Validator):
                 "tsql": "CAST(x AS DATETIME2)",
             },
         )
+
+    def test_len(self):
+        self.validate_all(
+            "LEN(x)",
+            write={
+                "spark": "LENGTH(x)",
+            },
+        )

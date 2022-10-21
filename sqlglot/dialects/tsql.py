@@ -106,49 +106,41 @@ class TSQL(Dialect):
             "CHARINDEX": exp.StrPosition.from_arg_list,
         }
 
+        var_length_datatype = [
+            DataType.Type.NVARCHAR,
+            DataType.Type.VARCHAR,
+            DataType.Type.CHAR,
+            DataType.Type.NCHAR,
+        ]
+
         def _parse_convert(self, strict):
             to = self._parse_types()
             self._match(TokenType.COMMA)
             this = self._parse_field()
 
-            var_length_datatype = [
-                DataType.Type.NVARCHAR,
-                DataType.Type.VARCHAR,
-                DataType.Type.CHAR,
-                DataType.Type.NCHAR,
-            ]
-
             # Retrieve length of datatype and override to default if not specified
-            if list_get(to.expressions, 0) is None and to.this in var_length_datatype:
-                to = exp.DataType.build(to.this, expressions=[exp.Literal(this="30", is_string=False)], nested=False)
+            if list_get(to.expressions, 0) is None and to.this in self.var_length_datatype:
+                to = exp.DataType.build(to.this, expressions=[exp.Literal.number(30)], nested=False)
 
             # Check whether a conversion with format is applicable
             if self._match(TokenType.COMMA):
-                format_norm = TSQL.convert_format_mapping[int(self._parse_number().this)]
+                format_norm = exp.Literal.string(TSQL.convert_format_mapping[int(self._parse_number().this)])
 
                 # Check whether the convert entails a string to date format
                 if to.this in [DataType.Type.DATE]:
-                    return self.expression(
-                        exp.StrToDate, this=this, format=exp.Literal(this=format_norm, is_string=True)
-                    )
+                    return self.expression(exp.StrToDate, this=this, format=format_norm)
                 # Check whether the convert entails a string to datetime format
                 elif to.this in [DataType.Type.DATETIME]:
-                    return self.expression(
-                        exp.StrToTime, this=this, format=exp.Literal(this=format_norm, is_string=True)
-                    )
+                    return self.expression(exp.StrToTime, this=this, format=format_norm)
                 # Check whether the convert entails a date to string format
-                elif to.this in var_length_datatype:
+                elif to.this in self.var_length_datatype:
                     return self.expression(
                         exp.Cast if strict else exp.TryCast,
                         to=to,
-                        this=self.expression(
-                            exp.TimeToStr, this=this, format=exp.Literal(this=format_norm, is_string=True)
-                        ),
+                        this=self.expression(exp.TimeToStr, this=this, format=format_norm),
                     )
                 elif to.this == DataType.Type.TEXT:
-                    return self.expression(
-                        exp.TimeToStr, this=this, format=exp.Literal(this=format_norm, is_string=True)
-                    )
+                    return self.expression(exp.TimeToStr, this=this, format=format_norm)
 
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)

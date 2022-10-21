@@ -2143,7 +2143,7 @@ class Parser:
             to = self._parse_types()
         else:
             to = None
-        return self.expression(exp.Cast, this=this, to=to)
+        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
     def _parse_position(self):
         args = self._parse_csv(self._parse_bitwise)

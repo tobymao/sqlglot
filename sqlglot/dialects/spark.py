@@ -111,7 +111,7 @@ class Spark(Hive):
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             exp.TimestampTrunc: lambda self, e: f"DATE_TRUNC({self.sql(e, 'unit')}, {self.sql(e, 'this')})",
             exp.VariancePop: rename_func("VAR_POP"),
-            exp.PartsToDate: rename_func("MAKE_DATE"),
+            exp.DateFromParts: rename_func("MAKE_DATE"),
         }
 
         WRAP_DERIVED_VALUES = False

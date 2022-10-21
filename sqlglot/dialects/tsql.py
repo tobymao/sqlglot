@@ -16,7 +16,7 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
             this=list_get(args, 1),
             format=exp.Literal.string(
                 format_time(
-                    list_get(args, 0).text("this") or (TSQL.time_format if default is True else default),
+                    list_get(args, 0).name or (TSQL.time_format if default is True else default),
                     {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING} if full_format_mapping else TSQL.time_mapping,
                 )
             ),
@@ -144,7 +144,7 @@ class TSQL(Dialect):
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "DATEFROMPARTS": exp.PartsToDate.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_exp_mapping=True),
+            "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
         }
 

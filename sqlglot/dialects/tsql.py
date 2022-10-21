@@ -4,7 +4,25 @@ from sqlglot.expressions import DataType
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
 from sqlglot.parser import Parser
+from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
+
+FULL_FORMAT_TIME_MAPPING = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"}
+
+
+def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
+    def _format_time(args):
+        return exp_class(
+            this=list_get(args, 1),
+            format=exp.Literal.string(
+                format_time(
+                    list_get(args, 0).name or (TSQL.time_format if default is True else default),
+                    {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING} if full_format_mapping else TSQL.time_mapping,
+                )
+            ),
+        )
+
+    return _format_time
 
 
 class TSQL(Dialect):
@@ -12,12 +30,37 @@ class TSQL(Dialect):
     time_format = "'yyyy-mm-dd hh:mm:ss'"
 
     time_mapping = {
+        "yyyy": "%Y",
+        "yy": "%y",
+        "year": "%Y",
+        "qq": "%q",
+        "q": "%q",
+        "quarter": "%q",
+        "dayofyear": "%j",
+        "day": "%d",
+        "dy": "%d",
         "y": "%Y",
+        "week": "%W",
+        "ww": "%W",
+        "wk": "%W",
+        "hour": "%h",
+        "hh": "%I",
+        "minute": "%M",
+        "mi": "%M",
+        "n": "%M",
+        "second": "%S",
+        "ss": "%S",
+        "s": "%-S",
+        "millisecond": "%f",
+        "ms": "%f",
+        "weekday": "%W",
+        "dw": "%W",
+        "month": "%m",
+        "mm": "%M",
+        "m": "%-M",
         "Y": "%Y",
         "YYYY": "%Y",
-        "yyyy": "%Y",
         "YY": "%y",
-        "yy": "%y",
         "MMMM": "%B",
         "MMM": "%b",
         "MM": "%m",
@@ -26,12 +69,7 @@ class TSQL(Dialect):
         "d": "%-d",
         "HH": "%H",
         "H": "%-H",
-        "hh": "%I",
         "h": "%-I",
-        "mm": "%M",
-        "m": "%-M",
-        "ss": "%S",
-        "s": "%-S",
         "S": "%f",
     }
 
@@ -104,6 +142,9 @@ class TSQL(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
+            "ISNULL": exp.Coalesce.from_arg_list,
+            "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
+            "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
         }
 
         VAR_LENGTH_DATATYPES = {

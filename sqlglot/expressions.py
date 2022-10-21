@@ -2411,6 +2411,11 @@ class TimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
+class DateFromParts(Func):
+    _sql_names = ["DATEFROMPARTS"]
+    arg_types = {"year": True, "month": True, "day": True}
+
+
 class DateStrToDate(Func):
     pass
 

@@ -1,10 +1,10 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
 from sqlglot.helper import list_get
+from sqlglot.parser import Parser
 from sqlglot.time import format_time
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 class TSQL(Dialect):

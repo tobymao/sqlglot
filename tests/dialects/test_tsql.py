@@ -75,3 +75,19 @@ class TestTSQL(Validator):
             "SELECT DATEFROMPARTS('2020', 10, 01)",
             write={"spark": "SELECT MAKE_DATE('2020',10,01)"},
         )
+
+    def test_datename(self):
+        self.validate_all(
+            "SELECT DATENAME(mm,'01-01-1970')",
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MMM')"},
+        )
+        self.validate_all(
+            "SELECT DATENAME(w,'01-01-1970')",
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'E')"},
+        )
+
+    def test_datepart(self):
+        self.validate_all(
+            "SELECT DATEPART(month,'01-01-1970')",
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MM')"},
+        )

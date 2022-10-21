@@ -124,6 +124,7 @@ class Hive(Dialect):
         "a": "%p",
         "DD": "%j",
         "D": "%-j",
+        "E": "%A",
     }
 
     date_format = "'yyyy-MM-dd'"

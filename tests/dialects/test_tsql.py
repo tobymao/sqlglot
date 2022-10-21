@@ -91,3 +91,155 @@ class TestTSQL(Validator):
             "SELECT DATEPART(month,'01-01-1970')",
             write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MM')"},
         )
+
+    def test_convert_date_format(self):
+        self.validate_all(
+            "CONVERT(NVARCHAR(200), x)",
+            write={
+                "spark": "CAST(x AS VARCHAR(200))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(NVARCHAR, x)",
+            write={
+                "spark": "CAST(x AS VARCHAR(30))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(NVARCHAR(MAX), x)",
+            write={
+                "spark": "CAST(x AS STRING)",
+            },
+        )
+        self.validate_all(
+            "CONVERT(VARCHAR(200), x)",
+            write={
+                "spark": "CAST(x AS VARCHAR(200))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(VARCHAR, x)",
+            write={
+                "spark": "CAST(x AS VARCHAR(30))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(VARCHAR(MAX), x)",
+            write={
+                "spark": "CAST(x AS STRING)",
+            },
+        )
+        self.validate_all(
+            "CONVERT(CHAR(40), x)",
+            write={
+                "spark": "CAST(x AS CHAR(40))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(CHAR, x)",
+            write={
+                "spark": "CAST(x AS CHAR(30))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(NCHAR(40), x)",
+            write={
+                "spark": "CAST(x AS CHAR(40))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(NCHAR, x)",
+            write={
+                "spark": "CAST(x AS CHAR(30))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(VARCHAR, x, 121)",
+            write={
+                "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(30))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(VARCHAR(40), x, 121)",
+            write={
+                "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(40))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(VARCHAR(MAX), x, 121)",
+            write={
+                "spark": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
+            "CONVERT(NVARCHAR, x, 121)",
+            write={
+                "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(30))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(NVARCHAR(40), x, 121)",
+            write={
+                "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(40))",
+            },
+        )
+        self.validate_all(
+            "CONVERT(NVARCHAR(MAX), x, 121)",
+            write={
+                "spark": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
+            "CONVERT(DATE, x, 121)",
+            write={
+                "spark": "TO_DATE(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
+            "CONVERT(DATETIME, x, 121)",
+            write={
+                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
+            "CONVERT(DATETIME2, x, 121)",
+            write={
+                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
+            "CONVERT(INT, x)",
+            write={
+                "spark": "CAST(x AS INT)",
+            },
+        )
+        self.validate_all(
+            "CONVERT(INT, x, 121)",
+            write={
+                "spark": "CAST(x AS INT)",
+            },
+        )
+        self.validate_all(
+            "TRY_CONVERT(NVARCHAR, x, 121)",
+            write={
+                "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(30))",
+            },
+        )
+        self.validate_all(
+            "TRY_CONVERT(INT, x)",
+            write={
+                "spark": "CAST(x AS INT)",
+            },
+        )
+        self.validate_all(
+            "TRY_CAST(x AS INT)",
+            write={
+                "spark": "CAST(x AS INT)",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS INT)",
+            write={
+                "spark": "CAST(x AS INT)",
+            },
+        )

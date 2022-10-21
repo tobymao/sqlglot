@@ -7,17 +7,17 @@ from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
 
-FULL_EXP_TIME_MAPPING = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"}
+FULL_FORMAT_TIME_MAPPING = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"}
 
 
-def tsql_format_time_lambda(exp_class, full_exp_mapping=None, default=None):
+def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     def _format_time(args):
         return exp_class(
             this=list_get(args, 1),
             format=exp.Literal.string(
                 format_time(
                     list_get(args, 0).text("this") or (TSQL.time_format if default is True else default),
-                    {**TSQL.time_mapping, **FULL_EXP_TIME_MAPPING} if full_exp_mapping else TSQL.time_mapping,
+                    {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING} if full_format_mapping else TSQL.time_mapping,
                 )
             ),
         )

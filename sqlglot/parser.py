@@ -329,6 +329,7 @@ class Parser:
         exp.DataType: lambda self: self._parse_types(),
         exp.From: lambda self: self._parse_from(),
         exp.Group: lambda self: self._parse_group(),
+        exp.Identifier: lambda self: self._parse_id_var(),
         exp.Lateral: lambda self: self._parse_lateral(),
         exp.Join: lambda self: self._parse_join(),
         exp.Order: lambda self: self._parse_order(),

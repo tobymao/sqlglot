@@ -3518,17 +3518,20 @@ def replace_tables(expression, mapping):
     return expression.transform(_replace_tables)
 
 
-def replace_placeholders(expression, mapping):
-    """Replace all placeholders in expression according to the mapping.
+def replace_placeholders(expression, *args, **kwargs):
+    """Replace placeholders in an expression.
 
     Args:
         expression (sqlglot.Expression): Expression node to be transformed and replaced
-        mapping (Dict[str, str]): Mapping of placeholder names
+        args: Positional names that will substitute unnamed placeholders in the given order
+        kwargs: Keyword arguments that will substitute named placeholders
 
     Examples:
         >>> from sqlglot import exp, parse_one
-        >>> replace_placeholders(parse_one("select * from :tbl"), {"tbl": "foo"}).sql()
-        'SELECT * FROM foo'
+        >>> replace_placeholders(
+        ...     parse_one("select * from :tbl where ? = ?"), "a", "b", tbl="foo"
+        ... ).sql()
+        'SELECT * FROM foo WHERE a = b'
 
     Returns:
         The mapped expression
@@ -3536,11 +3539,18 @@ def replace_placeholders(expression, mapping):
 
     def _replace_placeholders(node):
         if isinstance(node, Placeholder):
-            new_name = mapping.get(node.name)
-            if new_name:
-                return to_identifier(new_name)
+            if node.name:
+                new_name = kwargs.get(node.name)
+                if new_name:
+                    return to_identifier(new_name)
+            else:
+                try:
+                    return to_identifier(next(args))
+                except StopIteration:
+                    pass
         return node
 
+    args = iter(args)
     return expression.transform(_replace_placeholders)
 
 

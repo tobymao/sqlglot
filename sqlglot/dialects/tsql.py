@@ -35,7 +35,12 @@ class TSQL(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
+            "DATEFROMPARTS": exp.PartsToDate.from_arg_list,
+            "ISNULL": exp.Coalesce.from_arg_list,
         }
+
+        def _parse_date_from_parts(self, args):
+            print(args)
 
         def _parse_convert(self):
             to = self._parse_types()

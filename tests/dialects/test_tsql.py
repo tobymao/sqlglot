@@ -71,3 +71,7 @@ class TestTSQL(Validator):
                 "spark": "LOCATE('sub', 'testsubstring')",
             },
         )
+        self.validate_all(
+            "SELECT DATEFROMPARTS('2020', 10, 01)",
+            write={"spark": "SELECT MAKE_DATE('2020',10,01)"},
+        )

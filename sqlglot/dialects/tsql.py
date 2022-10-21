@@ -142,7 +142,6 @@ class TSQL(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
-            "DATEFROMPARTS": exp.PartsToDate.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),

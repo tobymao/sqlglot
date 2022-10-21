@@ -19,6 +19,7 @@ ENV = {
     "datetime": datetime,
     "locals": locals,
     "re": re,
+    "bool": bool,
     "float": float,
     "int": int,
     "str": str,

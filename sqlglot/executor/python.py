@@ -309,7 +309,7 @@ def _interval_py(self, expression):
 def _like_py(self, expression):
     this = self.sql(expression, "this")
     expression = self.sql(expression, "expression")
-    return f"""re.match({expression}.replace("_", ".").replace("%", ".*"), {this})"""
+    return f"""bool(re.match({expression}.replace("_", ".").replace("%", ".*"), {this}))"""
 
 
 def _ordered_py(self, expression):
@@ -331,6 +331,7 @@ class Python(Dialect):
             exp.Cast: _cast_py,
             exp.Column: _column_py,
             exp.EQ: lambda self, e: self.binary(e, "=="),
+            exp.In: lambda self, e: f"{self.sql(e, 'this')} in {self.expressions(e)}",
             exp.Interval: _interval_py,
             exp.Is: lambda self, e: self.binary(e, "is"),
             exp.Like: _like_py,

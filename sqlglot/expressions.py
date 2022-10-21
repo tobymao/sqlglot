@@ -3537,7 +3537,7 @@ def replace_placeholders(expression, *args, **kwargs):
         The mapped expression
     """
 
-    def _replace_placeholders(node):
+    def _replace_placeholders(node, args, **kwargs):
         if isinstance(node, Placeholder):
             if node.name:
                 new_name = kwargs.get(node.name)
@@ -3550,8 +3550,7 @@ def replace_placeholders(expression, *args, **kwargs):
                     pass
         return node
 
-    args = iter(args)
-    return expression.transform(_replace_placeholders)
+    return expression.transform(_replace_placeholders, iter(args), **kwargs)
 
 
 TRUE = Boolean(this=True)

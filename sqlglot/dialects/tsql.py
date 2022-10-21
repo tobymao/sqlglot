@@ -7,11 +7,31 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
 
 
+def tsql_format_time_lambda(exp_class, mapping=None, default=None):
+    corrected_mapping = {
+        "datename": {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%b", "mm": "%b", "m": "%b"},
+        None: {},
+    }
+
+    def _format_time(args):
+        return exp_class(
+            this=list_get(args, 1),
+            format=exp.Literal(
+                this=format_time(
+                    list_get(args, 0).text("this") or (TSQL.time_format if default is True else default),
+                    {**TSQL.time_mapping, **corrected_mapping[mapping]},
+                ),
+                is_string=True,
+            ),
+        )
+
+    return _format_time
+
+
 class TSQL(Dialect):
     null_ordering = "nulls_are_small"
     time_format = "'yyyy-mm-dd hh:mm:ss'"
 
-    date_name_mapping = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%b", "mm": "%b", "m": "%b"}
     time_mapping = {
         "yyyy": "%Y",
         "yy": "%Y",
@@ -71,20 +91,8 @@ class TSQL(Dialect):
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "DATEFROMPARTS": exp.PartsToDate.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "DATENAME": lambda args: exp.TimeToStr(
-                this=list_get(args, 1),
-                format=exp.Literal(
-                    this=format_time(list_get(args, 0).sql(), {**TSQL.time_mapping, **TSQL.date_name_mapping}),
-                    is_string=True,
-                ),
-            ),
-            "DATEPART": lambda args: exp.TimeToStr(
-                this=list_get(args, 1),
-                format=exp.Literal(
-                    this=format_time(list_get(args, 0).sql(), TSQL.time_mapping),
-                    is_string=True,
-                ),
-            ),
+            "DATENAME": tsql_format_time_lambda(exp.TimeToStr, mapping="datename"),
+            "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
         }
 
         def _parse_convert(self):

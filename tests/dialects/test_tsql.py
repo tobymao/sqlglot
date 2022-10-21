@@ -46,7 +46,6 @@ class TestTSQL(Validator):
             },
         )
 
-
     def test_charindex(self):
         self.validate_all(
             "CHARINDEX(x, y, 9)",
@@ -72,7 +71,6 @@ class TestTSQL(Validator):
                 "spark": "LOCATE('sub', 'testsubstring')",
             },
         )
-
 
     def test_convert_date_format(self):
         self.validate_all(

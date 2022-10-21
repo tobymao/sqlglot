@@ -117,7 +117,7 @@ class TSQL(Dialect):
                 DataType.Type.NVARCHAR,
                 DataType.Type.VARCHAR,
                 DataType.Type.CHAR,
-                DataType.Type.NCHAR
+                DataType.Type.NCHAR,
             ]
 
             # Retrieve length of datatype and override to default if not specified
@@ -131,38 +131,29 @@ class TSQL(Dialect):
                 # Check whether the convert entails a string to date format
                 if to.this in [DataType.Type.DATE]:
                     return self.expression(
-                        exp.StrToDate,
-                        this=this,
-                        format=exp.Literal(this=format_norm, is_string=True)
+                        exp.StrToDate, this=this, format=exp.Literal(this=format_norm, is_string=True)
                     )
                 # Check whether the convert entails a string to datetime format
                 elif to.this in [DataType.Type.DATETIME]:
                     return self.expression(
-                        exp.StrToTime,
-                        this=this,
-                        format=exp.Literal(this=format_norm, is_string=True)
+                        exp.StrToTime, this=this, format=exp.Literal(this=format_norm, is_string=True)
                     )
                 # Check whether the convert entails a date to string format
                 elif to.this in var_length_datatype:
                     return self.expression(
                         exp.Cast if strict else exp.TryCast,
-                        to = to,
-                        this = self.expression(
-                            exp.TimeToStr,
-                            this=this,
-                            format=exp.Literal(this=format_norm, is_string=True)
-                        )
+                        to=to,
+                        this=self.expression(
+                            exp.TimeToStr, this=this, format=exp.Literal(this=format_norm, is_string=True)
+                        ),
                     )
                 elif to.this == DataType.Type.TEXT:
                     return self.expression(
-                        exp.TimeToStr,
-                        this=this,
-                        format=exp.Literal(this=format_norm, is_string=True)
+                        exp.TimeToStr, this=this, format=exp.Literal(this=format_norm, is_string=True)
                     )
 
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
-
 
     class Generator(Generator):
         TYPE_MAPPING = {

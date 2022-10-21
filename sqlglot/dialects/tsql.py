@@ -17,12 +17,11 @@ def tsql_format_time_lambda(exp_class, mapping=None, default=None):
     def _format_time(args):
         return exp_class(
             this=list_get(args, 1),
-            format=exp.Literal(
-                this=format_time(
+            format=exp.Literal.string(
+                format_time(
                     list_get(args, 0).text("this") or (TSQL.time_format if default is True else default),
                     {**TSQL.time_mapping, **corrected_mapping[mapping]},
-                ),
-                is_string=True,
+                )
             ),
         )
 

@@ -79,7 +79,7 @@ class TestTSQL(Validator):
     def test_datename(self):
         self.validate_all(
             "SELECT DATENAME(mm,'01-01-1970')",
-            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MMM')"},
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MMMM')"},
         )
         self.validate_all(
             "SELECT DATENAME(dw,'01-01-1970')",

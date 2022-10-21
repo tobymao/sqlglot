@@ -190,7 +190,6 @@ class Hive(Dialect):
             "UNIX_TIMESTAMP": format_time_lambda(exp.StrToUnix, "hive", True),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
             "REPEAT": exp.Repeat.from_arg_list,
-            
         }
 
     class Generator(Generator):

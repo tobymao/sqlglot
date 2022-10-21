@@ -47,7 +47,8 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
-        annotations: Whether or not to show annotations in the SQL.
+        annotations: Whether or not to show annotations in the SQL when `pretty` is True.
+            Annotations can only be shown in pretty mode otherwise they may clobber resulting sql.
             Default: True
     """
 
@@ -280,7 +281,7 @@ class Generator:
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
     def annotation_sql(self, expression):
-        if self._annotations:
+        if self._annotations and self.pretty:
             return f"{self.sql(expression, 'expression')} # {expression.name}"
         return self.sql(expression, "expression")
 

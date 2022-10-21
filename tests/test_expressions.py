@@ -551,9 +551,24 @@ class TestExpressions(unittest.TestCase):
             [e.alias_or_name for e in expression.expressions],
             ["a", "B", "c", "D"],
         )
-        self.assertEqual(expression.sql(), sql)
+        self.assertEqual(expression.sql(), "SELECT a, b AS B, c, d AS D")
         self.assertEqual(expression.expressions[2].name, "comment")
-        self.assertEqual(expression.sql(annotations=False), "SELECT a, b AS B, c, d AS D")
+        self.assertEqual(
+            expression.sql(pretty=True, annotations=False),
+            """SELECT
+  a,
+  b AS B,
+  c,
+  d AS D""",
+        )
+        self.assertEqual(
+            expression.sql(pretty=True),
+            """SELECT
+  a,
+  b AS B,
+  c # comment,
+  d AS D # another_comment FROM foo""",
+        )
 
     def test_to_table(self):
         table_only = exp.to_table("table_name")

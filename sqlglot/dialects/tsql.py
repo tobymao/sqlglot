@@ -98,8 +98,6 @@ class TSQL(Dialect):
             "SQL_VARIANT": TokenType.VARIANT,
             "NVARCHAR(MAX)": TokenType.TEXT,
             "VARCHAR(MAX)": TokenType.TEXT,
-            "NVARCHAR": TokenType.VARCHAR,
-            "NCHAR": TokenType.CHAR,
         }
 
     class Parser(Parser):

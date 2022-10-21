@@ -36,6 +36,9 @@ class TSQL(Dialect):
           **Parser.FUNCTIONS,
           "CHARINDEX": exp.StrPosition.from_arg_list,
           "LEN": exp.Length.from_arg_list,
+          "REPLICATE": exp.Repeat.from_arg_list,
+          "ISNULL": exp.Coalesce.from_arg_list,
+          "JSON_VALUE": exp.JSONExtractScalar.from_arg_list
         }
 
         def _parse_convert(self):

@@ -189,6 +189,8 @@ class Hive(Dialect):
             "TO_DATE": format_time_lambda(exp.TsOrDsToDate, "hive"),
             "UNIX_TIMESTAMP": format_time_lambda(exp.StrToUnix, "hive", True),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
+            "REPEAT": exp.Repeat.from_arg_list,
+            
         }
 
     class Generator(Generator):
@@ -245,6 +247,7 @@ class Hive(Dialect):
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,
+            exp.Repeat: lambda self, e: f"REPEAT({self.format_args(e.this, e.args.get('times'))})",
             exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.format_args(e.this, _time_format(self, e))})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),

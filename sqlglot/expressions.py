@@ -2569,6 +2569,10 @@ class RegexpSplit(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Repeat(Func):
+    arg_types = {"this": True, "times": True}
+
+
 class Round(Func):
     arg_types = {"this": True, "decimals": False}
 

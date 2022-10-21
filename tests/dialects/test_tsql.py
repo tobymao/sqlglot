@@ -82,8 +82,8 @@ class TestTSQL(Validator):
             write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'MMM')"},
         )
         self.validate_all(
-            "SELECT DATENAME(w,'01-01-1970')",
-            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'E')"},
+            "SELECT DATENAME(dw,'01-01-1970')",
+            write={"spark": "SELECT DATE_FORMAT('01-01-1970', 'EEEE')"},
         )
 
     def test_datepart(self):

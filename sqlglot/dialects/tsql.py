@@ -10,7 +10,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 def tsql_format_time_lambda(exp_class, mapping=None, default=None):
     corrected_mapping = {
-        "datename": {"weekday": "%a", "dw": "%a", "w": "%a", "month": "%b", "mm": "%b", "m": "%b"},
+        "datename": {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%b", "mm": "%b", "m": "%b"},
         None: {},
     }
 

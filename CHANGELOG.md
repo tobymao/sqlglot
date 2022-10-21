@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v9.0.0
+------
+
+Changes:
+
+- Breaking : Changed AST hierarchy of exp.Table with exp.Alias. Before Tables were children's of their aliases, but in order to simplify the AST and fix some issues, Tables now have an alias property.
+
 v8.0.0
 ------
 
@@ -8,7 +15,6 @@ Changes:
 
 - Breaking : New add\_table method in Schema ABC.
 - New: SQLGlot now supports the [PySpark](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dataframe) dataframe API. This is still relatively experimental.
-
 
 v7.1.0
 ------

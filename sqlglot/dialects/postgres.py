@@ -177,6 +177,11 @@ class Postgres(Dialect):
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "UUID": TokenType.UUID,
         }
+        QUOTES = ["'", "$$"]
+        SINGLE_TOKENS = {
+            **Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.PARAMETER,
+        }
 
     class Parser(Parser):
         STRICT_CAST = False

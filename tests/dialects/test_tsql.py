@@ -223,4 +223,3 @@ class TestTSQL(Validator):
                 "spark": "CAST(x AS INT)",
             },
         )
-

@@ -1,9 +1,9 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.generator import Generator
 from sqlglot.expressions import DataType
-from sqlglot.parser import Parser
+from sqlglot.generator import Generator
 from sqlglot.helper import list_get
+from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
 

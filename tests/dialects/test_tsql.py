@@ -199,3 +199,15 @@ class TestTSQL(Validator):
                 "spark": "CAST(x AS INT)",
             },
         )
+        self.validate_all(
+            "TRY_CONVERT(NVARCHAR, x, 121)",
+            write={
+                "spark": "TRY_CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(30))",
+            },
+        )
+        self.validate_all(
+            "TRY_CONVERT(INT, x)",
+            write={
+                "spark": "TRY_CAST(x AS INT)",
+            },
+        )

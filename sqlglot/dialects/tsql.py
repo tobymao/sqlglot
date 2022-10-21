@@ -10,7 +10,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 def tsql_format_time_lambda(exp_class, mapping=None, default=None):
     corrected_mapping = {
-        "datename": {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%b", "mm": "%b", "m": "%b"},
+        "datename": {"weekday": "%a", "dw": "%a", "w": "%a", "month": "%b", "mm": "%b", "m": "%b"},
         None: {},
     }
 
@@ -32,14 +32,38 @@ def tsql_format_time_lambda(exp_class, mapping=None, default=None):
 class TSQL(Dialect):
     null_ordering = "nulls_are_small"
     time_format = "'yyyy-mm-dd hh:mm:ss'"
-
     time_mapping = {
+        "yyyy": "%Y",
+        "yy": "%y",
+        "year": "%Y",
+        "qq": "%q",
+        "q": "%q",
+        "quarter": "%q",
+        "dayofyear": "%j",
+        "day": "%d",
+        "dy": "%d",
         "y": "%Y",
+        "week": "%W",
+        "ww": "%W",
+        "wk": "%W",
+        "hour": "%h",
+        "hh": "%I",
+        "minute": "%M",
+        "mi": "%M",
+        "n": "%M",
+        "second": "%S",
+        "ss": "%S",
+        "s": "%-S",
+        "millisecond": "%f",
+        "ms": "%f",
+        "weekday": "%W",
+        "dw": "%W",
+        "month": "%m",
+        "mm": "%M",
+        "m": "%-M",
         "Y": "%Y",
         "YYYY": "%Y",
-        "yyyy": "%Y",
         "YY": "%y",
-        "yy": "%y",
         "MMMM": "%B",
         "MMM": "%b",
         "MM": "%m",
@@ -48,12 +72,7 @@ class TSQL(Dialect):
         "d": "%-d",
         "HH": "%H",
         "H": "%-H",
-        "hh": "%I",
         "h": "%-I",
-        "mm": "%M",
-        "m": "%-M",
-        "ss": "%S",
-        "s": "%-S",
         "S": "%f",
     }
 

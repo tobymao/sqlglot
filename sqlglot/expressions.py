@@ -2412,7 +2412,7 @@ class TimeTrunc(Func, TimeUnit):
 
 
 class PartsToDate(Func):
-    arg_types = {"this": True, "month": True, "day": True}
+    arg_types = {"year": True, "month": True, "day": True}
 
 
 class DateStrToDate(Func):

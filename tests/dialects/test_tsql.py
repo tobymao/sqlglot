@@ -73,7 +73,7 @@ class TestTSQL(Validator):
         )
         self.validate_all(
             "SELECT DATEFROMPARTS('2020', 10, 01)",
-            write={"spark": "SELECT MAKE_DATE('2020',10,01)"},
+            write={"spark": "SELECT MAKE_DATE('2020', 10, 01)"},
         )
 
     def test_datename(self):

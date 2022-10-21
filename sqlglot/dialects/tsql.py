@@ -7,20 +7,17 @@ from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
 
+FULL_EXP_TIME_MAPPING = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"}
 
-def tsql_format_time_lambda(exp_class, mapping=None, default=None):
-    corrected_mapping = {
-        "datename": {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"},
-        None: {},
-    }
 
+def tsql_format_time_lambda(exp_class, full_exp_mapping=None, default=None):
     def _format_time(args):
         return exp_class(
             this=list_get(args, 1),
             format=exp.Literal.string(
                 format_time(
                     list_get(args, 0).text("this") or (TSQL.time_format if default is True else default),
-                    {**TSQL.time_mapping, **corrected_mapping[mapping]},
+                    {**TSQL.time_mapping, **FULL_EXP_TIME_MAPPING} if full_exp_mapping else TSQL.time_mapping,
                 )
             ),
         )
@@ -31,6 +28,7 @@ def tsql_format_time_lambda(exp_class, mapping=None, default=None):
 class TSQL(Dialect):
     null_ordering = "nulls_are_small"
     time_format = "'yyyy-mm-dd hh:mm:ss'"
+
     time_mapping = {
         "yyyy": "%Y",
         "yy": "%y",
@@ -146,7 +144,7 @@ class TSQL(Dialect):
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "DATEFROMPARTS": exp.PartsToDate.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "DATENAME": tsql_format_time_lambda(exp.TimeToStr, mapping="datename"),
+            "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_exp_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
         }
 

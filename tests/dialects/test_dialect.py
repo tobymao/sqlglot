@@ -634,11 +634,13 @@ class TestDialect(Validator):
             read={
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
+                "starrocks": "x->'y'",
             },
             write={
                 "oracle": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
+                "starrocks": "x->'y'",
             },
         )
         self.validate_all(

@@ -316,7 +316,7 @@ Dialect["custom"]
 
 ## Run Tests and Lint
 ```
-pip install -r requirements.txt
+pip install -r dev-requirements.txt
 # set `SKIP_INTEGRATION=1` to skip integration tests
 ./run_checks.sh
 ```

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from inspect import signature
 
 from sqlglot import expressions as glotexp
 from sqlglot.dataframe.sql.column import Column
@@ -1109,8 +1108,7 @@ def aggregate(
 
 
 def transform(
-    col: ColumnOrName,
-    f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]]
+    col: ColumnOrName, f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]]
 ) -> Column:
     f_expression = get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "TRANSFORM", Column(f_expression))
@@ -1126,40 +1124,27 @@ def forall(col: ColumnOrName, f: t.Callable[[Column], Column]) -> Column:
     return Column.invoke_anonymous_function(col, "FORALL", Column(f_expression))
 
 
-def filter(
-    col: ColumnOrName,
-    f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]]
-) -> Column:
+def filter(col: ColumnOrName, f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]]) -> Column:
     f_expression = get_lambda_from_func(f)
     return Column.invoke_expression_over_column(col, glotexp.ArrayFilter, expression=f_expression)
 
 
-def zip_with(
-    left: ColumnOrName,
-    right: ColumnOrName,
-    f: t.Callable[[Column, Column], Column]
-) -> Column:
+def zip_with(left: ColumnOrName, right: ColumnOrName, f: t.Callable[[Column, Column], Column]) -> Column:
     f_expression = get_lambda_from_func(f)
     return Column.invoke_anonymous_function(left, "ZIP_WITH", right, Column(f_expression))
 
 
-def transform_keys(
-    col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]
-) -> Column:
+def transform_keys(col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]) -> Column:
     f_expression = get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "TRANSFORM_KEYS", Column(f_expression))
 
 
-def transform_values(
-    col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]
-) -> Column:
+def transform_values(col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]) -> Column:
     f_expression = get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "TRANSFORM_VALUES", Column(f_expression))
 
 
-def map_filter(
-    col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]
-) -> Column:
+def map_filter(col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]) -> Column:
     f_expression = get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "MAP_FILTER", Column(f_expression))
 
@@ -1177,12 +1162,8 @@ def _lambda_quoted(value: str) -> t.Optional[bool]:
     return False if value == "_" else None
 
 
-def get_variable_names_from_lambda(lambda_expression: t.Callable) -> t.List[glotexp.Identifier]:
-    return [glotexp.to_identifier(x, quoted=_lambda_quoted(x)) for x in lambda_expression.__code__.co_varnames]
-
-
 def get_lambda_from_func(lambda_expression: t.Callable):
-    variables = get_variable_names_from_lambda(lambda_expression)
+    variables = [glotexp.to_identifier(x, quoted=_lambda_quoted(x)) for x in lambda_expression.__code__.co_varnames]
     return glotexp.Lambda(
         this=lambda_expression(*[Column(x) for x in variables]).expression,
         expressions=variables,

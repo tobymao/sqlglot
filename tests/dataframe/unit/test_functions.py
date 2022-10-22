@@ -1558,9 +1558,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("FILTER(cola, x -> MONTH(TO_DATE(x)) > 6)", col_str.sql())
         col = SF.filter(SF.col("cola"), lambda x, i: SF.month(SF.to_date(x)) > SF.lit(i))
         self.assertEqual("FILTER(cola, (x, i) -> MONTH(TO_DATE(x)) > i)", col.sql())
-        col_custom_names = SF.filter(
-            "cola", lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count)
-        )
+        col_custom_names = SF.filter("cola", lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count))
 
         self.assertEqual(
             "FILTER(cola, (target, row_count) -> MONTH(TO_DATE(target)) > row_count)", col_custom_names.sql()

@@ -2559,7 +2559,7 @@ class Quantile(AggFunc):
 
 
 class ApproxQuantile(Quantile):
-    pass
+    arg_types = {"this": True, "quantile": True, "accuracy": False}
 
 
 class Reduce(Func):
@@ -2695,7 +2695,7 @@ class TsOrDiToDi(Func):
 
 
 class UnixToStr(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": True, "format": False}
 
 
 class UnixToTime(Func):

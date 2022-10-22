@@ -9,7 +9,6 @@ from sqlglot.errors import ErrorLevel
 
 
 class TestFunctions(unittest.TestCase):
-    @unittest.skip("not yet fixed.")
     def test_invoke_anonymous(self):
         for name, func in inspect.getmembers(SF, inspect.isfunction):
             with self.subTest(f"{name} should not invoke anonymous_function"):
@@ -438,13 +437,13 @@ class TestFunctions(unittest.TestCase):
 
     def test_pow(self):
         col_str = SF.pow("cola", "colb")
-        self.assertEqual("POW(cola, colb)", col_str.sql())
+        self.assertEqual("POWER(cola, colb)", col_str.sql())
         col = SF.pow(SF.col("cola"), SF.col("colb"))
-        self.assertEqual("POW(cola, colb)", col.sql())
+        self.assertEqual("POWER(cola, colb)", col.sql())
         col_float = SF.pow(10.10, "colb")
-        self.assertEqual("POW(10.1, colb)", col_float.sql())
+        self.assertEqual("POWER(10.1, colb)", col_float.sql())
         col_float2 = SF.pow("cola", 10.10)
-        self.assertEqual("POW(cola, 10.1)", col_float2.sql())
+        self.assertEqual("POWER(cola, 10.1)", col_float2.sql())
 
     def test_row_number(self):
         col_str = SF.row_number()
@@ -843,8 +842,8 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("TO_DATE(cola)", col_str.sql())
         col = SF.to_date(SF.col("cola"))
         self.assertEqual("TO_DATE(cola)", col.sql())
-        col_with_format = SF.to_date("cola", "yyyy-MM-dd")
-        self.assertEqual("TO_DATE(cola, 'yyyy-MM-dd')", col_with_format.sql())
+        col_with_format = SF.to_date("cola", "yy-MM-dd")
+        self.assertEqual("TO_DATE(cola, 'yy-MM-dd')", col_with_format.sql())
 
     def test_to_timestamp(self):
         col_str = SF.to_timestamp("cola")
@@ -883,16 +882,16 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("FROM_UNIXTIME(cola)", col_str.sql())
         col = SF.from_unixtime(SF.col("cola"))
         self.assertEqual("FROM_UNIXTIME(cola)", col.sql())
-        col_format = SF.from_unixtime("cola", "yyyy-MM-dd HH:mm:ss")
-        self.assertEqual("FROM_UNIXTIME(cola, 'yyyy-MM-dd HH:mm:ss')", col_format.sql())
+        col_format = SF.from_unixtime("cola", "yyyy-MM-dd HH:mm")
+        self.assertEqual("FROM_UNIXTIME(cola, 'yyyy-MM-dd HH:mm')", col_format.sql())
 
     def test_unix_timestamp(self):
         col_str = SF.unix_timestamp("cola")
         self.assertEqual("UNIX_TIMESTAMP(cola)", col_str.sql())
         col = SF.unix_timestamp(SF.col("cola"))
         self.assertEqual("UNIX_TIMESTAMP(cola)", col.sql())
-        col_format = SF.unix_timestamp("cola", "yyyy-MM-dd HH:mm:ss")
-        self.assertEqual("UNIX_TIMESTAMP(cola, 'yyyy-MM-dd HH:mm:ss')", col_format.sql())
+        col_format = SF.unix_timestamp("cola", "yyyy-MM-dd HH:mm")
+        self.assertEqual("UNIX_TIMESTAMP(cola, 'yyyy-MM-dd HH:mm')", col_format.sql())
         col_current = SF.unix_timestamp()
         self.assertEqual("UNIX_TIMESTAMP()", col_current.sql())
 
@@ -1427,6 +1426,13 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("ARRAY_SORT(cola)", col_str.sql())
         col = SF.array_sort(SF.col("cola"))
         self.assertEqual("ARRAY_SORT(cola)", col.sql())
+        col_comparator = SF.array_sort(
+            "cola", lambda x, y: SF.when(x.isNull() | y.isNull(), SF.lit(0)).otherwise(SF.length(y) - SF.length(x))
+        )
+        self.assertEqual(
+            "ARRAY_SORT(cola, (x, y) -> CASE WHEN x IS NULL OR y IS NULL THEN 0 ELSE LENGTH(y) - LENGTH(x) END)",
+            col_comparator.sql(),
+        )
 
     def test_reverse(self):
         col_str = SF.reverse("cola")

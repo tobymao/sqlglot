@@ -24,17 +24,15 @@ def lit(value: t.Optional[t.Any] = None) -> Column:
 
 
 def greatest(*cols: ColumnOrName) -> Column:
-    columns = [Column.ensure_col(col) for col in cols]
-    return Column.invoke_expression_over_column(
-        columns[0], glotexp.Greatest, expressions=[col.expression for col in columns[1:]] if len(columns) > 1 else None
-    )
+    if len(cols) > 1:
+        return Column.invoke_expression_over_column(cols[0], glotexp.Greatest, expressions=cols[1:])
+    return Column.invoke_expression_over_column(cols[0], glotexp.Greatest)
 
 
 def least(*cols: ColumnOrName) -> Column:
-    columns = [Column.ensure_col(col) for col in cols]
-    return Column.invoke_expression_over_column(
-        columns[0], glotexp.Least, expressions=[col.expression for col in columns[1:]] if len(columns) > 1 else None
-    )
+    if len(cols) > 1:
+        return Column.invoke_expression_over_column(cols[0], glotexp.Least, expressions=cols[1:])
+    return Column.invoke_expression_over_column(cols[0], glotexp.Least)
 
 
 def count_distinct(col: ColumnOrName, *cols: ColumnOrName) -> Column:
@@ -310,7 +308,7 @@ def hypot(col1: t.Union[ColumnOrName, float], col2: t.Union[ColumnOrName, float]
 
 
 def pow(col1: t.Union[ColumnOrName, float], col2: t.Union[ColumnOrName, float]) -> Column:
-    return Column.invoke_anonymous_function(col1, "POW", col2)
+    return Column.invoke_expression_over_column(col1, glotexp.Pow, power=col2)
 
 
 def row_number() -> Column:
@@ -405,11 +403,14 @@ def nanvl(col1: ColumnOrName, col2: ColumnOrName) -> Column:
 def percentile_approx(
     col: ColumnOrName,
     percentage: t.Union[ColumnOrLiteral, t.List[float], t.Tuple[float]],
-    accuracy: t.Optional[t.Union[ColumnOrLiteral]] = None,
+    accuracy: t.Optional[t.Union[ColumnOrLiteral, int]] = None,
 ) -> Column:
+    accuracy = Column.ensure_col(accuracy) if accuracy else None
     if accuracy:
-        return Column.invoke_anonymous_function(col, "PERCENTILE_APPROX", percentage, accuracy)
-    return Column.invoke_anonymous_function(col, "PERCENTILE_APPROX", percentage)
+        return Column.invoke_expression_over_column(
+            col, glotexp.ApproxQuantile, quantile=lit(percentage), accuracy=accuracy
+        )
+    return Column.invoke_expression_over_column(col, glotexp.ApproxQuantile, quantile=lit(percentage))
 
 
 def rand(seed: t.Optional[ColumnOrLiteral] = None) -> Column:
@@ -515,7 +516,7 @@ def current_timestamp() -> Column:
 
 
 def date_format(col: ColumnOrName, format: str) -> Column:
-    return Column.invoke_anonymous_function(col, "DATE_FORMAT", lit(format))
+    return Column.invoke_expression_over_column(col, glotexp.TimeToStr, format=lit(format).expression)
 
 
 def year(col: ColumnOrName) -> Column:
@@ -586,8 +587,8 @@ def months_between(date1: ColumnOrName, date2: ColumnOrName, roundOff: t.Optiona
 
 def to_date(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
     if format is not None:
-        return Column.invoke_anonymous_function(col, "TO_DATE", lit(format))
-    return Column.invoke_anonymous_function(col, "TO_DATE")
+        return Column.invoke_expression_over_column(col, glotexp.TsOrDsToDate, format=lit(format))
+    return Column.invoke_expression_over_column(col, glotexp.TsOrDsToDate)
 
 
 def to_timestamp(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
@@ -614,14 +615,14 @@ def last_day(col: ColumnOrName) -> Column:
 
 def from_unixtime(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
     if format is not None:
-        return Column.invoke_anonymous_function(col, "FROM_UNIXTIME", lit(format))
-    return Column.invoke_anonymous_function(col, "FROM_UNIXTIME")
+        return Column.invoke_expression_over_column(col, glotexp.UnixToStr, format=lit(format))
+    return Column.invoke_expression_over_column(col, glotexp.UnixToStr)
 
 
 def unix_timestamp(timestamp: t.Optional[ColumnOrName] = None, format: t.Optional[str] = None) -> Column:
     if format is not None:
-        return Column.invoke_anonymous_function(timestamp, "UNIX_TIMESTAMP", lit(format))
-    return Column.invoke_anonymous_function(timestamp, "UNIX_TIMESTAMP")
+        return Column.invoke_expression_over_column(timestamp, glotexp.StrToUnix, format=lit(format))
+    return Column.invoke_expression_over_column(timestamp, glotexp.StrToUnix)
 
 
 def from_utc_timestamp(timestamp: ColumnOrName, tz: ColumnOrName) -> Column:
@@ -808,8 +809,10 @@ def locate(substr: str, str: ColumnOrName, pos: t.Optional[int] = None) -> Colum
     pos_column = lit(pos)
     str_column = Column.ensure_col(str)
     if pos is not None:
-        return Column.invoke_anonymous_function(substr_col, "LOCATE", str_column, pos_column)
-    return Column.invoke_anonymous_function(substr_col, "LOCATE", str_column)
+        return Column.invoke_expression_over_column(
+            str_column, glotexp.StrPosition, substr=substr_col, position=pos_column
+        )
+    return Column.invoke_expression_over_column(str_column, glotexp.StrPosition, substr=substr_col)
 
 
 def lpad(col: ColumnOrName, len: int, pad: str) -> Column:
@@ -879,9 +882,8 @@ def translate(srcCol: ColumnOrName, matching: str, replace: str) -> Column:
 
 
 def array(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
-    cols = _flatten(cols) if not isinstance(cols[0], (str, Column)) else cols  # type: ignore
-    cols = [Column.ensure_col(col).expression for col in cols]  # type: ignore
-    return Column.invoke_expression_over_column(None, glotexp.Array, expressions=cols)
+    columns = _flatten(cols) if not isinstance(cols[0], (str, Column)) else cols  # type: ignore
+    return Column.invoke_expression_over_column(None, glotexp.Array, expressions=columns)
 
 
 def create_map(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
@@ -892,7 +894,9 @@ def create_map(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column
 
 
 def map_from_arrays(col1: ColumnOrName, col2: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col1, "MAP_FROM_ARRAYS", col2)
+    col1 = Column.ensure_col(col1)
+    col2 = Column.ensure_col(col2)
+    return Column.invoke_expression_over_column(None, glotexp.Map, keys=col1, values=col2)
 
 
 def array_contains(col: ColumnOrName, value: ColumnOrLiteral) -> Column:
@@ -1031,11 +1035,25 @@ def array_max(col: ColumnOrName) -> Column:
 
 def sort_array(col: ColumnOrName, asc: t.Optional[bool] = None) -> Column:
     if asc is not None:
-        return Column.invoke_anonymous_function(col, "SORT_ARRAY", lit(asc))
-    return Column.invoke_anonymous_function(col, "SORT_ARRAY")
+        return Column.invoke_expression_over_column(col, glotexp.SortArray, asc=lit(asc))
+    return Column.invoke_expression_over_column(col, glotexp.SortArray)
 
 
-def array_sort(col: ColumnOrName) -> Column:
+def array_sort(
+    col: ColumnOrName,
+    comparator: t.Optional[t.Union[t.Callable[[Column, Column], Column]]] = None,
+    value_one_name: str = "x",
+    value_two_name: str = "y",
+) -> Column:
+    if comparator is not None:
+        f_expression = glotexp.Lambda(
+            this=comparator(Column(value_one_name), Column(value_two_name)).expression,
+            expressions=[
+                glotexp.to_identifier(value_one_name, quoted=_lambda_quoted(value_one_name)),
+                glotexp.to_identifier(value_two_name, quoted=_lambda_quoted(value_two_name)),
+            ],
+        )
+        return Column.invoke_expression_over_column(col, glotexp.ArraySort, expression=f_expression)
     return Column.invoke_expression_over_column(col, glotexp.ArraySort)
 
 
@@ -1175,7 +1193,7 @@ def filter(
         expressions.append(glotexp.to_identifier(row_count_name, quoted=_lambda_quoted(row_count_name)))
 
     f_expression = glotexp.Lambda(this=f(*columns).expression, expressions=expressions)
-    return Column.invoke_anonymous_function(col, "FILTER", Column(f_expression))
+    return Column.invoke_expression_over_column(col, glotexp.ArrayFilter, expression=Column(f_expression).expression)
 
 
 def zip_with(

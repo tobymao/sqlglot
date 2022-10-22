@@ -1522,8 +1522,6 @@ class TestFunctions(unittest.TestCase):
             SF.lit(0),
             lambda accumulator, target: accumulator + target,
             lambda accumulator: accumulator * 2,
-            "accumulator",
-            "target",
         )
         self.assertEqual(
             "AGGREGATE(cola, 0, (accumulator, target) -> accumulator + target, accumulator -> accumulator * 2)",
@@ -1535,7 +1533,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("TRANSFORM(cola, x -> x * 2)", col_str.sql())
         col = SF.transform(SF.col("cola"), lambda x, i: x * i)
         self.assertEqual("TRANSFORM(cola, (x, i) -> x * i)", col.sql())
-        col_custom_names = SF.transform("cola", lambda target, row_count: target * row_count, "target", "row_count")
+        col_custom_names = SF.transform("cola", lambda target, row_count: target * row_count)
 
         self.assertEqual("TRANSFORM(cola, (target, row_count) -> target * row_count)", col_custom_names.sql())
 
@@ -1544,7 +1542,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("EXISTS(cola, x -> x % 2 = 0)", col_str.sql())
         col = SF.exists(SF.col("cola"), lambda x: x % 2 == 0)
         self.assertEqual("EXISTS(cola, x -> x % 2 = 0)", col.sql())
-        col_custom_name = SF.exists("cola", lambda target: target > 0, "target")
+        col_custom_name = SF.exists("cola", lambda target: target > 0)
         self.assertEqual("EXISTS(cola, target -> target > 0)", col_custom_name.sql())
 
     def test_forall(self):
@@ -1552,7 +1550,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("FORALL(cola, x -> x RLIKE 'foo')", col_str.sql())
         col = SF.forall(SF.col("cola"), lambda x: x.rlike("foo"))
         self.assertEqual("FORALL(cola, x -> x RLIKE 'foo')", col.sql())
-        col_custom_name = SF.forall("cola", lambda target: target.rlike("foo"), "target")
+        col_custom_name = SF.forall("cola", lambda target: target.rlike("foo"))
         self.assertEqual("FORALL(cola, target -> target RLIKE 'foo')", col_custom_name.sql())
 
     def test_filter(self):
@@ -1561,7 +1559,7 @@ class TestFunctions(unittest.TestCase):
         col = SF.filter(SF.col("cola"), lambda x, i: SF.month(SF.to_date(x)) > SF.lit(i))
         self.assertEqual("FILTER(cola, (x, i) -> MONTH(TO_DATE(x)) > i)", col.sql())
         col_custom_names = SF.filter(
-            "cola", lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count), "target", "row_count"
+            "cola", lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count)
         )
 
         self.assertEqual(
@@ -1573,7 +1571,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("ZIP_WITH(cola, colb, (x, y) -> CONCAT_WS('_', x, y))", col_str.sql())
         col = SF.zip_with(SF.col("cola"), SF.col("colb"), lambda x, y: SF.concat_ws("_", x, y))
         self.assertEqual("ZIP_WITH(cola, colb, (x, y) -> CONCAT_WS('_', x, y))", col.sql())
-        col_custom_names = SF.zip_with("cola", "colb", lambda l, r: SF.concat_ws("_", l, r), "l", "r")
+        col_custom_names = SF.zip_with("cola", "colb", lambda l, r: SF.concat_ws("_", l, r))
         self.assertEqual("ZIP_WITH(cola, colb, (l, r) -> CONCAT_WS('_', l, r))", col_custom_names.sql())
 
     def test_transform_keys(self):
@@ -1581,7 +1579,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("TRANSFORM_KEYS(cola, (k, v) -> UPPER(k))", col_str.sql())
         col = SF.transform_keys(SF.col("cola"), lambda k, v: SF.upper(k))
         self.assertEqual("TRANSFORM_KEYS(cola, (k, v) -> UPPER(k))", col.sql())
-        col_custom_names = SF.transform_keys("cola", lambda key, _: SF.upper(key), "key", "_")
+        col_custom_names = SF.transform_keys("cola", lambda key, _: SF.upper(key))
         self.assertEqual("TRANSFORM_KEYS(cola, (key, _) -> UPPER(key))", col_custom_names.sql())
 
     def test_transform_values(self):
@@ -1589,7 +1587,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("TRANSFORM_VALUES(cola, (k, v) -> UPPER(v))", col_str.sql())
         col = SF.transform_values(SF.col("cola"), lambda k, v: SF.upper(v))
         self.assertEqual("TRANSFORM_VALUES(cola, (k, v) -> UPPER(v))", col.sql())
-        col_custom_names = SF.transform_values("cola", lambda _, value: SF.upper(value), "_", "value")
+        col_custom_names = SF.transform_values("cola", lambda _, value: SF.upper(value))
         self.assertEqual("TRANSFORM_VALUES(cola, (_, value) -> UPPER(value))", col_custom_names.sql())
 
     def test_map_filter(self):
@@ -1597,5 +1595,9 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("MAP_FILTER(cola, (k, v) -> k > v)", col_str.sql())
         col = SF.map_filter(SF.col("cola"), lambda k, v: k > v)
         self.assertEqual("MAP_FILTER(cola, (k, v) -> k > v)", col.sql())
-        col_custom_names = SF.map_filter("cola", lambda key, value: key > value, "key", "value")
+        col_custom_names = SF.map_filter("cola", lambda key, value: key > value)
         self.assertEqual("MAP_FILTER(cola, (key, value) -> key > value)", col_custom_names.sql())
+
+    def test_map_zip_with(self):
+        col = SF.map_zip_with("base", "ratio", lambda k, v1, v2: SF.round(v1 * v2, 2))
+        self.assertEqual("MAP_ZIP_WITH(base, ratio, (k, v1, v2) -> ROUND(v1 * v2, 2))", col.sql())

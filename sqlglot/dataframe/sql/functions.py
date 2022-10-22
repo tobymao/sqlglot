@@ -192,7 +192,7 @@ def log2(col: ColumnOrName) -> Column:
 def log(arg1: t.Union[ColumnOrName, float], arg2: t.Optional[ColumnOrName] = None) -> Column:
     if arg2 is None:
         return Column.invoke_expression_over_column(arg1, glotexp.Ln)
-    return Column.invoke_expression_over_column(arg1, glotexp.Log, expression=Column.ensure_col(arg2).expression)
+    return Column.invoke_expression_over_column(arg1, glotexp.Log, expression=arg2)
 
 
 def rint(col: ColumnOrName) -> Column:
@@ -338,14 +338,13 @@ def approxCountDistinct(col: ColumnOrName, rsd: t.Optional[float] = None) -> Col
 def approx_count_distinct(col: ColumnOrName, rsd: t.Optional[float] = None) -> Column:
     if rsd is None:
         return Column.invoke_expression_over_column(col, glotexp.ApproxDistinct)
-    return Column.invoke_expression_over_column(col, glotexp.ApproxDistinct, accuracy=Column.ensure_col(rsd).expression)
+    return Column.invoke_expression_over_column(col, glotexp.ApproxDistinct, accuracy=rsd)
 
 
 def coalesce(*cols: ColumnOrName) -> Column:
-    columns = [Column.ensure_col(col) for col in cols]
-    return Column.invoke_expression_over_column(
-        columns[0], glotexp.Coalesce, expressions=[col.expression for col in columns[1:]] if len(columns) > 1 else None
-    )
+    if len(cols) > 1:
+        return Column.invoke_expression_over_column(cols[0], glotexp.Coalesce, expressions=cols[1:])
+    return Column.invoke_expression_over_column(cols[0], glotexp.Coalesce)
 
 
 def corr(col1: ColumnOrName, col2: ColumnOrName) -> Column:
@@ -405,7 +404,6 @@ def percentile_approx(
     percentage: t.Union[ColumnOrLiteral, t.List[float], t.Tuple[float]],
     accuracy: t.Optional[t.Union[ColumnOrLiteral, int]] = None,
 ) -> Column:
-    accuracy = Column.ensure_col(accuracy) if accuracy else None
     if accuracy:
         return Column.invoke_expression_over_column(
             col, glotexp.ApproxQuantile, quantile=lit(percentage), accuracy=accuracy
@@ -434,9 +432,7 @@ def bround(col: ColumnOrName, scale: t.Optional[int] = None) -> Column:
 
 
 def shiftleft(col: ColumnOrName, numBits: int) -> Column:
-    return Column.invoke_expression_over_column(
-        col, glotexp.BitwiseLeftShift, expression=Column.ensure_col(numBits).expression
-    )
+    return Column.invoke_expression_over_column(col, glotexp.BitwiseLeftShift, expression=numBits)
 
 
 def shiftLeft(col: ColumnOrName, numBits: int) -> Column:
@@ -444,9 +440,7 @@ def shiftLeft(col: ColumnOrName, numBits: int) -> Column:
 
 
 def shiftright(col: ColumnOrName, numBits: int) -> Column:
-    return Column.invoke_expression_over_column(
-        col, glotexp.BitwiseRightShift, expression=Column.ensure_col(numBits).expression
-    )
+    return Column.invoke_expression_over_column(col, glotexp.BitwiseRightShift, expression=numBits)
 
 
 def shiftRight(col: ColumnOrName, numBits: int) -> Column:
@@ -467,8 +461,7 @@ def expr(str: str) -> Column:
 
 def struct(col: t.Union[ColumnOrName, t.Iterable[ColumnOrName]], *cols: ColumnOrName) -> Column:
     columns = ensure_list(col) + list(cols)
-    expressions = [Column.ensure_col(column).expression for column in columns]
-    return Column(glotexp.Struct(expressions=expressions))
+    return Column.invoke_expression_over_column(None, glotexp.Struct, expressions=columns)
 
 
 def conv(col: ColumnOrName, fromBase: int, toBase: int) -> Column:
@@ -516,7 +509,7 @@ def current_timestamp() -> Column:
 
 
 def date_format(col: ColumnOrName, format: str) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.TimeToStr, format=lit(format).expression)
+    return Column.invoke_expression_over_column(col, glotexp.TimeToStr, format=lit(format))
 
 
 def year(col: ColumnOrName) -> Column:
@@ -564,15 +557,15 @@ def make_date(year: ColumnOrName, month: ColumnOrName, day: ColumnOrName) -> Col
 
 
 def date_add(col: ColumnOrName, days: t.Union[ColumnOrName, int]) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.DateAdd, expression=Column.ensure_col(days).expression)
+    return Column.invoke_expression_over_column(col, glotexp.DateAdd, expression=days)
 
 
 def date_sub(col: ColumnOrName, days: t.Union[ColumnOrName, int]) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.DateSub, expression=Column.ensure_col(days).expression)
+    return Column.invoke_expression_over_column(col, glotexp.DateSub, expression=days)
 
 
 def date_diff(end: ColumnOrName, start: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(end, glotexp.DateDiff, expression=Column.ensure_col(start).expression)
+    return Column.invoke_expression_over_column(end, glotexp.DateDiff, expression=start)
 
 
 def add_months(start: ColumnOrName, months: t.Union[ColumnOrName, int]) -> Column:
@@ -598,11 +591,11 @@ def to_timestamp(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
 
 
 def trunc(col: ColumnOrName, format: str) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.DateTrunc, unit=lit(format).expression)
+    return Column.invoke_expression_over_column(col, glotexp.DateTrunc, unit=lit(format))
 
 
 def date_trunc(format: str, timestamp: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(timestamp, glotexp.TimestampTrunc, unit=lit(format).expression)
+    return Column.invoke_expression_over_column(timestamp, glotexp.TimestampTrunc, unit=lit(format))
 
 
 def next_day(col: ColumnOrName, dayOfWeek: str) -> Column:
@@ -739,10 +732,7 @@ def trim(col: ColumnOrName) -> Column:
 
 
 def concat_ws(sep: str, *cols: ColumnOrName) -> Column:
-    columns = [Column(col) for col in cols]
-    return Column.invoke_expression_over_column(
-        None, glotexp.ConcatWs, expressions=[x.expression for x in [lit(sep)] + list(columns)]
-    )
+    return Column.invoke_expression_over_column(None, glotexp.ConcatWs, expressions=[lit(sep)] + list(cols))
 
 
 def decode(col: ColumnOrName, charset: str) -> Column:
@@ -799,20 +789,14 @@ def substring_index(str: ColumnOrName, delim: str, count: int) -> Column:
 
 
 def levenshtein(left: ColumnOrName, right: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(
-        left, glotexp.Levenshtein, expression=Column.ensure_col(right).expression
-    )
+    return Column.invoke_expression_over_column(left, glotexp.Levenshtein, expression=right)
 
 
 def locate(substr: str, str: ColumnOrName, pos: t.Optional[int] = None) -> Column:
     substr_col = lit(substr)
-    pos_column = lit(pos)
-    str_column = Column.ensure_col(str)
     if pos is not None:
-        return Column.invoke_expression_over_column(
-            str_column, glotexp.StrPosition, substr=substr_col, position=pos_column
-        )
-    return Column.invoke_expression_over_column(str_column, glotexp.StrPosition, substr=substr_col)
+        return Column.invoke_expression_over_column(str, glotexp.StrPosition, substr=substr_col, position=pos)
+    return Column.invoke_expression_over_column(str, glotexp.StrPosition, substr=substr_col)
 
 
 def lpad(col: ColumnOrName, len: int, pad: str) -> Column:
@@ -830,9 +814,9 @@ def repeat(col: ColumnOrName, n: int) -> Column:
 def split(str: ColumnOrName, pattern: str, limit: t.Optional[int] = None) -> Column:
     if limit is not None:
         return Column.invoke_expression_over_column(
-            str, glotexp.RegexpSplit, expression=lit(pattern).expression, limit=lit(limit).expression
+            str, glotexp.RegexpSplit, expression=lit(pattern).expression, limit=limit
         )
-    return Column.invoke_expression_over_column(str, glotexp.RegexpSplit, expression=lit(pattern).expression)
+    return Column.invoke_expression_over_column(str, glotexp.RegexpSplit, expression=lit(pattern))
 
 
 def regexp_extract(str: ColumnOrName, pattern: str, idx: t.Optional[int] = None) -> Column:
@@ -882,7 +866,7 @@ def translate(srcCol: ColumnOrName, matching: str, replace: str) -> Column:
 
 
 def array(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column:
-    columns = _flatten(cols) if not isinstance(cols[0], (str, Column)) else cols  # type: ignore
+    columns = _flatten(cols) if not isinstance(cols[0], (str, Column)) else cols
     return Column.invoke_expression_over_column(None, glotexp.Array, expressions=columns)
 
 
@@ -894,8 +878,6 @@ def create_map(*cols: t.Union[ColumnOrName, t.Iterable[ColumnOrName]]) -> Column
 
 
 def map_from_arrays(col1: ColumnOrName, col2: ColumnOrName) -> Column:
-    col1 = Column.ensure_col(col1)
-    col2 = Column.ensure_col(col2)
     return Column.invoke_expression_over_column(None, glotexp.Map, keys=col1, values=col2)
 
 
@@ -974,7 +956,7 @@ def posexplode_outer(col: ColumnOrName) -> Column:
 
 
 def get_json_object(col: ColumnOrName, path: str) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.JSONExtract, path=lit(path).expression)
+    return Column.invoke_expression_over_column(col, glotexp.JSONExtract, path=lit(path))
 
 
 def json_tuple(col: ColumnOrName, *fields: str) -> Column:
@@ -1035,7 +1017,7 @@ def array_max(col: ColumnOrName) -> Column:
 
 def sort_array(col: ColumnOrName, asc: t.Optional[bool] = None) -> Column:
     if asc is not None:
-        return Column.invoke_expression_over_column(col, glotexp.SortArray, asc=lit(asc))
+        return Column.invoke_expression_over_column(col, glotexp.SortArray, asc=asc)
     return Column.invoke_expression_over_column(col, glotexp.SortArray)
 
 
@@ -1193,7 +1175,7 @@ def filter(
         expressions.append(glotexp.to_identifier(row_count_name, quoted=_lambda_quoted(row_count_name)))
 
     f_expression = glotexp.Lambda(this=f(*columns).expression, expressions=expressions)
-    return Column.invoke_expression_over_column(col, glotexp.ArrayFilter, expression=Column(f_expression).expression)
+    return Column.invoke_expression_over_column(col, glotexp.ArrayFilter, expression=f_expression)
 
 
 def zip_with(

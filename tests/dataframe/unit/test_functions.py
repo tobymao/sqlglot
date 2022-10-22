@@ -492,6 +492,8 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("COALESCE(cola, colb, colc)", col_str.sql())
         col = SF.coalesce(SF.col("cola"), "colb", SF.col("colc"))
         self.assertEqual("COALESCE(cola, colb, colc)", col.sql())
+        col_single = SF.coalesce("cola")
+        self.assertEqual("COALESCE(cola)", col_single.sql())
 
     def test_corr(self):
         col_str = SF.corr("cola", "colb")

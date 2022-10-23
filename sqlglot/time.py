@@ -14,6 +14,8 @@ def format_time(string, mapping, trie=None):
     mapping: Dictionary of time format to target time format
     trie: Optional trie, can be passed in for performance
     """
+    if not string:
+        return None
     start = 0
     end = 1
     size = len(string)

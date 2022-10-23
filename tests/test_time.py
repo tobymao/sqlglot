@@ -5,7 +5,7 @@ from sqlglot.time import format_time
 
 class TestTime(unittest.TestCase):
     def test_format_time(self):
-        self.assertEqual(format_time("", {}), "")
+        self.assertEqual(format_time("", {}), None)
         self.assertEqual(format_time(" ", {}), " ")
         mapping = {"a": "b", "aa": "c"}
         self.assertEqual(format_time("a", mapping), "b")

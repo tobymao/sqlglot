@@ -106,6 +106,15 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "CURRENT_DATE",
+            read={
+                "tsql": "GETDATE()",
+            },
+            write={
+                "tsql": "GETDATE()",
+            },
+        )
+        self.validate_all(
             "current_datetime",
             write={
                 "bigquery": "CURRENT_DATETIME()",

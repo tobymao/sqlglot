@@ -420,7 +420,7 @@ def randn(seed: t.Optional[ColumnOrLiteral] = None) -> Column:
 
 def round(col: ColumnOrName, scale: t.Optional[int] = None) -> Column:
     if scale is not None:
-        return Column.invoke_expression_over_column(col, glotexp.Round, decimals=glotexp.convert(scale))
+        return Column.invoke_expression_over_column(col, glotexp.Round, decimals=scale)
     return Column.invoke_expression_over_column(col, glotexp.Round)
 
 

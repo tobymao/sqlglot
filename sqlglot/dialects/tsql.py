@@ -143,6 +143,9 @@ class TSQL(Dialect):
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
+            "DATEADD": lambda args: exp.DateAdd(
+                this=list_get(args, 2), expression=list_get(args, 1), unit=list_get(args, 0)
+            ),
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
         }
@@ -197,4 +200,9 @@ class TSQL(Dialect):
             exp.DataType.Type.DECIMAL: "NUMERIC",
             exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
+        }
+
+        TRANSFORMS = {
+            **Generator.TRANSFORMS,
+            exp.DateAdd: lambda self, e: f"DATEADD({self.format_args(e.args.get('unit'), e.expression, e.this)})",
         }

@@ -1025,7 +1025,7 @@ def array_sort(
     comparator: t.Optional[t.Union[t.Callable[[Column, Column], Column]]] = None,
 ) -> Column:
     if comparator is not None:
-        f_expression = get_lambda_from_func(comparator)
+        f_expression = _get_lambda_from_func(comparator)
         return Column.invoke_expression_over_column(col, glotexp.ArraySort, expression=f_expression)
     return Column.invoke_expression_over_column(col, glotexp.ArraySort)
 
@@ -1100,9 +1100,9 @@ def aggregate(
     merge: t.Callable[[Column, Column], Column],
     finish: t.Optional[t.Callable[[Column], Column]] = None,
 ) -> Column:
-    merge_exp = get_lambda_from_func(merge)
+    merge_exp = _get_lambda_from_func(merge)
     if finish is not None:
-        finish_exp = get_lambda_from_func(finish)
+        finish_exp = _get_lambda_from_func(finish)
         return Column.invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp), Column(finish_exp))
     return Column.invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp))
 
@@ -1110,42 +1110,42 @@ def aggregate(
 def transform(
     col: ColumnOrName, f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]]
 ) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "TRANSFORM", Column(f_expression))
 
 
 def exists(col: ColumnOrName, f: t.Callable[[Column], Column]) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "EXISTS", Column(f_expression))
 
 
 def forall(col: ColumnOrName, f: t.Callable[[Column], Column]) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "FORALL", Column(f_expression))
 
 
 def filter(col: ColumnOrName, f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]]) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_expression_over_column(col, glotexp.ArrayFilter, expression=f_expression)
 
 
 def zip_with(left: ColumnOrName, right: ColumnOrName, f: t.Callable[[Column, Column], Column]) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(left, "ZIP_WITH", right, Column(f_expression))
 
 
 def transform_keys(col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "TRANSFORM_KEYS", Column(f_expression))
 
 
 def transform_values(col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "TRANSFORM_VALUES", Column(f_expression))
 
 
 def map_filter(col: ColumnOrName, f: t.Union[t.Callable[[Column, Column], Column]]) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col, "MAP_FILTER", Column(f_expression))
 
 
@@ -1154,7 +1154,7 @@ def map_zip_with(
     col2: ColumnOrName,
     f: t.Union[t.Callable[[Column, Column, Column], Column]],
 ) -> Column:
-    f_expression = get_lambda_from_func(f)
+    f_expression = _get_lambda_from_func(f)
     return Column.invoke_anonymous_function(col1, "MAP_ZIP_WITH", col2, Column(f_expression))
 
 
@@ -1162,7 +1162,7 @@ def _lambda_quoted(value: str) -> t.Optional[bool]:
     return False if value == "_" else None
 
 
-def get_lambda_from_func(lambda_expression: t.Callable):
+def _get_lambda_from_func(lambda_expression: t.Callable):
     variables = [glotexp.to_identifier(x, quoted=_lambda_quoted(x)) for x in lambda_expression.__code__.co_varnames]
     return glotexp.Lambda(
         this=lambda_expression(*[Column(x) for x in variables]).expression,

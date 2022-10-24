@@ -205,6 +205,7 @@ class TSQL(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            exp.DateAdd: lambda self, e: f"DATEADD({self.format_args(e.args.get('unit'), e.expression, e.this)})",
             exp.CurrentDate: rename_func("GETDATE"),
+            exp.DateAdd: lambda self, e: f"DATEADD({self.sql(e,'unit')}, {self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e,'unit')}, {self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         }

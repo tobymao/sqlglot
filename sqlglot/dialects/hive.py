@@ -29,6 +29,7 @@ DATE_DELTA_INTERVAL = {
 
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
+
 def _add_date_sql(self, expression):
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))

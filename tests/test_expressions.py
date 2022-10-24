@@ -135,6 +135,53 @@ class TestExpressions(unittest.TestCase):
             "SELECT * FROM a1 AS a JOIN b.a JOIN c.a2 JOIN d2 JOIN e.a",
         )
 
+    def test_replace_placeholders(self):
+        self.assertEqual(
+            exp.replace_placeholders(
+                parse_one("select * from :tbl1 JOIN :tbl2 ON :col1 = :col2 WHERE :col3 > 100"),
+                tbl1="foo",
+                tbl2="bar",
+                col1="a",
+                col2="b",
+                col3="c",
+            ).sql(),
+            "SELECT * FROM foo JOIN bar ON a = b WHERE c > 100",
+        )
+        self.assertEqual(
+            exp.replace_placeholders(
+                parse_one("select * from ? JOIN ? ON ? = ? WHERE ? > 100"),
+                "foo",
+                "bar",
+                "a",
+                "b",
+                "c",
+            ).sql(),
+            "SELECT * FROM foo JOIN bar ON a = b WHERE c > 100",
+        )
+        self.assertEqual(
+            exp.replace_placeholders(
+                parse_one("select * from ? WHERE ? > 100"),
+                "foo",
+            ).sql(),
+            "SELECT * FROM foo WHERE ? > 100",
+        )
+        self.assertEqual(
+            exp.replace_placeholders(parse_one("select * from :name WHERE ? > 100"), another_name="bla").sql(),
+            "SELECT * FROM :name WHERE ? > 100",
+        )
+        self.assertEqual(
+            exp.replace_placeholders(
+                parse_one("select * from (SELECT :col1 FROM ?) WHERE :col2 > 100"),
+                "tbl1",
+                "tbl2",
+                "tbl3",
+                col1="a",
+                col2="b",
+                col3="c",
+            ).sql(),
+            "SELECT * FROM (SELECT a FROM tbl1) WHERE b > 100",
+        )
+
     def test_named_selects(self):
         expression = parse_one("SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz")
         self.assertEqual(expression.named_selects, ["a", "B", "e", "*", "zz", "z"])
@@ -504,9 +551,24 @@ class TestExpressions(unittest.TestCase):
             [e.alias_or_name for e in expression.expressions],
             ["a", "B", "c", "D"],
         )
-        self.assertEqual(expression.sql(), sql)
+        self.assertEqual(expression.sql(), "SELECT a, b AS B, c, d AS D")
         self.assertEqual(expression.expressions[2].name, "comment")
-        self.assertEqual(expression.sql(annotations=False), "SELECT a, b AS B, c, d AS D")
+        self.assertEqual(
+            expression.sql(pretty=True, annotations=False),
+            """SELECT
+  a,
+  b AS B,
+  c,
+  d AS D""",
+        )
+        self.assertEqual(
+            expression.sql(pretty=True),
+            """SELECT
+  a,
+  b AS B,
+  c # comment,
+  d AS D # another_comment FROM foo""",
+        )
 
     def test_to_table(self):
         table_only = exp.to_table("table_name")

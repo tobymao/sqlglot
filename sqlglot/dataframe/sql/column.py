@@ -5,7 +5,7 @@ import typing as t
 import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql.types import DataType
-from sqlglot.helper import flatten
+from sqlglot.helper import flatten, is_iterable
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import ColumnOrLiteral
@@ -134,10 +134,14 @@ class Column:
         cls, column: t.Optional[ColumnOrLiteral], callable_expression: t.Callable, **kwargs
     ) -> Column:
         ensured_column = None if column is None else cls.ensure_col(column)
+        ensure_expression_values = {
+            k: [Column.ensure_col(x).expression for x in v] if is_iterable(v) else Column.ensure_col(v).expression
+            for k, v in kwargs.items()
+        }
         new_expression = (
-            callable_expression(**kwargs)
+            callable_expression(**ensure_expression_values)
             if ensured_column is None
-            else callable_expression(this=ensured_column.column_expression, **kwargs)
+            else callable_expression(this=ensured_column.column_expression, **ensure_expression_values)
         )
         return Column(new_expression)
 

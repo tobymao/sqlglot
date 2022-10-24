@@ -149,6 +149,7 @@ class TSQL(Dialect):
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,
+            "IIF": exp.If.from_arg_list,
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
@@ -210,4 +211,5 @@ class TSQL(Dialect):
             **Generator.TRANSFORMS,
             exp.DateAdd: lambda self, e: f"DATEADD({self.format_args(e.args.get('unit'), e.expression, e.this)})",
             exp.CurrentDate: rename_func("GETDATE"),
+            exp.If: rename_func("IIF"),
         }

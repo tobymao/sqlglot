@@ -282,3 +282,6 @@ TBLPROPERTIES (
                 "spark": "SELECT ARRAY_SORT(x)",
             },
         )
+
+    def test_iif(self):
+        self.validate_all("SELECT IIF(cond, 'True', 'False')", write={"spark": "SELECT IF(cond, 'True', 'False')"})

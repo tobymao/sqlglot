@@ -260,3 +260,12 @@ class TestTSQL(Validator):
                 "spark": "CAST(x AS INT)",
             },
         )
+
+    def test_iif(self):
+        self.validate_identity("SELECT IIF(cond, 'True', 'False')")
+        self.validate_all(
+            "SELECT IIF(cond, 'True', 'False');",
+            write={
+                "spark": "SELECT IF(cond, 'True', 'False')",
+            },
+        )

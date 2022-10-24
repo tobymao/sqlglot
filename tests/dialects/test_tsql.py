@@ -71,6 +71,23 @@ class TestTSQL(Validator):
                 "spark": "LOCATE('sub', 'testsubstring')",
             },
         )
+
+    def test_len(self):
+        self.validate_all("LEN(x)", write={"spark": "LENGTH(x)"})
+
+    def test_replicate(self):
+        self.validate_all("REPLICATE('x', 2)", write={"spark": "REPEAT('x', 2)"})
+
+    def test_isnull(self):
+        self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
+
+    def test_jsonvalue(self):
+        self.validate_all(
+            "JSON_VALUE(r.JSON, '$.Attr_INT')",
+            write={"spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')"},
+        )
+
+    def test_datefromparts(self):
         self.validate_all(
             "SELECT DATEFROMPARTS('2020', 10, 01)",
             write={"spark": "SELECT MAKE_DATE('2020', 10, 01)"},
@@ -267,4 +284,13 @@ class TestTSQL(Validator):
         )
         self.validate_all(
             "SELECT DATEDIFF(quarter, 'start', 'end')", write={"spark": "SELECT MONTHS_BETWEEN('end', 'start') / 3"}
+        )
+
+    def test_iif(self):
+        self.validate_identity("SELECT IIF(cond, 'True', 'False')")
+        self.validate_all(
+            "SELECT IIF(cond, 'True', 'False');",
+            write={
+                "spark": "SELECT IF(cond, 'True', 'False')",
+            },
         )

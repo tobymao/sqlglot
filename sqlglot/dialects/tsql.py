@@ -52,7 +52,7 @@ def parse_date_delta(exp_class):
 
 def generate_date_delta(self, e):
     func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
-    return f"{func}({e.text('unit')}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})"
+    return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
 
 
 class TSQL(Dialect):
@@ -178,6 +178,10 @@ class TSQL(Dialect):
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,
+            "IIF": exp.If.from_arg_list,
+            "LEN": exp.Length.from_arg_list,
+            "REPLICATE": exp.Repeat.from_arg_list,
+            "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
         }
 
         VAR_LENGTH_DATATYPES = {
@@ -235,6 +239,7 @@ class TSQL(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.DateAdd: lambda self, e: generate_date_delta(self, e),
-            exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.args.get('unit'), e.expression, e.this)})",
+            exp.DateDiff: lambda self, e: generate_date_delta(self, e),
             exp.CurrentDate: rename_func("GETDATE"),
+            exp.If: rename_func("IIF"),
         }

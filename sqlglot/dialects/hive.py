@@ -34,7 +34,8 @@ def _add_date_sql(self, expression):
     modified_increment = (
         int(expression.text("expression")) * multiplier if expression.expression.is_number else expression.expression
     )
-    return f"{func}({self.sql(expression, 'this')}, {modified_increment})"
+    modified_increment = exp.Literal.number(modified_increment)
+    return f"{func}({self.format_args(expression.this, modified_increment.this)})"
 
 
 def _date_diff_sql(self, expression):
@@ -42,7 +43,7 @@ def _date_diff_sql(self, expression):
     sql_func = "MONTHS_BETWEEN" if unit in ["YEAR", "QUARTER", "MONTH"] else "DATEDIFF"
     _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
     multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""
-    diff_sql = f"{sql_func}({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
+    diff_sql = f"{sql_func}({self.format_args(expression.this, expression.expression)})"
     return f"{diff_sql}{multiplier_sql}"
 
 

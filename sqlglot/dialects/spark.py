@@ -71,6 +71,7 @@ class Spark(Hive):
                 length=list_get(args, 1),
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
+            "IIF": exp.If.from_arg_list,
         }
 
         FUNCTION_PARSERS = {

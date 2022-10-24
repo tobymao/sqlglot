@@ -245,10 +245,10 @@ class TestTSQL(Validator):
         )
 
     def test_iif(self):
-        self.validate_identity("SELECT IIF(a, b, c)")
+        self.validate_identity("SELECT IIF(cond, 'True', 'False')")
         self.validate_all(
-            "SELECT IIF(500 < 1000, 'YES', 'NO');",
+            "SELECT IIF(cond, 'True', 'False');",
             write={
-                "spark": "SELECT IF(500 < 1000, 'YES', 'NO')",
+                "spark": "SELECT IF(cond, 'True', 'False')",
             },
         )

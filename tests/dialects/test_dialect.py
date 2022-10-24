@@ -437,13 +437,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "DATE_ADD(x, y, 'day')",
+            "DATE_ADD(x, y, day)",
             read={
-                "tsql": "DATEADD('day', y, x)",
+                "tsql": "DATEADD(day, y, x)",
             },
             write={
                 "postgres": UnsupportedError,
-                "tsql": "DATEADD('day', y, x)",
+                "tsql": "DATEADD(day, y, x)",
             },
         )
         self.validate_all(

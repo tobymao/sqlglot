@@ -18,6 +18,24 @@ from sqlglot.helper import list_get
 from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer
 
+# (FuncType, Multiplier)
+DATE_DELTA_INTERVAL = {
+    "YEAR": ("ADD_MONTHS", 12),
+    "MONTH": ("ADD_MONTHS", 1),
+    "QUARTER": ("ADD_MONTHS", 4),
+    "WEEK": ("DATE_ADD", 7),
+    "DAY": ("DATE_ADD", 1),
+}
+
+
+def _add_date(self, expression):
+    unit = expression.text("unit").upper()
+    func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
+    modified_increment = (
+        int(expression.text("expression")) * multiplier if expression.expression.is_number else expression.expression
+    )
+    return f"{func}({self.sql(expression, 'this')}, {modified_increment})"
+
 
 def _array_sort(self, expression):
     if expression.expression:
@@ -211,7 +229,7 @@ class Hive(Dialect):
             exp.ArraySize: rename_func("SIZE"),
             exp.ArraySort: _array_sort,
             exp.With: no_recursive_cte_sql,
-            exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.DateAdd: _add_date,
             exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",

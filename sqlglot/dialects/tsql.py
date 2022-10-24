@@ -8,6 +8,23 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
 
 FULL_FORMAT_TIME_MAPPING = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"}
+DATE_DELTA_INTERVAL = {
+    "year": "year",
+    "yyyy": "year",
+    "yy": "year",
+    "quarter": "quarter",
+    "qq": "quarter",
+    "q": "quarter",
+    "month": "month",
+    "mm": "month",
+    "m": "month",
+    "week": "week",
+    "ww": "week",
+    "wk": "week",
+    "day": "day",
+    "dd": "day",
+    "d": "day",
+}
 
 
 def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
@@ -23,6 +40,11 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
         )
 
     return _format_time
+
+
+def parse_add_date(args):
+    unit = DATE_DELTA_INTERVAL.get(list_get(args, 0).text("this").lower(), "day")
+    return exp.DateAdd(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
 
 
 class TSQL(Dialect):
@@ -143,9 +165,7 @@ class TSQL(Dialect):
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "DATEADD": lambda args: exp.DateAdd(
-                this=list_get(args, 2), expression=list_get(args, 1), unit=list_get(args, 0)
-            ),
+            "DATEADD": parse_add_date,
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,

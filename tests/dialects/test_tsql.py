@@ -243,3 +243,11 @@ class TestTSQL(Validator):
                 "spark": "CAST(x AS INT)",
             },
         )
+
+    def test_add_date(self):
+        self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
+        self.validate_all(
+            "SELECT DATEADD(year, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 12)"}
+        )
+        self.validate_all("SELECT DATEADD(qq, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 4)"})
+        self.validate_all("SELECT DATEADD(wk, 1, '2017/08/25')", write={"spark": "SELECT DATE_ADD('2017/08/25', 7)"})

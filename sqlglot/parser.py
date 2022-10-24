@@ -1513,7 +1513,7 @@ class Parser:
         return this
 
     def _parse_offset(self, this=None):
-        if not self._match(TokenType.OFFSET):
+        if not self._match_set((TokenType.OFFSET, TokenType.COMMA)):
             return this
         count = self._parse_number()
         self._match_set((TokenType.ROW, TokenType.ROWS))

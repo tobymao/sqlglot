@@ -27,6 +27,7 @@ DATE_DELTA_INTERVAL = {
     "DAY": ("DATE_ADD", 1),
 }
 
+DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 def _add_date_sql(self, expression):
     unit = expression.text("unit").upper()
@@ -40,7 +41,7 @@ def _add_date_sql(self, expression):
 
 def _date_diff_sql(self, expression):
     unit = expression.text("unit").upper()
-    sql_func = "MONTHS_BETWEEN" if unit in ["YEAR", "QUARTER", "MONTH"] else "DATEDIFF"
+    sql_func = "MONTHS_BETWEEN" if unit in DIFF_MONTH_SWITCH else "DATEDIFF"
     _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
     multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""
     diff_sql = f"{sql_func}({self.format_args(expression.this, expression.expression)})"

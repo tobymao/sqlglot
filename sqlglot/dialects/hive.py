@@ -22,7 +22,7 @@ from sqlglot.tokens import Tokenizer
 DATE_DELTA_INTERVAL = {
     "YEAR": ("ADD_MONTHS", 12),
     "MONTH": ("ADD_MONTHS", 1),
-    "QUARTER": ("ADD_MONTHS", 4),
+    "QUARTER": ("ADD_MONTHS", 3),
     "WEEK": ("DATE_ADD", 7),
     "DAY": ("DATE_ADD", 1),
 }
@@ -35,6 +35,16 @@ def _add_date(self, expression):
         int(expression.text("expression")) * multiplier if expression.expression.is_number else expression.expression
     )
     return f"{func}({self.sql(expression, 'this')}, {modified_increment})"
+
+
+def _date_diff(self, expression):
+    unit = expression.text("unit").upper()
+    sql_func = "MONTHS_BETWEEN" if unit == "MONTH" else "DATEDIFF"
+    _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
+    if multiplier > 1:
+        return f"{sql_func}({self.sql(expression, 'this')}, {self.sql(expression, 'expression')}) / {multiplier}"
+    else:
+        return f"{sql_func}({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
 
 
 def _array_sort(self, expression):
@@ -230,7 +240,7 @@ class Hive(Dialect):
             exp.ArraySort: _array_sort,
             exp.With: no_recursive_cte_sql,
             exp.DateAdd: _add_date,
-            exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.DateDiff: _date_diff,
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",

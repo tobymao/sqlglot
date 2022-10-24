@@ -42,9 +42,12 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     return _format_time
 
 
-def parse_add_date(args):
+def parse_date_delta(args, kind="ADD"):
     unit = DATE_DELTA_INTERVAL.get(list_get(args, 0).text("this").lower(), "day")
-    return exp.DateAdd(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
+    if kind == "SUB":
+        return exp.DateDiff(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
+    else:
+        return exp.DateAdd(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
 
 
 class TSQL(Dialect):
@@ -165,7 +168,8 @@ class TSQL(Dialect):
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "DATEADD": parse_add_date,
+            "DATEADD": lambda args: parse_date_delta(args, kind="ADD"),
+            "DATEDIFF": lambda args: parse_date_delta(args, kind="SUB"),
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,
@@ -226,5 +230,6 @@ class TSQL(Dialect):
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.DateAdd: lambda self, e: f"DATEADD({self.format_args(e.args.get('unit'), e.expression, e.this)})",
+            exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.args.get('unit'), e.expression, e.this)})",
             exp.CurrentDate: rename_func("GETDATE"),
         }

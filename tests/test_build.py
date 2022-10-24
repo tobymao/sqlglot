@@ -156,8 +156,28 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x", "y", "z")
                 .from_("merged_df")
-                .join("vte_diagnosis_df", using="patient_id, encounter_id"),
+                .join("vte_diagnosis_df", using=["patient_id", "encounter_id"]),
                 "SELECT x, y, z FROM merged_df JOIN vte_diagnosis_df USING (patient_id, encounter_id)",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).on("y = 1", "z = 1"),
+                "JOIN x ON y = 1 AND z = 1",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).on("y = 1"),
+                "JOIN x ON y = 1",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).using("bar", "bob"),
+                "JOIN x USING (bar, bob)",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).using("bar"),
+                "JOIN x USING (bar)",
+            ),
+            (
+                lambda: select("x").from_("foo").join("bla", using="bob"),
+                "SELECT x FROM foo JOIN bla USING (bob)",
             ),
             (
                 lambda: select("x").from_("foo").join("bla", using="bob"),

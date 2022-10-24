@@ -1633,7 +1633,7 @@ class Select(Subqueryable):
             >>> Select().select("*").from_("tbl").join("tbl2", on="tbl1.y = tbl2.y").sql()
             'SELECT * FROM tbl JOIN tbl2 ON tbl1.y = tbl2.y'
 
-            >>> Select().select("1").from_("a").join("b", using="x, y, z").sql()
+            >>> Select().select("1").from_("a").join("b", using=["x", "y", "z"]).sql()
             'SELECT 1 FROM a JOIN b USING (x, y, z)'
 
             Use `join_type` to change the type of join:
@@ -1646,8 +1646,8 @@ class Select(Subqueryable):
                 If an `Expression` instance is passed, it will be used as-is.
             on (str | Expression): optionally specify the join "on" criteria as a SQL string.
                 If an `Expression` instance is passed, it will be used as-is.
-            using (str | [Expression]): optionally specify the join "using" criteria as a SQL string in CSV format.
-                If a list of `Expression` instances is passed (eg. identifiers), they will be used as-is.
+            using (str | Expression): optionally specify the join "using" criteria as a SQL string.
+                If an `Expression` instance is passed, it will be used as-is.
             append (bool): if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             join_type (str): If set, alter the parsed join type
@@ -1685,7 +1685,7 @@ class Select(Subqueryable):
 
         if using:
             if isinstance(using, str):
-                using = [to_identifier(name) for name in using.split(", ")]
+                using = [to_identifier(name) for name in ensure_list(using)]
             join.set("using", using)
 
         if join_alias:

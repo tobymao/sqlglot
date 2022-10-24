@@ -28,7 +28,7 @@ DATE_DELTA_INTERVAL = {
 }
 
 
-def _add_date(self, expression):
+def _add_date_sql(self, expression):
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
     modified_increment = (
@@ -238,7 +238,7 @@ class Hive(Dialect):
             exp.ArraySize: rename_func("SIZE"),
             exp.ArraySort: _array_sort,
             exp.With: no_recursive_cte_sql,
-            exp.DateAdd: _add_date,
+            exp.DateAdd: _add_date_sql,
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",

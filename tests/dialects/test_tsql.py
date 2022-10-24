@@ -261,6 +261,31 @@ class TestTSQL(Validator):
             },
         )
 
+    def test_add_date(self):
+        self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
+        self.validate_all(
+            "SELECT DATEADD(year, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 12)"}
+        )
+        self.validate_all("SELECT DATEADD(qq, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 3)"})
+        self.validate_all("SELECT DATEADD(wk, 1, '2017/08/25')", write={"spark": "SELECT DATE_ADD('2017/08/25', 7)"})
+
+    def test_date_diff(self):
+        self.validate_identity("SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')")
+        self.validate_all(
+            "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+            write={
+                "tsql": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+                "spark": "SELECT MONTHS_BETWEEN('2021/01/01', '2020/01/01') / 12",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(month, 'start','end')",
+            write={"spark": "SELECT MONTHS_BETWEEN('end', 'start')", "tsql": "SELECT DATEDIFF(month, 'start', 'end')"},
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(quarter, 'start', 'end')", write={"spark": "SELECT MONTHS_BETWEEN('end', 'start') / 3"}
+        )
+
     def test_iif(self):
         self.validate_identity("SELECT IIF(cond, 'True', 'False')")
         self.validate_all(

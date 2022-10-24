@@ -86,6 +86,8 @@ class TestTSQL(Validator):
             "JSON_VALUE(r.JSON, '$.Attr_INT')",
             write={"spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')"},
         )
+
+    def test_datefromparts(self):
         self.validate_all(
             "SELECT DATEFROMPARTS('2020', 10, 01)",
             write={"spark": "SELECT MAKE_DATE('2020', 10, 01)"},

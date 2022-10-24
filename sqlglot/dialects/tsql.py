@@ -142,6 +142,7 @@ class TSQL(Dialect):
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
+            "ISNULL": exp.Coalesce.from_arg_list,
             "DATEADD": lambda args: exp.DateAdd(
                 this=list_get(args, 2), expression=list_get(args, 1), unit=list_get(args, 0)
             ),
@@ -150,7 +151,6 @@ class TSQL(Dialect):
             "GETDATE": exp.CurrentDate.from_arg_list,
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
-            "ISNULL": exp.Coalesce.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
         }
 

@@ -265,3 +265,6 @@ class TestTSQL(Validator):
             "SELECT DATEDIFF(month, 'start','end')",
             write={"spark": "SELECT MONTHS_BETWEEN('end', 'start')", "tsql": "SELECT DATEDIFF(month, 'start', 'end')"},
         )
+        self.validate_all(
+            "SELECT DATEDIFF(quarter, 'start', 'end')", write={"spark": "SELECT MONTHS_BETWEEN('end', 'start') / 3"}
+        )

@@ -39,7 +39,7 @@ def _add_date(self, expression):
 
 def _date_diff(self, expression):
     unit = expression.text("unit").upper()
-    sql_func = "MONTHS_BETWEEN" if unit == "MONTH" else "DATEDIFF"
+    sql_func = "MONTHS_BETWEEN" if unit == "MONTH" or unit == "QUARTER" else "DATEDIFF"
     _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
     if multiplier > 1:
         return f"{sql_func}({self.sql(expression, 'this')}, {self.sql(expression, 'expression')}) / {multiplier}"

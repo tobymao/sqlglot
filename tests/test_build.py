@@ -330,6 +330,10 @@ class TestBuild(unittest.TestCase):
                 "UPDATE tbl SET x = 1 WHERE y > 0",
             ),
             (
+                lambda: exp.update("tbl", {"x": 1}, where=exp.condition("y > 0")),
+                "UPDATE tbl SET x = 1 WHERE y > 0",
+            ),
+            (
                 lambda: exp.update("tbl", {"x": 1}, from_="tbl2"),
                 "UPDATE tbl SET x = 1 FROM tbl2",
             ),

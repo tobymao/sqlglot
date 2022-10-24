@@ -807,7 +807,7 @@ def rpad(col: ColumnOrName, len: int, pad: str) -> Column:
 
 
 def repeat(col: ColumnOrName, n: int) -> Column:
-    return Column.invoke_anonymous_function(col, "REPEAT", n)
+    return Column.invoke_expression_over_column(col, glotexp.Repeat, times=lit(n))
 
 
 def split(str: ColumnOrName, pattern: str, limit: t.Optional[int] = None) -> Column:

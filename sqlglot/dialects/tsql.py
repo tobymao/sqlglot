@@ -42,9 +42,12 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     return _format_time
 
 
-def parse_date_delta(args, exp_class):
-    unit = DATE_DELTA_INTERVAL.get(list_get(args, 0).name.lower(), "day")
-    return exp_class(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
+def parse_date_delta(exp_class):
+    def inner_func(args):
+        unit = DATE_DELTA_INTERVAL.get(list_get(args, 0).name.lower(), "day")
+        return exp_class(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
+
+    return inner_func
 
 
 def generate_date_delta(self, e):
@@ -170,8 +173,8 @@ class TSQL(Dialect):
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "DATEADD": lambda args: parse_date_delta(args, exp.DateAdd),
-            "DATEDIFF": lambda args: parse_date_delta(args, exp.DateDiff),
+            "DATEADD": parse_date_delta(exp.DateAdd),
+            "DATEDIFF": parse_date_delta(exp.DateDiff),
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,

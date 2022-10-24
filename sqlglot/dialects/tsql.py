@@ -149,6 +149,9 @@ class TSQL(Dialect):
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,
+            "LEN": exp.Length.from_arg_list,
+            "REPLICATE": exp.Repeat.from_arg_list,
+            "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
         }
 
         VAR_LENGTH_DATATYPES = {

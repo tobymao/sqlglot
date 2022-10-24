@@ -71,6 +71,23 @@ class TestTSQL(Validator):
                 "spark": "LOCATE('sub', 'testsubstring')",
             },
         )
+
+    def test_len(self):
+        self.validate_all("LEN(x)", write={"spark": "LENGTH(x)"})
+
+    def test_replicate(self):
+        self.validate_all("REPLICATE('x', 2)", write={"spark": "REPEAT('x', 2)"})
+
+    def test_isnull(self):
+        self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
+
+    def test_jsonvalue(self):
+        self.validate_all(
+            "JSON_VALUE(r.JSON, '$.Attr_INT')",
+            write={"spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')"},
+        )
+
+    def test_datefromparts(self):
         self.validate_all(
             "SELECT DATEFROMPARTS('2020', 10, 01)",
             write={"spark": "SELECT MAKE_DATE('2020', 10, 01)"},
@@ -241,5 +258,39 @@ class TestTSQL(Validator):
             "CAST(x AS INT)",
             write={
                 "spark": "CAST(x AS INT)",
+            },
+        )
+
+    def test_add_date(self):
+        self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
+        self.validate_all(
+            "SELECT DATEADD(year, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 12)"}
+        )
+        self.validate_all("SELECT DATEADD(qq, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 3)"})
+        self.validate_all("SELECT DATEADD(wk, 1, '2017/08/25')", write={"spark": "SELECT DATE_ADD('2017/08/25', 7)"})
+
+    def test_date_diff(self):
+        self.validate_identity("SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')")
+        self.validate_all(
+            "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+            write={
+                "tsql": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+                "spark": "SELECT MONTHS_BETWEEN('2021/01/01', '2020/01/01') / 12",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(month, 'start','end')",
+            write={"spark": "SELECT MONTHS_BETWEEN('end', 'start')", "tsql": "SELECT DATEDIFF(month, 'start', 'end')"},
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(quarter, 'start', 'end')", write={"spark": "SELECT MONTHS_BETWEEN('end', 'start') / 3"}
+        )
+
+    def test_iif(self):
+        self.validate_identity("SELECT IIF(cond, 'True', 'False')")
+        self.validate_all(
+            "SELECT IIF(cond, 'True', 'False');",
+            write={
+                "spark": "SELECT IF(cond, 'True', 'False')",
             },
         )

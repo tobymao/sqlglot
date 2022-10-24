@@ -2574,6 +2574,10 @@ class RegexpSplit(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Repeat(Func):
+    arg_types = {"this": True, "times": True}
+
+
 class Round(Func):
     arg_types = {"this": True, "decimals": False}
 
@@ -3082,6 +3086,8 @@ def update(table, properties, where=None, from_=None, dialect=None, **opts):
     )
     if from_:
         update.set("from", maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", **opts))
+    if isinstance(where, Condition):
+        where = Where(this=where)
     if where:
         update.set("where", maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", **opts))
     return update

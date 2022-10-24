@@ -154,6 +154,42 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl LEFT JOIN (SELECT b FROM tbl2) AS aliased ON a = b",
             ),
             (
+                lambda: select("x", "y", "z")
+                .from_("merged_df")
+                .join("vte_diagnosis_df", using=["patient_id", "encounter_id"]),
+                "SELECT x, y, z FROM merged_df JOIN vte_diagnosis_df USING (patient_id, encounter_id)",
+            ),
+            (
+                lambda: select("x", "y", "z")
+                .from_("merged_df")
+                .join("vte_diagnosis_df", using=[exp.to_identifier("patient_id"), exp.to_identifier("encounter_id")]),
+                "SELECT x, y, z FROM merged_df JOIN vte_diagnosis_df USING (patient_id, encounter_id)",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).on("y = 1", "z = 1"),
+                "JOIN x ON y = 1 AND z = 1",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).on("y = 1"),
+                "JOIN x ON y = 1",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).using("bar", "bob"),
+                "JOIN x USING (bar, bob)",
+            ),
+            (
+                lambda: parse_one("JOIN x", into=exp.Join).using("bar"),
+                "JOIN x USING (bar)",
+            ),
+            (
+                lambda: select("x").from_("foo").join("bla", using="bob"),
+                "SELECT x FROM foo JOIN bla USING (bob)",
+            ),
+            (
+                lambda: select("x").from_("foo").join("bla", using="bob"),
+                "SELECT x FROM foo JOIN bla USING (bob)",
+            ),
+            (
                 lambda: select("x", "COUNT(y)").from_("tbl").group_by("x").having("COUNT(y) > 0"),
                 "SELECT x, COUNT(y) FROM tbl GROUP BY x HAVING COUNT(y) > 0",
             ),

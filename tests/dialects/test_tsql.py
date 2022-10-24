@@ -258,7 +258,7 @@ class TestTSQL(Validator):
             "SELECT DATEDIFF(year, '2021/01/01', '2020/01/01')",
             write={
                 "tsql": "SELECT DATEDIFF(year, '2021/01/01', '2020/01/01')",
-                "spark": "SELECT DATEDIFF('2020/01/01', '2021/01/01') / 12",
+                "spark": "SELECT MONTHS_BETWEEN('2020/01/01', '2021/01/01') / 12",
             },
         )
         self.validate_all(

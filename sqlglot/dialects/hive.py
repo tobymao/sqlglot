@@ -37,14 +37,13 @@ def _add_date(self, expression):
     return f"{func}({self.sql(expression, 'this')}, {modified_increment})"
 
 
-def _date_diff(self, expression):
+def _date_diff_sql(self, expression):
     unit = expression.text("unit").upper()
-    sql_func = "MONTHS_BETWEEN" if unit == "MONTH" or unit == "QUARTER" else "DATEDIFF"
+    sql_func = "MONTHS_BETWEEN" if unit in ["YEAR", "QUARTER", "MONTH"] else "DATEDIFF"
     _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
-    if multiplier > 1:
-        return f"{sql_func}({self.sql(expression, 'this')}, {self.sql(expression, 'expression')}) / {multiplier}"
-    else:
-        return f"{sql_func}({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
+    multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""
+    diff_sql = f"{sql_func}({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
+    return f"{diff_sql}{multiplier_sql}"
 
 
 def _array_sort(self, expression):
@@ -240,7 +239,7 @@ class Hive(Dialect):
             exp.ArraySort: _array_sort,
             exp.With: no_recursive_cte_sql,
             exp.DateAdd: _add_date,
-            exp.DateDiff: _date_diff,
+            exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",

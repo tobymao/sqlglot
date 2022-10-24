@@ -43,11 +43,9 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
 
 
 def parse_date_delta(args, kind="ADD"):
-    unit = DATE_DELTA_INTERVAL.get(list_get(args, 0).text("this").lower(), "day")
-    if kind == "SUB":
-        return exp.DateDiff(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
-    else:
-        return exp.DateAdd(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
+    unit = DATE_DELTA_INTERVAL.get(list_get(args, 0).name.lower(), "day")
+    exp_class = exp.DateDiff if kind == "SUB" else exp.DateAdd
+    return exp_class(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
 
 
 class TSQL(Dialect):

@@ -243,3 +243,12 @@ class TestTSQL(Validator):
                 "spark": "CAST(x AS INT)",
             },
         )
+
+    def test_iif(self):
+        self.validate_identity("SELECT IIF(a, b, c)")
+        self.validate_all(
+            "SELECT IIF(500 < 1000, 'YES', 'NO');",
+            write={
+                "spark": "SELECT IF(500 < 1000, 'YES', 'NO')",
+            },
+        )

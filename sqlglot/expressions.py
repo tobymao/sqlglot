@@ -1684,9 +1684,14 @@ class Select(Subqueryable):
             join.set("on", on)
 
         if using:
-            if isinstance(using, str):
-                using = [to_identifier(name) for name in ensure_list(using)]
-            join.set("using", using)
+            join = _apply_list_builder(
+                *ensure_list(using),
+                instance=join,
+                arg="using",
+                append=append,
+                copy=copy,
+                **opts,
+            )
 
         if join_alias:
             join.set("this", alias_(join.args["this"], join_alias, table=True))

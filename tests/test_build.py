@@ -160,6 +160,12 @@ class TestBuild(unittest.TestCase):
                 "SELECT x, y, z FROM merged_df JOIN vte_diagnosis_df USING (patient_id, encounter_id)",
             ),
             (
+                lambda: select("x", "y", "z")
+                .from_("merged_df")
+                .join("vte_diagnosis_df", using=[exp.to_identifier("patient_id"), exp.to_identifier("encounter_id")]),
+                "SELECT x, y, z FROM merged_df JOIN vte_diagnosis_df USING (patient_id, encounter_id)",
+            ),
+            (
                 lambda: parse_one("JOIN x", into=exp.Join).on("y = 1", "z = 1"),
                 "JOIN x ON y = 1 AND z = 1",
             ),

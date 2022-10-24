@@ -253,12 +253,12 @@ class TestTSQL(Validator):
         self.validate_all("SELECT DATEADD(wk, 1, '2017/08/25')", write={"spark": "SELECT DATE_ADD('2017/08/25', 7)"})
 
     def test_date_diff(self):
-        self.validate_identity("SELECT DATEDIFF(year, '2021/01/01', '2020/01/01')")
+        self.validate_identity("SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')")
         self.validate_all(
-            "SELECT DATEDIFF(year, '2021/01/01', '2020/01/01')",
+            "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
             write={
-                "tsql": "SELECT DATEDIFF(year, '2021/01/01', '2020/01/01')",
-                "spark": "SELECT MONTHS_BETWEEN('2020/01/01', '2021/01/01') / 12",
+                "tsql": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+                "spark": "SELECT MONTHS_BETWEEN('2021/01/01', '2020/01/01') / 12",
             },
         )
         self.validate_all(

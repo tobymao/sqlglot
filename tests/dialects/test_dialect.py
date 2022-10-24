@@ -434,16 +434,7 @@ class TestDialect(Validator):
                 "presto": "DATE_ADD('day', 1, x)",
                 "spark": "DATE_ADD(x, 1)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
-            },
-        )
-        self.validate_all(
-            "DATE_ADD(x, y, 'day')",
-            read={
-                "tsql": "DATEADD('day', y, x)",
-            },
-            write={
-                "postgres": UnsupportedError,
-                "tsql": "DATEADD('day', y, x)",
+                "tsql": "DATEADD(day, 1, x)",
             },
         )
         self.validate_all(

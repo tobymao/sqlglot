@@ -143,6 +143,7 @@ for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
 ```
 
 ### Parser Errors
+
 A syntax error will result in a parser error:
 
 ```python
@@ -157,6 +158,7 @@ sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
 ```
 
 ### Unsupported Errors
+
 Presto `APPROX_DISTINCT` supports the accuracy argument which is not supported in Hive:
 
 ```python
@@ -170,6 +172,7 @@ APPROX_COUNT_DISTINCT does not support accuracy
 ```
 
 ### Build and Modify SQL
+
 SQLGlot supports incrementally building sql expressions:
 
 ```python
@@ -361,6 +364,7 @@ print(Dialect["custom"])
 
 
 ## Optional Dependencies
+
 SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify literal timedelta expressions. The optimizer will not simplify expressions like the following if the module cannot be found:
 
 ```sql

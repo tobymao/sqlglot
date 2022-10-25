@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import Dialect, rename_func
+from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
 from sqlglot.expressions import DataType
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
@@ -42,15 +42,7 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     return _format_time
 
 
-def parse_date_delta(exp_class):
-    def inner_func(args):
-        unit = DATE_DELTA_INTERVAL.get(list_get(args, 0).name.lower(), "day")
-        return exp_class(this=list_get(args, 2), expression=list_get(args, 1), unit=unit)
-
-    return inner_func
-
-
-def generate_date_delta(self, e):
+def generate_date_delta_with_unit_sql(self, e):
     func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
     return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
 
@@ -173,8 +165,8 @@ class TSQL(Dialect):
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "DATEADD": parse_date_delta(exp.DateAdd),
-            "DATEDIFF": parse_date_delta(exp.DateDiff),
+            "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
+            "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,
@@ -238,8 +230,8 @@ class TSQL(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            exp.DateAdd: lambda self, e: generate_date_delta(self, e),
-            exp.DateDiff: lambda self, e: generate_date_delta(self, e),
+            exp.DateAdd: generate_date_delta_with_unit_sql,
+            exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
             exp.If: rename_func("IIF"),
         }

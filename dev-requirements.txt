@@ -6,3 +6,4 @@ mypy
 pandas
 pyspark
 python-dateutil
+pdoc

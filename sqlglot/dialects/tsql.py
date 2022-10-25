@@ -1,10 +1,5 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import (
-    Dialect,
-    generate_tsql_date_delta,
-    parse_date_delta,
-    rename_func,
-)
+from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
 from sqlglot.expressions import DataType
 from sqlglot.generator import Generator
 from sqlglot.helper import list_get
@@ -45,6 +40,11 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
         )
 
     return _format_time
+
+
+def generate_date_delta_with_unit_sql(self, e):
+    func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
+    return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
 
 
 class TSQL(Dialect):
@@ -230,8 +230,8 @@ class TSQL(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            exp.DateAdd: lambda self, e: generate_tsql_date_delta(self, e),
-            exp.DateDiff: lambda self, e: generate_tsql_date_delta(self, e),
+            exp.DateAdd: generate_date_delta_with_unit_sql,
+            exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
             exp.If: rename_func("IIF"),
         }

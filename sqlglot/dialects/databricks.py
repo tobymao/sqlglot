@@ -1,6 +1,7 @@
 from sqlglot import exp
-from sqlglot.dialects.dialect import generate_tsql_date_delta, parse_date_delta
+from sqlglot.dialects.dialect import parse_date_delta
 from sqlglot.dialects.spark import Spark
+from sqlglot.dialects.tsql import generate_date_delta_with_unit_sql
 
 
 class Databricks(Spark):
@@ -15,6 +16,6 @@ class Databricks(Spark):
     class Generator(Spark.Generator):
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
-            exp.DateAdd: lambda self, e: generate_tsql_date_delta(self, e),
-            exp.DateDiff: lambda self, e: generate_tsql_date_delta(self, e),
+            exp.DateAdd: generate_date_delta_with_unit_sql,
+            exp.DateDiff: generate_date_delta_with_unit_sql,
         }

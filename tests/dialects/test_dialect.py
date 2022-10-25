@@ -434,12 +434,7 @@ class TestDialect(Validator):
                 "presto": "DATE_ADD('day', 1, x)",
                 "spark": "DATE_ADD(x, 1)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
-            },
-        )
-        self.validate_all(
-            "DATE_ADD(x, y, 'day')",
-            write={
-                "postgres": UnsupportedError,
+                "tsql": "DATEADD(day, 1, x)",
             },
         )
         self.validate_all(
@@ -985,6 +980,7 @@ class TestDialect(Validator):
         )
 
     def test_limit(self):
+        self.validate_all("SELECT * FROM data LIMIT 10, 20", write={"sqlite": "SELECT * FROM data LIMIT 10 OFFSET 20"})
         self.validate_all(
             "SELECT x FROM y LIMIT 10",
             write={

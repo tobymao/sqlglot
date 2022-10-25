@@ -194,6 +194,24 @@ def split_num_words(value: str, sep: str, min_num_words: int, fill_from_start: b
     return words + [None] * (min_num_words - len(words))
 
 
+def is_iterable(value: t.Any) -> bool:
+    """
+    Checks if the value is an iterable but does not include strings and bytes
+
+    Examples:
+        >>> is_iterable([1,2])
+        True
+        >>> is_iterable("test")
+        False
+
+    Args:
+        value: The value to check if it is an interable
+
+    Returns: Bool indicating if it is an iterable
+    """
+    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes))
+
+
 def flatten(values: t.Iterable[t.Union[t.Iterable[t.Any], t.Any]]) -> t.Generator[t.Any, None, None]:
     """
     Flattens a list that can contain both iterables and non-iterable elements
@@ -211,7 +229,7 @@ def flatten(values: t.Iterable[t.Union[t.Iterable[t.Any], t.Any]]) -> t.Generato
         Yields non-iterable elements (not including str or byte as iterable)
     """
     for value in values:
-        if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
+        if is_iterable(value):
             yield from flatten(value)
         else:
             yield value

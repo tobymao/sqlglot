@@ -18,6 +18,36 @@ from sqlglot.helper import list_get
 from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer
 
+# (FuncType, Multiplier)
+DATE_DELTA_INTERVAL = {
+    "YEAR": ("ADD_MONTHS", 12),
+    "MONTH": ("ADD_MONTHS", 1),
+    "QUARTER": ("ADD_MONTHS", 3),
+    "WEEK": ("DATE_ADD", 7),
+    "DAY": ("DATE_ADD", 1),
+}
+
+DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
+
+
+def _add_date_sql(self, expression):
+    unit = expression.text("unit").upper()
+    func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
+    modified_increment = (
+        int(expression.text("expression")) * multiplier if expression.expression.is_number else expression.expression
+    )
+    modified_increment = exp.Literal.number(modified_increment)
+    return f"{func}({self.format_args(expression.this, modified_increment.this)})"
+
+
+def _date_diff_sql(self, expression):
+    unit = expression.text("unit").upper()
+    sql_func = "MONTHS_BETWEEN" if unit in DIFF_MONTH_SWITCH else "DATEDIFF"
+    _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
+    multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""
+    diff_sql = f"{sql_func}({self.format_args(expression.this, expression.expression)})"
+    return f"{diff_sql}{multiplier_sql}"
+
 
 def _array_sort(self, expression):
     if expression.expression:
@@ -121,10 +151,14 @@ class Hive(Dialect):
         "m": "%-M",
         "ss": "%S",
         "s": "%-S",
-        "S": "%f",
+        "SSSSSS": "%f",
         "a": "%p",
         "DD": "%j",
         "D": "%-j",
+        "E": "%a",
+        "EE": "%a",
+        "EEE": "%a",
+        "EEEE": "%A",
     }
 
     date_format = "'yyyy-MM-dd'"
@@ -208,8 +242,8 @@ class Hive(Dialect):
             exp.ArraySize: rename_func("SIZE"),
             exp.ArraySort: _array_sort,
             exp.With: no_recursive_cte_sql,
-            exp.DateAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-            exp.DateDiff: lambda self, e: f"DATEDIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
+            exp.DateAdd: _add_date_sql,
+            exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",

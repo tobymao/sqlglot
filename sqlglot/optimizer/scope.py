@@ -232,7 +232,7 @@ class Scope:
 
             self._columns = []
             for column in columns + external_columns:
-                ancestor = column.find_ancestor(exp.Qualify, exp.Order, exp.Hint)
+                ancestor = column.find_ancestor(exp.Qualify, exp.Order, exp.Having, exp.Hint)
                 if (
                     not ancestor
                     or column.table

@@ -433,7 +433,8 @@ class Parser:
     }
 
     FUNCTION_PARSERS = {
-        "CONVERT": lambda self: self._parse_convert(),
+        "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
+        "TRY_CONVERT": lambda self: self._parse_convert(False),
         "EXTRACT": lambda self: self._parse_extract(),
         "POSITION": lambda self: self._parse_position(),
         "SUBSTRING": lambda self: self._parse_substring(),
@@ -1513,7 +1514,7 @@ class Parser:
         return this
 
     def _parse_offset(self, this=None):
-        if not self._match(TokenType.OFFSET):
+        if not self._match_set((TokenType.OFFSET, TokenType.COMMA)):
             return this
         count = self._parse_number()
         self._match_set((TokenType.ROW, TokenType.ROWS))
@@ -2135,7 +2136,7 @@ class Parser:
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
-    def _parse_convert(self):
+    def _parse_convert(self, strict):
         this = self._parse_field()
         if self._match(TokenType.USING):
             to = self.expression(exp.CharacterSet, this=self._parse_var())
@@ -2143,7 +2144,7 @@ class Parser:
             to = self._parse_types()
         else:
             to = None
-        return self.expression(exp.Cast, this=this, to=to)
+        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
     def _parse_position(self):
         args = self._parse_csv(self._parse_bitwise)

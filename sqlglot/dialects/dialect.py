@@ -332,3 +332,20 @@ def create_with_partitions_sql(self, expression):
             expression.set("this", schema)
 
     return self.create_sql(expression)
+
+
+def generate_tsql_date_delta(self, e):
+    func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
+    return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
+
+
+def parse_date_delta(exp_class, unit_mapping=None):
+    def inner_func(args):
+        tsql_func = len(args) == 3
+        this = list_get(args, 2) if tsql_func else list_get(args, 0)
+        expression = list_get(args, 1) if tsql_func else list_get(args, 1)
+        unit = list_get(args, 0) if tsql_func else exp.Literal.string("DAY")
+        unit = unit_mapping.get(unit.name.lower(), unit) if unit_mapping else unit
+        return exp_class(this=this, expression=expression, unit=unit)
+
+    return inner_func

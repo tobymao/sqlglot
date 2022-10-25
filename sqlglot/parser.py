@@ -1172,14 +1172,15 @@ class Parser:
         subquery = self._parse_select(table=True)
 
         if subquery:
-            return self.expression(exp.Lateral, this=subquery)
+            return self.expression(exp.Lateral, this=subquery, view=False)
 
-        self._match(TokenType.VIEW)
+        view = True if self._match(TokenType.VIEW) else False
         outer = self._match(TokenType.OUTER)
 
         return self.expression(
             exp.Lateral,
             this=self._parse_function(),
+            view=view,
             outer=outer,
             alias=self.expression(
                 exp.TableAlias,

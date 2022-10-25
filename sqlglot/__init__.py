@@ -1,3 +1,5 @@
+"""## Python SQL parser, transpiler and optimizer."""
+
 from sqlglot import expressions as exp
 from sqlglot.dialects import Dialect, Dialects
 from sqlglot.diff import diff

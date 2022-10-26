@@ -443,7 +443,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "CONSTRAINT": TokenType.CONSTRAINT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
-        "APPLY": TokenType.APPLY,
         "CUBE": TokenType.CUBE,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,

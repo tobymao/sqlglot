@@ -158,6 +158,7 @@ class TSQL(Dialect):
             "SQL_VARIANT": TokenType.VARIANT,
             "NVARCHAR(MAX)": TokenType.TEXT,
             "VARCHAR(MAX)": TokenType.TEXT,
+            "APPLY": TokenType.APPLY,
         }
 
     class Parser(Parser):

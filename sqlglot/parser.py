@@ -1168,7 +1168,8 @@ class Parser:
 
     def _parse_lateral(self):
         index = self._index
-        if self._match_set([TokenType.OUTER, TokenType.CROSS]):
+        lat_apply = False
+        if self._match_set({TokenType.OUTER, TokenType.CROSS}):
             cross = self._prev.token_type == TokenType.CROSS
             kind = "inner" if cross else "outer"
             side = None if cross else "left"
@@ -1178,11 +1179,9 @@ class Parser:
                 self._retreat(index)
                 return None
 
-            lat_type = self._prev.token_type
+            lat_apply = True
 
-        elif self._match(TokenType.LATERAL):
-            lat_type = self._prev.token_type
-        else:
+        elif not self._match(TokenType.LATERAL):
             return None
 
         this = self._parse_select(table=True)
@@ -1212,15 +1211,15 @@ class Parser:
             ),
         )
 
-        if lat_type == TokenType.LATERAL:
-            return expression
-        if lat_type == TokenType.APPLY:
+        if lat_apply:
             return self.expression(
                 exp.Join,
                 this=expression,
                 side=side,
                 kind=kind,
             )
+
+        return expression
 
     def _parse_join_side_and_kind(self):
         return (

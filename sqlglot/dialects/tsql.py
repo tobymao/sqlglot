@@ -237,7 +237,7 @@ class TSQL(Dialect):
             subquery = self._parse_select(table=True)
             if subquery:
                 return self.expression(
-                    exp.Join, this=self.expression(exp.Lateral, this=subquery, view=False), side=side, kind=kind
+                    exp.Join, this=self.expression(exp.Lateral, this=subquery), side=side, kind=kind
                 )
 
             # If no subquery applicable, a function applies
@@ -256,7 +256,6 @@ class TSQL(Dialect):
                     exp.Lateral,
                     this=func,
                     outer=outer,
-                    view=False,
                     alias=self.expression(
                         exp.TableAlias,
                         this=table_alias,

@@ -1173,9 +1173,9 @@ class Parser:
         subquery = self._parse_select(table=True)
 
         if subquery:
-            return self.expression(exp.Lateral, this=subquery, view=False)
+            return self.expression(exp.Lateral, this=subquery)
 
-        view = True if self._match(TokenType.VIEW) else False
+        view = self._match(TokenType.VIEW)
         outer = self._match(TokenType.OUTER)
 
         return self.expression(

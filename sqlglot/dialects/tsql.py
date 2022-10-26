@@ -247,6 +247,7 @@ class TSQL(Dialect):
             table_alias = self._parse_id_var(any_token=False)
 
             # Check for any explicit column specifications
+            columns = None
             if self._match(TokenType.L_PAREN):
                 columns = self._parse_csv(self._parse_id_var)
                 self._match(TokenType.R_PAREN)

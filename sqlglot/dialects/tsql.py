@@ -166,6 +166,9 @@ class TSQL(Dialect):
             "SQL_VARIANT": TokenType.VARIANT,
             "NVARCHAR(MAX)": TokenType.TEXT,
             "VARCHAR(MAX)": TokenType.TEXT,
+            "APPLY": TokenType.LATERAL,
+            "OUTER": TokenType.OUTER,
+            "LEFT OUTER": TokenType.LEFT,
         }
 
     class Parser(Parser):
@@ -225,6 +228,49 @@ class TSQL(Dialect):
 
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+
+        def _parse_lateral(self):
+            if self._match_pair(TokenType.CROSS, TokenType.LATERAL):
+                side = None
+                kind = "INNER"
+                outer = False
+
+            elif self._match_pair(TokenType.OUTER, TokenType.LATERAL):
+                side = "LEFT"
+                kind = "OUTER"
+                outer = True
+            else:
+                return None
+
+            subquery = self._parse_select(table=True)
+
+            if subquery:
+                return self.expression(exp.Join, this=self.expression(exp.Lateral, this=subquery, view=False), side=side, kind=kind)
+
+            # Functions
+            func = self._parse_function()
+            table_alias = self._parse_id_var(any_token=False)
+
+            if self._match(TokenType.L_PAREN):
+                columns = self._parse_csv(self._parse_id_var)
+                self._match(TokenType.R_PAREN)
+
+            return self.expression(
+                exp.Join,
+                this = self.expression(
+                    exp.Lateral,
+                    this=func,
+                    outer=outer,
+                    view=False,
+                    alias=self.expression(
+                        exp.TableAlias,
+                        this=table_alias,
+                        columns=columns,
+                    ),
+                ),
+                side=side,
+                kind=kind,
+            )
 
     class Generator(Generator):
         TYPE_MAPPING = {

@@ -1,3 +1,5 @@
+"""## Python SQL parser, transpiler and optimizer."""
+
 from sqlglot import expressions as exp
 from sqlglot.dialects import Dialect, Dialects
 from sqlglot.diff import diff
@@ -24,7 +26,7 @@ from sqlglot.parser import Parser
 from sqlglot.schema import MappingSchema
 from sqlglot.tokens import Tokenizer, TokenType
 
-__version__ = "9.0.3"
+__version__ = "9.0.4"
 
 pretty = False
 

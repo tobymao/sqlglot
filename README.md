@@ -8,51 +8,96 @@ You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) qu
 
 Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations.
 
+Contributions are very welcome in SQLGlot; read the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) to get started!
+
+## Table of Contents
+
+* [Install](#install)
+* [Documentation](#documentation)
+* [Run Tests & Lint](#run-tests-and-lint)
+* [Examples](#examples)
+   * [Formatting and Transpiling](#formatting-and-transpiling)
+   * [Metadata](#metadata)
+   * [Parser Errors](#parser-errors)
+   * [Unsupported Errors](#unsupported-errors)
+   * [Build and Modify SQL](#build-and-modify-sql)
+   * [SQL Optimizer](#sql-optimizer)
+   * [SQL Annotations](#sql-annotations)
+   * [AST Introspection](#ast-introspection)
+   * [AST Diff](#ast-diff)
+   * [Custom Dialects](#custom-dialects)
+* [Benchmarks](#benchmarks)
+* [Optional Dependencies](#optional-dependencies)
+
 ## Install
-From PyPI
+
+From PyPI:
 
 ```
 pip3 install sqlglot
 ```
 
-Or with a local checkout
+Or with a local checkout:
 
 ```
 pip3 install -e .
 ```
 
+Requirements for development (optional):
+
+```
+pip3 install -r dev-requirements.txt
+```
+
+## Documentation
+
+SQLGlot's uses [pdocs](https://pdoc.dev/) to serve its API documentation:
+
+```
+pdoc sqlglot --docformat google
+```
+
+## Run Tests and Lint
+
+```
+# set `SKIP_INTEGRATION=1` to skip integration tests
+./run_checks.sh
+```
+
+
 ## Examples
-Easily translate from one dialect to another. For example, date/time functions vary from dialects and can be hard to deal with.
+
+### Formatting and Transpiling
+
+Easily translate from one dialect to another. For example, date/time functions vary from dialects and can be hard to deal with:
 
 ```python
 import sqlglot
-sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read='duckdb', write='hive')
+sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read="duckdb", write="hive")[0]
 ```
 
 ```sql
-SELECT FROM_UNIXTIME(1618088028295 / 1000)
+'SELECT FROM_UNIXTIME(1618088028295 / 1000)'
 ```
 
-SQLGlot can even translate custom time formats.
+SQLGlot can even translate custom time formats:
+
 ```python
 import sqlglot
-sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read='duckdb', write='hive')
+sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read="duckdb", write="hive")[0]
 ```
 
 ```sql
-SELECT DATE_FORMAT(x, 'yy-M-ss')"
+"SELECT DATE_FORMAT(x, 'yy-M-ss')"
 ```
 
-## Formatting and Transpiling
-Read in a SQL statement with a CTE and CASTING to a REAL and then transpiling to Spark.
-
-Spark uses backticks as identifiers and the REAL type is transpiled to FLOAT.
+As another example, let's suppose that we want to read in a SQL query that contains a CTE and a cast to `REAL`, and then transpile it to Spark, which uses backticks as identifiers and `FLOAT` instead of `REAL`:
 
 ```python
 import sqlglot
 
 sql = """WITH baz AS (SELECT a, c FROM foo WHERE a = 1) SELECT f.a, b.b, baz.c, CAST("b"."a" AS REAL) d FROM foo f JOIN bar b ON f.a = b.a LEFT JOIN baz ON f.a = baz.a"""
-sqlglot.transpile(sql, write='spark', identify=True, pretty=True)[0]
+print(sqlglot.transpile(sql, write="spark", identify=True, pretty=True)[0])
 ```
 
 ```sql
@@ -76,9 +121,9 @@ LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
 
-## Metadata
+### Metadata
 
-You can explore SQL with expression helpers to do things like find columns and tables.
+You can explore SQL with expression helpers to do things like find columns and tables:
 
 ```python
 from sqlglot import parse_one, exp
@@ -97,34 +142,38 @@ for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
   print(table.name)
 ```
 
-## Parser Errors
-A syntax error will result in a parser error.
+### Parser Errors
+
+A syntax error will result in a parser error:
+
 ```python
-transpile("SELECT foo( FROM bar")
+import sqlglot
+sqlglot.transpile("SELECT foo( FROM bar")
 ```
 
+```
 sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
-  select foo( __FROM__ bar
+  select foo( FROM bar
+              ~~~~
+```
 
-## Unsupported Errors
-Presto APPROX_DISTINCT supports the accuracy argument which is not supported in Spark.
+### Unsupported Errors
+
+Presto `APPROX_DISTINCT` supports the accuracy argument which is not supported in Hive:
 
 ```python
-transpile(
-    'SELECT APPROX_DISTINCT(a, 0.1) FROM foo',
-    read='presto',
-    write='spark',
-)
+import sqlglot
+sqlglot.transpile("SELECT APPROX_DISTINCT(a, 0.1) FROM foo", read="presto", write="hive")
 ```
 
 ```sql
-WARNING:root:APPROX_COUNT_DISTINCT does not support accuracy
-
-SELECT APPROX_COUNT_DISTINCT(a) FROM foo
+APPROX_COUNT_DISTINCT does not support accuracy
+'SELECT APPROX_COUNT_DISTINCT(a) FROM foo'
 ```
 
-## Build and Modify SQL
-SQLGlot supports incrementally building sql expressions.
+### Build and Modify SQL
+
+SQLGlot supports incrementally building sql expressions:
 
 ```python
 from sqlglot import select, condition
@@ -132,21 +181,20 @@ from sqlglot import select, condition
 where = condition("x=1").and_("y=1")
 select("*").from_("y").where(where).sql()
 ```
-Which outputs:
+
 ```sql
-SELECT * FROM y WHERE x = 1 AND y = 1
+'SELECT * FROM y WHERE x = 1 AND y = 1'
 ```
 
 You can also modify a parsed tree:
 
 ```python
 from sqlglot import parse_one
-
 parse_one("SELECT x FROM y").from_("z").sql()
 ```
-Which outputs:
+
 ```sql
-SELECT x FROM y, z
+'SELECT x FROM y, z'
 ```
 
 There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:
@@ -164,68 +212,64 @@ def transformer(node):
 transformed_tree = expression_tree.transform(transformer)
 transformed_tree.sql()
 ```
-Which outputs:
+
 ```sql
-SELECT FUN(a) FROM x
+'SELECT FUN(a) FROM x'
 ```
 
-## SQL Optimizer
+### SQL Optimizer
 
-SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standardize queries or provide the foundations for implementing an actual engine.
+SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standardize queries or provide the foundations for implementing an actual engine. For example:
 
 ```python
 import sqlglot
 from sqlglot.optimizer import optimize
 
->>>
-optimize(
-    sqlglot.parse_one("""
-    SELECT A OR (B OR (C AND D))
-    FROM x
-    WHERE Z = date '2021-01-01' + INTERVAL '1' month OR 1 = 0
-    """),
-    schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT", "Z": "STRING"}}
-).sql(pretty=True)
+print(
+    optimize(
+        sqlglot.parse_one("""
+            SELECT A OR (B OR (C AND D))
+            FROM x
+            WHERE Z = date '2021-01-01' + INTERVAL '1' month OR 1 = 0
+        """),
+        schema={"x": {"A": "INT", "B": "INT", "C": "INT", "D": "INT", "Z": "STRING"}}
+    ).sql(pretty=True)
+)
+```
 
-"""
+```
 SELECT
   (
-    "x"."A"
-    OR "x"."B"
-    OR "x"."C"
-  )
-  AND (
-    "x"."A"
-    OR "x"."B"
-    OR "x"."D"
+    "x"."A" OR "x"."B" OR "x"."C"
+  ) AND (
+    "x"."A" OR "x"."B" OR "x"."D"
   ) AS "_col_0"
 FROM "x" AS "x"
 WHERE
   "x"."Z" = CAST('2021-02-01' AS DATE)
-"""
 ```
 
-## SQL Annotations
+### SQL Annotations
 
 SQLGlot supports annotations in the sql expression. This is an experimental feature that is not part of any of the SQL standards but it can be useful when needing to annotate what a selected field is supposed to be. Below is an example:
 
 ```sql
 SELECT
-  user #primary_key,
+  user # primary_key,
   country
 FROM users
 ```
 
-SQL annotations are currently incompatible with MySQL, which uses the `#` character to introduce comments.
+### AST Introspection
 
-## AST Introspection
-
-You can see the AST version of the sql by calling repr.
+You can see the AST version of the sql by calling `repr`:
 
 ```python
 from sqlglot import parse_one
-repr(parse_one("SELECT a + 1 AS z"))
+print(repr(parse_one("SELECT a + 1 AS z")))
+```
 
+```python
 (SELECT expressions:
   (ALIAS this:
     (ADD this:
@@ -235,14 +279,16 @@ repr(parse_one("SELECT a + 1 AS z"))
     (IDENTIFIER this: z, quoted: False)))
 ```
 
-## AST Diff
+### AST Diff
 
-SQLGlot can calculate the difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one.
+SQLGlot can calculate the difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:
 
 ```python
 from sqlglot import diff, parse_one
 diff(parse_one("SELECT a + b, c, d"), parse_one("SELECT c, a - b, d"))
+```
 
+```python
 [
   Remove(expression=(ADD this:
     (COLUMN this:
@@ -261,9 +307,9 @@ diff(parse_one("SELECT a + b, c, d"), parse_one("SELECT c, a - b, d"))
 ]
 ```
 
-## Custom Dialects
+### Custom Dialects
 
-[Dialects](sqlglot/dialects) can be added by subclassing Dialect.
+[Dialects](sqlglot/dialects) can be added by subclassing `Dialect`:
 
 ```python
 from sqlglot import exp
@@ -298,8 +344,11 @@ class Custom(Dialect):
             exp.DataType.Type.TEXT: "STRING",
         }
 
+print(Dialect["custom"])
+```
 
-Dialect["custom"]
+```python
+<class '__main__.Custom'>
 ```
 
 ## Benchmarks
@@ -314,18 +363,10 @@ Dialect["custom"]
 |           crazy |   0.03751 (1.0) | 0.03471 (0.925) | 11.0796 (295.3) | 1.03355 (27.55) | 0.00529 (0.141) |
 
 
-## Run Tests and Lint
-```
-pip install -r dev-requirements.txt
-# set `SKIP_INTEGRATION=1` to skip integration tests
-./run_checks.sh
-```
-
 ## Optional Dependencies
-SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify literal timedelta expressions. The optimizer will not simplify expressions like
+
+SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify literal timedelta expressions. The optimizer will not simplify expressions like the following if the module cannot be found:
 
 ```sql
 x + interval '1' month
 ```
-
-if the module cannot be found.

@@ -267,7 +267,10 @@ class TestTSQL(Validator):
             "SELECT DATEADD(year, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 12)"}
         )
         self.validate_all("SELECT DATEADD(qq, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 3)"})
-        self.validate_all("SELECT DATEADD(wk, 1, '2017/08/25')", write={"spark": "SELECT DATE_ADD('2017/08/25', 7)"})
+        self.validate_all(
+            "SELECT DATEADD(wk, 1, '2017/08/25')",
+            write={"spark": "SELECT DATE_ADD('2017/08/25', 7)", "databricks": "SELECT DATEADD(week, 1, '2017/08/25')"},
+        )
 
     def test_date_diff(self):
         self.validate_identity("SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')")
@@ -279,11 +282,19 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATEDIFF(month, 'start','end')",
-            write={"spark": "SELECT MONTHS_BETWEEN('end', 'start')", "tsql": "SELECT DATEDIFF(month, 'start', 'end')"},
+            "SELECT DATEDIFF(mm, 'start','end')",
+            write={
+                "spark": "SELECT MONTHS_BETWEEN('end', 'start')",
+                "tsql": "SELECT DATEDIFF(month, 'start', 'end')",
+                "databricks": "SELECT DATEDIFF(month, 'start', 'end')",
+            },
         )
         self.validate_all(
-            "SELECT DATEDIFF(quarter, 'start', 'end')", write={"spark": "SELECT MONTHS_BETWEEN('end', 'start') / 3"}
+            "SELECT DATEDIFF(quarter, 'start', 'end')",
+            write={
+                "spark": "SELECT MONTHS_BETWEEN('end', 'start') / 3",
+                "databricks": "SELECT DATEDIFF(quarter, 'start', 'end')",
+            },
         )
 
     def test_iif(self):

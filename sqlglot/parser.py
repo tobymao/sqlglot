@@ -1057,8 +1057,8 @@ class Parser:
 
         return self._parse_set_operations(this) if this else None
 
-    def _parse_with(self):
-        if not self._match(TokenType.WITH):
+    def _parse_with(self, skip_with_token=False):
+        if not skip_with_token and not self._match(TokenType.WITH):
             return None
 
         recursive = self._match(TokenType.RECURSIVE)
@@ -1197,10 +1197,10 @@ class Parser:
             self._match_set(self.JOIN_KINDS) and self._prev,
         )
 
-    def _parse_join(self):
+    def _parse_join(self, skip_join_token=False):
         natural, side, kind = self._parse_join_side_and_kind()
 
-        if not self._match(TokenType.JOIN):
+        if not skip_join_token and not self._match(TokenType.JOIN):
             return None
 
         kwargs = {"this": self._parse_table()}
@@ -1426,13 +1426,13 @@ class Parser:
             unpivot=unpivot,
         )
 
-    def _parse_where(self):
-        if not self._match(TokenType.WHERE):
+    def _parse_where(self, skip_where_token=False):
+        if not skip_where_token and not self._match(TokenType.WHERE):
             return None
         return self.expression(exp.Where, this=self._parse_conjunction())
 
-    def _parse_group(self):
-        if not self._match(TokenType.GROUP_BY):
+    def _parse_group(self, skip_group_by_token=False):
+        if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
             return None
         return self.expression(
             exp.Group,
@@ -1458,8 +1458,8 @@ class Parser:
             return self.expression(exp.Tuple, expressions=grouping_set)
         return self._parse_id_var()
 
-    def _parse_having(self):
-        if not self._match(TokenType.HAVING):
+    def _parse_having(self, skip_having_token=False):
+        if not skip_having_token and not self._match(TokenType.HAVING):
             return None
         return self.expression(exp.Having, this=self._parse_conjunction())
 
@@ -1468,8 +1468,8 @@ class Parser:
             return None
         return self.expression(exp.Qualify, this=self._parse_conjunction())
 
-    def _parse_order(self, this=None):
-        if not self._match(TokenType.ORDER_BY):
+    def _parse_order(self, this=None, skip_order_token=False):
+        if not skip_order_token and not self._match(TokenType.ORDER_BY):
             return this
 
         return self.expression(exp.Order, this=this, expressions=self._parse_csv(self._parse_ordered))

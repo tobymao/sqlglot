@@ -1193,7 +1193,7 @@ class Parser:
 
         table_alias = self._parse_id_var(any_token=False)
         columns = None
-        if self._match_set([TokenType.ALIAS, TokenType.L_PAREN]):
+        if self._match_set({TokenType.ALIAS, TokenType.L_PAREN}):
             parenthesized = self._prev.token_type == TokenType.L_PAREN
             columns = self._parse_csv(self._parse_id_var)
             if parenthesized:

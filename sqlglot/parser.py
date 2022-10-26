@@ -131,6 +131,7 @@ class Parser:
         TokenType.ALTER,
         TokenType.ALWAYS,
         TokenType.ANTI,
+        TokenType.APPLY,
         TokenType.BEGIN,
         TokenType.BOTH,
         TokenType.BUCKET,
@@ -204,7 +205,7 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL}
+    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY}
 
     TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
@@ -1167,19 +1168,13 @@ class Parser:
         return self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
 
     def _parse_lateral(self):
-        index = self._index
-        lat_apply = False
-        if self._match_set({TokenType.OUTER, TokenType.CROSS}):
-            cross = self._prev.token_type == TokenType.CROSS
-            kind = "inner" if cross else "outer"
-            side = None if cross else "left"
-            outer = not cross
+        outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY)
+        cross_apply = self._match_pair(TokenType.CROSS, TokenType.APPLY)
 
-            if not self._match(TokenType.APPLY):
-                self._retreat(index)
-                return None
-
-            lat_apply = True
+        if outer_apply or cross_apply:
+            kind = "inner" if cross_apply else "outer"
+            side = None if cross_apply else "left"
+            outer = not cross_apply
 
         elif not self._match(TokenType.LATERAL):
             return None
@@ -1192,12 +1187,13 @@ class Parser:
             this = self._parse_function()
 
         table_alias = self._parse_id_var(any_token=False)
+
         columns = None
-        if self._match_set({TokenType.ALIAS, TokenType.L_PAREN}):
-            parenthesized = self._prev.token_type == TokenType.L_PAREN
+        if self._match(TokenType.ALIAS):
             columns = self._parse_csv(self._parse_id_var)
-            if parenthesized:
-                self._match(TokenType.R_PAREN)
+        elif self._match(TokenType.L_PAREN):
+            columns = self._parse_csv(self._parse_id_var)
+            self._match(TokenType.R_PAREN)
 
         expression = self.expression(
             exp.Lateral,
@@ -1211,7 +1207,7 @@ class Parser:
             ),
         )
 
-        if lat_apply:
+        if outer_apply or cross_apply:
             return self.expression(
                 exp.Join,
                 this=expression,

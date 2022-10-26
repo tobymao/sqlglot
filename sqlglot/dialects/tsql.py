@@ -222,6 +222,7 @@ class TSQL(Dialect):
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
         def _parse_lateral(self):
+            # Determine the type of join
             if self._match_pair(TokenType.CROSS, TokenType.LATERAL):
                 side = None
                 kind = "INNER"
@@ -234,15 +235,16 @@ class TSQL(Dialect):
             else:
                 return None
 
+            # Determine whether a subquery is applicable
             subquery = self._parse_select(table=True)
-
             if subquery:
                 return self.expression(exp.Join, this=self.expression(exp.Lateral, this=subquery, view=False), side=side, kind=kind)
 
-            # Functions
+            # If no subquery applicable, a function applies
             func = self._parse_function()
             table_alias = self._parse_id_var(any_token=False)
 
+            # Check for any explicit column specifications
             if self._match(TokenType.L_PAREN):
                 columns = self._parse_csv(self._parse_id_var)
                 self._match(TokenType.R_PAREN)

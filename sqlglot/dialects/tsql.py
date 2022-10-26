@@ -159,8 +159,6 @@ class TSQL(Dialect):
             "NVARCHAR(MAX)": TokenType.TEXT,
             "VARCHAR(MAX)": TokenType.TEXT,
             "APPLY": TokenType.LATERAL,
-            "OUTER": TokenType.OUTER,
-            "LEFT OUTER": TokenType.LEFT,
         }
 
     class Parser(Parser):

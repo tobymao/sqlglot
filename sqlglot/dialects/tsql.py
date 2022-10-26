@@ -236,9 +236,7 @@ class TSQL(Dialect):
             # Determine whether a subquery is applicable
             subquery = self._parse_select(table=True)
             if subquery:
-                return self.expression(
-                    exp.Join, this=self.expression(exp.Lateral, this=subquery), side=side, kind=kind
-                )
+                return self.expression(exp.Join, this=self.expression(exp.Lateral, this=subquery), side=side, kind=kind)
 
             # If no subquery applicable, a function applies
             func = self._parse_function()

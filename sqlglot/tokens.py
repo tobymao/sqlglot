@@ -107,6 +107,7 @@ class TokenType(AutoName):
     ANALYZE = auto()
     ANTI = auto()
     ANY = auto()
+    APPLY = auto()
     ARRAY = auto()
     ASC = auto()
     AT_TIME_ZONE = auto()
@@ -442,6 +443,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CONSTRAINT": TokenType.CONSTRAINT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
+        "APPLY": TokenType.APPLY,
         "CUBE": TokenType.CUBE,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,

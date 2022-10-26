@@ -1167,28 +1167,60 @@ class Parser:
         return self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
 
     def _parse_lateral(self):
-        if not self._match(TokenType.LATERAL):
+        index = self._index
+        if self._match_set([TokenType.OUTER, TokenType.CROSS]):
+            cross = self._prev.token_type == TokenType.CROSS
+            kind = "inner" if cross else "outer"
+            side = None if cross else "left"
+            outer = not cross
+
+            if not self._match(TokenType.APPLY):
+                self._retreat(index)
+                return None
+
+            lat_type = self._prev.token_type
+
+        elif self._match(TokenType.LATERAL):
+            lat_type = self._prev.token_type
+        else:
             return None
 
-        subquery = self._parse_select(table=True)
-
-        if subquery:
-            return self.expression(exp.Lateral, this=subquery)
-
+        this = self._parse_select(table=True)
         view = self._match(TokenType.VIEW)
         outer = self._match(TokenType.OUTER)
 
-        return self.expression(
+        if not this:
+            this = self._parse_function()
+
+        table_alias = self._parse_id_var(any_token=False)
+        columns = None
+        if self._match_set([TokenType.ALIAS, TokenType.L_PAREN]):
+            parenthesized = self._prev.token_type == TokenType.L_PAREN
+            columns = self._parse_csv(self._parse_id_var)
+            if parenthesized:
+                self._match(TokenType.R_PAREN)
+
+        expression = self.expression(
             exp.Lateral,
-            this=self._parse_function(),
+            this=this,
             view=view,
             outer=outer,
             alias=self.expression(
                 exp.TableAlias,
-                this=self._parse_id_var(any_token=False),
-                columns=(self._parse_csv(self._parse_id_var) if self._match(TokenType.ALIAS) else None),
+                this=table_alias,
+                columns=columns,
             ),
         )
+
+        if lat_type == TokenType.LATERAL:
+            return expression
+        if lat_type == TokenType.APPLY:
+            return self.expression(
+                exp.Join,
+                this=expression,
+                side=side,
+                kind=kind,
+            )
 
     def _parse_join_side_and_kind(self):
         return (

@@ -1,5 +1,7 @@
 """## Python SQL parser, transpiler and optimizer."""
 
+import typing as t
+
 from sqlglot import expressions as exp
 from sqlglot.dialects import Dialect, Dialects
 from sqlglot.diff import diff
@@ -33,38 +35,36 @@ pretty = False
 schema = MappingSchema()
 
 
-def parse(sql, read=None, **opts):
+def parse(sql: str, read: t.Optional[str] = None, **opts) -> t.List[t.Optional[Expression]]:
     """
-    Parses the given SQL string into a collection of syntax trees, one per
-    parsed SQL statement.
+    Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
     Args:
-        sql (str): the SQL code string to parse.
-        read (str): the SQL dialect to apply during parsing
-            (eg. "spark", "hive", "presto", "mysql").
+        sql: the SQL code string to parse.
+        read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
         **opts: other options.
 
     Returns:
-        typing.List[Expression]: the list of parsed syntax trees.
+        The resulting syntax tree collection.
     """
     dialect = Dialect.get_or_raise(read)()
     return dialect.parse(sql, **opts)
 
 
-def parse_one(sql, read=None, into=None, **opts):
+def parse_one(
+    sql: str, read: t.Optional[str] = None, into: t.Optional[Expression] = None, **opts
+) -> t.Optional[Expression]:
     """
-    Parses the given SQL string and returns a syntax tree for the first
-    parsed SQL statement.
+    Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.
 
     Args:
-        sql (str): the SQL code string to parse.
-        read (str): the SQL dialect to apply during parsing
-            (eg. "spark", "hive", "presto", "mysql").
-        into (Expression): the SQLGlot Expression to parse into
+        sql: the SQL code string to parse.
+        read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
+        into: the SQLGlot Expression to parse into.
         **opts: other options.
 
     Returns:
-        Expression: the syntax tree for the first parsed statement.
+        The syntax tree for the first parsed statement.
     """
 
     dialect = Dialect.get_or_raise(read)()
@@ -77,25 +77,29 @@ def parse_one(sql, read=None, into=None, **opts):
     return result[0] if result else None
 
 
-def transpile(sql, read=None, write=None, identity=True, error_level=None, **opts):
+def transpile(
+    sql: str,
+    read: t.Optional[str] = None,
+    write: t.Optional[str] = None,
+    identity: bool = True,
+    error_level: t.Optional[ErrorLevel] = None,
+    **opts
+) -> t.List[str]:
     """
-    Parses the given SQL string using the source dialect and returns a list of SQL strings
-    transformed to conform to the target dialect. Each string in the returned list represents
-    a single transformed SQL statement.
+    Parses the given SQL string in accordance with the source dialect and returns a list of SQL strings transformed
+    to conform to the target dialect. Each string in the returned list represents a single transformed SQL statement.
 
     Args:
-        sql (str): the SQL code string to transpile.
-        read (str): the source dialect used to parse the input string
-            (eg. "spark", "hive", "presto", "mysql").
-        write (str): the target dialect into which the input should be transformed
-            (eg. "spark", "hive", "presto", "mysql").
-        identity (bool): if set to True and if the target dialect is not specified
-            the source dialect will be used as both: the source and the target dialect.
-        error_level (ErrorLevel): the desired error level of the parser.
+        sql: the SQL code string to transpile.
+        read: the source dialect used to parse the input string (eg. "spark", "hive", "presto", "mysql").
+        write: the target dialect into which the input should be transformed (eg. "spark", "hive", "presto", "mysql").
+        identity: if set to `True` and if the target dialect is not specified the source dialect will be used as both:
+            the source and the target dialect.
+        error_level: the desired error level of the parser.
         **opts: other options.
 
     Returns:
-        typing.List[str]: the list of transpiled SQL statements / expressions.
+        The list of transpiled SQL statements.
     """
     write = write or read if identity else write
     return [

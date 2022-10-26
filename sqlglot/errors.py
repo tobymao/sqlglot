@@ -1,3 +1,4 @@
+import typing as t
 from enum import auto
 
 from sqlglot.helper import AutoName
@@ -30,7 +31,7 @@ class OptimizeError(SqlglotError):
     pass
 
 
-def concat_errors(errors, maximum):
+def concat_errors(errors: t.Union[ErrorLevel, str], maximum: int) -> str:
     msg = [str(e) for e in errors[:maximum]]
     remaining = len(errors) - maximum
     if remaining > 0:

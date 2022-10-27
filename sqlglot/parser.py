@@ -1172,16 +1172,15 @@ class Parser:
         cross_apply = self._match_pair(TokenType.CROSS, TokenType.APPLY)
 
         if outer_apply or cross_apply:
-            kind = "inner" if cross_apply else "outer"
-            side = None if cross_apply else "left"
+            this = self._parse_select(table=True)
+            view = None
             outer = not cross_apply
-
-        elif not self._match(TokenType.LATERAL):
+        elif self._match(TokenType.LATERAL):
+            this = self._parse_select(table=True)
+            view = self._match(TokenType.VIEW)
+            outer = self._match(TokenType.OUTER)
+        else:
             return None
-
-        this = self._parse_select(table=True)
-        view = self._match(TokenType.VIEW)
-        outer = self._match(TokenType.OUTER)
 
         if not this:
             this = self._parse_function()
@@ -1211,8 +1210,7 @@ class Parser:
             return self.expression(
                 exp.Join,
                 this=expression,
-                side=side,
-                kind=kind,
+                side=None if cross_apply else "LEFT",
             )
 
         return expression

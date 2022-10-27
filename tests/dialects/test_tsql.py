@@ -347,3 +347,17 @@ class TestTSQL(Validator):
                 "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) y AS z",
             },
         )
+
+    def test_top(self):
+        self.validate_all(
+            "SELECT TOP 3 * FROM A",
+            write={
+                "spark": "SELECT * FROM A LIMIT 3",
+            },
+        )
+        self.validate_all(
+            "SELECT TOP (3) * FROM A",
+            write={
+                "spark": "SELECT * FROM A LIMIT 3",
+            },
+        )

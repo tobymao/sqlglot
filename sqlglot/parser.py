@@ -1531,7 +1531,11 @@ class Parser:
 
     def _parse_limit(self, this=None, top=False):
         if self._match(TokenType.TOP if top else TokenType.LIMIT):
-            return self.expression(exp.Limit, this=this, expression=self._parse_number())
+            limit_paren = self._match(TokenType.L_PAREN)
+            limit_exp = self.expression(exp.Limit, this=this, expression=self._parse_number())
+            if limit_paren:
+                self._match(TokenType.R_PAREN)
+            return limit_exp
         if self._match(TokenType.FETCH):
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
             direction = self._prev.text if direction else "FIRST"

@@ -260,6 +260,20 @@ class TestTSQL(Validator):
                 "spark": "CAST(x AS INT)",
             },
         )
+        self.validate_all(
+            "SELECT CONVERT(VARCHAR(10), testdb.dbo.test.x, 120) y FROM testdb.dbo.test",
+            write={
+                "mysql": "SELECT CAST(TIME_TO_STR(testdb.dbo.test.x, '%Y-%m-%d %H:%M:%S') AS VARCHAR(10)) AS y FROM testdb.dbo.test",
+                "spark": "SELECT CAST(DATE_FORMAT(testdb.dbo.test.x, 'yyyy-MM-dd HH:mm:ss') AS VARCHAR(10)) AS y FROM testdb.dbo.test",
+            },
+        )
+        self.validate_all(
+            "SELECT CONVERT(VARCHAR(10), y.x) z FROM testdb.dbo.test y",
+            write={
+                "mysql": "SELECT CAST(y.x AS VARCHAR(10)) AS z FROM testdb.dbo.test AS y",
+                "spark": "SELECT CAST(y.x AS VARCHAR(10)) AS z FROM testdb.dbo.test AS y",
+            },
+        )
 
     def test_add_date(self):
         self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")

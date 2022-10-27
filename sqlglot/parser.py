@@ -191,6 +191,7 @@ class Parser:
         TokenType.TABLE,
         TokenType.TABLE_FORMAT,
         TokenType.TEMPORARY,
+        TokenType.TRANSIENT,
         TokenType.TOP,
         TokenType.TRAILING,
         TokenType.TRUNCATE,

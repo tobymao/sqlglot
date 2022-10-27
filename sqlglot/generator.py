@@ -65,6 +65,9 @@ class Generator:
         exp.VolatilityProperty: lambda self, e: self.sql(e.name),
     }
 
+    # whether 'CREATE ... TRANSIENT ... TABLE' is allowed
+    # can override in dialects
+    CREATE_TRANSIENT = False
     # whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
     # always do union distinct or union all
@@ -368,11 +371,7 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ""
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
-        transient = (
-            " TRANSIENT"
-            if expression.args.get("transient") and getattr(self, "can_create_transient_table", False)
-            else ""
-        )
+        transient = " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""

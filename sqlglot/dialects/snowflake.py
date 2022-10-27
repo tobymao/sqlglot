@@ -188,7 +188,7 @@ class Snowflake(Dialect):
         }
 
     class Generator(Generator):
-        can_create_transient_table = True
+        CREATE_TRANSIENT = True
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,

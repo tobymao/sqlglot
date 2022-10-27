@@ -368,15 +368,18 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ""
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
+        transient = (
+            " TRANSIENT"
+            if expression.args.get("transient") and getattr(self, "can_create_transient_table", False)
+            else ""
+        )
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         properties = self.sql(expression, "properties")
 
-        expression_sql = (
-            f"CREATE{replace}{temporary}{unique}{materialized} {kind}{exists_sql} {this}{properties} {expression_sql}"
-        )
+        expression_sql = f"CREATE{replace}{temporary}{transient}{unique}{materialized} {kind}{exists_sql} {this}{properties} {expression_sql}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression):

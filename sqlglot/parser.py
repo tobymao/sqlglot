@@ -686,6 +686,7 @@ class Parser:
     def _parse_create(self):
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
+        transient = self._match(TokenType.TRANSIENT)
         unique = self._match(TokenType.UNIQUE)
         materialized = self._match(TokenType.MATERIALIZED)
 
@@ -724,6 +725,7 @@ class Parser:
             exists=exists,
             properties=properties,
             temporary=temporary,
+            transient=transient,
             replace=replace,
             unique=unique,
             materialized=materialized,

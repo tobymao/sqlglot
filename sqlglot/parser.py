@@ -2162,7 +2162,7 @@ class Parser:
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
     def _parse_convert(self, strict):
-        this = self._parse_field()
+        this = self._parse_column()
         if self._match(TokenType.USING):
             to = self.expression(exp.CharacterSet, this=self._parse_var())
         elif self._match(TokenType.COMMA):

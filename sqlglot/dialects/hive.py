@@ -111,6 +111,7 @@ def _unnest_to_explode_sql(self, expression):
             self.sql(
                 exp.Lateral(
                     this=udtf(this=expression),
+                    view=True,
                     alias=exp.TableAlias(this=alias.this, columns=[column]),
                 )
             )

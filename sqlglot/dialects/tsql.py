@@ -4,7 +4,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
 from sqlglot.expressions import DataType
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
@@ -37,10 +37,10 @@ TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     def _format_time(args):
         return exp_class(
-            this=list_get(args, 1),
+            this=sequence_get(args, 1),
             format=exp.Literal.string(
                 format_time(
-                    list_get(args, 0).name or (TSQL.time_format if default is True else default),
+                    sequence_get(args, 0).name or (TSQL.time_format if default is True else default),
                     {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING} if full_format_mapping else TSQL.time_mapping,
                 )
             ),
@@ -243,7 +243,7 @@ class TSQL(Dialect):
             this = self._parse_column()
 
             # Retrieve length of datatype and override to default if not specified
-            if list_get(to.expressions, 0) is None and to.this in self.VAR_LENGTH_DATATYPES:
+            if sequence_get(to.expressions, 0) is None and to.this in self.VAR_LENGTH_DATATYPES:
                 to = exp.DataType.build(to.this, expressions=[exp.Literal.number(30)], nested=False)
 
             # Check whether a conversion with format is applicable

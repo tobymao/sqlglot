@@ -7,7 +7,7 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
 )
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -40,8 +40,8 @@ def _date_trunc_sql(self, expression):
 
 
 def _str_to_date(args):
-    date_format = MySQL.format_time(list_get(args, 1))
-    return exp.StrToDate(this=list_get(args, 0), format=date_format)
+    date_format = MySQL.format_time(sequence_get(args, 1))
+    return exp.StrToDate(this=sequence_get(args, 0), format=date_format)
 
 
 def _str_to_date_sql(self, expression):
@@ -66,9 +66,9 @@ def _trim_sql(self, expression):
 
 def _date_add(expression_class):
     def func(args):
-        interval = list_get(args, 1)
+        interval = sequence_get(args, 1)
         return expression_class(
-            this=list_get(args, 0),
+            this=sequence_get(args, 0),
             expression=interval.this,
             unit=exp.Literal.string(interval.text("unit").lower()),
         )

@@ -9,8 +9,9 @@ from sqlglot.errors import ParseError
 from sqlglot.helper import (
     AutoName,
     camel_to_snake_case,
+    ensure_collection,
     ensure_list,
-    list_get,
+    sequence_get,
     split_num_words,
     subclasses,
 )
@@ -249,9 +250,7 @@ class Expression(metaclass=_Expression):
             return
 
         for k, v in self.args.items():
-            nodes = ensure_list(v)
-
-            for node in nodes:
+            for node in ensure_collection(v):
                 if isinstance(node, Expression):
                     yield from node.dfs(self, k, prune)
 
@@ -274,9 +273,7 @@ class Expression(metaclass=_Expression):
 
             if isinstance(item, Expression):
                 for k, v in item.args.items():
-                    nodes = ensure_list(v)
-
-                    for node in nodes:
+                    for node in ensure_collection(v):
                         if isinstance(node, Expression):
                             queue.append((node, item, k))
 
@@ -343,7 +340,7 @@ class Expression(metaclass=_Expression):
         args = {
             k: ", ".join(
                 v.to_s(hide_missing=hide_missing, level=level + 1) if hasattr(v, "to_s") else str(v)
-                for v in ensure_list(vs)
+                for v in ensure_collection(vs)
                 if v is not None
             )
             for k, vs in self.args.items()
@@ -3500,15 +3497,14 @@ def replace_children(expression, fun):
 
         for cn in child_nodes:
             if isinstance(cn, Expression):
-                cns = ensure_list(fun(cn))
-                for child_node in cns:
+                for child_node in ensure_collection(fun(cn)):
                     new_child_nodes.append(child_node)
                     child_node.parent = expression
                     child_node.arg_key = k
             else:
                 new_child_nodes.append(cn)
 
-        expression.args[k] = new_child_nodes if is_list_arg else list_get(new_child_nodes, 0)
+        expression.args[k] = new_child_nodes if is_list_arg else sequence_get(new_child_nodes, 0)
 
 
 def column_table_names(expression):

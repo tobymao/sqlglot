@@ -7,7 +7,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.expressions import Literal
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -39,7 +39,7 @@ def _snowflake_to_timestamp(args):
 
         return exp.UnixToTime(this=first_arg, scale=timescale)
 
-    first_arg = list_get(args, 0)
+    first_arg = sequence_get(args, 0)
     if not isinstance(first_arg, Literal):
         # case: <variant_expr>
         return format_time_lambda(exp.StrToTime, "snowflake", default=True)(args)

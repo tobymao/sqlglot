@@ -13,7 +13,7 @@ from sqlglot.dialects.dialect import (
     str_position_sql,
 )
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -61,7 +61,7 @@ def _sort_array_sql(self, expression):
 
 
 def _sort_array_reverse(args):
-    return exp.SortArray(this=list_get(args, 0), asc=exp.FALSE)
+    return exp.SortArray(this=sequence_get(args, 0), asc=exp.FALSE)
 
 
 def _struct_pack_sql(self, expression):
@@ -92,7 +92,7 @@ class DuckDB(Dialect):
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
                 this=exp.Div(
-                    this=list_get(args, 0),
+                    this=sequence_get(args, 0),
                     expression=exp.Literal.number(1000),
                 )
             ),

@@ -4,7 +4,7 @@ from heapq import heappop, heappush
 
 from sqlglot import Dialect
 from sqlglot import expressions as exp
-from sqlglot.helper import ensure_list
+from sqlglot.helper import ensure_collection, ensure_list
 
 
 @dataclass(frozen=True)
@@ -241,8 +241,7 @@ def _get_leaves(expression):
     has_child_exprs = False
 
     for a in expression.args.values():
-        nodes = ensure_list(a)
-        for node in nodes:
+        for node in ensure_collection(a):
             if isinstance(node, exp.Expression):
                 has_child_exprs = True
                 yield from _get_leaves(node)

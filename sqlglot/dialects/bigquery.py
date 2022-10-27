@@ -6,16 +6,16 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
 
 def _date_add(expression_class):
     def func(args):
-        interval = list_get(args, 1)
+        interval = sequence_get(args, 1)
         return expression_class(
-            this=list_get(args, 0),
+            this=sequence_get(args, 0),
             expression=interval.this,
             unit=interval.args.get("unit"),
         )
@@ -124,7 +124,7 @@ class BigQuery(Dialect):
             "DATETIME_SUB": _date_add(exp.DatetimeSub),
             "TIME_SUB": _date_add(exp.TimeSub),
             "TIMESTAMP_SUB": _date_add(exp.TimestampSub),
-            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(this=list_get(args, 1), format=list_get(args, 0)),
+            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(this=sequence_get(args, 1), format=sequence_get(args, 0)),
         }
 
         NO_PAREN_FUNCTIONS = {

@@ -14,7 +14,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
 )
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser, parse_var_map
 from sqlglot.tokens import Tokenizer
 
@@ -188,30 +188,30 @@ class Hive(Dialect):
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
-                this=list_get(args, 0),
-                expression=list_get(args, 1),
+                this=sequence_get(args, 0),
+                expression=sequence_get(args, 1),
                 unit=exp.Literal.string("DAY"),
             ),
             "DATEDIFF": lambda args: exp.DateDiff(
-                this=exp.TsOrDsToDate(this=list_get(args, 0)),
-                expression=exp.TsOrDsToDate(this=list_get(args, 1)),
+                this=exp.TsOrDsToDate(this=sequence_get(args, 0)),
+                expression=exp.TsOrDsToDate(this=sequence_get(args, 1)),
             ),
             "DATE_SUB": lambda args: exp.TsOrDsAdd(
-                this=list_get(args, 0),
+                this=sequence_get(args, 0),
                 expression=exp.Mul(
-                    this=list_get(args, 1),
+                    this=sequence_get(args, 1),
                     expression=exp.Literal.number(-1),
                 ),
                 unit=exp.Literal.string("DAY"),
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "hive"),
-            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=list_get(args, 0))),
+            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=sequence_get(args, 0))),
             "FROM_UNIXTIME": format_time_lambda(exp.UnixToStr, "hive", True),
             "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,
             "LOCATE": lambda args: exp.StrPosition(
-                this=list_get(args, 1),
-                substr=list_get(args, 0),
-                position=list_get(args, 2),
+                this=sequence_get(args, 1),
+                substr=sequence_get(args, 0),
+                position=sequence_get(args, 2),
             ),
             "LOG": (lambda args: exp.Log.from_arg_list(args) if len(args) > 1 else exp.Ln.from_arg_list(args)),
             "MAP": parse_var_map,

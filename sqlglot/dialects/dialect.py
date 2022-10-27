@@ -2,7 +2,7 @@ from enum import Enum
 
 from sqlglot import exp
 from sqlglot.generator import Generator
-from sqlglot.helper import flatten, list_get
+from sqlglot.helper import flatten, sequence_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
@@ -298,9 +298,9 @@ def format_time_lambda(exp_class, dialect, default=None):
 
     def _format_time(args):
         return exp_class(
-            this=list_get(args, 0),
+            this=sequence_get(args, 0),
             format=Dialect[dialect].format_time(
-                list_get(args, 1) or (Dialect[dialect].time_format if default is True else default)
+                sequence_get(args, 1) or (Dialect[dialect].time_format if default is True else default)
             ),
         )
 
@@ -337,9 +337,9 @@ def create_with_partitions_sql(self, expression):
 def parse_date_delta(exp_class, unit_mapping=None):
     def inner_func(args):
         unit_based = len(args) == 3
-        this = list_get(args, 2) if unit_based else list_get(args, 0)
-        expression = list_get(args, 1) if unit_based else list_get(args, 1)
-        unit = list_get(args, 0) if unit_based else exp.Literal.string("DAY")
+        this = sequence_get(args, 2) if unit_based else sequence_get(args, 0)
+        expression = sequence_get(args, 1) if unit_based else sequence_get(args, 1)
+        unit = sequence_get(args, 0) if unit_based else exp.Literal.string("DAY")
         unit = unit_mapping.get(unit.name.lower(), unit) if unit_mapping else unit
         return exp_class(this=this, expression=expression, unit=unit)
 

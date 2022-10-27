@@ -1,57 +1,104 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import re
 import sys
 import typing as t
+from collections.abc import Collection
 from contextlib import contextmanager
 from copy import copy
 from enum import Enum
 
-from sqlglot.expressions import Expression, Table
+if t.TYPE_CHECKING:
+    from sqlglot.expressions import Expression, Table
+
+    T = t.TypeVar("T")
+    E = t.TypeVar("E", bound=Expression)
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 logger = logging.getLogger("sqlglot")
 
 
 class AutoName(Enum):
-    def _generate_next_value_(name: str, _start: int, _count: int, _last_values: int) -> str:
+    """This is used for creating enum classes where `auto()` is the string form of the corresponding value's name."""
+
+    def _generate_next_value_(name, _start, _count, _last_values):  # type: ignore
         return name
 
 
-def list_get(arr: t.List[t.Any], index: int) -> t.Optional[t.Any]:
-    """Returns the value in `arr` at position `index`, or `None` if `index` is out of bounds."""
+def sequence_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
+    """Returns the value in `seq` at position `index`, or `None` if `index` is out of bounds."""
     try:
-        return arr[index]
+        return seq[index]
     except IndexError:
         return None
 
 
-def ensure_list(value: t.Any) -> t.Union[t.List[t.Any], t.Tuple[t.Any], t.Set[t.Any]]:
-    """Returns `value` wrapped in a list, unless it's already a list, tuple or set."""
+def ensure_list(value: t.Tuple[T] | t.List[T] | T) -> t.List[T]:
+    """
+    Ensures that a value is a list, otherwise casts or wraps it into one.
+
+    Args:
+        value: the value of interest.
+
+    Returns:
+        The value cast as a list if it's a list or a tuple, or else the value wrapped in a list.
+    """
     if value is None:
         return []
-    return value if isinstance(value, (list, tuple, set)) else [value]
+    elif isinstance(value, (list, tuple)):
+        return list(value)
+
+    return [value]
+
+
+@t.overload
+def ensure_collection(value: t.Collection[T]) -> t.Collection[T]:
+    ...
+
+
+@t.overload
+def ensure_collection(value: T) -> t.Collection[T]:
+    ...
+
+
+def ensure_collection(value):
+    """
+    Ensures that a value is a collection (excluding `str` and `bytes`), otherwise wraps it into a list.
+
+    Args:
+        value: the value of interest.
+
+    Returns:
+        The value if it's a collection, or else the value wrapped in a list.
+    """
+    if value is None:
+        return []
+    return value if is_collection(value) else [value]
 
 
 def csv(*args, sep: str = ", ") -> str:
     """
-    Formats any number of strings as CSV.
+    Formats any number of string arguments as CSV.
 
     Args:
-        args: string arguments to convert to CSV format.
-        sep: the string to be used for separating `args`.
+        args: the string arguments to format.
+        sep: the argument separator.
 
     Returns:
-        The arguments formatted as CSV.
+        The arguments formatted as a CSV string.
     """
     return sep.join(arg for arg in args if arg)
 
 
 def subclasses(
-    module_name: str, classes: t.Union[t.Type, t.Tuple[t.Type]], exclude: t.Union[t.Type, t.Tuple[t.Type]] = ()
+    module_name: str,
+    classes: t.Type | t.Tuple[t.Type, ...],
+    exclude: t.Type | t.Tuple[t.Type, ...] = (),
 ) -> t.List[t.Type]:
     """
-    Returns a list of all subclasses for a specified class set, posibly excluding some of them.
+    Returns all subclasses for a collection of classes, possibly excluding some of them.
 
     Args:
         module_name: the name of the module to search for subclasses in.
@@ -59,7 +106,7 @@ def subclasses(
         exclude: class(es) we want to exclude from the returned list.
 
     Returns:
-        A list of all the target subclasses.
+        The target subclasses.
     """
     return [
         obj
@@ -70,7 +117,7 @@ def subclasses(
     ]
 
 
-def apply_index_offset(expressions: t.List[Expression], offset: int) -> t.List[Expression]:
+def apply_index_offset(expressions: t.List[E], offset: int) -> t.List[E]:
     """
     Applies an offset to a given integer literal expression.
 
@@ -101,7 +148,7 @@ def camel_to_snake_case(name: str) -> str:
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
 
 
-def while_changing(expression: t.Optional[Expression], func: t.Callable) -> t.Optional[Expression]:
+def while_changing(expression: t.Optional[Expression], func: t.Callable[[t.Optional[Expression]], E]) -> E:
     """
     Applies a transformation to a given expression until a fix point is reached.
 
@@ -120,7 +167,7 @@ def while_changing(expression: t.Optional[Expression], func: t.Callable) -> t.Op
     return expression
 
 
-def tsort(dag: t.Dict[t.Any, t.List[t.Any]]) -> t.List[t.Any]:
+def tsort(dag: t.Dict[T, t.List[T]]) -> t.List[T]:
     """
     Sorts a given directed acyclic graph in topological order.
 
@@ -132,7 +179,7 @@ def tsort(dag: t.Dict[t.Any, t.List[t.Any]]) -> t.List[t.Any]:
     """
     result = []
 
-    def visit(node: t.Any, visited: t.Set[t.Any]) -> None:
+    def visit(node: T, visited: t.Set[T]) -> None:
         if node in result:
             return
         if node in visited:
@@ -249,9 +296,28 @@ def split_num_words(value: str, sep: str, min_num_words: int, fill_from_start: b
     return words + [None] * (min_num_words - len(words))
 
 
+def is_collection(value: t.Any) -> bool:
+    """
+    Checks if the value is a collection, excluding the types `str` and `bytes`.
+
+    Examples:
+        >>> is_collection([1,2]) and is_collection({1,2})
+        True
+        >>> is_collection("test")
+        False
+
+    Args:
+        value: the value to check if it is a collection.
+
+    Returns:
+        A `bool` value indicating if it is a collection.
+    """
+    return issubclass(type(value), Collection) and not isinstance(value, (str, bytes))
+
+
 def is_iterable(value: t.Any) -> bool:
     """
-    Checks if the value is an iterable but does not include strings and bytes.
+    Checks if the value is an iterable, excluding the types `str` and `bytes`.
 
     Examples:
         >>> is_iterable([1,2])
@@ -263,18 +329,19 @@ def is_iterable(value: t.Any) -> bool:
         value: the value to check if it is an iterable.
 
     Returns:
-        A `bool` indicating if it is an iterable.
+        A `bool` value indicating if it is an iterable.
     """
     return hasattr(value, "__iter__") and not isinstance(value, (str, bytes))
 
 
-def flatten(values: t.Iterable[t.Union[t.Iterable[t.Any], t.Any]]) -> t.Generator[t.Any, None, None]:
+def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Generator[t.Any, None, None]:
     """
-    Flattens an iterable that can contain both iterables and non-iterable elements.
+    Flattens an iterable that can contain both iterable and non-iterable elements. Objects of
+    type `str` and `bytes` are not regarded as iterables.
 
     Examples:
-        >>> list(flatten([[1, 2], 3]))
-        [1, 2, 3]
+        >>> list(flatten([[1, 2], 3, {4}, (5, "bla")]))
+        [1, 2, 3, 4, 5, 'bla']
         >>> list(flatten([1, 2, 3]))
         [1, 2, 3]
 
@@ -282,7 +349,7 @@ def flatten(values: t.Iterable[t.Union[t.Iterable[t.Any], t.Any]]) -> t.Generato
         values: the value to be flattened.
 
     Yields:
-        Non-iterable elements in `values` (not including `str` or `byte` as iterable).
+        Non-iterable elements in `values`.
     """
     for value in values:
         if is_iterable(value):

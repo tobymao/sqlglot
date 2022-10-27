@@ -1,5 +1,7 @@
 """## Python SQL parser, transpiler and optimizer."""
 
+from __future__ import annotations
+
 import typing as t
 
 from sqlglot import expressions as exp
@@ -52,7 +54,7 @@ def parse(sql: str, read: t.Optional[str] = None, **opts) -> t.List[t.Optional[E
 
 
 def parse_one(
-    sql: str, read: t.Optional[str] = None, into: t.Optional[Expression] = None, **opts
+    sql: str, read: t.Optional[str] = None, into: t.Optional[Expression | str] = None, **opts
 ) -> t.Optional[Expression]:
     """
     Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.
@@ -83,7 +85,7 @@ def transpile(
     write: t.Optional[str] = None,
     identity: bool = True,
     error_level: t.Optional[ErrorLevel] = None,
-    **opts
+    **opts,
 ) -> t.List[str]:
     """
     Parses the given SQL string in accordance with the source dialect and returns a list of SQL strings transformed

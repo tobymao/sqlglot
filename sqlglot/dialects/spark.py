@@ -1,7 +1,7 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 from sqlglot.dialects.hive import Hive
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser
 
 
@@ -50,25 +50,25 @@ class Spark(Hive):
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "LEFT": lambda args: exp.Substring(
-                this=list_get(args, 0),
+                this=sequence_get(args, 0),
                 start=exp.Literal.number(1),
-                length=list_get(args, 1),
+                length=sequence_get(args, 1),
             ),
             "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
-                this=list_get(args, 0),
-                expression=list_get(args, 1),
+                this=sequence_get(args, 0),
+                expression=sequence_get(args, 1),
             ),
             "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
-                this=list_get(args, 0),
-                expression=list_get(args, 1),
+                this=sequence_get(args, 0),
+                expression=sequence_get(args, 1),
             ),
             "RIGHT": lambda args: exp.Substring(
-                this=list_get(args, 0),
+                this=sequence_get(args, 0),
                 start=exp.Sub(
-                    this=exp.Length(this=list_get(args, 0)),
-                    expression=exp.Add(this=list_get(args, 1), expression=exp.Literal.number(1)),
+                    this=exp.Length(this=sequence_get(args, 0)),
+                    expression=exp.Add(this=sequence_get(args, 1), expression=exp.Literal.number(1)),
                 ),
-                length=list_get(args, 1),
+                length=sequence_get(args, 1),
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,

@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generator import Generator
-from sqlglot.helper import list_get
+from sqlglot.helper import sequence_get
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -126,14 +126,14 @@ class Presto(Dialect):
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "CONTAINS": exp.ArrayContains.from_arg_list,
             "DATE_ADD": lambda args: exp.DateAdd(
-                this=list_get(args, 2),
-                expression=list_get(args, 1),
-                unit=list_get(args, 0),
+                this=sequence_get(args, 2),
+                expression=sequence_get(args, 1),
+                unit=sequence_get(args, 0),
             ),
             "DATE_DIFF": lambda args: exp.DateDiff(
-                this=list_get(args, 2),
-                expression=list_get(args, 1),
-                unit=list_get(args, 0),
+                this=sequence_get(args, 2),
+                expression=sequence_get(args, 1),
+                unit=sequence_get(args, 0),
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),

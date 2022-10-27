@@ -17,12 +17,18 @@ class TestTSQL(Validator):
                 "spark": "SELECT CAST(`a`.`b` AS SHORT) FROM foo",
             },
         )
-
         self.validate_all(
             "CONVERT(INT, CONVERT(NUMERIC, '444.75'))",
             write={
                 "mysql": "CAST(CAST('444.75' AS DECIMAL) AS INT)",
                 "tsql": "CAST(CAST('444.75' AS NUMERIC) AS INTEGER)",
+            },
+        )
+        self.validate_all(
+            "SELECT CONVERT(VARCHAR(10), b.field, 120) a FROM dbo.test b",
+            write={
+                "mysql": "SELECT CAST(TIME_TO_STR(b.field, '%Y-%m-%d %H:%M:%S') AS VARCHAR(10)) AS a FROM dbo.test AS b",
+                "tsql": "SELECT CAST(TIME_TO_STR(b.field, '%Y-%m-%d %H:%M:%S') AS VARCHAR(10)) AS a FROM dbo.test AS b",
             },
         )
 

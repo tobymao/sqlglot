@@ -20,6 +20,7 @@ class SQLite(Dialect):
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
+            "VARBINARY": TokenType.BINARY,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         }
 

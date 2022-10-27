@@ -612,6 +612,7 @@ class Create(Expression):
         "exists": False,
         "properties": False,
         "temporary": False,
+        "transient": False,
         "replace": False,
         "unique": False,
         "materialized": False,

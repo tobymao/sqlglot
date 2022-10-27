@@ -107,6 +107,7 @@ class TokenType(AutoName):
     ANALYZE = auto()
     ANTI = auto()
     ANY = auto()
+    APPLY = auto()
     ARRAY = auto()
     ASC = auto()
     AT_TIME_ZONE = auto()
@@ -582,6 +583,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "WITH LOCAL TIME ZONE": TokenType.WITH_LOCAL_TIME_ZONE,
         "WITHIN GROUP": TokenType.WITHIN_GROUP,
         "WITHOUT TIME ZONE": TokenType.WITHOUT_TIME_ZONE,
+        "APPLY": TokenType.APPLY,
         "ARRAY": TokenType.ARRAY,
         "BOOL": TokenType.BOOLEAN,
         "BOOLEAN": TokenType.BOOLEAN,

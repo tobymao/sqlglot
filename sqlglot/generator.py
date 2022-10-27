@@ -716,15 +716,21 @@ class Generator:
 
     def lateral_sql(self, expression):
         this = self.sql(expression, "this")
+
         if isinstance(expression.this, exp.Subquery):
-            return f"LATERAL{self.sep()}{this}"
-        op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
+            return f"LATERAL {this}"
+
         alias = expression.args["alias"]
         table = alias.name
         table = f" {table}" if table else table
         columns = self.expressions(alias, key="columns", flat=True)
         columns = f" AS {columns}" if columns else ""
-        return f"{op_sql}{self.sep()}{this}{table}{columns}"
+
+        if expression.args.get("view"):
+            op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
+            return f"{op_sql}{self.sep()}{this}{table}{columns}"
+
+        return f"LATERAL {this}{table}{columns}"
 
     def limit_sql(self, expression):
         this = self.sql(expression, "this")

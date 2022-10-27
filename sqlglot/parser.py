@@ -131,6 +131,7 @@ class Parser:
         TokenType.ALTER,
         TokenType.ALWAYS,
         TokenType.ANTI,
+        TokenType.APPLY,
         TokenType.BEGIN,
         TokenType.BOTH,
         TokenType.BUCKET,
@@ -204,7 +205,7 @@ class Parser:
         *TYPE_TOKENS,
     }
 
-    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL}
+    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY}
 
     TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
@@ -1167,27 +1168,54 @@ class Parser:
         return self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
 
     def _parse_lateral(self):
-        if not self._match(TokenType.LATERAL):
+        outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY)
+        cross_apply = self._match_pair(TokenType.CROSS, TokenType.APPLY)
+
+        if outer_apply or cross_apply:
+            kind = "inner" if cross_apply else "outer"
+            side = None if cross_apply else "left"
+            outer = not cross_apply
+
+        elif not self._match(TokenType.LATERAL):
             return None
 
-        subquery = self._parse_select(table=True)
-
-        if subquery:
-            return self.expression(exp.Lateral, this=subquery)
-
-        self._match(TokenType.VIEW)
+        this = self._parse_select(table=True)
+        view = self._match(TokenType.VIEW)
         outer = self._match(TokenType.OUTER)
 
-        return self.expression(
+        if not this:
+            this = self._parse_function()
+
+        table_alias = self._parse_id_var(any_token=False)
+
+        columns = None
+        if self._match(TokenType.ALIAS):
+            columns = self._parse_csv(self._parse_id_var)
+        elif self._match(TokenType.L_PAREN):
+            columns = self._parse_csv(self._parse_id_var)
+            self._match(TokenType.R_PAREN)
+
+        expression = self.expression(
             exp.Lateral,
-            this=self._parse_function(),
+            this=this,
+            view=view,
             outer=outer,
             alias=self.expression(
                 exp.TableAlias,
-                this=self._parse_id_var(any_token=False),
-                columns=(self._parse_csv(self._parse_id_var) if self._match(TokenType.ALIAS) else None),
+                this=table_alias,
+                columns=columns,
             ),
         )
+
+        if outer_apply or cross_apply:
+            return self.expression(
+                exp.Join,
+                this=expression,
+                side=side,
+                kind=kind,
+            )
+
+        return expression
 
     def _parse_join_side_and_kind(self):
         return (

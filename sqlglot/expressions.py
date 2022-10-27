@@ -975,7 +975,7 @@ class Join(Expression):
 
 
 class Lateral(UDTF):
-    arg_types = {"this": True, "outer": False, "alias": False}
+    arg_types = {"this": True, "view": False, "outer": False, "alias": False}
 
 
 # Clickhouse FROM FINAL modifier

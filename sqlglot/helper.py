@@ -312,7 +312,7 @@ def is_collection(value: t.Any) -> bool:
     Returns:
         A `bool` value indicating if it is a collection.
     """
-    return issubclass(type(value), Collection) and not isinstance(value, (str, bytes))
+    return isinstance(value, Collection) and not isinstance(value, (str, bytes))
 
 
 def is_iterable(value: t.Any) -> bool:

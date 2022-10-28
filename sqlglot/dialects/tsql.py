@@ -55,9 +55,7 @@ def parse_format(args):
     number_fmt = not re.search(DATE_FMT_RE, fmt.this) or fmt.this in TRANSPILE_SAFE_NUMBER_FMT
     if number_fmt:
         return exp.NumberToStr(this=list_get(args, 0), format=fmt)
-    return exp.TimeToStr(
-        this=list_get(args, 0), format=exp.Literal.string(format_time(fmt.name, TSQL.time_mapping))
-    )
+    return exp.TimeToStr(this=list_get(args, 0), format=exp.Literal.string(format_time(fmt.name, TSQL.time_mapping)))
 
 
 def generate_date_delta_with_unit_sql(self, e):

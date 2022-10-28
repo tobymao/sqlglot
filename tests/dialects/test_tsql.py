@@ -353,4 +353,3 @@ class TestTSQL(Validator):
                 "spark": "SELECT table.col1 + table.col2 + COALESCE(table.col3, 0) AS test FROM testdb.dbo.table",
             },
         )
-

@@ -333,3 +333,24 @@ class TestTSQL(Validator):
                 "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) y AS z",
             },
         )
+
+    def test_concat(self):
+        self.validate_all(
+            "SELECT CONCAT('test', testdb.dbo.table.column, 1) AS test FROM testdb.dbo.table",
+            write={
+                "spark": "SELECT CONCAT_WS('', 'test', testdb.dbo.table.column, 1) AS test FROM testdb.dbo.table",
+            },
+        )
+        self.validate_all(
+            "SELECT table.col1 + table.col2 + ISNULL(table.col3, 'default') AS test FROM testdb.dbo.table",
+            write={
+                "spark": "SELECT table.col1 || table.col2 || COALESCE(table.col3, 'default') AS test FROM testdb.dbo.table",
+            },
+        )
+        self.validate_all(
+            "SELECT table.col1 + table.col2 + ISNULL(table.col3, 0) AS test FROM testdb.dbo.table",
+            write={
+                "spark": "SELECT table.col1 + table.col2 + COALESCE(table.col3, 0) AS test FROM testdb.dbo.table",
+            },
+        )
+

@@ -174,6 +174,7 @@ class TSQL(Dialect):
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
+            "CONCAT": lambda args: exp.ConcatWs(expressions=[exp.Literal.string("")] + args),
         }
 
         VAR_LENGTH_DATATYPES = {
@@ -221,31 +222,45 @@ class TSQL(Dialect):
         def _parse_term(self):
             term = self._parse_tokens(self._parse_factor, self.TERM)
 
-            # Scan for expressions to be included in concat
+            # Build expression as if the addition should be a string operation
             if isinstance(term, exp.Add):
-                expressions = [term.expression]
-                this = term.this
-                while isinstance(this, exp.Add):
-                    expressions.insert(0, this.expression)
-                    this = this.this
-
-                expressions.insert(0, this)
 
                 # Determine whether its an arithmetic or string operation
-                arith_op = True
-                for expression in expressions:
-                    this = expression
-                    while isinstance(this, (exp.Paren, exp.ArrayConcat, exp.ConcatWs, exp.Add, exp.Coalesce, exp.Literal)):
-                        if isinstance(this, exp.Literal) and this.is_string is True:
-                            arith_op = False
-                        elif isinstance(this, exp.Coalesce) and any(isinstance(expression, exp.Literal) and expression.is_string is True for expression in this.expressions):
-                            arith_op = False
-                        this = this.this if hasattr(this, "this") else None
+                expressions = list(
+                    entry[0]
+                    for entry in term.dfs(
+                        prune=lambda self, parent, key: True
+                        if not isinstance(self, (exp.Add, exp.Paren, exp.Coalesce, exp.Literal, exp.DPipe))
+                        else False
+                    )
+                )
 
-                arith_op = True if arith_op is None else arith_op
+                arith_op = (
+                    False
+                    if any(
+                        isinstance(expression, exp.Literal) and expression.is_string is True
+                        for expression in expressions
+                    )
+                    else True
+                )
 
+                # Build expression with nested dpipes
                 if not arith_op:
-                    return self.expression(exp.ArrayConcat, this=expressions[0], expressions=expressions[1:])
+                    expressions = [term.expression]
+                    this = term.this
+
+                    while isinstance(this, (exp.Add, exp.Paren)):
+                        if isinstance(this, exp.Add):
+                            expressions.insert(0, this.expression)
+                            this = this.this
+                    else:
+                        expressions.insert(0, this)
+
+                    this = self.expression(exp.DPipe, this=expressions[0], expression=expressions[1])
+                    for expression in expressions[2:]:
+                        this = self.expression(exp.DPipe, this=this, expression=expression)
+
+                    return this
 
             return term
 

@@ -1,44 +1,55 @@
+from __future__ import annotations
+
 import abc
+import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import csv_reader
+
+if t.TYPE_CHECKING:
+    from sqlglot.dataframe.sql.types import StructType
+
+    ColumnMapping = t.Dict | str | StructType | t.List
 
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
     @abc.abstractmethod
-    def add_table(self, table, column_mapping=None):
+    def add_table(self, table: exp.Table | str, column_mapping: t.Optional[ColumnMapping] = None) -> None:
         """
-        Register or update a table. Some implementing classes may require column information to also be provided
+        Register or update a table. Some implementing classes may require column information to also be provided.
 
         Args:
-            table (sqlglot.expressions.Table|str): Table expression instance or string representing the table
-            column_mapping (dict|str|sqlglot.dataframe.sql.types.StructType|list): A column mapping that describes the structure of the table
+            table: table expression instance or string representing the table.
+            column_mapping: a column mapping that describes the structure of the table.
         """
 
     @abc.abstractmethod
-    def column_names(self, table, only_visible=False):
+    def column_names(self, table: exp.Table, only_visible: bool = False) -> t.List[str]:
         """
         Get the column names for a table.
+
         Args:
-            table (sqlglot.expressions.Table): Table expression instance
-            only_visible (bool): Whether to include invisible columns
+            table: the `Table` expression instance.
+            only_visible: whether to include invisible columns.
+
         Returns:
-            list[str]: list of column names
+            The list of column names.
         """
 
     @abc.abstractmethod
-    def get_column_type(self, table, column):
+    def get_column_type(self, table: exp.table, column: exp.Column) -> exp.DataType.Type:
         """
-        Get the exp.DataType type of a column in the schema.
+        Get the :class:`sqlglot.exp.DataType` type of a column in the schema.
 
         Args:
-            table (sqlglot.expressions.Table): The source table.
-            column (sqlglot.expressions.Column): The target column.
+            table: the source table.
+            column: the target column.
+
         Returns:
-            sqlglot.expressions.DataType.Type: The resulting column type.
+            The resulting column type.
         """
 
 

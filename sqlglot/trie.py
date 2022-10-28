@@ -49,11 +49,8 @@ def in_trie(trie: t.Dict, key: str) -> t.Tuple[int, t.Dict]:
         key: the target key.
 
     Returns:
-        (0, _): if `key` can't be found in the trie.
-        (1, subtrie): if `key` is a prefix of a keyword in the trie. Then, `subtrie` is the sub-trie we get at the
-            point where the search stops for `key`.
-        (2, subtrie): if `key` is in the trie. Then, `subtrie` is the sub-trie we get at the point where the search
-            stops for `key`.
+        A pair `(value, subtrie)`, where `subtrie` is the sub-trie we get at the point where the search stops, and `value`
+        is either 0 (search was unsuccessfull), 1 (`value` is a prefix of a keyword in `trie`) or 2 (`key is in `trie`).
     """
     if not key:
         return (0, trie)

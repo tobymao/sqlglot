@@ -52,7 +52,7 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
 
 def parse_format(args):
     fmt = list_get(args, 1)
-    number_fmt = not re.search(DATE_FMT_RE, fmt.this) or fmt.this in TRANSPILE_SAFE_NUMBER_FMT
+    number_fmt = not re.search(DATE_FMT_RE, fmt.this) or fmt.name in TRANSPILE_SAFE_NUMBER_FMT
     if number_fmt:
         return exp.NumberToStr(this=list_get(args, 0), format=fmt)
     return exp.TimeToStr(this=list_get(args, 0), format=exp.Literal.string(format_time(fmt.name, TSQL.time_mapping)))

@@ -340,14 +340,14 @@ class _Tokenizer(type):
 
         klass.KEYWORD_TRIE = new_trie(
             key.upper()
-            for key, value in {
+            for key in {
                 **klass.KEYWORDS,
                 **{comment: TokenType.COMMENT for comment in klass._COMMENTS},
                 **{quote: TokenType.QUOTE for quote in klass._QUOTES},
                 **{bit_string: TokenType.BIT_STRING for bit_string in klass._BIT_STRINGS},
                 **{hex_string: TokenType.HEX_STRING for hex_string in klass._HEX_STRINGS},
                 **{byte_string: TokenType.BYTE_STRING for byte_string in klass._BYTE_STRINGS},
-            }.items()
+            }
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
@@ -673,7 +673,7 @@ class Tokenizer(metaclass=_Tokenizer):
     ENCODE = None
 
     COMMENTS = ["--", ("/*", "*/")]
-    KEYWORD_TRIE = None   # autofilled
+    KEYWORD_TRIE = None  # autofilled
 
     __slots__ = (
         "sql",
@@ -789,7 +789,7 @@ class Tokenizer(metaclass=_Tokenizer):
             if skip:
                 result = 1
             else:
-                result, trie = in_trie(trie, char.upper())
+                result, trie = in_trie(trie, char.upper())  # type: ignore
 
             if result == 0:
                 break

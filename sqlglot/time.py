@@ -1,9 +1,11 @@
-# the generic time format is based on python time.strftime
+import typing as t
+
+# The generic time format is based on python time.strftime.
 # https://docs.python.org/3/library/time.html#time.strftime
 from sqlglot.trie import in_trie, new_trie
 
 
-def format_time(string, mapping, trie=None):
+def format_time(string: str, mapping: t.Dict[str, str], trie: t.Optional[t.Dict] = None) -> t.Optional[str]:
     """
     Converts a time string given a mapping.
 
@@ -11,11 +13,16 @@ def format_time(string, mapping, trie=None):
         >>> format_time("%Y", {"%Y": "YYYY"})
         'YYYY'
 
-    mapping: Dictionary of time format to target time format
-    trie: Optional trie, can be passed in for performance
+        Args:
+            mapping: dictionary of time format to target time format.
+            trie: optional trie, can be passed in for performance.
+
+        Returns:
+            The converted time string.
     """
     if not string:
         return None
+
     start = 0
     end = 1
     size = len(string)

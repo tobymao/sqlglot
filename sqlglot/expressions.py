@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import datetime
 import numbers
 import re
+import typing as t
 from collections import deque
 from copy import deepcopy
 from enum import auto
@@ -3290,16 +3293,16 @@ def to_identifier(alias, quoted=None):
     return identifier
 
 
-def to_table(sql_path: str, **kwargs) -> Table:
+def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
-
     If a table is passed in then that table is returned.
 
     Args:
-        sql_path(str|Table): `[catalog].[schema].[table]` string
+        sql_path: a `[catalog].[schema].[table]` string.
+
     Returns:
-        Table: A table expression
+        A table expression.
     """
     if sql_path is None or isinstance(sql_path, Table):
         return sql_path

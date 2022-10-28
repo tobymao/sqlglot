@@ -23,6 +23,7 @@ def format_time(string, mapping, trie=None):
     current = trie
     chunks = []
     sym = None
+
     while end <= size:
         chars = string[start:end]
         result, current = in_trie(current, chars[-1])

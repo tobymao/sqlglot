@@ -287,7 +287,7 @@ class TokenType(AutoName):
 
 
 class Token:
-    __slots__ = ("token_type", "text", "line", "col")
+    __slots__ = ("token_type", "text", "line", "col", "comment")
 
     @classmethod
     def number(cls, number):
@@ -305,11 +305,12 @@ class Token:
     def var(cls, var):
         return cls(TokenType.VAR, var)
 
-    def __init__(self, token_type, text, line=1, col=1):
+    def __init__(self, token_type, text, line=1, col=1, comment=None):
         self.token_type = token_type
         self.text = text
         self.line = line
         self.col = max(col - len(text), 1)
+        self.comment = comment
 
     def __repr__(self):
         attributes = ", ".join(f"{k}: {getattr(self, k)}" for k in self.__slots__)
@@ -674,6 +675,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "_current",
         "_line",
         "_col",
+        "_comment",
         "_char",
         "_end",
         "_peek",
@@ -694,6 +696,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._current = 0
         self._line = 1
         self._col = 1
+        self._comment = None
 
         self._char = None
         self._end = None
@@ -749,7 +752,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _add(self, token_type, text=None):
         self._prev_token_type = token_type
-        self.tokens.append(Token(token_type, self._text if text is None else text, self._line, self._col))
+        self.tokens.append(Token(token_type, self._text if text is None else text, self._line, self._col, self._comment))
+        self._comment = None
 
         if token_type in self.COMMANDS and (len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON):
             self._start = self._current
@@ -816,10 +820,12 @@ class Tokenizer(metaclass=_Tokenizer):
         self._advance(size - 1)
         self._add(self.KEYWORDS[word.upper()])
 
+    # Comments are attached to the next token, if any.
     def _scan_comment(self, comment_start):
         if comment_start not in self._COMMENTS:
             return False
 
+        comment_start_size = len(comment_start)
         comment_end = self._COMMENTS[comment_start]
 
         if comment_end:
@@ -827,10 +833,14 @@ class Tokenizer(metaclass=_Tokenizer):
 
             while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
+
+            self._comment = self._text[comment_start_size: -comment_end_size + 1]
             self._advance(comment_end_size - 1)
         else:
             while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK:
                 self._advance()
+            self._comment = self._text[comment_start_size:]
+
         return True
 
     def _scan_annotation(self):

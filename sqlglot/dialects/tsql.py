@@ -249,10 +249,9 @@ class TSQL(Dialect):
                     expressions = [term.expression]
                     this = term.this
 
-                    while isinstance(this, (exp.Add, exp.Paren)):
-                        if isinstance(this, exp.Add):
-                            expressions.insert(0, this.expression)
-                            this = this.this
+                    while isinstance(this, exp.Add):
+                        expressions.insert(0, this.expression)
+                        this = this.this
                     else:
                         expressions.insert(0, this)
 

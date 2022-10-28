@@ -361,3 +361,22 @@ class TestTSQL(Validator):
                 "spark": "SELECT * FROM A LIMIT 3",
             },
         )
+
+    def test_format(self):
+        self.validate_identity("SELECT FORMAT('01-01-1991', 'd.mm.yyyy')")
+        self.validate_identity("SELECT FORMAT(12345, '###.###.###')")
+        self.validate_identity("SELECT FORMAT(1234567, 'f')")
+        self.validate_all(
+            "SELECT FORMAT(1000000.01,'###,###.###')",
+            write={"spark": "SELECT FORMAT_NUMBER(1000000.01, '###,###.###')"},
+        )
+        self.validate_all("SELECT FORMAT(1234567, 'f')", write={"spark": "SELECT FORMAT_NUMBER(1234567, 'f')"})
+        self.validate_all(
+            "SELECT FORMAT('01-01-1991', 'dd.mm.yyyy')",
+            write={"spark": "SELECT DATE_FORMAT('01-01-1991', 'dd.mm.yyyy')"},
+        )
+        self.validate_all(
+            "SELECT FORMAT(date_col, 'dd.mm.yyyy')", write={"spark": "SELECT DATE_FORMAT(date_col, 'dd.mm.yyyy')"}
+        )
+        self.validate_all("SELECT FORMAT(date_col, 'm')", write={"spark": "SELECT DATE_FORMAT(date_col, 'MMMM d')"})
+        self.validate_all("SELECT FORMAT(num_col, 'c')", write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"})

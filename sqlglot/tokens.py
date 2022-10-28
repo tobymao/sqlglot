@@ -257,6 +257,7 @@ class TokenType(AutoName):
     TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
+    TRANSIENT = auto()
     TOP = auto()
     THEN = auto()
     TRUE = auto()
@@ -561,6 +562,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,
+        "TRANSIENT": TokenType.TRANSIENT,
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
         "TRAILING": TokenType.TRAILING,

@@ -188,6 +188,8 @@ class Snowflake(Dialect):
         }
 
     class Generator(Generator):
+        CREATE_TRANSIENT = True
+
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),

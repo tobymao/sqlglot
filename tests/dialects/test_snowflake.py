@@ -293,6 +293,18 @@ class TestSnowflake(Validator):
             "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
         )
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
+        self.validate_all(
+            "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
+            read={
+                "postgres": "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
+                "snowflake": "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
+            },
+            write={
+                "postgres": "CREATE OR REPLACE TABLE a (id INT)",
+                "mysql": "CREATE OR REPLACE TABLE a (id INT)",
+                "snowflake": "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
+            },
+        )
 
     def test_user_defined_functions(self):
         self.validate_all(

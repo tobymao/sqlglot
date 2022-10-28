@@ -158,6 +158,7 @@ class TSQL(Dialect):
             "SQL_VARIANT": TokenType.VARIANT,
             "NVARCHAR(MAX)": TokenType.TEXT,
             "VARCHAR(MAX)": TokenType.TEXT,
+            "TOP": TokenType.TOP,
         }
 
     class Parser(Parser):
@@ -187,7 +188,7 @@ class TSQL(Dialect):
         def _parse_convert(self, strict):
             to = self._parse_types()
             self._match(TokenType.COMMA)
-            this = self._parse_field()
+            this = self._parse_column()
 
             # Retrieve length of datatype and override to default if not specified
             if list_get(to.expressions, 0) is None and to.this in self.VAR_LENGTH_DATATYPES:

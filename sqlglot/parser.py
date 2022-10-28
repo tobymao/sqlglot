@@ -191,6 +191,7 @@ class Parser:
         TokenType.TABLE,
         TokenType.TABLE_FORMAT,
         TokenType.TEMPORARY,
+        TokenType.TRANSIENT,
         TokenType.TOP,
         TokenType.TRAILING,
         TokenType.TRUNCATE,
@@ -686,6 +687,7 @@ class Parser:
     def _parse_create(self):
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
+        transient = self._match(TokenType.TRANSIENT)
         unique = self._match(TokenType.UNIQUE)
         materialized = self._match(TokenType.MATERIALIZED)
 
@@ -724,6 +726,7 @@ class Parser:
             exists=exists,
             properties=properties,
             temporary=temporary,
+            transient=transient,
             replace=replace,
             unique=unique,
             materialized=materialized,
@@ -1528,7 +1531,11 @@ class Parser:
 
     def _parse_limit(self, this=None, top=False):
         if self._match(TokenType.TOP if top else TokenType.LIMIT):
-            return self.expression(exp.Limit, this=this, expression=self._parse_number())
+            limit_paren = self._match(TokenType.L_PAREN)
+            limit_exp = self.expression(exp.Limit, this=this, expression=self._parse_number())
+            if limit_paren:
+                self._match(TokenType.R_PAREN)
+            return limit_exp
         if self._match(TokenType.FETCH):
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
             direction = self._prev.text if direction else "FIRST"
@@ -2162,7 +2169,7 @@ class Parser:
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
     def _parse_convert(self, strict):
-        this = self._parse_field()
+        this = self._parse_column()
         if self._match(TokenType.USING):
             to = self.expression(exp.CharacterSet, this=self._parse_var())
         elif self._match(TokenType.COMMA):

@@ -752,7 +752,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _add(self, token_type, text=None):
         self._prev_token_type = token_type
-        self.tokens.append(Token(token_type, self._text if text is None else text, self._line, self._col, self._comment))
+        self.tokens.append(
+            Token(token_type, self._text if text is None else text, self._line, self._col, self._comment)
+        )
         self._comment = None
 
         if token_type in self.COMMANDS and (len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON):
@@ -834,7 +836,7 @@ class Tokenizer(metaclass=_Tokenizer):
             while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
 
-            self._comment = self._text[comment_start_size: -comment_end_size + 1]
+            self._comment = self._text[comment_start_size : -comment_end_size + 1]
             self._advance(comment_end_size - 1)
         else:
             while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK:

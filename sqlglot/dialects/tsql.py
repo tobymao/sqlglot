@@ -32,7 +32,7 @@ DATE_FMT_RE = "([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})"
 # Current known single letter options:
 #   "d","D", "c", "C", "f","F", "g", "G", "m","o", "r", "s" ,"u","U", "T","t","Y"
 # N = Numeric, C=Currency
-TRANSPILE_SAFE_NUMBER_FMT = ("N", "C")
+TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 
 
 def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
@@ -55,10 +55,9 @@ def parse_format(args):
     number_fmt = not re.search(DATE_FMT_RE, fmt.this) or fmt.this in TRANSPILE_SAFE_NUMBER_FMT
     if number_fmt:
         return exp.NumberToStr(this=list_get(args, 0), format=fmt)
-    else:
-        return exp.TimeToStr(
-            this=list_get(args, 0), format=exp.Literal.string(format_time(fmt.name, TSQL.time_mapping))
-        )
+    return exp.TimeToStr(
+        this=list_get(args, 0), format=exp.Literal.string(format_time(fmt.name, TSQL.time_mapping))
+    )
 
 
 def generate_date_delta_with_unit_sql(self, e):
@@ -68,13 +67,12 @@ def generate_date_delta_with_unit_sql(self, e):
 
 def generate_format_sql(self, e):
     fmt = (
-        e.args.get("format")
+        e.args["format"]
         if isinstance(e, exp.NumberToStr)
         else exp.Literal.string(
             format_time(e.args.get("format").name, {v: k.lower() for k, v in TSQL.time_mapping.items()})
         )
     )
-    print(self.sql(e, "format"))
     return f"FORMAT({self.format_args(e.this, fmt)})"
 
 

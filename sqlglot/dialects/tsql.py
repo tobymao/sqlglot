@@ -1,3 +1,5 @@
+import re
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
 from sqlglot.expressions import DataType
@@ -26,6 +28,12 @@ DATE_DELTA_INTERVAL = {
     "d": "day",
 }
 
+DATE_FMT_RE = "([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})"
+# Current known single letter options:
+#   "d","D", "c", "C", "f","F", "g", "G", "m","o", "r", "s" ,"u","U", "T","t","Y"
+# N = Numeric, C=Currency
+TRANSPILE_SAFE_NUMBER_FMT = ("N", "C")
+
 
 def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     def _format_time(args):
@@ -42,9 +50,32 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     return _format_time
 
 
+def parse_format(args):
+    fmt = list_get(args, 1)
+    number_fmt = not re.search(DATE_FMT_RE, fmt.this) or fmt.this in TRANSPILE_SAFE_NUMBER_FMT
+    if number_fmt:
+        return exp.NumberToStr(this=list_get(args, 0), format=fmt)
+    else:
+        return exp.TimeToStr(
+            this=list_get(args, 0), format=exp.Literal.string(format_time(fmt.name, TSQL.time_mapping))
+        )
+
+
 def generate_date_delta_with_unit_sql(self, e):
     func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
     return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
+
+
+def generate_format_sql(self, e):
+    fmt = (
+        e.args.get("format")
+        if isinstance(e, exp.NumberToStr)
+        else exp.Literal.string(
+            format_time(e.args.get("format").name, {v: k.lower() for k, v in TSQL.time_mapping.items()})
+        )
+    )
+    print(self.sql(e, "format"))
+    return f"FORMAT({self.format_args(e.this, fmt)})"
 
 
 class TSQL(Dialect):
@@ -175,6 +206,7 @@ class TSQL(Dialect):
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
+            "FORMAT": parse_format,
         }
 
         VAR_LENGTH_DATATYPES = {
@@ -235,4 +267,6 @@ class TSQL(Dialect):
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
             exp.If: rename_func("IIF"),
+            exp.NumberToStr: generate_format_sql,
+            exp.TimeToStr: generate_format_sql,
         }

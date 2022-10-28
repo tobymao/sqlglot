@@ -1,3 +1,5 @@
+import re
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
 from sqlglot.expressions import DataType
@@ -27,6 +29,11 @@ DATE_DELTA_INTERVAL = {
 }
 
 
+DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})")
+# N = Numeric, C=Currency
+TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
+
+
 def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     def _format_time(args):
         return exp_class(
@@ -42,9 +49,33 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     return _format_time
 
 
+def parse_format(args):
+    fmt = list_get(args, 1)
+    number_fmt = fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.this)
+    if number_fmt:
+        return exp.NumberToStr(this=list_get(args, 0), format=fmt)
+    return exp.TimeToStr(
+        this=list_get(args, 0),
+        format=exp.Literal.string(
+            format_time(fmt.name, TSQL.format_time_mapping)
+            if len(fmt.name) == 1
+            else format_time(fmt.name, TSQL.time_mapping)
+        ),
+    )
+
+
 def generate_date_delta_with_unit_sql(self, e):
     func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
     return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
+
+
+def generate_format_sql(self, e):
+    fmt = (
+        e.args["format"]
+        if isinstance(e, exp.NumberToStr)
+        else exp.Literal.string(format_time(e.text("format"), TSQL.inverse_time_mapping))
+    )
+    return f"FORMAT({self.format_args(e.this, fmt)})"
 
 
 class TSQL(Dialect):
@@ -52,8 +83,6 @@ class TSQL(Dialect):
     time_format = "'yyyy-mm-dd hh:mm:ss'"
 
     time_mapping = {
-        "yyyy": "%Y",
-        "yy": "%y",
         "year": "%Y",
         "qq": "%q",
         "q": "%q",
@@ -93,6 +122,8 @@ class TSQL(Dialect):
         "H": "%-H",
         "h": "%-I",
         "S": "%f",
+        "yyyy": "%Y",
+        "yy": "%y",
     }
 
     convert_format_mapping = {
@@ -135,6 +166,27 @@ class TSQL(Dialect):
         "120": "%Y-%m-%d %H:%M:%S",
         "121": "%Y-%m-%d %H:%M:%S.%f",
     }
+    # not sure if complete
+    format_time_mapping = {
+        "y": "%B %Y",
+        "d": "%m/%d/%Y",
+        "H": "%-H",
+        "h": "%-I",
+        "s": "%Y-%m-%d %H:%M:%S",
+        "D": "%A,%B,%Y",
+        "f": "%A,%B,%Y %-I:%M %p",
+        "F": "%A,%B,%Y %-I:%M:%S %p",
+        "g": "%m/%d/%Y %-I:%M %p",
+        "G": "%m/%d/%Y %-I:%M:%S %p",
+        "M": "%B %-d",
+        "m": "%B %-d",
+        "O": "%Y-%m-%dT%H:%M:%S",
+        "u": "%Y-%M-%D %H:%M:%S%z",
+        "U": "%A, %B %D, %Y %H:%M:%S%z",
+        "T": "%-I:%M:%S %p",
+        "t": "%-I:%M",
+        "Y": "%a %Y",
+    }
 
     class Tokenizer(Tokenizer):
         IDENTIFIERS = ['"', ("[", "]")]
@@ -175,6 +227,7 @@ class TSQL(Dialect):
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
+            "FORMAT": parse_format,
         }
 
         VAR_LENGTH_DATATYPES = {
@@ -235,4 +288,6 @@ class TSQL(Dialect):
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
             exp.If: rename_func("IIF"),
+            exp.NumberToStr: generate_format_sql,
+            exp.TimeToStr: generate_format_sql,
         }

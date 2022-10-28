@@ -284,6 +284,7 @@ class Hive(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'value')}",
+            exp.NumberToStr: rename_func("FORMAT_NUMBER"),
         }
 
         WITH_PROPERTIES = {exp.AnonymousProperty}

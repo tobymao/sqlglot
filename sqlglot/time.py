@@ -43,5 +43,4 @@ def format_time(string, mapping, trie=None):
 
         if result and end > size:
             chunks.append(chars)
-
     return "".join(mapping.get(chars, chars) for chars in chunks)

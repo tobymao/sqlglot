@@ -28,7 +28,8 @@ DATE_DELTA_INTERVAL = {
     "d": "day",
 }
 
-DATE_FMT_RE = "([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})"
+
+DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})")
 # Current known single letter options:
 #   "d","D", "c", "C", "f","F", "g", "G", "m","o", "r", "s" ,"u","U", "T","t","Y"
 # N = Numeric, C=Currency
@@ -52,7 +53,7 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
 
 def parse_format(args):
     fmt = list_get(args, 1)
-    number_fmt = not re.search(DATE_FMT_RE, fmt.this) or fmt.name in TRANSPILE_SAFE_NUMBER_FMT
+    number_fmt = not DATE_FMT_RE.search(fmt.this) or fmt.name in TRANSPILE_SAFE_NUMBER_FMT
     if number_fmt:
         return exp.NumberToStr(this=list_get(args, 0), format=fmt)
     return exp.TimeToStr(this=list_get(args, 0), format=exp.Literal.string(format_time(fmt.name, TSQL.time_mapping)))
@@ -67,9 +68,7 @@ def generate_format_sql(self, e):
     fmt = (
         e.args["format"]
         if isinstance(e, exp.NumberToStr)
-        else exp.Literal.string(
-            format_time(e.args.get("format").name, {v: k.lower() for k, v in TSQL.time_mapping.items()})
-        )
+        else exp.Literal.string(format_time(e.args.get("format").name, TSQL.inversed_lower_case_time_mapping))
     )
     return f"FORMAT({self.format_args(e.this, fmt)})"
 
@@ -162,6 +161,7 @@ class TSQL(Dialect):
         "120": "%Y-%m-%d %H:%M:%S",
         "121": "%Y-%m-%d %H:%M:%S.%f",
     }
+    inversed_lower_case_time_mapping = {v: k.lower() for k, v in time_mapping.items()}
 
     class Tokenizer(Tokenizer):
         IDENTIFIERS = ['"', ("[", "]")]

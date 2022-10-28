@@ -218,6 +218,37 @@ class TSQL(Dialect):
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
+        def _parse_term(self):
+            term = self._parse_tokens(self._parse_factor, self.TERM)
+
+            # Scan for expressions to be included in concat
+            if isinstance(term, exp.Add):
+                expressions = [term.expression]
+                this = term.this
+                while isinstance(this, exp.Add):
+                    expressions.insert(0, this.expression)
+                    this = this.this
+
+                expressions.insert(0, this)
+
+                # Determine whether its an arithmetic or string operation
+                arith_op = True
+                for expression in expressions:
+                    this = expression
+                    while isinstance(this, (exp.Paren, exp.ArrayConcat, exp.ConcatWs, exp.Add, exp.Coalesce, exp.Literal)):
+                        if isinstance(this, exp.Literal) and this.is_string is True:
+                            arith_op = False
+                        elif isinstance(this, exp.Coalesce) and any(isinstance(expression, exp.Literal) and expression.is_string is True for expression in this.expressions):
+                            arith_op = False
+                        this = this.this if hasattr(this, "this") else None
+
+                arith_op = True if arith_op is None else arith_op
+
+                if not arith_op:
+                    return self.expression(exp.ArrayConcat, this=expressions[0], expressions=expressions[1:])
+
+            return term
+
     class Generator(Generator):
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,

@@ -65,11 +65,7 @@ def generate_date_delta_with_unit_sql(self, e):
 
 
 def generate_format_sql(self, e):
-    fmt = (
-        e.args["format"]
-        if isinstance(e, exp.NumberToStr)
-        else exp.Literal.string(self.format_time(e.args.get("format").name))
-    )
+    fmt = e.args["format"] if isinstance(e, exp.NumberToStr) else exp.Literal.string(self.format_time(e.text("format")))
     return f"FORMAT({self.format_args(e.this, fmt)})".replace("Y", "y")
 
 

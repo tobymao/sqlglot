@@ -3480,7 +3480,7 @@ def convert(value):
             values=[convert(v) for v in value.values()],
         )
     if isinstance(value, datetime.datetime):
-        datetime_literal = Literal.string(value.strftime("%Y-%m-%d %H:%M:%S"))
+        datetime_literal = Literal.string(value.strftime("%Y-%m-%d %H:%M:%S.%f%z"))
         return TimeStrToTime(this=datetime_literal)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))

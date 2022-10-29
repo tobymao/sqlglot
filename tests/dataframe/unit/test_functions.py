@@ -30,7 +30,7 @@ class TestFunctions(unittest.TestCase):
         test_date = SF.lit(datetime.date(2022, 1, 1))
         self.assertEqual("TO_DATE('2022-01-01')", test_date.sql())
         test_datetime = SF.lit(datetime.datetime(2022, 1, 1, 1, 1, 1))
-        self.assertEqual("CAST('2022-01-01 01:01:01' AS TIMESTAMP)", test_datetime.sql())
+        self.assertEqual("CAST('2022-01-01 01:01:01.000000' AS TIMESTAMP)", test_datetime.sql())
         test_dict = SF.lit({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS cola, 'test' AS colb)", test_dict.sql())
 
@@ -52,7 +52,7 @@ class TestFunctions(unittest.TestCase):
         test_date = SF.col(datetime.date(2022, 1, 1))
         self.assertEqual("TO_DATE('2022-01-01')", test_date.sql())
         test_datetime = SF.col(datetime.datetime(2022, 1, 1, 1, 1, 1))
-        self.assertEqual("CAST('2022-01-01 01:01:01' AS TIMESTAMP)", test_datetime.sql())
+        self.assertEqual("CAST('2022-01-01 01:01:01.000000' AS TIMESTAMP)", test_datetime.sql())
         test_dict = SF.col({"cola": 1, "colb": "test"})
         self.assertEqual("STRUCT(1 AS cola, 'test' AS colb)", test_dict.sql())
 

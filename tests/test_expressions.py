@@ -538,7 +538,11 @@ class TestExpressions(unittest.TestCase):
             ((1, "2", None), "(1, '2', NULL)"),
             ([1, "2", None], "ARRAY(1, '2', NULL)"),
             ({"x": None}, "MAP('x', NULL)"),
-            (datetime.datetime(2022, 10, 1, 1, 1, 1), "TIME_STR_TO_TIME('2022-10-01 01:01:01')"),
+            (datetime.datetime(2022, 10, 1, 1, 1, 1), "TIME_STR_TO_TIME('2022-10-01 01:01:01.000000')"),
+            (
+                datetime.datetime(2022, 10, 1, 1, 1, 1, tzinfo=datetime.timezone.utc),
+                "TIME_STR_TO_TIME('2022-10-01 01:01:01.000000+0000')",
+            ),
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
         ]:
             with self.subTest(value):

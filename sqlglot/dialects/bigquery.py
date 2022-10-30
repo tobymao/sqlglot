@@ -96,7 +96,7 @@ class BigQuery(Dialect):
             for prefix in ["", "r", "R"]
         ]
         IDENTIFIERS = ["`"]
-        ESCAPE = "\\"
+        ESCAPES = ["\\"]
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {

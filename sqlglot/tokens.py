@@ -325,6 +325,7 @@ class _Tokenizer(type):
         klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
         klass._BYTE_STRINGS = cls._delimeter_list_to_dict(klass.BYTE_STRINGS)
         klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
+        klass._ESCAPES = set(klass.ESCAPES)
         klass._COMMENTS = dict(
             (comment, None) if isinstance(comment, str) else (comment[0], comment[1]) for comment in klass.COMMENTS
         )
@@ -394,7 +395,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     IDENTIFIERS = ['"']
 
-    ESCAPE = "'"
+    ESCAPES = ["'"]
 
     KEYWORDS = {
         "/*+": TokenType.HINT,
@@ -678,12 +679,14 @@ class Tokenizer(metaclass=_Tokenizer):
         "_end",
         "_peek",
         "_prev_token_type",
+        "_replace_backslash",
     )
 
     def __init__(self):
         """
         Tokenizer consumes a sql string and produces an array of :class:`~sqlglot.tokens.Token`
         """
+        self._replace_backslash = "\\" in self._ESCAPES
         self.reset()
 
     def reset(self):
@@ -909,9 +912,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
         self._advance(len(quote))
         text = self._extract_string(quote_end)
-
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
-        text = text.replace("\\\\", "\\") if self.ESCAPE == "\\" else text
+        text = text.replace("\\\\", "\\") if self._replace_backslash else text
         self._add(TokenType.STRING, text)
         return True
 
@@ -972,7 +974,7 @@ class Tokenizer(metaclass=_Tokenizer):
         delim_size = len(delimiter)
 
         while True:
-            if self._char == self.ESCAPE and self._peek == delimiter:
+            if self._char in self._ESCAPES and self._peek == delimiter:
                 text += delimiter
                 self._advance(2)
             else:

@@ -168,7 +168,7 @@ class Hive(Dialect):
     class Tokenizer(Tokenizer):
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
-        ESCAPE = "\\"
+        ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
         NUMERIC_LITERALS = {

@@ -12,7 +12,7 @@ class Redshift(Postgres):
     }
 
     class Tokenizer(Postgres.Tokenizer):
-        ESCAPE = "\\"
+        ESCAPES = ["\\"]
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,

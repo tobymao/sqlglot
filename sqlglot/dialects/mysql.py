@@ -105,6 +105,7 @@ class MySQL(Dialect):
         QUOTES = ["'", '"']
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
+        ESCAPES = ["'", "\\"]
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
 

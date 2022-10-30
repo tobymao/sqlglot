@@ -157,6 +157,14 @@ class TestBigQuery(Validator):
             },
         )
 
+        self.validate_all(
+            "DIV(x, y)",
+            write={
+                "bigquery": "DIV(x, y)",
+                "duckdb": "CAST(x / y AS INT)",
+            },
+        )
+
         self.validate_identity(
             "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)"
         )

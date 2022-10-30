@@ -100,7 +100,7 @@ class BigQuery(Dialect):
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **{k: v for k, v in Tokenizer.KEYWORDS.items() if k != "DIV"},
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
@@ -117,6 +117,7 @@ class BigQuery(Dialect):
             **Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
+            "DIV": lambda args: exp.IntDiv(this=list_get(args, 0), expression=list_get(args, 1)),
             "TIME_ADD": _date_add(exp.TimeAdd),
             "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
             "DATE_SUB": _date_add(exp.DateSub),
@@ -148,6 +149,7 @@ class BigQuery(Dialect):
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.ILike: no_ilike_sql,
+            exp.IntDiv: rename_func("DIV"),
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),

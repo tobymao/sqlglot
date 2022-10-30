@@ -320,7 +320,7 @@ def _ordered_py(self, expression):
 
 class Python(Dialect):
     class Tokenizer(Tokenizer):
-        ESCAPE = "\\"
+        ESCAPES = ["\\"]
 
     class Generator(Generator):
         TRANSFORMS = {

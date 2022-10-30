@@ -21,6 +21,15 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT TRIM(BOTH 'bla' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM('bla' FROM ' XXX ')")
 
+    def test_escape(self):
+        self.validate_all(
+            r"'a \' b '' '",
+            write={
+                "mysql": r"'a '' b '' '",
+                "spark": r"'a \' b \' '",
+            },
+        )
+
     def test_introducers(self):
         self.validate_all(
             "_utf8mb4 'hola'",

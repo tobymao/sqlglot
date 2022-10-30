@@ -169,7 +169,7 @@ class Snowflake(Dialect):
 
     class Tokenizer(Tokenizer):
         QUOTES = ["'", "$$"]
-        ESCAPE = "\\"
+        ESCAPES = ["\\"]
 
         SINGLE_TOKENS = {
             **Tokenizer.SINGLE_TOKENS,

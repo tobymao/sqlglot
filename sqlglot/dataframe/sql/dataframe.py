@@ -21,7 +21,12 @@ from sqlglot.optimizer import optimize as optimize_func
 from sqlglot.optimizer.qualify_columns import qualify_columns
 
 if t.TYPE_CHECKING:
-    from sqlglot.dataframe.sql._typing import ColumnLiterals, OutputExpressionContainer
+    from sqlglot.dataframe.sql._typing import (
+        ColumnLiterals,
+        ColumnOrLiteral,
+        ColumnOrName,
+        OutputExpressionContainer,
+    )
     from sqlglot.dataframe.sql.session import SparkSession
 
 
@@ -132,12 +137,16 @@ class DataFrame:
         cte.set("sequence_id", sequence_id or self.sequence_id)
         return cte, name
 
-    def _ensure_list_of_columns(
-        self, cols: t.Union[str, t.Iterable[str], Column, t.Iterable[Column]]
-    ) -> t.List[Column]:
-        columns = ensure_list(cols)
-        columns = Column.ensure_cols(columns)
-        return columns
+    @t.overload
+    def _ensure_list_of_columns(self, cols: t.Collection[ColumnOrLiteral]) -> t.List[Column]:
+        ...
+
+    @t.overload
+    def _ensure_list_of_columns(self, cols: ColumnOrLiteral) -> t.List[Column]:
+        ...
+
+    def _ensure_list_of_columns(self, cols):
+        return Column.ensure_cols(ensure_list(cols))
 
     def _ensure_and_normalize_cols(self, cols):
         cols = self._ensure_list_of_columns(cols)
@@ -589,12 +598,11 @@ class DataFrame:
         self,
         to_replace: t.Union[bool, int, float, str, t.List, t.Dict],
         value: t.Optional[t.Union[bool, int, float, str, t.List]] = None,
-        subset: t.Optional[t.Union[str, t.List[str]]] = None,
+        subset: t.Optional[t.Collection[ColumnOrName] | ColumnOrName] = None,
     ) -> DataFrame:
         from sqlglot.dataframe.sql.functions import lit
 
         old_values = None
-        subset = ensure_list(subset)
         new_df = self.copy()
         all_columns = self._get_outer_select_columns(new_df.expression)
         all_column_mapping = {column.alias_or_name: column for column in all_columns}
@@ -679,10 +687,10 @@ class DataFrame:
         return self._hint(name, parameter_columns)
 
     @operation(Operation.NO_OP)
-    def repartition(self, numPartitions: t.Union[int, str], *cols: t.Union[int, str]) -> DataFrame:
-        num_partitions = Column.ensure_cols(ensure_list(numPartitions))
+    def repartition(self, numPartitions: t.Union[int, ColumnOrName], *cols: ColumnOrName) -> DataFrame:
+        num_partition_cols = self._ensure_list_of_columns(numPartitions)
         columns = self._ensure_and_normalize_cols(cols)
-        args = num_partitions + columns
+        args = num_partition_cols + columns
         return self._hint("repartition", args)
 
     @operation(Operation.NO_OP)

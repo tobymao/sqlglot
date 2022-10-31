@@ -17,6 +17,7 @@ if t.TYPE_CHECKING:
     E = t.TypeVar("E", bound=Expression)
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
+PYTHON_VERSION = sys.version_info[:2]
 logger = logging.getLogger("sqlglot")
 
 

@@ -1,9 +1,9 @@
-import sys
 import typing as t
 import unittest
 import warnings
 
 import sqlglot
+from sqlglot.helper import PYTHON_VERSION
 from tests.helpers import SKIP_INTEGRATION
 
 if t.TYPE_CHECKING:
@@ -11,7 +11,7 @@ if t.TYPE_CHECKING:
 
 
 @unittest.skipIf(
-    SKIP_INTEGRATION or sys.version_info[:2] > (3, 10), "Skipping Integration Tests since `SKIP_INTEGRATION` is set"
+    SKIP_INTEGRATION or PYTHON_VERSION > (3, 10), "Skipping Integration Tests since `SKIP_INTEGRATION` is set"
 )
 class DataFrameValidator(unittest.TestCase):
     spark = None

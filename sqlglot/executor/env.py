@@ -2,6 +2,8 @@ import datetime
 import re
 import statistics
 
+from sqlglot.helper import PYTHON_VERSION
+
 
 class reverse_key:
     def __init__(self, obj):
@@ -25,7 +27,7 @@ ENV = {
     "str": str,
     "desc": reverse_key,
     "SUM": sum,
-    "AVG": statistics.fmean if hasattr(statistics, "fmean") else statistics.mean,
+    "AVG": statistics.fmean if PYTHON_VERSION > (3, 8) else statistics.mean,
     "COUNT": lambda acc: sum(1 for e in acc if e is not None),
     "MAX": max,
     "MIN": min,

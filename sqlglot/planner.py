@@ -102,7 +102,7 @@ class Step:
                         continue
                     if operand not in operands:
                         operands[operand] = f"_a_{next(sequence)}"
-                    operand.replace(exp.column(operands[operand], step.name, quoted=True))
+                    operand.replace(exp.column(operands[operand], quoted=True))
             else:
                 projections.append(e)
 
@@ -119,7 +119,7 @@ class Step:
             aggregate.name = step.name
             aggregate.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
             aggregate.aggregations = aggregations
-            aggregate.group = [exp.column(e.alias_or_name, step.name, quoted=True) for e in group.expressions]
+            aggregate.group = group.expressions
             aggregate.add_dependency(step)
             step = aggregate
 
@@ -136,9 +136,6 @@ class Step:
             sort.key = order.expressions
             sort.add_dependency(step)
             step = sort
-            for k in sort.key + projections:
-                for column in k.find_all(exp.Column):
-                    column.set("table", exp.to_identifier(step.name, quoted=True))
 
         step.projections = projections
 

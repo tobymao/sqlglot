@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -14,7 +16,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 
 class SQLite(Dialect):
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
@@ -24,13 +26,13 @@ class SQLite(Dialect):
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "INTEGER",

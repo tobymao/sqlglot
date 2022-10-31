@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -76,13 +78,13 @@ def _datatype_sql(self, expression):
 
 
 class DuckDB(Dialect):
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             ":=": TokenType.EQ,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
@@ -112,7 +114,7 @@ class DuckDB(Dialect):
             "UNNEST": exp.Explode.from_arg_list,
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         STRUCT_DELIMITER = ("(", ")")
 
         TRANSFORMS = {

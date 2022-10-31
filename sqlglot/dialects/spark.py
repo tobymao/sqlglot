@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 from sqlglot.dialects.hive import Hive
@@ -44,9 +46,9 @@ def _unix_to_time(self, expression):
 
 
 class Spark(Hive):
-    class Parser(Hive.Parser):
+    class Parser(Hive.Parser):  # type: ignore
         FUNCTIONS = {
-            **Hive.Parser.FUNCTIONS,
+            **Hive.Parser.FUNCTIONS,  # type: ignore
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "LEFT": lambda args: exp.Substring(
@@ -86,16 +88,16 @@ class Spark(Hive):
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
-    class Generator(Hive.Generator):
+    class Generator(Hive.Generator):  # type: ignore
         TYPE_MAPPING = {
-            **Hive.Generator.TYPE_MAPPING,
+            **Hive.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "BYTE",
             exp.DataType.Type.SMALLINT: "SHORT",
             exp.DataType.Type.BIGINT: "LONG",
         }
 
         TRANSFORMS = {
-            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort, exp.ILike}},
+            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort, exp.ILike}},  # type: ignore
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
@@ -117,5 +119,5 @@ class Spark(Hive):
 
         WRAP_DERIVED_VALUES = False
 
-    class Tokenizer(Hive.Tokenizer):
+    class Tokenizer(Hive.Tokenizer):  # type: ignore
         HEX_STRINGS = [("X'", "'")]

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generator import Generator
@@ -20,15 +22,15 @@ def _count_sql(self, expression):
 
 
 class Tableau(Dialect):
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **Generator.TRANSFORMS,  # type: ignore
             exp.If: _if_sql,
             exp.Coalesce: _coalesce_sql,
             exp.Count: _count_sql,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "IFNULL": exp.Coalesce.from_arg_list,

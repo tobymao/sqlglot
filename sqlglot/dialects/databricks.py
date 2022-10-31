@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import parse_date_delta
 from sqlglot.dialects.spark import Spark
@@ -13,9 +15,9 @@ class Databricks(Spark):
             "DATEDIFF": parse_date_delta(exp.DateDiff),
         }
 
-    class Generator(Spark.Generator):
+    class Generator(Spark.Generator):  # type: ignore
         TRANSFORMS = {
-            **Spark.Generator.TRANSFORMS,
+            **Spark.Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
         }

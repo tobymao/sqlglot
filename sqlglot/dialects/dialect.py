@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import typing as t
 from enum import Enum
 
 from sqlglot import exp
@@ -32,7 +35,7 @@ class Dialects(str, Enum):
 
 
 class _Dialect(type):
-    classes = {}
+    classes: t.Dict[str, Dialect] = {}
 
     @classmethod
     def __getitem__(cls, key):
@@ -87,7 +90,7 @@ class Dialect(metaclass=_Dialect):
     date_format = "'%Y-%m-%d'"
     dateint_format = "'%Y%m%d'"
     time_format = "'%Y-%m-%d %H:%M:%S'"
-    time_mapping = {}
+    time_mapping: t.Dict[str, str] = {}
 
     # autofilled
     quote_start = None

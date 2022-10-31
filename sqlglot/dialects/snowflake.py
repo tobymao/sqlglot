@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -132,7 +134,7 @@ class Snowflake(Dialect):
         "ff6": "%f",
     }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
@@ -154,7 +156,7 @@ class Snowflake(Dialect):
         }
 
         COLUMN_OPERATORS = {
-            **Parser.COLUMN_OPERATORS,
+            **Parser.COLUMN_OPERATORS,  # type: ignore
             TokenType.COLON: lambda self, this, path: self.expression(
                 exp.Bracket,
                 this=this,
@@ -167,7 +169,7 @@ class Snowflake(Dialect):
             TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
         }
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         QUOTES = ["'", "$$"]
         ESCAPES = ["\\"]
 
@@ -187,7 +189,7 @@ class Snowflake(Dialect):
             "SAMPLE": TokenType.TABLE_SAMPLE,
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         CREATE_TRANSIENT = True
 
         TRANSFORMS = {

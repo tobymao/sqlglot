@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -160,7 +162,7 @@ class Postgres(Dialect):
         "YYYY": "%Y",  # 2015
     }
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
@@ -183,7 +185,7 @@ class Postgres(Dialect):
             "$": TokenType.PARAMETER,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         STRICT_CAST = False
 
         FUNCTIONS = {
@@ -192,7 +194,7 @@ class Postgres(Dialect):
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "SMALLINT",

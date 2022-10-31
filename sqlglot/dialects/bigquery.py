@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -89,7 +91,7 @@ class BigQuery(Dialect):
         "%j": "%-j",
     }
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         QUOTES = [
             (prefix + quote, quote) if prefix else quote
             for quote in ["'", '"', '"""', "'''"]
@@ -112,7 +114,7 @@ class BigQuery(Dialect):
             "NOT DETERMINISTIC": TokenType.VOLATILE,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
@@ -138,7 +140,7 @@ class BigQuery(Dialect):
             TokenType.TABLE,
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TRANSFORMS = {
             **Generator.TRANSFORMS,
             exp.Array: inline_array_sql,

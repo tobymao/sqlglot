@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -110,16 +112,16 @@ class Presto(Dialect):
     index_offset = 1
     null_ordering = "nulls_are_last"
     time_format = "'%Y-%m-%d %H:%i:%S'"
-    time_mapping = MySQL.time_mapping
+    time_mapping = MySQL.time_mapping  # type: ignore
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "VARBINARY": TokenType.BINARY,
             "ROW": TokenType.STRUCT,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
@@ -143,7 +145,7 @@ class Presto(Dialect):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
 
         STRUCT_DELIMITER = ("(", ")")
 
@@ -170,7 +172,7 @@ class Presto(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            **transforms.UNALIAS_GROUP,
+            **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
             exp.ArrayConcat: rename_func("CONCAT"),

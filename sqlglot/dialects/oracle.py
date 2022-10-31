@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql
 from sqlglot.generator import Generator
@@ -36,7 +38,7 @@ class Oracle(Dialect):
         "YYYY": "%Y",  # 2015
     }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "NUMBER",
@@ -53,7 +55,7 @@ class Oracle(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            **transforms.UNALIAS_GROUP,
+            **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
@@ -86,7 +88,7 @@ class Oracle(Dialect):
         def table_sql(self, expression):
             return super().table_sql(expression, sep=" ")
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "TOP": TokenType.TOP,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
 from sqlglot.generator import Generator
@@ -11,10 +13,10 @@ def _lower_func(sql):
 
 
 class ClickHouse(Dialect):
-    normalize_functions = None
+    normalize_functions = None  # type: ignore
     null_ordering = "nulls_are_last"
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         IDENTIFIERS = ['"', "`"]
 
         KEYWORDS = {
@@ -30,7 +32,7 @@ class ClickHouse(Dialect):
             "TUPLE": TokenType.STRUCT,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "MAP": parse_var_map,
@@ -44,7 +46,7 @@ class ClickHouse(Dialect):
 
             return this
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         STRUCT_DELIMITER = ("(", ")")
 
         TYPE_MAPPING = {

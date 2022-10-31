@@ -312,10 +312,10 @@ def _ordered_py(self, expression):
 
 
 class Python(Dialect):
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         ESCAPES = ["\\"]
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TRANSFORMS = {
             exp.Alias: lambda self, e: self.sql(e.this),
             exp.Array: inline_array_sql,

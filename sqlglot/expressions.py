@@ -1915,7 +1915,7 @@ class Placeholder(Expression):
 
 
 class Null(Condition):
-    arg_types = {}
+    arg_types: t.Dict[str, t.Any] = {}
 
 
 class Boolean(Condition):

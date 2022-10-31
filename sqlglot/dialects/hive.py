@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -165,7 +167,7 @@ class Hive(Dialect):
     dateint_format = "'yyyyMMdd'"
     time_format = "'yyyy-MM-dd HH:mm:ss'"
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
         ESCAPES = ["\\"]
@@ -180,7 +182,7 @@ class Hive(Dialect):
             "BD": "DECIMAL",
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         STRICT_CAST = False
 
         FUNCTIONS = {
@@ -226,7 +228,7 @@ class Hive(Dialect):
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
@@ -234,7 +236,7 @@ class Hive(Dialect):
 
         TRANSFORMS = {
             **Generator.TRANSFORMS,
-            **transforms.UNALIAS_GROUP,
+            **transforms.UNALIAS_GROUP,  # type: ignore
             exp.AnonymousProperty: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),

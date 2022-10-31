@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import typing as t
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -101,7 +105,7 @@ class MySQL(Dialect):
         "%l": "%-I",
     }
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         QUOTES = ["'", '"']
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
@@ -159,7 +163,7 @@ class MySQL(Dialect):
             "_UTF8MB4": TokenType.INTRODUCER,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         STRICT_CAST = False
 
         FUNCTIONS = {
@@ -183,7 +187,7 @@ class MySQL(Dialect):
             TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
         }
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         NULL_ORDERING_SUPPORTED = False
 
         TRANSFORMS = {
@@ -210,4 +214,4 @@ class MySQL(Dialect):
             exp.SchemaCommentProperty,
         }
 
-        WITH_PROPERTIES = {}
+        WITH_PROPERTIES: t.Set[exp.Property] = set()

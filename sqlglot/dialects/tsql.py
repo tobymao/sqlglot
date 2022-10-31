@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 from sqlglot import exp
@@ -188,7 +190,7 @@ class TSQL(Dialect):
         "Y": "%a %Y",
     }
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(Tokenizer):  # type: ignore
         IDENTIFIERS = ['"', ("[", "]")]
 
         KEYWORDS = {
@@ -213,7 +215,7 @@ class TSQL(Dialect):
             "TOP": TokenType.TOP,
         }
 
-    class Parser(Parser):
+    class Parser(Parser):  # type: ignore
         FUNCTIONS = {
             **Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
@@ -272,7 +274,7 @@ class TSQL(Dialect):
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
-    class Generator(Generator):
+    class Generator(Generator):  # type: ignore
         TYPE_MAPPING = {
             **Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "BIT",
@@ -283,7 +285,7 @@ class TSQL(Dialect):
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),

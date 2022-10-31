@@ -27,7 +27,7 @@ ENV = {
     "str": str,
     "desc": reverse_key,
     "SUM": sum,
-    "AVG": statistics.fmean if PYTHON_VERSION >= (3, 8) else statistics.mean,
+    "AVG": statistics.fmean if PYTHON_VERSION >= (3, 8) else statistics.mean,  # type: ignore
     "COUNT": lambda acc: sum(1 for e in acc if e is not None),
     "MAX": max,
     "MIN": min,

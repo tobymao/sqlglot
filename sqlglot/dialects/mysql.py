@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     no_ilike_sql,
@@ -10,10 +10,8 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
 )
-from sqlglot.generator import Generator
-from sqlglot.helper import sequence_get
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 def _date_trunc_sql(self, expression):
@@ -44,8 +42,8 @@ def _date_trunc_sql(self, expression):
 
 
 def _str_to_date(args):
-    date_format = MySQL.format_time(sequence_get(args, 1))
-    return exp.StrToDate(this=sequence_get(args, 0), format=date_format)
+    date_format = MySQL.format_time(seq_get(args, 1))
+    return exp.StrToDate(this=seq_get(args, 0), format=date_format)
 
 
 def _str_to_date_sql(self, expression):
@@ -70,9 +68,9 @@ def _trim_sql(self, expression):
 
 def _date_add(expression_class):
     def func(args):
-        interval = sequence_get(args, 1)
+        interval = seq_get(args, 1)
         return expression_class(
-            this=sequence_get(args, 0),
+            this=seq_get(args, 0),
             expression=interval.this,
             unit=exp.Literal.string(interval.text("unit").lower()),
         )
@@ -105,7 +103,7 @@ class MySQL(Dialect):
         "%l": "%-I",
     }
 
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
@@ -114,7 +112,7 @@ class MySQL(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
 
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "SEPARATOR": TokenType.SEPARATOR,
             "_ARMSCII8": TokenType.INTRODUCER,
             "_ASCII": TokenType.INTRODUCER,
@@ -163,18 +161,18 @@ class MySQL(Dialect):
             "_UTF8MB4": TokenType.INTRODUCER,
         }
 
-    class Parser(Parser):  # type: ignore
+    class Parser(parser.Parser):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
             "STR_TO_DATE": _str_to_date,
         }
 
         FUNCTION_PARSERS = {
-            **Parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,
             "GROUP_CONCAT": lambda self: self.expression(
                 exp.GroupConcat,
                 this=self._parse_lambda(),
@@ -183,15 +181,15 @@ class MySQL(Dialect):
         }
 
         PROPERTY_PARSERS = {
-            **Parser.PROPERTY_PARSERS,
+            **parser.Parser.PROPERTY_PARSERS,
             TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
         }
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         NULL_ORDERING_SUPPORTED = False
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ILike: no_ilike_sql,
@@ -214,4 +212,4 @@ class MySQL(Dialect):
             exp.SchemaCommentProperty,
         }
 
-        WITH_PROPERTIES: t.Set[exp.Property] = set()
+        WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()

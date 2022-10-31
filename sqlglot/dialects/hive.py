@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp, transforms
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
@@ -15,10 +15,8 @@ from sqlglot.dialects.dialect import (
     struct_extract_sql,
     var_map_sql,
 )
-from sqlglot.generator import Generator
-from sqlglot.helper import sequence_get
-from sqlglot.parser import Parser, parse_var_map
-from sqlglot.tokens import Tokenizer
+from sqlglot.helper import seq_get
+from sqlglot.parser import parse_var_map
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -167,7 +165,7 @@ class Hive(Dialect):
     dateint_format = "'yyyyMMdd'"
     time_format = "'yyyy-MM-dd HH:mm:ss'"
 
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
         ESCAPES = ["\\"]
@@ -182,38 +180,38 @@ class Hive(Dialect):
             "BD": "DECIMAL",
         }
 
-    class Parser(Parser):  # type: ignore
+    class Parser(parser.Parser):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
-                this=sequence_get(args, 0),
-                expression=sequence_get(args, 1),
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
                 unit=exp.Literal.string("DAY"),
             ),
             "DATEDIFF": lambda args: exp.DateDiff(
-                this=exp.TsOrDsToDate(this=sequence_get(args, 0)),
-                expression=exp.TsOrDsToDate(this=sequence_get(args, 1)),
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+                expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
             ),
             "DATE_SUB": lambda args: exp.TsOrDsAdd(
-                this=sequence_get(args, 0),
+                this=seq_get(args, 0),
                 expression=exp.Mul(
-                    this=sequence_get(args, 1),
+                    this=seq_get(args, 1),
                     expression=exp.Literal.number(-1),
                 ),
                 unit=exp.Literal.string("DAY"),
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "hive"),
-            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=sequence_get(args, 0))),
+            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "FROM_UNIXTIME": format_time_lambda(exp.UnixToStr, "hive", True),
             "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,
             "LOCATE": lambda args: exp.StrPosition(
-                this=sequence_get(args, 1),
-                substr=sequence_get(args, 0),
-                position=sequence_get(args, 2),
+                this=seq_get(args, 1),
+                substr=seq_get(args, 0),
+                position=seq_get(args, 2),
             ),
             "LOG": (lambda args: exp.Log.from_arg_list(args) if len(args) > 1 else exp.Ln.from_arg_list(args)),
             "MAP": parse_var_map,
@@ -228,14 +226,14 @@ class Hive(Dialect):
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.AnonymousProperty: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,

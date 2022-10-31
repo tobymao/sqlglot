@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, parser
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 from sqlglot.dialects.hive import Hive
-from sqlglot.helper import sequence_get
-from sqlglot.parser import Parser
+from sqlglot.helper import seq_get
 
 
 def _create_sql(self, e):
@@ -46,38 +45,38 @@ def _unix_to_time(self, expression):
 
 
 class Spark(Hive):
-    class Parser(Hive.Parser):  # type: ignore
+    class Parser(Hive.Parser):
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,  # type: ignore
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "LEFT": lambda args: exp.Substring(
-                this=sequence_get(args, 0),
+                this=seq_get(args, 0),
                 start=exp.Literal.number(1),
-                length=sequence_get(args, 1),
+                length=seq_get(args, 1),
             ),
             "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
-                this=sequence_get(args, 0),
-                expression=sequence_get(args, 1),
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
             ),
             "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
-                this=sequence_get(args, 0),
-                expression=sequence_get(args, 1),
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
             ),
             "RIGHT": lambda args: exp.Substring(
-                this=sequence_get(args, 0),
+                this=seq_get(args, 0),
                 start=exp.Sub(
-                    this=exp.Length(this=sequence_get(args, 0)),
-                    expression=exp.Add(this=sequence_get(args, 1), expression=exp.Literal.number(1)),
+                    this=exp.Length(this=seq_get(args, 0)),
+                    expression=exp.Add(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 ),
-                length=sequence_get(args, 1),
+                length=seq_get(args, 1),
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
-            **Parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,
             "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
             "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
             "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
@@ -88,7 +87,7 @@ class Spark(Hive):
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
-    class Generator(Hive.Generator):  # type: ignore
+    class Generator(Hive.Generator):
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "BYTE",
@@ -119,5 +118,5 @@ class Spark(Hive):
 
         WRAP_DERIVED_VALUES = False
 
-    class Tokenizer(Hive.Tokenizer):  # type: ignore
+    class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

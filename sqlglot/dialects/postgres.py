@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
@@ -11,9 +11,7 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     str_position_sql,
 )
-from sqlglot.generator import Generator
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.tokens import TokenType
 from sqlglot.transforms import delegate, preprocess
 
 
@@ -162,12 +160,12 @@ class Postgres(Dialect):
         "YYYY": "%Y",  # 2015
     }
 
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "ALWAYS": TokenType.ALWAYS,
             "BY DEFAULT": TokenType.BY_DEFAULT,
             "COMMENT ON": TokenType.COMMENT_ON,
@@ -181,22 +179,22 @@ class Postgres(Dialect):
         }
         QUOTES = ["'", "$$"]
         SINGLE_TOKENS = {
-            **Tokenizer.SINGLE_TOKENS,
+            **tokens.Tokenizer.SINGLE_TOKENS,
             "$": TokenType.PARAMETER,
         }
 
-    class Parser(Parser):  # type: ignore
+    class Parser(parser.Parser):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
         }
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
@@ -205,7 +203,7 @@ class Postgres(Dialect):
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             exp.ColumnDef: preprocess(
                 [
                     _auto_increment_to_serial,

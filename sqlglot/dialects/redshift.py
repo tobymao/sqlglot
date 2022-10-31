@@ -13,7 +13,7 @@ class Redshift(Postgres):
         "HH": "%H",
     }
 
-    class Tokenizer(Postgres.Tokenizer):  # type: ignore
+    class Tokenizer(Postgres.Tokenizer):
         ESCAPES = ["\\"]
 
         KEYWORDS = {
@@ -28,7 +28,7 @@ class Redshift(Postgres):
             "SIMILAR TO": TokenType.SIMILAR_TO,
         }
 
-    class Generator(Postgres.Generator):  # type: ignore
+    class Generator(Postgres.Generator):
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BINARY: "VARBYTE",

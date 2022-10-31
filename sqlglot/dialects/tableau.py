@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, generator, parser
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.generator import Generator
-from sqlglot.parser import Parser
 
 
 def _if_sql(self, expression):
@@ -22,17 +20,17 @@ def _count_sql(self, expression):
 
 
 class Tableau(Dialect):
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TRANSFORMS = {
-            **Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.If: _if_sql,
             exp.Coalesce: _coalesce_sql,
             exp.Count: _count_sql,
         }
 
-    class Parser(Parser):  # type: ignore
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "IFNULL": exp.Coalesce.from_arg_list,
             "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
         }

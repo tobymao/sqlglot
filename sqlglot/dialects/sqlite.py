@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
@@ -10,31 +10,29 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     rename_func,
 )
-from sqlglot.generator import Generator
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.tokens import TokenType
 
 
 class SQLite(Dialect):
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "VARBINARY": TokenType.BINARY,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         }
 
-    class Parser(Parser):  # type: ignore
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "INTEGER",
             exp.DataType.Type.TINYINT: "INTEGER",
             exp.DataType.Type.SMALLINT: "INTEGER",
@@ -55,7 +53,7 @@ class SQLite(Dialect):
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,

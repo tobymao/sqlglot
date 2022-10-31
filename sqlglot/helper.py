@@ -27,7 +27,7 @@ class AutoName(Enum):
         return name
 
 
-def sequence_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
+def seq_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
     """Returns the value in `seq` at position `index`, or `None` if `index` is out of bounds."""
     try:
         return seq[index]
@@ -35,7 +35,17 @@ def sequence_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
         return None
 
 
-def ensure_list(value: t.Tuple[T] | t.List[T] | T) -> t.List[T]:
+@t.overload
+def ensure_list(value: t.Collection[T]) -> t.Collection[T]:
+    ...
+
+
+@t.overload
+def ensure_list(value: T) -> t.Collection[T]:
+    ...
+
+
+def ensure_list(value):
     """
     Ensures that a value is a list, otherwise casts or wraps it into one.
 
@@ -75,7 +85,7 @@ def ensure_collection(value):
     """
     if value is None:
         return []
-    return value if is_collection(value) else [value]
+    return value if isinstance(value, Collection) and not isinstance(value, (str, bytes)) else [value]
 
 
 def csv(*args, sep: str = ", ") -> str:
@@ -294,25 +304,6 @@ def split_num_words(value: str, sep: str, min_num_words: int, fill_from_start: b
     if fill_from_start:
         return [None] * (min_num_words - len(words)) + words
     return words + [None] * (min_num_words - len(words))
-
-
-def is_collection(value: t.Any) -> bool:
-    """
-    Checks if the value is a collection, excluding the types `str` and `bytes`.
-
-    Examples:
-        >>> is_collection([1,2]) and is_collection({1,2})
-        True
-        >>> is_collection("test")
-        False
-
-    Args:
-        value: the value to check if it is a collection.
-
-    Returns:
-        A `bool` value indicating if it is a collection.
-    """
-    return isinstance(value, Collection) and not isinstance(value, (str, bytes))
 
 
 def is_iterable(value: t.Any) -> bool:

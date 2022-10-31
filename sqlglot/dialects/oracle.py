@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from sqlglot import exp, transforms
+from sqlglot import exp, generator, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql
-from sqlglot.generator import Generator
 from sqlglot.helper import csv
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.tokens import TokenType
 
 
 def _limit_sql(self, expression):
@@ -38,9 +37,9 @@ class Oracle(Dialect):
         "YYYY": "%Y",  # 2015
     }
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "NUMBER",
             exp.DataType.Type.SMALLINT: "NUMBER",
             exp.DataType.Type.INT: "NUMBER",
@@ -54,7 +53,7 @@ class Oracle(Dialect):
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,
@@ -88,9 +87,9 @@ class Oracle(Dialect):
         def table_sql(self, expression):
             return super().table_sql(expression, sep=" ")
 
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
             "NVARCHAR2": TokenType.NVARCHAR,

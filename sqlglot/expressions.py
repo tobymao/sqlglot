@@ -14,7 +14,7 @@ from sqlglot.helper import (
     camel_to_snake_case,
     ensure_collection,
     ensure_list,
-    sequence_get,
+    seq_get,
     split_num_words,
     subclasses,
 )
@@ -3507,7 +3507,7 @@ def replace_children(expression, fun):
             else:
                 new_child_nodes.append(cn)
 
-        expression.args[k] = new_child_nodes if is_list_arg else sequence_get(new_child_nodes, 0)
+        expression.args[k] = new_child_nodes if is_list_arg else seq_get(new_child_nodes, 0)
 
 
 def column_table_names(expression):

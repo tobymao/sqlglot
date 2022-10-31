@@ -2,7 +2,7 @@ import logging
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_errors
-from sqlglot.helper import apply_index_offset, ensure_collection, sequence_get
+from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
 logger = logging.getLogger("sqlglot")
@@ -45,16 +45,16 @@ class Parser:
     FUNCTIONS = {
         **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
-            this=sequence_get(args, 0),
+            this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
-            this=sequence_get(args, 0),
+            this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
             this=exp.Cast(
-                this=sequence_get(args, 0),
+                this=seq_get(args, 0),
                 to=exp.DataType(this=exp.DataType.Type.TEXT),
             ),
             start=exp.Literal.number(1),
@@ -634,7 +634,7 @@ class Parser:
         return index
 
     def _get_token(self, index):
-        return sequence_get(self._tokens, index)
+        return seq_get(self._tokens, index)
 
     def _advance(self, times=1):
         self._index += times
@@ -1833,7 +1833,7 @@ class Parser:
             else:
                 expressions = self._parse_csv(lambda: self._parse_alias(self._parse_conjunction(), explicit=True))
 
-            this = sequence_get(expressions, 0)
+            this = seq_get(expressions, 0)
             self._parse_query_modifiers(this)
             self._match_r_paren()
 

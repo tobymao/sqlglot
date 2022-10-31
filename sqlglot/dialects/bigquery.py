@@ -1,23 +1,21 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     inline_array_sql,
     no_ilike_sql,
     rename_func,
 )
-from sqlglot.generator import Generator
-from sqlglot.helper import sequence_get
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 def _date_add(expression_class):
     def func(args):
-        interval = sequence_get(args, 1)
+        interval = seq_get(args, 1)
         return expression_class(
-            this=sequence_get(args, 0),
+            this=seq_get(args, 0),
             expression=interval.this,
             unit=interval.args.get("unit"),
         )
@@ -91,7 +89,7 @@ class BigQuery(Dialect):
         "%j": "%-j",
     }
 
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         QUOTES = [
             (prefix + quote, quote) if prefix else quote
             for quote in ["'", '"', '"""', "'''"]
@@ -102,7 +100,7 @@ class BigQuery(Dialect):
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {
-            **{k: v for k, v in Tokenizer.KEYWORDS.items() if k != "DIV"},
+            **{k: v for k, v in tokens.Tokenizer.KEYWORDS.items() if k != "DIV"},
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
@@ -114,35 +112,35 @@ class BigQuery(Dialect):
             "NOT DETERMINISTIC": TokenType.VOLATILE,
         }
 
-    class Parser(Parser):  # type: ignore
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
-            "DIV": lambda args: exp.IntDiv(this=sequence_get(args, 0), expression=sequence_get(args, 1)),
+            "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "TIME_ADD": _date_add(exp.TimeAdd),
             "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
             "DATE_SUB": _date_add(exp.DateSub),
             "DATETIME_SUB": _date_add(exp.DatetimeSub),
             "TIME_SUB": _date_add(exp.TimeSub),
             "TIMESTAMP_SUB": _date_add(exp.TimestampSub),
-            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(this=sequence_get(args, 1), format=sequence_get(args, 0)),
+            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(this=seq_get(args, 1), format=seq_get(args, 0)),
         }
 
         NO_PAREN_FUNCTIONS = {
-            **Parser.NO_PAREN_FUNCTIONS,
+            **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
             TokenType.CURRENT_TIME: exp.CurrentTime,
         }
 
         NESTED_TYPE_TOKENS = {
-            *Parser.NESTED_TYPE_TOKENS,
+            *parser.Parser.NESTED_TYPE_TOKENS,
             TokenType.TABLE,
         }
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
@@ -165,7 +163,7 @@ class BigQuery(Dialect):
         }
 
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.SMALLINT: "INT64",
             exp.DataType.Type.INT: "INT64",

@@ -15,7 +15,7 @@ class Databricks(Spark):
             "DATEDIFF": parse_date_delta(exp.DateDiff),
         }
 
-    class Generator(Spark.Generator):  # type: ignore
+    class Generator(Spark.Generator):
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,

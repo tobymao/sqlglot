@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import re
 
-from sqlglot import exp
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
 from sqlglot.expressions import DataType
-from sqlglot.generator import Generator
-from sqlglot.helper import sequence_get
-from sqlglot.parser import Parser
+from sqlglot.helper import seq_get
 from sqlglot.time import format_time
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.tokens import TokenType
 
 FULL_FORMAT_TIME_MAPPING = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"}
 DATE_DELTA_INTERVAL = {
@@ -39,10 +37,10 @@ TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     def _format_time(args):
         return exp_class(
-            this=sequence_get(args, 1),
+            this=seq_get(args, 1),
             format=exp.Literal.string(
                 format_time(
-                    sequence_get(args, 0).name or (TSQL.time_format if default is True else default),
+                    seq_get(args, 0).name or (TSQL.time_format if default is True else default),
                     {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING} if full_format_mapping else TSQL.time_mapping,
                 )
             ),
@@ -52,12 +50,12 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
 
 
 def parse_format(args):
-    fmt = sequence_get(args, 1)
+    fmt = seq_get(args, 1)
     number_fmt = fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.this)
     if number_fmt:
-        return exp.NumberToStr(this=sequence_get(args, 0), format=fmt)
+        return exp.NumberToStr(this=seq_get(args, 0), format=fmt)
     return exp.TimeToStr(
-        this=sequence_get(args, 0),
+        this=seq_get(args, 0),
         format=exp.Literal.string(
             format_time(fmt.name, TSQL.format_time_mapping)
             if len(fmt.name) == 1
@@ -190,11 +188,11 @@ class TSQL(Dialect):
         "Y": "%a %Y",
     }
 
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]")]
 
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "BIT": TokenType.BOOLEAN,
             "REAL": TokenType.FLOAT,
             "NTEXT": TokenType.TEXT,
@@ -215,9 +213,9 @@ class TSQL(Dialect):
             "TOP": TokenType.TOP,
         }
 
-    class Parser(Parser):  # type: ignore
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
@@ -245,7 +243,7 @@ class TSQL(Dialect):
             this = self._parse_column()
 
             # Retrieve length of datatype and override to default if not specified
-            if sequence_get(to.expressions, 0) is None and to.this in self.VAR_LENGTH_DATATYPES:
+            if seq_get(to.expressions, 0) is None and to.this in self.VAR_LENGTH_DATATYPES:
                 to = exp.DataType.build(to.this, expressions=[exp.Literal.number(30)], nested=False)
 
             # Check whether a conversion with format is applicable
@@ -274,9 +272,9 @@ class TSQL(Dialect):
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.DECIMAL: "NUMERIC",
@@ -285,7 +283,7 @@ class TSQL(Dialect):
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),

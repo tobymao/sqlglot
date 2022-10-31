@@ -395,7 +395,7 @@ class Tokenizer(metaclass=_Tokenizer):
         '"': TokenType.IDENTIFIER,
     }
 
-    QUOTES = ["'"]
+    QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
 
     BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []
 
@@ -672,7 +672,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     # handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
-    ENCODE = None
+    ENCODE: t.Optional[str] = None
 
     COMMENTS = ["--", ("/*", "*/")]
     KEYWORD_TRIE = None  # autofilled

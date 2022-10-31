@@ -117,7 +117,7 @@ class BigQuery(Dialect):
             **Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
-            "DIV": lambda args: exp.IntDiv(this=list_get(args, 0), expression=list_get(args, 1)),
+            "DIV": lambda args: exp.IntDiv(this=sequence_get(args, 0), expression=sequence_get(args, 1)),
             "TIME_ADD": _date_add(exp.TimeAdd),
             "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
             "DATE_SUB": _date_add(exp.DateSub),

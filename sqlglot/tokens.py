@@ -312,7 +312,9 @@ class Token:
         """Returns an VAR token with `var` as its text."""
         return cls(TokenType.VAR, var)
 
-    def __init__(self, token_type: TokenType, text: str, line: int = 1, col: int = 1, comment: t.Optional[str] = None) -> None:
+    def __init__(
+        self, token_type: TokenType, text: str, line: int = 1, col: int = 1, comment: t.Optional[str] = None
+    ) -> None:
         self.token_type = token_type
         self.text = text
         self.line = line
@@ -694,7 +696,7 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(self) -> None:
-    	self._replace_backslash = "\\" in self._ESCAPES
+        self._replace_backslash = "\\" in self._ESCAPES  # type: ignore
         self.reset()
 
     def reset(self) -> None:
@@ -762,12 +764,14 @@ class Tokenizer(metaclass=_Tokenizer):
     def _text(self) -> str:
         return self.sql[self._start : self._current]
 
-
     def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
         self._prev_token_line = self._line
         self._prev_token_comment = self._comment
         self._prev_token_type = token_type  # type: ignore
-        self.tokens.append(Token(token_type, self._text if text is None else text, self._line, self._col))
+        self.tokens.append(
+            Token(token_type, self._text if text is None else text, self._line, self._col, self._comment)
+        )
+        self._comment = None
 
         if token_type in self.COMMANDS and (len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON):
             self._start = self._current
@@ -848,12 +852,12 @@ class Tokenizer(metaclass=_Tokenizer):
             while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
 
-            self._comment = self._text[comment_start_size : -comment_end_size + 1]
+            self._comment = self._text[comment_start_size : -comment_end_size + 1]  # type: ignore
             self._advance(comment_end_size - 1)
         else:
             while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK:  # type: ignore
                 self._advance()
-            self._comment = self._text[comment_start_size:]
+            self._comment = self._text[comment_start_size:]  # type: ignore
 
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding. If both
         # types of comment can be attached to a token, the trailing one is discarded in favour of the leading one.
@@ -1001,7 +1005,7 @@ class Tokenizer(metaclass=_Tokenizer):
         delim_size = len(delimiter)
 
         while True:
-            if self._char in self._ESCAPES and self._peek == delimiter:
+            if self._char in self._ESCAPES and self._peek == delimiter:  # type: ignore
                 text += delimiter
                 self._advance(2)
             else:

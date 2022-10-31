@@ -50,12 +50,12 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
 
 
 def parse_format(args):
-    fmt = list_get(args, 1)
+    fmt = sequence_get(args, 1)
     number_fmt = fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.this)
     if number_fmt:
-        return exp.NumberToStr(this=list_get(args, 0), format=fmt)
+        return exp.NumberToStr(this=sequence_get(args, 0), format=fmt)
     return exp.TimeToStr(
-        this=list_get(args, 0),
+        this=sequence_get(args, 0),
         format=exp.Literal.string(
             format_time(fmt.name, TSQL.format_time_mapping)
             if len(fmt.name) == 1

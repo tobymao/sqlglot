@@ -1,4 +1,6 @@
-from sqlglot import exp
+from __future__ import annotations
+
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
@@ -12,10 +14,8 @@ from sqlglot.dialects.dialect import (
     rename_func,
     str_position_sql,
 )
-from sqlglot.generator import Generator
-from sqlglot.helper import list_get
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 def _unix_to_time(self, expression):
@@ -61,7 +61,7 @@ def _sort_array_sql(self, expression):
 
 
 def _sort_array_reverse(args):
-    return exp.SortArray(this=list_get(args, 0), asc=exp.FALSE)
+    return exp.SortArray(this=seq_get(args, 0), asc=exp.FALSE)
 
 
 def _struct_pack_sql(self, expression):
@@ -76,15 +76,15 @@ def _datatype_sql(self, expression):
 
 
 class DuckDB(Dialect):
-    class Tokenizer(Tokenizer):
+    class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             ":=": TokenType.EQ,
         }
 
-    class Parser(Parser):
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
@@ -92,7 +92,7 @@ class DuckDB(Dialect):
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
                 this=exp.Div(
-                    this=list_get(args, 0),
+                    this=seq_get(args, 0),
                     expression=exp.Literal.number(1000),
                 )
             ),
@@ -112,11 +112,11 @@ class DuckDB(Dialect):
             "UNNEST": exp.Explode.from_arg_list,
         }
 
-    class Generator(Generator):
+    class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: rename_func("LIST_VALUE"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
@@ -160,7 +160,7 @@ class DuckDB(Dialect):
         }
 
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.VARCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
         }

@@ -1,4 +1,6 @@
-from sqlglot import exp
+from __future__ import annotations
+
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,
@@ -6,10 +8,8 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.expressions import Literal
-from sqlglot.generator import Generator
-from sqlglot.helper import list_get
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 def _check_int(s):
@@ -39,7 +39,7 @@ def _snowflake_to_timestamp(args):
 
         return exp.UnixToTime(this=first_arg, scale=timescale)
 
-    first_arg = list_get(args, 0)
+    first_arg = seq_get(args, 0)
     if not isinstance(first_arg, Literal):
         # case: <variant_expr>
         return format_time_lambda(exp.StrToTime, "snowflake", default=True)(args)
@@ -132,9 +132,9 @@ class Snowflake(Dialect):
         "ff6": "%f",
     }
 
-    class Parser(Parser):
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
@@ -143,18 +143,18 @@ class Snowflake(Dialect):
         }
 
         FUNCTION_PARSERS = {
-            **Parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": _parse_date_part,
         }
 
         FUNC_TOKENS = {
-            *Parser.FUNC_TOKENS,
+            *parser.Parser.FUNC_TOKENS,
             TokenType.RLIKE,
             TokenType.TABLE,
         }
 
         COLUMN_OPERATORS = {
-            **Parser.COLUMN_OPERATORS,
+            **parser.Parser.COLUMN_OPERATORS,  # type: ignore
             TokenType.COLON: lambda self, this, path: self.expression(
                 exp.Bracket,
                 this=this,
@@ -163,21 +163,21 @@ class Snowflake(Dialect):
         }
 
         PROPERTY_PARSERS = {
-            **Parser.PROPERTY_PARSERS,
+            **parser.Parser.PROPERTY_PARSERS,
             TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
         }
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPES = ["\\"]
 
         SINGLE_TOKENS = {
-            **Tokenizer.SINGLE_TOKENS,
+            **tokens.Tokenizer.SINGLE_TOKENS,
             "$": TokenType.PARAMETER,
         }
 
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
@@ -187,11 +187,11 @@ class Snowflake(Dialect):
             "SAMPLE": TokenType.TABLE_SAMPLE,
         }
 
-    class Generator(Generator):
+    class Generator(generator.Generator):
         CREATE_TRANSIENT = True
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
@@ -204,7 +204,7 @@ class Snowflake(Dialect):
         }
 
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_errors
@@ -80,7 +83,7 @@ class Generator:
         exp.DataType.Type.NVARCHAR: "VARCHAR",
     }
 
-    TOKEN_MAPPING = {}
+    TOKEN_MAPPING: t.Dict[TokenType, str] = {}
 
     STRUCT_DELIMITER = ("<", ">")
 

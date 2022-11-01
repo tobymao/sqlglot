@@ -106,7 +106,7 @@ class SparkSession:
                 select_expression.set("with", expression.args.get("with"))
                 expression.set("with", None)
             del expression.args["expression"]
-            df = DataFrame(self, select_expression, output_expression_container=expression)
+            df = DataFrame(self, select_expression, output_expression_container=expression)  # type: ignore
             df = df._convert_leaf_to_cte()
         else:
             raise ValueError("Unknown expression type provided in the SQL. Please create an issue with the SQL.")

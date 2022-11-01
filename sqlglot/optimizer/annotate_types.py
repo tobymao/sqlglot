@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.helper import ensure_list, subclasses
+from sqlglot.helper import ensure_collection, subclasses
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 
@@ -219,7 +219,7 @@ class TypeAnnotator:
 
     def _annotate_args(self, expression):
         for value in expression.args.values():
-            for v in ensure_list(value):
+            for v in ensure_collection(value):
                 self._maybe_annotate(v)
 
         return expression

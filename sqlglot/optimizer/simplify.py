@@ -357,7 +357,7 @@ def extract_date(cast):
 
 def extract_interval(interval):
     try:
-        from dateutil.relativedelta import relativedelta
+        from dateutil.relativedelta import relativedelta  # type: ignore
     except ModuleNotFoundError:
         return None
 

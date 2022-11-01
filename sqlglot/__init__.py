@@ -37,7 +37,9 @@ pretty = False
 schema = MappingSchema()
 
 
-def parse(sql: str, read: t.Optional[str | Dialect] = None, **opts) -> t.List[t.Optional[Expression]]:
+def parse(
+    sql: str, read: t.Optional[str | Dialect] = None, **opts
+) -> t.List[t.Optional[Expression]]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
@@ -54,7 +56,10 @@ def parse(sql: str, read: t.Optional[str | Dialect] = None, **opts) -> t.List[t.
 
 
 def parse_one(
-    sql: str, read: t.Optional[str | Dialect] = None, into: t.Optional[Expression | str] = None, **opts
+    sql: str,
+    read: t.Optional[str | Dialect] = None,
+    into: t.Optional[Expression | str] = None,
+    **opts,
 ) -> t.Optional[Expression]:
     """
     Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.

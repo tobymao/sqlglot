@@ -22,7 +22,8 @@ class TestDatabricks(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATEDIFF('end', 'start')", write={"databricks": "SELECT DATEDIFF(DAY, 'start', 'end')"}
+            "SELECT DATEDIFF('end', 'start')",
+            write={"databricks": "SELECT DATEDIFF(DAY, 'start', 'end')"},
         )
         self.validate_all(
             "SELECT DATE_ADD('2020-01-01', 1)",

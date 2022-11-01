@@ -265,7 +265,9 @@ class TestSchema(unittest.TestCase):
                 }
             },
         )
-        schema.add_table(table("y"), df_types.StructType([df_types.StructField("b", df_types.StringType())]))
+        schema.add_table(
+            table("y"), df_types.StructType([df_types.StructField("b", df_types.StringType())])
+        )
         self.assertEqual(
             schema.schema,
             {

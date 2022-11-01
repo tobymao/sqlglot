@@ -50,7 +50,9 @@ def normalization_distance(expression, dnf=False):
     Returns:
         int: difference
     """
-    return sum(_predicate_lengths(expression, dnf)) - (len(list(expression.find_all(exp.Connector))) + 1)
+    return sum(_predicate_lengths(expression, dnf)) - (
+        len(list(expression.find_all(exp.Connector))) + 1
+    )
 
 
 def _predicate_lengths(expression, dnf):

@@ -17,7 +17,9 @@ class GroupedData:
         self.last_op = last_op
         self.group_by_cols = group_by_cols
 
-    def _get_function_applied_columns(self, func_name: str, cols: t.Tuple[str, ...]) -> t.List[Column]:
+    def _get_function_applied_columns(
+        self, func_name: str, cols: t.Tuple[str, ...]
+    ) -> t.List[Column]:
         func_name = func_name.lower()
         return [getattr(F, func_name)(name).alias(f"{func_name}({name})") for name in cols]
 
@@ -30,9 +32,9 @@ class GroupedData:
         )
         cols = self._df._ensure_and_normalize_cols(columns)
 
-        expression = self._df.expression.group_by(*[x.expression for x in self.group_by_cols]).select(
-            *[x.expression for x in self.group_by_cols + cols], append=False
-        )
+        expression = self._df.expression.group_by(
+            *[x.expression for x in self.group_by_cols]
+        ).select(*[x.expression for x in self.group_by_cols + cols], append=False)
         return self._df.copy(expression=expression)
 
     def count(self) -> DataFrame:

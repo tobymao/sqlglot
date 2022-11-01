@@ -9,7 +9,9 @@ class TestDataframe(DataFrameSQLValidator):
         self.assertEqual("t17051", DataFrame._create_hash_from_expression(expression))
 
     def test_columns(self):
-        self.assertEqual(["employee_id", "fname", "lname", "age", "store_id"], self.df_employee.columns)
+        self.assertEqual(
+            ["employee_id", "fname", "lname", "age", "store_id"], self.df_employee.columns
+        )
 
     def test_cache(self):
         df = self.df_employee.select("fname").cache()

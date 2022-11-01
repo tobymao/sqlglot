@@ -278,12 +278,19 @@ class TestTSQL(Validator):
     def test_add_date(self):
         self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
         self.validate_all(
-            "SELECT DATEADD(year, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 12)"}
+            "SELECT DATEADD(year, 1, '2017/08/25')",
+            write={"spark": "SELECT ADD_MONTHS('2017/08/25', 12)"},
         )
-        self.validate_all("SELECT DATEADD(qq, 1, '2017/08/25')", write={"spark": "SELECT ADD_MONTHS('2017/08/25', 3)"})
+        self.validate_all(
+            "SELECT DATEADD(qq, 1, '2017/08/25')",
+            write={"spark": "SELECT ADD_MONTHS('2017/08/25', 3)"},
+        )
         self.validate_all(
             "SELECT DATEADD(wk, 1, '2017/08/25')",
-            write={"spark": "SELECT DATE_ADD('2017/08/25', 7)", "databricks": "SELECT DATEADD(week, 1, '2017/08/25')"},
+            write={
+                "spark": "SELECT DATE_ADD('2017/08/25', 7)",
+                "databricks": "SELECT DATEADD(week, 1, '2017/08/25')",
+            },
         )
 
     def test_date_diff(self):
@@ -370,13 +377,21 @@ class TestTSQL(Validator):
             "SELECT FORMAT(1000000.01,'###,###.###')",
             write={"spark": "SELECT FORMAT_NUMBER(1000000.01, '###,###.###')"},
         )
-        self.validate_all("SELECT FORMAT(1234567, 'f')", write={"spark": "SELECT FORMAT_NUMBER(1234567, 'f')"})
+        self.validate_all(
+            "SELECT FORMAT(1234567, 'f')", write={"spark": "SELECT FORMAT_NUMBER(1234567, 'f')"}
+        )
         self.validate_all(
             "SELECT FORMAT('01-01-1991', 'dd.mm.yyyy')",
             write={"spark": "SELECT DATE_FORMAT('01-01-1991', 'dd.mm.yyyy')"},
         )
         self.validate_all(
-            "SELECT FORMAT(date_col, 'dd.mm.yyyy')", write={"spark": "SELECT DATE_FORMAT(date_col, 'dd.mm.yyyy')"}
+            "SELECT FORMAT(date_col, 'dd.mm.yyyy')",
+            write={"spark": "SELECT DATE_FORMAT(date_col, 'dd.mm.yyyy')"},
         )
-        self.validate_all("SELECT FORMAT(date_col, 'm')", write={"spark": "SELECT DATE_FORMAT(date_col, 'MMMM d')"})
-        self.validate_all("SELECT FORMAT(num_col, 'c')", write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"})
+        self.validate_all(
+            "SELECT FORMAT(date_col, 'm')",
+            write={"spark": "SELECT DATE_FORMAT(date_col, 'MMMM d')"},
+        )
+        self.validate_all(
+            "SELECT FORMAT(num_col, 'c')", write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"}
+        )

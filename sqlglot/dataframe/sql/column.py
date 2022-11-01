@@ -135,21 +135,29 @@ class Column:
     ) -> Column:
         ensured_column = None if column is None else cls.ensure_col(column)
         ensure_expression_values = {
-            k: [Column.ensure_col(x).expression for x in v] if is_iterable(v) else Column.ensure_col(v).expression
+            k: [Column.ensure_col(x).expression for x in v]
+            if is_iterable(v)
+            else Column.ensure_col(v).expression
             for k, v in kwargs.items()
         }
         new_expression = (
             callable_expression(**ensure_expression_values)
             if ensured_column is None
-            else callable_expression(this=ensured_column.column_expression, **ensure_expression_values)
+            else callable_expression(
+                this=ensured_column.column_expression, **ensure_expression_values
+            )
         )
         return Column(new_expression)
 
     def binary_op(self, klass: t.Callable, other: ColumnOrLiteral, **kwargs) -> Column:
-        return Column(klass(this=self.column_expression, expression=Column(other).column_expression, **kwargs))
+        return Column(
+            klass(this=self.column_expression, expression=Column(other).column_expression, **kwargs)
+        )
 
     def inverse_binary_op(self, klass: t.Callable, other: ColumnOrLiteral, **kwargs) -> Column:
-        return Column(klass(this=Column(other).column_expression, expression=self.column_expression, **kwargs))
+        return Column(
+            klass(this=Column(other).column_expression, expression=self.column_expression, **kwargs)
+        )
 
     def unary_op(self, klass: t.Callable, **kwargs) -> Column:
         return Column(klass(this=self.column_expression, **kwargs))
@@ -265,10 +273,14 @@ class Column:
         )
 
     def like(self, other: str):
-        return self.invoke_expression_over_column(self, exp.Like, expression=self._lit(other).expression)
+        return self.invoke_expression_over_column(
+            self, exp.Like, expression=self._lit(other).expression
+        )
 
     def ilike(self, other: str):
-        return self.invoke_expression_over_column(self, exp.ILike, expression=self._lit(other).expression)
+        return self.invoke_expression_over_column(
+            self, exp.ILike, expression=self._lit(other).expression
+        )
 
     def substr(self, startPos: t.Union[int, Column], length: t.Union[int, Column]) -> Column:
         startPos = self._lit(startPos) if not isinstance(startPos, Column) else startPos
@@ -287,10 +299,18 @@ class Column:
         lowerBound: t.Union[ColumnOrLiteral],
         upperBound: t.Union[ColumnOrLiteral],
     ) -> Column:
-        lower_bound_exp = self._lit(lowerBound) if not isinstance(lowerBound, Column) else lowerBound
-        upper_bound_exp = self._lit(upperBound) if not isinstance(upperBound, Column) else upperBound
+        lower_bound_exp = (
+            self._lit(lowerBound) if not isinstance(lowerBound, Column) else lowerBound
+        )
+        upper_bound_exp = (
+            self._lit(upperBound) if not isinstance(upperBound, Column) else upperBound
+        )
         return Column(
-            exp.Between(this=self.column_expression, low=lower_bound_exp.expression, high=upper_bound_exp.expression)
+            exp.Between(
+                this=self.column_expression,
+                low=lower_bound_exp.expression,
+                high=upper_bound_exp.expression,
+            )
         )
 
     def over(self, window: WindowSpec) -> Column:

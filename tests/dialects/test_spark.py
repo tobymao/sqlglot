@@ -284,4 +284,6 @@ TBLPROPERTIES (
         )
 
     def test_iif(self):
-        self.validate_all("SELECT IIF(cond, 'True', 'False')", write={"spark": "SELECT IF(cond, 'True', 'False')"})
+        self.validate_all(
+            "SELECT IIF(cond, 'True', 'False')", write={"spark": "SELECT IF(cond, 'True', 'False')"}
+        )

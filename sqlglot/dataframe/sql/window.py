@@ -74,8 +74,13 @@ class WindowSpec:
         window_spec.expression.args["order"].set("expressions", order_by)
         return window_spec
 
-    def _calc_start_end(self, start: int, end: int) -> t.Dict[str, t.Optional[t.Union[str, exp.Expression]]]:
-        kwargs: t.Dict[str, t.Optional[t.Union[str, exp.Expression]]] = {"start_side": None, "end_side": None}
+    def _calc_start_end(
+        self, start: int, end: int
+    ) -> t.Dict[str, t.Optional[t.Union[str, exp.Expression]]]:
+        kwargs: t.Dict[str, t.Optional[t.Union[str, exp.Expression]]] = {
+            "start_side": None,
+            "end_side": None,
+        }
         if start == Window.currentRow:
             kwargs["start"] = "CURRENT ROW"
         else:
@@ -83,7 +88,9 @@ class WindowSpec:
                 **kwargs,
                 **{
                     "start_side": "PRECEDING",
-                    "start": "UNBOUNDED" if start <= Window.unboundedPreceding else F.lit(start).expression,
+                    "start": "UNBOUNDED"
+                    if start <= Window.unboundedPreceding
+                    else F.lit(start).expression,
                 },
             }
         if end == Window.currentRow:
@@ -93,7 +100,9 @@ class WindowSpec:
                 **kwargs,
                 **{
                     "end_side": "FOLLOWING",
-                    "end": "UNBOUNDED" if end >= Window.unboundedFollowing else F.lit(end).expression,
+                    "end": "UNBOUNDED"
+                    if end >= Window.unboundedFollowing
+                    else F.lit(end).expression,
                 },
             }
         return kwargs
@@ -103,7 +112,10 @@ class WindowSpec:
         spec = self._calc_start_end(start, end)
         spec["kind"] = "ROWS"
         window_spec.expression.set(
-            "spec", exp.WindowSpec(**{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec})
+            "spec",
+            exp.WindowSpec(
+                **{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec}
+            ),
         )
         return window_spec
 
@@ -112,6 +124,9 @@ class WindowSpec:
         spec = self._calc_start_end(start, end)
         spec["kind"] = "RANGE"
         window_spec.expression.set(
-            "spec", exp.WindowSpec(**{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec})
+            "spec",
+            exp.WindowSpec(
+                **{**window_spec.expression.args.get("spec", exp.WindowSpec()).args, **spec}
+            ),
         )
         return window_spec

@@ -40,7 +40,8 @@ def _derived_table_values_to_unnest(self, expression):
     structs = []
     for row in rows:
         aliases = [
-            exp.alias_(value, column_name) for value, column_name in zip(row, expression.args["alias"].args["columns"])
+            exp.alias_(value, column_name)
+            for value, column_name in zip(row, expression.args["alias"].args["columns"])
         ]
         structs.append(exp.Struct(expressions=aliases))
     unnest_exp = exp.Unnest(expressions=[exp.Array(expressions=structs)])
@@ -124,7 +125,9 @@ class BigQuery(Dialect):
             "DATETIME_SUB": _date_add(exp.DatetimeSub),
             "TIME_SUB": _date_add(exp.TimeSub),
             "TIMESTAMP_SUB": _date_add(exp.TimestampSub),
-            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(this=seq_get(args, 1), format=seq_get(args, 0)),
+            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(
+                this=seq_get(args, 1), format=seq_get(args, 0)
+            ),
         }
 
         NO_PAREN_FUNCTIONS = {
@@ -159,7 +162,9 @@ class BigQuery(Dialect):
             exp.Values: _derived_table_values_to_unnest,
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Create: _create_sql,
-            exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC",
+            exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC"
+            if e.name == "IMMUTABLE"
+            else "NOT DETERMINISTIC",
         }
 
         TYPE_MAPPING = {

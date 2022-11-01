@@ -23,6 +23,14 @@ class TestSessionFunc(DataFrameValidator):
             ON
                 e.store_id = s.store_id
         """
-        df = self.spark.sql(query).groupBy(F.col("store_id")).agg(F.countDistinct(F.col("employee_id")))
-        dfs = self.sqlglot.sql(query).groupBy(SF.col("store_id")).agg(SF.countDistinct(SF.col("employee_id")))
+        df = (
+            self.spark.sql(query)
+            .groupBy(F.col("store_id"))
+            .agg(F.countDistinct(F.col("employee_id")))
+        )
+        dfs = (
+            self.sqlglot.sql(query)
+            .groupBy(SF.col("store_id"))
+            .agg(SF.countDistinct(SF.col("employee_id")))
+        )
         self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)

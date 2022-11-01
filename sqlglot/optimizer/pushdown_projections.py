@@ -98,7 +98,9 @@ def _remove_unused_selections(scope, parent_selections):
 
 
 def _remove_indexed_selections(scope, indexes_to_remove):
-    new_selections = [selection for i, selection in enumerate(scope.selects) if i not in indexes_to_remove]
+    new_selections = [
+        selection for i, selection in enumerate(scope.selects) if i not in indexes_to_remove
+    ]
     if not new_selections:
         new_selections.append(DEFAULT_SELECTION)
     scope.expression.set("expressions", new_selections)

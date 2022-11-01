@@ -116,7 +116,9 @@ class ChangeDistiller:
             source_node = self._source_index[kept_source_node_id]
             target_node = self._target_index[kept_target_node_id]
             if not isinstance(source_node, LEAF_EXPRESSION_TYPES) or source_node == target_node:
-                edit_script.extend(self._generate_move_edits(source_node, target_node, matching_set))
+                edit_script.extend(
+                    self._generate_move_edits(source_node, target_node, matching_set)
+                )
                 edit_script.append(Keep(source_node, target_node))
             else:
                 edit_script.append(Update(source_node, target_node))
@@ -158,13 +160,16 @@ class ChangeDistiller:
                     max_leaves_num = max(len(source_leaf_ids), len(target_leaf_ids))
                     if max_leaves_num:
                         common_leaves_num = sum(
-                            1 if s in source_leaf_ids and t in target_leaf_ids else 0 for s, t in leaves_matching_set
+                            1 if s in source_leaf_ids and t in target_leaf_ids else 0
+                            for s, t in leaves_matching_set
                         )
                         leaf_similarity_score = common_leaves_num / max_leaves_num
                     else:
                         leaf_similarity_score = 0.0
 
-                    adjusted_t = self.t if min(len(source_leaf_ids), len(target_leaf_ids)) > 4 else 0.4
+                    adjusted_t = (
+                        self.t if min(len(source_leaf_ids), len(target_leaf_ids)) > 4 else 0.4
+                    )
 
                     if leaf_similarity_score >= 0.8 or (
                         leaf_similarity_score >= adjusted_t
@@ -201,7 +206,10 @@ class ChangeDistiller:
         matching_set = set()
         while candidate_matchings:
             _, _, source_leaf, target_leaf = heappop(candidate_matchings)
-            if id(source_leaf) in self._unmatched_source_nodes and id(target_leaf) in self._unmatched_target_nodes:
+            if (
+                id(source_leaf) in self._unmatched_source_nodes
+                and id(target_leaf) in self._unmatched_target_nodes
+            ):
                 matching_set.add((id(source_leaf), id(target_leaf)))
                 self._unmatched_source_nodes.remove(id(source_leaf))
                 self._unmatched_target_nodes.remove(id(target_leaf))

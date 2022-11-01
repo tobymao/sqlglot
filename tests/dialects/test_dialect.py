@@ -33,7 +33,9 @@ class Validator(unittest.TestCase):
         for read_dialect, read_sql in (read or {}).items():
             with self.subTest(f"{read_dialect} -> {sql}"):
                 self.assertEqual(
-                    parse_one(read_sql, read_dialect).sql(self.dialect, unsupported_level=ErrorLevel.IGNORE),
+                    parse_one(read_sql, read_dialect).sql(
+                        self.dialect, unsupported_level=ErrorLevel.IGNORE
+                    ),
                     sql,
                 )
 
@@ -1002,7 +1004,10 @@ class TestDialect(Validator):
         )
 
     def test_limit(self):
-        self.validate_all("SELECT * FROM data LIMIT 10, 20", write={"sqlite": "SELECT * FROM data LIMIT 10 OFFSET 20"})
+        self.validate_all(
+            "SELECT * FROM data LIMIT 10, 20",
+            write={"sqlite": "SELECT * FROM data LIMIT 10 OFFSET 20"},
+        )
         self.validate_all(
             "SELECT x FROM y LIMIT 10",
             write={

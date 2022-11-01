@@ -5,7 +5,9 @@ import typing as t
 from sqlglot.trie import in_trie, new_trie
 
 
-def format_time(string: str, mapping: t.Dict[str, str], trie: t.Optional[t.Dict] = None) -> t.Optional[str]:
+def format_time(
+    string: str, mapping: t.Dict[str, str], trie: t.Optional[t.Dict] = None
+) -> t.Optional[str]:
     """
     Converts a time string given a mapping.
 

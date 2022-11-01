@@ -9,7 +9,14 @@ from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
-FULL_FORMAT_TIME_MAPPING = {"weekday": "%A", "dw": "%A", "w": "%A", "month": "%B", "mm": "%B", "m": "%B"}
+FULL_FORMAT_TIME_MAPPING = {
+    "weekday": "%A",
+    "dw": "%A",
+    "w": "%A",
+    "month": "%B",
+    "mm": "%B",
+    "m": "%B",
+}
 DATE_DELTA_INTERVAL = {
     "year": "year",
     "yyyy": "year",
@@ -41,7 +48,9 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
             format=exp.Literal.string(
                 format_time(
                     seq_get(args, 0).name or (TSQL.time_format if default is True else default),
-                    {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING} if full_format_mapping else TSQL.time_mapping,
+                    {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING}
+                    if full_format_mapping
+                    else TSQL.time_mapping,
                 )
             ),
         )
@@ -250,7 +259,9 @@ class TSQL(Dialect):
             if self._match(TokenType.COMMA):
                 format_val = self._parse_number().name
                 if format_val not in TSQL.convert_format_mapping:
-                    raise ValueError(f"CONVERT function at T-SQL does not support format style {format_val}")
+                    raise ValueError(
+                        f"CONVERT function at T-SQL does not support format style {format_val}"
+                    )
                 format_norm = exp.Literal.string(TSQL.convert_format_mapping[format_val])
 
                 # Check whether the convert entails a string to date format

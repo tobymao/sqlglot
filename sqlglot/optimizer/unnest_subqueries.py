@@ -89,7 +89,11 @@ def decorrelate(select, parent_select, external_columns, sequence):
             return
 
         if isinstance(predicate, exp.Binary):
-            key = predicate.right if any(node is column for node, *_ in predicate.left.walk()) else predicate.left
+            key = (
+                predicate.right
+                if any(node is column for node, *_ in predicate.left.walk())
+                else predicate.left
+            )
         else:
             return
 
@@ -145,7 +149,9 @@ def decorrelate(select, parent_select, external_columns, sequence):
         else:
             parent_predicate = _replace(parent_predicate, "TRUE")
     elif isinstance(parent_predicate, exp.All):
-        parent_predicate = _replace(parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> _x = {other})")
+        parent_predicate = _replace(
+            parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> _x = {other})"
+        )
     elif isinstance(parent_predicate, exp.Any):
         if value.this in group_by:
             parent_predicate = _replace(parent_predicate.parent, f"{other} = {alias}")
@@ -168,7 +174,9 @@ def decorrelate(select, parent_select, external_columns, sequence):
 
         if key in group_by:
             key.replace(nested)
-            parent_predicate = _replace(parent_predicate, f"({parent_predicate} AND NOT {nested} IS NULL)")
+            parent_predicate = _replace(
+                parent_predicate, f"({parent_predicate} AND NOT {nested} IS NULL)"
+            )
         elif isinstance(predicate, exp.EQ):
             parent_predicate = _replace(
                 parent_predicate,

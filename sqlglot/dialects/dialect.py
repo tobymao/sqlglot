@@ -59,19 +59,30 @@ class _Dialect(type):
         klass.generator_class = getattr(klass, "Generator", Generator)
 
         klass.quote_start, klass.quote_end = list(klass.tokenizer_class._QUOTES.items())[0]
-        klass.identifier_start, klass.identifier_end = list(klass.tokenizer_class._IDENTIFIERS.items())[0]
+        klass.identifier_start, klass.identifier_end = list(
+            klass.tokenizer_class._IDENTIFIERS.items()
+        )[0]
 
-        if klass.tokenizer_class._BIT_STRINGS and exp.BitString not in klass.generator_class.TRANSFORMS:
+        if (
+            klass.tokenizer_class._BIT_STRINGS
+            and exp.BitString not in klass.generator_class.TRANSFORMS
+        ):
             bs_start, bs_end = list(klass.tokenizer_class._BIT_STRINGS.items())[0]
             klass.generator_class.TRANSFORMS[
                 exp.BitString
             ] = lambda self, e: f"{bs_start}{int(self.sql(e, 'this')):b}{bs_end}"
-        if klass.tokenizer_class._HEX_STRINGS and exp.HexString not in klass.generator_class.TRANSFORMS:
+        if (
+            klass.tokenizer_class._HEX_STRINGS
+            and exp.HexString not in klass.generator_class.TRANSFORMS
+        ):
             hs_start, hs_end = list(klass.tokenizer_class._HEX_STRINGS.items())[0]
             klass.generator_class.TRANSFORMS[
                 exp.HexString
             ] = lambda self, e: f"{hs_start}{int(self.sql(e, 'this')):X}{hs_end}"
-        if klass.tokenizer_class._BYTE_STRINGS and exp.ByteString not in klass.generator_class.TRANSFORMS:
+        if (
+            klass.tokenizer_class._BYTE_STRINGS
+            and exp.ByteString not in klass.generator_class.TRANSFORMS
+        ):
             be_start, be_end = list(klass.tokenizer_class._BYTE_STRINGS.items())[0]
             klass.generator_class.TRANSFORMS[
                 exp.ByteString
@@ -198,7 +209,9 @@ def approx_count_distinct_sql(self, expression):
 
 
 def if_sql(self, expression):
-    expressions = self.format_args(expression.this, expression.args.get("true"), expression.args.get("false"))
+    expressions = self.format_args(
+        expression.this, expression.args.get("true"), expression.args.get("false")
+    )
     return f"IF({expressions})"
 
 
@@ -331,7 +344,9 @@ def create_with_partitions_sql(self, expression):
                 "expressions",
                 [e for e in schema.expressions if e not in partitions],
             )
-            prop.replace(exp.PartitionedByProperty(this=prop.this, value=exp.Schema(expressions=partitions)))
+            prop.replace(
+                exp.PartitionedByProperty(this=prop.this, value=exp.Schema(expressions=partitions))
+            )
             expression.set("this", schema)
 
     return self.create_sql(expression)

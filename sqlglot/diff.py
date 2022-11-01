@@ -4,7 +4,7 @@ from heapq import heappop, heappush
 
 from sqlglot import Dialect
 from sqlglot import expressions as exp
-from sqlglot.helper import ensure_collection, ensure_list
+from sqlglot.helper import ensure_collection
 
 
 @dataclass(frozen=True)
@@ -267,7 +267,7 @@ def _expression_only_args(expression):
     args = []
     if expression:
         for a in expression.args.values():
-            args.extend(ensure_list(a))
+            args.extend(ensure_collection(a))
     return [a for a in args if isinstance(a, exp.Expression)]
 
 

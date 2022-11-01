@@ -13,7 +13,6 @@ from sqlglot.helper import (
     AutoName,
     camel_to_snake_case,
     ensure_collection,
-    ensure_list,
     seq_get,
     split_num_words,
     subclasses,
@@ -1681,12 +1680,12 @@ class Select(Subqueryable):
                 join.set("kind", kind.text)
 
         if on:
-            on = and_(*ensure_list(on), dialect=dialect, **opts)
+            on = and_(*ensure_collection(on), dialect=dialect, **opts)
             join.set("on", on)
 
         if using:
             join = _apply_list_builder(
-                *ensure_list(using),
+                *ensure_collection(using),
                 instance=join,
                 arg="using",
                 append=append,

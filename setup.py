@@ -21,6 +21,7 @@ setup(
     author_email="toby.mao@gmail.com",
     license="MIT",
     packages=find_packages(include=["sqlglot", "sqlglot.*"]),
+    package_data={"sqlglot": ["py.typed"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

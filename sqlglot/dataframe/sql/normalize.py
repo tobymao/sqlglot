@@ -58,7 +58,6 @@ def _set_alias_name(id: exp.Identifier, name: str):
 
 
 def _ensure_expressions(values: t.List[NORMALIZE_INPUT]) -> t.List[exp.Expression]:
-    values = ensure_list(values)
     results = []
     for value in values:
         if isinstance(value, str):

@@ -2,7 +2,7 @@ import logging
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_errors
-from sqlglot.helper import apply_index_offset, ensure_list, list_get
+from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
 logger = logging.getLogger("sqlglot")
@@ -45,16 +45,16 @@ class Parser:
     FUNCTIONS = {
         **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
-            this=list_get(args, 0),
+            this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
-            this=list_get(args, 0),
+            this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
             this=exp.Cast(
-                this=list_get(args, 0),
+                this=seq_get(args, 0),
                 to=exp.DataType(this=exp.DataType.Type.TEXT),
             ),
             start=exp.Literal.number(1),
@@ -536,7 +536,7 @@ class Parser:
         return self._parse(parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql)
 
     def parse_into(self, expression_types, raw_tokens, sql=None):
-        for expression_type in ensure_list(expression_types):
+        for expression_type in ensure_collection(expression_types):
             parser = self.EXPRESSION_PARSERS.get(expression_type)
             if not parser:
                 raise TypeError(f"No parser registered for {expression_type}")
@@ -634,7 +634,7 @@ class Parser:
         return index
 
     def _get_token(self, index):
-        return list_get(self._tokens, index)
+        return seq_get(self._tokens, index)
 
     def _advance(self, times=1):
         self._index += times
@@ -1833,7 +1833,7 @@ class Parser:
             else:
                 expressions = self._parse_csv(lambda: self._parse_alias(self._parse_conjunction(), explicit=True))
 
-            this = list_get(expressions, 0)
+            this = seq_get(expressions, 0)
             self._parse_query_modifiers(this)
             self._match_r_paren()
 

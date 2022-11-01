@@ -1,7 +1,14 @@
+from __future__ import annotations
+
+import typing as t
+
+if t.TYPE_CHECKING:
+    from sqlglot.generator import Generator
+
 from sqlglot import expressions as exp
 
 
-def unalias_group(expression):
+def unalias_group(expression: exp.Expression) -> exp.Expression:
     """
     Replace references to select aliases in GROUP BY clauses.
 
@@ -9,6 +16,12 @@ def unalias_group(expression):
         >>> import sqlglot
         >>> sqlglot.parse_one("SELECT a AS b FROM x GROUP BY b").transform(unalias_group).sql()
         'SELECT a AS b FROM x GROUP BY 1'
+
+    Args:
+        expression: the expression that will be transformed.
+
+    Returns:
+        The transformed expression.
     """
     if isinstance(expression, exp.Group) and isinstance(expression.parent, exp.Select):
         aliased_selects = {
@@ -30,19 +43,20 @@ def unalias_group(expression):
     return expression
 
 
-def preprocess(transforms, to_sql):
+def preprocess(
+    transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
+    to_sql: t.Callable[[Generator, exp.Expression], str],
+) -> t.Callable[[Generator, exp.Expression], str]:
     """
-    Create a new transform function that can be used a value in `Generator.TRANSFORMS`
-    to convert expressions to SQL.
+    Creates a new transform by chaining a sequence of transformations and converts the resulting
+    expression to SQL, using an appropriate `Generator.TRANSFORMS` function.
 
     Args:
-        transforms (list[(exp.Expression) -> exp.Expression]):
-            Sequence of transform functions. These will be called in order.
-        to_sql ((sqlglot.generator.Generator, exp.Expression) -> str):
-            Final transform that converts the resulting expression to a SQL string.
+        transforms: sequence of transform functions. These will be called in order.
+        to_sql: final transform that converts the resulting expression to a SQL string.
+
     Returns:
-        (sqlglot.generator.Generator, exp.Expression) -> str:
-            Function that can be used as a generator transform.
+        Function that can be used as a generator transform.
     """
 
     def _to_sql(self, expression):
@@ -54,12 +68,10 @@ def preprocess(transforms, to_sql):
     return _to_sql
 
 
-def delegate(attr):
+def delegate(attr: str) -> t.Callable:
     """
-    Create a new method that delegates to `attr`.
-
-    This is useful for creating `Generator.TRANSFORMS` functions that delegate
-    to existing generator methods.
+    Create a new method that delegates to `attr`. This is useful for creating `Generator.TRANSFORMS`
+    functions that delegate to existing generator methods.
     """
 
     def _transform(self, *args, **kwargs):

@@ -14,7 +14,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 
 * [Install](#install)
 * [Documentation](#documentation)
-* [Run Tests & Lint](#run-tests-and-lint)
+* [Run Tests and Lint](#run-tests-and-lint)
 * [Examples](#examples)
    * [Formatting and Transpiling](#formatting-and-transpiling)
    * [Metadata](#metadata)
@@ -51,7 +51,7 @@ pip3 install -r dev-requirements.txt
 
 ## Documentation
 
-SQLGlot's uses [pdocs](https://pdoc.dev/) to serve its API documentation:
+SQLGlot uses [pdocs](https://pdoc.dev/) to serve its API documentation:
 
 ```
 pdoc sqlglot --docformat google

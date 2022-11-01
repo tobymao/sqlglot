@@ -1,4 +1,6 @@
-from sqlglot import exp, transforms
+from __future__ import annotations
+
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     format_time_lambda,
@@ -10,10 +12,8 @@ from sqlglot.dialects.dialect import (
     struct_extract_sql,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.generator import Generator
-from sqlglot.helper import list_get
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 def _approx_distinct_sql(self, expression):
@@ -110,30 +110,30 @@ class Presto(Dialect):
     index_offset = 1
     null_ordering = "nulls_are_last"
     time_format = "'%Y-%m-%d %H:%i:%S'"
-    time_mapping = MySQL.time_mapping
+    time_mapping = MySQL.time_mapping  # type: ignore
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "VARBINARY": TokenType.BINARY,
             "ROW": TokenType.STRUCT,
         }
 
-    class Parser(Parser):
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "CONTAINS": exp.ArrayContains.from_arg_list,
             "DATE_ADD": lambda args: exp.DateAdd(
-                this=list_get(args, 2),
-                expression=list_get(args, 1),
-                unit=list_get(args, 0),
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
             ),
             "DATE_DIFF": lambda args: exp.DateDiff(
-                this=list_get(args, 2),
-                expression=list_get(args, 1),
-                unit=list_get(args, 0),
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
@@ -143,7 +143,7 @@ class Presto(Dialect):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
         }
 
-    class Generator(Generator):
+    class Generator(generator.Generator):
 
         STRUCT_DELIMITER = ("(", ")")
 
@@ -159,7 +159,7 @@ class Presto(Dialect):
         }
 
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.BINARY: "VARBINARY",
@@ -169,8 +169,8 @@ class Presto(Dialect):
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
-            **transforms.UNALIAS_GROUP,
+            **generator.Generator.TRANSFORMS,
+            **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
             exp.ArrayConcat: rename_func("CONCAT"),

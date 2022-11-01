@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import arrow_json_extract_sql, rename_func
 from sqlglot.dialects.mysql import MySQL
 
 
 class StarRocks(MySQL):
-    class Generator(MySQL.Generator):
+    class Generator(MySQL.Generator):  # type: ignore
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
@@ -13,7 +15,7 @@ class StarRocks(MySQL):
         }
 
         TRANSFORMS = {
-            **MySQL.Generator.TRANSFORMS,
+            **MySQL.Generator.TRANSFORMS,  # type: ignore
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.DateDiff: rename_func("DATEDIFF"),

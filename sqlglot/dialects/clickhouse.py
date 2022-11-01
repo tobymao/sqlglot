@@ -1,8 +1,9 @@
-from sqlglot import exp
+from __future__ import annotations
+
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
-from sqlglot.generator import Generator
-from sqlglot.parser import Parser, parse_var_map
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.parser import parse_var_map
+from sqlglot.tokens import TokenType
 
 
 def _lower_func(sql):
@@ -14,11 +15,11 @@ class ClickHouse(Dialect):
     normalize_functions = None
     null_ordering = "nulls_are_last"
 
-    class Tokenizer(Tokenizer):
+    class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', "`"]
 
         KEYWORDS = {
-            **Tokenizer.KEYWORDS,
+            **tokens.Tokenizer.KEYWORDS,
             "FINAL": TokenType.FINAL,
             "DATETIME64": TokenType.DATETIME,
             "INT8": TokenType.TINYINT,
@@ -30,9 +31,9 @@ class ClickHouse(Dialect):
             "TUPLE": TokenType.STRUCT,
         }
 
-    class Parser(Parser):
+    class Parser(parser.Parser):
         FUNCTIONS = {
-            **Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "MAP": parse_var_map,
         }
 
@@ -44,11 +45,11 @@ class ClickHouse(Dialect):
 
             return this
 
-    class Generator(Generator):
+    class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 
         TYPE_MAPPING = {
-            **Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.NULLABLE: "Nullable",
             exp.DataType.Type.DATETIME: "DateTime64",
             exp.DataType.Type.MAP: "Map",
@@ -63,7 +64,7 @@ class ClickHouse(Dialect):
         }
 
         TRANSFORMS = {
-            **Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",

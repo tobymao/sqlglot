@@ -60,7 +60,9 @@ def _join_is_used(scope, join, alias):
         on_clause_columns = set(id(column) for column in on.find_all(exp.Column))
     else:
         on_clause_columns = set()
-    return any(column for column in scope.source_columns(alias) if id(column) not in on_clause_columns)
+    return any(
+        column for column in scope.source_columns(alias) if id(column) not in on_clause_columns
+    )
 
 
 def _is_joined_on_all_unique_outputs(scope, join):

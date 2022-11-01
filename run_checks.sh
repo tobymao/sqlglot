@@ -1,15 +1,8 @@
 #!/bin/bash -e
-
 [[ -z "${GITHUB_ACTIONS}" ]] && RETURN_ERROR_CODE='' || RETURN_ERROR_CODE='--check'
-
-python -m autoflake -i -r ${RETURN_ERROR_CODE} \
-  --expand-star-imports \
-  --remove-all-unused-imports \
-  --ignore-init-module-imports \
-  --remove-duplicate-keys \
-  --remove-unused-variables \
-  sqlglot/ tests/
-python -m isort --profile black sqlglot/ tests/ --project sqlglot
-python -m black ${RETURN_ERROR_CODE} --line-length 120 sqlglot/ tests/
-python -m mypy sqlglot tests
+TARGETS="sqlglot/ tests/"
+python -m mypy $TARGETS
+python -m autoflake -i -r ${RETURN_ERROR_CODE} $TARGETS
+python -m isort $TARGETS
+python -m black --line-length 100 ${RETURN_ERROR_CODE} $TARGETS
 python -m unittest

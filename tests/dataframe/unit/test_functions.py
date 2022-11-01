@@ -925,12 +925,17 @@ class TestFunctions(unittest.TestCase):
         col = SF.window(SF.col("cola"), "10 minutes")
         self.assertEqual("WINDOW(cola, '10 minutes')", col.sql())
         col_all_values = SF.window("cola", "2 minutes 30 seconds", "30 seconds", "15 seconds")
-        self.assertEqual("WINDOW(cola, '2 minutes 30 seconds', '30 seconds', '15 seconds')", col_all_values.sql())
+        self.assertEqual(
+            "WINDOW(cola, '2 minutes 30 seconds', '30 seconds', '15 seconds')", col_all_values.sql()
+        )
         col_no_start_time = SF.window("cola", "2 minutes 30 seconds", "30 seconds")
-        self.assertEqual("WINDOW(cola, '2 minutes 30 seconds', '30 seconds')", col_no_start_time.sql())
+        self.assertEqual(
+            "WINDOW(cola, '2 minutes 30 seconds', '30 seconds')", col_no_start_time.sql()
+        )
         col_no_slide = SF.window("cola", "2 minutes 30 seconds", startTime="15 seconds")
         self.assertEqual(
-            "WINDOW(cola, '2 minutes 30 seconds', '2 minutes 30 seconds', '15 seconds')", col_no_slide.sql()
+            "WINDOW(cola, '2 minutes 30 seconds', '2 minutes 30 seconds', '15 seconds')",
+            col_no_slide.sql(),
         )
 
     def test_session_window(self):
@@ -1359,9 +1364,13 @@ class TestFunctions(unittest.TestCase):
 
     def test_from_json(self):
         col_str = SF.from_json("cola", "cola INT", dict(timestampFormat="dd/MM/yyyy"))
-        self.assertEqual("FROM_JSON(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        self.assertEqual(
+            "FROM_JSON(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql()
+        )
         col = SF.from_json(SF.col("cola"), "cola INT", dict(timestampFormat="dd/MM/yyyy"))
-        self.assertEqual("FROM_JSON(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        self.assertEqual(
+            "FROM_JSON(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql()
+        )
         col_no_option = SF.from_json("cola", "cola INT")
         self.assertEqual("FROM_JSON(cola, 'cola INT')", col_no_option.sql())
 
@@ -1375,7 +1384,9 @@ class TestFunctions(unittest.TestCase):
 
     def test_schema_of_json(self):
         col_str = SF.schema_of_json("cola", dict(timestampFormat="dd/MM/yyyy"))
-        self.assertEqual("SCHEMA_OF_JSON(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        self.assertEqual(
+            "SCHEMA_OF_JSON(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql()
+        )
         col = SF.schema_of_json(SF.col("cola"), dict(timestampFormat="dd/MM/yyyy"))
         self.assertEqual("SCHEMA_OF_JSON(cola, MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
         col_no_option = SF.schema_of_json("cola")
@@ -1429,7 +1440,10 @@ class TestFunctions(unittest.TestCase):
         col = SF.array_sort(SF.col("cola"))
         self.assertEqual("ARRAY_SORT(cola)", col.sql())
         col_comparator = SF.array_sort(
-            "cola", lambda x, y: SF.when(x.isNull() | y.isNull(), SF.lit(0)).otherwise(SF.length(y) - SF.length(x))
+            "cola",
+            lambda x, y: SF.when(x.isNull() | y.isNull(), SF.lit(0)).otherwise(
+                SF.length(y) - SF.length(x)
+            ),
         )
         self.assertEqual(
             "ARRAY_SORT(cola, (x, y) -> CASE WHEN x IS NULL OR y IS NULL THEN 0 ELSE LENGTH(y) - LENGTH(x) END)",
@@ -1504,9 +1518,13 @@ class TestFunctions(unittest.TestCase):
 
     def test_from_csv(self):
         col_str = SF.from_csv("cola", "cola INT", dict(timestampFormat="dd/MM/yyyy"))
-        self.assertEqual("FROM_CSV(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql())
+        self.assertEqual(
+            "FROM_CSV(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col_str.sql()
+        )
         col = SF.from_csv(SF.col("cola"), "cola INT", dict(timestampFormat="dd/MM/yyyy"))
-        self.assertEqual("FROM_CSV(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql())
+        self.assertEqual(
+            "FROM_CSV(cola, 'cola INT', MAP('timestampFormat', 'dd/MM/yyyy'))", col.sql()
+        )
         col_no_option = SF.from_csv("cola", "cola INT")
         self.assertEqual("FROM_CSV(cola, 'cola INT')", col_no_option.sql())
 
@@ -1535,7 +1553,9 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("TRANSFORM(cola, (x, i) -> x * i)", col.sql())
         col_custom_names = SF.transform("cola", lambda target, row_count: target * row_count)
 
-        self.assertEqual("TRANSFORM(cola, (target, row_count) -> target * row_count)", col_custom_names.sql())
+        self.assertEqual(
+            "TRANSFORM(cola, (target, row_count) -> target * row_count)", col_custom_names.sql()
+        )
 
     def test_exists(self):
         col_str = SF.exists("cola", lambda x: x % 2 == 0)
@@ -1558,10 +1578,13 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("FILTER(cola, x -> MONTH(TO_DATE(x)) > 6)", col_str.sql())
         col = SF.filter(SF.col("cola"), lambda x, i: SF.month(SF.to_date(x)) > SF.lit(i))
         self.assertEqual("FILTER(cola, (x, i) -> MONTH(TO_DATE(x)) > i)", col.sql())
-        col_custom_names = SF.filter("cola", lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count))
+        col_custom_names = SF.filter(
+            "cola", lambda target, row_count: SF.month(SF.to_date(target)) > SF.lit(row_count)
+        )
 
         self.assertEqual(
-            "FILTER(cola, (target, row_count) -> MONTH(TO_DATE(target)) > row_count)", col_custom_names.sql()
+            "FILTER(cola, (target, row_count) -> MONTH(TO_DATE(target)) > row_count)",
+            col_custom_names.sql(),
         )
 
     def test_zip_with(self):
@@ -1570,7 +1593,9 @@ class TestFunctions(unittest.TestCase):
         col = SF.zip_with(SF.col("cola"), SF.col("colb"), lambda x, y: SF.concat_ws("_", x, y))
         self.assertEqual("ZIP_WITH(cola, colb, (x, y) -> CONCAT_WS('_', x, y))", col.sql())
         col_custom_names = SF.zip_with("cola", "colb", lambda l, r: SF.concat_ws("_", l, r))
-        self.assertEqual("ZIP_WITH(cola, colb, (l, r) -> CONCAT_WS('_', l, r))", col_custom_names.sql())
+        self.assertEqual(
+            "ZIP_WITH(cola, colb, (l, r) -> CONCAT_WS('_', l, r))", col_custom_names.sql()
+        )
 
     def test_transform_keys(self):
         col_str = SF.transform_keys("cola", lambda k, v: SF.upper(k))
@@ -1586,7 +1611,9 @@ class TestFunctions(unittest.TestCase):
         col = SF.transform_values(SF.col("cola"), lambda k, v: SF.upper(v))
         self.assertEqual("TRANSFORM_VALUES(cola, (k, v) -> UPPER(v))", col.sql())
         col_custom_names = SF.transform_values("cola", lambda _, value: SF.upper(value))
-        self.assertEqual("TRANSFORM_VALUES(cola, (_, value) -> UPPER(value))", col_custom_names.sql())
+        self.assertEqual(
+            "TRANSFORM_VALUES(cola, (_, value) -> UPPER(value))", col_custom_names.sql()
+        )
 
     def test_map_filter(self):
         col_str = SF.map_filter("cola", lambda k, v: k > v)

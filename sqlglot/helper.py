@@ -86,7 +86,9 @@ def ensure_collection(value):
     """
     if value is None:
         return []
-    return value if isinstance(value, Collection) and not isinstance(value, (str, bytes)) else [value]
+    return (
+        value if isinstance(value, Collection) and not isinstance(value, (str, bytes)) else [value]
+    )
 
 
 def csv(*args, sep: str = ", ") -> str:
@@ -159,7 +161,9 @@ def camel_to_snake_case(name: str) -> str:
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
 
 
-def while_changing(expression: t.Optional[Expression], func: t.Callable[[t.Optional[Expression]], E]) -> E:
+def while_changing(
+    expression: t.Optional[Expression], func: t.Callable[[t.Optional[Expression]], E]
+) -> E:
     """
     Applies a transformation to a given expression until a fix point is reached.
 
@@ -280,7 +284,9 @@ def object_to_dict(obj: t.Any, **kwargs) -> t.Dict:
     return {**{k: copy(v) for k, v in vars(obj).copy().items()}, **kwargs}
 
 
-def split_num_words(value: str, sep: str, min_num_words: int, fill_from_start: bool = True) -> t.List[t.Optional[str]]:
+def split_num_words(
+    value: str, sep: str, min_num_words: int, fill_from_start: bool = True
+) -> t.List[t.Optional[str]]:
     """
     Perform a split on a value and return N words as a result with `None` used for words that don't exist.
 

@@ -21,9 +21,7 @@ class TestDataframeSession(DataFrameSQLValidator):
 
     def test_cdf_no_schema(self):
         df = self.spark.createDataFrame([[1, 2], [3, 4], [None, 6]])
-        expected = (
-            "SELECT `a2`.`_1` AS `_1`, `a2`.`_2` AS `_2` FROM (VALUES (1, 2), (3, 4), (NULL, 6)) AS `a2`(`_1`, `_2`)"
-        )
+        expected = "SELECT `a2`.`_1` AS `_1`, `a2`.`_2` AS `_2` FROM (VALUES (1, 2), (3, 4), (NULL, 6)) AS `a2`(`_1`, `_2`)"
         self.compare_sql(df, expected)
 
     def test_cdf_row_mixed_primitives(self):
@@ -77,7 +75,8 @@ class TestDataframeSession(DataFrameSQLValidator):
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"})
         df = self.spark.sql(query)
         self.assertIn(
-            "SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`", df.sql(pretty=False)
+            "SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`",
+            df.sql(pretty=False),
         )
 
     @mock.patch("sqlglot.schema", MappingSchema())
@@ -104,9 +103,7 @@ class TestDataframeSession(DataFrameSQLValidator):
         query = "WITH t1 AS (SELECT cola, colb FROM table) INSERT INTO new_table SELECT cola, colb FROM t1"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"})
         df = self.spark.sql(query)
-        expected = (
-            "INSERT INTO new_table SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`"
-        )
+        expected = "INSERT INTO new_table SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`"
         self.compare_sql(df, expected)
 
     def test_session_create_builder_patterns(self):

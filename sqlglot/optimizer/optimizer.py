@@ -58,6 +58,8 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
 
         # Find any additional rule parameters, beyond `expression`
         rule_params = rule.__code__.co_varnames
-        rule_kwargs = {param: possible_kwargs[param] for param in rule_params if param in possible_kwargs}
+        rule_kwargs = {
+            param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
+        }
         expression = rule(expression, **rule_kwargs)
     return expression

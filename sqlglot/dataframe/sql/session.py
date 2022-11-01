@@ -67,13 +67,20 @@ class SparkSession:
 
         data_expressions = [
             exp.Tuple(
-                expressions=list(map(lambda x: F.lit(x).expression, row if not isinstance(row, dict) else row.values()))
+                expressions=list(
+                    map(
+                        lambda x: F.lit(x).expression,
+                        row if not isinstance(row, dict) else row.values(),
+                    )
+                )
             )
             for row in data
         ]
 
         sel_columns = [
-            F.col(name).cast(data_type).alias(name).expression if data_type is not None else F.col(name).expression
+            F.col(name).cast(data_type).alias(name).expression
+            if data_type is not None
+            else F.col(name).expression
             for name, data_type in column_mapping.items()
         ]
 
@@ -109,7 +116,9 @@ class SparkSession:
             df = DataFrame(self, select_expression, output_expression_container=expression)  # type: ignore
             df = df._convert_leaf_to_cte()
         else:
-            raise ValueError("Unknown expression type provided in the SQL. Please create an issue with the SQL.")
+            raise ValueError(
+                "Unknown expression type provided in the SQL. Please create an issue with the SQL."
+            )
         return df
 
     @property

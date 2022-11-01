@@ -229,7 +229,9 @@ def simplify_literals(expression):
                 operands.append(a)
 
         if len(operands) < size:
-            return functools.reduce(lambda a, b: expression.__class__(this=a, expression=b), operands)
+            return functools.reduce(
+                lambda a, b: expression.__class__(this=a, expression=b), operands
+            )
     elif isinstance(expression, exp.Neg):
         this = expression.this
         if this.is_number:

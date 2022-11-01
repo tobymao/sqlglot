@@ -226,7 +226,9 @@ class Scope:
             self._ensure_collected()
             columns = self._raw_columns
 
-            external_columns = [column for scope in self.subquery_scopes for column in scope.external_columns]
+            external_columns = [
+                column for scope in self.subquery_scopes for column in scope.external_columns
+            ]
 
             named_outputs = {e.alias_or_name for e in self.expression.expressions}
 
@@ -278,7 +280,11 @@ class Scope:
         Returns:
             dict[str, Scope]: Mapping of source alias to Scope
         """
-        return {alias: scope for alias, scope in self.sources.items() if isinstance(scope, Scope) and scope.is_cte}
+        return {
+            alias: scope
+            for alias, scope in self.sources.items()
+            if isinstance(scope, Scope) and scope.is_cte
+        }
 
     @property
     def selects(self):
@@ -307,7 +313,9 @@ class Scope:
                 sources in the current scope.
         """
         if self._external_columns is None:
-            self._external_columns = [c for c in self.columns if c.table not in self.selected_sources]
+            self._external_columns = [
+                c for c in self.columns if c.table not in self.selected_sources
+            ]
         return self._external_columns
 
     @property

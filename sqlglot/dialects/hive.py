@@ -34,7 +34,9 @@ def _add_date_sql(self, expression):
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
     modified_increment = (
-        int(expression.text("expression")) * multiplier if expression.expression.is_number else expression.expression
+        int(expression.text("expression")) * multiplier
+        if expression.expression.is_number
+        else expression.expression
     )
     modified_increment = exp.Literal.number(modified_increment)
     return f"{func}({self.format_args(expression.this, modified_increment.this)})"
@@ -213,7 +215,11 @@ class Hive(Dialect):
                 substr=seq_get(args, 0),
                 position=seq_get(args, 2),
             ),
-            "LOG": (lambda args: exp.Log.from_arg_list(args) if len(args) > 1 else exp.Ln.from_arg_list(args)),
+            "LOG": (
+                lambda args: exp.Log.from_arg_list(args)
+                if len(args) > 1
+                else exp.Ln.from_arg_list(args)
+            ),
             "MAP": parse_var_map,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
             "PERCENTILE": exp.Quantile.from_arg_list,

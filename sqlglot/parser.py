@@ -367,11 +367,15 @@ class Parser:
     PRIMARY_PARSERS = {
         TokenType.STRING: lambda _, token: exp.Literal.string(token.text),
         TokenType.NUMBER: lambda _, token: exp.Literal.number(token.text),
-        TokenType.STAR: lambda self, _: exp.Star(**{"except": self._parse_except(), "replace": self._parse_replace()}),
+        TokenType.STAR: lambda self, _: exp.Star(
+            **{"except": self._parse_except(), "replace": self._parse_replace()}
+        ),
         TokenType.NULL: lambda *_: exp.Null(),
         TokenType.TRUE: lambda *_: exp.Boolean(this=True),
         TokenType.FALSE: lambda *_: exp.Boolean(this=False),
-        TokenType.PARAMETER: lambda self, _: exp.Parameter(this=self._parse_var() or self._parse_primary()),
+        TokenType.PARAMETER: lambda self, _: exp.Parameter(
+            this=self._parse_var() or self._parse_primary()
+        ),
         TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
         TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
         TokenType.BYTE_STRING: lambda _, token: exp.ByteString(this=token.text),
@@ -411,16 +415,24 @@ class Parser:
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
         TokenType.FORMAT: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
-        TokenType.TABLE_FORMAT: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        TokenType.TABLE_FORMAT: lambda self: self._parse_property_assignment(
+            exp.TableFormatProperty
+        ),
         TokenType.USING: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         TokenType.LANGUAGE: lambda self: self._parse_property_assignment(exp.LanguageProperty),
         TokenType.EXECUTE: lambda self: self._parse_execute_as(),
         TokenType.DETERMINISTIC: lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
-        TokenType.IMMUTABLE: lambda self: self.expression(exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")),
-        TokenType.STABLE: lambda self: self.expression(exp.VolatilityProperty, this=exp.Literal.string("STABLE")),
-        TokenType.VOLATILE: lambda self: self.expression(exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")),
+        TokenType.IMMUTABLE: lambda self: self.expression(
+            exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
+        ),
+        TokenType.STABLE: lambda self: self.expression(
+            exp.VolatilityProperty, this=exp.Literal.string("STABLE")
+        ),
+        TokenType.VOLATILE: lambda self: self.expression(
+            exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
+        ),
     }
 
     CONSTRAINT_PARSERS = {
@@ -450,7 +462,8 @@ class Parser:
         "group": lambda self: self._parse_group(),
         "having": lambda self: self._parse_having(),
         "qualify": lambda self: self._parse_qualify(),
-        "window": lambda self: self._match(TokenType.WINDOW) and self._parse_window(self._parse_id_var(), alias=True),
+        "window": lambda self: self._match(TokenType.WINDOW)
+        and self._parse_window(self._parse_id_var(), alias=True),
         "distribute": lambda self: self._parse_sort(TokenType.DISTRIBUTE_BY, exp.Distribute),
         "sort": lambda self: self._parse_sort(TokenType.SORT_BY, exp.Sort),
         "cluster": lambda self: self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
@@ -533,7 +546,9 @@ class Parser:
         Returns
             the list of syntax trees (:class:`~sqlglot.expressions.Expression`).
         """
-        return self._parse(parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql)
+        return self._parse(
+            parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql
+        )
 
     def parse_into(self, expression_types, raw_tokens, sql=None):
         for expression_type in ensure_collection(expression_types):
@@ -682,7 +697,11 @@ class Parser:
         )
 
     def _parse_exists(self, not_=False):
-        return self._match(TokenType.IF) and (not not_ or self._match(TokenType.NOT)) and self._match(TokenType.EXISTS)
+        return (
+            self._match(TokenType.IF)
+            and (not not_ or self._match(TokenType.NOT))
+            and self._match(TokenType.EXISTS)
+        )
 
     def _parse_create(self):
         replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
@@ -931,7 +950,9 @@ class Parser:
         return self.expression(
             exp.Delete,
             this=self._parse_table(schema=True),
-            using=self._parse_csv(lambda: self._match(TokenType.USING) and self._parse_table(schema=True)),
+            using=self._parse_csv(
+                lambda: self._match(TokenType.USING) and self._parse_table(schema=True)
+            ),
             where=self._parse_where(),
         )
 
@@ -1152,7 +1173,9 @@ class Parser:
 
     def _parse_annotation(self, expression):
         if self._match(TokenType.ANNOTATION):
-            return self.expression(exp.Annotation, this=self._prev.text.strip(), expression=expression)
+            return self.expression(
+                exp.Annotation, this=self._prev.text.strip(), expression=expression
+            )
 
         return expression
 
@@ -1295,7 +1318,9 @@ class Parser:
         if not table:
             self.raise_error("Expected table name")
 
-        this = self.expression(exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots())
+        this = self.expression(
+            exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
+        )
 
         if schema:
             return self._parse_schema(this=this)
@@ -1500,7 +1525,9 @@ class Parser:
         if not skip_order_token and not self._match(TokenType.ORDER_BY):
             return this
 
-        return self.expression(exp.Order, this=this, expressions=self._parse_csv(self._parse_ordered))
+        return self.expression(
+            exp.Order, this=this, expressions=self._parse_csv(self._parse_ordered)
+        )
 
     def _parse_sort(self, token_type, exp_class):
         if not self._match(token_type):
@@ -1521,7 +1548,8 @@ class Parser:
         if (
             not explicitly_null_ordered
             and (
-                (asc and self.null_ordering == "nulls_are_small") or (desc and self.null_ordering != "nulls_are_small")
+                (asc and self.null_ordering == "nulls_are_small")
+                or (desc and self.null_ordering != "nulls_are_small")
             )
             and self.null_ordering != "nulls_are_last"
         ):
@@ -1653,9 +1681,13 @@ class Parser:
                     expression=self._parse_term(),
                 )
             elif self._match_pair(TokenType.LT, TokenType.LT):
-                this = self.expression(exp.BitwiseLeftShift, this=this, expression=self._parse_term())
+                this = self.expression(
+                    exp.BitwiseLeftShift, this=this, expression=self._parse_term()
+                )
             elif self._match_pair(TokenType.GT, TokenType.GT):
-                this = self.expression(exp.BitwiseRightShift, this=this, expression=self._parse_term())
+                this = self.expression(
+                    exp.BitwiseRightShift, this=this, expression=self._parse_term()
+                )
             else:
                 break
 
@@ -1711,7 +1743,9 @@ class Parser:
 
         if not nested and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             return exp.DataType(
-                this=exp.DataType.Type.ARRAY, expressions=[exp.DataType.build(type_token.value)], nested=True
+                this=exp.DataType.Type.ARRAY,
+                expressions=[exp.DataType.build(type_token.value)],
+                nested=True,
             )
 
         if self._match(TokenType.L_BRACKET):
@@ -1748,7 +1782,9 @@ class Parser:
                     this=exp.DataType.Type.TIMESTAMPTZ,
                     expressions=expressions,
                 )
-            ltz = self._match(TokenType.WITH_LOCAL_TIME_ZONE) or type_token == TokenType.TIMESTAMPLTZ
+            ltz = (
+                self._match(TokenType.WITH_LOCAL_TIME_ZONE) or type_token == TokenType.TIMESTAMPLTZ
+            )
             if ltz:
                 return exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPLTZ,
@@ -1831,7 +1867,9 @@ class Parser:
             if query:
                 expressions = [query]
             else:
-                expressions = self._parse_csv(lambda: self._parse_alias(self._parse_conjunction(), explicit=True))
+                expressions = self._parse_csv(
+                    lambda: self._parse_alias(self._parse_conjunction(), explicit=True)
+                )
 
             this = seq_get(expressions, 0)
             self._parse_query_modifiers(this)
@@ -1942,7 +1980,9 @@ class Parser:
             self._retreat(index)
 
             if self._match(TokenType.DISTINCT):
-                this = self.expression(exp.Distinct, expressions=self._parse_csv(self._parse_conjunction))
+                this = self.expression(
+                    exp.Distinct, expressions=self._parse_csv(self._parse_conjunction)
+                )
             else:
                 this = self._parse_conjunction()
 
@@ -1953,7 +1993,9 @@ class Parser:
 
             return self._parse_alias(self._parse_limit(self._parse_order(this)))
 
-        conjunction = self._parse_conjunction().transform(self._replace_lambda, {node.name for node in expressions})
+        conjunction = self._parse_conjunction().transform(
+            self._replace_lambda, {node.name for node in expressions}
+        )
         return self.expression(
             exp.Lambda,
             this=conjunction,
@@ -1966,7 +2008,9 @@ class Parser:
             self._retreat(index)
             return this
 
-        args = self._parse_csv(lambda: self._parse_constraint() or self._parse_column_def(self._parse_field(True)))
+        args = self._parse_csv(
+            lambda: self._parse_constraint() or self._parse_column_def(self._parse_field(True))
+        )
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
 
@@ -2124,7 +2168,9 @@ class Parser:
         if not self._match(TokenType.END):
             self.raise_error("Expected END after CASE", self._prev)
 
-        return self._parse_window(self.expression(exp.Case, this=expression, ifs=ifs, default=default))
+        return self._parse_window(
+            self.expression(exp.Case, this=expression, ifs=ifs, default=default)
+        )
 
     def _parse_if(self):
         if self._match(TokenType.L_PAREN):
@@ -2331,7 +2377,9 @@ class Parser:
         self._match(TokenType.BETWEEN)
 
         return {
-            "value": (self._match_set((TokenType.UNBOUNDED, TokenType.CURRENT_ROW)) and self._prev.text)
+            "value": (
+                self._match_set((TokenType.UNBOUNDED, TokenType.CURRENT_ROW)) and self._prev.text
+            )
             or self._parse_bitwise(),
             "side": self._match_set((TokenType.PRECEDING, TokenType.FOLLOWING)) and self._prev.text,
         }
@@ -2367,7 +2415,9 @@ class Parser:
         if any_token and self._curr and self._curr.token_type not in self.RESERVED_KEYWORDS:
             return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
 
-        return self._match_set(tokens or self.ID_VAR_TOKENS) and exp.Identifier(this=self._prev.text, quoted=False)
+        return self._match_set(tokens or self.ID_VAR_TOKENS) and exp.Identifier(
+            this=self._prev.text, quoted=False
+        )
 
     def _parse_string(self):
         if self._match(TokenType.STRING):
@@ -2447,7 +2497,9 @@ class Parser:
         this = parse()
 
         while self._match_set(expressions):
-            this = self.expression(expressions[self._prev.token_type], this=this, expression=parse())
+            this = self.expression(
+                expressions[self._prev.token_type], this=this, expression=parse()
+            )
 
         return this
 

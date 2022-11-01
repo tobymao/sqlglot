@@ -8,7 +8,9 @@ class TestPostgres(Validator):
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
-            write={"postgres": "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)"},
+            write={
+                "postgres": "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)"
+            },
         )
         self.validate_all(
             "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)",
@@ -59,15 +61,27 @@ class TestPostgres(Validator):
 
     def test_postgres(self):
         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
-        self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END")
-        self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1 FOR 2) IN ('ab') THEN 1 ELSE 0 END")
-        self.validate_identity('SELECT * FROM "x" WHERE SUBSTRING("x"."foo" FROM 1 FOR 2) IN (\'mas\')')
+        self.validate_identity(
+            "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END"
+        )
+        self.validate_identity(
+            "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1 FOR 2) IN ('ab') THEN 1 ELSE 0 END"
+        )
+        self.validate_identity(
+            'SELECT * FROM "x" WHERE SUBSTRING("x"."foo" FROM 1 FOR 2) IN (\'mas\')'
+        )
         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
-        self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')")
-        self.validate_identity("SELECT SUBSTRING('bla' + 'foo' || 'bar' FROM 3 - 1 + 5 FOR 4 + SOME_FUNC(arg1, arg2))")
+        self.validate_identity(
+            "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')"
+        )
+        self.validate_identity(
+            "SELECT SUBSTRING('bla' + 'foo' || 'bar' FROM 3 - 1 + 5 FOR 4 + SOME_FUNC(arg1, arg2))"
+        )
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
-        self.validate_identity("SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')")
+        self.validate_identity(
+            "SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')"
+        )
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
@@ -153,7 +167,9 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss",
-            read={"postgres": "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss"},
+            read={
+                "postgres": "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss"
+            },
         )
         self.validate_all(
             "SELECT m.name FROM manufacturers AS m LEFT JOIN LATERAL GET_PRODUCT_NAMES(m.id) AS pname ON TRUE WHERE pname IS NULL",
@@ -169,11 +185,15 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",
-            read={"postgres": "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE deleted NOTNULL"},
+            read={
+                "postgres": "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE deleted NOTNULL"
+            },
         )
         self.validate_all(
             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",
-            read={"postgres": "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted ISNULL"},
+            read={
+                "postgres": "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted ISNULL"
+            },
         )
         self.validate_all(
             "'[1,2,3]'::json->2",
@@ -184,7 +204,8 @@ class TestPostgres(Validator):
             write={"postgres": """CAST('{"a":1,"b":2}' AS JSON)->'b'"""},
         )
         self.validate_all(
-            """'{"x": {"y": 1}}'::json->'x'->'y'""", write={"postgres": """CAST('{"x": {"y": 1}}' AS JSON)->'x'->'y'"""}
+            """'{"x": {"y": 1}}'::json->'x'->'y'""",
+            write={"postgres": """CAST('{"x": {"y": 1}}' AS JSON)->'x'->'y'"""},
         )
         self.validate_all(
             """'{"x": {"y": 1}}'::json->'x'::json->'y'""",

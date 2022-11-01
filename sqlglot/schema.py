@@ -17,7 +17,9 @@ class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
     @abc.abstractmethod
-    def add_table(self, table: exp.Table | str, column_mapping: t.Optional[ColumnMapping] = None) -> None:
+    def add_table(
+        self, table: exp.Table | str, column_mapping: t.Optional[ColumnMapping] = None
+    ) -> None:
         """
         Register or update a table. Some implementing classes may require column information to also be provided.
 
@@ -72,7 +74,10 @@ class MappingSchema(Schema):
     """
 
     def __init__(
-        self, schema: t.Optional[t.Dict] = None, visible: t.Optional[t.Dict] = None, dialect: t.Optional[str] = None
+        self,
+        schema: t.Optional[t.Dict] = None,
+        visible: t.Optional[t.Dict] = None,
+        dialect: t.Optional[str] = None,
     ) -> None:
         self.schema = schema or {}
         self.visible = visible
@@ -87,13 +92,17 @@ class MappingSchema(Schema):
     @classmethod
     def from_mapping_schema(cls, mapping_schema: MappingSchema) -> MappingSchema:
         return MappingSchema(
-            schema=mapping_schema.schema, visible=mapping_schema.visible, dialect=mapping_schema.dialect
+            schema=mapping_schema.schema,
+            visible=mapping_schema.visible,
+            dialect=mapping_schema.dialect,
         )
 
     def copy(self, **kwargs) -> MappingSchema:
         return MappingSchema(**{"schema": self.schema.copy(), **kwargs})  # type: ignore
 
-    def add_table(self, table: exp.Table | str, column_mapping: t.Optional[ColumnMapping] = None) -> None:
+    def add_table(
+        self, table: exp.Table | str, column_mapping: t.Optional[ColumnMapping] = None
+    ) -> None:
         """
         Register or update a table. Updates are only performed if a new column mapping is provided.
 
@@ -232,7 +241,9 @@ def fs_get(table: exp.Table) -> t.List[str]:
     raise ValueError(f"Cannot read schema for {table}")
 
 
-def _nested_get(d: t.Dict, *path: t.Tuple[str, str], raise_on_missing: bool = True) -> t.Optional[t.Any]:
+def _nested_get(
+    d: t.Dict, *path: t.Tuple[str, str], raise_on_missing: bool = True
+) -> t.Optional[t.Any]:
     """
     Get a value for a nested dictionary.
 

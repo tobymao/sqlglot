@@ -53,7 +53,10 @@ class TestDataframeTypes(unittest.TestCase):
         self.assertEqual("array<int>", types.ArrayType(types.IntegerType()).simpleString())
 
     def test_map(self):
-        self.assertEqual("map<int, string>", types.MapType(types.IntegerType(), types.StringType()).simpleString())
+        self.assertEqual(
+            "map<int, string>",
+            types.MapType(types.IntegerType(), types.StringType()).simpleString(),
+        )
 
     def test_struct_field(self):
         self.assertEqual("cola:int", types.StructField("cola", types.IntegerType()).simpleString())

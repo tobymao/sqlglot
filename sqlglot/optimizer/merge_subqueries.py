@@ -122,7 +122,9 @@ def _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
         unmergable_window_columns = [
             column
             for column in outer_scope.columns
-            if column.find_ancestor(exp.Where, exp.Group, exp.Order, exp.Join, exp.Having, exp.AggFunc)
+            if column.find_ancestor(
+                exp.Where, exp.Group, exp.Order, exp.Join, exp.Having, exp.AggFunc
+            )
         ]
         window_expressions_in_unmergable = [
             column
@@ -147,7 +149,9 @@ def _mergeable(outer_scope, inner_select, leave_tables_isolated, from_or_join):
         and not (
             isinstance(from_or_join, exp.From)
             and inner_select.args.get("where")
-            and any(j.side in {"FULL", "RIGHT"} for j in outer_scope.expression.args.get("joins", []))
+            and any(
+                j.side in {"FULL", "RIGHT"} for j in outer_scope.expression.args.get("joins", [])
+            )
         )
         and not _is_a_window_expression_in_unmergable_operation()
     )
@@ -203,7 +207,9 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
             if table.alias_or_name == node_to_replace.alias_or_name:
                 table.set("this", exp.to_identifier(new_subquery.alias_or_name))
     outer_scope.remove_source(alias)
-    outer_scope.add_source(new_subquery.alias_or_name, inner_scope.sources[new_subquery.alias_or_name])
+    outer_scope.add_source(
+        new_subquery.alias_or_name, inner_scope.sources[new_subquery.alias_or_name]
+    )
 
 
 def _merge_joins(outer_scope, inner_scope, from_or_join):
@@ -296,7 +302,9 @@ def _merge_order(outer_scope, inner_scope):
         inner_scope (sqlglot.optimizer.scope.Scope)
     """
     if (
-        any(outer_scope.expression.args.get(arg) for arg in ["group", "distinct", "having", "order"])
+        any(
+            outer_scope.expression.args.get(arg) for arg in ["group", "distinct", "having", "order"]
+        )
         or len(outer_scope.selected_sources) != 1
         or any(expression.find(exp.AggFunc) for expression in outer_scope.expression.expressions)
     ):

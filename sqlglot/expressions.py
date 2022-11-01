@@ -58,7 +58,9 @@ class Expression(metaclass=_Expression):
         return hash(
             (
                 self.key,
-                tuple((k, tuple(v) if isinstance(v, list) else v) for k, v in _norm_args(self).items()),
+                tuple(
+                    (k, tuple(v) if isinstance(v, list) else v) for k, v in _norm_args(self).items()
+                ),
             )
         )
 
@@ -863,7 +865,9 @@ class Literal(Condition):
 
     def __eq__(self, other):
         return (
-            isinstance(other, Literal) and self.this == other.this and self.args["is_string"] == other.args["is_string"]
+            isinstance(other, Literal)
+            and self.this == other.this
+            and self.args["is_string"] == other.args["is_string"]
         )
 
     def __hash__(self):
@@ -2188,7 +2192,13 @@ class Distinct(Expression):
 
 
 class In(Predicate):
-    arg_types = {"this": True, "expressions": False, "query": False, "unnest": False, "field": False}
+    arg_types = {
+        "this": True,
+        "expressions": False,
+        "query": False,
+        "unnest": False,
+        "field": False,
+    }
 
 
 class TimeUnit(Expression):
@@ -2254,7 +2264,9 @@ class Func(Condition):
     @classmethod
     def sql_names(cls):
         if cls is Func:
-            raise NotImplementedError("SQL name is only supported by concrete function implementations")
+            raise NotImplementedError(
+                "SQL name is only supported by concrete function implementations"
+            )
         if not hasattr(cls, "_sql_names"):
             cls._sql_names = [camel_to_snake_case(cls.__name__)]
         return cls._sql_names
@@ -3138,7 +3150,10 @@ def update(table, properties, where=None, from_=None, dialect=None, **opts):
     update = Update(this=maybe_parse(table, into=Table, dialect=dialect))
     update.set(
         "expressions",
-        [EQ(this=maybe_parse(k, dialect=dialect, **opts), expression=convert(v)) for k, v in properties.items()],
+        [
+            EQ(this=maybe_parse(k, dialect=dialect, **opts), expression=convert(v))
+            for k, v in properties.items()
+        ],
     )
     if from_:
         update.set("from", maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", **opts))

@@ -72,7 +72,9 @@ class Step:
         if from_:
             from_ = from_.expressions
             if len(from_) > 1:
-                raise UnsupportedError("Multi-from statements are unsupported. Run it through the optimizer")
+                raise UnsupportedError(
+                    "Multi-from statements are unsupported. Run it through the optimizer"
+                )
 
             step = Scan.from_expression(from_[0], ctes)
         else:
@@ -117,7 +119,9 @@ class Step:
             aggregate = Aggregate()
             aggregate.source = step.name
             aggregate.name = step.name
-            aggregate.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
+            aggregate.operands = tuple(
+                alias(operand, alias_) for operand, alias_ in operands.items()
+            )
             aggregate.aggregations = aggregations
             aggregate.group = group.expressions
             aggregate.add_dependency(step)
@@ -200,7 +204,9 @@ class Scan(Step):
         alias_ = expression.alias
 
         if not alias_:
-            raise UnsupportedError("Tables/Subqueries must be aliased. Run it through the optimizer")
+            raise UnsupportedError(
+                "Tables/Subqueries must be aliased. Run it through the optimizer"
+            )
 
         if isinstance(expression, exp.Subquery):
             table = expression.this

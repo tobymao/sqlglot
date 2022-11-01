@@ -313,7 +313,12 @@ class Token:
         return cls(TokenType.VAR, var)
 
     def __init__(
-        self, token_type: TokenType, text: str, line: int = 1, col: int = 1, comment: t.Optional[str] = None
+        self,
+        token_type: TokenType,
+        text: str,
+        line: int = 1,
+        col: int = 1,
+        comment: t.Optional[str] = None,
     ) -> None:
         self.token_type = token_type
         self.text = text
@@ -337,7 +342,8 @@ class _Tokenizer(type):
         klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
         klass._ESCAPES = set(klass.ESCAPES)
         klass._COMMENTS = dict(
-            (comment, None) if isinstance(comment, str) else (comment[0], comment[1]) for comment in klass.COMMENTS
+            (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
+            for comment in klass.COMMENTS
         )
 
         klass.KEYWORD_TRIE = new_trie(
@@ -769,11 +775,19 @@ class Tokenizer(metaclass=_Tokenizer):
         self._prev_token_comment = self._comment
         self._prev_token_type = token_type  # type: ignore
         self.tokens.append(
-            Token(token_type, self._text if text is None else text, self._line, self._col, self._comment)
+            Token(
+                token_type,
+                self._text if text is None else text,
+                self._line,
+                self._col,
+                self._comment,
+            )
         )
         self._comment = None
 
-        if token_type in self.COMMANDS and (len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON):
+        if token_type in self.COMMANDS and (
+            len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON
+        ):
             self._start = self._current
             while not self._end and self._peek != ";":
                 self._advance()
@@ -975,7 +989,9 @@ class Tokenizer(metaclass=_Tokenizer):
             try:
                 self._add(token_type, f"{int(text, base)}")
             except:
-                raise RuntimeError(f"Numeric string contains invalid characters from {self._line}:{self._start}")
+                raise RuntimeError(
+                    f"Numeric string contains invalid characters from {self._line}:{self._start}"
+                )
 
         return True
 

@@ -68,4 +68,8 @@ def normalize(expression):
 
 
 def other_table_names(join, exclude):
-    return [name for name in (exp.column_table_names(join.args.get("on") or exp.TRUE)) if name != exclude]
+    return [
+        name
+        for name in (exp.column_table_names(join.args.get("on") or exp.TRUE))
+        if name != exclude
+    ]

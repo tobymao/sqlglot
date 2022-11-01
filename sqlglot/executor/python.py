@@ -25,7 +25,11 @@ class PythonExecutor:
         while queue:
             node = queue.pop()
             context = self.context(
-                {name: table for dep in node.dependencies for name, table in contexts[dep].tables.items()}
+                {
+                    name: table
+                    for dep in node.dependencies
+                    for name, table in contexts[dep].tables.items()
+                }
             )
             running.add(node)
 
@@ -151,7 +155,10 @@ class PythonExecutor:
                 table = self.nested_loop_join(join, source_context, join_context)
 
             source_context = self.context(
-                {name: Table(table.columns, table.rows, column_range) for name, column_range in column_ranges.items()}
+                {
+                    name: Table(table.columns, table.rows, column_range)
+                    for name, column_range in column_ranges.items()
+                }
             )
 
         condition = self.generate(step.condition)
@@ -217,7 +224,9 @@ class PythonExecutor:
             for reader, ctx in context:
                 operand_table.append(reader.row + ctx.eval_tuple(operands))
 
-            context = self.context({None: operand_table, **{table: operand_table for table in context.tables}})
+            context = self.context(
+                {None: operand_table, **{table: operand_table for table in context.tables}}
+            )
 
         context.sort(group_by)
 

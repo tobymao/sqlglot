@@ -26,12 +26,14 @@ class TestDataframeColumn(unittest.TestCase):
 
     def test_and(self):
         self.assertEqual(
-            "cola = colb AND colc = cold", ((F.col("cola") == F.col("colb")) & (F.col("colc") == F.col("cold"))).sql()
+            "cola = colb AND colc = cold",
+            ((F.col("cola") == F.col("colb")) & (F.col("colc") == F.col("cold"))).sql(),
         )
 
     def test_or(self):
         self.assertEqual(
-            "cola = colb OR colc = cold", ((F.col("cola") == F.col("colb")) | (F.col("colc") == F.col("cold"))).sql()
+            "cola = colb OR colc = cold",
+            ((F.col("cola") == F.col("colb")) | (F.col("colc") == F.col("cold"))).sql(),
         )
 
     def test_mod(self):
@@ -112,7 +114,9 @@ class TestDataframeColumn(unittest.TestCase):
 
     def test_when_otherwise(self):
         self.assertEqual("CASE WHEN cola = 1 THEN 2 END", F.when(F.col("cola") == 1, 2).sql())
-        self.assertEqual("CASE WHEN cola = 1 THEN 2 END", F.col("cola").when(F.col("cola") == 1, 2).sql())
+        self.assertEqual(
+            "CASE WHEN cola = 1 THEN 2 END", F.col("cola").when(F.col("cola") == 1, 2).sql()
+        )
         self.assertEqual(
             "CASE WHEN cola = 1 THEN 2 WHEN colb = 2 THEN 3 END",
             (F.when(F.col("cola") == 1, 2).when(F.col("colb") == 2, 3)).sql(),
@@ -148,7 +152,9 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual(
             "cola BETWEEN CAST('2022-01-01 01:01:01.000000' AS TIMESTAMP) "
             "AND CAST('2022-03-01 01:01:01.000000' AS TIMESTAMP)",
-            F.col("cola").between(datetime.datetime(2022, 1, 1, 1, 1, 1), datetime.datetime(2022, 3, 1, 1, 1, 1)).sql(),
+            F.col("cola")
+            .between(datetime.datetime(2022, 1, 1, 1, 1, 1), datetime.datetime(2022, 3, 1, 1, 1, 1))
+            .sql(),
         )
 
     def test_over(self):

@@ -336,7 +336,8 @@ class TestSnowflake(Validator):
     def test_table_literal(self):
         # All examples from https://docs.snowflake.com/en/sql-reference/literals-table.html
         self.validate_all(
-            r"""SELECT * FROM TABLE('MYTABLE')""", write={"snowflake": r"""SELECT * FROM TABLE('MYTABLE')"""}
+            r"""SELECT * FROM TABLE('MYTABLE')""",
+            write={"snowflake": r"""SELECT * FROM TABLE('MYTABLE')"""},
         )
 
         self.validate_all(
@@ -352,12 +353,18 @@ class TestSnowflake(Validator):
             write={"snowflake": r"""SELECT * FROM TABLE('MYDB. "MYSCHEMA"."MYTABLE"')"""},
         )
 
-        self.validate_all(r"""SELECT * FROM TABLE($MYVAR)""", write={"snowflake": r"""SELECT * FROM TABLE($MYVAR)"""})
-
-        self.validate_all(r"""SELECT * FROM TABLE(?)""", write={"snowflake": r"""SELECT * FROM TABLE(?)"""})
+        self.validate_all(
+            r"""SELECT * FROM TABLE($MYVAR)""",
+            write={"snowflake": r"""SELECT * FROM TABLE($MYVAR)"""},
+        )
 
         self.validate_all(
-            r"""SELECT * FROM TABLE(:BINDING)""", write={"snowflake": r"""SELECT * FROM TABLE(:BINDING)"""}
+            r"""SELECT * FROM TABLE(?)""", write={"snowflake": r"""SELECT * FROM TABLE(?)"""}
+        )
+
+        self.validate_all(
+            r"""SELECT * FROM TABLE(:BINDING)""",
+            write={"snowflake": r"""SELECT * FROM TABLE(:BINDING)"""},
         )
 
         self.validate_all(

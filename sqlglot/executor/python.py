@@ -3,14 +3,12 @@ import collections
 import itertools
 import math
 
-from sqlglot import exp, planner
+from sqlglot import exp, generator, planner, tokens
 from sqlglot.dialects.dialect import Dialect, inline_array_sql
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
-from sqlglot.generator import Generator
 from sqlglot.helper import csv_reader
-from sqlglot.tokens import Tokenizer
 
 
 class PythonExecutor:
@@ -312,10 +310,10 @@ def _ordered_py(self, expression):
 
 
 class Python(Dialect):
-    class Tokenizer(Tokenizer):  # type: ignore
+    class Tokenizer(tokens.Tokenizer):
         ESCAPES = ["\\"]
 
-    class Generator(Generator):  # type: ignore
+    class Generator(generator.Generator):
         TRANSFORMS = {
             exp.Alias: lambda self, e: self.sql(e.this),
             exp.Array: inline_array_sql,

@@ -64,23 +64,40 @@ class TestTranspile(unittest.TestCase):
 
     def test_comments(self):
         self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo")
-        self.validate("SELECT 1 /* inline */ FROM foo -- comment", "SELECT 1 FROM foo")
+        self.validate("SELECT 1 /* inline */ FROM foo -- comment", "SELECT 1 /* inline */ FROM foo")
 
         self.validate(
             """
             SELECT 1 -- comment
             FROM foo -- comment
             """,
-            "SELECT 1 FROM foo",
+            "SELECT 1 /* comment */ FROM foo",
         )
-
         self.validate(
             """
             SELECT 1 /* big comment
              like this */
             FROM foo -- comment
             """,
-            "SELECT 1 FROM foo",
+            """SELECT 1 /* big comment
+             like this */ FROM foo""",
+        )
+        self.validate(
+            """
+            /*
+              multi
+              line
+              comment
+            */
+            SELECT * FROM foo
+            """,
+            """/* multi
+              line
+              comment */
+SELECT
+  *
+FROM foo""",
+            pretty=True,
         )
 
     def test_types(self):

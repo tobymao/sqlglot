@@ -571,3 +571,4 @@ SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)
 SELECT * FROM (tbl1 JOIN tbl2 JOIN tbl3)
 SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)
 SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)
+SELECT CAST(x AS INT) /* comment */ FROM foo

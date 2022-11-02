@@ -129,7 +129,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT 1 # arbitrary content,,, until end-of-line",
             write={
-                "mysql": "SELECT 1",
+                "mysql": "SELECT 1 /* arbitrary content,,, until end-of-line */",
             },
         )
         self.validate_all(

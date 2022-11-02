@@ -676,10 +676,9 @@ class Parser(metaclass=_Parser):
         self._advance(index - self._index)
 
     def _attach_comment(self, node, comment):
-        try:
-            node.comment = comment
-        finally:
-            return node
+        if node and comment is not None:
+            node.comment = comment.strip()
+        return node
 
     def _parse_statement(self):
         if self._curr is None:
@@ -1030,11 +1029,13 @@ class Parser(metaclass=_Parser):
             return None
 
         def parse_values():
-            k = self._parse_var()
+            key = self._parse_var()
+            value = None
+
             if self._match(TokenType.EQ):
-                v = self._parse_string()
-                return (k, v)
-            return (k, None)
+                value = self._parse_string()
+
+            return exp.Property(this=key, value=value)
 
         self._match_l_paren()
         values = self._parse_csv(parse_values)

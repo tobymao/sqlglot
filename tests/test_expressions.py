@@ -574,7 +574,7 @@ class TestExpressions(unittest.TestCase):
             a,
             b AS B,
             c, /*comment*/
-            d AS D, -- another_comment
+            d AS D, -- another comment
             CAST(x AS INT) -- final comment
         FROM foo
         """
@@ -583,7 +583,10 @@ class TestExpressions(unittest.TestCase):
             [e.alias_or_name for e in expression.expressions],
             ["a", "B", "c", "D", "x"],
         )
-        self.assertEqual(expression.sql(), "SELECT a, b AS B, c, d AS D, CAST(x AS INT) FROM foo")
+        self.assertEqual(
+            expression.sql(),
+            "SELECT a, b AS B, c /* comment */, d AS D /* another comment */, CAST(x AS INT) /* final comment */ FROM foo",
+        )
         self.assertEqual(
             expression.sql(pretty=True, comments=False),
             """SELECT
@@ -599,8 +602,8 @@ FROM foo""",
             """SELECT
   a,
   b AS B,
-  c, --comment
-  d AS D, -- another_comment
+  c, -- comment
+  d AS D, -- another comment
   CAST(x AS INT) -- final comment
 FROM foo""",
         )

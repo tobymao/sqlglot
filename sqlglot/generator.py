@@ -219,7 +219,13 @@ class Generator:
         return f"{self.sep(sep)}{sql}"
 
     def maybe_comment(self, sql, comment):
-        return f"{sql}{f' --{comment}' if comment else ''}" if self._comments else sql
+        if not self._comments or not comment:
+            return sql
+
+        if not self.pretty:
+            return f"{sql}{f' /* {comment} */'}"
+
+        return f"/* {comment} */\n{sql}" if "\n" in comment else f"{sql}{f' -- {comment}'}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -497,8 +503,8 @@ class Generator:
     def partition_sql(self, expression):
         keys = csv(
             *[
-                f"{k.args['this']}='{v.args['this']}'" if v else k.args["this"]
-                for k, v in expression.args.get("this")
+                f"{prop.this.this}={prop.args['value']}" if prop.args["value"] else prop.this.this
+                for prop in expression.this
             ]
         )
         return f"PARTITION({keys})"
@@ -1296,7 +1302,7 @@ class Generator:
             )
         else:
             expressions = "".join(
-                f"{s}{self.sep(sep) if i + 1 < num_expressions else ''}"
+                f"{self.maybe_comment(s, c)}{self.sep(sep) if i + 1 < num_expressions else ''}"
                 for i, (s, c) in enumerate(sql_with_comment)
             )
 

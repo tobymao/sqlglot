@@ -175,10 +175,10 @@ class MappingSchema(Schema):
                     *zip(self.supported_table_args, table_args),
                     raise_on_missing=False,
                 )
-                schema_type = table_schema.get(column.name).upper()  # type: ignore
-                return self._convert_type(schema_type)
+            else:
+                schema_type = self.schema.get(table, {})
 
-            schema_type = self.schema.get(table, {}).table_schema.get(column).upper()
+            schema_type = table_schema.get(column if isinstance(column, str) else column.name).upper()  # type: ignore
             return self._convert_type(schema_type)
         except:
             raise OptimizeError(

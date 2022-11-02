@@ -40,13 +40,14 @@ class Expression(metaclass=_Expression):
 
     key = None
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key", "type")
+    __slots__ = ("args", "parent", "arg_key", "type", "comment")
 
     def __init__(self, **args):
         self.args = args
         self.parent = None
         self.arg_key = None
         self.type = None
+        self.comment = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
@@ -577,17 +578,6 @@ class Unionable(Expression):
 
 class UDTF(DerivedTable, Unionable):
     pass
-
-
-class Annotation(Expression):
-    arg_types = {
-        "this": True,
-        "expression": True,
-    }
-
-    @property
-    def alias(self):
-        return self.expression.alias_or_name
 
 
 class Cache(Expression):

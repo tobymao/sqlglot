@@ -50,8 +50,8 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
-        annotations: Whether or not to show annotations in the SQL when `pretty` is True.
-            Annotations can only be shown in pretty mode otherwise they may clobber resulting sql.
+        comments: Whether or not to show comments in the SQL when `pretty` is True.
+            Comments can only be shown in pretty mode otherwise they may clobber resulting sql.
             Default: True
     """
 
@@ -125,7 +125,7 @@ class Generator:
         "_escaped_quote_end",
         "_leading_comma",
         "_max_text_width",
-        "_annotations",
+        "_comments",
     )
 
     def __init__(
@@ -151,7 +151,7 @@ class Generator:
         max_unsupported=3,
         leading_comma=False,
         max_text_width=80,
-        annotations=True,
+        comments=True,
     ):
         import sqlglot
 
@@ -180,7 +180,7 @@ class Generator:
         self._escaped_quote_end = self.escape + self.quote_end
         self._leading_comma = leading_comma
         self._max_text_width = max_text_width
-        self._annotations = annotations
+        self._comments = comments
 
     def generate(self, expression):
         """
@@ -217,6 +217,9 @@ class Generator:
 
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
+
+    def maybe_comment(self, sql, comment):
+        return f"{sql}{f' --{comment}' if comment else ''}" if self._comments else sql
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -287,11 +290,6 @@ class Generator:
             return self.property_sql(expression)
 
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
-
-    def annotation_sql(self, expression):
-        if self._annotations and self.pretty:
-            return f"{self.sql(expression, 'expression')} # {expression.name}"
-        return self.sql(expression, "expression")
 
     def uncache_sql(self, expression):
         table = self.sql(expression, "this")
@@ -858,7 +856,7 @@ class Generator:
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
         sql = self.query_modifiers(
             expression,
-            f"SELECT{hint}{distinct}{expressions}",
+            f"{self.maybe_comment('SELECT', expression.comment)}{hint}{distinct}{expressions}",
             self.sql(expression, "from"),
         )
         return self.prepend_ctes(expression, sql)
@@ -1281,19 +1279,28 @@ class Generator:
         if flat:
             return sep.join(self.sql(e) for e in expressions)
 
-        sql = (self.sql(e) for e in expressions)
+        num_expressions = len(expressions)
+        sql_with_comment = [(self.sql(e), e.comment) for e in expressions]
+
         # the only time leading_comma changes the output is if pretty print is enabled
         if self._leading_comma and self.pretty:
             pad = " " * self.pad
             expressions = "\n".join(
-                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql)
+                f"{sep}{self.maybe_comment(s, c)}" if i > 0 else f"{pad}{self.maybe_comment(s, c)}"
+                for i, (s, c) in enumerate(sql_with_comment)
+            )
+        elif self.pretty:
+            expressions = "\n".join(
+                f"{s}{sep.strip() if i + 1 < num_expressions else ''}{self.maybe_comment('', c)}"
+                for i, (s, c) in enumerate(sql_with_comment)
             )
         else:
-            expressions = self.sep(sep).join(sql)
+            expressions = "".join(
+                f"{s}{self.sep(sep) if i + 1 < num_expressions else ''}"
+                for i, (s, c) in enumerate(sql_with_comment)
+            )
 
-        if indent:
-            return self.indent(expressions, skip_first=False)
-        return expressions
+        return self.indent(expressions, skip_first=False) if indent else expressions
 
     def op_expressions(self, op, expression, flat=False):
         expressions_sql = self.expressions(expression, flat=flat)

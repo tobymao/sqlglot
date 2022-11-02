@@ -22,7 +22,6 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
    * [Unsupported Errors](#unsupported-errors)
    * [Build and Modify SQL](#build-and-modify-sql)
    * [SQL Optimizer](#sql-optimizer)
-   * [SQL Annotations](#sql-annotations)
    * [AST Introspection](#ast-introspection)
    * [AST Diff](#ast-diff)
    * [Custom Dialects](#custom-dialects)
@@ -120,6 +119,28 @@ JOIN `bar` AS `b`
 LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
+
+Finally, SQLGlot tries to preserve comments when formatting SQL code using the `pretty=True` option:
+
+```python
+sql = """
+SELECT            -- comment1
+  CAST(x AS INT), -- comment2
+  y               -- comment3
+FROM
+  bar
+"""
+
+print(sqlglot.transpile(sql, pretty=True)[0])
+```
+
+```sql
+SELECT -- comment1
+  CAST(x AS INT), -- comment2
+  y -- comment3
+FROM bar
+```
+
 
 ### Metadata
 
@@ -247,17 +268,6 @@ SELECT
 FROM "x" AS "x"
 WHERE
   "x"."Z" = CAST('2021-02-01' AS DATE)
-```
-
-### SQL Annotations
-
-SQLGlot supports annotations in the sql expression. This is an experimental feature that is not part of any of the SQL standards but it can be useful when needing to annotate what a selected field is supposed to be. Below is an example:
-
-```sql
-SELECT
-  user # primary_key,
-  country
-FROM users
 ```
 
 ### AST Introspection

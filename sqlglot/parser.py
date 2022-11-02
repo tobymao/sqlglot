@@ -675,6 +675,12 @@ class Parser(metaclass=_Parser):
     def _retreat(self, index):
         self._advance(index - self._index)
 
+    def _attach_comment(self, node, comment):
+        try:
+            node.comment = comment
+        finally:
+            return node
+
     def _parse_statement(self):
         if self._curr is None:
             return None
@@ -689,9 +695,14 @@ class Parser(metaclass=_Parser):
                 expression=self._parse_string(),
             )
 
+        comment = self._curr.comment
+
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
+
         self._parse_query_modifiers(expression)
+        self._attach_comment(expression, comment)
+
         return expression
 
     def _parse_drop(self):
@@ -1069,7 +1080,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
             limit = self._parse_limit(top=True)
-            expressions = self._parse_csv(lambda: self._parse_annotation(self._parse_expression()))
+            expressions = self._parse_csv(lambda: self._parse_expression())
 
             this = self.expression(
                 exp.Select,
@@ -1187,14 +1198,6 @@ class Parser(metaclass=_Parser):
 
             if expression:
                 this.set(key, expression)
-
-    def _parse_annotation(self, expression):
-        if self._match(TokenType.ANNOTATION):
-            return self.expression(
-                exp.Annotation, this=self._prev.text.strip(), expression=expression
-            )
-
-        return expression
 
     def _parse_hint(self):
         if self._match(TokenType.HINT):
@@ -2502,23 +2505,25 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
         return columns
 
-    def _parse_csv(self, parse):
-        parse_result = parse()
+    def _parse_csv(self, parse_method):
+        parse_result = parse_method()
         items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            parse_result = parse()
+            self._attach_comment(parse_result, self._prev.comment)
+            parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)
 
+        self._attach_comment(parse_result, self._prev.comment)
         return items
 
-    def _parse_tokens(self, parse, expressions):
-        this = parse()
+    def _parse_tokens(self, parse_method, expressions):
+        this = parse_method()
 
         while self._match_set(expressions):
             this = self.expression(
-                expressions[self._prev.token_type], this=this, expression=parse()
+                expressions[self._prev.token_type], this=this, expression=parse_method()
             )
 
         return this

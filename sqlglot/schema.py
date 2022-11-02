@@ -163,7 +163,9 @@ class MappingSchema(Schema):
         visible = _nested_get(self.visible, *zip(self.supported_table_args, args))  # type: ignore
         return [col for col in columns if col in visible]  # type: ignore
 
-    def get_column_type(self, table: exp.Table | str, column: exp.Column) -> exp.DataType.Type:
+    def get_column_type(
+        self, table: exp.Table | str, column: exp.Column | str
+    ) -> exp.DataType.Type:
         try:
             if isinstance(table, exp.Table):
                 table_args = [
@@ -176,7 +178,7 @@ class MappingSchema(Schema):
                     raise_on_missing=False,
                 )
             else:
-                schema_type = self.schema.get(table, {})
+                table_schema = self.schema.get(table, {})
 
             schema_type = table_schema.get(column if isinstance(column, str) else column.name).upper()  # type: ignore
             return self._convert_type(schema_type)

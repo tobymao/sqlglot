@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot import table
+from sqlglot import exp, table
 from sqlglot.dataframe.sql import types as df_types
 from sqlglot.schema import MappingSchema, ensure_schema
 from sqlglot import exp

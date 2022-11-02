@@ -101,7 +101,7 @@ class BigQuery(Dialect):
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {
-            **{k: v for k, v in tokens.Tokenizer.KEYWORDS.items() if k != "DIV"},
+            **tokens.Tokenizer.KEYWORDS,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
@@ -112,6 +112,7 @@ class BigQuery(Dialect):
             "WINDOW": TokenType.WINDOW,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
         }
+        KEYWORDS.pop("DIV")
 
     class Parser(parser.Parser):
         FUNCTIONS = {

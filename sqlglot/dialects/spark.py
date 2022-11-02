@@ -96,7 +96,7 @@ class Spark(Hive):
         }
 
         TRANSFORMS = {
-            **{k: v for k, v in Hive.Generator.TRANSFORMS.items() if k not in {exp.ArraySort, exp.ILike}},  # type: ignore
+            **Hive.Generator.TRANSFORMS,  # type: ignore
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
@@ -115,6 +115,8 @@ class Spark(Hive):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
         }
+        TRANSFORMS.pop(exp.ArraySort)
+        TRANSFORMS.pop(exp.ILike)
 
         WRAP_DERIVED_VALUES = False
 

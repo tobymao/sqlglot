@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot import table
+from sqlglot import exp, table
 from sqlglot.dataframe.sql import types as df_types
 from sqlglot.schema import MappingSchema, ensure_schema
 
@@ -290,3 +290,34 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(schema.column_names("test"), ["x", "y"])
         schema.add_table("test")
         self.assertEqual(schema.column_names("test"), ["x", "y"])
+
+    def test_schema_get_column_type(self):
+        schema = MappingSchema({"a": {"b": "varchar"}})
+        self.assertEqual(schema.get_column_type("a", "b"), exp.DataType.Type.VARCHAR)
+        self.assertEqual(
+            schema.get_column_type(exp.Table(this="a"), exp.Column(this="b")),
+            exp.DataType.Type.VARCHAR,
+        )
+        self.assertEqual(
+            schema.get_column_type("a", exp.Column(this="b")), exp.DataType.Type.VARCHAR
+        )
+        self.assertEqual(
+            schema.get_column_type(exp.Table(this="a"), "b"), exp.DataType.Type.VARCHAR
+        )
+        schema = MappingSchema({"a": {"b": {"c": "varchar"}}})
+        self.assertEqual(
+            schema.get_column_type(exp.Table(this="b", db="a"), exp.Column(this="c")),
+            exp.DataType.Type.VARCHAR,
+        )
+        self.assertEqual(
+            schema.get_column_type(exp.Table(this="b", db="a"), "c"), exp.DataType.Type.VARCHAR
+        )
+        schema = MappingSchema({"a": {"b": {"c": {"d": "varchar"}}}})
+        self.assertEqual(
+            schema.get_column_type(exp.Table(this="c", db="b", catalog="a"), exp.Column(this="d")),
+            exp.DataType.Type.VARCHAR,
+        )
+        self.assertEqual(
+            schema.get_column_type(exp.Table(this="c", db="b", catalog="a"), "d"),
+            exp.DataType.Type.VARCHAR,
+        )

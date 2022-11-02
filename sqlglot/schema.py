@@ -163,9 +163,19 @@ class MappingSchema(Schema):
         visible = _nested_get(self.visible, *zip(self.supported_table_args, args))  # type: ignore
         return [col for col in columns if col in visible]  # type: ignore
 
-    def get_column_type(self, table: exp.Table | str, column: exp.Column) -> exp.DataType.Type:
+    def get_column_type(self, table, column):
         try:
-            schema_type = self.schema.get(table.name, {}).get(column.name).upper()  # type: ignore
+            table_args = [
+                table.text(p)
+                for p in self.supported_table_args or self._get_table_args_from_table(table)
+            ]
+            schema_type = (
+                _nested_get(
+                    self.schema, *zip(self.supported_table_args, table_args), raise_on_missing=False
+                )
+                .get(column.name)
+                .upper()
+            )
             return self._convert_type(schema_type)
         except:
             raise OptimizeError(f"Failed to get type for column {column.sql()}")

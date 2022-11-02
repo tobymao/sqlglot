@@ -19,6 +19,8 @@ class StarRocks(MySQL):
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.DateDiff: rename_func("DATEDIFF"),
+            # use default generator function handler
+            exp.DateTrunc: None,  # type: ignore
             exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.format_time(e)})",

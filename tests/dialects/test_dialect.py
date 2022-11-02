@@ -477,42 +477,45 @@ class TestDialect(Validator):
             "DATE_TRUNC(x, 'day')",
             write={
                 "mysql": "DATE(x)",
-                "starrocks": "DATE(x)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC('day', x)",
+            read={
+                "starrocks": "DATE_TRUNC('day', x)",
+            },
+            write={
+                "starrocks": "DATE_TRUNC('day', x)",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'week')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', WEEK(x, 1), ' 1'), '%Y %u %w')",
-                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' ', WEEK(x, 1), ' 1'), '%Y %u %w')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'month')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', MONTH(x), ' 1'), '%Y %c %e')",
-                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' ', MONTH(x), ' 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'quarter')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', QUARTER(x) * 3 - 2, ' 1'), '%Y %c %e')",
-                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' ', QUARTER(x) * 3 - 2, ' 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'year')",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
-                "starrocks": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
             "DATE_TRUNC(x, 'millenium')",
             write={
                 "mysql": UnsupportedError,
-                "starrocks": UnsupportedError,
             },
         )
         self.validate_all(

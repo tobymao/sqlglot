@@ -676,7 +676,7 @@ class Parser(metaclass=_Parser):
         self._advance(index - self._index)
 
     def _attach_comment(self, node, comment):
-        if node and comment is not None:
+        if node and node.comment is None and comment is not None:
             node.comment = comment
         return node
 
@@ -1361,7 +1361,7 @@ class Parser(metaclass=_Parser):
             table_sample.set("this", this)
             this = table_sample
 
-        return this
+        return self._attach_comment(this, self._prev.comment)
 
     def _parse_unnest(self):
         if not self._match(TokenType.UNNEST):
@@ -1880,7 +1880,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
-            return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
+            return self._attach_comment(
+                self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev), self._prev.comment
+            )
 
         if self._match_pair(TokenType.DOT, TokenType.NUMBER):
             return exp.Literal.number(f"0.{self._prev.text}")
@@ -2516,7 +2518,10 @@ class Parser(metaclass=_Parser):
             if parse_result is not None:
                 items.append(parse_result)
 
-        self._attach_comment(parse_result, self._prev.comment)
+        # This makes sure we don't attach a comment twice to the last term in a binary expression
+        if not isinstance(parse_result, exp.Binary):
+            self._attach_comment(parse_result, self._prev.comment)
+
         return items
 
     def _parse_tokens(self, parse_method, expressions):

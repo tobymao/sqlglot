@@ -85,6 +85,10 @@ class Expression(metaclass=_Expression):
             return field.this
         return ""
 
+    def comment_(self, key):
+        field = self.args.get(key)
+        return field.comment if field is not None else ""
+
     @property
     def is_string(self):
         return isinstance(self, Literal) and self.args["is_string"]

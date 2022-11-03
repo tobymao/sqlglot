@@ -50,6 +50,8 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
+        comments: Whether or not to preserve comments in the ouput SQL code.
+            Default: True
     """
 
     TRANSFORMS = {
@@ -65,14 +67,16 @@ class Generator:
         exp.VolatilityProperty: lambda self, e: self.sql(e.name),
     }
 
-    # whether 'CREATE ... TRANSIENT ... TABLE' is allowed
-    # can override in dialects
+    # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
     CREATE_TRANSIENT = False
-    # whether or not null ordering is supported in order by
+
+    # Whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
-    # always do union distinct or union all
+
+    # Always do union distinct or union all
     EXPLICIT_UNION = False
-    # wrap derived values in parens, usually standard but spark doesn't support it
+
+    # Wrap derived values in parens, usually standard but spark doesn't support it
     WRAP_DERIVED_VALUES = True
 
     TYPE_MAPPING = {
@@ -122,6 +126,7 @@ class Generator:
         "_escaped_quote_end",
         "_leading_comma",
         "_max_text_width",
+        "_comments",
     )
 
     def __init__(
@@ -147,6 +152,7 @@ class Generator:
         max_unsupported=3,
         leading_comma=False,
         max_text_width=80,
+        comments=True,
     ):
         import sqlglot
 
@@ -175,6 +181,7 @@ class Generator:
         self._escaped_quote_end = self.escape + self.quote_end
         self._leading_comma = leading_comma
         self._max_text_width = max_text_width
+        self._comments = comments
 
     def generate(self, expression):
         """
@@ -213,13 +220,13 @@ class Generator:
         return f"{self.sep(sep)}{sql}"
 
     def maybe_comment(self, sql, comment):
-        if not comment:
+        if not comment or not self._comments:
             return sql
 
-        if not self.pretty:
-            return f"{sql}{f' /* {comment.strip()} */'}"
+        if not self.pretty or "\n" not in comment:
+            return f"{sql} /* {comment.strip()} */"
 
-        return f"/*{comment}*/\n{sql}" if "\n" in comment else f"{sql}{f' --{comment}'}"
+        return f"/*{comment}*/\n{sql}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -1245,7 +1252,11 @@ class Generator:
         return f"SHOW {self.sql(expression, 'this')}"
 
     def binary(self, expression, op):
-        return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
+        left = self.maybe_comment(self.sql(expression, "this"), expression.comment_("this"))
+        right = self.maybe_comment(
+            self.sql(expression, "expression"), expression.comment_("expression")
+        )
+        return f"{left} {op} {right}"
 
     def function_fallback_sql(self, expression):
         args = []
@@ -1276,29 +1287,19 @@ class Generator:
         if not expressions:
             return ""
 
-        if flat:
-            return sep.join(self.sql(e) for e in expressions)
+        sql_with_comment = (self.maybe_comment(self.sql(e), e.comment) for e in expressions)
 
-        num_expressions = len(expressions)
-        sql_with_comment = [(self.sql(e), e.comment) for e in expressions]
+        if flat:
+            return sep.join(sql_with_comment)
 
         # the only time leading_comma changes the output is if pretty print is enabled
         if self._leading_comma and self.pretty:
             pad = " " * self.pad
             expressions = "\n".join(
-                f"{sep}{self.maybe_comment(s, c)}" if i > 0 else f"{pad}{self.maybe_comment(s, c)}"
-                for i, (s, c) in enumerate(sql_with_comment)
-            )
-        elif self.pretty:
-            expressions = "\n".join(
-                f"{s}{sep.strip() if i + 1 < num_expressions else ''}{self.maybe_comment('', c)}"
-                for i, (s, c) in enumerate(sql_with_comment)
+                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql_with_comment)
             )
         else:
-            expressions = "".join(
-                f"{self.maybe_comment(s, c)}{self.sep(sep) if i + 1 < num_expressions else ''}"
-                for i, (s, c) in enumerate(sql_with_comment)
-            )
+            expressions = self.sep(sep).join(sql_with_comment)
 
         return self.indent(expressions, skip_first=False) if indent else expressions
 

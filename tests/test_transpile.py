@@ -63,15 +63,25 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
-        self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo")
-        self.validate("SELECT 1 /* inline */ FROM foo -- comment", "SELECT 1 /* inline */ FROM foo")
-
+        self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment */")
+        self.validate("SELECT 1 /* comment */ + 1", "SELECT 1 /* comment */ + 1")
+        self.validate("SELECT 1 /*c1*/ + 2 /*c2*/", "SELECT 1 /* c1 */ + 2 /* c2 */")
+        self.validate(
+            "SELECT 1 /*c1*/ + 2 /*c2*/ + 3 /* c3 */", "SELECT 1 /* c1 */ + 2 /* c2 */ + 3 /* c3 */"
+        )
+        self.validate(
+            "SELECT 1 /*c1*/ + 2 /*c2*/, 3 /*c3*/", "SELECT 1 /* c1 */ + 2 /* c2 */, 3 /* c3 */"
+        )
+        self.validate(
+            "SELECT 1 /* inline */ FROM foo -- comment",
+            "SELECT 1 /* inline */ FROM foo /* comment */",
+        )
         self.validate(
             """
             SELECT 1 -- comment
             FROM foo -- comment
             """,
-            "SELECT 1 /* comment */ FROM foo",
+            "SELECT 1 /* comment */ FROM foo /* comment */",
         )
         self.validate(
             """
@@ -80,7 +90,7 @@ class TestTranspile(unittest.TestCase):
             FROM foo -- comment
             """,
             """SELECT 1 /* big comment
-             like this */ FROM foo""",
+             like this */ FROM foo /* comment */""",
         )
         self.validate(
             """
@@ -99,6 +109,34 @@ class TestTranspile(unittest.TestCase):
 SELECT
   *
 FROM foo""",
+            pretty=True,
+        )
+        self.validate(
+            "select x from foo --       x",
+            "SELECT x FROM foo /* x */",
+        )
+        self.validate(
+            "select x from a.b.c /*x*/, e.f.g /*x*/",
+            "SELECT x FROM a.b.c /* x */, e.f.g /* x */",
+        )
+        self.validate(
+            "select x from a.b.c /*x*/, e.f.g /*x*/",
+            """SELECT
+  x
+FROM a.b.c /* x */, e.f.g /* x */""",
+            pretty=True,
+        )
+        self.validate(
+            "select x from (select * from bla /*x*/where id=1) /*x*/",
+            """SELECT
+  x
+FROM (
+  SELECT
+    *
+  FROM bla /* x */
+  WHERE
+    id = 1
+) /* x */""",
             pretty=True,
         )
 

@@ -588,13 +588,31 @@ class TestExpressions(unittest.TestCase):
             "SELECT a, b AS B, c /* comment */, d AS D /* another comment */, CAST(x AS INT) /* final comment */ FROM foo",
         )
         self.assertEqual(
+            expression.sql(comments=False),
+            "SELECT a, b AS B, c, d AS D, CAST(x AS INT) FROM foo",
+        )
+        self.assertEqual(
+            expression.sql(pretty=True, comments=False),
+            """SELECT
+  a,
+  b AS B,
+  c,
+  d AS D,
+  CAST(x AS INT)
+FROM foo""",
+        )
+        self.assertEqual(
+            expression.sql(),
+            "SELECT a, b AS B, c /* comment */, d AS D /* another comment */, CAST(x AS INT) /* final comment */ FROM foo",
+        )
+        self.assertEqual(
             expression.sql(pretty=True),
             """SELECT
   a,
   b AS B,
-  c, --comment
-  d AS D, -- another comment
-  CAST(x AS INT) -- final comment
+  c /* comment */,
+  d AS D /* another comment */,
+  CAST(x AS INT) /* final comment */
 FROM foo""",
         )
 

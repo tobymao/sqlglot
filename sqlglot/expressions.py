@@ -2419,8 +2419,8 @@ class DateDiff(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DateTrunc(Func, TimeUnit):
-    arg_types = {"this": True, "unit": True, "zone": False}
+class DateTrunc(Func):
+    arg_types = {"this": True, "expression": True, "zone": False}
 
 
 class DatetimeAdd(Func, TimeUnit):

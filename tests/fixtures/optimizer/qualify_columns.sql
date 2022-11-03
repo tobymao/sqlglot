@@ -104,6 +104,16 @@ SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_
 SELECT AGGREGATE(ARRAY(a, x.b), 0, (x, acc) -> x + acc + a) AS sum_agg FROM x;
 SELECT AGGREGATE(ARRAY(x.a, x.b), 0, (x, acc) -> x + acc + x.a) AS sum_agg FROM x AS x;
 
+# dialect: starrocks
+# execute: false
+SELECT DATE_TRUNC('week', a) AS a FROM x;
+SELECT DATE_TRUNC('week', x.a) AS a FROM x AS x;
+
+# dialect: bigquery
+# execute: false
+SELECT DATE_TRUNC(a, MONTH) AS a FROM x;
+SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

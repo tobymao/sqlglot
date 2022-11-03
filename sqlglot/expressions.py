@@ -87,7 +87,7 @@ class Expression(metaclass=_Expression):
 
     def find_comment(self, key: str) -> str:
         """
-        Finds the comment that is attached to specified child node.
+        Finds the comment that is attached to a specified child node.
 
         Args:
             key: the key of the target child node (e.g. "this", "expression", etc).

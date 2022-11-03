@@ -120,11 +120,15 @@ LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
 
-Finally, SQLGlot tries to preserve comments when formatting SQL code using the `pretty=True` option:
+Comments are preserved in a best-effort basis when traspiling SQL code:
 
 ```python
 sql = """
-SELECT            -- comment1
+/* multi
+   line
+   comment
+*/
+SELECT
   CAST(x AS INT), -- comment2
   y               -- comment3
 FROM
@@ -135,7 +139,11 @@ print(sqlglot.transpile(sql, pretty=True)[0])
 ```
 
 ```sql
-SELECT -- comment1
+/* multi
+   line
+   comment
+*/
+SELECT
   CAST(x AS INT), -- comment2
   y -- comment3
 FROM bar

@@ -91,9 +91,11 @@ class TestTranspile(unittest.TestCase):
             */
             SELECT * FROM foo
             """,
-            """/* multi
+            """/*
+              multi
               line
-              comment */
+              comment
+            */
 SELECT
   *
 FROM foo""",

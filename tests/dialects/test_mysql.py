@@ -125,27 +125,6 @@ class TestMySQL(Validator):
             },
         )
 
-    def test_hash_comments(self):
-        self.validate_all(
-            "SELECT 1 # arbitrary content,,, until end-of-line",
-            write={
-                "mysql": "SELECT 1 /* arbitrary content,,, until end-of-line */",
-            },
-        )
-        self.validate_all(
-            """
-            SELECT # comment1
-              x,   # comment2
-              y    # comment3
-            """,
-            write={
-                "mysql": """SELECT -- comment1
-  x, -- comment2
-  y -- comment3"""
-            },
-            pretty=True,
-        )
-
     def test_mysql(self):
         self.validate_all(
             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",

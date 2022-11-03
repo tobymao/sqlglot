@@ -677,7 +677,7 @@ class Parser(metaclass=_Parser):
 
     def _attach_comment(self, node, comment):
         if node and comment is not None:
-            node.comment = comment.strip()
+            node.comment = comment
         return node
 
     def _parse_statement(self):

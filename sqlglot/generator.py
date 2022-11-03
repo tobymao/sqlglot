@@ -50,9 +50,6 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
-        comments: Whether or not to show comments in the SQL when `pretty` is True.
-            Comments can only be shown in pretty mode otherwise they may clobber resulting sql.
-            Default: True
     """
 
     TRANSFORMS = {
@@ -125,7 +122,6 @@ class Generator:
         "_escaped_quote_end",
         "_leading_comma",
         "_max_text_width",
-        "_comments",
     )
 
     def __init__(
@@ -151,7 +147,6 @@ class Generator:
         max_unsupported=3,
         leading_comma=False,
         max_text_width=80,
-        comments=True,
     ):
         import sqlglot
 
@@ -180,7 +175,6 @@ class Generator:
         self._escaped_quote_end = self.escape + self.quote_end
         self._leading_comma = leading_comma
         self._max_text_width = max_text_width
-        self._comments = comments
 
     def generate(self, expression):
         """
@@ -219,13 +213,13 @@ class Generator:
         return f"{self.sep(sep)}{sql}"
 
     def maybe_comment(self, sql, comment):
-        if not self._comments or not comment:
+        if not comment:
             return sql
 
         if not self.pretty:
-            return f"{sql}{f' /* {comment} */'}"
+            return f"{sql}{f' /* {comment.strip()} */'}"
 
-        return f"/* {comment} */\n{sql}" if "\n" in comment else f"{sql}{f' -- {comment}'}"
+        return f"/*{comment}*/\n{sql}" if "\n" in comment else f"{sql}{f' --{comment}'}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -503,7 +497,7 @@ class Generator:
     def partition_sql(self, expression):
         keys = csv(
             *[
-                f"{prop.this.this}={prop.args['value']}" if prop.args["value"] else prop.this.this
+                f"""{prop.name}='{prop.text("value")}'""" if prop.text("value") else prop.name
                 for prop in expression.this
             ]
         )

@@ -474,48 +474,57 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "DATE_TRUNC(x, 'day')",
+            "DATE_TRUNC('day', x)",
             write={
                 "mysql": "DATE(x)",
             },
         )
         self.validate_all(
-            "DATE_TRUNC('day', x)",
-            read={
-                "starrocks": "DATE_TRUNC('day', x)",
-            },
-            write={
-                "starrocks": "DATE_TRUNC('day', x)",
-            },
-        )
-        self.validate_all(
-            "DATE_TRUNC(x, 'week')",
+            "DATE_TRUNC('week', x)",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', WEEK(x, 1), ' 1'), '%Y %u %w')",
             },
         )
         self.validate_all(
-            "DATE_TRUNC(x, 'month')",
+            "DATE_TRUNC('month', x)",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', MONTH(x), ' 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
-            "DATE_TRUNC(x, 'quarter')",
+            "DATE_TRUNC('quarter', x)",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' ', QUARTER(x) * 3 - 2, ' 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
-            "DATE_TRUNC(x, 'year')",
+            "DATE_TRUNC('year', x)",
             write={
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
             },
         )
         self.validate_all(
-            "DATE_TRUNC(x, 'millenium')",
+            "DATE_TRUNC('millenium', x)",
             write={
                 "mysql": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC('year', x)",
+            read={
+                "starrocks": "DATE_TRUNC('year', x)",
+            },
+            write={
+                "starrocks": "DATE_TRUNC('year', x)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(x, year)",
+            read={
+                "bigquery": "DATE_TRUNC(x, year)",
+            },
+            write={
+                "bigquery": "DATE_TRUNC(x, year)",
             },
         )
         self.validate_all(

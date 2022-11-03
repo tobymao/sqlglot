@@ -24,3 +24,4 @@ class StarRocks(MySQL):
             exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
         }
+        TRANSFORMS.pop(exp.DateTrunc)

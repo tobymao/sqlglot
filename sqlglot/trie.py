@@ -1,7 +1,9 @@
 import typing as t
 
+key = t.Sequence[t.Hashable]
 
-def new_trie(keywords: t.Iterable[str]) -> t.Dict:
+
+def new_trie(keywords: t.Iterable[key]) -> t.Dict:
     """
     Creates a new trie out of a collection of keywords.
 
@@ -30,7 +32,7 @@ def new_trie(keywords: t.Iterable[str]) -> t.Dict:
     return trie
 
 
-def in_trie(trie: t.Dict, key: str) -> t.Tuple[int, t.Dict]:
+def in_trie(trie: t.Dict, key: key) -> t.Tuple[int, t.Dict]:
     """
     Checks whether a key is in a trie.
 

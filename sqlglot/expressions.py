@@ -85,7 +85,7 @@ class Expression(metaclass=_Expression):
             return field.this
         return ""
 
-    def comment_(self, key):
+    def find_comment(self, key):
         field = self.args.get(key)
         return field.comment if field is not None else ""
 

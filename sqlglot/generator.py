@@ -1252,9 +1252,9 @@ class Generator:
         return f"SHOW {self.sql(expression, 'this')}"
 
     def binary(self, expression, op):
-        left = self.maybe_comment(self.sql(expression, "this"), expression.comment_("this"))
+        left = self.maybe_comment(self.sql(expression, "this"), expression.find_comment("this"))
         right = self.maybe_comment(
-            self.sql(expression, "expression"), expression.comment_("expression")
+            self.sql(expression, "expression"), expression.find_comment("expression")
         )
         return f"{left} {op} {right}"
 

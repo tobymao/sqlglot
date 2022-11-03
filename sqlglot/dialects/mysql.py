@@ -15,28 +15,28 @@ from sqlglot.tokens import TokenType
 
 
 def _date_trunc_sql(self, expression):
-    unit = expression.text("unit").lower()
+    unit = expression.name.lower()
 
-    this = self.sql(expression.this)
+    expr = self.sql(expression.expression)
 
     if unit == "day":
-        return f"DATE({this})"
+        return f"DATE({expr})"
 
     if unit == "week":
-        concat = f"CONCAT(YEAR({this}), ' ', WEEK({this}, 1), ' 1')"
+        concat = f"CONCAT(YEAR({expr}), ' ', WEEK({expr}, 1), ' 1')"
         date_format = "%Y %u %w"
     elif unit == "month":
-        concat = f"CONCAT(YEAR({this}), ' ', MONTH({this}), ' 1')"
+        concat = f"CONCAT(YEAR({expr}), ' ', MONTH({expr}), ' 1')"
         date_format = "%Y %c %e"
     elif unit == "quarter":
-        concat = f"CONCAT(YEAR({this}), ' ', QUARTER({this}) * 3 - 2, ' 1')"
+        concat = f"CONCAT(YEAR({expr}), ' ', QUARTER({expr}) * 3 - 2, ' 1')"
         date_format = "%Y %c %e"
     elif unit == "year":
-        concat = f"CONCAT(YEAR({this}), ' 1 1')"
+        concat = f"CONCAT(YEAR({expr}), ' 1 1')"
         date_format = "%Y %c %e"
     else:
         self.unsupported("Unexpected interval unit: {unit}")
-        return f"DATE({this})"
+        return f"DATE({expr})"
 
     return f"STR_TO_DATE({concat}, '{date_format}')"
 

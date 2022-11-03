@@ -23,6 +23,13 @@ def _date_add(expression_class):
     return func
 
 
+def _date_trunc(args):
+    unit = seq_get(args, 1)
+    if isinstance(unit, exp.Column):
+        unit = exp.Var(this=unit.name)
+    return exp.DateTrunc(this=seq_get(args, 0), expression=unit)
+
+
 def _date_add_sql(data_type, kind):
     def func(self, expression):
         this = self.sql(expression, "this")
@@ -117,6 +124,7 @@ class BigQuery(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "DATE_TRUNC": _date_trunc,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),

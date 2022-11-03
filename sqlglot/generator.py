@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import typing as t
 
 from sqlglot import exp
@@ -10,6 +11,8 @@ from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 logger = logging.getLogger("sqlglot")
+
+NEWLINE_RE = re.compile("\r\n?|\n")
 
 
 class Generator:
@@ -223,7 +226,7 @@ class Generator:
         if not comment or not self._comments:
             return sql
 
-        if not self.pretty or "\n" not in comment:
+        if not self.pretty or not NEWLINE_RE.search(comment):
             return f"{sql} /* {comment.strip()} */"
 
         return f"/*{comment}*/\n{sql}"

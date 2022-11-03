@@ -676,7 +676,7 @@ class Parser(metaclass=_Parser):
         self._advance(index - self._index)
 
     def _attach_comment(self, node, comment):
-        if node and node.comment is None and comment is not None:
+        if node and comment is not None:
             node.comment = comment
         return node
 
@@ -1876,7 +1876,7 @@ class Parser(metaclass=_Parser):
                 this = self.expression(exp.Dot, this=this, expression=field)
             this = self._parse_bracket(this)
 
-        return this
+        return self._attach_comment(this, self._prev.comment)
 
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
@@ -1946,7 +1946,7 @@ class Parser(metaclass=_Parser):
             ):
                 this = self.expression(subquery_predicate, this=self._parse_select())
                 self._match_r_paren()
-                return this
+                return self._attach_comment(this, self._prev.comment)
 
             if functions is None:
                 functions = self.FUNCTIONS
@@ -1959,7 +1959,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
         self._match_r_paren()
-        return self._parse_window(this)
+        return self._parse_window(self._attach_comment(this, self._prev.comment))
 
     def _parse_user_defined_function(self):
         this = self._parse_id_var()
@@ -2174,7 +2174,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.R_BRACKET):
             self.raise_error("Expected ]")
 
-        return self._parse_bracket(this)
+        return self._parse_bracket(self._attach_comment(this, self._prev.comment))
 
     def _parse_case(self):
         ifs = []

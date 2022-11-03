@@ -129,13 +129,15 @@ sql = """
    comment
 */
 SELECT
-  CAST(x AS INT), -- comment2
-  y               -- comment3
+  tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
+  CAST(x AS INT), # comment 3
+  y               -- comment 4
 FROM
-  bar
+  bar /* comment 5 */,
+  tbl #          comment 6
 """
 
-print(sqlglot.transpile(sql, pretty=True)[0])
+print(sqlglot.transpile(sql, read='mysql', pretty=True)[0])
 ```
 
 ```sql
@@ -144,9 +146,10 @@ print(sqlglot.transpile(sql, pretty=True)[0])
    comment
 */
 SELECT
-  CAST(x AS INT), -- comment2
-  y -- comment3
-FROM bar
+  tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
+  CAST(x AS INT) /* comment 3 */,
+  y /* comment 4 */
+FROM bar /* comment 5 */, tbl /* comment 6 */
 ```
 
 

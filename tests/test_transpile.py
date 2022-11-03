@@ -63,6 +63,7 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
+        self.validate("SELECT a /*x*/, b /*x*/", "SELECT a /* x */, b /* x */")
         self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment */")
         self.validate("SELECT 1 /* comment */ + 1", "SELECT 1 /* comment */ + 1")
         self.validate("SELECT 1 /*c1*/ + 2 /*c2*/", "SELECT 1 /* c1 */ + 2 /* c2 */")
@@ -75,6 +76,9 @@ class TestTranspile(unittest.TestCase):
         self.validate(
             "SELECT 1 /* inline */ FROM foo -- comment",
             "SELECT 1 /* inline */ FROM foo /* comment */",
+        )
+        self.validate(
+            "SELECT FUN(x) /*x*/, [1,2,3] /*y*/", "SELECT FUN(x) /* x */, ARRAY(1, 2, 3) /* y */"
         )
         self.validate(
             """
@@ -137,6 +141,32 @@ FROM (
   WHERE
     id = 1
 ) /* x */""",
+            pretty=True,
+        )
+        self.validate(
+            """
+            /* multi
+               line
+               comment
+            */
+            SELECT
+              tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
+              CAST(x AS INT), # comment 3
+              y               -- comment 4
+            FROM
+              bar /* comment 5 */,
+              tbl #          comment 6
+            """,
+            """/* multi
+               line
+               comment
+            */
+SELECT
+  tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
+  CAST(x AS INT) /* comment 3 */,
+  y /* comment 4 */
+FROM bar /* comment 5 */, tbl /* comment 6 */""",
+            read="mysql",
             pretty=True,
         )
 

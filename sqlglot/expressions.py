@@ -85,9 +85,18 @@ class Expression(metaclass=_Expression):
             return field.this
         return ""
 
-    def find_comment(self, key):
+    def find_comment(self, key: str) -> str:
+        """
+        Finds the comment that is attached to specified child node.
+
+        Args:
+            key: the key of the target child node (e.g. "this", "expression", etc).
+
+        Returns:
+            The comment attached to the child node, or the empty string, if it doesn't exist.
+        """
         field = self.args.get(key)
-        return field.comment if field is not None else ""
+        return field.comment if isinstance(field, Expression) else ""
 
     @property
     def is_string(self):

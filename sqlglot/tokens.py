@@ -876,8 +876,10 @@ class Tokenizer(metaclass=_Tokenizer):
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding. If both
         # types of comment can be attached to a token, the trailing one is discarded in favour of the leading one.
 
-        if comment_start_line == self._prev_token_line and self._prev_token_comment is None:
-            self.tokens[-1].comment = self._comment
+        if comment_start_line == self._prev_token_line:
+            if self._prev_token_comment is None:
+                self.tokens[-1].comment = self._comment
+
             self._comment = None
 
         return True

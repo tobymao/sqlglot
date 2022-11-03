@@ -222,12 +222,15 @@ class Generator:
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
 
-    def maybe_comment(self, sql, comment):
+    def maybe_comment(self, sql, comment, single_line=False):
         if not comment or not self._comments:
             return sql
 
-        if not self.pretty or not NEWLINE_RE.search(comment):
-            return f"{sql} /* {comment.strip()} */"
+        if not self.pretty:
+            return f"{sql} /*{comment}*/"
+
+        if not NEWLINE_RE.search(comment):
+            return f"{sql} --{comment}" if single_line else f"{sql} /*{comment}*/"
 
         return f"/*{comment}*/\n{sql}"
 
@@ -866,7 +869,7 @@ class Generator:
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
         sql = self.query_modifiers(
             expression,
-            f"{self.maybe_comment('SELECT', expression.comment)}{hint}{distinct}{expressions}",
+            f"{self.maybe_comment('SELECT', expression.comment, single_line=True)}{hint}{distinct}{expressions}",
             self.sql(expression, "from"),
         )
         return self.prepend_ctes(expression, sql)
@@ -1290,19 +1293,34 @@ class Generator:
         if not expressions:
             return ""
 
-        sql_with_comment = (self.maybe_comment(self.sql(e), e.comment) for e in expressions)
-
         if flat:
-            return sep.join(sql_with_comment)
+            return sep.join(self.maybe_comment(self.sql(e), e.comment) for e in expressions)
 
-        # the only time leading_comma changes the output is if pretty print is enabled
+        sql_with_comment = [(self.sql(e), e.comment) for e in expressions]
+        num_sqls = len(sql_with_comment)
+
+        # The only time leading_comma changes the output is if pretty print is enabled
         if self._leading_comma and self.pretty:
             pad = " " * self.pad
             expressions = "\n".join(
-                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql_with_comment)
+                f"{sep if i > 0 else pad}{self.maybe_comment(sql, com, single_line=True)}"
+                for i, (sql, com) in enumerate(sql_with_comment)
+            )
+        elif self.pretty:
+            sep = sep.strip()
+            expressions = "\n".join(
+                [
+                    f"{sql}{sep if i + 1 < num_sqls else ''}{self.maybe_comment('', com, single_line=True)}"
+                    for i, (sql, com) in enumerate(sql_with_comment)
+                ]
             )
         else:
-            expressions = self.sep(sep).join(sql_with_comment)
+            expressions = "".join(
+                [
+                    f"{self.maybe_comment(sql, com, single_line=True)}{sep if i + 1 < num_sqls else ''}"
+                    for i, (sql, com) in enumerate(sql_with_comment)
+                ]
+            )
 
         return self.indent(expressions, skip_first=False) if indent else expressions
 

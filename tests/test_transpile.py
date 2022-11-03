@@ -49,6 +49,12 @@ class TestTranspile(unittest.TestCase):
             leading_comma=True,
             pretty=True,
         )
+        self.validate(
+            "SELECT FOO /*x*/, BAR /*y*/, BAZ",
+            "SELECT\n    FOO --x\n  , BAR --y\n  , BAZ",
+            leading_comma=True,
+            pretty=True,
+        )
         # without pretty, this should be a no-op
         self.validate(
             "SELECT FOO, BAR, BAZ",
@@ -63,29 +69,21 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
-        self.validate("SELECT a /*x*/, b /*x*/", "SELECT a /* x */, b /* x */")
-        self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment */")
+        self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment*/")
         self.validate("SELECT 1 /* comment */ + 1", "SELECT 1 /* comment */ + 1")
-        self.validate("SELECT 1 /*c1*/ + 2 /*c2*/", "SELECT 1 /* c1 */ + 2 /* c2 */")
-        self.validate(
-            "SELECT 1 /*c1*/ + 2 /*c2*/ + 3 /* c3 */", "SELECT 1 /* c1 */ + 2 /* c2 */ + 3 /* c3 */"
-        )
-        self.validate(
-            "SELECT 1 /*c1*/ + 2 /*c2*/, 3 /*c3*/", "SELECT 1 /* c1 */ + 2 /* c2 */, 3 /* c3 */"
-        )
         self.validate(
             "SELECT 1 /* inline */ FROM foo -- comment",
-            "SELECT 1 /* inline */ FROM foo /* comment */",
+            "SELECT 1 /* inline */ FROM foo /* comment*/",
         )
         self.validate(
-            "SELECT FUN(x) /*x*/, [1,2,3] /*y*/", "SELECT FUN(x) /* x */, ARRAY(1, 2, 3) /* y */"
+            "SELECT FUN(x) /*x*/, [1,2,3] /*y*/", "SELECT FUN(x) /*x*/, ARRAY(1, 2, 3) /*y*/"
         )
         self.validate(
             """
             SELECT 1 -- comment
             FROM foo -- comment
             """,
-            "SELECT 1 /* comment */ FROM foo /* comment */",
+            "SELECT 1 /* comment*/ FROM foo /* comment*/",
         )
         self.validate(
             """
@@ -94,54 +92,11 @@ class TestTranspile(unittest.TestCase):
             FROM foo -- comment
             """,
             """SELECT 1 /* big comment
-             like this */ FROM foo /* comment */""",
-        )
-        self.validate(
-            """
-            /*
-              multi
-              line
-              comment
-            */
-            SELECT * FROM foo
-            """,
-            """/*
-              multi
-              line
-              comment
-            */
-SELECT
-  *
-FROM foo""",
-            pretty=True,
+             like this */ FROM foo /* comment*/""",
         )
         self.validate(
             "select x from foo --       x",
-            "SELECT x FROM foo /* x */",
-        )
-        self.validate(
-            "select x from a.b.c /*x*/, e.f.g /*x*/",
-            "SELECT x FROM a.b.c /* x */, e.f.g /* x */",
-        )
-        self.validate(
-            "select x from a.b.c /*x*/, e.f.g /*x*/",
-            """SELECT
-  x
-FROM a.b.c /* x */, e.f.g /* x */""",
-            pretty=True,
-        )
-        self.validate(
-            "select x from (select * from bla /*x*/where id=1) /*x*/",
-            """SELECT
-  x
-FROM (
-  SELECT
-    *
-  FROM bla /* x */
-  WHERE
-    id = 1
-) /* x */""",
-            pretty=True,
+            "SELECT x FROM foo /*       x*/",
         )
         self.validate(
             """
@@ -163,9 +118,9 @@ FROM (
             */
 SELECT
   tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
-  CAST(x AS INT) /* comment 3 */,
-  y /* comment 4 */
-FROM bar /* comment 5 */, tbl /* comment 6 */""",
+  CAST(x AS INT), -- comment 3
+  y -- comment 4
+FROM bar /* comment 5 */, tbl /*          comment 6*/""",
             read="mysql",
             pretty=True,
         )

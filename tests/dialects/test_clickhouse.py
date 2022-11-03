@@ -33,6 +33,6 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT x #! comment",
             write={
-                "": "SELECT x /* comment */",
+                "": "SELECT x /* comment*/",
             },
         )

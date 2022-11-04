@@ -1108,8 +1108,10 @@ class Parser(metaclass=_Parser):
         while True:
             expressions.append(self._parse_cte())
 
-            if not self._match(TokenType.COMMA):
+            if not self._match(TokenType.COMMA) and not self._match(TokenType.WITH):
                 break
+            else:
+                self._match(TokenType.WITH)
 
         return self.expression(
             exp.With,

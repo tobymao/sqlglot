@@ -146,6 +146,16 @@ class TestTranspile(unittest.TestCase):
     def test_ignore_nulls(self):
         self.validate("SELECT COUNT(x RESPECT NULLS)", "SELECT COUNT(x)")
 
+    def test_with(self):
+        self.validate(
+            "WITH a AS (SELECT 1) WITH b AS (SELECT 2) SELECT *",
+            "WITH a AS (SELECT 1), b AS (SELECT 2) SELECT *",
+        )
+        self.validate(
+            "WITH a AS (SELECT 1), WITH b AS (SELECT 2) SELECT *",
+            "WITH a AS (SELECT 1), b AS (SELECT 2) SELECT *",
+        )
+
     def test_time(self):
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
         self.validate("TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)")

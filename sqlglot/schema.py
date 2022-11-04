@@ -98,9 +98,10 @@ class MappingSchema(Schema):
         )
 
     def copy(self, **kwargs) -> MappingSchema:
+        # type: ignore
         return MappingSchema(
             **{
-                "schema": self.schema.copy(),  # type: ignore
+                "schema": self.schema.copy(),
                 "visible": self.visible.copy(),
                 "dialect": self.dialect,
                 **kwargs,

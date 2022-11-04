@@ -243,6 +243,7 @@ class TokenType(AutoName):
     RETURNS = auto()
     RIGHT = auto()
     RLIKE = auto()
+    ROLLBACK = auto()
     ROLLUP = auto()
     ROW = auto()
     ROWS = auto()
@@ -674,10 +675,9 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,
         TokenType.SET,
-        TokenType.SHOW,
         TokenType.TRUNCATE,
-        TokenType.USE,
         TokenType.VACUUM,
+        TokenType.ROLLBACK,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

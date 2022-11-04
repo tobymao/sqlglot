@@ -624,6 +624,26 @@ class Describe(Expression):
     pass
 
 
+class Show(Expression):
+    arg_types = {
+        "this": True,
+        "target": False,
+        "offset": False,
+        "limit": False,
+        "like": False,
+        "where": False,
+        "db": False,
+        "full": False,
+        "mutex": False,
+        "query": False,
+        "channel": False,
+        "global": False,
+        "log": False,
+        "position": False,
+        "types": False,
+    }
+
+
 class UserDefinedFunction(Expression):
     arg_types = {"this": True, "expressions": False}
 
@@ -2807,6 +2827,10 @@ class Week(Func):
 
 
 class Year(Func):
+    pass
+
+
+class Use(Expression):
     pass
 
 

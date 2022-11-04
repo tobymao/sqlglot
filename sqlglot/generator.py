@@ -1240,6 +1240,12 @@ class Generator:
     def trycast_sql(self, expression):
         return f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
+    def use_sql(self, expression):
+        return f"USE {self.sql(expression, 'this')}"
+
+    def show_sql(self, expression):
+        return f"SHOW {self.sql(expression, 'this')}"
+
     def binary(self, expression, op):
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
 

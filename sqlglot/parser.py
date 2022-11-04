@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import logging
+import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_errors
 from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
+from sqlglot.trie import in_trie, new_trie
 
 logger = logging.getLogger("sqlglot")
 
@@ -20,7 +24,14 @@ def parse_var_map(args):
     )
 
 
-class Parser:
+class _Parser(type):
+    def __new__(cls, clsname, bases, attrs):
+        klass = super().__new__(cls, clsname, bases, attrs)
+        klass._show_trie = new_trie(key.split(" ") for key in klass.SHOW_PARSERS)
+        return klass
+
+
+class Parser(metaclass=_Parser):
     """
     Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
     and produces a parsed syntax tree.
@@ -363,6 +374,8 @@ class Parser:
         TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
+        TokenType.USE: lambda self: self._parse_use(),
+        TokenType.SHOW: lambda self: self._parse_show(),
     }
 
     PRIMARY_PARSERS = {
@@ -473,6 +486,8 @@ class Parser:
         "offset": lambda self: self._parse_offset(),
     }
 
+    SHOW_PARSERS: t.Dict[str, t.Callable] = {}
+
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
     CREATABLES = {
@@ -502,6 +517,7 @@ class Parser:
         "_curr",
         "_next",
         "_prev",
+        "_show_trie",
     )
 
     def __init__(
@@ -2513,6 +2529,26 @@ class Parser:
 
     def _parse_select_or_expression(self):
         return self._parse_select() or self._parse_expression()
+
+    def _parse_use(self):
+        return self.expression(exp.Use, this=self._parse_id_var())
+
+    def _parse_show(self):
+        this = []
+        trie = self._show_trie
+        while True:
+            # The current token might be multiple words
+            key = self._curr.text.split(" ")
+            this.append(self._curr.text.upper())
+            self._advance()
+            result, trie = in_trie(trie, key)
+            if result == 0:
+                break
+            if result == 2:
+                subparser = self.SHOW_PARSERS[" ".join(this)]
+                return subparser(self)
+
+        return self.expression(exp.Show, this=" ".join(this))
 
     def _match(self, token_type):
         if not self._curr:

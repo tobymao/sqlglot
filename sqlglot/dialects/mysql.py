@@ -14,6 +14,13 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
+def _show_parser(*args, **kwargs):
+    def _parse(self):
+        return self._parse_show_mysql(*args, **kwargs)
+
+    return _parse
+
+
 def _date_trunc_sql(self, expression):
     unit = expression.name.lower()
 
@@ -185,6 +192,143 @@ class MySQL(Dialect):
             TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
         }
 
+        SHOW_PARSERS = {
+            "BINARY LOGS": _show_parser("BINARY LOGS"),
+            "MASTER LOGS": _show_parser("BINARY LOGS"),
+            "BINLOG EVENTS": _show_parser("BINLOG EVENTS"),
+            "CHARACTER SET": _show_parser("CHARACTER SET"),
+            "CHARSET": _show_parser("CHARACTER SET"),
+            "COLLATION": _show_parser("COLLATION"),
+            "FULL COLUMNS": _show_parser("COLUMNS", target="FROM", full=True),
+            "COLUMNS": _show_parser("COLUMNS", target="FROM"),
+            "CREATE DATABASE": _show_parser("CREATE DATABASE", target=True),
+            "CREATE EVENT": _show_parser("CREATE EVENT", target=True),
+            "CREATE FUNCTION": _show_parser("CREATE FUNCTION", target=True),
+            "CREATE PROCEDURE": _show_parser("CREATE PROCEDURE", target=True),
+            "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
+            "CREATE TRIGGER": _show_parser("CREATE TRIGGER", target=True),
+            "CREATE VIEW": _show_parser("CREATE VIEW", target=True),
+            "DATABASES": _show_parser("DATABASES"),
+            "ENGINE": _show_parser("ENGINE", target=True),
+            "STORAGE ENGINES": _show_parser("ENGINES"),
+            "ENGINES": _show_parser("ENGINES"),
+            "ERRORS": _show_parser("ERRORS"),
+            "EVENTS": _show_parser("EVENTS"),
+            "FUNCTION CODE": _show_parser("FUNCTION CODE", target=True),
+            "FUNCTION STATUS": _show_parser("FUNCTION STATUS"),
+            "GRANTS": _show_parser("GRANTS", target="FOR"),
+            "INDEX": _show_parser("INDEX", target="FROM"),
+            "MASTER STATUS": _show_parser("MASTER STATUS"),
+            "OPEN TABLES": _show_parser("OPEN TABLES"),
+            "PLUGINS": _show_parser("PLUGINS"),
+            "PROCEDURE CODE": _show_parser("PROCEDURE CODE", target=True),
+            "PROCEDURE STATUS": _show_parser("PROCEDURE STATUS"),
+            "PRIVILEGES": _show_parser("PRIVILEGES"),
+            "FULL PROCESSLIST": _show_parser("PROCESSLIST", full=True),
+            "PROCESSLIST": _show_parser("PROCESSLIST"),
+            "PROFILE": _show_parser("PROFILE"),
+            "PROFILES": _show_parser("PROFILES"),
+            "RELAYLOG EVENTS": _show_parser("RELAYLOG EVENTS"),
+            "REPLICAS": _show_parser("REPLICAS"),
+            "SLAVE HOSTS": _show_parser("REPLICAS"),
+            "REPLICA STATUS": _show_parser("REPLICA STATUS"),
+            "SLAVE STATUS": _show_parser("REPLICA STATUS"),
+            "GLOBAL STATUS": _show_parser("STATUS", global_=True),
+            "SESSION STATUS": _show_parser("STATUS"),
+            "STATUS": _show_parser("STATUS"),
+            "TABLE STATUS": _show_parser("TABLE STATUS"),
+            "FULL TABLES": _show_parser("TABLES", full=True),
+            "TABLES": _show_parser("TABLES"),
+            "TRIGGERS": _show_parser("TRIGGERS"),
+            "GLOBAL VARIABLES": _show_parser("VARIABLES", global_=True),
+            "SESSION VARIABLES": _show_parser("VARIABLES"),
+            "VARIABLES": _show_parser("VARIABLES"),
+            "WARNINGS": _show_parser("WARNINGS"),
+        }
+
+        PROFILE_TYPES = {
+            "ALL",
+            "BLOCK IO",
+            "CONTEXT SWITCHES",
+            "CPU",
+            "IPC",
+            "MEMORY",
+            "PAGE FAULTS",
+            "SOURCE",
+            "SWAPS",
+        }
+
+        def _parse_show_mysql(self, this, target=False, full=None, global_=None):
+            if target:
+                if isinstance(target, str):
+                    self._match_text(target)
+                target_id = self._parse_id_var()
+            else:
+                target_id = None
+
+            log = self._parse_string() if self._match_text("IN") else None
+
+            if this in {"BINLOG EVENTS", "RELAYLOG EVENTS"}:
+                position = self._parse_number() if self._match_text("FROM") else None
+                db = None
+            else:
+                position = None
+                db = self._parse_id_var() if self._match_text("FROM") else None
+
+            channel = self._parse_id_var() if self._match_text("FOR", "CHANNEL") else None
+
+            like = self._parse_string() if self._match_text("LIKE") else None
+            where = self._parse_where()
+
+            if this == "PROFILE":
+                types = self._parse_csv(self._parse_show_profile_type)
+                query = self._parse_number() if self._match_text("FOR", "QUERY") else None
+                offset = self._parse_number() if self._match_text("OFFSET") else None
+                limit = self._parse_number() if self._match_text("LIMIT") else None
+            else:
+                types, query = None, None
+                offset, limit = self._parse_oldstyle_limit()
+
+            mutex = True if self._match_text("MUTEX") else None
+            mutex = False if self._match_text("STATUS") else mutex
+
+            return self.expression(
+                exp.Show,
+                this=this,
+                target=target_id,
+                full=full,
+                log=log,
+                position=position,
+                db=db,
+                channel=channel,
+                like=like,
+                where=where,
+                types=types,
+                query=query,
+                offset=offset,
+                limit=limit,
+                mutex=mutex,
+                **{"global": global_},
+            )
+
+        def _parse_show_profile_type(self):
+            for type_ in self.PROFILE_TYPES:
+                if self._match_text(*type_.split(" ")):
+                    return type_
+            return None
+
+        def _parse_oldstyle_limit(self):
+            limit = None
+            offset = None
+            if self._match_text("LIMIT"):
+                parts = self._parse_csv(self._parse_number)
+                if len(parts) == 1:
+                    limit = parts[0]
+                elif len(parts) == 2:
+                    limit = parts[1]
+                    offset = parts[0]
+            return offset, limit
+
     class Generator(generator.Generator):
         NULL_ORDERING_SUPPORTED = False
 
@@ -215,3 +359,57 @@ class MySQL(Dialect):
         }
 
         WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()
+
+        def show_sql(self, expression):
+            this = f" {expression.name}"
+            full = " FULL" if expression.args.get("full") else ""
+            global_ = " GLOBAL" if expression.args.get("global") else ""
+
+            target = self.sql(expression, "target")
+            target = f" {target}" if target else ""
+            if expression.name in {"COLUMNS", "INDEX"}:
+                target = f" FROM{target}"
+            elif expression.name == "GRANTS":
+                target = f" FOR{target}"
+
+            db = self._prefixed_sql("FROM", expression, "db")
+
+            like = self._prefixed_sql("LIKE", expression, "like")
+            where = self.sql(expression, "where")
+
+            types = self.expressions(expression, key="types")
+            types = f" {types}" if types else types
+            query = self._prefixed_sql("FOR QUERY", expression, "query")
+
+            if expression.name == "PROFILE":
+                offset = self._prefixed_sql("OFFSET", expression, "offset")
+                limit = self._prefixed_sql("LIMIT", expression, "limit")
+            else:
+                offset = ""
+                limit = self._oldstyle_limit_sql(expression)
+
+            log = self._prefixed_sql("IN", expression, "log")
+            position = self._prefixed_sql("FROM", expression, "position")
+
+            channel = self._prefixed_sql("FOR CHANNEL", expression, "channel")
+
+            if expression.name == "ENGINE":
+                mutex_or_status = " MUTEX" if expression.args.get("mutex") else " STATUS"
+            else:
+                mutex_or_status = ""
+
+            return f"SHOW{full}{global_}{this}{target}{types}{db}{query}{log}{position}{channel}{mutex_or_status}{like}{where}{offset}{limit}"
+
+        def _prefixed_sql(self, prefix, expression, arg):
+            sql = self.sql(expression, arg)
+            if not sql:
+                return ""
+            return f" {prefix} {sql}"
+
+        def _oldstyle_limit_sql(self, expression):
+            limit = self.sql(expression, "limit")
+            offset = self.sql(expression, "offset")
+            if limit:
+                limit_offset = f"{offset}, {limit}" if offset else limit
+                return f" LIMIT {limit_offset}"
+            return ""

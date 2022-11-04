@@ -1,20 +1,15 @@
 import unittest
 
-from sqlglot import (
-    Dialect,
-    Dialects,
-    ErrorLevel,
-    UnsupportedError,
-    parse_one,
-    transpile,
-)
+from sqlglot import Dialect, Dialects, ErrorLevel, UnsupportedError, parse_one
 
 
 class Validator(unittest.TestCase):
     dialect = None
 
-    def validate_identity(self, sql):
-        self.assertEqual(transpile(sql, read=self.dialect, write=self.dialect)[0], sql)
+    def validate_identity(self, sql, write_sql=None):
+        expression = parse_one(sql, read=self.dialect)
+        self.assertEqual(expression.sql(dialect=self.dialect), write_sql or sql)
+        return expression
 
     def validate_all(self, sql, read=None, write=None, pretty=False):
         """

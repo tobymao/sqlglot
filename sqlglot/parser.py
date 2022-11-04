@@ -28,6 +28,7 @@ class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
         klass._show_trie = new_trie(key.split(" ") for key in klass.SHOW_PARSERS)
+        klass._set_trie = new_trie(key.split(" ") for key in klass.SET_PARSERS)
         return klass
 
 
@@ -376,6 +377,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.USE: lambda self: self._parse_use(),
         TokenType.SHOW: lambda self: self._parse_show(),
+        TokenType.SET: lambda self: self._parse_set(),
     }
 
     PRIMARY_PARSERS = {
@@ -394,6 +396,7 @@ class Parser(metaclass=_Parser):
         TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
         TokenType.BYTE_STRING: lambda _, token: exp.ByteString(this=token.text),
         TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
+        TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
     }
 
     RANGE_PARSERS = {
@@ -487,6 +490,7 @@ class Parser(metaclass=_Parser):
     }
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
+    SET_PARSERS: t.Dict[str, t.Callable] = {}
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
@@ -518,6 +522,7 @@ class Parser(metaclass=_Parser):
         "_next",
         "_prev",
         "_show_trie",
+        "_set_trie",
     )
 
     def __init__(
@@ -1978,6 +1983,18 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Identifier, this=token.text)
 
+    def _parse_session_parameter(self):
+        kind = None
+        this = self._parse_id_var() or self._parse_primary()
+        if self._match(TokenType.DOT):
+            kind = this.name
+            this = self._parse_var() or self._parse_primary()
+        return self.expression(
+            exp.SessionParameter,
+            this=this,
+            kind=kind,
+        )
+
     def _parse_udf_kwarg(self):
         this = self._parse_id_var()
         kind = self._parse_types()
@@ -2536,8 +2553,28 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Use, this=self._parse_id_var())
 
     def _parse_show(self):
+        parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)
+        if parser:
+            return parser(self)
+        self._advance()
+        return self.expression(exp.Show, this=self._prev.text.upper())
+
+    def _default_parse_set_item(self):
+        return self.expression(
+            exp.SetItem,
+            this=self._parse_statement(),
+        )
+
+    def _parse_set_item(self):
+        parser = self._find_parser(self.SET_PARSERS, self._set_trie)
+        return parser(self) if parser else self._default_parse_set_item()
+
+    def _parse_set(self):
+        return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
+
+    def _find_parser(self, parsers, trie):
+        index = self._index
         this = []
-        trie = self._show_trie
         while True:
             # The current token might be multiple words
             key = self._curr.text.split(" ")
@@ -2547,10 +2584,10 @@ class Parser(metaclass=_Parser):
             if result == 0:
                 break
             if result == 2:
-                subparser = self.SHOW_PARSERS[" ".join(this)]
-                return subparser(self)
-
-        return self.expression(exp.Show, this=" ".join(this))
+                subparser = parsers[" ".join(this)]
+                return subparser
+        self._retreat(index)
+        return None
 
     def _match(self, token_type):
         if not self._curr:

@@ -6,9 +6,12 @@ from sqlglot import Dialect, Dialects, ErrorLevel, UnsupportedError, parse_one
 class Validator(unittest.TestCase):
     dialect = None
 
+    def parse_one(self, sql):
+        return parse_one(sql, read=self.dialect)
+
     def validate_identity(self, sql, write_sql=None):
-        expression = parse_one(sql, read=self.dialect)
-        self.assertEqual(expression.sql(dialect=self.dialect), write_sql or sql)
+        expression = self.parse_one(sql)
+        self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect))
         return expression
 
     def validate_all(self, sql, read=None, write=None, pretty=False):
@@ -23,7 +26,7 @@ class Validator(unittest.TestCase):
             read (dict): Mapping of dialect -> SQL
             write (dict): Mapping of dialect -> SQL
         """
-        expression = parse_one(sql, read=self.dialect)
+        expression = self.parse_one(sql)
 
         for read_dialect, read_sql in (read or {}).items():
             with self.subTest(f"{read_dialect} -> {sql}"):

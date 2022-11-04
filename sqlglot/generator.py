@@ -882,6 +882,13 @@ class Generator:
     def parameter_sql(self, expression):
         return f"@{self.sql(expression, 'this')}"
 
+    def sessionparameter_sql(self, expression):
+        this = self.sql(expression, "this")
+        kind = expression.text("kind")
+        if kind:
+            kind = f"{kind}."
+        return f"@@{kind}{this}"
+
     def placeholder_sql(self, expression):
         return f":{expression.name}" if expression.name else "?"
 
@@ -1245,6 +1252,12 @@ class Generator:
 
     def show_sql(self, expression):
         return f"SHOW {self.sql(expression, 'this')}"
+
+    def setitem_sql(self, expression):
+        return self.sql(expression, "this")
+
+    def set_sql(self, expression):
+        return f"SET {self.expressions(expression)}"
 
     def binary(self, expression, op):
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"

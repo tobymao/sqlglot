@@ -21,6 +21,40 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT TRIM(TRAILING 'bla' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(BOTH 'bla' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM('bla' FROM ' XXX ')")
+        self.validate_identity("@@GLOBAL.max_connections")
+
+        # SET Commands
+        self.validate_identity("SET @var_name = expr")
+        self.validate_identity("SET @name = 43")
+        self.validate_identity("SET @total_tax = (SELECT SUM(tax) FROM taxable_transactions)")
+        self.validate_identity("SET GLOBAL max_connections = 1000")
+        self.validate_identity("SET @@GLOBAL.max_connections = 1000")
+        self.validate_identity("SET SESSION sql_mode = 'TRADITIONAL'")
+        self.validate_identity("SET LOCAL sql_mode = 'TRADITIONAL'")
+        self.validate_identity("SET @@SESSION.sql_mode = 'TRADITIONAL'")
+        self.validate_identity("SET @@LOCAL.sql_mode = 'TRADITIONAL'")
+        self.validate_identity("SET @@sql_mode = 'TRADITIONAL'")
+        self.validate_identity("SET sql_mode = 'TRADITIONAL'")
+        self.validate_identity("SET PERSIST max_connections = 1000")
+        self.validate_identity("SET @@PERSIST.max_connections = 1000")
+        self.validate_identity("SET PERSIST_ONLY back_log = 100")
+        self.validate_identity("SET @@PERSIST_ONLY.back_log = 100")
+        self.validate_identity("SET @@SESSION.max_join_size = DEFAULT")
+        self.validate_identity("SET @@SESSION.max_join_size = @@GLOBAL.max_join_size")
+        self.validate_identity("SET @x = 1, SESSION sql_mode = ''")
+        self.validate_identity(
+            "SET GLOBAL sort_buffer_size = 1000000, SESSION sort_buffer_size = 1000000"
+        )
+        self.validate_identity(
+            "SET @@GLOBAL.sort_buffer_size = 1000000, @@LOCAL.sort_buffer_size = 1000000"
+        )
+        self.validate_identity("SET GLOBAL max_connections = 1000, sort_buffer_size = 1000000")
+        self.validate_identity("SET @@GLOBAL.sort_buffer_size = 50000, sort_buffer_size = 1000000")
+        self.validate_identity("SET CHARACTER SET 'utf8'")
+        self.validate_identity("SET CHARACTER SET DEFAULT")
+        self.validate_identity("SET NAMES 'utf8'")
+        self.validate_identity("SET NAMES DEFAULT")
+        self.validate_identity("SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'")
 
     def test_escape(self):
         self.validate_all(
@@ -393,3 +427,32 @@ COMMENT='客户账户表'"""
         self.assertEqual(show.text("db"), "db_name")
         self.assertIsInstance(show.args["like"], exp.Literal)
         self.assertEqual(show.text("like"), "%foo%")
+
+    def test_set_variable(self):
+        cmd = self.parse_one("SET SESSION x = 1")
+        item = cmd.expressions[0]
+        self.assertEqual(item.text("kind"), "SESSION")
+        self.assertIsInstance(item.this, exp.EQ)
+        self.assertEqual(item.this.left.name, "x")
+        self.assertEqual(item.this.right.name, "1")
+
+        cmd = self.parse_one("SET @@GLOBAL.x = @@GLOBAL.y")
+        item = cmd.expressions[0]
+        self.assertEqual(item.text("kind"), "")
+        self.assertIsInstance(item.this, exp.EQ)
+        self.assertIsInstance(item.this.left, exp.SessionParameter)
+        self.assertIsInstance(item.this.right, exp.SessionParameter)
+
+        cmd = self.parse_one("SET NAMES 'charset_name' COLLATE 'collation_name'")
+        item = cmd.expressions[0]
+        self.assertEqual(item.text("kind"), "NAMES")
+        self.assertEqual(item.name, "charset_name")
+        self.assertEqual(item.text("collate"), "collation_name")
+
+        cmd = self.parse_one("SET CHARSET DEFAULT")
+        item = cmd.expressions[0]
+        self.assertEqual(item.text("kind"), "CHARACTER SET")
+        self.assertEqual(item.this.name, "DEFAULT")
+
+        cmd = self.parse_one("SET x = 1, y = 2")
+        self.assertEqual(len(cmd.expressions), 2)

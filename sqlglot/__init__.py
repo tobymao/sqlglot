@@ -24,7 +24,7 @@ from sqlglot.expressions import (
     subquery,
 )
 from sqlglot.expressions import table_ as table
-from sqlglot.expressions import union
+from sqlglot.expressions import to_column, to_table, union
 from sqlglot.generator import Generator
 from sqlglot.parser import Parser
 from sqlglot.schema import MappingSchema

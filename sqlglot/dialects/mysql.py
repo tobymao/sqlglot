@@ -202,6 +202,8 @@ class MySQL(Dialect):
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Trim: _trim_sql,
+            exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
+            exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
         }
 
         ROOT_PROPERTIES = {

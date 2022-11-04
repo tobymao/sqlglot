@@ -257,6 +257,12 @@ def _simplify_binary(expression, a, b):
                 return TRUE if not_ else FALSE
             if a == NULL:
                 return FALSE if not_ else TRUE
+    elif isinstance(expression, exp.NullSafeEQ):
+        if a == b:
+            return TRUE
+    elif isinstance(expression, exp.NullSafeNEQ):
+        if a == b:
+            return FALSE
     elif NULL in (a, b):
         return NULL
 

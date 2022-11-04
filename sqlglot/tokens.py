@@ -30,6 +30,7 @@ class TokenType(AutoName):
     NOT = auto()
     EQ = auto()
     NEQ = auto()
+    NULLSAFE_EQ = auto()
     AND = auto()
     OR = auto()
     AMP = auto()
@@ -145,6 +146,7 @@ class TokenType(AutoName):
     DESCRIBE = auto()
     DETERMINISTIC = auto()
     DISTINCT = auto()
+    DISTINCT_FROM = auto()
     DISTRIBUTE_BY = auto()
     DIV = auto()
     DROP = auto()
@@ -423,6 +425,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "<=": TokenType.LTE,
         "<>": TokenType.NEQ,
         "!=": TokenType.NEQ,
+        "<=>": TokenType.NULLSAFE_EQ,
         "->": TokenType.ARROW,
         "->>": TokenType.DARROW,
         "#>": TokenType.HASH_ARROW,
@@ -471,6 +474,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DESCRIBE": TokenType.DESCRIBE,
         "DETERMINISTIC": TokenType.DETERMINISTIC,
         "DISTINCT": TokenType.DISTINCT,
+        "DISTINCT FROM": TokenType.DISTINCT_FROM,
         "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
         "DIV": TokenType.DIV,
         "DROP": TokenType.DROP,

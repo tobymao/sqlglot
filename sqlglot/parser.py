@@ -243,6 +243,7 @@ class Parser:
     EQUALITY = {
         TokenType.EQ: exp.EQ,
         TokenType.NEQ: exp.NEQ,
+        TokenType.NULLSAFE_EQ: exp.NullSafeEQ,
     }
 
     COMPARISON = {
@@ -1632,6 +1633,9 @@ class Parser:
 
     def _parse_is(self, this):
         negate = self._match(TokenType.NOT)
+        if self._match(TokenType.DISTINCT_FROM):
+            klass = exp.NullSafeEQ if negate else exp.NullSafeNEQ
+            return self.expression(klass, this=this, expression=self._parse_expression())
         this = self.expression(
             exp.Is,
             this=this,

@@ -501,7 +501,6 @@ class Parser:
         "_curr",
         "_next",
         "_prev",
-        "_greedy_subqueries",
     )
 
     def __init__(
@@ -532,7 +531,6 @@ class Parser:
         self._curr = None
         self._next = None
         self._prev = None
-        self._greedy_subqueries = False
 
     def parse(self, raw_tokens, sql=None):
         """

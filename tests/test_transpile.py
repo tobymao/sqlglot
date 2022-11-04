@@ -70,6 +70,8 @@ class TestTranspile(unittest.TestCase):
 
     def test_comments(self):
         self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment*/")
+        self.validate("SELECT --+5\nx FROM foo", "SELECT /* +5*/ x FROM foo")
+        self.validate("SELECT --!5\nx FROM foo", "SELECT /* !5*/ x FROM foo")
         self.validate("SELECT 1 /* comment */ + 1", "SELECT 1 /* comment */ + 1")
         self.validate(
             "SELECT 1 /* inline */ FROM foo -- comment",

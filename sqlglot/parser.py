@@ -700,9 +700,7 @@ class Parser(metaclass=_Parser):
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
 
         self._parse_query_modifiers(expression)
-        self._attach_comment(expression, comment)
-
-        return expression
+        return self._attach_comment(expression, comment)
 
     def _parse_drop(self):
         temporary = self._match(TokenType.TEMPORARY)
@@ -1098,7 +1096,7 @@ class Parser(metaclass=_Parser):
             this = self._parse_table() if table else self._parse_select(nested=True)
             self._parse_query_modifiers(this)
             self._match_r_paren()
-            this = self._parse_subquery(this)
+            this = self._attach_comment(self._parse_subquery(this), self._prev.comment)
         elif self._match(TokenType.VALUES):
             this = self.expression(exp.Values, expressions=self._parse_csv(self._parse_value))
             alias = self._parse_table_alias()
@@ -1161,11 +1159,9 @@ class Parser(metaclass=_Parser):
         if not alias and not columns:
             return None
 
-        return self.expression(
-            exp.TableAlias,
-            this=alias,
-            columns=columns,
-        )
+        alias = self.expression(exp.TableAlias, this=alias, columns=columns)
+        alias.comment = self._prev.comment
+        return alias
 
     def _parse_subquery(self, this):
         return self.expression(
@@ -1361,7 +1357,7 @@ class Parser(metaclass=_Parser):
             table_sample.set("this", this)
             this = table_sample
 
-        return self._attach_comment(this, self._prev.comment)
+        return this
 
     def _parse_unnest(self):
         if not self._match(TokenType.UNNEST):
@@ -1880,9 +1876,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
-            return self._attach_comment(
-                self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev), self._prev.comment
-            )
+            primary = self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
+            primary.comment = self._prev.comment
+            return primary
 
         if self._match_pair(TokenType.DOT, TokenType.NUMBER):
             return exp.Literal.number(f"0.{self._prev.text}")
@@ -1946,7 +1942,7 @@ class Parser(metaclass=_Parser):
             ):
                 this = self.expression(subquery_predicate, this=self._parse_select())
                 self._match_r_paren()
-                return self._attach_comment(this, self._prev.comment)
+                return this
 
             if functions is None:
                 functions = self.FUNCTIONS
@@ -1959,7 +1955,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
         self._match_r_paren()
-        return self._parse_window(self._attach_comment(this, self._prev.comment))
+        return self._parse_window(this)
 
     def _parse_user_defined_function(self):
         this = self._parse_id_var()
@@ -2414,7 +2410,7 @@ class Parser(metaclass=_Parser):
         any_token = self._match(TokenType.ALIAS)
 
         if explicit and not any_token:
-            return this
+            return self._attach_comment(this, self._prev.comment)
 
         if self._match(TokenType.L_PAREN):
             aliases = self.expression(
@@ -2423,12 +2419,15 @@ class Parser(metaclass=_Parser):
                 expressions=self._parse_csv(lambda: self._parse_id_var(any_token)),
             )
             self._match_r_paren()
+            aliases.comment = self._prev.comment
             return aliases
 
         alias = self._parse_id_var(any_token)
 
         if alias:
-            return self.expression(exp.Alias, this=this, alias=alias)
+            alias = self.expression(exp.Alias, this=this, alias=alias)
+            alias.comment = self._prev.comment
+            return alias
 
         return this
 
@@ -2439,30 +2438,40 @@ class Parser(metaclass=_Parser):
             return identifier
 
         if any_token and self._curr and self._curr.token_type not in self.RESERVED_KEYWORDS:
-            return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
+            self._advance()
+        elif not self._match_set(tokens or self.ID_VAR_TOKENS):
+            return None
 
-        return self._match_set(tokens or self.ID_VAR_TOKENS) and exp.Identifier(
-            this=self._prev.text, quoted=False
-        )
+        identifier = exp.Identifier(this=self._prev.text, quoted=False)
+        identifier.comment = self._prev.comment
+        return identifier
 
     def _parse_string(self):
         if self._match(TokenType.STRING):
-            return exp.Literal.string(self._prev.text)
+            string = exp.Literal.string(self._prev.text)
+            string.comment = self._prev.comment
+            return string
         return self._parse_placeholder()
 
     def _parse_number(self):
         if self._match(TokenType.NUMBER):
-            return exp.Literal.number(self._prev.text)
+            number = exp.Literal.number(self._prev.text)
+            number.comment = self._prev.comment
+            return number
         return self._parse_placeholder()
 
     def _parse_identifier(self):
         if self._match(TokenType.IDENTIFIER):
-            return exp.Identifier(this=self._prev.text, quoted=True)
+            identifier = exp.Identifier(this=self._prev.text, quoted=True)
+            identifier.comment = self._prev.comment
+            return identifier
         return self._parse_placeholder()
 
     def _parse_var(self):
         if self._match(TokenType.VAR):
-            return exp.Var(this=self._prev.text)
+            var = exp.Var(this=self._prev.text)
+            var.comment = self._prev.comment
+            return var
         return self._parse_placeholder()
 
     def _parse_var_or_string(self):
@@ -2517,10 +2526,6 @@ class Parser(metaclass=_Parser):
             parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)
-
-        # This makes sure we don't attach a comment twice to the last term in a binary expression
-        if not isinstance(parse_result, exp.Binary):
-            self._attach_comment(parse_result, self._prev.comment)
 
         return items
 

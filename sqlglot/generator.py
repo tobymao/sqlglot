@@ -103,6 +103,8 @@ class Generator:
         exp.TableFormatProperty,
     }
 
+    HINT_SIGNIFIER = {"+", "!"}
+
     __slots__ = (
         "time_mapping",
         "time_trie",
@@ -211,7 +213,6 @@ class Generator:
         return sql
 
     def unsupported(self, message):
-
         if self.unsupported_level == ErrorLevel.IMMEDIATE:
             raise UnsupportedError(message)
         self.unsupported_messages.append(message)
@@ -226,13 +227,16 @@ class Generator:
         if not comment or not self._comments:
             return sql
 
+        # Add a leading space if needed so that we don't transpile to a hint accidentally
+        pad = " " if comment[0] in self.HINT_SIGNIFIER else ""
+
         if not self.pretty:
-            return f"{sql} /*{comment}*/"
+            return f"{sql} /*{pad}{comment}*/"
 
         if not NEWLINE_RE.search(comment):
-            return f"{sql} --{comment}" if single_line else f"{sql} /*{comment}*/"
+            return f"{sql} --{comment}" if single_line else f"{sql} /*{pad}{comment}*/"
 
-        return f"/*{comment}*/\n{sql}"
+        return f"/*{pad}{comment}*/\n{sql}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -615,12 +619,12 @@ class Generator:
             for part in [
                 self.sql(expression, "catalog"),
                 self.sql(expression, "db"),
-                self.sql(expression, "this"),
+                self.maybe_comment(self.sql(expression, "this"), expression.find_comment("this")),
             ]
             if part
         )
 
-        alias = self.sql(expression, "alias")
+        alias = self.maybe_comment(self.sql(expression, "alias"), expression.find_comment("alias"))
         alias = f"{sep}{alias}" if alias else ""
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
@@ -1299,30 +1303,28 @@ class Generator:
         sql_with_comment = [(self.sql(e), e.comment) for e in expressions]
         num_sqls = len(sql_with_comment)
 
-        # The only time leading_comma changes the output is if pretty print is enabled
-        if self._leading_comma and self.pretty:
-            pad = " " * self.pad
-            expressions = "\n".join(
-                f"{sep if i > 0 else pad}{self.maybe_comment(sql, com, single_line=True)}"
-                for i, (sql, com) in enumerate(sql_with_comment)
-            )
-        elif self.pretty:
-            sep = sep.strip()
-            expressions = "\n".join(
-                [
-                    f"{sql}{sep if i + 1 < num_sqls else ''}{self.maybe_comment('', com, single_line=True)}"
-                    for i, (sql, com) in enumerate(sql_with_comment)
-                ]
-            )
-        else:
-            expressions = "".join(
-                [
-                    f"{self.maybe_comment(sql, com, single_line=True)}{sep if i + 1 < num_sqls else ''}"
-                    for i, (sql, com) in enumerate(sql_with_comment)
-                ]
-            )
+        # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
+        pad = " " * self.pad
+        stripped_sep = sep.strip()
 
-        return self.indent(expressions, skip_first=False) if indent else expressions
+        result_sqls = []
+        for i, (sql, comment) in enumerate(sql_with_comment):
+            if self.pretty:
+                if self._leading_comma:
+                    result_sqls.append(
+                        f"{sep if i > 0 else pad}{self.maybe_comment(sql, comment, single_line=True)}"
+                    )
+                else:
+                    result_sqls.append(
+                        f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{self.maybe_comment('', comment, single_line=True)}"
+                    )
+            else:
+                result_sqls.append(
+                    f"{self.maybe_comment(sql, comment, single_line=True)}{sep if i + 1 < num_sqls else ''}"
+                )
+
+        result_sqls = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
+        return self.indent(result_sqls, skip_first=False) if indent else result_sqls
 
     def op_expressions(self, op, expression, flat=False):
         expressions_sql = self.expressions(expression, flat=flat)

@@ -1225,6 +1225,12 @@ class Generator:
     def neq_sql(self, expression):
         return self.binary(expression, "<>")
 
+    def nullsafeeq_sql(self, expression):
+        return self.binary(expression, "IS NOT DISTINCT FROM")
+
+    def nullsafeneq_sql(self, expression):
+        return self.binary(expression, "IS DISTINCT FROM")
+
     def or_sql(self, expression):
         return self.connector_sql(expression, "OR")
 

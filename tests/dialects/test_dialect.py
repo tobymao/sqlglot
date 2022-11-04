@@ -1149,3 +1149,28 @@ class TestDialect(Validator):
                 "sqlite": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
             },
         )
+
+    def test_nullsafe_eq(self):
+        self.validate_all(
+            "SELECT a IS NOT DISTINCT FROM b",
+            read={
+                "mysql": "SELECT a <=> b",
+                "postgres": "SELECT a IS NOT DISTINCT FROM b",
+            },
+            write={
+                "mysql": "SELECT a <=> b",
+                "postgres": "SELECT a IS NOT DISTINCT FROM b",
+            },
+        )
+
+    def test_nullsafe_neq(self):
+        self.validate_all(
+            "SELECT a IS DISTINCT FROM b",
+            read={
+                "postgres": "SELECT a IS DISTINCT FROM b",
+            },
+            write={
+                "mysql": "SELECT NOT a <=> b",
+                "postgres": "SELECT a IS DISTINCT FROM b",
+            },
+        )

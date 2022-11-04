@@ -2080,6 +2080,14 @@ class EQ(Binary, Predicate):
     pass
 
 
+class NullSafeEQ(Binary, Predicate):
+    pass
+
+
+class NullSafeNEQ(Binary, Predicate):
+    pass
+
+
 class Escape(Binary):
     pass
 

@@ -276,7 +276,7 @@ class Generator:
             for i, line in enumerate(lines)
         )
 
-    def sql(self, expression, key=None):
+    def sql(self, expression, key=None, comment=False, **kwargs):
         if not expression:
             return ""
 
@@ -284,6 +284,13 @@ class Generator:
             return expression
 
         if key:
+            if comment:
+                return self.maybe_comment(
+                    self.sql(expression.args.get(key), comment=comment, **kwargs),
+                    expression.find_comment(key),
+                    **kwargs,
+                )
+
             return self.sql(expression.args.get(key))
 
         transform = self.TRANSFORMS.get(expression.__class__)
@@ -619,12 +626,12 @@ class Generator:
             for part in [
                 self.sql(expression, "catalog"),
                 self.sql(expression, "db"),
-                self.maybe_comment(self.sql(expression, "this"), expression.find_comment("this")),
+                self.sql(expression, "this", comment=True),
             ]
             if part
         )
 
-        alias = self.maybe_comment(self.sql(expression, "alias"), expression.find_comment("alias"))
+        alias = self.sql(expression, "alias", comment=True)
         alias = f"{sep}{alias}" if alias else ""
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
@@ -905,7 +912,7 @@ class Generator:
 
         return self.query_modifiers(
             expression,
-            self.wrap(expression),
+            self.maybe_comment(self.wrap(expression), expression.comment),
             self.expressions(expression, key="pivots", sep=" "),
             f" AS {alias}" if alias else "",
         )
@@ -1262,10 +1269,8 @@ class Generator:
         return f"SHOW {self.sql(expression, 'this')}"
 
     def binary(self, expression, op):
-        left = self.maybe_comment(self.sql(expression, "this"), expression.find_comment("this"))
-        right = self.maybe_comment(
-            self.sql(expression, "expression"), expression.find_comment("expression")
-        )
+        left = self.sql(expression, "this", comment=True)
+        right = self.sql(expression, "expression", comment=True)
         return f"{left} {op} {right}"
 
     def function_fallback_sql(self, expression):
@@ -1298,7 +1303,7 @@ class Generator:
             return ""
 
         if flat:
-            return sep.join(self.maybe_comment(self.sql(e), e.comment) for e in expressions)
+            return sep.join(self.sql(e, comment=True) for e in expressions)
 
         sql_with_comment = [(self.sql(e), e.comment) for e in expressions]
         num_sqls = len(sql_with_comment)

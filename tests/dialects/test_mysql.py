@@ -353,12 +353,13 @@ COMMENT='客户账户表'"""
         self.assertEqual(show.name, "PROFILE")
 
         show = self.validate_identity("SHOW PROFILE BLOCK IO")
-        self.assertEqual(show.args["types"], ["BLOCK IO"])
+        self.assertEqual(show.args["types"][0].name, "BLOCK IO")
 
         show = self.validate_identity(
             "SHOW PROFILE BLOCK IO, PAGE FAULTS FOR QUERY 1 OFFSET 2 LIMIT 3"
         )
-        self.assertEqual(show.args["types"], ["BLOCK IO", "PAGE FAULTS"])
+        self.assertEqual(show.args["types"][0].name, "BLOCK IO")
+        self.assertEqual(show.args["types"][1].name, "PAGE FAULTS")
         self.assertEqual(show.text("query"), "1")
         self.assertEqual(show.text("offset"), "2")
         self.assertEqual(show.text("limit"), "3")

@@ -2539,7 +2539,7 @@ class Parser(metaclass=_Parser):
         while True:
             # The current token might be multiple words
             key = self._curr.text.split(" ")
-            this.extend(key)
+            this.append(self._curr.text.upper())
             self._advance()
             result, trie = in_trie(trie, key)
             if result == 0:

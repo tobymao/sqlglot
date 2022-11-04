@@ -46,6 +46,7 @@ class TokenType(AutoName):
     ANNOTATION = auto()
     DOLLAR = auto()
     PARAMETER = auto()
+    SESSION_PARAMETER = auto()
 
     SPACE = auto()
     BREAK = auto()
@@ -674,7 +675,6 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.COMMIT,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,
-        TokenType.SET,
         TokenType.TRUNCATE,
         TokenType.VACUUM,
         TokenType.ROLLBACK,

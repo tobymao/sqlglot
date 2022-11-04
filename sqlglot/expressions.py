@@ -624,6 +624,18 @@ class Describe(Expression):
     pass
 
 
+class Set(Expression):
+    arg_types = {"expressions": True}
+
+
+class SetItem(Expression):
+    arg_types = {
+        "this": True,
+        "kind": False,
+        "collate": False,  # MySQL SET NAMES statement
+    }
+
+
 class Show(Expression):
     arg_types = {
         "this": True,
@@ -1931,6 +1943,10 @@ class Star(Expression):
 
 class Parameter(Expression):
     pass
+
+
+class SessionParameter(Expression):
+    arg_types = {"this": True, "kind": False}
 
 
 class Placeholder(Expression):

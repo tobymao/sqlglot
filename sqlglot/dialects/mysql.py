@@ -166,6 +166,7 @@ class MySQL(Dialect):
             "_UTF32": TokenType.INTRODUCER,
             "_UTF8MB3": TokenType.INTRODUCER,
             "_UTF8MB4": TokenType.INTRODUCER,
+            "@@": TokenType.SESSION_PARAMETER,
         }
 
     class Parser(parser.Parser):
@@ -244,6 +245,17 @@ class MySQL(Dialect):
             "SESSION VARIABLES": _show_parser("VARIABLES"),
             "VARIABLES": _show_parser("VARIABLES"),
             "WARNINGS": _show_parser("WARNINGS"),
+        }
+
+        SET_PARSERS = {
+            "GLOBAL": lambda self: self._parse_set_item_kind("GLOBAL"),
+            "PERSIST": lambda self: self._parse_set_item_kind("PERSIST"),
+            "PERSIST_ONLY": lambda self: self._parse_set_item_kind("PERSIST_ONLY"),
+            "SESSION": lambda self: self._parse_set_item_kind("SESSION"),
+            "LOCAL": lambda self: self._parse_set_item_kind("LOCAL"),
+            "CHARACTER SET": lambda self: self._parse_set_item_kind("CHARACTER SET"),
+            "CHARSET": lambda self: self._parse_set_item_kind("CHARACTER SET"),
+            "NAMES": lambda self: self._parse_set_item_names(),
         }
 
         PROFILE_TYPES = {
@@ -329,6 +341,28 @@ class MySQL(Dialect):
                     offset = parts[0]
             return offset, limit
 
+        def _parse_set_item_kind(self, kind):
+            this = self._parse_statement()
+
+            return self.expression(
+                exp.SetItem,
+                this=this,
+                kind=kind,
+            )
+
+        def _parse_set_item_names(self):
+            charset = self._parse_string() or self._parse_id_var()
+            if self._match_text("COLLATE"):
+                collate = self._parse_string()
+            else:
+                collate = None
+            return self.expression(
+                exp.SetItem,
+                this=charset,
+                collate=collate,
+                kind="NAMES",
+            )
+
     class Generator(generator.Generator):
         NULL_ORDERING_SUPPORTED = False
 
@@ -413,3 +447,14 @@ class MySQL(Dialect):
                 limit_offset = f"{offset}, {limit}" if offset else limit
                 return f" LIMIT {limit_offset}"
             return ""
+
+        def setitem_sql(self, expression):
+            kind = self.sql(expression, "kind")
+            kind = f"{kind} " if kind else ""
+            this = self.sql(expression, "this")
+            collate = self.sql(expression, "collate")
+            collate = f" COLLATE {collate}" if collate else ""
+            return f"{kind}{this}{collate}"
+
+        def set_sql(self, expression):
+            return f"SET {self.expressions(expression)}"

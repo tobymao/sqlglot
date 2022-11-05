@@ -83,10 +83,6 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "CAST(a AS BINARY(4))",
-            read={
-                "presto": "CAST(a AS VARBINARY(4))",
-                "sqlite": "CAST(a AS VARBINARY(4))",
-            },
             write={
                 "bigquery": "CAST(a AS BINARY(4))",
                 "clickhouse": "CAST(a AS BINARY(4))",
@@ -101,6 +97,24 @@ class TestDialect(Validator):
                 "sqlite": "CAST(a AS BLOB(4))",
                 "spark": "CAST(a AS BINARY(4))",
                 "starrocks": "CAST(a AS BINARY(4))",
+            },
+        )
+        self.validate_all(
+            "CAST(a AS VARBINARY(4))",
+            write={
+                "bigquery": "CAST(a AS VARBINARY(4))",
+                "clickhouse": "CAST(a AS VARBINARY(4))",
+                "duckdb": "CAST(a AS VARBINARY(4))",
+                "mysql": "CAST(a AS VARBINARY(4))",
+                "hive": "CAST(a AS BINARY(4))",
+                "oracle": "CAST(a AS BLOB(4))",
+                "postgres": "CAST(a AS BYTEA(4))",
+                "presto": "CAST(a AS VARBINARY(4))",
+                "redshift": "CAST(a AS VARBYTE(4))",
+                "snowflake": "CAST(a AS VARBINARY(4))",
+                "sqlite": "CAST(a AS BLOB(4))",
+                "spark": "CAST(a AS BINARY(4))",
+                "starrocks": "CAST(a AS VARBINARY(4))",
             },
         )
         self.validate_all(

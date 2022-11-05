@@ -236,6 +236,7 @@ class Hive(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.VARBINARY: "BINARY",
         }
 
         TRANSFORMS = {

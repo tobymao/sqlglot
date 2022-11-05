@@ -209,7 +209,6 @@ class TSQL(Dialect):
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "TIME": TokenType.TIMESTAMP,
-            "VARBINARY": TokenType.BINARY,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "SMALLMONEY": TokenType.SMALLMONEY,

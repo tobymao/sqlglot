@@ -102,6 +102,7 @@ class Parser(metaclass=_Parser):
         TokenType.NVARCHAR,
         TokenType.TEXT,
         TokenType.BINARY,
+        TokenType.VARBINARY,
         TokenType.JSON,
         TokenType.INTERVAL,
         TokenType.TIMESTAMP,

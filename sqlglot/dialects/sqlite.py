@@ -20,7 +20,6 @@ class SQLite(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "VARBINARY": TokenType.BINARY,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         }
 
@@ -46,6 +45,7 @@ class SQLite(Dialect):
             exp.DataType.Type.VARCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
             exp.DataType.Type.BINARY: "BLOB",
+            exp.DataType.Type.VARBINARY: "BLOB",
         }
 
         TOKEN_MAPPING = {

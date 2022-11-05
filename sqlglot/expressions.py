@@ -1975,6 +1975,7 @@ class DataType(Expression):
         NVARCHAR = auto()
         TEXT = auto()
         BINARY = auto()
+        VARBINARY = auto()
         INT = auto()
         TINYINT = auto()
         SMALLINT = auto()

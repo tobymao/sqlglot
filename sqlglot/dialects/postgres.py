@@ -199,6 +199,7 @@ class Postgres(Dialect):
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
             exp.DataType.Type.BINARY: "BYTEA",
+            exp.DataType.Type.VARBINARY: "BYTEA",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 

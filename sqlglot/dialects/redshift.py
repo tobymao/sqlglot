@@ -24,7 +24,7 @@ class Redshift(Postgres):
             "SUPER": TokenType.SUPER,
             "TIME": TokenType.TIMESTAMP,
             "TIMETZ": TokenType.TIMESTAMPTZ,
-            "VARBYTE": TokenType.BINARY,
+            "VARBYTE": TokenType.VARBINARY,
             "SIMILAR TO": TokenType.SIMILAR_TO,
         }
 
@@ -32,5 +32,6 @@ class Redshift(Postgres):
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BINARY: "VARBYTE",
+            exp.DataType.Type.VARBINARY: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
         }

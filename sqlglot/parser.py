@@ -675,11 +675,6 @@ class Parser(metaclass=_Parser):
     def _retreat(self, index):
         self._advance(index - self._index)
 
-    def _attach_comment(self, node, comment):
-        if node and comment is not None:
-            node.comment = comment
-        return node
-
     def _parse_statement(self):
         if self._curr is None:
             return None
@@ -694,13 +689,11 @@ class Parser(metaclass=_Parser):
                 expression=self._parse_string(),
             )
 
-        comment = self._curr.comment
-
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
 
         self._parse_query_modifiers(expression)
-        return self._attach_comment(expression, comment)
+        return expression
 
     def _parse_drop(self):
         temporary = self._match(TokenType.TEMPORARY)
@@ -1065,6 +1058,8 @@ class Parser(metaclass=_Parser):
                 self.raise_error(f"{this.key} does not support CTE")
                 this = cte
         elif self._match(TokenType.SELECT):
+            comment = self._prev.comment
+
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
             distinct = self._match(TokenType.DISTINCT)
@@ -1088,6 +1083,7 @@ class Parser(metaclass=_Parser):
                 expressions=expressions,
                 limit=limit,
             )
+            this.comment = comment
             from_ = self._parse_from()
             if from_:
                 this.set("from", from_)
@@ -1096,7 +1092,7 @@ class Parser(metaclass=_Parser):
             this = self._parse_table() if table else self._parse_select(nested=True)
             self._parse_query_modifiers(this)
             self._match_r_paren()
-            this = self._attach_comment(self._parse_subquery(this), self._prev.comment)
+            this = self._parse_subquery(this)
         elif self._match(TokenType.VALUES):
             this = self.expression(exp.Values, expressions=self._parse_csv(self._parse_value))
             alias = self._parse_table_alias()
@@ -1164,12 +1160,14 @@ class Parser(metaclass=_Parser):
         return alias
 
     def _parse_subquery(self, this):
-        return self.expression(
+        subquery = self.expression(
             exp.Subquery,
             this=this,
             pivots=self._parse_pivots(),
             alias=self._parse_table_alias(),
         )
+        subquery.comment = self._prev.comment
+        return subquery
 
     def _parse_query_modifiers(self, this):
         if not isinstance(this, self.MODIFIABLES):
@@ -1872,7 +1870,7 @@ class Parser(metaclass=_Parser):
                 this = self.expression(exp.Dot, this=this, expression=field)
             this = self._parse_bracket(this)
 
-        return self._attach_comment(this, self._prev.comment)
+        return this
 
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
@@ -1954,7 +1952,9 @@ class Parser(metaclass=_Parser):
                 self.validate_expression(this, args)
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
+
         self._match_r_paren()
+        this.comment = self._prev.comment
         return self._parse_window(this)
 
     def _parse_user_defined_function(self):
@@ -2170,7 +2170,8 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.R_BRACKET):
             self.raise_error("Expected ]")
 
-        return self._parse_bracket(self._attach_comment(this, self._prev.comment))
+        this.comment = self._prev.comment
+        return self._parse_bracket(this)
 
     def _parse_case(self):
         ifs = []
@@ -2410,7 +2411,7 @@ class Parser(metaclass=_Parser):
         any_token = self._match(TokenType.ALIAS)
 
         if explicit and not any_token:
-            return self._attach_comment(this, self._prev.comment)
+            return this
 
         if self._match(TokenType.L_PAREN):
             aliases = self.expression(
@@ -2522,7 +2523,9 @@ class Parser(metaclass=_Parser):
         items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            self._attach_comment(parse_result, self._prev.comment)
+            if parse_result and self._prev.comment is not None:
+                parse_result.comment = self._prev.comment
+
             parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)

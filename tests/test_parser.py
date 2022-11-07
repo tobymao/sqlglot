@@ -148,7 +148,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.expressions[2].comment, None)
         self.assertEqual(expression.expressions[3].comment, "comment4 --foo")
         self.assertEqual(expression.expressions[4].comment, "")
-        self.assertEqual(expression.expressions[5].comment, " space")
+        self.assertEqual(expression.expressions[5].this.comment, " space")
 
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")

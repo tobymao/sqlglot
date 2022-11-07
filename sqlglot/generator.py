@@ -276,7 +276,7 @@ class Generator:
             for i, line in enumerate(lines)
         )
 
-    def sql(self, expression, key=None, comment=False, **kwargs):
+    def sql(self, expression, key=None):
         if not expression:
             return ""
 
@@ -284,13 +284,6 @@ class Generator:
             return expression
 
         if key:
-            if comment:
-                return self.maybe_comment(
-                    self.sql(expression.args.get(key), comment=comment, **kwargs),
-                    expression.find_comment(key),
-                    **kwargs,
-                )
-
             return self.sql(expression.args.get(key))
 
         transform = self.TRANSFORMS.get(expression.__class__)
@@ -308,7 +301,7 @@ class Generator:
             return getattr(self, exp_handler_name)(expression)
 
         if isinstance(expression, exp.Func):
-            return self.function_fallback_sql(expression)
+            return self.maybe_comment(self.function_fallback_sql(expression), expression.comment)
 
         if isinstance(expression, exp.Property):
             return self.property_sql(expression)
@@ -512,11 +505,11 @@ class Generator:
         return f"{this} ON {table} {columns}"
 
     def identifier_sql(self, expression):
-        value = expression.name
-        value = value.lower() if self.normalize else value
+        text = expression.name
+        text = text.lower() if self.normalize else text
         if expression.args.get("quoted") or self.identify:
-            return f"{self.identifier_start}{value}{self.identifier_end}"
-        return value
+            text = f"{self.identifier_start}{text}{self.identifier_end}"
+        return self.maybe_comment(text, expression.comment)
 
     def partition_sql(self, expression):
         keys = csv(
@@ -626,12 +619,12 @@ class Generator:
             for part in [
                 self.sql(expression, "catalog"),
                 self.sql(expression, "db"),
-                self.sql(expression, "this", comment=True),
+                self.sql(expression, "this"),
             ]
             if part
         )
 
-        alias = self.sql(expression, "alias", comment=True)
+        alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
@@ -696,7 +689,7 @@ class Generator:
         return f"VALUES{self.seg('')}{args}{alias}"
 
     def var_sql(self, expression):
-        return self.sql(expression, "this")
+        return self.maybe_comment(self.sql(expression, "this"), expression.comment)
 
     def from_sql(self, expression):
         expressions = self.expressions(expression, flat=True)
@@ -786,8 +779,8 @@ class Generator:
             if self._replace_backslash:
                 text = text.replace("\\", "\\\\")
             text = text.replace(self.quote_end, self._escaped_quote_end)
-            return f"{self.quote_start}{text}{self.quote_end}"
-        return text
+            text = f"{self.quote_start}{text}{self.quote_end}"
+        return self.maybe_comment(text, expression.comment)
 
     def loaddata_sql(self, expression):
         local = " LOCAL" if expression.args.get("local") else ""
@@ -802,11 +795,11 @@ class Generator:
         serde = f" SERDE {serde}" if serde else ""
         return f"LOAD DATA{local}{inpath}{overwrite}{this}{partition}{input_format}{serde}"
 
-    def null_sql(self, *_):
-        return "NULL"
+    def null_sql(self, expression):
+        return self.maybe_comment("NULL", expression.comment)
 
     def boolean_sql(self, expression):
-        return "TRUE" if expression.this else "FALSE"
+        return self.maybe_comment("TRUE" if expression.this else "FALSE", expression.comment)
 
     def order_sql(self, expression, flat=False):
         this = self.sql(expression, "this")
@@ -1162,7 +1155,10 @@ class Generator:
         return self.binary(expression, "^")
 
     def cast_sql(self, expression):
-        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
+        return self.maybe_comment(
+            f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})",
+            expression.comment,
+        )
 
     def currentdate_sql(self, expression):
         zone = self.sql(expression, "this")
@@ -1269,9 +1265,7 @@ class Generator:
         return f"SHOW {self.sql(expression, 'this')}"
 
     def binary(self, expression, op):
-        left = self.sql(expression, "this", comment=True)
-        right = self.sql(expression, "expression", comment=True)
-        return f"{left} {op} {right}"
+        return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
 
     def function_fallback_sql(self, expression):
         args = []
@@ -1303,7 +1297,7 @@ class Generator:
             return ""
 
         if flat:
-            return sep.join(self.sql(e, comment=True) for e in expressions)
+            return sep.join(self.sql(e) for e in expressions)
 
         sql_with_comment = [(self.sql(e), e.comment) for e in expressions]
         num_sqls = len(sql_with_comment)

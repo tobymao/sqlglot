@@ -50,7 +50,7 @@ class TestTranspile(unittest.TestCase):
             pretty=True,
         )
         self.validate(
-            "SELECT FOO /*x*/, BAR /*y*/, BAZ",
+            "SELECT FOO, /*x*/\nBAR, /*y*/\nBAZ",
             "SELECT\n    FOO --x\n  , BAR --y\n  , BAZ",
             leading_comma=True,
             pretty=True,

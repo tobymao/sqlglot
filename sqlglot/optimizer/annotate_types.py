@@ -96,10 +96,10 @@ class TypeAnnotator:
         exp.DiToDate: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DATE),
         exp.Exp: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DOUBLE),
         exp.Floor: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
-        exp.Case: lambda self, expr: self._annotate_custom(expr, "default", "ifs"),
-        exp.If: lambda self, expr: self._annotate_custom(expr, "true", "false"),
-        exp.Coalesce: lambda self, expr: self._annotate_custom(expr, "this", "expressions"),
-        exp.IfNull: lambda self, expr: self._annotate_custom(expr, "this", "expression"),
+        exp.Case: lambda self, expr: self._annotate_by_args(expr, "default", "ifs"),
+        exp.If: lambda self, expr: self._annotate_by_args(expr, "true", "false"),
+        exp.Coalesce: lambda self, expr: self._annotate_by_args(expr, "this", "expressions"),
+        exp.IfNull: lambda self, expr: self._annotate_by_args(expr, "this", "expression"),
         exp.ConcatWs: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
         exp.GroupConcat: lambda self, expr: self._annotate_with_type(
             expr, exp.DataType.Type.VARCHAR
@@ -340,7 +340,7 @@ class TypeAnnotator:
         expression.type = target_type
         return self._annotate_args(expression)
 
-    def _annotate_custom(self, expression, *kwargs):
+    def _annotate_by_args(self, expression, *kwargs):
         self._annotate_args(expression)
         expressions = []
         for arg in kwargs:

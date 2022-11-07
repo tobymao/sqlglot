@@ -377,8 +377,6 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.USE: lambda self: self._parse_use(),
-        TokenType.SHOW: lambda self: self._parse_show(),
-        TokenType.SET: lambda self: self._parse_set(),
     }
 
     PRIMARY_PARSERS = {

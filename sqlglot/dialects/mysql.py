@@ -169,6 +169,10 @@ class MySQL(Dialect):
             "@@": TokenType.SESSION_PARAMETER,
         }
 
+        COMMANDS = {*tokens.Tokenizer.COMMANDS}
+        COMMANDS.remove(TokenType.SET)
+        COMMANDS.remove(TokenType.SHOW)
+
     class Parser(parser.Parser):
         STRICT_CAST = False
 
@@ -191,6 +195,12 @@ class MySQL(Dialect):
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
+        }
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.SHOW: lambda self: self._parse_show(),
+            TokenType.SET: lambda self: self._parse_set(),
         }
 
         SHOW_PARSERS = {

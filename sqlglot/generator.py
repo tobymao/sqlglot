@@ -1250,15 +1250,6 @@ class Generator:
     def use_sql(self, expression):
         return f"USE {self.sql(expression, 'this')}"
 
-    def show_sql(self, expression):
-        return f"SHOW {self.sql(expression, 'this')}"
-
-    def setitem_sql(self, expression):
-        return self.sql(expression, "this")
-
-    def set_sql(self, expression):
-        return f"SET {self.expressions(expression)}"
-
     def binary(self, expression, op):
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
 

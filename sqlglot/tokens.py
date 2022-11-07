@@ -676,6 +676,8 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.COMMIT,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,
+        TokenType.SET,
+        TokenType.SHOW,
         TokenType.TRUNCATE,
         TokenType.VACUUM,
         TokenType.ROLLBACK,

@@ -340,13 +340,13 @@ class TypeAnnotator:
         expression.type = target_type
         return self._annotate_args(expression)
 
-    def _annotate_by_args(self, expression, *kwargs):
+    def _annotate_by_args(self, expression, *args):
         self._annotate_args(expression)
         expressions = []
-        for arg in kwargs:
+        for arg in args:
             if isinstance(arg, list):
                 expressions += arg
-            if isinstance(arg, str):
+            elif isinstance(arg, str):
                 arg_expr = expression.args.get(arg)
                 if isinstance(arg_expr, list):
                     expressions += arg_expr
@@ -354,13 +354,11 @@ class TypeAnnotator:
                     expressions.append(arg_expr)
             else:
                 expressions.append(arg)
+
         last_datatype = None
-
         for expr in expressions:
-            if hasattr(expr, "type"):
-                last_datatype = self._maybe_coerce(
-                    last_datatype if last_datatype else expr.type, expr.type
-                )
+            if expr:
+                last_datatype = self._maybe_coerce(last_datatype or expr.type, expr.type)
 
-        expression.type = last_datatype if last_datatype else exp.DataType.Type.UNKNOWN
+        expression.type = last_datatype or exp.DataType.Type.UNKNOWN
         return expression

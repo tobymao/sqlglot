@@ -96,7 +96,17 @@ class TypeAnnotator:
         exp.DiToDate: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DATE),
         exp.Exp: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DOUBLE),
         exp.Floor: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
-        exp.If: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
+        exp.Case: lambda self, expr: self._annotate_custom(expr, "default", "ifs"),
+        exp.If: lambda self, expr: self._annotate_custom(expr, "true", "false"),
+        exp.Coalesce: lambda self, expr: self._annotate_custom(expr, "this", "expressions"),
+        exp.IfNull: lambda self, expr: self._annotate_custom(expr, "this", "expression"),
+        exp.ConcatWs: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
+        exp.GroupConcat: lambda self, expr: self._annotate_with_type(
+            expr, exp.DataType.Type.VARCHAR
+        ),
+        exp.ArrayConcat: lambda self, expr: self._annotate_with_type(
+            expr, exp.DataType.Type.VARCHAR
+        ),
         exp.Initcap: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
         exp.Length: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BIGINT),
         exp.Levenshtein: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
@@ -329,3 +339,28 @@ class TypeAnnotator:
     def _annotate_with_type(self, expression, target_type):
         expression.type = target_type
         return self._annotate_args(expression)
+
+    def _annotate_custom(self, expression, *kwargs):
+        self._annotate_args(expression)
+        expressions = []
+        for arg in kwargs:
+            if isinstance(arg, list):
+                expressions += arg
+            if isinstance(arg, str):
+                arg_expr = expression.args.get(arg)
+                if isinstance(arg_expr, list):
+                    expressions += arg_expr
+                else:
+                    expressions.append(arg_expr)
+            else:
+                expressions.append(arg)
+        last_datatype = None
+
+        for expr in expressions:
+            if hasattr(expr, "type"):
+                last_datatype = self._maybe_coerce(
+                    last_datatype if last_datatype else expr.type, expr.type
+                )
+
+        expression.type = last_datatype if last_datatype else exp.DataType.Type.UNKNOWN
+        return expression

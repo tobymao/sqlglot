@@ -346,7 +346,7 @@ class TypeAnnotator:
         for arg in args:
             arg_expr = expression.args.get(arg)
             if isinstance(arg_expr, list):
-                expressions += (expr for expr in arg_expr if expr)
+                expressions.extend(expr for expr in arg_expr if expr)
             elif arg_expr:
                 expressions.append(arg_expr)
 

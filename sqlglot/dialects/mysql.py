@@ -169,9 +169,7 @@ class MySQL(Dialect):
             "@@": TokenType.SESSION_PARAMETER,
         }
 
-        COMMANDS = {*tokens.Tokenizer.COMMANDS}
-        COMMANDS.remove(TokenType.SET)
-        COMMANDS.remove(TokenType.SHOW)
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SET, TokenType.SHOW}
 
     class Parser(parser.Parser):
         STRICT_CAST = False

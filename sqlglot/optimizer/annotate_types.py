@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.helper import ensure_collection, subclasses
+from sqlglot.helper import ensure_collection, ensure_list, subclasses
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 
@@ -96,7 +96,17 @@ class TypeAnnotator:
         exp.DiToDate: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DATE),
         exp.Exp: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DOUBLE),
         exp.Floor: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
-        exp.If: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
+        exp.Case: lambda self, expr: self._annotate_by_args(expr, "default", "ifs"),
+        exp.If: lambda self, expr: self._annotate_by_args(expr, "true", "false"),
+        exp.Coalesce: lambda self, expr: self._annotate_by_args(expr, "this", "expressions"),
+        exp.IfNull: lambda self, expr: self._annotate_by_args(expr, "this", "expression"),
+        exp.ConcatWs: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
+        exp.GroupConcat: lambda self, expr: self._annotate_with_type(
+            expr, exp.DataType.Type.VARCHAR
+        ),
+        exp.ArrayConcat: lambda self, expr: self._annotate_with_type(
+            expr, exp.DataType.Type.VARCHAR
+        ),
         exp.Initcap: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
         exp.Length: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BIGINT),
         exp.Levenshtein: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
@@ -329,3 +339,17 @@ class TypeAnnotator:
     def _annotate_with_type(self, expression, target_type):
         expression.type = target_type
         return self._annotate_args(expression)
+
+    def _annotate_by_args(self, expression, *args):
+        self._annotate_args(expression)
+        expressions = []
+        for arg in args:
+            arg_expr = expression.args.get(arg)
+            expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
+
+        last_datatype = None
+        for expr in expressions:
+            last_datatype = self._maybe_coerce(last_datatype or expr.type, expr.type)
+
+        expression.type = last_datatype or exp.DataType.Type.UNKNOWN
+        return expression

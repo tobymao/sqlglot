@@ -438,6 +438,19 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(concat_expr.right.type, exp.DataType.Type.VARCHAR)  # TRIM(x.colb)
         self.assertEqual(concat_expr.right.this.type, exp.DataType.Type.CHAR)  # x.colb
 
+        sql = "SELECT CASE WHEN 1=1 THEN x.cola ELSE x.colb END AS col FROM x AS x"
+
+        case_expr_alias = annotate_types(parse_one(sql), schema=schema).expressions[0]
+        self.assertEqual(case_expr_alias.type, exp.DataType.Type.VARCHAR)
+
+        case_expr = case_expr_alias.this
+        self.assertEqual(case_expr.type, exp.DataType.Type.VARCHAR)
+        self.assertEqual(case_expr.args["default"].type, exp.DataType.Type.CHAR)
+
+        case_ifs_expr = case_expr.args["ifs"][0]
+        self.assertEqual(case_ifs_expr.type, exp.DataType.Type.VARCHAR)
+        self.assertEqual(case_ifs_expr.args["true"].type, exp.DataType.Type.VARCHAR)
+
     def test_unknown_annotation(self):
         schema = {"x": {"cola": "VARCHAR"}}
         sql = "SELECT x.cola || SOME_ANONYMOUS_FUNC(x.cola) AS col FROM x AS x"

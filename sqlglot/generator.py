@@ -798,7 +798,7 @@ class Generator:
         serde = f" SERDE {serde}" if serde else ""
         return f"LOAD DATA{local}{inpath}{overwrite}{this}{partition}{input_format}{serde}"
 
-    def null_sql(self, expression):
+    def null_sql(self, *_):
         return "NULL"
 
     def boolean_sql(self, expression):

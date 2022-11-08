@@ -1176,6 +1176,7 @@ class TestDialect(Validator):
             read={
                 "mysql": "SELECT 1 # arbitrary content,,, until end-of-line",
                 "bigquery": "SELECT 1 # arbitrary content,,, until end-of-line",
+                "clickhouse": "SELECT 1 #! arbitrary content,,, until end-of-line",
             },
         )
         self.validate_all(

@@ -334,7 +334,7 @@ class MySQL(Dialect):
         def _parse_show_profile_type(self):
             for type_ in self.PROFILE_TYPES:
                 if self._match_text(*type_.split(" ")):
-                    return type_
+                    return exp.Var(this=type_)
             return None
 
         def _parse_oldstyle_limit(self):

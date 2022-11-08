@@ -18,7 +18,6 @@ class TestClickhouse(Validator):
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
             },
         )
-
         self.validate_all(
             "CAST(1 AS NULLABLE(Int64))",
             write={
@@ -30,4 +29,8 @@ class TestClickhouse(Validator):
             write={
                 "clickhouse": "CAST(1 AS Nullable(DateTime64(6, 'UTC')))",
             },
+        )
+        self.validate_all(
+            "SELECT x #! comment",
+            write={"": "SELECT x /* comment */"},
         )

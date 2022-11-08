@@ -568,30 +568,48 @@ class TestExpressions(unittest.TestCase):
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)
 
-    def test_annotation_alias(self):
-        sql = "SELECT a, b AS B, c # comment, d AS D # another_comment FROM foo"
+    def test_comment_alias(self):
+        sql = """
+        SELECT
+            a,
+            b AS B,
+            c, /*comment*/
+            d AS D, -- another comment
+            CAST(x AS INT) -- final comment
+        FROM foo
+        """
         expression = parse_one(sql)
         self.assertEqual(
             [e.alias_or_name for e in expression.expressions],
-            ["a", "B", "c", "D"],
+            ["a", "B", "c", "D", "x"],
         )
-        self.assertEqual(expression.sql(), "SELECT a, b AS B, c, d AS D")
-        self.assertEqual(expression.expressions[2].name, "comment")
         self.assertEqual(
-            expression.sql(pretty=True, annotations=False),
+            expression.sql(),
+            "SELECT a, b AS B, c /* comment */, d AS D /* another comment */, CAST(x AS INT) /* final comment */ FROM foo",
+        )
+        self.assertEqual(
+            expression.sql(comments=False),
+            "SELECT a, b AS B, c, d AS D, CAST(x AS INT) FROM foo",
+        )
+        self.assertEqual(
+            expression.sql(pretty=True, comments=False),
             """SELECT
   a,
   b AS B,
   c,
-  d AS D""",
+  d AS D,
+  CAST(x AS INT)
+FROM foo""",
         )
         self.assertEqual(
             expression.sql(pretty=True),
             """SELECT
   a,
   b AS B,
-  c # comment,
-  d AS D # another_comment FROM foo""",
+  c, -- comment
+  d AS D, -- another comment
+  CAST(x AS INT) -- final comment
+FROM foo""",
         )
 
     def test_to_table(self):

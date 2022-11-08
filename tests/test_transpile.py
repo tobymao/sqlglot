@@ -49,6 +49,12 @@ class TestTranspile(unittest.TestCase):
             leading_comma=True,
             pretty=True,
         )
+        self.validate(
+            "SELECT FOO, /*x*/\nBAR, /*y*/\nBAZ",
+            "SELECT\n    FOO -- x\n  , BAR -- y\n  , BAZ",
+            leading_comma=True,
+            pretty=True,
+        )
         # without pretty, this should be a no-op
         self.validate(
             "SELECT FOO, BAR, BAZ",
@@ -63,24 +69,61 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
-        self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo")
-        self.validate("SELECT 1 /* inline */ FROM foo -- comment", "SELECT 1 FROM foo")
-
+        self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment */")
+        self.validate("SELECT --+5\nx FROM foo", "/* +5 */ SELECT x FROM foo")
+        self.validate("SELECT --!5\nx FROM foo", "/* !5 */ SELECT x FROM foo")
+        self.validate(
+            "SELECT 1 /* inline */ FROM foo -- comment",
+            "SELECT 1 /* inline */ FROM foo /* comment */",
+        )
+        self.validate(
+            "SELECT FUN(x) /*x*/, [1,2,3] /*y*/", "SELECT FUN(x) /* x */, ARRAY(1, 2, 3) /* y */"
+        )
         self.validate(
             """
             SELECT 1 -- comment
             FROM foo -- comment
             """,
-            "SELECT 1 FROM foo",
+            "SELECT 1 /* comment */ FROM foo /* comment */",
         )
-
         self.validate(
             """
             SELECT 1 /* big comment
              like this */
             FROM foo -- comment
             """,
-            "SELECT 1 FROM foo",
+            """SELECT 1 /* big comment
+             like this */ FROM foo /* comment */""",
+        )
+        self.validate(
+            "select x from foo --       x",
+            "SELECT x FROM foo /*       x */",
+        )
+        self.validate(
+            """
+            /* multi
+               line
+               comment
+            */
+            SELECT
+              tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
+              CAST(x AS INT), # comment 3
+              y               -- comment 4
+            FROM
+              bar /* comment 5 */,
+              tbl #          comment 6
+            """,
+            """/* multi
+               line
+               comment
+            */
+SELECT
+  tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
+  CAST(x AS INT), -- comment 3
+  y -- comment 4
+FROM bar /* comment 5 */, tbl /*          comment 6 */""",
+            read="mysql",
+            pretty=True,
         )
 
     def test_types(self):

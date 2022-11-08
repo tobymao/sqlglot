@@ -103,6 +103,7 @@ class BigQuery(Dialect):
             for quote in ["'", '"', '"""', "'''"]
             for prefix in ["", "r", "R"]
         ]
+        COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
         ESCAPES = ["\\"]
         HEX_STRINGS = [("0x", ""), ("0X", "")]

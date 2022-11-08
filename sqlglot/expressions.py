@@ -40,13 +40,14 @@ class Expression(metaclass=_Expression):
 
     key = None
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key", "type")
+    __slots__ = ("args", "parent", "arg_key", "type", "comment")
 
     def __init__(self, **args):
         self.args = args
         self.parent = None
         self.arg_key = None
         self.type = None
+        self.comment = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
@@ -84,6 +85,19 @@ class Expression(metaclass=_Expression):
             return field.this
         return ""
 
+    def find_comment(self, key: str) -> str:
+        """
+        Finds the comment that is attached to a specified child node.
+
+        Args:
+            key: the key of the target child node (e.g. "this", "expression", etc).
+
+        Returns:
+            The comment attached to the child node, or the empty string, if it doesn't exist.
+        """
+        field = self.args.get(key)
+        return field.comment if isinstance(field, Expression) else ""
+
     @property
     def is_string(self):
         return isinstance(self, Literal) and self.args["is_string"]
@@ -119,7 +133,10 @@ class Expression(metaclass=_Expression):
         return self.alias or self.name
 
     def __deepcopy__(self, memo):
-        return self.__class__(**deepcopy(self.args))
+        copy = self.__class__(**deepcopy(self.args))
+        copy.comment = self.comment
+        copy.type = self.type
+        return copy
 
     def copy(self):
         new = deepcopy(self)
@@ -349,6 +366,8 @@ class Expression(metaclass=_Expression):
             )
             for k, vs in self.args.items()
         }
+        args["comment"] = self.comment
+        args["type"] = self.type
         args = {k: v for k, v in args.items() if v or not hide_missing}
 
         right = ", ".join(f"{k}: {v}" for k, v in args.items())
@@ -577,17 +596,6 @@ class Unionable(Expression):
 
 class UDTF(DerivedTable, Unionable):
     pass
-
-
-class Annotation(Expression):
-    arg_types = {
-        "this": True,
-        "expression": True,
-    }
-
-    @property
-    def alias(self):
-        return self.expression.alias_or_name
 
 
 class Cache(Expression):

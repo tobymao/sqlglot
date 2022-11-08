@@ -127,26 +127,28 @@ class TestParser(unittest.TestCase):
     def test_var(self):
         self.assertEqual(parse_one("SELECT @JOIN, @'foo'").sql(), "SELECT @JOIN, @'foo'")
 
-    def test_annotations(self):
+    def test_comments(self):
         expression = parse_one(
             """
-            SELECT
-                a #annotation1,
-                b as B #annotation2:testing ,
-                "test#annotation",c#annotation3, d #annotation4,
-                e #,
-                f # space
+            --comment1
+            SELECT /* this won't be used */
+                a, --comment2
+                b as B, --comment3:testing
+                "test--annotation",
+                c, --comment4 --foo
+                e, --
+                f -- space
             FROM foo
         """
         )
 
-        assert expression.expressions[0].name == "annotation1"
-        assert expression.expressions[1].name == "annotation2:testing"
-        assert expression.expressions[2].name == "test#annotation"
-        assert expression.expressions[3].name == "annotation3"
-        assert expression.expressions[4].name == "annotation4"
-        assert expression.expressions[5].name == ""
-        assert expression.expressions[6].name == "space"
+        self.assertEqual(expression.comment, "comment1")
+        self.assertEqual(expression.expressions[0].comment, "comment2")
+        self.assertEqual(expression.expressions[1].comment, "comment3:testing")
+        self.assertEqual(expression.expressions[2].comment, None)
+        self.assertEqual(expression.expressions[3].comment, "comment4 --foo")
+        self.assertEqual(expression.expressions[4].comment, "")
+        self.assertEqual(expression.expressions[5].comment, " space")
 
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")

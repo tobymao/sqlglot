@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import typing as t
 
 from sqlglot import exp
@@ -10,6 +11,8 @@ from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 logger = logging.getLogger("sqlglot")
+
+NEWLINE_RE = re.compile("\r\n?|\n")
 
 
 class Generator:
@@ -50,8 +53,7 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
-        annotations: Whether or not to show annotations in the SQL when `pretty` is True.
-            Annotations can only be shown in pretty mode otherwise they may clobber resulting sql.
+        comments: Whether or not to preserve comments in the ouput SQL code.
             Default: True
     """
 
@@ -68,14 +70,16 @@ class Generator:
         exp.VolatilityProperty: lambda self, e: self.sql(e.name),
     }
 
-    # whether 'CREATE ... TRANSIENT ... TABLE' is allowed
-    # can override in dialects
+    # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
     CREATE_TRANSIENT = False
-    # whether or not null ordering is supported in order by
+
+    # Whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
-    # always do union distinct or union all
+
+    # Always do union distinct or union all
     EXPLICIT_UNION = False
-    # wrap derived values in parens, usually standard but spark doesn't support it
+
+    # Wrap derived values in parens, usually standard but spark doesn't support it
     WRAP_DERIVED_VALUES = True
 
     TYPE_MAPPING = {
@@ -125,7 +129,7 @@ class Generator:
         "_escaped_quote_end",
         "_leading_comma",
         "_max_text_width",
-        "_annotations",
+        "_comments",
     )
 
     def __init__(
@@ -151,7 +155,7 @@ class Generator:
         max_unsupported=3,
         leading_comma=False,
         max_text_width=80,
-        annotations=True,
+        comments=True,
     ):
         import sqlglot
 
@@ -180,7 +184,7 @@ class Generator:
         self._escaped_quote_end = self.escape + self.quote_end
         self._leading_comma = leading_comma
         self._max_text_width = max_text_width
-        self._annotations = annotations
+        self._comments = comments
 
     def generate(self, expression):
         """
@@ -207,7 +211,6 @@ class Generator:
         return sql
 
     def unsupported(self, message):
-
         if self.unsupported_level == ErrorLevel.IMMEDIATE:
             raise UnsupportedError(message)
         self.unsupported_messages.append(message)
@@ -217,6 +220,26 @@ class Generator:
 
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
+
+    def maybe_comment(self, sql, expression, single_line=False):
+        comment = expression.comment if self._comments else None
+
+        if not comment:
+            return sql
+
+        comment = " " + comment if comment[0].strip() else comment
+        comment = comment + " " if comment[-1].strip() else comment
+
+        if isinstance(expression, exp.Select):
+            return f"/*{comment}*/{self.sep()}{sql}"
+
+        if not self.pretty:
+            return f"{sql} /*{comment}*/"
+
+        if not NEWLINE_RE.search(comment):
+            return f"{sql} --{comment.rstrip()}" if single_line else f"{sql} /*{comment}*/"
+
+        return f"/*{comment}*/\n{sql}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -256,7 +279,7 @@ class Generator:
             for i, line in enumerate(lines)
         )
 
-    def sql(self, expression, key=None):
+    def sql(self, expression, key=None, comment=True):
         if not expression:
             return ""
 
@@ -269,29 +292,24 @@ class Generator:
         transform = self.TRANSFORMS.get(expression.__class__)
 
         if callable(transform):
-            return transform(self, expression)
-        if transform:
-            return transform
+            sql = transform(self, expression)
+        elif transform:
+            sql = transform
+        elif isinstance(expression, exp.Expression):
+            exp_handler_name = f"{expression.key}_sql"
 
-        if not isinstance(expression, exp.Expression):
+            if hasattr(self, exp_handler_name):
+                sql = getattr(self, exp_handler_name)(expression)
+            elif isinstance(expression, exp.Func):
+                sql = self.function_fallback_sql(expression)
+            elif isinstance(expression, exp.Property):
+                sql = self.property_sql(expression)
+            else:
+                raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+        else:
             raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
-        exp_handler_name = f"{expression.key}_sql"
-        if hasattr(self, exp_handler_name):
-            return getattr(self, exp_handler_name)(expression)
-
-        if isinstance(expression, exp.Func):
-            return self.function_fallback_sql(expression)
-
-        if isinstance(expression, exp.Property):
-            return self.property_sql(expression)
-
-        raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
-
-    def annotation_sql(self, expression):
-        if self._annotations and self.pretty:
-            return f"{self.sql(expression, 'expression')} # {expression.name}"
-        return self.sql(expression, "expression")
+        return self.maybe_comment(sql, expression) if self._comments and comment else sql
 
     def uncache_sql(self, expression):
         table = self.sql(expression, "this")
@@ -490,17 +508,17 @@ class Generator:
         return f"{this} ON {table} {columns}"
 
     def identifier_sql(self, expression):
-        value = expression.name
-        value = value.lower() if self.normalize else value
+        text = expression.name
+        text = text.lower() if self.normalize else text
         if expression.args.get("quoted") or self.identify:
-            return f"{self.identifier_start}{value}{self.identifier_end}"
-        return value
+            text = f"{self.identifier_start}{text}{self.identifier_end}"
+        return text
 
     def partition_sql(self, expression):
         keys = csv(
             *[
-                f"{k.args['this']}='{v.args['this']}'" if v else k.args["this"]
-                for k, v in expression.args.get("this")
+                f"""{prop.name}='{prop.text("value")}'""" if prop.text("value") else prop.name
+                for prop in expression.this
             ]
         )
         return f"PARTITION({keys})"
@@ -764,7 +782,7 @@ class Generator:
             if self._replace_backslash:
                 text = text.replace("\\", "\\\\")
             text = text.replace(self.quote_end, self._escaped_quote_end)
-            return f"{self.quote_start}{text}{self.quote_end}"
+            text = f"{self.quote_start}{text}{self.quote_end}"
         return text
 
     def loaddata_sql(self, expression):
@@ -859,7 +877,7 @@ class Generator:
         sql = self.query_modifiers(
             expression,
             f"SELECT{hint}{distinct}{expressions}",
-            self.sql(expression, "from"),
+            self.sql(expression, "from", comment=False),
         )
         return self.prepend_ctes(expression, sql)
 
@@ -1285,19 +1303,27 @@ class Generator:
         if flat:
             return sep.join(self.sql(e) for e in expressions)
 
-        sql = (self.sql(e) for e in expressions)
-        # the only time leading_comma changes the output is if pretty print is enabled
-        if self._leading_comma and self.pretty:
-            pad = " " * self.pad
-            expressions = "\n".join(
-                f"{sep}{s}" if i > 0 else f"{pad}{s}" for i, s in enumerate(sql)
-            )
-        else:
-            expressions = self.sep(sep).join(sql)
+        num_sqls = len(expressions)
 
-        if indent:
-            return self.indent(expressions, skip_first=False)
-        return expressions
+        # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
+        pad = " " * self.pad
+        stripped_sep = sep.strip()
+
+        result_sqls = []
+        for i, e in enumerate(expressions):
+            sql = self.sql(e, comment=False)
+            comment = self.maybe_comment("", e, single_line=True)
+
+            if self.pretty:
+                if self._leading_comma:
+                    result_sqls.append(f"{sep if i > 0 else pad}{sql}{comment}")
+                else:
+                    result_sqls.append(f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{comment}")
+            else:
+                result_sqls.append(f"{sql}{comment}{sep if i + 1 < num_sqls else ''}")
+
+        result_sqls = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
+        return self.indent(result_sqls, skip_first=False) if indent else result_sqls
 
     def op_expressions(self, op, expression, flat=False):
         expressions_sql = self.expressions(expression, flat=flat)

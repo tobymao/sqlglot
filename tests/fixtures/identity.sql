@@ -571,3 +571,13 @@ SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)
 SELECT * FROM (tbl1 JOIN tbl2 JOIN tbl3)
 SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)
 SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)
+SELECT CAST(x AS INT) /* comment */ FROM foo
+SELECT a /* x */, b /* x */
+SELECT * FROM foo /* x */, bla /* x */
+SELECT 1 /* comment */ + 1
+SELECT 1 /* c1 */ + 2 /* c2 */
+SELECT 1 /* c1 */ + 2 /* c2 */ + 3 /* c3 */
+SELECT 1 /* c1 */ + 2 /* c2 */, 3 /* c3 */
+SELECT x FROM a.b.c /* x */, e.f.g /* x */
+SELECT FOO(x /* c */) /* FOO */, b /* b */
+SELECT FOO(x /* c1 */ + y /* c2 */ + BLA(5 /* c3 */)) FROM VALUES (1 /* c4 */, "test" /* c5 */) /* c6 */

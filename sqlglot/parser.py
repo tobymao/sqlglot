@@ -380,20 +380,24 @@ class Parser(metaclass=_Parser):
     }
 
     PRIMARY_PARSERS = {
-        TokenType.STRING: lambda _, token: exp.Literal.string(token.text),
-        TokenType.NUMBER: lambda _, token: exp.Literal.number(token.text),
-        TokenType.STAR: lambda self, _: exp.Star(
-            **{"except": self._parse_except(), "replace": self._parse_replace()}
+        TokenType.STRING: lambda self, token: self.expression(
+            exp.Literal, this=token.text, is_string=True
         ),
-        TokenType.NULL: lambda *_: exp.Null(),
-        TokenType.TRUE: lambda *_: exp.Boolean(this=True),
-        TokenType.FALSE: lambda *_: exp.Boolean(this=False),
-        TokenType.PARAMETER: lambda self, _: exp.Parameter(
-            this=self._parse_var() or self._parse_primary()
+        TokenType.NUMBER: lambda self, token: self.expression(
+            exp.Literal, this=token.text, is_string=False
         ),
-        TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
-        TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
-        TokenType.BYTE_STRING: lambda _, token: exp.ByteString(this=token.text),
+        TokenType.STAR: lambda self, _: self.expression(
+            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
+        ),
+        TokenType.NULL: lambda self, _: self.expression(exp.Null),
+        TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
+        TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
+        TokenType.PARAMETER: lambda self, _: self.expression(
+            exp.Parameter, this=self._parse_var() or self._parse_primary()
+        ),
+        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
+        TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
+        TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
         TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
     }
@@ -520,6 +524,7 @@ class Parser(metaclass=_Parser):
         "_curr",
         "_next",
         "_prev",
+        "_prev_comment",
         "_show_trie",
         "_set_trie",
     )
@@ -552,6 +557,7 @@ class Parser(metaclass=_Parser):
         self._curr = None
         self._next = None
         self._prev = None
+        self._prev_comment = None
 
     def parse(self, raw_tokens, sql=None):
         """
@@ -631,6 +637,9 @@ class Parser(metaclass=_Parser):
 
     def expression(self, exp_class, **kwargs):
         instance = exp_class(**kwargs)
+        if self._prev_comment:
+            instance.comment = self._prev_comment
+            self._prev_comment = None
         self.validate_expression(instance)
         return instance
 
@@ -667,14 +676,16 @@ class Parser(metaclass=_Parser):
 
         return index
 
-    def _get_token(self, index):
-        return seq_get(self._tokens, index)
-
     def _advance(self, times=1):
         self._index += times
-        self._curr = self._get_token(self._index)
-        self._next = self._get_token(self._index + 1)
-        self._prev = self._get_token(self._index - 1) if self._index > 0 else None
+        self._curr = seq_get(self._tokens, self._index)
+        self._next = seq_get(self._tokens, self._index + 1)
+        if self._index > 0:
+            self._prev = self._tokens[self._index - 1]
+            self._prev_comment = self._prev.comment
+        else:
+            self._prev = None
+            self._prev_comment = None
 
     def _retreat(self, index):
         self._advance(index - self._index)
@@ -695,6 +706,7 @@ class Parser(metaclass=_Parser):
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
+
         self._parse_query_modifiers(expression)
         return expression
 
@@ -1023,11 +1035,13 @@ class Parser(metaclass=_Parser):
             return None
 
         def parse_values():
-            k = self._parse_var()
+            key = self._parse_var()
+            value = None
+
             if self._match(TokenType.EQ):
-                v = self._parse_string()
-                return (k, v)
-            return (k, None)
+                value = self._parse_string()
+
+            return exp.Property(this=key, value=value)
 
         self._match_l_paren()
         values = self._parse_csv(parse_values)
@@ -1059,6 +1073,8 @@ class Parser(metaclass=_Parser):
                 self.raise_error(f"{this.key} does not support CTE")
                 this = cte
         elif self._match(TokenType.SELECT):
+            comment = self._prev_comment
+
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
             distinct = self._match(TokenType.DISTINCT)
@@ -1073,7 +1089,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
             limit = self._parse_limit(top=True)
-            expressions = self._parse_csv(lambda: self._parse_annotation(self._parse_expression()))
+            expressions = self._parse_csv(self._parse_expression)
 
             this = self.expression(
                 exp.Select,
@@ -1082,6 +1098,7 @@ class Parser(metaclass=_Parser):
                 expressions=expressions,
                 limit=limit,
             )
+            this.comment = comment
             from_ = self._parse_from()
             if from_:
                 this.set("from", from_)
@@ -1153,11 +1170,7 @@ class Parser(metaclass=_Parser):
         if not alias and not columns:
             return None
 
-        return self.expression(
-            exp.TableAlias,
-            this=alias,
-            columns=columns,
-        )
+        return self.expression(exp.TableAlias, this=alias, columns=columns)
 
     def _parse_subquery(self, this):
         return self.expression(
@@ -1191,14 +1204,6 @@ class Parser(metaclass=_Parser):
 
             if expression:
                 this.set(key, expression)
-
-    def _parse_annotation(self, expression):
-        if self._match(TokenType.ANNOTATION):
-            return self.expression(
-                exp.Annotation, this=self._prev.text.strip(), expression=expression
-            )
-
-        return expression
 
     def _parse_hint(self):
         if self._match(TokenType.HINT):
@@ -1886,6 +1891,7 @@ class Parser(metaclass=_Parser):
             return exp.Literal.number(f"0.{self._prev.text}")
 
         if self._match(TokenType.L_PAREN):
+            comment = self._prev_comment
             query = self._parse_select()
 
             if query:
@@ -1900,10 +1906,14 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
 
             if isinstance(this, exp.Subqueryable):
-                return self._parse_set_operations(self._parse_subquery(this))
-            if len(expressions) > 1:
-                return self.expression(exp.Tuple, expressions=expressions)
-            return self.expression(exp.Paren, this=this)
+                this = self._parse_set_operations(self._parse_subquery(this))
+            elif len(expressions) > 1:
+                this = self.expression(exp.Tuple, expressions=expressions)
+            else:
+                this = self.expression(exp.Paren, this=this)
+            if comment:
+                this.comment = comment
+            return this
 
         return None
 
@@ -1956,7 +1966,8 @@ class Parser(metaclass=_Parser):
                 self.validate_expression(this, args)
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
-        self._match_r_paren()
+
+        self._match_r_paren(this)
         return self._parse_window(this)
 
     def _parse_user_defined_function(self):
@@ -2184,6 +2195,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.R_BRACKET):
             self.raise_error("Expected ]")
 
+        this.comment = self._prev_comment
         return self._parse_bracket(this)
 
     def _parse_case(self):
@@ -2432,7 +2444,7 @@ class Parser(metaclass=_Parser):
                 this=this,
                 expressions=self._parse_csv(lambda: self._parse_id_var(any_token)),
             )
-            self._match_r_paren()
+            self._match_r_paren(aliases)
             return aliases
 
         alias = self._parse_id_var(any_token)
@@ -2449,30 +2461,29 @@ class Parser(metaclass=_Parser):
             return identifier
 
         if any_token and self._curr and self._curr.token_type not in self.RESERVED_KEYWORDS:
-            return self._advance() or exp.Identifier(this=self._prev.text, quoted=False)
-
-        return self._match_set(tokens or self.ID_VAR_TOKENS) and exp.Identifier(
-            this=self._prev.text, quoted=False
-        )
+            self._advance()
+        elif not self._match_set(tokens or self.ID_VAR_TOKENS):
+            return None
+        return exp.Identifier(this=self._prev.text, quoted=False)
 
     def _parse_string(self):
         if self._match(TokenType.STRING):
-            return exp.Literal.string(self._prev.text)
+            return self.PRIMARY_PARSERS[TokenType.STRING](self, self._prev)
         return self._parse_placeholder()
 
     def _parse_number(self):
         if self._match(TokenType.NUMBER):
-            return exp.Literal.number(self._prev.text)
+            return self.PRIMARY_PARSERS[TokenType.NUMBER](self, self._prev)
         return self._parse_placeholder()
 
     def _parse_identifier(self):
         if self._match(TokenType.IDENTIFIER):
-            return exp.Identifier(this=self._prev.text, quoted=True)
+            return self.expression(exp.Identifier, this=self._prev.text, quoted=True)
         return self._parse_placeholder()
 
     def _parse_var(self):
         if self._match(TokenType.VAR):
-            return exp.Var(this=self._prev.text)
+            return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()
 
     def _parse_var_or_string(self):
@@ -2480,27 +2491,27 @@ class Parser(metaclass=_Parser):
 
     def _parse_null(self):
         if self._match(TokenType.NULL):
-            return exp.Null()
+            return self.PRIMARY_PARSERS[TokenType.NULL](self, self._prev)
         return None
 
     def _parse_boolean(self):
         if self._match(TokenType.TRUE):
-            return exp.Boolean(this=True)
+            return self.PRIMARY_PARSERS[TokenType.TRUE](self, self._prev)
         if self._match(TokenType.FALSE):
-            return exp.Boolean(this=False)
+            return self.PRIMARY_PARSERS[TokenType.FALSE](self, self._prev)
         return None
 
     def _parse_star(self):
         if self._match(TokenType.STAR):
-            return exp.Star(**{"except": self._parse_except(), "replace": self._parse_replace()})
+            return self.PRIMARY_PARSERS[TokenType.STAR](self, self._prev)
         return None
 
     def _parse_placeholder(self):
         if self._match(TokenType.PLACEHOLDER):
-            return exp.Placeholder()
+            return self.expression(exp.Placeholder)
         elif self._match(TokenType.COLON):
             self._advance()
-            return exp.Placeholder(this=self._prev.text)
+            return self.expression(exp.Placeholder, this=self._prev.text)
         return None
 
     def _parse_except(self):
@@ -2518,23 +2529,26 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
         return columns
 
-    def _parse_csv(self, parse):
-        parse_result = parse()
+    def _parse_csv(self, parse_method):
+        parse_result = parse_method()
         items = [parse_result] if parse_result is not None else []
 
         while self._match(TokenType.COMMA):
-            parse_result = parse()
+            if parse_result and self._prev_comment is not None:
+                parse_result.comment = self._prev_comment
+
+            parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)
 
         return items
 
-    def _parse_tokens(self, parse, expressions):
-        this = parse()
+    def _parse_tokens(self, parse_method, expressions):
+        this = parse_method()
 
         while self._match_set(expressions):
             this = self.expression(
-                expressions[self._prev.token_type], this=this, expression=parse()
+                expressions[self._prev.token_type], this=this, expression=parse_method()
             )
 
         return this
@@ -2619,13 +2633,17 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _match_l_paren(self):
+    def _match_l_paren(self, expression=None):
         if not self._match(TokenType.L_PAREN):
             self.raise_error("Expecting (")
+        if expression and self._prev_comment:
+            expression.comment = self._prev_comment
 
-    def _match_r_paren(self):
+    def _match_r_paren(self, expression=None):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
+        if expression and self._prev_comment:
+            expression.comment = self._prev_comment
 
     def _match_text(self, *texts):
         index = self._index

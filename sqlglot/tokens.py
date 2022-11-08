@@ -40,10 +40,10 @@ class TokenType(AutoName):
     TILDA = auto()
     ARROW = auto()
     DARROW = auto()
+    HASH = auto()
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
     LR_ARROW = auto()
-    ANNOTATION = auto()
     DOLLAR = auto()
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
@@ -396,13 +396,13 @@ class Tokenizer(metaclass=_Tokenizer):
         "*": TokenType.STAR,
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
-        "#": TokenType.ANNOTATION,
         "@": TokenType.PARAMETER,
         # used for breaking a var like x'y' but nothing else
         # the token type doesn't matter
         "'": TokenType.QUOTE,
         "`": TokenType.IDENTIFIER,
         '"': TokenType.IDENTIFIER,
+        "#": TokenType.HASH,
     }
 
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
@@ -840,11 +840,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
-                token = self.SINGLE_TOKENS[self._char]  # type: ignore
-                if token == TokenType.ANNOTATION:
-                    self._scan_annotation()
-                    return
-                self._add(token)
+                self._add(self.SINGLE_TOKENS[self._char])  # type: ignore
                 return
             self._scan_var()
             return
@@ -882,16 +878,14 @@ class Tokenizer(metaclass=_Tokenizer):
 
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding. If both
         # types of comment can be attached to a token, the trailing one is discarded in favour of the leading one.
-        if comment_start_line == self._prev_token_line and self._prev_token_comment is None:
-            self.tokens[-1].comment = self._comment
+
+        if comment_start_line == self._prev_token_line:
+            if self._prev_token_comment is None:
+                self.tokens[-1].comment = self._comment
+
             self._comment = None
 
         return True
-
-    def _scan_annotation(self) -> None:
-        while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK and self._peek != ",":  # type: ignore
-            self._advance()
-        self._add(TokenType.ANNOTATION, self._text[1:])
 
     def _scan_number(self) -> None:
         if self._char == "0":

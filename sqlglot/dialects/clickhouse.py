@@ -16,6 +16,7 @@ class ClickHouse(Dialect):
     null_ordering = "nulls_are_last"
 
     class Tokenizer(tokens.Tokenizer):
+        COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         IDENTIFIERS = ['"', "`"]
 
         KEYWORDS = {

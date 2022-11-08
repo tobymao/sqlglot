@@ -2553,11 +2553,6 @@ class Explode(Func):
     pass
 
 
-# https://docs.snowflake.com/en/sql-reference/functions/flatten.html#syntax
-class Flatten(Func):
-    arg_types = {"this": True, "path": False, "outer": False, "recursive": False, "mode": False}
-
-
 class Floor(Func):
     arg_types = {"this": True, "decimals": False}
 

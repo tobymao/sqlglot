@@ -393,7 +393,7 @@ class TestSnowflake(Validator):
   dag_report.airflow_name,
   dag_report.dag_id,
   CAST(f.value AS VARCHAR) AS operator
-FROM cs.telescope.dag_report, TABLE(FLATTEN(INPUT => SPLIT(operators, ','))) AS f"""
+FROM cs.telescope.dag_report, TABLE(FLATTEN(input => SPLIT(operators, ','))) AS f"""
             },
             pretty=True,
         )
@@ -402,54 +402,54 @@ FROM cs.telescope.dag_report, TABLE(FLATTEN(INPUT => SPLIT(operators, ','))) AS 
         self.validate_all(
             "SELECT * FROM TABLE(FLATTEN(input => parse_json('[1, ,77]'))) f",
             write={
-                "snowflake": "SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[1, ,77]'))) AS f"
+                "snowflake": "SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('[1, ,77]'))) AS f"
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88]}'), outer => true)) f""",
             write={
-                "snowflake": """SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('{"a":1, "b":[77,88]}'), OUTER => TRUE)) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88]}'), outer => TRUE)) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88]}'), path => 'b')) f""",
             write={
-                "snowflake": """SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('{"a":1, "b":[77,88]}'), PATH => 'b')) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88]}'), path => 'b')) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('[]'))) f""",
-            write={"snowflake": """SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[]'))) AS f"""},
+            write={"snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('[]'))) AS f"""},
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('[]'), outer => true)) f""",
             write={
-                "snowflake": """SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[]'), OUTER => TRUE)) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('[]'), outer => TRUE)) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88], "c": {"d":"X"}}'))) f""",
             write={
-                "snowflake": """SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'))) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'))) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => true)) f""",
             write={
-                "snowflake": """SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), RECURSIVE => TRUE)) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => TRUE)) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => true, mode => 'object')) f""",
             write={
-                "snowflake": """SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), RECURSIVE => TRUE, MODE => 'object')) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => TRUE, mode => 'object')) AS f"""
             },
         )
 
@@ -469,7 +469,7 @@ FROM cs.telescope.dag_report, TABLE(FLATTEN(INPUT => SPLIT(operators, ','))) AS 
   f.value AS "Contact",
   f1.value['type'] AS "Type",
   f1.value['content'] AS "Details"
-FROM persons AS p, LATERAL FLATTEN(INPUT => p.c, PATH => 'contact') f, LATERAL FLATTEN(INPUT => f.value['business']) f1""",
+FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') f, LATERAL FLATTEN(input => f.value['business']) f1""",
             },
             pretty=True,
         )

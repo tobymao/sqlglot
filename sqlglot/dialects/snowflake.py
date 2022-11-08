@@ -71,18 +71,6 @@ def _unix_to_time_sql(self, expression):
     raise ValueError("Improper scale for timestamp")
 
 
-def _flatten_sql(self, expression):
-    args = [
-        f"{'INPUT' if key == 'this' else key.upper()} => {self.sql(arg)}"
-        for key, arg in expression.args.items()
-    ]
-
-    if self.pretty and self.text_width(args) > self._max_text_width:
-        nl = "\n"
-        return f"FLATTEN({self.indent({nl} + f',{nl}'.join(args) + {nl}, skip_first=True, skip_last=True)})"
-    return f'FLATTEN({", ".join(args)})'
-
-
 # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
 # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts
 def _parse_date_part(self):
@@ -110,18 +98,6 @@ def _parse_date_part(self):
         return to_unix
 
     return self.expression(exp.Extract, this=this, expression=expression)
-
-
-# https://docs.snowflake.com/en/sql-reference/functions/flatten.html#syntax
-def _parse_flatten(self):
-    def _parse_flatten_arg():
-        self._match_set(self.FLATTEN_ARGS)
-        arg_name = "this" if self._prev.token_type == TokenType.INPUT else self._prev.text.lower()
-        self._match(TokenType.ARROW)
-        return arg_name, self._parse_expression()
-
-    args = dict(self._parse_csv(_parse_flatten_arg))
-    return self.expression(exp.Flatten, **args)
 
 
 class Snowflake(Dialect):
@@ -159,14 +135,6 @@ class Snowflake(Dialect):
     }
 
     class Parser(parser.Parser):
-        FLATTEN_ARGS = {
-            TokenType.INPUT,
-            TokenType.PATH,
-            TokenType.OUTER,
-            TokenType.RECURSIVE,
-            TokenType.MODE,
-        }
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
@@ -179,7 +147,6 @@ class Snowflake(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": _parse_date_part,
-            "FLATTEN": _parse_flatten,
         }
 
         FUNC_TOKENS = {
@@ -237,7 +204,6 @@ class Snowflake(Dialect):
             exp.StrPosition: rename_func("POSITION"),
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
-            exp.Flatten: _flatten_sql,
         }
 
         TYPE_MAPPING = {
@@ -253,6 +219,9 @@ class Snowflake(Dialect):
             exp.ExecuteAsProperty,
             exp.VolatilityProperty,
         }
+
+        def lambda_sql(self, expression):
+            return super().lambda_sql(expression, arrow_sep="=>")
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

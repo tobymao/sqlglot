@@ -310,7 +310,8 @@ class DataFrame:
                 cache_table_name = df._create_hash_from_expression(select_expression)
                 cache_table = exp.to_table(cache_table_name)
                 original_alias_name = select_expression.args["cte_alias_name"]
-                replacement_mapping[exp.to_identifier(original_alias_name)] = exp.to_identifier(
+
+                replacement_mapping[exp.to_identifier(original_alias_name)] = exp.to_identifier(  # type: ignore
                     cache_table_name
                 )
                 sqlglot.schema.add_table(cache_table_name, select_expression.named_selects)

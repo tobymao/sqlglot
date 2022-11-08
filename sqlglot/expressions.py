@@ -135,6 +135,7 @@ class Expression(metaclass=_Expression):
     def __deepcopy__(self, memo):
         copy = self.__class__(**deepcopy(self.args))
         copy.comment = self.comment
+        copy.type = self.type
         return copy
 
     def copy(self):
@@ -366,6 +367,7 @@ class Expression(metaclass=_Expression):
             for k, vs in self.args.items()
         }
         args["comment"] = self.comment
+        args["type"] = self.type
         args = {k: v for k, v in args.items() if v or not hide_missing}
 
         right = ", ".join(f"{k}: {v}" for k, v in args.items())

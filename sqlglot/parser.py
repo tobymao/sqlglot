@@ -1081,7 +1081,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
             limit = self._parse_limit(top=True)
-            expressions = self._parse_csv(lambda: self._parse_expression())
+            expressions = self._parse_csv(self._parse_expression)
 
             this = self.expression(
                 exp.Select,
@@ -1162,17 +1162,15 @@ class Parser(metaclass=_Parser):
         if not alias and not columns:
             return None
 
-        alias = self.expression(exp.TableAlias, this=alias, columns=columns)
-        return alias
+        return self.expression(exp.TableAlias, this=alias, columns=columns)
 
     def _parse_subquery(self, this):
-        subquery = self.expression(
+        return self.expression(
             exp.Subquery,
             this=this,
             pivots=self._parse_pivots(),
             alias=self._parse_table_alias(),
         )
-        return subquery
 
     def _parse_query_modifiers(self, this):
         if not isinstance(this, self.MODIFIABLES):
@@ -2446,32 +2444,26 @@ class Parser(metaclass=_Parser):
             self._advance()
         elif not self._match_set(tokens or self.ID_VAR_TOKENS):
             return None
-
-        identifier = exp.Identifier(this=self._prev.text, quoted=False)
-        return identifier
+        return exp.Identifier(this=self._prev.text, quoted=False)
 
     def _parse_string(self):
         if self._match(TokenType.STRING):
-            string = exp.Literal.string(self._prev.text)
-            return string
+            return self.PRIMARY_PARSERS[TokenType.STRING](self, self._prev)
         return self._parse_placeholder()
 
     def _parse_number(self):
         if self._match(TokenType.NUMBER):
-            number = exp.Literal.number(self._prev.text)
-            return number
+            return self.PRIMARY_PARSERS[TokenType.NUMBER](self, self._prev)
         return self._parse_placeholder()
 
     def _parse_identifier(self):
         if self._match(TokenType.IDENTIFIER):
-            identifier = exp.Identifier(this=self._prev.text, quoted=True)
-            return identifier
+            return self.expression(exp.Identifier, this=self._prev.text, quoted=True)
         return self._parse_placeholder()
 
     def _parse_var(self):
         if self._match(TokenType.VAR):
-            var = exp.Var(this=self._prev.text)
-            return var
+            return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()
 
     def _parse_var_or_string(self):
@@ -2479,27 +2471,27 @@ class Parser(metaclass=_Parser):
 
     def _parse_null(self):
         if self._match(TokenType.NULL):
-            return exp.Null()
+            return self.PRIMARY_PARSERS[TokenType.NULL](self, self._prev)
         return None
 
     def _parse_boolean(self):
         if self._match(TokenType.TRUE):
-            return exp.Boolean(this=True)
+            return self.PRIMARY_PARSERS[TokenType.TRUE](self, self._prev)
         if self._match(TokenType.FALSE):
-            return exp.Boolean(this=False)
+            return self.PRIMARY_PARSERS[TokenType.FALSE](self, self._prev)
         return None
 
     def _parse_star(self):
         if self._match(TokenType.STAR):
-            return exp.Star(**{"except": self._parse_except(), "replace": self._parse_replace()})
+            return self.PRIMARY_PARSERS[TokenType.STAR](self, self._prev)
         return None
 
     def _parse_placeholder(self):
         if self._match(TokenType.PLACEHOLDER):
-            return exp.Placeholder()
+            return self.expression(exp.Placeholder)
         elif self._match(TokenType.COLON):
             self._advance()
-            return exp.Placeholder(this=self._prev.text)
+            return self.expression(exp.Placeholder, this=self._prev.text)
         return None
 
     def _parse_except(self):

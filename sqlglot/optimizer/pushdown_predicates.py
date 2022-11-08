@@ -181,7 +181,7 @@ def replace_aliases(source, predicate):
 
     def _replace_alias(column):
         if isinstance(column, exp.Column) and column.name in aliases:
-            return aliases[column.name]
+            return aliases[column.name].copy()
         return column
 
     return predicate.transform(_replace_alias)

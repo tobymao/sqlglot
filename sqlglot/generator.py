@@ -745,10 +745,10 @@ class Generator:
         this_sql = self.sql(expression, "this")
         return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
 
-    def lambda_sql(self, expression):
+    def lambda_sql(self, expression, arrow_sep="->"):
         args = self.expressions(expression, flat=True)
         args = f"({args})" if len(args.split(",")) > 1 else args
-        return self.no_identify(lambda: f"{args} -> {self.sql(expression, 'this')}")
+        return self.no_identify(lambda: f"{args} {arrow_sep} {self.sql(expression, 'this')}")
 
     def lateral_sql(self, expression):
         this = self.sql(expression, "this")

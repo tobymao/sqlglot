@@ -58,7 +58,7 @@ def _snowflake_to_timestamp(args):
     return exp.UnixToTime.from_arg_list(args)
 
 
-def _unix_to_time(self, expression):
+def _unix_to_time_sql(self, expression):
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
     if scale in [None, exp.UnixToTime.SECONDS]:
@@ -180,6 +180,7 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "=>": TokenType.ARROW,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
@@ -197,7 +198,7 @@ class Snowflake(Dialect):
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.If: rename_func("IFF"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.UnixToTime: _unix_to_time,
+            exp.UnixToTime: _unix_to_time_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Array: inline_array_sql,
             exp.StrPosition: rename_func("POSITION"),
@@ -218,6 +219,9 @@ class Snowflake(Dialect):
             exp.ExecuteAsProperty,
             exp.VolatilityProperty,
         }
+
+        def lambda_sql(self, expression):
+            return super().lambda_sql(expression, arrow_sep="=>")
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

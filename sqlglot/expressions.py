@@ -365,6 +365,7 @@ class Expression(metaclass=_Expression):
             )
             for k, vs in self.args.items()
         }
+        args["comment"] = self.comment
         args = {k: v for k, v in args.items() if v or not hide_missing}
 
         right = ", ".join(f"{k}: {v}" for k, v in args.items())

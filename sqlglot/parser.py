@@ -379,15 +379,21 @@ class Parser(metaclass=_Parser):
     }
 
     PRIMARY_PARSERS = {
-        TokenType.STRING: lambda self, token: self.expression(exp.Literal, this=token.text, is_string=True),
-        TokenType.NUMBER: lambda self, token: self.expression(exp.Literal, this=token.text, is_string=False),
-        TokenType.STAR: lambda self, _: self.expression(exp.Star,
-            **{"except": self._parse_except(), "replace": self._parse_replace()}
+        TokenType.STRING: lambda self, token: self.expression(
+            exp.Literal, this=token.text, is_string=True
+        ),
+        TokenType.NUMBER: lambda self, token: self.expression(
+            exp.Literal, this=token.text, is_string=False
+        ),
+        TokenType.STAR: lambda self, _: self.expression(
+            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
         ),
         TokenType.NULL: lambda self, _: self.expression(exp.Null),
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
         TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
-        TokenType.PARAMETER: lambda self, _: self.expression(exp.Paramater, this=self._parse_var() or self._parse_primary()),
+        TokenType.PARAMETER: lambda self, _: self.expression(
+            exp.Parameter, this=self._parse_var() or self._parse_primary()
+        ),
         TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
         TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
         TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
@@ -625,7 +631,9 @@ class Parser(metaclass=_Parser):
 
     def expression(self, exp_class, **kwargs):
         instance = exp_class(**kwargs)
-        instance.comment = self._prev.comment
+        if self._prev:
+            instance.comment = self._prev.comment
+            self._prev.comment = None
         self.validate_expression(instance)
         return instance
 
@@ -1877,6 +1885,7 @@ class Parser(metaclass=_Parser):
             return exp.Literal.number(f"0.{self._prev.text}")
 
         if self._match(TokenType.L_PAREN):
+            comment = self._prev.comment
             query = self._parse_select()
 
             if query:
@@ -1891,10 +1900,14 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
 
             if isinstance(this, exp.Subqueryable):
-                return self._parse_set_operations(self._parse_subquery(this))
-            if len(expressions) > 1:
-                return self.expression(exp.Tuple, expressions=expressions)
-            return self.expression(exp.Paren, this=this)
+                this = self._parse_set_operations(self._parse_subquery(this))
+            elif len(expressions) > 1:
+                this = self.expression(exp.Tuple, expressions=expressions)
+            else:
+                this = self.expression(exp.Paren, this=this)
+            if comment:
+                this.comment = comment
+            return this
 
         return None
 
@@ -1948,8 +1961,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
-        self._match_r_paren()
-        this.comment = self._prev.comment
+        self._match_r_paren(this)
         return self._parse_window(this)
 
     def _parse_user_defined_function(self):
@@ -2414,8 +2426,7 @@ class Parser(metaclass=_Parser):
                 this=this,
                 expressions=self._parse_csv(lambda: self._parse_id_var(any_token)),
             )
-            self._match_r_paren()
-            aliases.comment = self._prev.comment
+            self._match_r_paren(aliases)
             return aliases
 
         alias = self._parse_id_var(any_token)
@@ -2590,13 +2601,17 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _match_l_paren(self):
+    def _match_l_paren(self, expression=None):
         if not self._match(TokenType.L_PAREN):
             self.raise_error("Expecting (")
+        if expression and self._prev.comment:
+            expression.comment = self._prev.comment
 
-    def _match_r_paren(self):
+    def _match_r_paren(self, expression=None):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
+        if expression and self._prev.comment:
+            expression.comment = self._prev.comment
 
     def _match_text(self, *texts):
         index = self._index

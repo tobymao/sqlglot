@@ -304,14 +304,14 @@ FROM foo;
 SELECT x FROM a.b.c /*x*/, e.f.g /*x*/;
 SELECT
   x
-FROM a.b.c /*x*/, e.f.g /*x*/;
+FROM a.b.c /* x */, e.f.g /* x */;
 SELECT x FROM (SELECT * FROM bla /*x*/WHERE id = 1) /*x*/;
 SELECT
   x
 FROM (
   SELECT
     *
-  FROM bla /*x*/
+  FROM bla /* x */
   WHERE
     id = 1
-) /*x*/;
+) /* x */;

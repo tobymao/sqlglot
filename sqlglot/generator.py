@@ -228,18 +228,18 @@ class Generator:
             return sql
 
         comment = " " + comment if comment[0].strip() else comment
-        comment = comment.rstrip()
+        comment = comment + " " if comment[-1].strip() else comment
 
         if isinstance(expression, exp.Select):
-            return f"/*{comment} */{self.sep()}{sql}"
+            return f"/*{comment}*/{self.sep()}{sql}"
 
         if not self.pretty:
-            return f"{sql} /*{comment} */"
+            return f"{sql} /*{comment}*/"
 
         if not NEWLINE_RE.search(comment):
-            return f"{sql} --{comment}" if single_line else f"{sql} /*{comment} */"
+            return f"{sql} --{comment.rstrip()}" if single_line else f"{sql} /*{comment}*/"
 
-        return f"/*{comment} */\n{sql}"
+        return f"/*{comment}*/\n{sql}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -877,7 +877,7 @@ class Generator:
         sql = self.query_modifiers(
             expression,
             f"SELECT{hint}{distinct}{expressions}",
-            self.sql(expression, "from"),
+            self.sql(expression, "from", comment=False),
         )
         return self.prepend_ctes(expression, sql)
 
@@ -1308,13 +1308,11 @@ class Generator:
         result_sqls = []
         for i, e in enumerate(expressions):
             sql = self.sql(e, comment=False)
-            comment = self.maybe_comment('', e, single_line=True)
+            comment = self.maybe_comment("", e, single_line=True)
 
             if self.pretty:
                 if self._leading_comma:
-                    result_sqls.append(
-                        f"{sep if i > 0 else pad}{sql}{comment}"
-                    )
+                    result_sqls.append(f"{sep if i > 0 else pad}{sql}{comment}")
                 else:
                     result_sqls.append(f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{comment}")
             else:

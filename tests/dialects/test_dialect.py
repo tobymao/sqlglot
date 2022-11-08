@@ -1182,7 +1182,7 @@ class TestDialect(Validator):
             """/* comment1 */
 SELECT
   x, -- comment2
-  y /* comment3 */""",
+  y -- comment3""",
             read={
                 "mysql": """SELECT # comment1
   x, # comment2

@@ -379,20 +379,18 @@ class Parser(metaclass=_Parser):
     }
 
     PRIMARY_PARSERS = {
-        TokenType.STRING: lambda _, token: exp.Literal.string(token.text),
-        TokenType.NUMBER: lambda _, token: exp.Literal.number(token.text),
-        TokenType.STAR: lambda self, _: exp.Star(
+        TokenType.STRING: lambda self, token: self.expression(exp.Literal, this=token.text, is_string=True),
+        TokenType.NUMBER: lambda self, token: self.expression(exp.Literal, this=token.text, is_string=False),
+        TokenType.STAR: lambda self, _: self.expression(exp.Star,
             **{"except": self._parse_except(), "replace": self._parse_replace()}
         ),
-        TokenType.NULL: lambda *_: exp.Null(),
-        TokenType.TRUE: lambda *_: exp.Boolean(this=True),
-        TokenType.FALSE: lambda *_: exp.Boolean(this=False),
-        TokenType.PARAMETER: lambda self, _: exp.Parameter(
-            this=self._parse_var() or self._parse_primary()
-        ),
-        TokenType.BIT_STRING: lambda _, token: exp.BitString(this=token.text),
-        TokenType.HEX_STRING: lambda _, token: exp.HexString(this=token.text),
-        TokenType.BYTE_STRING: lambda _, token: exp.ByteString(this=token.text),
+        TokenType.NULL: lambda self, _: self.expression(exp.Null),
+        TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
+        TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
+        TokenType.PARAMETER: lambda self, _: self.expression(exp.Paramater, this=self._parse_var() or self._parse_primary()),
+        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
+        TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
+        TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
         TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
     }
 
@@ -627,6 +625,7 @@ class Parser(metaclass=_Parser):
 
     def expression(self, exp_class, **kwargs):
         instance = exp_class(**kwargs)
+        instance.comment = self._prev.comment
         self.validate_expression(instance)
         return instance
 
@@ -1156,7 +1155,6 @@ class Parser(metaclass=_Parser):
             return None
 
         alias = self.expression(exp.TableAlias, this=alias, columns=columns)
-        alias.comment = self._prev.comment
         return alias
 
     def _parse_subquery(self, this):
@@ -1166,7 +1164,6 @@ class Parser(metaclass=_Parser):
             pivots=self._parse_pivots(),
             alias=self._parse_table_alias(),
         )
-        subquery.comment = self._prev.comment
         return subquery
 
     def _parse_query_modifiers(self, this):
@@ -1874,9 +1871,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
-            primary = self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
-            primary.comment = self._prev.comment
-            return primary
+            return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
 
         if self._match_pair(TokenType.DOT, TokenType.NUMBER):
             return exp.Literal.number(f"0.{self._prev.text}")
@@ -2426,9 +2421,7 @@ class Parser(metaclass=_Parser):
         alias = self._parse_id_var(any_token)
 
         if alias:
-            alias = self.expression(exp.Alias, this=this, alias=alias)
-            alias.comment = self._prev.comment
-            return alias
+            return self.expression(exp.Alias, this=this, alias=alias)
 
         return this
 
@@ -2444,34 +2437,29 @@ class Parser(metaclass=_Parser):
             return None
 
         identifier = exp.Identifier(this=self._prev.text, quoted=False)
-        identifier.comment = self._prev.comment
         return identifier
 
     def _parse_string(self):
         if self._match(TokenType.STRING):
             string = exp.Literal.string(self._prev.text)
-            string.comment = self._prev.comment
             return string
         return self._parse_placeholder()
 
     def _parse_number(self):
         if self._match(TokenType.NUMBER):
             number = exp.Literal.number(self._prev.text)
-            number.comment = self._prev.comment
             return number
         return self._parse_placeholder()
 
     def _parse_identifier(self):
         if self._match(TokenType.IDENTIFIER):
             identifier = exp.Identifier(this=self._prev.text, quoted=True)
-            identifier.comment = self._prev.comment
             return identifier
         return self._parse_placeholder()
 
     def _parse_var(self):
         if self._match(TokenType.VAR):
             var = exp.Var(this=self._prev.text)
-            var.comment = self._prev.comment
             return var
         return self._parse_placeholder()
 

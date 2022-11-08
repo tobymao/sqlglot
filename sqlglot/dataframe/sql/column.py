@@ -18,7 +18,11 @@ class Column:
             expression = expression.expression  # type: ignore
         elif expression is None or not isinstance(expression, (str, exp.Expression)):
             expression = self._lit(expression).expression  # type: ignore
-        self.expression: exp.Expression = sqlglot.maybe_parse(expression, dialect="spark")
+
+        expression = sqlglot.maybe_parse(expression, dialect="spark")
+        if expression is None:
+            raise ValueError(f"Could not parse {expression}")
+        self.expression: exp.Expression = expression
 
     def __repr__(self):
         return repr(self.expression)
@@ -196,7 +200,7 @@ class Column:
         expression.set("table", exp.to_identifier(table_name))
         return Column(expression)
 
-    def sql(self, **kwargs) -> Column:
+    def sql(self, **kwargs) -> str:
         return self.expression.sql(**{"dialect": "spark", **kwargs})
 
     def alias(self, name: str) -> Column:

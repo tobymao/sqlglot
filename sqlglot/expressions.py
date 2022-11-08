@@ -18,6 +18,9 @@ from sqlglot.helper import (
     subclasses,
 )
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import Dialect
+
 
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
@@ -38,7 +41,7 @@ class Expression(metaclass=_Expression):
             or optional (False).
     """
 
-    key = None
+    key = "Expression"
     arg_types = {"this": True}
     __slots__ = ("args", "parent", "arg_key", "type", "comment")
 
@@ -52,10 +55,10 @@ class Expression(metaclass=_Expression):
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return type(self) is type(other) and _norm_args(self) == _norm_args(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(
             (
                 self.key,
@@ -337,7 +340,7 @@ class Expression(metaclass=_Expression):
     def __repr__(self):
         return self.to_s()
 
-    def sql(self, dialect=None, **opts):
+    def sql(self, dialect: Dialect | str | None = None, **opts) -> str:
         """
         Returns SQL string representation of this tree.
 
@@ -353,7 +356,7 @@ class Expression(metaclass=_Expression):
 
         return Dialect.get_or_raise(dialect)().generate(self, **opts)
 
-    def to_s(self, hide_missing=True, level=0):
+    def to_s(self, hide_missing: bool = True, level: int = 0) -> str:
         indent = "" if not level else "\n"
         indent += "".join(["  "] * level)
         left = f"({self.key.upper()} "
@@ -914,11 +917,11 @@ class Literal(Condition):
         return hash((self.key, self.this, self.args["is_string"]))
 
     @classmethod
-    def number(cls, number):
+    def number(cls, number) -> Literal:
         return cls(this=str(number), is_string=False)
 
     @classmethod
-    def string(cls, string):
+    def string(cls, string) -> Literal:
         return cls(this=str(string), is_string=True)
 
 
@@ -1130,7 +1133,7 @@ class Properties(Expression):
     }
 
     @classmethod
-    def from_dict(cls, properties_dict):
+    def from_dict(cls, properties_dict) -> Properties:
         expressions = []
         for key, value in properties_dict.items():
             property_cls = cls.PROPERTY_KEY_MAPPING.get(key.upper(), AnonymousProperty)
@@ -1366,7 +1369,7 @@ class Select(Subqueryable):
         **QUERY_MODIFIERS,
     }
 
-    def from_(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def from_(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Set the FROM expression.
 
@@ -1399,7 +1402,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def group_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def group_by(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Set the GROUP BY expression.
 
@@ -1435,7 +1438,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def order_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def order_by(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Set the ORDER BY expression.
 
@@ -1468,7 +1471,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def sort_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def sort_by(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Set the SORT BY expression.
 
@@ -1501,7 +1504,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def cluster_by(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def cluster_by(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Set the CLUSTER BY expression.
 
@@ -1534,7 +1537,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def limit(self, expression, dialect=None, copy=True, **opts):
+    def limit(self, expression, dialect=None, copy=True, **opts) -> Select:
         """
         Set the LIMIT expression.
 
@@ -1565,7 +1568,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def offset(self, expression, dialect=None, copy=True, **opts):
+    def offset(self, expression, dialect=None, copy=True, **opts) -> Select:
         """
         Set the OFFSET expression.
 
@@ -1596,7 +1599,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def select(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def select(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Append to or set the SELECT expressions.
 
@@ -1626,7 +1629,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def lateral(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def lateral(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Append to or set the LATERAL expressions.
 
@@ -1669,7 +1672,7 @@ class Select(Subqueryable):
         dialect=None,
         copy=True,
         **opts,
-    ):
+    ) -> Select:
         """
         Append to or set the JOIN expressions.
 
@@ -1715,7 +1718,7 @@ class Select(Subqueryable):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            natural, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)
+            natural, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)  # type: ignore
             if natural:
                 join.set("natural", True)
             if side:
@@ -1748,7 +1751,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def where(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def where(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Append to or set the WHERE expressions.
 
@@ -1780,7 +1783,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def having(self, *expressions, append=True, dialect=None, copy=True, **opts):
+    def having(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         """
         Append to or set the HAVING expressions.
 
@@ -1812,7 +1815,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def distinct(self, distinct=True, copy=True):
+    def distinct(self, distinct=True, copy=True) -> Select:
         """
         Set the OFFSET expression.
 
@@ -1831,7 +1834,7 @@ class Select(Subqueryable):
         instance.set("distinct", Distinct() if distinct else None)
         return instance
 
-    def ctas(self, table, properties=None, dialect=None, copy=True, **opts):
+    def ctas(self, table, properties=None, dialect=None, copy=True, **opts) -> Create:
         """
         Convert this expression to a CREATE TABLE AS statement.
 
@@ -1869,11 +1872,11 @@ class Select(Subqueryable):
         )
 
     @property
-    def named_selects(self):
+    def named_selects(self) -> t.List[str]:
         return [e.alias_or_name for e in self.expressions if e.alias_or_name]
 
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         return self.expressions
 
 
@@ -2023,7 +2026,7 @@ class DataType(Expression):
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
 
     @classmethod
-    def build(cls, dtype, **kwargs):
+    def build(cls, dtype, **kwargs) -> DataType:
         return DataType(
             this=dtype if isinstance(dtype, DataType.Type) else DataType.Type[dtype.upper()],
             **kwargs,
@@ -2890,7 +2893,7 @@ def maybe_parse(
     dialect=None,
     prefix=None,
     **opts,
-):
+) -> t.Optional[Expression]:
     """Gracefully handle a possible string or expression.
 
     Example:
@@ -3141,7 +3144,7 @@ def except_(left, right, distinct=True, dialect=None, **opts):
     return Except(this=left, expression=right, distinct=distinct)
 
 
-def select(*expressions, dialect=None, **opts):
+def select(*expressions, dialect=None, **opts) -> Select:
     """
     Initializes a syntax tree from one or multiple SELECT expressions.
 
@@ -3163,7 +3166,7 @@ def select(*expressions, dialect=None, **opts):
     return Select().select(*expressions, dialect=dialect, **opts)
 
 
-def from_(*expressions, dialect=None, **opts):
+def from_(*expressions, dialect=None, **opts) -> Select:
     """
     Initializes a syntax tree from a FROM expression.
 
@@ -3185,7 +3188,7 @@ def from_(*expressions, dialect=None, **opts):
     return Select().from_(*expressions, dialect=dialect, **opts)
 
 
-def update(table, properties, where=None, from_=None, dialect=None, **opts):
+def update(table, properties, where=None, from_=None, dialect=None, **opts) -> Update:
     """
     Creates an update statement.
 
@@ -3221,7 +3224,7 @@ def update(table, properties, where=None, from_=None, dialect=None, **opts):
     return update
 
 
-def delete(table, where=None, dialect=None, **opts):
+def delete(table, where=None, dialect=None, **opts) -> Delete:
     """
     Builds a delete statement.
 
@@ -3245,7 +3248,7 @@ def delete(table, where=None, dialect=None, **opts):
     )
 
 
-def condition(expression, dialect=None, **opts):
+def condition(expression, dialect=None, **opts) -> Condition:
     """
     Initialize a logical condition expression.
 
@@ -3270,7 +3273,7 @@ def condition(expression, dialect=None, **opts):
     Returns:
         Condition: the expression
     """
-    return maybe_parse(
+    return maybe_parse(  # type: ignore
         expression,
         into=Condition,
         dialect=dialect,
@@ -3278,7 +3281,7 @@ def condition(expression, dialect=None, **opts):
     )
 
 
-def and_(*expressions, dialect=None, **opts):
+def and_(*expressions, dialect=None, **opts) -> And:
     """
     Combine multiple conditions with an AND logical operator.
 
@@ -3298,7 +3301,7 @@ def and_(*expressions, dialect=None, **opts):
     return _combine(expressions, And, dialect, **opts)
 
 
-def or_(*expressions, dialect=None, **opts):
+def or_(*expressions, dialect=None, **opts) -> Or:
     """
     Combine multiple conditions with an OR logical operator.
 
@@ -3318,7 +3321,7 @@ def or_(*expressions, dialect=None, **opts):
     return _combine(expressions, Or, dialect, **opts)
 
 
-def not_(expression, dialect=None, **opts):
+def not_(expression, dialect=None, **opts) -> Not:
     """
     Wrap a condition with a NOT operator.
 
@@ -3343,14 +3346,14 @@ def not_(expression, dialect=None, **opts):
     return Not(this=_wrap_operator(this))
 
 
-def paren(expression):
+def paren(expression) -> Paren:
     return Paren(this=expression)
 
 
 SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
 
 
-def to_identifier(alias, quoted=None):
+def to_identifier(alias, quoted=None) -> t.Optional[Identifier]:
     if alias is None:
         return None
     if isinstance(alias, Identifier):
@@ -3464,7 +3467,7 @@ def subquery(expression, alias=None, dialect=None, **opts):
     return Select().from_(expression, dialect=dialect, **opts)
 
 
-def column(col, table=None, quoted=None):
+def column(col, table=None, quoted=None) -> Column:
     """
     Build a Column.
     Args:
@@ -3479,7 +3482,7 @@ def column(col, table=None, quoted=None):
     )
 
 
-def table_(table, db=None, catalog=None, quoted=None, alias=None):
+def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
     """Build a Table.
 
     Args:
@@ -3498,7 +3501,7 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None):
     )
 
 
-def values(values, alias=None):
+def values(values, alias=None) -> Values:
     """Build VALUES statement.
 
     Example:
@@ -3520,7 +3523,7 @@ def values(values, alias=None):
     )
 
 
-def convert(value):
+def convert(value) -> Expression:
     """Convert a python value into an expression object.
 
     Raises an error if a conversion is not possible.
@@ -3599,7 +3602,7 @@ def column_table_names(expression):
     return list(dict.fromkeys(column.table for column in expression.find_all(Column)))
 
 
-def table_name(table):
+def table_name(table) -> str:
     """Get the full name of a table as a string.
 
     Args:
@@ -3615,6 +3618,9 @@ def table_name(table):
     """
 
     table = maybe_parse(table, into=Table)
+
+    if not table:
+        raise ValueError(f"Cannot parse {table}")
 
     return ".".join(
         part

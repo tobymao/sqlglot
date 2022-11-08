@@ -133,7 +133,9 @@ class Expression(metaclass=_Expression):
         return self.alias or self.name
 
     def __deepcopy__(self, memo):
-        return self.__class__(**deepcopy(self.args))
+        copy = self.__class__(**deepcopy(self.args))
+        copy.comment = self.comment
+        return copy
 
     def copy(self):
         new = deepcopy(self)

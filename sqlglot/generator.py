@@ -103,8 +103,6 @@ class Generator:
         exp.TableFormatProperty,
     }
 
-    HINT_SIGNIFIER = {"+", "!"}
-
     __slots__ = (
         "time_mapping",
         "time_trie",
@@ -223,20 +221,25 @@ class Generator:
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
 
-    def maybe_comment(self, sql, comment, single_line=False):
-        if not comment or not self._comments:
+    def maybe_comment(self, sql, expression, single_line=False):
+        comment = expression.comment if self._comments else None
+
+        if not comment:
             return sql
 
-        # Add a leading space if needed so that we don't transpile to a hint accidentally
-        pad = " " if comment[0] in self.HINT_SIGNIFIER else ""
+        comment = " " + comment if comment[0].strip() else comment
+        comment = comment.rstrip()
+
+        if isinstance(expression, exp.Select):
+            return f"/*{comment} */{self.sep()}{sql}"
 
         if not self.pretty:
-            return f"{sql} /*{pad}{comment}*/"
+            return f"{sql} /*{comment} */"
 
         if not NEWLINE_RE.search(comment):
-            return f"{sql} --{comment}" if single_line else f"{sql} /*{pad}{comment}*/"
+            return f"{sql} --{comment}" if single_line else f"{sql} /*{comment} */"
 
-        return f"/*{pad}{comment}*/\n{sql}"
+        return f"/*{comment} */\n{sql}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -276,7 +279,7 @@ class Generator:
             for i, line in enumerate(lines)
         )
 
-    def sql(self, expression, key=None):
+    def sql(self, expression, key=None, comment=True):
         if not expression:
             return ""
 
@@ -289,24 +292,24 @@ class Generator:
         transform = self.TRANSFORMS.get(expression.__class__)
 
         if callable(transform):
-            return transform(self, expression)
-        if transform:
-            return transform
+            sql = transform(self, expression)
+        elif transform:
+            sql = transform
+        elif isinstance(expression, exp.Expression):
+            exp_handler_name = f"{expression.key}_sql"
 
-        if not isinstance(expression, exp.Expression):
+            if hasattr(self, exp_handler_name):
+                sql = getattr(self, exp_handler_name)(expression)
+            elif isinstance(expression, exp.Func):
+                sql = self.function_fallback_sql(expression)
+            elif isinstance(expression, exp.Property):
+                sql = self.property_sql(expression)
+            else:
+                raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+        else:
             raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
-        exp_handler_name = f"{expression.key}_sql"
-        if hasattr(self, exp_handler_name):
-            return getattr(self, exp_handler_name)(expression)
-
-        if isinstance(expression, exp.Func):
-            return self.maybe_comment(self.function_fallback_sql(expression), expression.comment)
-
-        if isinstance(expression, exp.Property):
-            return self.property_sql(expression)
-
-        raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+        return self.maybe_comment(sql, expression) if self._comments and comment else sql
 
     def uncache_sql(self, expression):
         table = self.sql(expression, "this")
@@ -509,7 +512,7 @@ class Generator:
         text = text.lower() if self.normalize else text
         if expression.args.get("quoted") or self.identify:
             text = f"{self.identifier_start}{text}{self.identifier_end}"
-        return self.maybe_comment(text, expression.comment)
+        return text
 
     def partition_sql(self, expression):
         keys = csv(
@@ -689,7 +692,7 @@ class Generator:
         return f"VALUES{self.seg('')}{args}{alias}"
 
     def var_sql(self, expression):
-        return self.maybe_comment(self.sql(expression, "this"), expression.comment)
+        return self.sql(expression, "this")
 
     def from_sql(self, expression):
         expressions = self.expressions(expression, flat=True)
@@ -780,7 +783,7 @@ class Generator:
                 text = text.replace("\\", "\\\\")
             text = text.replace(self.quote_end, self._escaped_quote_end)
             text = f"{self.quote_start}{text}{self.quote_end}"
-        return self.maybe_comment(text, expression.comment)
+        return text
 
     def loaddata_sql(self, expression):
         local = " LOCAL" if expression.args.get("local") else ""
@@ -796,10 +799,10 @@ class Generator:
         return f"LOAD DATA{local}{inpath}{overwrite}{this}{partition}{input_format}{serde}"
 
     def null_sql(self, expression):
-        return self.maybe_comment("NULL", expression.comment)
+        return "NULL"
 
     def boolean_sql(self, expression):
-        return self.maybe_comment("TRUE" if expression.this else "FALSE", expression.comment)
+        return "TRUE" if expression.this else "FALSE"
 
     def order_sql(self, expression, flat=False):
         this = self.sql(expression, "this")
@@ -873,7 +876,7 @@ class Generator:
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
         sql = self.query_modifiers(
             expression,
-            f"{self.maybe_comment('SELECT', expression.comment, single_line=True)}{hint}{distinct}{expressions}",
+            f"SELECT{hint}{distinct}{expressions}",
             self.sql(expression, "from"),
         )
         return self.prepend_ctes(expression, sql)
@@ -905,7 +908,7 @@ class Generator:
 
         return self.query_modifiers(
             expression,
-            self.maybe_comment(self.wrap(expression), expression.comment),
+            self.wrap(expression),
             self.expressions(expression, key="pivots", sep=" "),
             f" AS {alias}" if alias else "",
         )
@@ -1155,10 +1158,7 @@ class Generator:
         return self.binary(expression, "^")
 
     def cast_sql(self, expression):
-        return self.maybe_comment(
-            f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})",
-            expression.comment,
-        )
+        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
     def currentdate_sql(self, expression):
         zone = self.sql(expression, "this")
@@ -1299,28 +1299,26 @@ class Generator:
         if flat:
             return sep.join(self.sql(e) for e in expressions)
 
-        sql_with_comment = [(self.sql(e), e.comment) for e in expressions]
-        num_sqls = len(sql_with_comment)
+        num_sqls = len(expressions)
 
         # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
         pad = " " * self.pad
         stripped_sep = sep.strip()
 
         result_sqls = []
-        for i, (sql, comment) in enumerate(sql_with_comment):
+        for i, e in enumerate(expressions):
+            sql = self.sql(e, comment=False)
+            comment = self.maybe_comment('', e, single_line=True)
+
             if self.pretty:
                 if self._leading_comma:
                     result_sqls.append(
-                        f"{sep if i > 0 else pad}{self.maybe_comment(sql, comment, single_line=True)}"
+                        f"{sep if i > 0 else pad}{sql}{comment}"
                     )
                 else:
-                    result_sqls.append(
-                        f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{self.maybe_comment('', comment, single_line=True)}"
-                    )
+                    result_sqls.append(f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{comment}")
             else:
-                result_sqls.append(
-                    f"{self.maybe_comment(sql, comment, single_line=True)}{sep if i + 1 < num_sqls else ''}"
-                )
+                result_sqls.append(f"{sql}{comment}{sep if i + 1 < num_sqls else ''}")
 
         result_sqls = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
         return self.indent(result_sqls, skip_first=False) if indent else result_sqls

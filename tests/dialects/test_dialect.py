@@ -1172,16 +1172,17 @@ class TestDialect(Validator):
 
     def test_hash_comments(self):
         self.validate_all(
-            "SELECT 1 /* arbitrary content,,, until end-of-line*/",
+            "SELECT 1 /* arbitrary content,,, until end-of-line */",
             read={
                 "mysql": "SELECT 1 # arbitrary content,,, until end-of-line",
                 "bigquery": "SELECT 1 # arbitrary content,,, until end-of-line",
             },
         )
         self.validate_all(
-            """SELECT -- comment1
+            """/* comment1 */
+SELECT
   x, -- comment2
-  y /* comment3*/""",
+  y /* comment3 */""",
             read={
                 "mysql": """SELECT # comment1
   x, # comment2

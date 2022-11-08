@@ -184,6 +184,7 @@ class TokenType(AutoName):
     IN = auto()
     INDEX = auto()
     INNER = auto()
+    INPUT = auto()
     INSERT = auto()
     INTERSECT = auto()
     INTERVAL = auto()
@@ -205,6 +206,7 @@ class TokenType(AutoName):
     MAP = auto()
     MATERIALIZED = auto()
     MOD = auto()
+    MODE = auto()
     NATURAL = auto()
     NEXT = auto()
     NO_ACTION = auto()
@@ -227,6 +229,7 @@ class TokenType(AutoName):
     PARTITION = auto()
     PARTITION_BY = auto()
     PARTITIONED_BY = auto()
+    PATH = auto()
     PERCENT = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()
@@ -509,6 +512,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
         "INNER": TokenType.INNER,
+        "INPUT": TokenType.INPUT,
         "INSERT": TokenType.INSERT,
         "INTERVAL": TokenType.INTERVAL,
         "INTERSECT": TokenType.INTERSECT,
@@ -527,6 +531,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LOCAL": TokenType.LOCAL,
         "LOCATION": TokenType.LOCATION,
         "MATERIALIZED": TokenType.MATERIALIZED,
+        "MODE": TokenType.MODE,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
         "NO ACTION": TokenType.NO_ACTION,
@@ -552,6 +557,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PARTITION BY": TokenType.PARTITION_BY,
         "PARTITIONED BY": TokenType.PARTITIONED_BY,
         "PARTITIONED_BY": TokenType.PARTITIONED_BY,
+        "PATH": TokenType.PATH,
         "PERCENT": TokenType.PERCENT,
         "PIVOT": TokenType.PIVOT,
         "PRECEDING": TokenType.PRECEDING,

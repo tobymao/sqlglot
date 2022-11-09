@@ -590,6 +590,22 @@ class TestDialect(Validator):
                 "spark": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             },
         )
+        self.validate_all(
+            "TIMESTAMP '2022-01-01'",
+            write={
+                "mysql": "CAST('2022-01-01' AS TIMESTAMP)",
+                "starrocks": "CAST('2022-01-01' AS DATETIME)",
+                "hive": "CAST('2022-01-01' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "TIMESTAMP('2022-01-01')",
+            write={
+                "mysql": "TIMESTAMP('2022-01-01')",
+                "starrocks": "TIMESTAMP('2022-01-01')",
+                "hive": "TIMESTAMP('2022-01-01')",
+            },
+        )
 
         for unit in ("DAY", "MONTH", "YEAR"):
             self.validate_all(

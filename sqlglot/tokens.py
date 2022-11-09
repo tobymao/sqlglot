@@ -566,6 +566,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RETURNS": TokenType.RETURNS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
+        "ROLLBACK": TokenType.ROLLBACK,
         "ROLLUP": TokenType.ROLLUP,
         "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,

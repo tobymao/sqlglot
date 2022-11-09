@@ -51,10 +51,13 @@ class TestMySQL(Validator):
         self.validate_identity("SET GLOBAL max_connections = 1000, sort_buffer_size = 1000000")
         self.validate_identity("SET @@GLOBAL.sort_buffer_size = 50000, sort_buffer_size = 1000000")
         self.validate_identity("SET CHARACTER SET 'utf8'")
+        self.validate_identity("SET CHARACTER SET utf8")
         self.validate_identity("SET CHARACTER SET DEFAULT")
         self.validate_identity("SET NAMES 'utf8'")
         self.validate_identity("SET NAMES DEFAULT")
         self.validate_identity("SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'")
+        self.validate_identity("SET NAMES utf8 COLLATE utf8_unicode_ci")
+        self.validate_identity("SET autocommit = ON")
 
     def test_escape(self):
         self.validate_all(

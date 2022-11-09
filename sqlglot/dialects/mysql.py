@@ -256,13 +256,13 @@ class MySQL(Dialect):
         }
 
         SET_PARSERS = {
-            "GLOBAL": lambda self: self._parse_set_item_kind("GLOBAL"),
-            "PERSIST": lambda self: self._parse_set_item_kind("PERSIST"),
-            "PERSIST_ONLY": lambda self: self._parse_set_item_kind("PERSIST_ONLY"),
-            "SESSION": lambda self: self._parse_set_item_kind("SESSION"),
-            "LOCAL": lambda self: self._parse_set_item_kind("LOCAL"),
-            "CHARACTER SET": lambda self: self._parse_set_item_kind("CHARACTER SET"),
-            "CHARSET": lambda self: self._parse_set_item_kind("CHARACTER SET"),
+            "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
+            "PERSIST": lambda self: self._parse_set_item_assignment("PERSIST"),
+            "PERSIST_ONLY": lambda self: self._parse_set_item_assignment("PERSIST_ONLY"),
+            "SESSION": lambda self: self._parse_set_item_assignment("SESSION"),
+            "LOCAL": lambda self: self._parse_set_item_assignment("LOCAL"),
+            "CHARACTER SET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
+            "CHARSET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
             "NAMES": lambda self: self._parse_set_item_names(),
         }
 
@@ -349,8 +349,29 @@ class MySQL(Dialect):
                     offset = parts[0]
             return offset, limit
 
-        def _parse_set_item_kind(self, kind):
-            this = self._parse_statement()
+        def _default_parse_set_item(self):
+            return self._parse_set_item_assignment(kind=None)
+
+        def _parse_set_item_assignment(self, kind):
+            left = self._parse_primary() or self._parse_id_var()
+            if not self._match(TokenType.EQ):
+                self.raise_error("Expected =")
+            right = self._parse_statement() or self._parse_id_var()
+
+            this = self.expression(
+                exp.EQ,
+                this=left,
+                expression=right,
+            )
+
+            return self.expression(
+                exp.SetItem,
+                this=this,
+                kind=kind,
+            )
+
+        def _parse_set_item_charset(self, kind):
+            this = self._parse_string() or self._parse_id_var()
 
             return self.expression(
                 exp.SetItem,
@@ -361,7 +382,7 @@ class MySQL(Dialect):
         def _parse_set_item_names(self):
             charset = self._parse_string() or self._parse_id_var()
             if self._match_text("COLLATE"):
-                collate = self._parse_string()
+                collate = self._parse_string() or self._parse_id_var()
             else:
                 collate = None
             return self.expression(

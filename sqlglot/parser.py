@@ -2592,7 +2592,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_commit_or_rollback(self):
         savepoint = None
-        is_rollback = self._prev.text == "ROLLBACK"
+        is_rollback = self._prev.token_type == TokenType.ROLLBACK
 
         self._match_texts({"TRANSACTION", "WORK"})
 

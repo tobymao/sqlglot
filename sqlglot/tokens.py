@@ -244,7 +244,6 @@ class TokenType(AutoName):
     RETURNS = auto()
     RIGHT = auto()
     RLIKE = auto()
-    ROLLBACK = auto()
     ROLLUP = auto()
     ROW = auto()
     ROWS = auto()
@@ -566,7 +565,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RETURNS": TokenType.RETURNS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
-        "ROLLBACK": TokenType.ROLLBACK,
+        "ROLLBACK": TokenType.COMMIT,
         "ROLLUP": TokenType.ROLLUP,
         "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,
@@ -673,14 +672,12 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.ANALYZE,
         TokenType.CALL,
         TokenType.COMMENT_ON,
-        TokenType.COMMIT,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.TRUNCATE,
         TokenType.VACUUM,
-        TokenType.ROLLBACK,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

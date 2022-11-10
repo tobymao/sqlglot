@@ -378,6 +378,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.USE: lambda self: self._parse_use(),
         TokenType.BEGIN: lambda self: self._parse_transaction(),
+        TokenType.COMMIT: lambda self: self._parse_commit(),
     }
 
     PRIMARY_PARSERS = {
@@ -2581,6 +2582,17 @@ class Parser(metaclass=_Parser):
 
         modes = " ".join(modes).split(" , ") if modes else None
         return self.expression(exp.Transaction, this=this, modes=modes)
+
+    def _parse_commit(self):
+        is_rollback = self._prev.text == "ROLLBACK"
+        savepoint = None
+
+        self._match_texts({"TRANSACTION", "WORK"})
+        if self._match_text_seq("TO"):
+            self._match_text_seq("SAVEPOINT")
+            savepoint = self._parse_id_var()
+
+        return self.expression(exp.Commit, is_rollback=is_rollback, savepoint=savepoint)
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)

@@ -2064,6 +2064,10 @@ class Transaction(Command):
     arg_types = {"this": False, "modes": False}
 
 
+class Commit(Command):
+    arg_types = {"is_rollback": False, "savepoint": False}
+
+
 # Binary expressions like (ADD a b)
 class Binary(Expression):
     arg_types = {"this": True, "expression": True}

@@ -287,7 +287,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%Y-%m-%dT%H:%i:%S')",
-                "drill": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH:MI:SS')",
+                "drill": "TO_TIMESTAMP(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH:MI:SS')",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')",
             },
@@ -295,6 +295,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
             write={
+                "drill": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
                 "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "oracle": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
@@ -307,6 +308,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_TIME(x, '%y')",
             write={
+                "drill": "TO_TIMESTAMP(x, 'yy')",
                 "duckdb": "STRPTIME(x, '%y')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%y')",
@@ -328,6 +330,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_STR_TO_DATE('2020-01-01')",
             write={
+                "drill": "CAST('2020-01-01' AS DATE)",
                 "duckdb": "CAST('2020-01-01' AS DATE)",
                 "hive": "TO_DATE('2020-01-01')",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
@@ -337,6 +340,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_STR_TO_TIME('2020-01-01')",
             write={
+                "drill": "CAST('2020-01-01' AS TIMESTAMP)",
                 "duckdb": "CAST('2020-01-01' AS TIMESTAMP)",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
@@ -353,6 +357,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_TO_STR(x, '%Y-%m-%d')",
             write={
+                "drill": "TO_CHAR(x, 'yyyy-MM-dd')",
                 "duckdb": "STRFTIME(x, '%Y-%m-%d')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",
                 "oracle": "TO_CHAR(x, 'YYYY-MM-DD')",
@@ -746,6 +751,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
             write={
+                "drill": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
                 "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
                 "spark": "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
             },
@@ -753,6 +759,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t (a, b)",
             write={
+                "drill": "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t(a, b)",
                 "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t(a, b)",
                 "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) t AS b",
             },

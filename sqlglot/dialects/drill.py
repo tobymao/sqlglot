@@ -15,10 +15,18 @@ from sqlglot.tokens import TokenType
 def _to_timestamp(args):
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
     if len(args) == 1 and args[0].is_number:
-        # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TABLE
         return exp.UnixToTime.from_arg_list(args)
-    # https://www.postgresql.org/docs/current/functions-formatting.html
-    return format_time_lambda(exp.StrToTime, "postgres")(args)
+    return format_time_lambda(exp.StrToTime, "drill")(args)
+
+def _str_to_time_sql(self, expression):
+    return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
+
+
+def _ts_or_ds_to_date_sql(self, expression):
+    time_format = self.format_time(expression)
+    if time_format and time_format not in (DuckDB.time_format, DuckDB.date_format):
+        return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
+    return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
 
 def if_sql(self, expression):
@@ -43,6 +51,37 @@ class Drill(Dialect):
     null_ordering = "nulls_are_last"
     date_format = "'yyyy-MM-dd'"
 
+    time_mapping = {
+        "y": "%Y",
+        "Y": "%Y",
+        "YYYY": "%Y",
+        "yyyy": "%Y",
+        "YY": "%y",
+        "yy": "%y",
+        "MMMM": "%B",
+        "MMM": "%b",
+        "MM": "%m",
+        "M": "%-m",
+        "dd": "%d",
+        "d": "%-d",
+        "HH": "%H",
+        "H": "%-H",
+        "hh": "%I",
+        "h": "%-I",
+        "mm": "%M",
+        "m": "%-M",
+        "ss": "%S",
+        "s": "%-S",
+        "SSSSSS": "%f",
+        "a": "%p",
+        "DD": "%j",
+        "D": "%-j",
+        "E": "%a",
+        "EE": "%a",
+        "EEE": "%a",
+        "EEEE": "%A",
+        "''T''": "T"
+    }
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'"]
         IDENTIFIERS = ["`"]
@@ -54,40 +93,17 @@ class Drill(Dialect):
             "VARBINARY": TokenType.BINARY
         }
 
-        time_mapping = {
-            "y": "%Y",
-            "Y": "%Y",
-            "YYYY": "%Y",
-            "yyyy": "%Y",
-            "YY": "%y",
-            "yy": "%y",
-            "MMMM": "%B",
-            "MMM": "%b",
-            "MM": "%m",
-            "M": "%-m",
-            "dd": "%d",
-            "d": "%-d",
-            "HH": "%H",
-            "H": "%-H",
-            "hh": "%I",
-            "h": "%-I",
-            "mm": "%M",
-            "m": "%-M",
-            "ss": "%S",
-            "s": "%-S",
-            "SSSSSS": "%f",
-            "a": "%p",
-            "DD": "%j",
-            "D": "%-j",
-            "E": "%a",
-            "EE": "%a",
-            "EEE": "%a",
-            "EEEE": "%A",
-        }
+        date_format = "'yyyy-MM-dd'"
+        dateint_format = "'yyyyMMdd'"
+        time_format = "'yyyy-MM-dd HH:mm:ss'"
 
     class Parser(parser.Parser):
+        STRICT_CAST = False
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
+            "TO_CHAR": format_time_lambda(exp.TimeToStr, "drill"),
         }
 
     class Generator(generator.Generator):
@@ -112,9 +128,6 @@ class Drill(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.Lateral: _lateral_sql,
-            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),
             exp.Create: create_with_partitions_sql,
@@ -123,5 +136,11 @@ class Drill(Dialect):
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
             exp.StrPosition: str_position_sql,
+            exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
+            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+            exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+            exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TryCast: no_trycast_sql,
+            exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
         }

@@ -1820,8 +1820,15 @@ class Parser(metaclass=_Parser):
                     this=exp.DataType.Type.TIMESTAMPLTZ,
                     expressions=expressions,
                 )
-            else:
-                self._match(TokenType.WITHOUT_TIME_ZONE)
+            elif self._match(TokenType.WITHOUT_TIME_ZONE):
+                value = exp.DataType(
+                    this=exp.DataType.Type.TIMESTAMP,
+                    expressions=expressions,
+                )
+
+            maybe_func = maybe_func and value is None
+
+            if value is None:
                 value = exp.DataType(
                     this=exp.DataType.Type.TIMESTAMP,
                     expressions=expressions,
@@ -1829,7 +1836,7 @@ class Parser(metaclass=_Parser):
 
         if maybe_func and check_func:
             index2 = self._index
-            peek = self._parse_column()
+            peek = self._parse_string()
 
             if not peek:
                 self._retreat(index)

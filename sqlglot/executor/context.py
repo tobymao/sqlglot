@@ -52,6 +52,12 @@ class Context:
                 reader = table[i]
             yield reader, self
 
+    def tables_iter(self):
+        self.env["scope"] = self.row_readers
+
+        for i in range(len(self.table.rows)):
+            yield {name: table[i] for name, table in self.tables.items()}, self
+
     def table_iter(self, table):
         self.env["scope"] = self.row_readers
 
@@ -84,3 +90,8 @@ class Context:
 
     def __contains__(self, table):
         return table in self.tables
+
+    def merge(self, tables):
+        new_tables = {**self.tables}
+        new_tables.update(tables)
+        return Context(new_tables, env=self.env)

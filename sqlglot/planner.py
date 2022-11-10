@@ -32,6 +32,9 @@ class Plan:
     def leaves(self):
         return (node for node, deps in self.dag.items() if not deps)
 
+    def __repr__(self):
+        return f"Plan\n----\n{repr(self.root)}"
+
 
 class Step:
     @classmethod
@@ -175,7 +178,7 @@ class Step:
             context = [f"{nested}Context:"] + context
 
         lines = [
-            f"{indent}- {self.__class__.__name__}: {self.name}",
+            f"{indent}- {self.id}",
             *context,
             f"{nested}Projections:",
         ]
@@ -192,6 +195,10 @@ class Step:
                 lines.append("  " + dependency.to_s(level + 1))
 
         return "\n".join(lines)
+
+    @property
+    def id(self):
+        return f"{self.__class__.__name__}: {self.name} ({id(self)})"
 
     def _to_s(self, _indent):
         return []

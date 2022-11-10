@@ -37,6 +37,10 @@ class SchemaError(SqlglotError):
     pass
 
 
+class ExecuteError(SqlglotError):
+    pass
+
+
 def concat_errors(errors: t.Sequence[t.Any], maximum: int) -> str:
     msg = [str(e) for e in errors[:maximum]]
     remaining = len(errors) - maximum

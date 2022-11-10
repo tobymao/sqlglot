@@ -312,6 +312,21 @@ class Parser(metaclass=_Parser):
         TokenType.ANTI,
     }
 
+    LAMBDAS = {
+        TokenType.ARROW: lambda self, expressions: self.expression(
+            exp.Lambda,
+            this=self._parse_conjunction().transform(
+                self._replace_lambda, {node.name for node in expressions}
+            ),
+            expressions=expressions,
+        ),
+        TokenType.FARROW: lambda self, expressions: self.expression(
+            exp.Kwarg,
+            this=exp.Var(this=expressions[0].name),
+            expression=self._parse_conjunction(),
+        ),
+    }
+
     COLUMN_OPERATORS = {
         TokenType.DOT: None,
         TokenType.DCOLON: lambda self, this, to: self.expression(
@@ -2023,31 +2038,24 @@ class Parser(metaclass=_Parser):
         else:
             expressions = [self._parse_id_var()]
 
-        if not self._match(TokenType.ARROW):
-            self._retreat(index)
+        if self._match_set(self.LAMBDAS):
+            return self.LAMBDAS[self._prev.token_type](self, expressions)
 
-            if self._match(TokenType.DISTINCT):
-                this = self.expression(
-                    exp.Distinct, expressions=self._parse_csv(self._parse_conjunction)
-                )
-            else:
-                this = self._parse_conjunction()
+        self._retreat(index)
 
-            if self._match(TokenType.IGNORE_NULLS):
-                this = self.expression(exp.IgnoreNulls, this=this)
-            else:
-                self._match(TokenType.RESPECT_NULLS)
+        if self._match(TokenType.DISTINCT):
+            this = self.expression(
+                exp.Distinct, expressions=self._parse_csv(self._parse_conjunction)
+            )
+        else:
+            this = self._parse_conjunction()
 
-            return self._parse_alias(self._parse_limit(self._parse_order(this)))
+        if self._match(TokenType.IGNORE_NULLS):
+            this = self.expression(exp.IgnoreNulls, this=this)
+        else:
+            self._match(TokenType.RESPECT_NULLS)
 
-        conjunction = self._parse_conjunction().transform(
-            self._replace_lambda, {node.name for node in expressions}
-        )
-        return self.expression(
-            exp.Lambda,
-            this=conjunction,
-            expressions=expressions,
-        )
+        return self._parse_alias(self._parse_limit(self._parse_order(this)))
 
     def _parse_schema(self, this=None):
         index = self._index

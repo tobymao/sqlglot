@@ -2136,6 +2136,10 @@ class NullSafeNEQ(Binary, Predicate):
     pass
 
 
+class Distance(Binary):
+    pass
+
+
 class Escape(Binary):
     pass
 
@@ -2160,15 +2164,11 @@ class Is(Binary, Predicate):
     pass
 
 
+class Kwarg(Binary):
+    """Kwarg in special functions like func(kwarg => y)."""
+
+
 class Like(Binary, Predicate):
-    pass
-
-
-class SimilarTo(Binary, Predicate):
-    pass
-
-
-class Distance(Binary):
     pass
 
 
@@ -2189,6 +2189,10 @@ class Mul(Binary):
 
 
 class NEQ(Binary, Predicate):
+    pass
+
+
+class SimilarTo(Binary, Predicate):
     pass
 
 

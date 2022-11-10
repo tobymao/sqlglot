@@ -40,6 +40,7 @@ class TokenType(AutoName):
     TILDA = auto()
     ARROW = auto()
     DARROW = auto()
+    FARROW = auto()
     HASH = auto()
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
@@ -430,6 +431,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "<=>": TokenType.NULLSAFE_EQ,
         "->": TokenType.ARROW,
         "->>": TokenType.DARROW,
+        "=>": TokenType.FARROW,
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,

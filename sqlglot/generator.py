@@ -103,6 +103,8 @@ class Generator:
         exp.TableFormatProperty,
     }
 
+    WITH_SEPARATED_COMMENTS = (exp.Select,)
+
     __slots__ = (
         "time_mapping",
         "time_trie",
@@ -230,7 +232,7 @@ class Generator:
         comment = " " + comment if comment[0].strip() else comment
         comment = comment + " " if comment[-1].strip() else comment
 
-        if isinstance(expression, exp.Select):
+        if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return f"/*{comment}*/{self.sep()}{sql}"
 
         if not self.pretty:

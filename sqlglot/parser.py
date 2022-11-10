@@ -1761,7 +1761,7 @@ class Parser(metaclass=_Parser):
             )
 
         index = self._index
-        type_token = self._parse_types()
+        type_token = self._parse_types(check_func=True)
         this = self._parse_column()
 
         if type_token:
@@ -1774,7 +1774,7 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_types(self):
+    def _parse_types(self, check_func=False):
         index = self._index
 
         if not self._match_set(self.TYPE_TOKENS):
@@ -1784,6 +1784,7 @@ class Parser(metaclass=_Parser):
         nested = type_token in self.NESTED_TYPE_TOKENS
         is_struct = type_token == TokenType.STRUCT
         expressions = None
+        maybe_func = False
 
         if not nested and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             return exp.DataType(
@@ -1809,6 +1810,7 @@ class Parser(metaclass=_Parser):
                 return None
 
             self._match_r_paren()
+            maybe_func = True
 
         if nested and self._match(TokenType.LT):
             if is_struct:
@@ -1819,27 +1821,46 @@ class Parser(metaclass=_Parser):
             if not self._match(TokenType.GT):
                 self.raise_error("Expecting >")
 
+        value = None
         if type_token in self.TIMESTAMPS:
-            tz = self._match(TokenType.WITH_TIME_ZONE) or type_token == TokenType.TIMESTAMPTZ
-            if tz:
-                return exp.DataType(
+            if self._match(TokenType.WITH_TIME_ZONE) or type_token == TokenType.TIMESTAMPTZ:
+                value = exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPTZ,
                     expressions=expressions,
                 )
-            ltz = (
+            elif (
                 self._match(TokenType.WITH_LOCAL_TIME_ZONE) or type_token == TokenType.TIMESTAMPLTZ
-            )
-            if ltz:
-                return exp.DataType(
+            ):
+                value = exp.DataType(
                     this=exp.DataType.Type.TIMESTAMPLTZ,
                     expressions=expressions,
                 )
-            self._match(TokenType.WITHOUT_TIME_ZONE)
+            elif self._match(TokenType.WITHOUT_TIME_ZONE):
+                value = exp.DataType(
+                    this=exp.DataType.Type.TIMESTAMP,
+                    expressions=expressions,
+                )
 
-            return exp.DataType(
-                this=exp.DataType.Type.TIMESTAMP,
-                expressions=expressions,
-            )
+            maybe_func = maybe_func and value is None
+
+            if value is None:
+                value = exp.DataType(
+                    this=exp.DataType.Type.TIMESTAMP,
+                    expressions=expressions,
+                )
+
+        if maybe_func and check_func:
+            index2 = self._index
+            peek = self._parse_string()
+
+            if not peek:
+                self._retreat(index)
+                return None
+
+            self._retreat(index2)
+
+        if value:
+            return value
 
         return exp.DataType(
             this=exp.DataType.Type[type_token.value.upper()],

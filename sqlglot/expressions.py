@@ -2065,7 +2065,11 @@ class Transaction(Command):
 
 
 class Commit(Command):
-    arg_types = {"is_rollback": False, "savepoint": False}
+    arg_types = {}  # type: ignore
+
+
+class Rollback(Command):
+    arg_types = {"savepoint": False}
 
 
 # Binary expressions like (ADD a b)

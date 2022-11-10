@@ -2588,18 +2588,21 @@ class Parser(metaclass=_Parser):
             if not self._match(TokenType.COMMA):
                 break
 
-        return self.expression(exp.Transaction, this=this, modes=modes or None)
+        return self.expression(exp.Transaction, this=this, modes=modes)
 
     def _parse_commit_or_rollback(self):
-        is_rollback = self._prev.text == "ROLLBACK"
         savepoint = None
+        is_rollback = self._prev.text == "ROLLBACK"
 
         self._match_texts({"TRANSACTION", "WORK"})
+
         if self._match_text_seq("TO"):
             self._match_text_seq("SAVEPOINT")
             savepoint = self._parse_id_var()
 
-        return self.expression(exp.Commit, is_rollback=is_rollback, savepoint=savepoint)
+        if is_rollback:
+            return self.expression(exp.Rollback, savepoint=savepoint)
+        return self.expression(exp.Commit)
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)

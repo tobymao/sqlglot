@@ -52,17 +52,17 @@ class TestParser(unittest.TestCase):
     def test_transactions(self):
         expression = parse_one("BEGIN TRANSACTION")
         self.assertIsNone(expression.this)
-        self.assertIsNone(expression.args["modes"])
+        self.assertEqual(expression.args["modes"], [])
         self.assertEqual(expression.sql(), "BEGIN")
 
         expression = parse_one("START TRANSACTION", read="mysql")
         self.assertIsNone(expression.this)
-        self.assertIsNone(expression.args["modes"])
+        self.assertEqual(expression.args["modes"], [])
         self.assertEqual(expression.sql(), "BEGIN")
 
         expression = parse_one("BEGIN DEFERRED TRANSACTION")
         self.assertEqual(expression.this, "DEFERRED")
-        self.assertIsNone(expression.args["modes"])
+        self.assertEqual(expression.args["modes"], [])
         self.assertEqual(expression.sql(), "BEGIN")
 
         expression = parse_one(

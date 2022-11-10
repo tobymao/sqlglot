@@ -213,6 +213,12 @@ class BigQuery(Dialect):
         def transaction_sql(self, *_):
             return "BEGIN TRANSACTION"
 
+        def commit_sql(self, *_):
+            return "COMMIT TRANSACTION"
+
+        def rollback_sql(self, *_):
+            return "ROLLBACK TRANSACTION"
+
         def in_unnest_op(self, unnest):
             return self.sql(unnest)
 

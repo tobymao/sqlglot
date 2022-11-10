@@ -1,13 +1,19 @@
 import unittest
 
 from sqlglot import parse_one
-from sqlglot.transforms import unalias_group
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.transforms import add_or_dpipe, unalias_group
 
 
 class TestTime(unittest.TestCase):
-    def validate(self, transform, sql, target):
+    def validate(self, transform, sql, target, schema=None):
         with self.subTest(sql):
-            self.assertEqual(parse_one(sql).transform(transform).sql(), target)
+            expr = (
+                parse_one(sql)
+                if not schema
+                else annotate_types(expression=parse_one(sql), schema=schema)
+            )
+            self.assertEqual(expr.transform(transform).sql(), target)
 
     def test_unalias_group(self):
         self.validate(
@@ -34,4 +40,26 @@ class TestTime(unittest.TestCase):
             unalias_group,
             "SELECT the_date AS the_date, COUNT(*) AS the_count FROM x GROUP BY the_date",
             "SELECT the_date AS the_date, COUNT(*) AS the_count FROM x GROUP BY the_date",
+        )
+
+    def test_add_to_dpipe(self):
+        schema = {"x": {"cola": "VARCHAR", "colb": "CHAR", "colc": "INT"}}
+
+        self.validate(
+            add_or_dpipe,
+            "SELECT x.cola + TRIM(x.colb) FROM x",
+            "SELECT x.cola || TRIM(x.colb) FROM x",
+            schema,
+        )
+        self.validate(
+            add_or_dpipe,
+            "SELECT x.colc + x.colc FROM x",
+            "SELECT x.colc + x.colc FROM x",
+            schema,
+        )
+        self.validate(
+            add_or_dpipe,
+            "SELECT ('a') + TRIM('b') FROM x",
+            "SELECT ('a') || TRIM('b') FROM x",
+            schema,
         )

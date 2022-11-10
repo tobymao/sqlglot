@@ -80,16 +80,24 @@ def delegate(attr: str) -> t.Callable:
     return _transform
 
 
-UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
-ADD_TO_DPIPE = {
-    exp.Add: lambda self, e: self.dpipe_sql(e)
-    if e.type
-    in [
+def add_or_dpipe(expression):
+    if isinstance(expression, exp.Add) and expression.type in (
         exp.DataType.Type.VARCHAR,
         exp.DataType.Type.NVARCHAR,
         exp.DataType.Type.CHAR,
         exp.DataType.Type.NCHAR,
         exp.DataType.Type.TEXT,
-    ]
-    else self.add_sql(e)
-}
+    ):
+        expression = exp.DPipe(this=expression.this, expression=expression.expression)
+    return expression
+
+
+def transform_add(self, e):
+    expr = add_or_dpipe(e)
+    delegate_func = f"{expr.key}_sql"
+    to_sql = delegate(delegate_func)
+    return to_sql(self, e)
+
+
+UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
+ADD_TO_DPIPE = {exp.Add: transform_add}

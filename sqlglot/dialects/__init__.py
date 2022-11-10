@@ -2,6 +2,7 @@ from sqlglot.dialects.bigquery import BigQuery
 from sqlglot.dialects.clickhouse import ClickHouse
 from sqlglot.dialects.databricks import Databricks
 from sqlglot.dialects.dialect import Dialect, Dialects
+from sqlglot.dialects.drill import Drill
 from sqlglot.dialects.duckdb import DuckDB
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL

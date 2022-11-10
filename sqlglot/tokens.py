@@ -244,6 +244,7 @@ class TokenType(AutoName):
     RETURNS = auto()
     RIGHT = auto()
     RLIKE = auto()
+    ROLLBACK = auto()
     ROLLUP = auto()
     ROW = auto()
     ROWS = auto()
@@ -565,7 +566,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RETURNS": TokenType.RETURNS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
-        "ROLLBACK": TokenType.COMMIT,
+        "ROLLBACK": TokenType.ROLLBACK,
         "ROLLUP": TokenType.ROLLUP,
         "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,

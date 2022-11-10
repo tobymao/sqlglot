@@ -43,3 +43,11 @@ class TestDrill(Validator):
                 "spark": "'\\\\a'",
             },
         )
+
+    def test_table_function(self):
+        self.validate_all(
+            "SELECT * FROM table( dfs.`test_data.xlsx` (type => 'excel', sheetName => 'secondSheet'))",
+            write={
+                "drill": "SELECT * FROM table( dfs.`test_data.xlsx` (type => 'excel', sheetName => 'secondSheet'))",
+            },
+        )

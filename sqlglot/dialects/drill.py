@@ -22,6 +22,16 @@ def _to_timestamp(args):
 
 
 def if_sql(self, expression):
+    """
+    Drill requires backticks around certain SQL reserved words, IF being one of them,  This function
+    adds the backticks around the keyword IF.
+    Args:
+        self: The Drill dialect
+        expression: The input IF expression
+
+    Returns:  The expression with IF in backticks.
+
+    """
     expressions = self.format_args(
         expression.this, expression.args.get("true"), expression.args.get("false")
     )
@@ -88,8 +98,14 @@ class Drill(Dialect):
             exp.DataType.Type.TINYINT: "INTEGER",
             exp.DataType.Type.BINARY: "VARBINARY",
             exp.DataType.Type.TEXT: "VARCHAR",
+            exp.DataType.Type.NCHAR: "VARCHAR",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.DATETIME: "TIMESTAMP"
+        }
+
+        ROOT_PROPERTIES = {
+            exp.PartitionedByProperty
         }
 
         TRANSFORMS = {
@@ -98,13 +114,14 @@ class Drill(Dialect):
             exp.Lateral: _lateral_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
-
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),
+            exp.Create: create_with_partitions_sql,
             exp.If: if_sql,
             exp.ILike: lambda self, e: f" {self.sql(e, 'this')} `ILIKE` {self.sql(e, 'expression')}",
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
             exp.StrPosition: str_position_sql,
             exp.TryCast: no_trycast_sql,
         }

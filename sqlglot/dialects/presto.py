@@ -216,3 +216,8 @@ class Presto(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
         }
+
+        def transaction_sql(self, expression):
+            modes = expression.args.get("modes")
+            modes = f" {', '.join(modes)}" if modes else ""
+            return f"START TRANSACTION{modes}"

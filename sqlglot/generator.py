@@ -1174,6 +1174,9 @@ class Generator:
     def command_sql(self, expression):
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 
+    def transaction_sql(self, *_):
+        return "BEGIN"
+
     def distinct_sql(self, expression):
         this = self.expressions(expression, flat=True)
         this = f" {this}" if this else ""

@@ -204,6 +204,9 @@ class BigQuery(Dialect):
 
         EXPLICIT_UNION = True
 
+        def transaction_sql(self, *_):
+            return "BEGIN TRANSACTION"
+
         def in_unnest_op(self, unnest):
             return self.sql(unnest)
 

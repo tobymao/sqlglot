@@ -63,3 +63,8 @@ class SQLite(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
         }
+
+        def transaction_sql(self, expression):
+            this = expression.this
+            this = f" {this}" if this else ""
+            return f"BEGIN{this} TRANSACTION"

@@ -377,6 +377,8 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.USE: lambda self: self._parse_use(),
+        TokenType.START: lambda self: self._parse_transaction(),
+        TokenType.BEGIN: lambda self: self._parse_transaction(),
     }
 
     PRIMARY_PARSERS = {
@@ -2564,6 +2566,24 @@ class Parser(metaclass=_Parser):
 
     def _parse_use(self):
         return self.expression(exp.Use, this=self._parse_id_var())
+
+    def _parse_transaction(self):
+        this = None
+        if (
+            self._match_text("DEFERRED")
+            or self._match_text("IMMEDIATE")
+            or self._match_text("EXCLUSIVE")
+        ):
+            this = self._prev.text
+
+        self._match_text("TRANSACTION") or self._match_text("WORK")
+
+        modes = []
+        while self._match(TokenType.VAR) or self._match(TokenType.COMMA):
+            modes.append(self._prev.text)
+
+        modes = " ".join(modes).split(" , ") if modes else None
+        return self.expression(exp.Transaction, this=this, modes=modes)
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)

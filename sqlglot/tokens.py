@@ -259,6 +259,7 @@ class TokenType(AutoName):
     SOME = auto()
     SORT_BY = auto()
     STABLE = auto()
+    START = auto()
     STORED = auto()
     STRUCT = auto()
     TABLE_FORMAT = auto()
@@ -579,6 +580,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "STABLE": TokenType.STABLE,
+        "START": TokenType.START,
         "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
         "TABLE_FORMAT": TokenType.TABLE_FORMAT,
@@ -668,10 +670,9 @@ class Tokenizer(metaclass=_Tokenizer):
     }
 
     COMMANDS = {
-        TokenType.ALTER,
         TokenType.ADD_FILE,
+        TokenType.ALTER,
         TokenType.ANALYZE,
-        TokenType.BEGIN,
         TokenType.CALL,
         TokenType.COMMENT_ON,
         TokenType.COMMIT,

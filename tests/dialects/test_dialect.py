@@ -1214,3 +1214,36 @@ SELECT
             },
             pretty=True,
         )
+
+    def test_transactions(self):
+        self.validate_all(
+            "BEGIN TRANSACTION",
+            write={
+                "bigquery": "BEGIN TRANSACTION",
+                "mysql": "BEGIN",
+                "postgres": "BEGIN",
+                "presto": "START TRANSACTION",
+                "trino": "START TRANSACTION",
+                "redshift": "BEGIN",
+                "snowflake": "BEGIN",
+                "sqlite": "BEGIN TRANSACTION",
+            },
+        )
+        self.validate_all(
+            "START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE",
+            write={
+                "presto": "START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE",
+                "trino": "START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE",
+            },
+        )
+        self.validate_all(
+            "START TRANSACTION ISOLATION LEVEL REPEATABLE READ",
+            write={
+                "presto": "START TRANSACTION ISOLATION LEVEL REPEATABLE READ",
+                "trino": "START TRANSACTION ISOLATION LEVEL REPEATABLE READ",
+            },
+        )
+        self.validate_all(
+            "BEGIN IMMEDIATE TRANSACTION",
+            write={"sqlite": "BEGIN IMMEDIATE TRANSACTION"},
+        )

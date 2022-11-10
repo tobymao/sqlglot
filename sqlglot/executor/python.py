@@ -5,6 +5,7 @@ import math
 
 from sqlglot import exp, generator, planner, tokens
 from sqlglot.dialects.dialect import Dialect, inline_array_sql
+from sqlglot.errors import ExecuteError
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import Table
@@ -12,9 +13,10 @@ from sqlglot.helper import csv_reader
 
 
 class PythonExecutor:
-    def __init__(self, env=None):
+    def __init__(self, env=None, tables=None):
         self.generator = Python().generator(identify=True)
         self.env = {**ENV, **(env or {})}
+        self.tables = tables or {}
 
     def execute(self, plan):
         running = set()
@@ -24,36 +26,39 @@ class PythonExecutor:
 
         while queue:
             node = queue.pop()
-            context = self.context(
-                {
-                    name: table
-                    for dep in node.dependencies
-                    for name, table in contexts[dep].tables.items()
-                }
-            )
-            running.add(node)
+            try:
+                context = self.context(
+                    {
+                        name: table
+                        for dep in node.dependencies
+                        for name, table in contexts[dep].tables.items()
+                    }
+                )
+                running.add(node)
 
-            if isinstance(node, planner.Scan):
-                contexts[node] = self.scan(node, context)
-            elif isinstance(node, planner.Aggregate):
-                contexts[node] = self.aggregate(node, context)
-            elif isinstance(node, planner.Join):
-                contexts[node] = self.join(node, context)
-            elif isinstance(node, planner.Sort):
-                contexts[node] = self.sort(node, context)
-            else:
-                raise NotImplementedError
+                if isinstance(node, planner.Scan):
+                    contexts[node] = self.scan(node, context)
+                elif isinstance(node, planner.Aggregate):
+                    contexts[node] = self.aggregate(node, context)
+                elif isinstance(node, planner.Join):
+                    contexts[node] = self.join(node, context)
+                elif isinstance(node, planner.Sort):
+                    contexts[node] = self.sort(node, context)
+                else:
+                    raise NotImplementedError
 
-            running.remove(node)
-            finished.add(node)
+                running.remove(node)
+                finished.add(node)
 
-            for dep in node.dependents:
-                if dep not in running and all(d in contexts for d in dep.dependencies):
-                    queue.add(dep)
+                for dep in node.dependents:
+                    if dep not in running and all(d in contexts for d in dep.dependencies):
+                        queue.add(dep)
 
-            for dep in node.dependencies:
-                if all(d in finished for d in dep.dependents):
-                    contexts.pop(dep)
+                for dep in node.dependencies:
+                    if all(d in finished for d in dep.dependents):
+                        contexts.pop(dep)
+            except Exception as e:
+                raise ExecuteError(f"Step '{node.id}' failed: {e}") from e
 
         root = plan.root
         return contexts[root].tables[root.name]
@@ -76,7 +81,10 @@ class PythonExecutor:
         return Context(tables, env=self.env)
 
     def table(self, expressions):
-        return Table(expression.alias_or_name for expression in expressions)
+        return Table(
+            expression.alias_or_name if isinstance(expression, exp.Expression) else expression
+            for expression in expressions
+        )
 
     def scan(self, step, context):
         source = step.source
@@ -91,6 +99,8 @@ class PythonExecutor:
             if not projections and not condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
+        elif source in self.tables:
+            table_iter = self.scan_table(source)
         else:
             table_iter = self.scan_csv(step)
 
@@ -115,6 +125,13 @@ class PythonExecutor:
                 break
 
         return self.context({step.name: sink})
+
+    def scan_table(self, source):
+        table = self.tables[source]
+
+        context = self.context({source: table})
+        for r in table:
+            yield r, context
 
     def scan_csv(self, step):
         source = step.source
@@ -164,12 +181,12 @@ class PythonExecutor:
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
 
-        if not condition or not projections:
+        if not condition and not projections:
             return source_context
 
         sink = self.table(step.projections if projections else source_context.columns)
 
-        for reader, ctx in join_context:
+        for reader, ctx in source_context:
             if condition and not ctx.eval(condition):
                 continue
 
@@ -181,7 +198,15 @@ class PythonExecutor:
             if len(sink) >= step.limit:
                 break
 
-        return self.context({step.name: sink})
+        if projections:
+            return self.context({step.name: sink})
+        else:
+            return self.context(
+                {
+                    name: Table(table.columns, sink.rows, table.column_range)
+                    for name, table in source_context.tables.items()
+                }
+            )
 
     def nested_loop_join(self, _join, source_context, join_context):
         table = Table(source_context.columns + join_context.columns)

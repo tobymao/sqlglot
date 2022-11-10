@@ -77,3 +77,54 @@ class TestExecutor(unittest.TestCase):
             table = execute(sql, TPCH_SCHEMA)
             b = pd.DataFrame(table.rows, columns=table.columns)
             assert_frame_equal(a, b, check_dtype=False)
+
+    def test_execute_callable(self):
+        tables = {
+            "x": [
+                {"a": "a", "b": "d"},
+                {"a": "b", "b": "e"},
+                {"a": "c", "b": "f"},
+            ],
+            "y": [
+                {"b": "d", "c": "g"},
+                {"b": "e", "c": "h"},
+                {"b": "f", "c": "i"},
+            ],
+        }
+        schema = {
+            "x": {
+                "a": "VARCHAR",
+                "b": "VARCHAR",
+            },
+            "y": {
+                "b": "VARCHAR",
+                "c": "VARCHAR",
+            },
+        }
+
+        for sql, cols, rows in [
+            ("SELECT * FROM x", ["a", "b"], [("a", "d"), ("b", "e"), ("c", "f")]),
+            (
+                "SELECT * FROM x JOIN y ON x.b = y.b",
+                ["a", "b", "b", "c"],
+                [("a", "d", "d", "g"), ("b", "e", "e", "h"), ("c", "f", "f", "i")],
+            ),
+            (
+                "SELECT j.c AS d FROM x AS i JOIN y AS j ON i.b = j.b",
+                ["d"],
+                [("g",), ("h",), ("i",)],
+            ),
+            (
+                "SELECT CONCAT(x.a, y.c) FROM x JOIN y ON x.b = y.b WHERE y.b = 'e'",
+                ["_col_0"],
+                [("bh",)],
+            ),
+            (
+                "SELECT * FROM x JOIN y ON x.b = y.b WHERE y.b = 'e'",
+                ["a", "b", "b", "c"],
+                [("b", "e", "e", "h")],
+            ),
+        ]:
+            result = execute(sql, schema=schema, tables=tables)
+            self.assertEqual(result.columns, tuple(cols))
+            self.assertEqual(result.rows, rows)

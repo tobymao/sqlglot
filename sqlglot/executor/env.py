@@ -27,6 +27,7 @@ ENV = {
     "str": str,
     "desc": reverse_key,
     "SUM": sum,
+    "CONCAT": lambda *args: "".join(v for v in args if v),
     "AVG": statistics.fmean if PYTHON_VERSION >= (3, 8) else statistics.mean,  # type: ignore
     "COUNT": lambda acc: sum(1 for e in acc if e is not None),
     "MAX": max,

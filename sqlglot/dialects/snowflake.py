@@ -180,7 +180,6 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "=>": TokenType.ARROW,
             "QUALIFY": TokenType.QUALIFY,
             "DOUBLE PRECISION": TokenType.DOUBLE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
@@ -219,9 +218,6 @@ class Snowflake(Dialect):
             exp.ExecuteAsProperty,
             exp.VolatilityProperty,
         }
-
-        def lambda_sql(self, expression):
-            return super().lambda_sql(expression, arrow_sep="=>")
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

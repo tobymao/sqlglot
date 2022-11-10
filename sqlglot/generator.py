@@ -1358,3 +1358,6 @@ class Generator:
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)
         return f"{this}({expressions})"
+
+    def kwarg_sql(self, expression):
+        return self.binary(expression, "=>")

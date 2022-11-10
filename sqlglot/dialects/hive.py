@@ -242,6 +242,7 @@ class Hive(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             **transforms.UNALIAS_GROUP,  # type: ignore
+            **transforms.ADD_TO_DPIPE,  # type: ignore
             exp.AnonymousProperty: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),

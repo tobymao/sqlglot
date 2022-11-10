@@ -81,3 +81,15 @@ def delegate(attr: str) -> t.Callable:
 
 
 UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
+ADD_TO_DPIPE = {
+    exp.Add: lambda self, e: exp.DPipe(this=e.this, expression=e.expression)
+    if e.type
+    in [
+        exp.DataType.Type.VARCHAR,
+        exp.DataType.Type.NVARCHAR,
+        exp.DataType.Type.CHAR,
+        exp.DataType.Type.NCHAR,
+        exp.DataType.Type.TEXT,
+    ]
+    else e
+}

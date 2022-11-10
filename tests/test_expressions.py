@@ -441,7 +441,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("VARIANCE(a)"), exp.Variance)
         self.assertIsInstance(parse_one("VARIANCE_POP(a)"), exp.VariancePop)
         self.assertIsInstance(parse_one("YEAR(a)"), exp.Year)
-        self.assertIsInstance(parse_one("START DEFERRED TRANSACTION"), exp.Transaction)
+        self.assertIsInstance(parse_one("BEGIN DEFERRED TRANSACTION"), exp.Transaction)
 
     def test_column(self):
         dot = parse_one("a.b.c")

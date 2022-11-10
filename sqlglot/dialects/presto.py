@@ -115,6 +115,7 @@ class Presto(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "START": TokenType.BEGIN,
             "ROW": TokenType.STRUCT,
         }
 

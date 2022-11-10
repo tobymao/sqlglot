@@ -151,6 +151,11 @@ class BigQuery(Dialect):
             TokenType.TABLE,
         }
 
+        def _parse_transaction(self):
+            if self._match_text_seq("TRANSACTION"):
+                return self.expression(exp.Transaction)
+            return self.expression(exp.Command, this=self._prev.text)
+
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

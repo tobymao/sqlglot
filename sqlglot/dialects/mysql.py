@@ -120,6 +120,7 @@ class MySQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "START": TokenType.BEGIN,
             "SEPARATOR": TokenType.SEPARATOR,
             "_ARMSCII8": TokenType.INTRODUCER,
             "_ASCII": TokenType.INTRODUCER,
@@ -281,36 +282,36 @@ class MySQL(Dialect):
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
             if target:
                 if isinstance(target, str):
-                    self._match_text(target)
+                    self._match_text_seq(target)
                 target_id = self._parse_id_var()
             else:
                 target_id = None
 
-            log = self._parse_string() if self._match_text("IN") else None
+            log = self._parse_string() if self._match_text_seq("IN") else None
 
             if this in {"BINLOG EVENTS", "RELAYLOG EVENTS"}:
-                position = self._parse_number() if self._match_text("FROM") else None
+                position = self._parse_number() if self._match_text_seq("FROM") else None
                 db = None
             else:
                 position = None
-                db = self._parse_id_var() if self._match_text("FROM") else None
+                db = self._parse_id_var() if self._match_text_seq("FROM") else None
 
-            channel = self._parse_id_var() if self._match_text("FOR", "CHANNEL") else None
+            channel = self._parse_id_var() if self._match_text_seq("FOR", "CHANNEL") else None
 
-            like = self._parse_string() if self._match_text("LIKE") else None
+            like = self._parse_string() if self._match_text_seq("LIKE") else None
             where = self._parse_where()
 
             if this == "PROFILE":
                 types = self._parse_csv(self._parse_show_profile_type)
-                query = self._parse_number() if self._match_text("FOR", "QUERY") else None
-                offset = self._parse_number() if self._match_text("OFFSET") else None
-                limit = self._parse_number() if self._match_text("LIMIT") else None
+                query = self._parse_number() if self._match_text_seq("FOR", "QUERY") else None
+                offset = self._parse_number() if self._match_text_seq("OFFSET") else None
+                limit = self._parse_number() if self._match_text_seq("LIMIT") else None
             else:
                 types, query = None, None
                 offset, limit = self._parse_oldstyle_limit()
 
-            mutex = True if self._match_text("MUTEX") else None
-            mutex = False if self._match_text("STATUS") else mutex
+            mutex = True if self._match_text_seq("MUTEX") else None
+            mutex = False if self._match_text_seq("STATUS") else mutex
 
             return self.expression(
                 exp.Show,
@@ -333,14 +334,14 @@ class MySQL(Dialect):
 
         def _parse_show_profile_type(self):
             for type_ in self.PROFILE_TYPES:
-                if self._match_text(*type_.split(" ")):
+                if self._match_text_seq(*type_.split(" ")):
                     return exp.Var(this=type_)
             return None
 
         def _parse_oldstyle_limit(self):
             limit = None
             offset = None
-            if self._match_text("LIMIT"):
+            if self._match_text_seq("LIMIT"):
                 parts = self._parse_csv(self._parse_number)
                 if len(parts) == 1:
                     limit = parts[0]
@@ -381,7 +382,7 @@ class MySQL(Dialect):
 
         def _parse_set_item_names(self):
             charset = self._parse_string() or self._parse_id_var()
-            if self._match_text("COLLATE"):
+            if self._match_text_seq("COLLATE"):
                 collate = self._parse_string() or self._parse_id_var()
             else:
                 collate = None

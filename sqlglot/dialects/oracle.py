@@ -91,6 +91,7 @@ class Oracle(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "START": TokenType.BEGIN,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
             "NVARCHAR2": TokenType.NVARCHAR,

@@ -392,6 +392,9 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.USE: lambda self: self._parse_use(),
+        TokenType.BEGIN: lambda self: self._parse_transaction(),
+        TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
+        TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
     }
 
     PRIMARY_PARSERS = {
@@ -520,6 +523,8 @@ class Parser(metaclass=_Parser):
         TokenType.PROCEDURE,
         TokenType.SCHEMA,
     }
+
+    TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
     STRICT_CAST = True
 
@@ -930,7 +935,7 @@ class Parser(metaclass=_Parser):
     def _parse_insert(self):
         overwrite = self._match(TokenType.OVERWRITE)
         local = self._match(TokenType.LOCAL)
-        if self._match_text("DIRECTORY"):
+        if self._match_text_seq("DIRECTORY"):
             this = self.expression(
                 exp.Directory,
                 this=self._parse_var_or_string(),
@@ -954,27 +959,27 @@ class Parser(metaclass=_Parser):
         if not self._match_pair(TokenType.ROW, TokenType.FORMAT):
             return None
 
-        self._match_text("DELIMITED")
+        self._match_text_seq("DELIMITED")
 
         kwargs = {}
 
-        if self._match_text("FIELDS", "TERMINATED", "BY"):
+        if self._match_text_seq("FIELDS", "TERMINATED", "BY"):
             kwargs["fields"] = self._parse_string()
-            if self._match_text("ESCAPED", "BY"):
+            if self._match_text_seq("ESCAPED", "BY"):
                 kwargs["escaped"] = self._parse_string()
-        if self._match_text("COLLECTION", "ITEMS", "TERMINATED", "BY"):
+        if self._match_text_seq("COLLECTION", "ITEMS", "TERMINATED", "BY"):
             kwargs["collection_items"] = self._parse_string()
-        if self._match_text("MAP", "KEYS", "TERMINATED", "BY"):
+        if self._match_text_seq("MAP", "KEYS", "TERMINATED", "BY"):
             kwargs["map_keys"] = self._parse_string()
-        if self._match_text("LINES", "TERMINATED", "BY"):
+        if self._match_text_seq("LINES", "TERMINATED", "BY"):
             kwargs["lines"] = self._parse_string()
-        if self._match_text("NULL", "DEFINED", "AS"):
+        if self._match_text_seq("NULL", "DEFINED", "AS"):
             kwargs["null"] = self._parse_string()
         return self.expression(exp.RowFormat, **kwargs)
 
     def _parse_load_data(self):
         local = self._match(TokenType.LOCAL)
-        self._match_text("INPATH")
+        self._match_text_seq("INPATH")
         inpath = self._parse_string()
         overwrite = self._match(TokenType.OVERWRITE)
         self._match_pair(TokenType.INTO, TokenType.TABLE)
@@ -986,8 +991,8 @@ class Parser(metaclass=_Parser):
             overwrite=overwrite,
             inpath=inpath,
             partition=self._parse_partition(),
-            input_format=self._match_text("INPUTFORMAT") and self._parse_string(),
-            serde=self._match_text("SERDE") and self._parse_string(),
+            input_format=self._match_text_seq("INPUTFORMAT") and self._parse_string(),
+            serde=self._match_text_seq("SERDE") and self._parse_string(),
         )
 
     def _parse_delete(self):
@@ -2594,6 +2599,40 @@ class Parser(metaclass=_Parser):
     def _parse_use(self):
         return self.expression(exp.Use, this=self._parse_id_var())
 
+    def _parse_transaction(self):
+        this = None
+        if self._match_texts(self.TRANSACTION_KIND):
+            this = self._prev.text
+
+        self._match_texts({"TRANSACTION", "WORK"})
+
+        modes = []
+        while True:
+            mode = []
+            while self._match(TokenType.VAR):
+                mode.append(self._prev.text)
+
+            if mode:
+                modes.append(" ".join(mode))
+            if not self._match(TokenType.COMMA):
+                break
+
+        return self.expression(exp.Transaction, this=this, modes=modes)
+
+    def _parse_commit_or_rollback(self):
+        savepoint = None
+        is_rollback = self._prev.token_type == TokenType.ROLLBACK
+
+        self._match_texts({"TRANSACTION", "WORK"})
+
+        if self._match_text_seq("TO"):
+            self._match_text_seq("SAVEPOINT")
+            savepoint = self._parse_id_var()
+
+        if is_rollback:
+            return self.expression(exp.Rollback, savepoint=savepoint)
+        return self.expression(exp.Commit)
+
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)
         if parser:
@@ -2675,7 +2714,13 @@ class Parser(metaclass=_Parser):
         if expression and self._prev_comment:
             expression.comment = self._prev_comment
 
-    def _match_text(self, *texts):
+    def _match_texts(self, texts):
+        if self._curr and self._curr.text.upper() in texts:
+            self._advance()
+            return True
+        return False
+
+    def _match_text_seq(self, *texts):
         index = self._index
         for text in texts:
             if self._curr and self._curr.text.upper() == text:

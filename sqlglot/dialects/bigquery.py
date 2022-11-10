@@ -151,6 +151,12 @@ class BigQuery(Dialect):
             TokenType.TABLE,
         }
 
+        # BEGIN signifies the start of a block statement, so it's different from BEGIN TRANSACTION
+        def _parse_transaction(self):
+            if self._match_text_seq("TRANSACTION"):
+                return self.expression(exp.Transaction)
+            return self.expression(exp.Command, this=self._prev.text)
+
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -203,6 +209,15 @@ class BigQuery(Dialect):
         }
 
         EXPLICIT_UNION = True
+
+        def transaction_sql(self, *_):
+            return "BEGIN TRANSACTION"
+
+        def commit_sql(self, *_):
+            return "COMMIT TRANSACTION"
+
+        def rollback_sql(self, *_):
+            return "ROLLBACK TRANSACTION"
 
         def in_unnest_op(self, unnest):
             return self.sql(unnest)

@@ -286,6 +286,10 @@ class TestBigQuery(Validator):
                 "bigquery": "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
             },
         )
+        self.validate_identity("BEGIN")
+        self.validate_identity("BEGIN TRANSACTION")
+        self.validate_identity("COMMIT TRANSACTION")
+        self.validate_identity("ROLLBACK TRANSACTION")
 
     def test_user_defined_functions(self):
         self.validate_identity(

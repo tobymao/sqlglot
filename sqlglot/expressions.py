@@ -2054,16 +2054,25 @@ class Exists(SubqueryPredicate):
     pass
 
 
-# Commands to interact with the databases or engines
-# These expressions don't truly parse the expression and consume
-# whatever exists as a string until the end or a semicolon
+# Commands to interact with the databases or engines. For most of the command
+# expressions we parse whatever comes after the command's name as a string.
 class Command(Expression):
     arg_types = {"this": True, "expression": False}
 
 
-# Binary Expressions
-# (ADD a b)
-# (FROM table selects)
+class Transaction(Command):
+    arg_types = {"this": False, "modes": False}
+
+
+class Commit(Command):
+    arg_types = {}  # type: ignore
+
+
+class Rollback(Command):
+    arg_types = {"savepoint": False}
+
+
+# Binary expressions like (ADD a b)
 class Binary(Expression):
     arg_types = {"this": True, "expression": True}
 

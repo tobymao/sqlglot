@@ -1176,6 +1176,17 @@ class Generator:
     def command_sql(self, expression):
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 
+    def transaction_sql(self, *_):
+        return "BEGIN"
+
+    def commit_sql(self, *_):
+        return "COMMIT"
+
+    def rollback_sql(self, expression):
+        savepoint = expression.args.get("savepoint")
+        savepoint = f" TO {savepoint}" if savepoint else ""
+        return f"ROLLBACK{savepoint}"
+
     def distinct_sql(self, expression):
         this = self.expressions(expression, flat=True)
         this = f" {this}" if this else ""

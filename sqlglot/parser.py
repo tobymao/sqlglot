@@ -2578,11 +2578,17 @@ class Parser(metaclass=_Parser):
         self._match_texts({"TRANSACTION", "WORK"})
 
         modes = []
-        while self._match(TokenType.VAR) or self._match(TokenType.COMMA):
-            modes.append(self._prev.text)
+        while True:
+            mode = []
+            while self._match(TokenType.VAR):
+                mode.append(self._prev.text)
 
-        modes = " ".join(modes).split(" , ") if modes else None
-        return self.expression(exp.Transaction, this=this, modes=modes)
+            if mode:
+                modes.append(" ".join(mode))
+            if not self._match(TokenType.COMMA):
+                break
+
+        return self.expression(exp.Transaction, this=this, modes=modes or None)
 
     def _parse_commit_or_rollback(self):
         is_rollback = self._prev.text == "ROLLBACK"

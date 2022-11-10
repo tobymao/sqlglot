@@ -427,3 +427,5 @@ class TestPresto(Validator):
                 "spark": UnsupportedError,
             },
         )
+        self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
+        self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")

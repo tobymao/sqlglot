@@ -670,20 +670,17 @@ class Tokenizer(metaclass=_Tokenizer):
     }
 
     COMMANDS = {
-        TokenType.ALTER,
         TokenType.ADD_FILE,
+        TokenType.ALTER,
         TokenType.ANALYZE,
-        TokenType.BEGIN,
         TokenType.CALL,
         TokenType.COMMENT_ON,
-        TokenType.COMMIT,
         TokenType.EXPLAIN,
         TokenType.OPTIMIZE,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.TRUNCATE,
         TokenType.VACUUM,
-        TokenType.ROLLBACK,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

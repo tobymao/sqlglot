@@ -47,6 +47,35 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
         self.assertEqual(expressions[2].sql(), "SELECT 1")
 
+    def test_transactions(self):
+        expression = parse_one("BEGIN TRANSACTION")
+        self.assertIsNone(expression.this)
+        self.assertEqual(expression.args["modes"], [])
+        self.assertEqual(expression.sql(), "BEGIN")
+
+        expression = parse_one("START TRANSACTION", read="mysql")
+        self.assertIsNone(expression.this)
+        self.assertEqual(expression.args["modes"], [])
+        self.assertEqual(expression.sql(), "BEGIN")
+
+        expression = parse_one("BEGIN DEFERRED TRANSACTION")
+        self.assertEqual(expression.this, "DEFERRED")
+        self.assertEqual(expression.args["modes"], [])
+        self.assertEqual(expression.sql(), "BEGIN")
+
+        expression = parse_one(
+            "START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE", read="presto"
+        )
+        self.assertIsNone(expression.this)
+        self.assertEqual(expression.args["modes"][0], "READ WRITE")
+        self.assertEqual(expression.args["modes"][1], "ISOLATION LEVEL SERIALIZABLE")
+        self.assertEqual(expression.sql(), "BEGIN")
+
+        expression = parse_one("BEGIN", read="bigquery")
+        self.assertNotIsInstance(expression, exp.Transaction)
+        self.assertIsNone(expression.expression)
+        self.assertEqual(expression.sql(), "BEGIN")
+
     def test_identify(self):
         expression = parse_one(
             """

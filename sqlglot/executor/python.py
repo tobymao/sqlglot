@@ -171,7 +171,7 @@ class PythonExecutor:
             else:
                 table = self.nested_loop_join(join, source_context, join_context)
 
-            source_context = source_context.merge(
+            source_context = self.context(
                 {
                     name: Table(table.columns, table.rows, column_range)
                     for name, column_range in column_ranges.items()
@@ -183,36 +183,30 @@ class PythonExecutor:
 
         if not condition and not projections:
             return source_context
-        elif not projections:
-            sink_tables = {name: self.table(t.columns) for name, t in source_context.tables.items()}
-            sink = self.context(sink_tables)
 
-            def append(reader, ctx):
-                for name, table_reader in reader.items():
-                    sink_tables[name].append(table_reader.row)
+        sink = self.table(step.projections if projections else source_context.columns)
 
-            iter_context = source_context.tables_iter()
-        else:
-            sink_table = self.table(step.projections)
-            sink = self.context({step.name: sink_table})
-
-            def append(reader, ctx):
-                sink_table.append(ctx.eval_tuple(projections))
-
-            iter_context = source_context
-
-        count = 0
-        for reader, ctx in iter_context:
+        for reader, ctx in source_context:
             if condition and not ctx.eval(condition):
                 continue
 
-            if count >= step.limit:
+            if projections:
+                sink.append(ctx.eval_tuple(projections))
+            else:
+                sink.append(reader.row)
+
+            if len(sink) >= step.limit:
                 break
-            count += 1
 
-            append(reader, ctx)
-
-        return sink
+        if projections:
+            return self.context({step.name: sink})
+        else:
+            return self.context(
+                {
+                    name: Table(table.columns, sink.rows, table.column_range)
+                    for name, table in source_context.tables.items()
+                }
+            )
 
     def nested_loop_join(self, _join, source_context, join_context):
         table = Table(source_context.columns + join_context.columns)

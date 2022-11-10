@@ -50,7 +50,7 @@ def _ensure_tables(tables):
         if isinstance(table, Table):
             result[name] = table
         else:
-            columns = tuple(table[0].keys()) if table else ()
+            columns = tuple(table[0]) if table else ()
             rows = [tuple(row[c] for c in columns) for row in table]
             result[name] = Table(columns=columns, rows=rows)
     return result

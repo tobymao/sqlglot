@@ -157,6 +157,41 @@ class TestExecutor(unittest.TestCase):
         assert result1.columns == result2.columns
         assert result1.rows == result2.rows
 
+    def test_execute_tables(self):
+        tables = {
+            "sushi": [
+                {"id": 1, "price": 1.0},
+                {"id": 2, "price": 2.0},
+                {"id": 3, "price": 3.0},
+            ],
+            "order_items": [
+                {"sushi_id": 1, "order_id": 1},
+                {"sushi_id": 1, "order_id": 1},
+                {"sushi_id": 2, "order_id": 1},
+            ],
+            "orders": [
+                {"id": 1, "user_id": 1},
+            ],
+        }
+
+        self.assertEqual(
+            execute(
+                """
+            SELECT
+              o.user_id,
+              SUM(s.price) AS price
+            FROM orders o
+            JOIN order_items i
+              ON o.id = i.order_id
+            JOIN sushi s
+              ON i.sushi_id = s.id
+            GROUP BY o.user_id
+        """,
+                tables=tables,
+            ).rows,
+            [(1, 4.0)],
+        )
+
     def test_table_depth_mismatch(self):
         tables = {"table": []}
         schema = {"db": {"table": {"col": "VARCHAR"}}}

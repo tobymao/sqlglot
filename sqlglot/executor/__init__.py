@@ -13,7 +13,7 @@ from sqlglot.schema import ensure_schema
 logger = logging.getLogger("sqlglot")
 
 
-def execute(sql, schema, read=None, tables=None):
+def execute(sql, schema=None, read=None, tables=None):
     """
     Run a sql query against data.
 
@@ -31,8 +31,14 @@ def execute(sql, schema, read=None, tables=None):
     Returns:
         sqlglot.executor.Table: Simple columnar data structure.
     """
-    schema = ensure_schema(schema)
     tables = ensure_tables(tables)
+    if not schema:
+        # do a real type mapping one day
+        schema = {
+            name: {column: type(table[0][column]).__name__ for column in table.columns}
+            for name, table in tables.mapping.items()
+        }
+    schema = ensure_schema(schema)
     if tables.supported_table_args and tables.supported_table_args != schema.supported_table_args:
         raise ExecuteError("Tables must support the same table args as schema")
     expression = parse_one(sql, read=read)

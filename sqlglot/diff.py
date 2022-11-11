@@ -113,7 +113,7 @@ class ChangeDistiller:
         matching_set = self._compute_matching_set()
         return self._generate_edit_script(matching_set)
 
-    def _generate_edit_script(self, matching_set) -> t.List[Edit]:
+    def _generate_edit_script(self, matching_set: t.Set[t.Tuple[int, int]]) -> t.List[Edit]:
         edit_script: t.List[Edit] = []
         for removed_node_id in self._unmatched_source_nodes:
             edit_script.append(Remove(self._source_index[removed_node_id]))
@@ -132,7 +132,9 @@ class ChangeDistiller:
 
         return edit_script
 
-    def _generate_move_edits(self, source, target, matching_set):
+    def _generate_move_edits(
+        self, source: exp.Expression, target: exp.Expression, matching_set: t.Set[t.Tuple[int, int]]
+    ) -> t.List[Move]:
         source_args = [id(e) for e in _expression_only_args(source)]
         target_args = [id(e) for e in _expression_only_args(target)]
 
@@ -145,7 +147,7 @@ class ChangeDistiller:
 
         return move_edits
 
-    def _compute_matching_set(self):
+    def _compute_matching_set(self) -> t.Set[t.Tuple[int, int]]:
         leaves_matching_set = self._compute_leaf_matching_set()
         matching_set = leaves_matching_set.copy()
 
@@ -190,8 +192,8 @@ class ChangeDistiller:
 
         return matching_set
 
-    def _compute_leaf_matching_set(self):
-        candidate_matchings = []
+    def _compute_leaf_matching_set(self) -> t.Set[t.Tuple[int, int]]:
+        candidate_matchings: t.List[t.Tuple[float, int, exp.Expression, exp.Expression]] = []
         source_leaves = list(_get_leaves(self._source))
         target_leaves = list(_get_leaves(self._target))
         for source_leaf in source_leaves:
@@ -223,7 +225,7 @@ class ChangeDistiller:
 
         return matching_set
 
-    def _dice_coefficient(self, source, target):
+    def _dice_coefficient(self, source: exp.Expression, target: exp.Expression) -> float:
         source_histo = self._bigram_histo(source)
         target_histo = self._bigram_histo(target)
 
@@ -238,13 +240,13 @@ class ChangeDistiller:
 
         return 2 * overlap_len / total_grams
 
-    def _bigram_histo(self, expression):
+    def _bigram_histo(self, expression: exp.Expression) -> t.DefaultDict[str, int]:
         if id(expression) in self._bigram_histo_cache:
             return self._bigram_histo_cache[id(expression)]
 
         expression_str = self._sql_generator.generate(expression)
         count = max(0, len(expression_str) - 1)
-        bigram_histo = defaultdict(int)
+        bigram_histo: t.DefaultDict[str, int] = defaultdict(int)
         for i in range(count):
             bigram_histo[expression_str[i : i + 2]] += 1
 
@@ -252,7 +254,7 @@ class ChangeDistiller:
         return bigram_histo
 
 
-def _get_leaves(expression):
+def _get_leaves(expression: exp.Expression) -> t.Generator[exp.Expression, None, None]:
     has_child_exprs = False
 
     for a in expression.args.values():
@@ -265,7 +267,7 @@ def _get_leaves(expression):
         yield expression
 
 
-def _is_same_type(source, target):
+def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:
     if type(source) is type(target):
         if isinstance(source, exp.Join):
             return source.args.get("side") == target.args.get("side")
@@ -278,8 +280,8 @@ def _is_same_type(source, target):
     return False
 
 
-def _expression_only_args(expression):
-    args = []
+def _expression_only_args(expression: exp.Expression) -> t.List[exp.Expression]:
+    args: t.List[t.Union[exp.Expression, t.List]] = []
     if expression:
         for a in expression.args.values():
             args.extend(ensure_collection(a))

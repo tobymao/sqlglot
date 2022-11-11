@@ -197,10 +197,10 @@ class TestExecutor(unittest.TestCase):
             }
         )
 
-        t1 = tables.get_table(exp.table_(table="t1", db="db1", catalog="catalog1"))
+        t1 = tables.find(exp.table_(table="t1", db="db1", catalog="catalog1"))
         self.assertEqual(t1.columns, ("a",))
         self.assertEqual(t1.rows, [(1,)])
 
-        t8 = tables.get_table(exp.table_(table="t8"))
+        t8 = tables.find(exp.table_(table="t8"))
         self.assertEqual(t1.columns, t8.columns)
         self.assertEqual(t1.rows, t8.rows)

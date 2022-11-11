@@ -127,7 +127,7 @@ class PythonExecutor:
         return self.context({step.name: sink})
 
     def scan_table(self, step):
-        table = self.tables.get_table(step.source)
+        table = self.tables.find(step.source)
 
         context = self.context({step.source.alias_or_name: table})
         for r in table:

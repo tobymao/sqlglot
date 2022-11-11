@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
-from sqlglot import expressions as exp
 from sqlglot.helper import dict_depth
 from sqlglot.schema import AbstractMappingSchema
 
@@ -99,14 +96,7 @@ class RowReader:
 
 
 class Tables(AbstractMappingSchema[Table]):
-    def __init__(self, tables: dict):
-        super().__init__(tables)
-
-    def get_table(self, table: exp.Table) -> Table | None:
-        return self.find(table)
-
-    def __contains__(self, item: t.Any) -> bool:
-        return isinstance(item, exp.Table) and bool(self.find(item))
+    pass
 
 
 def ensure_tables(d: dict | None) -> Tables:

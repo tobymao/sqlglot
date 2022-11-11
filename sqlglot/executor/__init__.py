@@ -2,10 +2,13 @@ import logging
 import time
 
 from sqlglot import parse_one
+from sqlglot.errors import ExecuteError
 from sqlglot.executor.python import PythonExecutor
-from sqlglot.executor.table import Table
+from sqlglot.executor.table import Table, ensure_tables
+from sqlglot.helper import dict_depth
 from sqlglot.optimizer import optimize
 from sqlglot.planner import Plan
+from sqlglot.schema import ensure_schema
 
 logger = logging.getLogger("sqlglot")
 
@@ -24,11 +27,14 @@ def execute(sql, schema, read=None, tables=None):
                 3. {catalog: {db: {table: {col: type}}}}
         read (str): the SQL dialect to apply during parsing
             (eg. "spark", "hive", "presto", "mysql").
-        tables (dict[str, list[dict]|sqlglot.executor.Table]): additional tables to register
+        tables (dict): additional tables to register.
     Returns:
         sqlglot.executor.Table: Simple columnar data structure.
     """
-    tables = _ensure_tables(tables)
+    schema = ensure_schema(schema)
+    tables = ensure_tables(tables)
+    if tables.supported_table_args and tables.supported_table_args != schema.supported_table_args:
+        raise ExecuteError("Tables must support the same table args as schema")
     expression = parse_one(sql, read=read)
     now = time.time()
     expression = optimize(expression, schema, leave_tables_isolated=True)

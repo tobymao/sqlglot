@@ -164,11 +164,34 @@ class Postgres(Dialect):
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
+
+        CREATABLES = (
+            "AGGREGATE",
+            "CAST",
+            "CONVERSION",
+            "COLLATION",
+            "DEFAULT CONVERSION",
+            "CONSTRAINT",
+            "DOMAIN",
+            "EXTENSION",
+            "FOREIGN",
+            "FUNCTION",
+            "OPERATOR",
+            "POLICY",
+            "ROLE",
+            "RULE",
+            "SEQUENCE",
+            "TEXT",
+            "TRIGGER",
+            "TYPE",
+            "UNLOGGED",
+            "USER",
+        )
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ALWAYS": TokenType.ALWAYS,
             "BY DEFAULT": TokenType.BY_DEFAULT,
-            "COMMENT ON": TokenType.COMMENT_ON,
             "IDENTITY": TokenType.IDENTITY,
             "GENERATED": TokenType.GENERATED,
             "DOUBLE PRECISION": TokenType.DOUBLE,
@@ -176,6 +199,19 @@ class Postgres(Dialect):
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "UUID": TokenType.UUID,
+            "TEMP": TokenType.TEMPORARY,
+            "BEGIN TRANSACTION": TokenType.BEGIN,
+            "BEGIN": TokenType.COMMAND,
+            "COMMENT ON": TokenType.COMMAND,
+            "DECLARE": TokenType.COMMAND,
+            "DO": TokenType.COMMAND,
+            "REFRESH": TokenType.COMMAND,
+            "REINDEX": TokenType.COMMAND,
+            "RESET": TokenType.COMMAND,
+            "REVOKE": TokenType.COMMAND,
+            "GRANT": TokenType.COMMAND,
+            **{f"CREATE {kind}": TokenType.COMMAND for kind in CREATABLES},
+            **{f"DROP {kind}": TokenType.COMMAND for kind in CREATABLES},
         }
         QUOTES = ["'", "$$"]
         SINGLE_TOKENS = {

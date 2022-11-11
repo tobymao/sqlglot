@@ -141,7 +141,6 @@ class Parser(metaclass=_Parser):
 
     ID_VAR_TOKENS = {
         TokenType.VAR,
-        TokenType.ALTER,
         TokenType.ALWAYS,
         TokenType.ANTI,
         TokenType.APPLY,
@@ -149,8 +148,9 @@ class Parser(metaclass=_Parser):
         TokenType.BOTH,
         TokenType.BUCKET,
         TokenType.CACHE,
-        TokenType.CALL,
+        TokenType.CASCADE,
         TokenType.COLLATE,
+        TokenType.COMMAND,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
         TokenType.DEFAULT,
@@ -160,7 +160,6 @@ class Parser(metaclass=_Parser):
         TokenType.EXECUTE,
         TokenType.ENGINE,
         TokenType.ESCAPE,
-        TokenType.EXPLAIN,
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FOLLOWING,
@@ -182,7 +181,6 @@ class Parser(metaclass=_Parser):
         TokenType.NATURAL,
         TokenType.NEXT,
         TokenType.ONLY,
-        TokenType.OPTIMIZE,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
         TokenType.PARTITIONED_BY,
@@ -207,7 +205,6 @@ class Parser(metaclass=_Parser):
         TokenType.TRANSIENT,
         TokenType.TOP,
         TokenType.TRAILING,
-        TokenType.TRUNCATE,
         TokenType.TRUE,
         TokenType.UNBOUNDED,
         TokenType.UNIQUE,
@@ -745,6 +742,7 @@ class Parser(metaclass=_Parser):
             kind=kind,
             temporary=temporary,
             materialized=materialized,
+            cascade=self._match(TokenType.CASCADE),
         )
 
     def _parse_exists(self, not_=False):

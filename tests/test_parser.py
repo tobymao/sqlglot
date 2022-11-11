@@ -41,7 +41,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_command(self):
-        expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1")
+        expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1", read="hive")
         self.assertEqual(len(expressions), 3)
         self.assertEqual(expressions[0].sql(), "SET x = 1")
         self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
@@ -229,7 +229,7 @@ class TestParser(unittest.TestCase):
     @patch("sqlglot.parser.logger")
     def test_comment_error_n(self, logger):
         parse_one(
-            """CREATE TABLE x
+            """SUM
 (
 -- test
 )""",
@@ -237,19 +237,19 @@ class TestParser(unittest.TestCase):
         )
 
         assert_logger_contains(
-            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Schema'>. Line 4, Col: 1.",
+            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Sum'>. Line 4, Col: 1.",
             logger,
         )
 
     @patch("sqlglot.parser.logger")
     def test_comment_error_r(self, logger):
         parse_one(
-            """CREATE TABLE x (-- test\r)""",
+            """SUM(-- test\r)""",
             error_level=ErrorLevel.WARN,
         )
 
         assert_logger_contains(
-            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Schema'>. Line 2, Col: 1.",
+            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Sum'>. Line 2, Col: 1.",
             logger,
         )
 

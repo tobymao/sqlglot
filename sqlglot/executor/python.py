@@ -266,17 +266,14 @@ class PythonExecutor:
             key = context.eval_tuple(group_by)
             group = key if group is None else group
             end += 1
-
+            if key != group:
+                context.set_range(start, end - 2)
+                table.append(group + context.eval_tuple(aggregations))
+                group = key
+                start = end - 2
             if i == length - 1:
                 context.set_range(start, end - 1)
-            elif key != group:
-                context.set_range(start, end - 2)
-            else:
-                continue
-
-            table.append(group + context.eval_tuple(aggregations))
-            group = key
-            start = end - 2
+                table.append(group + context.eval_tuple(aggregations))
 
         context = self.context({step.name: table, **{name: table for name in context.tables}})
 

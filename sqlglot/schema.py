@@ -68,8 +68,6 @@ class Schema(abc.ABC):
 
 
 class AbstractMappingSchema(t.Generic[T]):
-    DEPTH_OFFSET = 0
-
     def __init__(
         self,
         mapping: dict | None = None,
@@ -82,7 +80,7 @@ class AbstractMappingSchema(t.Generic[T]):
         return new_trie(tuple(reversed(t)) for t in flatten_schema(schema, depth=self._depth()))
 
     def _depth(self):
-        return dict_depth(self.mapping) + self.DEPTH_OFFSET
+        return dict_depth(self.mapping)
 
     @property
     def supported_table_args(self):
@@ -94,7 +92,7 @@ class AbstractMappingSchema(t.Generic[T]):
             elif 1 <= depth <= 3:
                 self._supported_table_args = TABLE_ARGS[:depth]
             else:
-                raise SchemaError(f"Invalid schema shape. Depth: {depth}")
+                raise SchemaError(f"Invalid mapping shape. Depth: {depth}")
 
         return self._supported_table_args
 
@@ -109,7 +107,7 @@ class AbstractMappingSchema(t.Generic[T]):
 
         if value == 0:
             if raise_on_missing:
-                raise SchemaError(f"Cannot find schema for {table}.")
+                raise SchemaError(f"Cannot find mapping for {table}.")
             else:
                 return None
         elif value == 1:
@@ -119,7 +117,7 @@ class AbstractMappingSchema(t.Generic[T]):
             else:
                 message = ", ".join(".".join(parts) for parts in possibilities)
                 if raise_on_missing:
-                    raise SchemaError(f"Ambiguous schema for {table}: {message}.")
+                    raise SchemaError(f"Ambiguous mapping for {table}: {message}.")
                 return None
         return self._nested_get(parts, raise_on_missing=raise_on_missing)
 
@@ -150,8 +148,6 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             3. {catalog: {db: {table: set(*cols)}}}}
         dialect (str): The dialect to be used for custom type mappings.
     """
-
-    DEPTH_OFFSET = -1
 
     def __init__(
         self,
@@ -205,6 +201,10 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             column_mapping,
         )
         self.mapping_trie = self._build_trie(self.mapping)
+
+    def _depth(self) -> int:
+        # The columns themselves are a mapping, but we don't want to include those
+        return super()._depth() - 1
 
     def _ensure_table(self, table: exp.Table | str) -> exp.Table:
         table_ = exp.to_table(table)

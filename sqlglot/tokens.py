@@ -105,12 +105,9 @@ class TokenType(AutoName):
     OBJECT = auto()
 
     # keywords
-    ADD_FILE = auto()
     ALIAS = auto()
     ALWAYS = auto()
     ALL = auto()
-    ALTER = auto()
-    ANALYZE = auto()
     ANTI = auto()
     ANY = auto()
     APPLY = auto()
@@ -124,14 +121,14 @@ class TokenType(AutoName):
     BUCKET = auto()
     BY_DEFAULT = auto()
     CACHE = auto()
-    CALL = auto()
+    CASCADE = auto()
     CASE = auto()
     CHARACTER_SET = auto()
     CHECK = auto()
     CLUSTER_BY = auto()
     COLLATE = auto()
+    COMMAND = auto()
     COMMENT = auto()
-    COMMENT_ON = auto()
     COMMIT = auto()
     CONSTRAINT = auto()
     CREATE = auto()
@@ -159,7 +156,6 @@ class TokenType(AutoName):
     EXCEPT = auto()
     EXECUTE = auto()
     EXISTS = auto()
-    EXPLAIN = auto()
     FALSE = auto()
     FETCH = auto()
     FILTER = auto()
@@ -216,7 +212,6 @@ class TokenType(AutoName):
     OFFSET = auto()
     ON = auto()
     ONLY = auto()
-    OPTIMIZE = auto()
     OPTIONS = auto()
     ORDER_BY = auto()
     ORDERED = auto()
@@ -268,9 +263,8 @@ class TokenType(AutoName):
     TRANSIENT = auto()
     TOP = auto()
     THEN = auto()
-    TRUE = auto()
     TRAILING = auto()
-    TRUNCATE = auto()
+    TRUE = auto()
     UNBOUNDED = auto()
     UNCACHE = auto()
     UNION = auto()
@@ -280,7 +274,6 @@ class TokenType(AutoName):
     USE = auto()
     USING = auto()
     VALUES = auto()
-    VACUUM = auto()
     VIEW = auto()
     VOLATILE = auto()
     WHEN = auto()
@@ -435,15 +428,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
-        "ADD ARCHIVE": TokenType.ADD_FILE,
-        "ADD ARCHIVES": TokenType.ADD_FILE,
-        "ADD FILE": TokenType.ADD_FILE,
-        "ADD FILES": TokenType.ADD_FILE,
-        "ADD JAR": TokenType.ADD_FILE,
-        "ADD JARS": TokenType.ADD_FILE,
         "ALL": TokenType.ALL,
-        "ALTER": TokenType.ALTER,
-        "ANALYZE": TokenType.ANALYZE,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,
@@ -455,10 +440,10 @@ class Tokenizer(metaclass=_Tokenizer):
         "BETWEEN": TokenType.BETWEEN,
         "BOTH": TokenType.BOTH,
         "BUCKET": TokenType.BUCKET,
-        "CALL": TokenType.CALL,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
+        "CASCADE": TokenType.CASCADE,
         "CHARACTER SET": TokenType.CHARACTER_SET,
         "CHECK": TokenType.CHECK,
         "CLUSTER BY": TokenType.CLUSTER_BY,
@@ -489,7 +474,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "EXCEPT": TokenType.EXCEPT,
         "EXECUTE": TokenType.EXECUTE,
         "EXISTS": TokenType.EXISTS,
-        "EXPLAIN": TokenType.EXPLAIN,
         "FALSE": TokenType.FALSE,
         "FETCH": TokenType.FETCH,
         "FILTER": TokenType.FILTER,
@@ -541,7 +525,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
         "ONLY": TokenType.ONLY,
-        "OPTIMIZE": TokenType.OPTIMIZE,
         "OPTIONS": TokenType.OPTIONS,
         "OR": TokenType.OR,
         "ORDER BY": TokenType.ORDER_BY,
@@ -592,7 +575,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
         "TRAILING": TokenType.TRAILING,
-        "TRUNCATE": TokenType.TRUNCATE,
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
         "UNPIVOT": TokenType.UNPIVOT,
@@ -600,7 +582,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
-        "VACUUM": TokenType.VACUUM,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "VOLATILE": TokenType.VOLATILE,
@@ -659,6 +640,14 @@ class Tokenizer(metaclass=_Tokenizer):
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
         "VARIANT": TokenType.VARIANT,
+        "ALTER": TokenType.COMMAND,
+        "ANALYZE": TokenType.COMMAND,
+        "CALL": TokenType.COMMAND,
+        "EXPLAIN": TokenType.COMMAND,
+        "OPTIMIZE": TokenType.COMMAND,
+        "PREPARE": TokenType.COMMAND,
+        "TRUNCATE": TokenType.COMMAND,
+        "VACUUM": TokenType.COMMAND,
     }
 
     WHITE_SPACE = {
@@ -670,17 +659,11 @@ class Tokenizer(metaclass=_Tokenizer):
     }
 
     COMMANDS = {
-        TokenType.ADD_FILE,
-        TokenType.ALTER,
-        TokenType.ANALYZE,
-        TokenType.CALL,
-        TokenType.COMMENT_ON,
-        TokenType.EXPLAIN,
-        TokenType.OPTIMIZE,
+        TokenType.COMMAND,
+        TokenType.EXECUTE,
+        TokenType.FETCH,
         TokenType.SET,
         TokenType.SHOW,
-        TokenType.TRUNCATE,
-        TokenType.VACUUM,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

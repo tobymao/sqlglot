@@ -475,7 +475,8 @@ class Generator:
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
-        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}"
+        cascade = " CASCADE" if expression.args.get("cascade") else ""
+        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{cascade}"
 
     def except_sql(self, expression):
         return self.prepend_ctes(

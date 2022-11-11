@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get
 from sqlglot.parser import parse_var_map
+from sqlglot.tokens import TokenType
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -180,6 +181,15 @@ class Hive(Dialect):
             "D": "DOUBLE",
             "F": "FLOAT",
             "BD": "DECIMAL",
+        }
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "ADD ARCHIVE": TokenType.COMMAND,
+            "ADD ARCHIVES": TokenType.COMMAND,
+            "ADD FILE": TokenType.COMMAND,
+            "ADD FILES": TokenType.COMMAND,
+            "ADD JAR": TokenType.COMMAND,
+            "ADD JARS": TokenType.COMMAND,
         }
 
     class Parser(parser.Parser):

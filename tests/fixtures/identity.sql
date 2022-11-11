@@ -122,12 +122,6 @@ x AT TIME ZONE 'UTC'
 CAST('2025-11-20 00:00:00+00' AS TIMESTAMP) AT TIME ZONE 'Africa/Cairo'
 SET x = 1
 SET -v
-ADD JAR s3://bucket
-ADD JARS s3://bucket, c
-ADD FILE s3://file
-ADD FILES s3://file, s3://a
-ADD ARCHIVE s3://file
-ADD ARCHIVES s3://file, s3://a
 COMMIT
 USE db
 NOT 1
@@ -513,10 +507,13 @@ DELETE FROM x WHERE y > 1
 DELETE FROM y
 DELETE FROM event USING sales WHERE event.eventid = sales.eventid
 DELETE FROM event USING sales, USING bla WHERE event.eventid = sales.eventid
+PREPARE statement
+EXECUTE statement
 DROP TABLE a
 DROP TABLE a.b
 DROP TABLE IF EXISTS a
 DROP TABLE IF EXISTS a.b
+DROP TABLE a CASCADE
 DROP VIEW a
 DROP VIEW a.b
 DROP VIEW IF EXISTS a

@@ -286,7 +286,7 @@ class TestBigQuery(Validator):
                 "bigquery": "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
             },
         )
-        self.validate_identity("BEGIN")
+        self.validate_identity("BEGIN A B C D E F")
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")

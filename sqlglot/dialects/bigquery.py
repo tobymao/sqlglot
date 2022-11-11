@@ -119,6 +119,8 @@ class BigQuery(Dialect):
             "UNKNOWN": TokenType.NULL,
             "WINDOW": TokenType.WINDOW,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
+            "BEGIN": TokenType.COMMAND,
+            "BEGIN TRANSACTION": TokenType.BEGIN,
         }
         KEYWORDS.pop("DIV")
 
@@ -150,12 +152,6 @@ class BigQuery(Dialect):
             *parser.Parser.NESTED_TYPE_TOKENS,
             TokenType.TABLE,
         }
-
-        # BEGIN signifies the start of a block statement, so it's different from BEGIN TRANSACTION
-        def _parse_transaction(self):
-            if self._match_text_seq("TRANSACTION"):
-                return self.expression(exp.Transaction)
-            return self.expression(exp.Command, this=self._prev.text)
 
     class Generator(generator.Generator):
         TRANSFORMS = {

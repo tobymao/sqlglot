@@ -787,6 +787,7 @@ class Drop(Expression):
         "exists": False,
         "temporary": False,
         "materialized": False,
+        "cascade": False,
     }
 
 
@@ -1356,7 +1357,7 @@ class Var(Expression):
 
 
 class Schema(Expression):
-    arg_types = {"this": False, "expressions": True}
+    arg_types = {"this": False, "expressions": False}
 
 
 class Select(Subqueryable):

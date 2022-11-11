@@ -7,21 +7,37 @@ v10.0.0
 Changes:
 
 - Breaking: replaced SQLGlot annotations with comments. Now comments can be preserved after transpilation, and they can appear in other places besides SELECT's expressions.
+
 - Breaking: renamed list_get to seq_get.
+
 - Breaking: activated mypy type checking for SQLGlot.
+
 - New: Azure Databricks support.
+
 - New: placeholders can now be replaced in an expression.
+
 - New: null safe equal operator (<=>).
+
 - New: [SET statements](https://github.com/tobymao/sqlglot/pull/673) for MySQL.
+
 - New: [SHOW commands](https://dev.mysql.com/doc/refman/8.0/en/show.html) for MySQL.
+
 - New: [FORMAT function](https://www.w3schools.com/sql/func_sqlserver_format.asp) for TSQL.
+
 - New: CROSS APPLY / OUTER APPLY [support](https://github.com/tobymao/sqlglot/pull/641) for TSQL.
-- New: added formats for TSQL's [DATENAME/DATEPART functions](https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-sql?view=sql-server-ver16)
+
+- New: added formats for TSQL's [DATENAME/DATEPART functions](https://learn.microsoft.com/en-us/sql/t-sql/functions/datename-transact-sql?view=sql-server-ver16).
+
 - New: added styles for TSQL's [CONVERT function](https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16).
+
 - Improvement: [refactored the schema](https://github.com/tobymao/sqlglot/pull/668) to be more lenient; before it needed to do an exact match of db.table, now it finds table if there are no ambiguities.
+
 - Improvement: allow functions to [inherit](https://github.com/tobymao/sqlglot/pull/674) their arguments' types, so that annotating CASE, IF etc. is possible.
+
 - Improvement: allow [joining with same names](https://github.com/tobymao/sqlglot/pull/660) in the python executor.
+
 - Improvement: the "using" field can now be set for the [join expression builders](https://github.com/tobymao/sqlglot/pull/636).
+
 - Improvement: qualify_columns [now qualifies](https://github.com/tobymao/sqlglot/pull/635) only non-alias columns in the having clause.
 
 v9.0.0
@@ -37,6 +53,7 @@ v8.0.0
 Changes:
 
 - Breaking : New add\_table method in Schema ABC.
+
 - New: SQLGlot now supports the [PySpark](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dataframe) dataframe API. This is still relatively experimental.
 
 v7.1.0
@@ -45,8 +62,11 @@ v7.1.0
 Changes:
 
 - Improvement: Pretty generator now takes max\_text\_width which breaks segments into new lines
+
 - New: exp.to\_table helper to turn table names into table expression objects
+
 - New: int[] type parsers
+
 - New: annotations are now generated in sql
 
 v7.0.0

@@ -45,25 +45,51 @@ class Step:
         cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
     ) -> Step:
         """
-        Build a DAG of Steps from a SQL expression so that it's easier to execute in an engine.
+        Builds a DAG of Steps from a SQL expression so that it's easier to execute in an engine.
+        Note: the expression's tables and subqueries must be aliased for this method to work. For
+        example, given the following expression:
 
-        Example:
-            Given an expression like:
+        SELECT
+          x.a,
+          SUM(x.b)
+        FROM x AS x
+        JOIN y AS y
+          ON x.a = y.a
+        GROUP BY x.a
 
-            SELECT x.a, SUM(x.b)
-            FROM x
-            JOIN y
-                ON x.a = y.a
-            GROUP BY x.a
+        the following DAG is produced (the expression IDs might differ per execution):
 
-            Transform it into a DAG of the form:
+        - Aggregate: x (4347984624)
+            Context:
+              Aggregations:
+                - SUM(x.b)
+              Group:
+                - x.a
+            Projections:
+              - x.a
+              - "x".""
+            Dependencies:
+            - Join: x (4347985296)
+              Context:
+                y:
+                On: x.a = y.a
+              Projections:
+              Dependencies:
+              - Scan: x (4347983136)
+                Context:
+                  Source: x AS x
+                Projections:
+              - Scan: y (4343416624)
+                Context:
+                  Source: y AS y
+                Projections:
 
-            Aggregate(x.a, SUM(x.b))
-              Join(y)
-                Scan(x)
-                Scan(y)
+        Args:
+            expression: the expression to build the DAG from.
+            ctes: a dictionary that maps CTEs to their corresponding Step DAG by name.
 
-        This can then more easily be executed on by an engine.
+        Returns:
+            A Step DAG corresponding to `expression`.
         """
         ctes = ctes or {}
         with_ = expression.args.get("with")

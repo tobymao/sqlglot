@@ -5,8 +5,10 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from sqlglot import exp, parse_one
+from sqlglot.errors import ExecuteError
 from sqlglot.executor import execute
 from sqlglot.executor.python import Python
+from sqlglot.executor.table import Table, ensure_tables
 from tests.helpers import (
     FIXTURES_DIR,
     SKIP_INTEGRATION,
@@ -128,3 +130,77 @@ class TestExecutor(unittest.TestCase):
             result = execute(sql, schema=schema, tables=tables)
             self.assertEqual(result.columns, tuple(cols))
             self.assertEqual(result.rows, rows)
+
+    def test_execute_catalog_db_table(self):
+        tables = {
+            "catalog": {
+                "db": {
+                    "x": [
+                        {"a": "a"},
+                        {"a": "b"},
+                        {"a": "c"},
+                    ],
+                }
+            }
+        }
+        schema = {
+            "catalog": {
+                "db": {
+                    "x": {
+                        "a": "VARCHAR",
+                    }
+                }
+            }
+        }
+        result1 = execute("SELECT * FROM x", schema=schema, tables=tables)
+        result2 = execute("SELECT * FROM catalog.db.x", schema=schema, tables=tables)
+        assert result1.columns == result2.columns
+        assert result1.rows == result2.rows
+
+    def test_table_depth_mismatch(self):
+        tables = {"table": []}
+        schema = {"db": {"table": {"col": "VARCHAR"}}}
+        with self.assertRaises(ExecuteError):
+            execute("SELECT * FROM table", schema=schema, tables=tables)
+
+    def test_tables(self):
+        tables = ensure_tables(
+            {
+                "catalog1": {
+                    "db1": {
+                        "t1": [
+                            {"a": 1},
+                        ],
+                        "t2": [
+                            {"a": 1},
+                        ],
+                    },
+                    "db2": {
+                        "t3": [
+                            {"a": 1},
+                        ],
+                        "t4": [
+                            {"a": 1},
+                        ],
+                    },
+                },
+                "catalog2": {
+                    "db3": {
+                        "t5": Table(columns=("a",), rows=[(1,)]),
+                        "t6": Table(columns=("a",), rows=[(1,)]),
+                    },
+                    "db4": {
+                        "t7": Table(columns=("a",), rows=[(1,)]),
+                        "t8": Table(columns=("a",), rows=[(1,)]),
+                    },
+                },
+            }
+        )
+
+        t1 = tables.find(exp.table_(table="t1", db="db1", catalog="catalog1"))
+        self.assertEqual(t1.columns, ("a",))
+        self.assertEqual(t1.rows, [(1,)])
+
+        t8 = tables.find(exp.table_(table="t8"))
+        self.assertEqual(t1.columns, t8.columns)
+        self.assertEqual(t1.rows, t8.rows)

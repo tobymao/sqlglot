@@ -76,14 +76,14 @@ class AbstractMappingSchema(t.Generic[T]):
         self.mapping_trie = self._build_trie(self.mapping)
         self._supported_table_args: t.Tuple[str, ...] = tuple()
 
-    def _build_trie(self, schema: t.Dict):
+    def _build_trie(self, schema: t.Dict) -> t.Dict:
         return new_trie(tuple(reversed(t)) for t in flatten_schema(schema, depth=self._depth()))
 
-    def _depth(self):
+    def _depth(self) -> int:
         return dict_depth(self.mapping)
 
     @property
-    def supported_table_args(self):
+    def supported_table_args(self) -> t.Tuple[str, ...]:
         if not self._supported_table_args and self.mapping:
             depth = self._depth()
 

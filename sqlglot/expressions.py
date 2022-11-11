@@ -3711,6 +3711,19 @@ def replace_placeholders(expression, *args, **kwargs):
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
 
 
+def true():
+    return Boolean(this=True)
+
+
+def false():
+    return Boolean(this=False)
+
+
+def null():
+    return Null()
+
+
+# TODO: deprecate this
 TRUE = Boolean(this=True)
 FALSE = Boolean(this=False)
 NULL = Null()

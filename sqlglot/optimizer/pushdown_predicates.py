@@ -64,11 +64,11 @@ def pushdown_cnf(predicates, scope, scope_ref_count):
     for predicate in predicates:
         for node in nodes_for_predicate(predicate, scope, scope_ref_count).values():
             if isinstance(node, exp.Join):
-                predicate.replace(exp.TRUE)
+                predicate.replace(exp.true())
                 node.on(predicate, copy=False)
                 break
             if isinstance(node, exp.Select):
-                predicate.replace(exp.TRUE)
+                predicate.replace(exp.true())
                 node.where(replace_aliases(node, predicate), copy=False)
 
 

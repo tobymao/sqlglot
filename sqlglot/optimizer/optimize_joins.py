@@ -29,7 +29,7 @@ def optimize_joins(expression):
                 if isinstance(on, exp.Connector):
                     for predicate in on.flatten():
                         if name in exp.column_table_names(predicate):
-                            predicate.replace(exp.TRUE)
+                            predicate.replace(exp.true())
                             join.on(predicate, copy=False)
 
     expression = reorder_joins(expression)
@@ -70,6 +70,6 @@ def normalize(expression):
 def other_table_names(join, exclude):
     return [
         name
-        for name in (exp.column_table_names(join.args.get("on") or exp.TRUE))
+        for name in (exp.column_table_names(join.args.get("on") or exp.true()))
         if name != exclude
     ]

@@ -189,11 +189,11 @@ def absorb_and_eliminate(expression):
 
                 # absorb
                 if is_complement(b, aa):
-                    aa.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+                    aa.replace(exp.true() if kind == exp.And else exp.false())
                 elif is_complement(b, ab):
-                    ab.replace(exp.TRUE if kind == exp.And else exp.FALSE)
+                    ab.replace(exp.true() if kind == exp.And else exp.false())
                 elif (set(b.flatten()) if isinstance(b, kind) else {b}) < set(a.flatten()):
-                    a.replace(exp.FALSE if kind == exp.And else exp.TRUE)
+                    a.replace(exp.false() if kind == exp.And else exp.true())
                 elif isinstance(b, kind):
                     # eliminate
                     rhs = b.unnest_operands()

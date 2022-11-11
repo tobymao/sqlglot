@@ -55,13 +55,13 @@ def _array_sort_sql(self, expression):
 
 def _sort_array_sql(self, expression):
     this = self.sql(expression, "this")
-    if expression.args.get("asc") == exp.FALSE:
+    if expression.args.get("asc") == exp.false():
         return f"ARRAY_REVERSE_SORT({this})"
     return f"ARRAY_SORT({this})"
 
 
 def _sort_array_reverse(args):
-    return exp.SortArray(this=seq_get(args, 0), asc=exp.FALSE)
+    return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
 def _struct_pack_sql(self, expression):

@@ -169,7 +169,7 @@ def decorrelate(select, parent_select, external_columns, sequence):
         select.parent.replace(alias)
 
     for key, column, predicate in keys:
-        predicate.replace(exp.TRUE)
+        predicate.replace(exp.true())
         nested = exp.column(key_aliases[key], table_alias)
 
         if key in group_by:

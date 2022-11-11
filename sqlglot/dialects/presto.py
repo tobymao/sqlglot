@@ -62,7 +62,7 @@ def _initcap_sql(self, expression):
 
 
 def _no_sort_array(self, expression):
-    if expression.args.get("asc") == exp.FALSE:
+    if expression.args.get("asc") == exp.false():
         comparator = "(a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END"
     else:
         comparator = None

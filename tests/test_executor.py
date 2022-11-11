@@ -168,9 +168,11 @@ class TestExecutor(unittest.TestCase):
                 {"sushi_id": 1, "order_id": 1},
                 {"sushi_id": 1, "order_id": 1},
                 {"sushi_id": 2, "order_id": 1},
+                {"sushi_id": 3, "order_id": 2},
             ],
             "orders": [
                 {"id": 1, "user_id": 1},
+                {"id": 2, "user_id": 2},
             ],
         }
 
@@ -189,7 +191,10 @@ class TestExecutor(unittest.TestCase):
         """,
                 tables=tables,
             ).rows,
-            [(1, 4.0)],
+            [
+                (1, 4.0),
+                (2, 3.0),
+            ],
         )
 
     def test_table_depth_mismatch(self):

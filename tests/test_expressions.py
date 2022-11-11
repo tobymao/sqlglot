@@ -541,8 +541,8 @@ class TestExpressions(unittest.TestCase):
                         this=exp.Literal.string("TABLE_FORMAT"),
                         value=exp.to_identifier("test_format"),
                     ),
-                    exp.EngineProperty(this=exp.Literal.string("ENGINE"), value=exp.NULL),
-                    exp.CollateProperty(this=exp.Literal.string("COLLATE"), value=exp.TRUE),
+                    exp.EngineProperty(this=exp.Literal.string("ENGINE"), value=exp.null()),
+                    exp.CollateProperty(this=exp.Literal.string("COLLATE"), value=exp.true()),
                 ]
             ),
         )

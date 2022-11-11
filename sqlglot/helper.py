@@ -354,3 +354,34 @@ def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Generator[t.Any,
             yield from flatten(value)
         else:
             yield value
+
+
+def dict_depth(d: t.Dict) -> int:
+    """
+    Get the nesting depth of a dictionary.
+
+    For example:
+        >>> dict_depth(None)
+        0
+        >>> dict_depth({})
+        1
+        >>> dict_depth({"a": "b"})
+        1
+        >>> dict_depth({"a": {}})
+        2
+        >>> dict_depth({"a": {"b": {}}})
+        3
+
+    Args:
+        d (dict): dictionary
+    Returns:
+        int: depth
+    """
+    try:
+        return 1 + dict_depth(next(iter(d.values())))
+    except AttributeError:
+        # d doesn't have attribute "values"
+        return 0
+    except StopIteration:
+        # d.values() returns an empty sequence
+        return 1

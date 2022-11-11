@@ -99,10 +99,10 @@ class PythonExecutor:
             if not projections and not condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
-        elif source in self.tables:
-            table_iter = self.scan_table(source)
-        else:
+        elif isinstance(step.source, exp.Table) and step.source.this.name == "READ_CSV":
             table_iter = self.scan_csv(step)
+        else:
+            table_iter = self.scan_table(step)
 
         if projections:
             sink = self.table(step.projections)
@@ -126,10 +126,10 @@ class PythonExecutor:
 
         return self.context({step.name: sink})
 
-    def scan_table(self, source):
-        table = self.tables[source]
+    def scan_table(self, step):
+        table = self.tables.get_table(step.source)
 
-        context = self.context({source: table})
+        context = self.context({step.source.alias_or_name: table})
         for r in table:
             yield r, context
 

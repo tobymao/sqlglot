@@ -1077,7 +1077,12 @@ class Parser(metaclass=_Parser):
     def _parse_select(self, nested=False, table=False):
         cte = self._parse_with()
         if cte:
+            matched_lparen = self._match(TokenType.L_PAREN)
+
             this = self._parse_statement()
+            if matched_lparen:
+                this = self.expression(exp.Paren, this=this)
+                self._match_r_paren()
 
             if not this:
                 self.raise_error("Failed to parse any statement following CTE")

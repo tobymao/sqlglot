@@ -1885,6 +1885,7 @@ class Subquery(DerivedTable, Unionable):
     arg_types = {
         "this": True,
         "alias": False,
+        "with": False,
         **QUERY_MODIFIERS,
     }
 
@@ -2225,7 +2226,7 @@ class Not(Unary, Condition):
 
 
 class Paren(Unary, Condition):
-    pass
+    arg_types = {"this": True, "with": False}
 
 
 class Neg(Unary):

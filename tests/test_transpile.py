@@ -198,10 +198,6 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             "WITH a AS (SELECT 1), WITH b AS (SELECT 2) SELECT *",
             "WITH a AS (SELECT 1), b AS (SELECT 2) SELECT *",
         )
-        self.validate(
-            "WITH sub_query AS ( SELECT a FROM table ) (SELECT a FROM sub_query)",
-            "WITH sub_query AS (SELECT a FROM table) SELECT a FROM sub_query",
-        )
 
     def test_time(self):
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")

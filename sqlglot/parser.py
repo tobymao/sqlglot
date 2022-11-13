@@ -1081,6 +1081,7 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_statement()
             if matched_lparen:
+                this = self.expression(exp.Paren, this=this)
                 self._match_r_paren()
 
             if not this:

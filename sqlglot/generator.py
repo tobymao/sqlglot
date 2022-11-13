@@ -916,12 +916,14 @@ class Generator:
     def subquery_sql(self, expression):
         alias = self.sql(expression, "alias")
 
-        return self.query_modifiers(
+        sql = self.query_modifiers(
             expression,
             self.wrap(expression),
             self.expressions(expression, key="pivots", sep=" "),
             f" AS {alias}" if alias else "",
         )
+
+        return self.prepend_ctes(expression, sql)
 
     def qualify_sql(self, expression):
         this = self.indent(self.sql(expression, "this"))
@@ -1112,9 +1114,12 @@ class Generator:
 
     def paren_sql(self, expression):
         if isinstance(expression.unnest(), exp.Select):
-            return self.wrap(expression)
-        sql = self.seg(self.indent(self.sql(expression, "this")), sep="")
-        return f"({sql}{self.seg(')', sep='')}"
+            sql = self.wrap(expression)
+        else:
+            sql = self.seg(self.indent(self.sql(expression, "this")), sep="")
+            sql = f"({sql}{self.seg(')', sep='')}"
+
+        return self.prepend_ctes(expression, sql)
 
     def neg_sql(self, expression):
         return f"-{self.sql(expression, 'this')}"

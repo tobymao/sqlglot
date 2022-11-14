@@ -15,7 +15,7 @@ select
 from
         lineitem
 where
-        CAST(l_shipdate AS DATE) <= date '1998-12-01' - interval '90' day
+        l_shipdate <= date '1998-12-01' - interval '90' day
 group by
         l_returnflag,
         l_linestatus
@@ -250,8 +250,8 @@ FROM "orders" AS "orders"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE
-  "orders"."o_orderdate" < CAST('1993-10-01' AS DATE)
-  AND "orders"."o_orderdate" >= CAST('1993-07-01' AS DATE)
+  CAST("orders"."o_orderdate" AS DATE) < CAST('1993-10-01' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1993-07-01' AS DATE)
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "orders"."o_orderpriority"
@@ -293,8 +293,8 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "orders"."o_orderdate" < CAST('1995-01-01' AS DATE)
-  AND "orders"."o_orderdate" >= CAST('1994-01-01' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) < CAST('1995-01-01' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1994-01-01' AS DATE)
 JOIN "region" AS "region"
   ON "region"."r_name" = 'ASIA'
 JOIN "nation" AS "nation"
@@ -328,8 +328,8 @@ FROM "lineitem" AS "lineitem"
 WHERE
   "lineitem"."l_discount" BETWEEN 0.05 AND 0.07
   AND "lineitem"."l_quantity" < 24
-  AND "lineitem"."l_shipdate" < CAST('1995-01-01' AS DATE)
-  AND "lineitem"."l_shipdate" >= CAST('1994-01-01' AS DATE);
+  AND CAST("lineitem"."l_shipdate" AS DATE) < CAST('1995-01-01' AS DATE)
+  AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1994-01-01' AS DATE);
 
 --------------------------------------
 -- TPC-H 7
@@ -606,8 +606,8 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "orders"."o_orderdate" < CAST('1994-01-01' AS DATE)
-  AND "orders"."o_orderdate" >= CAST('1993-10-01' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) < CAST('1994-01-01' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1993-10-01' AS DATE)
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey" AND "lineitem"."l_returnflag" = 'R'
 JOIN "nation" AS "nation"
@@ -740,8 +740,8 @@ SELECT
 FROM "orders" AS "orders"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
-  AND "lineitem"."l_receiptdate" < CAST('1995-01-01' AS DATE)
-  AND "lineitem"."l_receiptdate" >= CAST('1994-01-01' AS DATE)
+  AND CAST("lineitem"."l_receiptdate" AS DATE) < CAST('1995-01-01' AS DATE)
+  AND CAST("lineitem"."l_receiptdate" AS DATE) >= CAST('1994-01-01' AS DATE)
   AND "lineitem"."l_shipdate" < "lineitem"."l_commitdate"
   AND "lineitem"."l_shipmode" IN ('MAIL', 'SHIP')
   AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
@@ -832,8 +832,8 @@ FROM "lineitem" AS "lineitem"
 JOIN "part" AS "part"
   ON "lineitem"."l_partkey" = "part"."p_partkey"
 WHERE
-  "lineitem"."l_shipdate" < CAST('1995-10-01' AS DATE)
-  AND "lineitem"."l_shipdate" >= CAST('1995-09-01' AS DATE);
+  CAST("lineitem"."l_shipdate" AS DATE) < CAST('1995-10-01' AS DATE)
+  AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1995-09-01' AS DATE);
 
 --------------------------------------
 -- TPC-H 15
@@ -876,8 +876,8 @@ WITH "revenue" AS (
     )) AS "total_revenue"
   FROM "lineitem" AS "lineitem"
   WHERE
-    "lineitem"."l_shipdate" < CAST('1996-04-01' AS DATE)
-    AND "lineitem"."l_shipdate" >= CAST('1996-01-01' AS DATE)
+    CAST("lineitem"."l_shipdate" AS DATE) < CAST('1996-04-01' AS DATE)
+    AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1996-01-01' AS DATE)
   GROUP BY
     "lineitem"."l_suppkey"
 )
@@ -1220,8 +1220,8 @@ WITH "_u_0" AS (
     "lineitem"."l_suppkey" AS "_u_2"
   FROM "lineitem" AS "lineitem"
   WHERE
-    "lineitem"."l_shipdate" < CAST('1995-01-01' AS DATE)
-    AND "lineitem"."l_shipdate" >= CAST('1994-01-01' AS DATE)
+    CAST("lineitem"."l_shipdate" AS DATE) < CAST('1995-01-01' AS DATE)
+    AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1994-01-01' AS DATE)
   GROUP BY
     "lineitem"."l_partkey",
     "lineitem"."l_suppkey"

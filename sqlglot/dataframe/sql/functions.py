@@ -939,11 +939,7 @@ def array_join(
 
 
 def concat(*cols: ColumnOrName) -> Column:
-    if len(cols) == 1:
-        return Column.invoke_anonymous_function(cols[0], "CONCAT")
-    return Column.invoke_anonymous_function(
-        cols[0], "CONCAT", *[Column.ensure_col(x).expression for x in cols[1:]]
-    )
+    return Column.invoke_expression_over_column(None, glotexp.Concat, expressions=cols)
 
 
 def array_position(col: ColumnOrName, value: ColumnOrLiteral) -> Column:

@@ -2027,6 +2027,14 @@ class DataType(Expression):
         NULL = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
 
+    TEXT_TYPES = {
+        Type.CHAR,
+        Type.NCHAR,
+        Type.VARCHAR,
+        Type.NVARCHAR,
+        Type.TEXT,
+    }
+
     @classmethod
     def build(cls, dtype, **kwargs) -> DataType:
         return DataType(
@@ -2453,9 +2461,13 @@ class Coalesce(Func):
     is_var_len_args = True
 
 
-class ConcatWs(Func):
-    arg_types = {"expressions": False}
+class Concat(Func):
+    arg_types = {"expressions": True}
     is_var_len_args = True
+
+
+class ConcatWs(Concat):
+    _sql_names = ["CONCAT_WS"]
 
 
 class Count(AggFunc):

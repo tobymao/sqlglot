@@ -13,12 +13,12 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
         expression: The expression to canonicalize.
     """
     exp.replace_children(expression, canonicalize)
-    expression = add_char_to_concat(expression)
+    expression = add_text_to_concat(expression)
     expression = coerce_type(expression)
     return expression
 
 
-def add_char_to_concat(node: exp.Expression) -> exp.Expression:
+def add_text_to_concat(node: exp.Expression) -> exp.Expression:
     if isinstance(node, exp.Add) and node.type in exp.DataType.TEXT_TYPES:
         node = exp.Concat(this=node.this, expression=node.expression)
     return node

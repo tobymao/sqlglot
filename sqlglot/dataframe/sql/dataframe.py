@@ -314,7 +314,13 @@ class DataFrame:
                 replacement_mapping[exp.to_identifier(original_alias_name)] = exp.to_identifier(  # type: ignore
                     cache_table_name
                 )
-                sqlglot.schema.add_table(cache_table_name, select_expression.named_selects)
+                sqlglot.schema.add_table(
+                    cache_table_name,
+                    {
+                        expression.alias_or_name: expression.type.name
+                        for expression in select_expression.expressions
+                    },
+                )
                 cache_storage_level = select_expression.args["cache_storage_level"]
                 options = [
                     exp.Literal.string("storageLevel"),

@@ -20,6 +20,8 @@ class TestTranspile(unittest.TestCase):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
     def test_alias(self):
+        self.assertEqual(transpile("SELECT 1 current_time")[0], "SELECT 1 AS current_time")
+
         for key in ("union", "filter", "over", "from", "join"):
             with self.subTest(f"alias {key}"):
                 self.validate(f"SELECT x AS {key}", f"SELECT x AS {key}")

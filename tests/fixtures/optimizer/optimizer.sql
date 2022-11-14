@@ -119,7 +119,7 @@ GROUP BY
 LIMIT 1;
 
 # title: Root subquery is union
-(SELECT b FROM x UNION SELECT b FROM y) LIMIT 1;
+(SELECT b FROM x UNION SELECT b FROM y ORDER BY b) LIMIT 1;
 (
   SELECT
     "x"."b" AS "b"
@@ -128,6 +128,8 @@ LIMIT 1;
   SELECT
     "y"."b" AS "b"
   FROM "y" AS "y"
+  ORDER BY
+    "b"
 )
 LIMIT 1;
 

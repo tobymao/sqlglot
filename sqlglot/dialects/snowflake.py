@@ -169,6 +169,12 @@ class Snowflake(Dialect):
             TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
         }
 
+        def _parse_trim(self):
+            args = self._parse_csv(self._parse_conjunction)
+            this = exp.Trim.from_arg_list(args)
+            self.validate_expression(this, args)
+            return this
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPES = ["\\"]
@@ -203,6 +209,7 @@ class Snowflake(Dialect):
             exp.StrPosition: rename_func("POSITION"),
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
+            exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
         }
 
         TYPE_MAPPING = {

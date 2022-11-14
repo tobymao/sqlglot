@@ -153,6 +153,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMMAND,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
+        TokenType.CURRENT_TIME,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESCRIBE,
@@ -214,6 +215,7 @@ class Parser(metaclass=_Parser):
         TokenType.VOLATILE,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
+        *NO_PAREN_FUNCTIONS,
     }
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY}

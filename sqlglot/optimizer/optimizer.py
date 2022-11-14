@@ -1,5 +1,6 @@
 import sqlglot
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.canonicalize import canonicalize
 from sqlglot.optimizer.eliminate_ctes import eliminate_ctes
 from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
@@ -30,6 +31,7 @@ RULES = (
     eliminate_joins,
     eliminate_ctes,
     annotate_types,
+    canonicalize,
     quote_identities,
 )
 

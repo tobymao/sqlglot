@@ -29,6 +29,7 @@ class TestOptimizer(unittest.TestCase):
         CREATE TABLE x (a INT, b INT);
         CREATE TABLE y (b INT, c INT);
         CREATE TABLE z (b INT, c INT);
+        CREATE TABLE w (d TEXT, e TEXT);
 
         INSERT INTO x VALUES (1, 1);
         INSERT INTO x VALUES (2, 2);
@@ -47,6 +48,8 @@ class TestOptimizer(unittest.TestCase):
         INSERT INTO y VALUES (4, 4);
         INSERT INTO y VALUES (5, 5);
         INSERT INTO y VALUES (null, null);
+
+        INSERT INTO w VALUES ('a', 'b');
         """
         )
 
@@ -63,6 +66,10 @@ class TestOptimizer(unittest.TestCase):
             "z": {
                 "b": "INT",
                 "c": "INT",
+            },
+            "w": {
+                "d": "TEXT",
+                "e": "TEXT",
             },
         }
 
@@ -223,6 +230,18 @@ class TestOptimizer(unittest.TestCase):
 
     def test_eliminate_subqueries(self):
         self.check_file("eliminate_subqueries", optimizer.eliminate_subqueries.eliminate_subqueries)
+
+    def test_canonicalize(self):
+        optimize = partial(
+            optimizer.optimize,
+            rules=[
+                optimizer.qualify_tables.qualify_tables,
+                optimizer.qualify_columns.qualify_columns,
+                annotate_types,
+                optimizer.canonicalize.canonicalize,
+            ],
+        )
+        self.check_file("canonicalize", optimize, schema=self.schema)
 
     def test_tpch(self):
         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)

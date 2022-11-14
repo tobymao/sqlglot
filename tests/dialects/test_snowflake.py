@@ -171,7 +171,10 @@ class TestSnowflake(Validator):
         )
         self.validate_all(
             "trim(date_column, 'UTC')",
-            write={"snowflake": "TRIM(date_column, 'UTC')"},
+            write={
+                "snowflake": "TRIM(date_column, 'UTC')",
+                "postgres": "TRIM('UTC' FROM date_column)",
+            },
         )
         self.validate_all(
             "trim(date_column)",

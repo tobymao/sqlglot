@@ -2821,8 +2821,8 @@ class TimeStrToUnix(Func):
 class Trim(Func):
     arg_types = {
         "this": True,
-        "position": False,
         "expression": False,
+        "position": False,
         "collation": False,
     }
 

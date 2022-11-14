@@ -169,6 +169,17 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT a FROM test AS unpivot",
             },
         )
+        self.validate_all(
+            "trim(date_column, 'UTC')",
+            write={
+                "snowflake": "TRIM(date_column, 'UTC')",
+                "postgres": "TRIM('UTC' FROM date_column)",
+            },
+        )
+        self.validate_all(
+            "trim(date_column)",
+            write={"snowflake": "TRIM(date_column)"},
+        )
 
     def test_null_treatment(self):
         self.validate_all(

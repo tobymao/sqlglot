@@ -1125,10 +1125,11 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
             this = self._parse_subquery(this)
         elif self._match(TokenType.VALUES):
-            this = self.expression(exp.Values, expressions=self._parse_csv(self._parse_value))
-            alias = self._parse_table_alias()
-            if alias:
-                this = self.expression(exp.Subquery, this=this, alias=alias)
+            this = self.expression(
+                exp.Values,
+                expressions=self._parse_csv(self._parse_value),
+                alias=self._parse_table_alias(),
+            )
         else:
             this = None
 

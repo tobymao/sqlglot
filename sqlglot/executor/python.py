@@ -99,7 +99,7 @@ class PythonExecutor:
             if not projections and not condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
-        elif isinstance(step.source, exp.Table) and step.source.this.name == "READ_CSV":
+        elif isinstance(step.source, exp.Table) and isinstance(step.source.this, exp.ReadCSV):
             table_iter = self.scan_csv(step)
         else:
             table_iter = self.scan_table(step)
@@ -134,8 +134,8 @@ class PythonExecutor:
             yield r, context
 
     def scan_csv(self, step):
-        source = step.source
-        alias = source.alias
+        alias = step.source.alias
+        source = step.source.this
 
         with csv_reader(source) as reader:
             columns = next(reader)

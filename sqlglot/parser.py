@@ -215,6 +215,7 @@ class Parser(metaclass=_Parser):
         TokenType.VOLATILE,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
+        *NO_PAREN_FUNCTIONS,
     }
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY}

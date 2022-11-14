@@ -148,6 +148,7 @@ class Snowflake(Dialect):
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": _parse_date_part,
         }
+        FUNCTION_PARSERS.pop("TRIM")
 
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
@@ -168,12 +169,6 @@ class Snowflake(Dialect):
             **parser.Parser.PROPERTY_PARSERS,
             TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
         }
-
-        def _parse_trim(self):
-            args = self._parse_csv(self._parse_conjunction)
-            this = exp.Trim.from_arg_list(args)
-            self.validate_expression(this, args)
-            return this
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]

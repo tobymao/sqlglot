@@ -245,23 +245,31 @@ class TypeAnnotator:
     def annotate(self, expression):
         if isinstance(expression, self.TRAVERSABLES):
             for scope in traverse_scope(expression):
-                subscope_selects = {
-                    name: {select.alias_or_name: select for select in source.selects}
-                    for name, source in scope.sources.items()
-                    if isinstance(source, Scope)
-                }
-
+                selects = {}
+                for name, source in scope.sources.items():
+                    if not isinstance(source, Scope):
+                        continue
+                    if isinstance(source.expression, exp.Values):
+                        selects[name] = {
+                            alias: column
+                            for alias, column in zip(
+                                source.expression.alias_column_names,
+                                source.expression.expressions[0].expressions,
+                            )
+                        }
+                    else:
+                        selects[name] = {
+                            select.alias_or_name: select for select in source.expression.selects
+                        }
                 # First annotate the current scope's column references
                 for col in scope.columns:
                     source = scope.sources[col.table]
                     if isinstance(source, exp.Table):
                         col.type = self.schema.get_column_type(source, col)
                     else:
-                        col.type = subscope_selects[col.table][col.name].type
-
+                        col.type = selects[col.table][col.name].type
                 # Then (possibly) annotate the remaining expressions in the scope
                 self._maybe_annotate(scope.expression)
-
         return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
 
     def _maybe_annotate(self, expression):

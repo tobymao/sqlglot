@@ -382,9 +382,7 @@ class _Resolver:
                 raise OptimizeError(str(e)) from e
 
         if isinstance(source, Scope) and isinstance(source.expression, exp.Values):
-            values_alias = source.expression.parent
-            if hasattr(values_alias, "alias_column_names"):
-                return values_alias.alias_column_names
+            return source.expression.alias_column_names
 
         # Otherwise, if referencing another scope, return that scope's named selects
         return source.expression.named_selects

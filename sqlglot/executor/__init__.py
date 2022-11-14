@@ -33,7 +33,6 @@ def execute(sql, schema=None, read=None, tables=None):
     """
     tables = ensure_tables(tables)
     if not schema:
-        # do a real type mapping one day
         schema = {
             name: {column: type(table[0][column]).__name__ for column in table.columns}
             for name, table in tables.mapping.items()

@@ -11,7 +11,8 @@ from copy import copy
 from enum import Enum
 
 if t.TYPE_CHECKING:
-    from sqlglot.expressions import Expression, Table
+    from sqlglot import exp
+    from sqlglot.expressions import Expression
 
     T = t.TypeVar("T")
     E = t.TypeVar("E", bound=Expression)
@@ -228,19 +229,18 @@ def open_file(file_name: str) -> t.TextIO:
 
 
 @contextmanager
-def csv_reader(table: Table) -> t.Any:
+def csv_reader(read_csv: exp.ReadCSV) -> t.Any:
     """
     Returns a csv reader given the expression `READ_CSV(name, ['delimiter', '|', ...])`.
 
     Args:
-        table: a `Table` expression with an anonymous function `READ_CSV` in it.
+        read_csv: a `ReadCSV` function call
 
     Yields:
         A python csv reader.
     """
-    file, *args = table.this.expressions
-    file = file.name
-    file = open_file(file)
+    args = read_csv.expressions
+    file = open_file(read_csv.name)
 
     delimiter = ","
     args = iter(arg.name for arg in args)

@@ -260,7 +260,10 @@ class Column:
         """
         if isinstance(dataType, DataType):
             dataType = dataType.simpleString()
-        new_expression = exp.Cast(this=self.column_expression, to=dataType)
+        new_expression = exp.Cast(
+            this=self.column_expression,
+            to=sqlglot.parse_one(dataType, into=exp.DataType, read="spark"),  # type: ignore
+        )
         return Column(new_expression)
 
     def startswith(self, value: t.Union[str, Column]) -> Column:

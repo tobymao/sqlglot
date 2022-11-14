@@ -21,7 +21,7 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 5. Issue that pull request and wait for it to be reviewed by a maintainer or contributor!
 
 ## Report bugs using Github's [issues](https://github.com/tobymao/sqlglot/issues)
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue]().
+We use GitHub issues to track public bugs. Report a bug by opening a new issue.
 
 **Great Bug Reports** tend to have:
 

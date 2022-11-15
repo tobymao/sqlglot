@@ -69,6 +69,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS STRING)",
                 "clickhouse": "CAST(a AS TEXT)",
+                "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS TEXT)",
                 "hive": "CAST(a AS STRING)",
@@ -86,6 +87,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS BINARY(4))",
                 "clickhouse": "CAST(a AS BINARY(4))",
+                "drill": "CAST(a AS VARBINARY(4))",
                 "duckdb": "CAST(a AS BINARY(4))",
                 "mysql": "CAST(a AS BINARY(4))",
                 "hive": "CAST(a AS BINARY(4))",
@@ -146,6 +148,7 @@ class TestDialect(Validator):
             "CAST(a AS STRING)",
             write={
                 "bigquery": "CAST(a AS STRING)",
+                "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS TEXT)",
                 "hive": "CAST(a AS STRING)",
@@ -162,6 +165,7 @@ class TestDialect(Validator):
             "CAST(a AS VARCHAR)",
             write={
                 "bigquery": "CAST(a AS STRING)",
+                "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS VARCHAR)",
                 "hive": "CAST(a AS STRING)",
@@ -178,6 +182,7 @@ class TestDialect(Validator):
             "CAST(a AS VARCHAR(3))",
             write={
                 "bigquery": "CAST(a AS STRING(3))",
+                "drill": "CAST(a AS VARCHAR(3))",
                 "duckdb": "CAST(a AS TEXT(3))",
                 "mysql": "CAST(a AS VARCHAR(3))",
                 "hive": "CAST(a AS VARCHAR(3))",
@@ -194,6 +199,7 @@ class TestDialect(Validator):
             "CAST(a AS SMALLINT)",
             write={
                 "bigquery": "CAST(a AS INT64)",
+                "drill": "CAST(a AS INTEGER)",
                 "duckdb": "CAST(a AS SMALLINT)",
                 "mysql": "CAST(a AS SMALLINT)",
                 "hive": "CAST(a AS SMALLINT)",
@@ -215,6 +221,7 @@ class TestDialect(Validator):
             },
             write={
                 "duckdb": "TRY_CAST(a AS DOUBLE)",
+                "drill": "CAST(a AS DOUBLE)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
             },
@@ -225,6 +232,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS FLOAT64)",
                 "clickhouse": "CAST(a AS Float64)",
+                "drill": "CAST(a AS DOUBLE)",
                 "duckdb": "CAST(a AS DOUBLE)",
                 "mysql": "CAST(a AS DOUBLE)",
                 "hive": "CAST(a AS DOUBLE)",
@@ -279,6 +287,7 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%Y-%m-%dT%H:%i:%S')",
+                "drill": "TO_TIMESTAMP(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH:MI:SS')",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')",
             },
@@ -286,6 +295,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
             write={
+                "drill": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
                 "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "oracle": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
@@ -298,6 +308,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_TIME(x, '%y')",
             write={
+                "drill": "TO_TIMESTAMP(x, 'yy')",
                 "duckdb": "STRPTIME(x, '%y')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%y')",
@@ -319,6 +330,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_STR_TO_DATE('2020-01-01')",
             write={
+                "drill": "CAST('2020-01-01' AS DATE)",
                 "duckdb": "CAST('2020-01-01' AS DATE)",
                 "hive": "TO_DATE('2020-01-01')",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
@@ -328,6 +340,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_STR_TO_TIME('2020-01-01')",
             write={
+                "drill": "CAST('2020-01-01' AS TIMESTAMP)",
                 "duckdb": "CAST('2020-01-01' AS TIMESTAMP)",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
@@ -344,6 +357,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_TO_STR(x, '%Y-%m-%d')",
             write={
+                "drill": "TO_CHAR(x, 'yyyy-MM-dd')",
                 "duckdb": "STRFTIME(x, '%Y-%m-%d')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",
                 "oracle": "TO_CHAR(x, 'YYYY-MM-DD')",
@@ -355,6 +369,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_TO_TIME_STR(x)",
             write={
+                "drill": "CAST(x AS VARCHAR)",
                 "duckdb": "CAST(x AS TEXT)",
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
@@ -364,6 +379,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_TO_UNIX(x)",
             write={
+                "drill": "UNIX_TIMESTAMP(x)",
                 "duckdb": "EPOCH(x)",
                 "hive": "UNIX_TIMESTAMP(x)",
                 "presto": "TO_UNIXTIME(x)",
@@ -425,6 +441,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_TO_DATE_STR(x)",
             write={
+                "drill": "CAST(x AS VARCHAR)",
                 "duckdb": "CAST(x AS TEXT)",
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
@@ -433,6 +450,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_TO_DI(x)",
             write={
+                "drill": "CAST(TO_DATE(x, 'yyyyMMdd') AS INT)",
                 "duckdb": "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
                 "hive": "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
                 "presto": "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
@@ -441,6 +459,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DI_TO_DATE(x)",
             write={
+                "drill": "TO_DATE(CAST(x AS VARCHAR), 'yyyyMMdd')",
                 "duckdb": "CAST(STRPTIME(CAST(x AS TEXT), '%Y%m%d') AS DATE)",
                 "hive": "TO_DATE(CAST(x AS STRING), 'yyyyMMdd')",
                 "presto": "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
@@ -463,6 +482,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "drill": "DATE_ADD(x, INTERVAL '1' DAY)",
                 "duckdb": "x + INTERVAL 1 day",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -477,6 +497,7 @@ class TestDialect(Validator):
             "DATE_ADD(x, 1)",
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "drill": "DATE_ADD(x, INTERVAL '1' DAY)",
                 "duckdb": "x + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -546,6 +567,7 @@ class TestDialect(Validator):
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
             },
             write={
+                "drill": "TO_DATE(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
@@ -556,6 +578,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_DATE(x, '%Y-%m-%d')",
             write={
+                "drill": "CAST(x AS DATE)",
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%d')",
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%d')",
                 "hive": "CAST(x AS DATE)",
@@ -566,6 +589,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_STR_TO_DATE(x)",
             write={
+                "drill": "CAST(x AS DATE)",
                 "duckdb": "CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
@@ -575,6 +599,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
             write={
+                "drill": "DATE_ADD(CAST('2021-02-01' AS DATE), INTERVAL '1' DAY)",
                 "duckdb": "CAST('2021-02-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD('2021-02-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d'))",
@@ -584,6 +609,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             write={
+                "drill": "DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL '1' DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
                 "presto": "DATE_ADD('day', 1, CAST('2020-01-01' AS DATE))",
@@ -593,6 +619,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIMESTAMP '2022-01-01'",
             write={
+                "drill": "CAST('2022-01-01' AS TIMESTAMP)",
                 "mysql": "CAST('2022-01-01' AS TIMESTAMP)",
                 "starrocks": "CAST('2022-01-01' AS DATETIME)",
                 "hive": "CAST('2022-01-01' AS TIMESTAMP)",
@@ -614,6 +641,7 @@ class TestDialect(Validator):
                     dialect: f"{unit}(x)"
                     for dialect in (
                         "bigquery",
+                        "drill",
                         "duckdb",
                         "mysql",
                         "presto",
@@ -624,6 +652,7 @@ class TestDialect(Validator):
                     dialect: f"{unit}(x)"
                     for dialect in (
                         "bigquery",
+                        "drill",
                         "duckdb",
                         "mysql",
                         "presto",
@@ -649,6 +678,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "ARRAY_LENGTH(x)",
                 "duckdb": "ARRAY_LENGTH(x)",
+                "drill": "REPEATED_COUNT(x)",
                 "presto": "CARDINALITY(x)",
                 "spark": "SIZE(x)",
             },
@@ -736,6 +766,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT a FROM x CROSS JOIN UNNEST(y) AS t (a)",
             write={
+                "drill": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
                 "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
                 "spark": "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
             },
@@ -743,6 +774,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t (a, b)",
             write={
+                "drill": "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t(a, b)",
                 "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y, z) AS t(a, b)",
                 "spark": "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) t AS b",
             },
@@ -775,6 +807,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
+                "drill": "SELECT * FROM a UNION SELECT * FROM b",
                 "duckdb": "SELECT * FROM a UNION SELECT * FROM b",
                 "presto": "SELECT * FROM a UNION SELECT * FROM b",
                 "spark": "SELECT * FROM a UNION SELECT * FROM b",
@@ -887,6 +920,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "LOWER(x) LIKE '%y'",
                 "clickhouse": "x ILIKE '%y'",
+                "drill": "x `ILIKE` '%y'",
                 "duckdb": "x ILIKE '%y'",
                 "hive": "LOWER(x) LIKE '%y'",
                 "mysql": "LOWER(x) LIKE '%y'",
@@ -910,6 +944,7 @@ class TestDialect(Validator):
         self.validate_all(
             "POSITION(' ' in x)",
             write={
+                "drill": "STRPOS(x, ' ')",
                 "duckdb": "STRPOS(x, ' ')",
                 "postgres": "STRPOS(x, ' ')",
                 "presto": "STRPOS(x, ' ')",
@@ -921,6 +956,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_POSITION('a', x)",
             write={
+                "drill": "STRPOS(x, 'a')",
                 "duckdb": "STRPOS(x, 'a')",
                 "postgres": "STRPOS(x, 'a')",
                 "presto": "STRPOS(x, 'a')",
@@ -932,6 +968,7 @@ class TestDialect(Validator):
         self.validate_all(
             "POSITION('a', x, 3)",
             write={
+                "drill": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
                 "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
                 "spark": "LOCATE('a', x, 3)",
                 "clickhouse": "position(x, 'a', 3)",
@@ -960,6 +997,7 @@ class TestDialect(Validator):
         self.validate_all(
             "IF(x > 1, 1, 0)",
             write={
+                "drill": "`IF`(x > 1, 1, 0)",
                 "duckdb": "CASE WHEN x > 1 THEN 1 ELSE 0 END",
                 "presto": "IF(x > 1, 1, 0)",
                 "hive": "IF(x > 1, 1, 0)",
@@ -970,6 +1008,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CASE WHEN 1 THEN x ELSE 0 END",
             write={
+                "drill": "CASE WHEN 1 THEN x ELSE 0 END",
                 "duckdb": "CASE WHEN 1 THEN x ELSE 0 END",
                 "presto": "CASE WHEN 1 THEN x ELSE 0 END",
                 "hive": "CASE WHEN 1 THEN x ELSE 0 END",
@@ -980,6 +1019,7 @@ class TestDialect(Validator):
         self.validate_all(
             "x[y]",
             write={
+                "drill": "x[y]",
                 "duckdb": "x[y]",
                 "presto": "x[y]",
                 "hive": "x[y]",
@@ -1000,6 +1040,7 @@ class TestDialect(Validator):
             'true or null as "foo"',
             write={
                 "bigquery": "TRUE OR NULL AS `foo`",
+                "drill": "TRUE OR NULL AS `foo`",
                 "duckdb": 'TRUE OR NULL AS "foo"',
                 "presto": 'TRUE OR NULL AS "foo"',
                 "hive": "TRUE OR NULL AS `foo`",
@@ -1020,6 +1061,7 @@ class TestDialect(Validator):
             "LEVENSHTEIN(col1, col2)",
             write={
                 "duckdb": "LEVENSHTEIN(col1, col2)",
+                "drill": "LEVENSHTEIN_DISTANCE(col1, col2)",
                 "presto": "LEVENSHTEIN_DISTANCE(col1, col2)",
                 "hive": "LEVENSHTEIN(col1, col2)",
                 "spark": "LEVENSHTEIN(col1, col2)",
@@ -1029,6 +1071,7 @@ class TestDialect(Validator):
             "LEVENSHTEIN(coalesce(col1, col2), coalesce(col2, col1))",
             write={
                 "duckdb": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
+                "drill": "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "presto": "LEVENSHTEIN_DISTANCE(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "hive": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
                 "spark": "LEVENSHTEIN(COALESCE(col1, col2), COALESCE(col2, col1))",
@@ -1152,6 +1195,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT a AS b FROM x GROUP BY b",
             write={
+                "drill": "SELECT a AS b FROM x GROUP BY b",
                 "duckdb": "SELECT a AS b FROM x GROUP BY b",
                 "presto": "SELECT a AS b FROM x GROUP BY 1",
                 "hive": "SELECT a AS b FROM x GROUP BY 1",
@@ -1162,6 +1206,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT y x FROM my_table t",
             write={
+                "drill": "SELECT y AS x FROM my_table AS t",
                 "hive": "SELECT y AS x FROM my_table AS t",
                 "oracle": "SELECT y AS x FROM my_table t",
                 "postgres": "SELECT y AS x FROM my_table AS t",

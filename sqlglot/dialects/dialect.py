@@ -32,6 +32,7 @@ class Dialects(str, Enum):
     TRINO = "trino"
     TSQL = "tsql"
     DATABRICKS = "databricks"
+    DRILL = "drill"
 
 
 class _Dialect(type):

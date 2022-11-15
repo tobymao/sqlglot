@@ -265,8 +265,6 @@ class MySQL(Dialect):
             "CHARACTER SET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
             "CHARSET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
             "NAMES": lambda self: self._parse_set_item_names(),
-            "GLOBAL TRANSACTION": lambda self: self._parse_set_transaction(global_=True),
-            "SESSION TRANSACTION": lambda self: self._parse_set_transaction(),
             "TRANSACTION": lambda self: self._parse_set_transaction(),
         }
 

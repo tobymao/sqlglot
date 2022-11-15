@@ -114,8 +114,6 @@ class Step:
             step = Scan.from_expression(from_[0], ctes)
         else:
             step = Scan()
-            step.name = "static"
-            # raise UnsupportedError("Static selects are unsupported.")
 
         joins = expression.args.get("joins")
 

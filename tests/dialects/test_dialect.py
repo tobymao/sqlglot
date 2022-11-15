@@ -369,6 +369,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_TO_TIME_STR(x)",
             write={
+                "drill": "CAST(x AS VARCHAR)",
                 "duckdb": "CAST(x AS TEXT)",
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
@@ -378,6 +379,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_TO_UNIX(x)",
             write={
+                "drill": "UNIX_TIMESTAMP(x)",
                 "duckdb": "EPOCH(x)",
                 "hive": "UNIX_TIMESTAMP(x)",
                 "presto": "TO_UNIXTIME(x)",
@@ -439,6 +441,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_TO_DATE_STR(x)",
             write={
+                "drill": "CAST(x AS VARCHAR)",
                 "duckdb": "CAST(x AS TEXT)",
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
@@ -447,6 +450,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_TO_DI(x)",
             write={
+                "drill": "CAST(TO_DATE(x, 'yyyyMMdd') AS INT)",
                 "duckdb": "CAST(STRFTIME(x, '%Y%m%d') AS INT)",
                 "hive": "CAST(DATE_FORMAT(x, 'yyyyMMdd') AS INT)",
                 "presto": "CAST(DATE_FORMAT(x, '%Y%m%d') AS INT)",
@@ -455,6 +459,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DI_TO_DATE(x)",
             write={
+                "drill": "TO_DATE(CAST(x AS VARCHAR), 'yyyyMMdd')",
                 "duckdb": "CAST(STRPTIME(CAST(x AS TEXT), '%Y%m%d') AS DATE)",
                 "hive": "TO_DATE(CAST(x AS STRING), 'yyyyMMdd')",
                 "presto": "CAST(DATE_PARSE(CAST(x AS VARCHAR), '%Y%m%d') AS DATE)",
@@ -477,6 +482,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "drill": "DATE_ADD(x, INTERVAL '1' DAY)",
                 "duckdb": "x + INTERVAL 1 day",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -491,6 +497,7 @@ class TestDialect(Validator):
             "DATE_ADD(x, 1)",
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "drill": "DATE_ADD(x, INTERVAL '1' DAY)",
                 "duckdb": "x + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -560,6 +567,7 @@ class TestDialect(Validator):
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
             },
             write={
+                "drill": "TO_DATE(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
@@ -570,6 +578,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_DATE(x, '%Y-%m-%d')",
             write={
+                "drill": "CAST(x AS DATE)",
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%d')",
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%d')",
                 "hive": "CAST(x AS DATE)",
@@ -580,6 +589,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_STR_TO_DATE(x)",
             write={
+                "drill": "CAST(x AS DATE)",
                 "duckdb": "CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
@@ -589,6 +599,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
             write={
+                "drill": "DATE_ADD(CAST('2021-02-01' AS DATE), INTERVAL '1' DAY)",
                 "duckdb": "CAST('2021-02-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD('2021-02-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d'))",
@@ -598,6 +609,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             write={
+                "drill": "DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL '1' DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
                 "presto": "DATE_ADD('day', 1, CAST('2020-01-01' AS DATE))",
@@ -607,6 +619,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIMESTAMP '2022-01-01'",
             write={
+                "drill": "CAST('2022-01-01' AS TIMESTAMP)",
                 "mysql": "CAST('2022-01-01' AS TIMESTAMP)",
                 "starrocks": "CAST('2022-01-01' AS DATETIME)",
                 "hive": "CAST('2022-01-01' AS TIMESTAMP)",
@@ -628,6 +641,7 @@ class TestDialect(Validator):
                     dialect: f"{unit}(x)"
                     for dialect in (
                         "bigquery",
+                        "drill",
                         "duckdb",
                         "mysql",
                         "presto",
@@ -638,6 +652,7 @@ class TestDialect(Validator):
                     dialect: f"{unit}(x)"
                     for dialect in (
                         "bigquery",
+                        "drill",
                         "duckdb",
                         "mysql",
                         "presto",

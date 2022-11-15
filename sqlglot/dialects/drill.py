@@ -6,7 +6,7 @@ from sqlglot.dialects.dialect import (
     create_with_partitions_sql,
     format_time_lambda,
     rename_func, str_position_sql,
-    no_trycast_sql
+    no_trycast_sql, no_pivot_sql
 )
 from sqlglot.dialects.postgres import _lateral_sql
 from sqlglot.tokens import TokenType
@@ -24,10 +24,19 @@ def _str_to_time_sql(self, expression):
 
 def _ts_or_ds_to_date_sql(self, expression):
     time_format = self.format_time(expression)
-    if time_format and time_format not in (DuckDB.time_format, DuckDB.date_format):
+    if time_format and time_format not in (Drill.time_format, Drill.date_format):
         return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
     return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
+
+def _date_add_sql(kind):
+    def func(self, expression):
+        this = self.sql(expression, "this")
+        unit = expression.text("unit").upper() or "DAY"
+        expression = self.sql(expression, "expression")
+        return f"DATE_{kind}({this}, INTERVAL '{expression}' {unit})"
+
+    return func
 
 def if_sql(self, expression):
     """
@@ -46,10 +55,19 @@ def if_sql(self, expression):
     return f"`IF`({expressions})"
 
 
+def _str_to_date(self, expression):
+    this = self.sql(expression, "this")
+    time_format = self.format_time(expression)
+    if time_format == Drill.date_format:
+        return f"CAST({this} AS DATE)"
+    return f"TO_DATE({this}, {time_format})"
+
 class Drill(Dialect):
     normalize_functions = None
     null_ordering = "nulls_are_last"
     date_format = "'yyyy-MM-dd'"
+    dateint_format = "'yyyyMMdd'"
+    time_format = "'yyyy-MM-dd HH:mm:ss'"
 
     time_mapping = {
         "y": "%Y",
@@ -93,9 +111,7 @@ class Drill(Dialect):
             "VARBINARY": TokenType.BINARY
         }
 
-        date_format = "'yyyy-MM-dd'"
-        dateint_format = "'yyyyMMdd'"
-        time_format = "'yyyy-MM-dd HH:mm:ss'"
+        normalize_functions = None
 
     class Parser(parser.Parser):
         STRICT_CAST = False
@@ -131,16 +147,27 @@ class Drill(Dialect):
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),
             exp.Create: create_with_partitions_sql,
+            exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+            exp.DateSub: _date_add_sql("SUB"),
+            exp.DateToDi: lambda self, e: f"CAST(TO_DATE({self.sql(e, 'this')}, {Drill.dateint_format}) AS INT)",
+            exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS VARCHAR), {Drill.dateint_format})",
             exp.If: if_sql,
             exp.ILike: lambda self, e: f" {self.sql(e, 'this')} `ILIKE` {self.sql(e, 'expression')}",
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
+            exp.Pivot: no_pivot_sql,
+            exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.StrPosition: str_position_sql,
-            exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
+            exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+            exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TryCast: no_trycast_sql,
+            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD(CAST({self.sql(e,'this')} AS DATE), INTERVAL '{self.sql(e,'expression')}' DAY)",
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
+            exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         }

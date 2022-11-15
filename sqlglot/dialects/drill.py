@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     str_position_sql,
 )
 from sqlglot.dialects.postgres import _lateral_sql
-from sqlglot.tokens import TokenType
 
 
 def _to_timestamp(args):
@@ -112,8 +111,6 @@ class Drill(Dialect):
         ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
-        KEYWORDS = {**tokens.Tokenizer.KEYWORDS, "VARBINARY": TokenType.BINARY}
-
         normalize_functions = None
 
     class Parser(parser.Parser):
@@ -168,7 +165,7 @@ class Drill(Dialect):
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TryCast: no_trycast_sql,
-            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD(CAST({self.sql(e,'this')} AS DATE), INTERVAL '{self.sql(e,'expression')}' DAY)",
+            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD(CAST({self.sql(e, 'this')} AS DATE), INTERVAL '{self.sql(e, 'expression')}' DAY)",
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         }

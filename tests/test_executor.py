@@ -244,3 +244,15 @@ class TestExecutor(unittest.TestCase):
         t8 = tables.find(exp.table_(table="t8"))
         self.assertEqual(t1.columns, t8.columns)
         self.assertEqual(t1.rows, t8.rows)
+
+    def test_static_queries(self):
+        for sql, cols, rows in [
+            ("SELECT 1", ["_col_0"], [(1,)]),
+            ("SELECT 1 + 2 AS x", ["x"], [(3,)]),
+            ("SELECT CONCAT('a', 'b') AS x", ["x"], [("ab",)]),
+            ("SELECT 1 AS x, 2 AS y", ["x", "y"], [(1, 2)]),
+            ("SELECT 'foo' LIMIT 1", ["_col_0"], [("foo",)]),
+        ]:
+            result = execute(sql)
+            self.assertEqual(result.columns, tuple(cols))
+            self.assertEqual(result.rows, rows)

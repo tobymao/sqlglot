@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import Dialect, inline_array_sql
 from sqlglot.errors import ExecuteError
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
-from sqlglot.executor.table import Table
+from sqlglot.executor.table import RowReader, Table
 from sqlglot.helper import csv_reader
 
 
@@ -44,6 +44,8 @@ class PythonExecutor:
                     contexts[node] = self.join(node, context)
                 elif isinstance(node, planner.Sort):
                     contexts[node] = self.sort(node, context)
+                elif isinstance(node, planner.Static):
+                    contexts[node] = self.static(node, context)
                 else:
                     raise NotImplementedError
 
@@ -89,13 +91,15 @@ class PythonExecutor:
     def scan(self, step, context):
         source = step.source
 
-        if isinstance(source, exp.Expression):
+        if source and isinstance(source, exp.Expression):
             source = source.name or source.alias
 
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
 
-        if source in context:
+        if source is None:
+            table_iter = self.static()
+        elif source in context:
             if not projections and not condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
@@ -125,6 +129,9 @@ class PythonExecutor:
                 break
 
         return self.context({step.name: sink})
+
+    def static(self):
+        yield RowReader(()), self.context({})
 
     def scan_table(self, step):
         table = self.tables.find(step.source)
@@ -301,6 +308,46 @@ class PythonExecutor:
             context.table.rows = context.table.rows[0 : step.limit]
 
         return self.context({step.name: context.table})
+
+    # def static(self, step, context):
+    #     source = step.source
+    #
+    #     if isinstance(source, exp.Expression):
+    #         source = source.name or source.alias
+    #
+    #     condition = self.generate(step.condition)
+    #     projections = self.generate_tuple(step.projections)
+    #
+    #     if source in context:
+    #         if not projections and not condition:
+    #             return self.context({step.name: context.tables[source]})
+    #         table_iter = context.table_iter(source)
+    #     elif isinstance(step.source, exp.Table) and isinstance(step.source.this, exp.ReadCSV):
+    #         table_iter = self.scan_csv(step)
+    #     else:
+    #         table_iter = self.scan_table(step)
+    #
+    #     if projections:
+    #         sink = self.table(step.projections)
+    #     else:
+    #         sink = None
+    #
+    #     for reader, ctx in table_iter:
+    #         if sink is None:
+    #             sink = Table(reader.columns)
+    #
+    #         if condition and not ctx.eval(condition):
+    #             continue
+    #
+    #         if projections:
+    #             sink.append(ctx.eval_tuple(projections))
+    #         else:
+    #             sink.append(reader.row)
+    #
+    #         if len(sink) >= step.limit:
+    #             break
+    #
+    #     return self.context({step.name: sink})
 
 
 def _cast_py(self, expression):

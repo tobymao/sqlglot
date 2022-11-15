@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import Dialect, inline_array_sql
 from sqlglot.errors import ExecuteError
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
-from sqlglot.executor.table import Table
+from sqlglot.executor.table import RowReader, Table
 from sqlglot.helper import csv_reader
 
 
@@ -89,13 +89,15 @@ class PythonExecutor:
     def scan(self, step, context):
         source = step.source
 
-        if isinstance(source, exp.Expression):
+        if source and isinstance(source, exp.Expression):
             source = source.name or source.alias
 
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
 
-        if source in context:
+        if source is None:
+            table_iter = self.static()
+        elif source in context:
             if not projections and not condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
@@ -125,6 +127,9 @@ class PythonExecutor:
                 break
 
         return self.context({step.name: sink})
+
+    def static(self):
+        yield RowReader(()), self.context({})
 
     def scan_table(self, step):
         table = self.tables.find(step.source)

@@ -29,7 +29,7 @@ class TestDrill(Validator):
                 "presto": "'\"x\"'",
                 "hive": "'\"x\"'",
                 "spark": "'\"x\"'",
-            }
+            },
         )
         self.validate_all(
             "'\\\\a'",

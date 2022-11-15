@@ -221,7 +221,7 @@ class TestDialect(Validator):
             },
             write={
                 "duckdb": "TRY_CAST(a AS DOUBLE)",
-                "drill" : "CAST(a AS DOUBLE)",
+                "drill": "CAST(a AS DOUBLE)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
             },

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from sqlglot import exp, parser, tokens, generator
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     create_with_partitions_sql,
     format_time_lambda,
-    rename_func, str_position_sql,
-    no_trycast_sql, no_pivot_sql
+    no_pivot_sql,
+    no_trycast_sql,
+    rename_func,
+    str_position_sql,
 )
 from sqlglot.dialects.postgres import _lateral_sql
 from sqlglot.tokens import TokenType
@@ -17,6 +19,7 @@ def _to_timestamp(args):
     if len(args) == 1 and args[0].is_number:
         return exp.UnixToTime.from_arg_list(args)
     return format_time_lambda(exp.StrToTime, "drill")(args)
+
 
 def _str_to_time_sql(self, expression):
     return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
@@ -37,6 +40,7 @@ def _date_add_sql(kind):
         return f"DATE_{kind}({this}, INTERVAL '{expression}' {unit})"
 
     return func
+
 
 def if_sql(self, expression):
     """
@@ -61,6 +65,7 @@ def _str_to_date(self, expression):
     if time_format == Drill.date_format:
         return f"CAST({this} AS DATE)"
     return f"TO_DATE({this}, {time_format})"
+
 
 class Drill(Dialect):
     normalize_functions = None
@@ -98,18 +103,16 @@ class Drill(Dialect):
         "EE": "%a",
         "EEE": "%a",
         "EEEE": "%A",
-        "''T''": "T"
+        "''T''": "T",
     }
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'"]
         IDENTIFIERS = ["`"]
         ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-            "VARBINARY": TokenType.BINARY
-        }
+        KEYWORDS = {**tokens.Tokenizer.KEYWORDS, "VARBINARY": TokenType.BINARY}
 
         normalize_functions = None
 
@@ -133,12 +136,10 @@ class Drill(Dialect):
             exp.DataType.Type.NCHAR: "VARCHAR",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.DATETIME: "TIMESTAMP"
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 
-        ROOT_PROPERTIES = {
-            exp.PartitionedByProperty
-        }
+        ROOT_PROPERTIES = {exp.PartitionedByProperty}
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

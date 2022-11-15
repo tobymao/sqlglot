@@ -641,9 +641,11 @@ class Set(Expression):
 
 class SetItem(Expression):
     arg_types = {
-        "this": True,
+        "this": False,
+        "expressions": False,
         "kind": False,
         "collate": False,  # MySQL SET NAMES statement
+        "global": False,
     }
 
 

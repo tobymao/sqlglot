@@ -58,6 +58,9 @@ class TestMySQL(Validator):
         self.validate_identity("SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'")
         self.validate_identity("SET NAMES utf8 COLLATE utf8_unicode_ci")
         self.validate_identity("SET autocommit = ON")
+        self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+        self.validate_identity("SET TRANSACTION READ ONLY")
+        self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE")
 
     def test_escape(self):
         self.validate_all(

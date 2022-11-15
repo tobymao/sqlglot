@@ -265,6 +265,9 @@ class MySQL(Dialect):
             "CHARACTER SET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
             "CHARSET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
             "NAMES": lambda self: self._parse_set_item_names(),
+            "GLOBAL TRANSACTION": lambda self: self._parse_set_transaction(global_=True),
+            "SESSION TRANSACTION": lambda self: self._parse_set_transaction(),
+            "TRANSACTION": lambda self: self._parse_set_transaction(),
         }
 
         PROFILE_TYPES = {
@@ -277,6 +280,15 @@ class MySQL(Dialect):
             "PAGE FAULTS",
             "SOURCE",
             "SWAPS",
+        }
+
+        TRANSACTION_CHARACTERISTICS = {
+            "ISOLATION LEVEL REPEATABLE READ",
+            "ISOLATION LEVEL READ COMMITTED",
+            "ISOLATION LEVEL READ UNCOMMITTED",
+            "ISOLATION LEVEL SERIALIZABLE",
+            "READ WRITE",
+            "READ ONLY",
         }
 
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
@@ -302,7 +314,7 @@ class MySQL(Dialect):
             where = self._parse_where()
 
             if this == "PROFILE":
-                types = self._parse_csv(self._parse_show_profile_type)
+                types = self._parse_csv(lambda: self._parse_var_from_options(self.PROFILE_TYPES))
                 query = self._parse_number() if self._match_text_seq("FOR", "QUERY") else None
                 offset = self._parse_number() if self._match_text_seq("OFFSET") else None
                 limit = self._parse_number() if self._match_text_seq("LIMIT") else None
@@ -332,10 +344,10 @@ class MySQL(Dialect):
                 **{"global": global_},
             )
 
-        def _parse_show_profile_type(self):
-            for type_ in self.PROFILE_TYPES:
-                if self._match_text_seq(*type_.split(" ")):
-                    return exp.Var(this=type_)
+        def _parse_var_from_options(self, options):
+            for option in options:
+                if self._match_text_seq(*option.split(" ")):
+                    return exp.Var(this=option)
             return None
 
         def _parse_oldstyle_limit(self):
@@ -354,6 +366,9 @@ class MySQL(Dialect):
             return self._parse_set_item_assignment(kind=None)
 
         def _parse_set_item_assignment(self, kind):
+            if kind in {"GLOBAL", "SESSION"} and self._match_text_seq("TRANSACTION"):
+                return self._parse_set_transaction(global_=kind == "GLOBAL")
+
             left = self._parse_primary() or self._parse_id_var()
             if not self._match(TokenType.EQ):
                 self.raise_error("Expected =")
@@ -391,6 +406,18 @@ class MySQL(Dialect):
                 this=charset,
                 collate=collate,
                 kind="NAMES",
+            )
+
+        def _parse_set_transaction(self, global_=False):
+            self._match_text_seq("TRANSACTION")
+            characteristics = self._parse_csv(
+                lambda: self._parse_var_from_options(self.TRANSACTION_CHARACTERISTICS)
+            )
+            return self.expression(
+                exp.SetItem,
+                expressions=characteristics,
+                kind="TRANSACTION",
+                **{"global": global_},
             )
 
     class Generator(generator.Generator):
@@ -482,9 +509,11 @@ class MySQL(Dialect):
             kind = self.sql(expression, "kind")
             kind = f"{kind} " if kind else ""
             this = self.sql(expression, "this")
+            expressions = self.expressions(expression)
             collate = self.sql(expression, "collate")
             collate = f" COLLATE {collate}" if collate else ""
-            return f"{kind}{this}{collate}"
+            global_ = "GLOBAL " if expression.args.get("global") else ""
+            return f"{global_}{kind}{this}{expressions}{collate}"
 
         def set_sql(self, expression):
             return f"SET {self.expressions(expression)}"

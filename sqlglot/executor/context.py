@@ -26,7 +26,7 @@ class Context:
             env: dictionary of functions within the execution context.
         """
         self.tables = tables
-        self._table = None
+        self._table: t.Optional[Table] = None
         self.range_readers = {name: table.range_reader for name, table in self.tables.items()}
         self.row_readers = {name: table.reader for name, table in tables.items()}
         self.env = {**(env or {}), "scope": self.row_readers}
@@ -40,13 +40,13 @@ class Context:
     @property
     def table(self) -> Table:
         if self._table is None:
-            self._table = list(self.tables.values())[0]  # type: ignore
+            self._table = list(self.tables.values())[0]
             for other in self.tables.values():
-                if self._table.columns != other.columns:  # type: ignore
+                if self._table.columns != other.columns:
                     raise Exception(f"Columns are different.")
-                if len(self._table.rows) != len(other.rows):  # type: ignore
+                if len(self._table.rows) != len(other.rows):
                     raise Exception(f"Rows are different.")
-        return self._table  # type: ignore
+        return self._table
 
     @property
     def columns(self) -> t.Tuple:

@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+import typing as t
+
 from sqlglot.executor.env import ENV
+
+if t.TYPE_CHECKING:
+    from sqlglot.executor.table import Table, TableIter
 
 
 class Context:
@@ -12,11 +19,11 @@ class Context:
     evaluation of aggregation functions.
     """
 
-    def __init__(self, tables, env=None):
+    def __init__(self, tables: t.Dict[str, Table], env: t.Optional[t.Dict] = None) -> None:
         """
         Args
-            tables (dict): table_name -> Table, representing the scope of the current execution context
-            env (Optional[dict]): dictionary of functions within the execution context
+            tables: representing the scope of the current execution context.
+            env: dictionary of functions within the execution context.
         """
         self.tables = tables
         self._table = None
@@ -31,18 +38,18 @@ class Context:
         return tuple(self.eval(code) for code in codes)
 
     @property
-    def table(self):
+    def table(self) -> Table:
         if self._table is None:
-            self._table = list(self.tables.values())[0]
+            self._table = list(self.tables.values())[0]  # type: ignore
             for other in self.tables.values():
-                if self._table.columns != other.columns:
+                if self._table.columns != other.columns:  # type: ignore
                     raise Exception(f"Columns are different.")
-                if len(self._table.rows) != len(other.rows):
+                if len(self._table.rows) != len(other.rows):  # type: ignore
                     raise Exception(f"Rows are different.")
-        return self._table
+        return self._table  # type: ignore
 
     @property
-    def columns(self):
+    def columns(self) -> t.Tuple:
         return self.table.columns
 
     def __iter__(self):
@@ -52,35 +59,35 @@ class Context:
                 reader = table[i]
             yield reader, self
 
-    def table_iter(self, table):
+    def table_iter(self, table: str) -> t.Generator[t.Tuple[TableIter, Context], None, None]:
         self.env["scope"] = self.row_readers
 
         for reader in self.tables[table]:
             yield reader, self
 
-    def sort(self, key):
+    def sort(self, key) -> None:
         table = self.table
 
-        def sort_key(row):
+        def sort_key(row: t.Tuple) -> t.Tuple:
             table.reader.row = row
             return self.eval_tuple(key)
 
         table.rows.sort(key=sort_key)
 
-    def set_row(self, row):
+    def set_row(self, row: t.Tuple) -> None:
         for table in self.tables.values():
             table.reader.row = row
         self.env["scope"] = self.row_readers
 
-    def set_index(self, index):
+    def set_index(self, index: int) -> None:
         for table in self.tables.values():
             table[index]
         self.env["scope"] = self.row_readers
 
-    def set_range(self, start, end):
+    def set_range(self, start: int, end: int) -> None:
         for name in self.tables:
             self.range_readers[name].range = range(start, end)
         self.env["scope"] = self.range_readers
 
-    def __contains__(self, table):
+    def __contains__(self, table: str) -> bool:
         return table in self.tables

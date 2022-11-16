@@ -162,7 +162,7 @@ class TestExecutor(unittest.TestCase):
                 "SELECT a /* test */ FROM x LIMIT 1",
                 ["a"],
                 [("a",)],
-            )
+            ),
         ]:
             with self.subTest(sql):
                 result = execute(sql, schema=schema, tables=tables)

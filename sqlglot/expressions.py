@@ -2490,7 +2490,7 @@ class ConcatWs(Concat):
 
 
 class Count(AggFunc):
-    pass
+    arg_types = {"this": False}
 
 
 class CurrentDate(Func):

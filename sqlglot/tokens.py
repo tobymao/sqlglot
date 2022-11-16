@@ -413,7 +413,6 @@ class Tokenizer(metaclass=_Tokenizer):
 
     KEYWORDS = {
         "/*+": TokenType.HINT,
-        "*/": TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
         "||": TokenType.DPIPE,

@@ -306,7 +306,7 @@ class PythonExecutor:
 
         output = Table(
             projection_columns,
-            rows=[r[len(context.columns): len(all_columns)] for r in sort_ctx.table.rows],
+            rows=[r[len(context.columns) : len(all_columns)] for r in sort_ctx.table.rows],
         )
         return self.context({step.name: output})
 

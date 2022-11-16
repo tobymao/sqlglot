@@ -951,6 +951,7 @@ class TestDialect(Validator):
                 "spark": "LOCATE(' ', x)",
                 "clickhouse": "position(x, ' ')",
                 "snowflake": "POSITION(' ', x)",
+                "mysql": "LOCATE(' ', x)",
             },
         )
         self.validate_all(
@@ -963,6 +964,7 @@ class TestDialect(Validator):
                 "spark": "LOCATE('a', x)",
                 "clickhouse": "position(x, 'a')",
                 "snowflake": "POSITION('a', x)",
+                "mysql": "LOCATE('a', x)",
             },
         )
         self.validate_all(
@@ -973,6 +975,7 @@ class TestDialect(Validator):
                 "spark": "LOCATE('a', x, 3)",
                 "clickhouse": "position(x, 'a', 3)",
                 "snowflake": "POSITION('a', x, 3)",
+                "mysql": "LOCATE('a', x, 3)",
             },
         )
         self.validate_all(

@@ -92,6 +92,7 @@ class TestExecutor(unittest.TestCase):
                 {"b": "e", "c": "h"},
                 {"b": "f", "c": "i"},
             ],
+            "z": [],
         }
         schema = {
             "x": {
@@ -102,6 +103,7 @@ class TestExecutor(unittest.TestCase):
                 "b": "VARCHAR",
                 "c": "VARCHAR",
             },
+            "z": {"d": "VARCHAR"},
         }
 
         for sql, cols, rows in [
@@ -126,10 +128,26 @@ class TestExecutor(unittest.TestCase):
                 ["a", "b", "b", "c"],
                 [("b", "e", "e", "h")],
             ),
+            (
+                "SELECT * FROM z",
+                ["d"],
+                [],
+            ),
+            (
+                "SELECT d FROM z ORDER BY d",
+                ["d"],
+                [],
+            ),
+            (
+                "SELECT a FROM x WHERE x.a <> 'b'",
+                ["a"],
+                [("a",), ("c",)],
+            ),
         ]:
-            result = execute(sql, schema=schema, tables=tables)
-            self.assertEqual(result.columns, tuple(cols))
-            self.assertEqual(result.rows, rows)
+            with self.subTest(sql):
+                result = execute(sql, schema=schema, tables=tables)
+                self.assertEqual(result.columns, tuple(cols))
+                self.assertEqual(result.rows, rows)
 
     def test_execute_catalog_db_table(self):
         tables = {
@@ -261,3 +279,38 @@ class TestExecutor(unittest.TestCase):
         result = execute("SELECT SUM(x) FROM t", tables={"t": [{"x": 1}, {"x": 2}]})
         self.assertEqual(result.columns, ("_col_0",))
         self.assertEqual(result.rows, [(3,)])
+
+    def test_scalar_functions(self):
+        for sql, expected in [
+            ("CONCAT('a', 'b')", "ab"),
+            ("CONCAT('a', NULL)", None),
+            ("STR_POSITION('bar', 'foobarbar')", 4),
+            ("STR_POSITION('bar', 'foobarbar', 5)", 7),
+            ("STR_POSITION(NULL, 'foobarbar')", None),
+            ("STR_POSITION('bar', NULL)", None),
+            ("UPPER('foo')", "FOO"),
+            ("UPPER(NULL)", None),
+            ("LOWER('FOO')", "foo"),
+            ("LOWER(NULL)", None),
+            ("IFNULL('a', 'b')", "a"),
+            ("IFNULL(NULL, 'b')", "b"),
+            ("IFNULL(NULL, NULL)", None),
+            ("SUBSTRING('12345')", "12345"),
+            ("SUBSTRING('12345', 3)", "345"),
+            ("SUBSTRING('12345', 3, 0)", ""),
+            ("SUBSTRING('12345', 3, 1)", "3"),
+            ("SUBSTRING('12345', 3, 2)", "34"),
+            ("SUBSTRING('12345', 3, 3)", "345"),
+            ("SUBSTRING('12345', 3, 4)", "345"),
+            ("SUBSTRING('12345', -3)", "345"),
+            ("SUBSTRING('12345', -3, 0)", ""),
+            ("SUBSTRING('12345', -3, 1)", "3"),
+            ("SUBSTRING('12345', -3, 2)", "34"),
+            ("SUBSTRING('12345', 0)", ""),
+            ("SUBSTRING('12345', 0, 1)", ""),
+            ("SUBSTRING(NULL)", None),
+            ("SUBSTRING(NULL, 1)", None),
+        ]:
+            with self.subTest(sql):
+                result = execute(f"SELECT {sql}")
+                self.assertEqual(result.rows, [(expected,)])

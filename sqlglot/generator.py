@@ -241,7 +241,7 @@ class Generator:
         if not NEWLINE_RE.search(comment):
             return f"{sql} --{comment.rstrip()}" if single_line else f"{sql} /*{comment}*/"
 
-        return f" /*{comment}*/" if not sql else f"/*{comment}*/\n{sql}"
+        return  f"/*{comment}*/\n{sql}" if sql else f" /*{comment}*/"
 
     def wrap(self, expression):
         this_sql = self.indent(

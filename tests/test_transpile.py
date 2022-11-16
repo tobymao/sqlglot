@@ -76,6 +76,9 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
+        self.validate(
+            "SELECT * FROM table /*comment 1*/ /*comment 2*/", "SELECT * FROM table /* comment 1 */"
+        )
         self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment */")
         self.validate("SELECT --+5\nx FROM foo", "/* +5 */ SELECT x FROM foo")
         self.validate("SELECT --!5\nx FROM foo", "/* !5 */ SELECT x FROM foo")

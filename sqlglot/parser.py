@@ -144,6 +144,7 @@ class Parser(metaclass=_Parser):
         TokenType.ALWAYS,
         TokenType.ANTI,
         TokenType.APPLY,
+        TokenType.AUTO_INCREMENT,
         TokenType.BEGIN,
         TokenType.BOTH,
         TokenType.BUCKET,

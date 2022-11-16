@@ -115,4 +115,5 @@ ENV = {
     "ORD": null_if_any(ord),
     "IFNULL": lambda e, alt: alt if e is None else e,
     "SUBSTRING": substring,
+    "COALESCE": lambda *args: next((a for a in args if a is not None), None),
 }

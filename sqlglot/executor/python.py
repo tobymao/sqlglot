@@ -317,8 +317,12 @@ def _cast_py(self, expression):
 
     if to == exp.DataType.Type.DATE:
         return f"datetime.date.fromisoformat({this})"
-    if to == exp.DataType.Type.TEXT:
+    if to in exp.DataType.TEXT_TYPES:
         return f"str({this})"
+    if to in {exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE}:
+        return f"float({this})"
+    if to in exp.DataType.NUMERIC_TYPES:
+        return f"int({this})"
     raise NotImplementedError
 
 

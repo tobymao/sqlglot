@@ -47,14 +47,18 @@ def null_if_any(*required):
             required_indices = [
                 i for i, param in enumerate(inspect.signature(func).parameters) if param in required
             ]
+
+            def predicate(*args):
+                return any(args[i] is None for i in required_indices)
+
         else:
-            required_indices = None
+
+            def predicate(*args):
+                return any(a is None for a in args)
 
         @wraps(func)
         def _func(*args):
-            if (required_indices and any(args[i] is None for i in required_indices)) or (
-                not required_indices and any(a is None for a in args)
-            ):
+            if predicate(*args):
                 return None
             return func(*args)
 

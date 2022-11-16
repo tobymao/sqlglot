@@ -150,7 +150,7 @@ class Step:
 
         group = expression.args.get("group")
 
-        if group:
+        if group or aggregations:
             aggregate = Aggregate()
             aggregate.source = step.name
             aggregate.name = step.name
@@ -158,7 +158,7 @@ class Step:
                 alias(operand, alias_) for operand, alias_ in operands.items()
             )
             aggregate.aggregations = aggregations
-            aggregate.group = group.expressions
+            aggregate.group = group.expressions if group else []
             aggregate.add_dependency(step)
             step = aggregate
 

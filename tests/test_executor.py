@@ -73,7 +73,7 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        for sql, _ in self.sqls[0:3]:
+        for sql, _ in self.sqls[:5]:
             a = self.cached_execute(sql)
             sql = parse_one(sql).transform(to_csv).sql(pretty=True)
             table = execute(sql, TPCH_SCHEMA)
@@ -256,3 +256,8 @@ class TestExecutor(unittest.TestCase):
             result = execute(sql)
             self.assertEqual(result.columns, tuple(cols))
             self.assertEqual(result.rows, rows)
+
+    def test_aggregate_without_group_by(self):
+        result = execute("SELECT SUM(x) FROM t", tables={"t": [{"x": 1}, {"x": 2}]})
+        self.assertEqual(result.columns, ("_col_0",))
+        self.assertEqual(result.rows, [(3,)])

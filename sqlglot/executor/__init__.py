@@ -51,17 +51,3 @@ def execute(sql, schema=None, read=None, tables=None):
     result = PythonExecutor(tables=tables).execute(plan)
     logger.debug("Query finished: %f", time.time() - now)
     return result
-
-
-def _ensure_tables(tables):
-    result = {}
-    if not tables:
-        return result
-    for name, table in tables.items():
-        if isinstance(table, Table):
-            result[name] = table
-        else:
-            columns = tuple(table[0]) if table else ()
-            rows = [tuple(row[c] for c in columns) for row in table]
-            result[name] = Table(columns=columns, rows=rows)
-    return result

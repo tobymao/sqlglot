@@ -12,6 +12,7 @@ class TestTokens(unittest.TestCase):
             ("--comment\nfoo --test", "comment"),
             ("foo --comment", "comment"),
             ("foo", None),
+            ("foo /*comment 1*/ /*comment 2*/", "comment 1"),
         ]
 
         for sql, comment in sql_comment:

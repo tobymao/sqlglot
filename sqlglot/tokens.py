@@ -865,6 +865,7 @@ class Tokenizer(metaclass=_Tokenizer):
         if comment_start_line == self._prev_token_line:
             if self._prev_token_comment is None:
                 self.tokens[-1].comment = self._comment
+                self._prev_token_comment = self._comment
 
             self._comment = None
 

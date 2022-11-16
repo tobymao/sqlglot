@@ -278,6 +278,7 @@ class Parser(metaclass=_Parser):
         TokenType.DASH: exp.Sub,
         TokenType.PLUS: exp.Add,
         TokenType.MOD: exp.Mod,
+        TokenType.COLLATE: exp.Collate,
     }
 
     FACTOR = {

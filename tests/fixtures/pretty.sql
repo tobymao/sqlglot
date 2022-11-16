@@ -315,3 +315,10 @@ FROM (
   WHERE
     id = 1
 ) /* x */;
+SELECT * /* multi
+   line
+   comment */;
+SELECT
+  * /* multi
+     line
+     comment */;

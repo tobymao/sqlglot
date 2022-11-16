@@ -2037,6 +2037,23 @@ class DataType(Expression):
         Type.TEXT,
     }
 
+    NUMERIC_TYPES = {
+        Type.INT,
+        Type.TINYINT,
+        Type.SMALLINT,
+        Type.BIGINT,
+        Type.FLOAT,
+        Type.DOUBLE,
+    }
+
+    TEMPORAL_TYPES = {
+        Type.TIMESTAMP,
+        Type.TIMESTAMPTZ,
+        Type.TIMESTAMPLTZ,
+        Type.DATE,
+        Type.DATETIME,
+    }
+
     @classmethod
     def build(cls, dtype, **kwargs) -> DataType:
         return DataType(

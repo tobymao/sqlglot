@@ -363,3 +363,18 @@ def parse_date_delta(exp_class, unit_mapping=None):
         return exp_class(this=this, expression=expression, unit=unit)
 
     return inner_func
+
+
+def locate_to_strposition(args):
+    return exp.StrPosition(
+        this=seq_get(args, 1),
+        substr=seq_get(args, 0),
+        position=seq_get(args, 2),
+    )
+
+
+def strposition_to_local_sql(self, expression):
+    args = self.format_args(
+        expression.args.get("substr"), expression.this, expression.args.get("position")
+    )
+    return f"LOCATE({args})"

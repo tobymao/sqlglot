@@ -96,30 +96,28 @@ class PythonExecutor:
         projections = self.generate_tuple(step.projections)
 
         if source is None:
-            table_iter = self.static()
+            context, table_iter = self.static()
         elif source in context:
             if not projections and not condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
         elif isinstance(step.source, exp.Table) and isinstance(step.source.this, exp.ReadCSV):
             table_iter = self.scan_csv(step)
+            context = next(table_iter)
         else:
-            table_iter = self.scan_table(step)
+            context, table_iter = self.scan_table(step)
 
         if projections:
             sink = self.table(step.projections)
         else:
-            sink = None
+            sink = self.table(context.columns)
 
-        for reader, ctx in table_iter:
-            if sink is None:
-                sink = Table(reader.columns)
-
-            if condition and not ctx.eval(condition):
+        for reader in table_iter:
+            if condition and not context.eval(condition):
                 continue
 
             if projections:
-                sink.append(ctx.eval_tuple(projections))
+                sink.append(context.eval_tuple(projections))
             else:
                 sink.append(reader.row)
 
@@ -129,14 +127,12 @@ class PythonExecutor:
         return self.context({step.name: sink})
 
     def static(self):
-        yield RowReader(()), self.context({})
+        return self.context({}), [RowReader(())]
 
     def scan_table(self, step):
         table = self.tables.find(step.source)
-
         context = self.context({step.source.alias_or_name: table})
-        for r in table:
-            yield r, context
+        return context, iter(table)
 
     def scan_csv(self, step):
         alias = step.source.alias
@@ -146,6 +142,7 @@ class PythonExecutor:
             columns = next(reader)
             table = Table(columns)
             context = self.context({alias: table})
+            yield context
             types = []
 
             for row in reader:
@@ -156,7 +153,7 @@ class PythonExecutor:
                         except (ValueError, SyntaxError):
                             types.append(str)
                 context.set_row(tuple(t(v) for t, v in zip(types, row)))
-                yield context.table.reader, context
+                yield context.table.reader
 
     def join(self, step, context):
         source = step.name
@@ -359,6 +356,7 @@ class Python(Dialect):
             exp.Cast: _cast_py,
             exp.Column: _column_py,
             exp.EQ: lambda self, e: self.binary(e, "=="),
+            exp.NEQ: lambda self, e: self.binary(e, "!="),
             exp.In: lambda self, e: f"{self.sql(e, 'this')} in {self.expressions(e)}",
             exp.Interval: _interval_py,
             exp.Is: lambda self, e: self.binary(e, "is"),

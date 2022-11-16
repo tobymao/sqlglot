@@ -7,11 +7,13 @@ from sqlglot.dialects.dialect import (
     create_with_partitions_sql,
     format_time_lambda,
     if_sql,
+    locate_to_strposition,
     no_ilike_sql,
     no_recursive_cte_sql,
     no_safe_divide_sql,
     no_trycast_sql,
     rename_func,
+    strposition_to_local_sql,
     struct_extract_sql,
     var_map_sql,
 )
@@ -220,11 +222,7 @@ class Hive(Dialect):
             "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "FROM_UNIXTIME": format_time_lambda(exp.UnixToStr, "hive", True),
             "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,
-            "LOCATE": lambda args: exp.StrPosition(
-                this=seq_get(args, 1),
-                substr=seq_get(args, 0),
-                position=seq_get(args, 2),
-            ),
+            "LOCATE": locate_to_strposition,
             "LOG": (
                 lambda args: exp.Log.from_arg_list(args)
                 if len(args) > 1
@@ -282,7 +280,7 @@ class Hive(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
-            exp.StrPosition: lambda self, e: f"LOCATE({self.format_args(e.args.get('substr'), e.this, e.args.get('position'))})",
+            exp.StrPosition: strposition_to_local_sql,
             exp.StrToDate: _str_to_date,
             exp.StrToTime: _str_to_time,
             exp.StrToUnix: _str_to_unix,

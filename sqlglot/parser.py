@@ -1229,7 +1229,7 @@ class Parser(metaclass=_Parser):
     def _parse_hint(self):
         if self._match(TokenType.HINT):
             hints = self._parse_csv(self._parse_function)
-            if not self._match(TokenType.HINT):
+            if not self._match_pair(TokenType.STAR, TokenType.SLASH):
                 self.raise_error("Expected */ after HINT")
             return self.expression(exp.Hint, expressions=hints)
         return None

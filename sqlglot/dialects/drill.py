@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -111,8 +113,6 @@ class Drill(Dialect):
         ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
-        normalize_functions = None
-
     class Parser(parser.Parser):
         STRICT_CAST = False
 
@@ -169,3 +169,6 @@ class Drill(Dialect):
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         }
+
+        def normalize_func(self, name):
+            return name if re.match(exp.SAFE_IDENTIFIER_RE, name) else f"`{name}`"

@@ -143,6 +143,16 @@ class TestExecutor(unittest.TestCase):
                 ["a"],
                 [("a",), ("c",)],
             ),
+            (
+                "SELECT a AS i FROM x ORDER BY a",
+                ["i"],
+                [("a",), ("b",), ("c",)],
+            ),
+            (
+                "SELECT a AS i FROM x ORDER BY i",
+                ["i"],
+                [("a",), ("b",), ("c",)],
+            ),
         ]:
             with self.subTest(sql):
                 result = execute(sql, schema=schema, tables=tables)

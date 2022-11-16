@@ -61,6 +61,13 @@ class TestMySQL(Validator):
         self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("SET TRANSACTION READ ONLY")
         self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE")
+        self.validate_identity("SELECT SCHEMA()")
+
+    def test_canonical_functions(self):
+        self.validate_identity("SELECT LEFT('str', 2)", "SELECT SUBSTRING('str', 1, 2)")
+        self.validate_identity("SELECT INSTR('str', 'substr')", "SELECT LOCATE('substr', 'str')")
+        self.validate_identity("SELECT UCASE('foo')", "SELECT UPPER('foo')")
+        self.validate_identity("SELECT LCASE('foo')", "SELECT LOWER('foo')")
 
     def test_escape(self):
         self.validate_all(

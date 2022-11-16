@@ -2683,7 +2683,7 @@ class Log10(Func):
 
 
 class Lower(Func):
-    pass
+    _sql_names = ["LOWER", "LCASE"]
 
 
 class Map(Func):
@@ -2891,7 +2891,7 @@ class UnixToTimeStr(Func):
 
 
 class Upper(Func):
-    pass
+    _sql_names = ["UPPER", "UCASE"]
 
 
 class Variance(AggFunc):

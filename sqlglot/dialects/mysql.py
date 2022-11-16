@@ -5,10 +5,12 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    locate_to_strposition,
     no_ilike_sql,
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    strposition_to_local_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -175,11 +177,18 @@ class MySQL(Dialect):
     class Parser(parser.Parser):
         STRICT_CAST = False
 
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA}
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
             "STR_TO_DATE": _str_to_date,
+            "LOCATE": locate_to_strposition,
+            "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
+            "LEFT": lambda args: exp.Substring(
+                this=seq_get(args, 0), start=exp.Literal.number(1), length=seq_get(args, 1)
+            ),
         }
 
         FUNCTION_PARSERS = {
@@ -437,6 +446,7 @@ class MySQL(Dialect):
             exp.Trim: _trim_sql,
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
+            exp.StrPosition: strposition_to_local_sql,
         }
 
         ROOT_PROPERTIES = {

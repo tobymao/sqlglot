@@ -112,6 +112,7 @@ ENV = {
     "STR_POSITION": str_position,
     "UPPER": null_if_any(lambda arg: arg.upper()),
     "LOWER": null_if_any(lambda arg: arg.lower()),
+    "ORD": null_if_any(ord),
     "IFNULL": lambda e, alt: alt if e is None else e,
     "SUBSTRING": substring,
 }

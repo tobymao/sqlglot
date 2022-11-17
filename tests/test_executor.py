@@ -73,7 +73,7 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        for sql, _ in self.sqls[:5]:
+        for sql, _ in self.sqls[:6]:
             a = self.cached_execute(sql)
             sql = parse_one(sql).transform(to_csv).sql(pretty=True)
             table = execute(sql, TPCH_SCHEMA)
@@ -213,13 +213,13 @@ class TestExecutor(unittest.TestCase):
                 [("b",), ("c",)],
             ),
             (
-                """SELECT i.a 
+                """SELECT i.a
                 FROM (
                   SELECT a FROM x UNION SELECT a FROM y
-                ) AS i 
+                ) AS i
                 JOIN (
                   SELECT a FROM x UNION SELECT a FROM y
-                ) AS j 
+                ) AS j
                   ON i.a = j.a""",
                 ["a"],
                 [("a",), ("b",), ("c",), ("d",)],
@@ -298,6 +298,49 @@ class TestExecutor(unittest.TestCase):
             [
                 (1, 4.0),
                 (2, 3.0),
+            ],
+        )
+
+        self.assertEqual(
+            execute(
+                """
+            SELECT
+              o.id, x.*
+            FROM orders o
+            LEFT JOIN (
+                SELECT
+                  1 AS id, 'b' AS x
+                UNION ALL
+                SELECT
+                  3 AS id, 'c' AS x
+            ) x
+              ON o.id = x.id
+        """,
+                tables=tables,
+            ).rows,
+            [(1, 1, "b"), (2, None, None)],
+        )
+        self.assertEqual(
+            execute(
+                """
+            SELECT
+              o.id, x.*
+            FROM orders o
+            RIGHT JOIN (
+                SELECT
+                  1 AS id,
+                  'b' AS x
+                UNION ALL
+                SELECT
+                  3 AS id, 'c' AS x
+            ) x
+              ON o.id = x.id
+        """,
+                tables=tables,
+            ).rows,
+            [
+                (1, 1, "b"),
+                (None, 3, "c"),
             ],
         )
 

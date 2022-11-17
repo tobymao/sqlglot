@@ -224,6 +224,8 @@ class PythonExecutor:
     def hash_join(self, join, source_context, join_context):
         source_key = self.generate_tuple(join["source_key"])
         join_key = self.generate_tuple(join["join_key"])
+        left = join.get("side") == "LEFT"
+        right = join.get("side") == "RIGHT"
 
         results = collections.defaultdict(lambda: ([], []))
 
@@ -233,8 +235,14 @@ class PythonExecutor:
             results[ctx.eval_tuple(join_key)][1].append(reader.row)
 
         table = Table(source_context.columns + join_context.columns)
+        nulls = [(None,) * len(join_context.columns if left else source_context.columns)]
 
         for a_group, b_group in results.values():
+            if left:
+                b_group = b_group or nulls
+            elif right:
+                a_group = a_group or nulls
+
             for a_row, b_row in itertools.product(a_group, b_group):
                 table.append(a_row + b_row)
 

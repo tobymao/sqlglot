@@ -276,7 +276,7 @@ class Scan(Step):
         self.source = None
 
     def _to_s(self, indent: str) -> t.List[str]:
-        return [f"{indent}Source: {self.source.sql()}"]  # type: ignore
+        return [f"{indent}Source: {self.source.sql() if self.source else '-static-'}"]  # type: ignore
 
 
 class Write(Step):

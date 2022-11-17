@@ -104,7 +104,7 @@ class Step:
 
         from_ = expression.args.get("from")
 
-        if from_:
+        if isinstance(expression, exp.Select) and from_:
             from_ = from_.expressions
             if len(from_) > 1:
                 raise UnsupportedError(
@@ -112,6 +112,8 @@ class Step:
                 )
 
             step = Scan.from_expression(from_[0], ctes)
+        elif isinstance(expression, exp.Union):
+            step = SetOperation.from_expression(expression, ctes)
         else:
             step = Scan()
 
@@ -229,8 +231,14 @@ class Step:
         return "\n".join(lines)
 
     @property
+    def type_name(self) -> str:
+        return self.__class__.__name__
+
+    @property
     def id(self) -> str:
-        return f"{self.__class__.__name__}: {self.name} ({id(self)})"
+        name = self.name
+        name = f" {name}" if name else ""
+        return f"{self.type_name}:{name} ({id(self)})"
 
     def _to_s(self, _indent: str) -> t.List[str]:
         return []
@@ -346,3 +354,45 @@ class Sort(Step):
             lines.append(f"{indent}  - {expression.sql()}")
 
         return lines
+
+
+class SetOperation(Step):
+    def __init__(
+        self,
+        op: t.Type[exp.Expression],
+        left: str | None,
+        right: str | None,
+        distinct: bool = False,
+    ) -> None:
+        super().__init__()
+        self.op = op
+        self.left = left
+        self.right = right
+        self.distinct = distinct
+
+    @classmethod
+    def from_expression(
+        cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
+    ) -> Step:
+        assert isinstance(expression, exp.Union)
+        left = Step.from_expression(expression.left, ctes)
+        right = Step.from_expression(expression.right, ctes)
+        step = cls(
+            op=expression.__class__,
+            left=left.name,
+            right=right.name,
+            distinct=expression.args.get("distinct"),
+        )
+        step.add_dependency(left)
+        step.add_dependency(right)
+        return step
+
+    def _to_s(self, indent: str) -> t.List[str]:
+        lines = []
+        if self.distinct:
+            lines.append(f"{indent}Distinct: {self.distinct}")
+        return lines
+
+    @property
+    def type_name(self) -> str:
+        return self.op.__name__

@@ -169,6 +169,72 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(result.columns, tuple(cols))
                 self.assertEqual(result.rows, rows)
 
+    def test_set_operations(self):
+        tables = {
+            "x": [
+                {"a": "a"},
+                {"a": "b"},
+                {"a": "c"},
+            ],
+            "y": [
+                {"a": "b"},
+                {"a": "c"},
+                {"a": "d"},
+            ],
+        }
+        schema = {
+            "x": {
+                "a": "VARCHAR",
+            },
+            "y": {
+                "a": "VARCHAR",
+            },
+        }
+
+        for sql, cols, rows in [
+            (
+                "SELECT a FROM x UNION ALL SELECT a FROM y",
+                ["a"],
+                [("a",), ("b",), ("c",), ("b",), ("c",), ("d",)],
+            ),
+            (
+                "SELECT a FROM x UNION SELECT a FROM y",
+                ["a"],
+                [("a",), ("b",), ("c",), ("d",)],
+            ),
+            (
+                "SELECT a FROM x EXCEPT SELECT a FROM y",
+                ["a"],
+                [("a",)],
+            ),
+            (
+                "SELECT a FROM x INTERSECT SELECT a FROM y",
+                ["a"],
+                [("b",), ("c",)],
+            ),
+            (
+                """SELECT i.a 
+                FROM (
+                  SELECT a FROM x UNION SELECT a FROM y
+                ) AS i 
+                JOIN (
+                  SELECT a FROM x UNION SELECT a FROM y
+                ) AS j 
+                  ON i.a = j.a""",
+                ["a"],
+                [("a",), ("b",), ("c",), ("d",)],
+            ),
+            (
+                "SELECT 1 AS a UNION SELECT 2 AS a",
+                ["a"],
+                [(1,), (2,)],
+            ),
+        ]:
+            with self.subTest(sql):
+                result = execute(sql, schema=schema, tables=tables)
+                self.assertEqual(result.columns, tuple(cols))
+                self.assertEqual(set(result.rows), set(rows))
+
     def test_execute_catalog_db_table(self):
         tables = {
             "catalog": {

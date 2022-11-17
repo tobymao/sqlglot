@@ -44,6 +44,8 @@ class PythonExecutor:
                     contexts[node] = self.join(node, context)
                 elif isinstance(node, planner.Sort):
                     contexts[node] = self.sort(node, context)
+                elif isinstance(node, planner.SetOperation):
+                    contexts[node] = self.set_operation(node, context)
                 else:
                     raise NotImplementedError
 
@@ -309,6 +311,23 @@ class PythonExecutor:
             rows=[r[len(context.columns) : len(all_columns)] for r in sort_ctx.table.rows],
         )
         return self.context({step.name: output})
+
+    def set_operation(self, step, context):
+        left = context.tables[step.left]
+        right = context.tables[step.right]
+
+        sink = self.table(left.columns)
+
+        if issubclass(step.op, exp.Intersect):
+            sink.rows = list(set(left.rows).intersection(set(right.rows)))
+        elif issubclass(step.op, exp.Except):
+            sink.rows = list(set(left.rows).difference(set(right.rows)))
+        elif issubclass(step.op, exp.Union) and step.distinct:
+            sink.rows = list(set(left.rows).union(set(right.rows)))
+        else:
+            sink.rows = left.rows + right.rows
+
+        return self.context({step.name: sink})
 
 
 def _cast_py(self, expression):

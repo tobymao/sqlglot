@@ -158,6 +158,11 @@ class TestExecutor(unittest.TestCase):
                 ["a", "i"],
                 [(1, "c"), (2, "b"), (3, "a")],
             ),
+            (
+                "SELECT a /* test */ FROM x LIMIT 1",
+                ["a"],
+                [("a",)],
+            ),
         ]:
             with self.subTest(sql):
                 result = execute(sql, schema=schema, tables=tables)
@@ -325,6 +330,13 @@ class TestExecutor(unittest.TestCase):
             ("SUBSTRING('12345', 0, 1)", ""),
             ("SUBSTRING(NULL)", None),
             ("SUBSTRING(NULL, 1)", None),
+            ("CAST(1 AS TEXT)", "1"),
+            ("CAST('1' AS LONG)", 1),
+            ("CAST('1.1' AS FLOAT)", 1.1),
+            ("COALESCE(NULL)", None),
+            ("COALESCE(NULL, NULL)", None),
+            ("COALESCE(NULL, 'b')", "b"),
+            ("COALESCE('a', 'b')", "a"),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

@@ -1182,6 +1182,9 @@ class Generator:
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
 
+    def collate_sql(self, expression):
+        return self.binary(expression, "COLLATE")
+
     def command_sql(self, expression):
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 

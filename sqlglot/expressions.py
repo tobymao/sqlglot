@@ -2481,6 +2481,10 @@ class Cast(Func):
         return self.args["to"]
 
 
+class Collate(Binary):
+    pass
+
+
 class TryCast(Cast):
     pass
 

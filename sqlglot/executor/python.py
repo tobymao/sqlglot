@@ -14,7 +14,7 @@ from sqlglot.helper import csv_reader
 
 class PythonExecutor:
     def __init__(self, env=None, tables=None):
-        self.generator = Python().generator(identify=True)
+        self.generator = Python().generator(identify=True, comments=False)
         self.env = {**ENV, **(env or {})}
         self.tables = tables or {}
 

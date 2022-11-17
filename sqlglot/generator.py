@@ -94,6 +94,9 @@ class Generator:
     ROOT_PROPERTIES = {
         exp.ReturnsProperty,
         exp.LanguageProperty,
+        exp.DistStyleProperty,
+        exp.DistKeyProperty,
+        exp.SortKeyProperty,
     }
 
     WITH_PROPERTIES = {

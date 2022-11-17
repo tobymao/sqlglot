@@ -146,7 +146,9 @@ class TokenType(AutoName):
     DETERMINISTIC = auto()
     DISTINCT = auto()
     DISTINCT_FROM = auto()
+    DISTKEY = auto()
     DISTRIBUTE_BY = auto()
+    DISTSTYLE = auto()
     DIV = auto()
     DROP = auto()
     ELSE = auto()
@@ -253,6 +255,7 @@ class TokenType(AutoName):
     SHOW = auto()
     SIMILAR_TO = auto()
     SOME = auto()
+    SORTKEY = auto()
     SORT_BY = auto()
     STABLE = auto()
     STORED = auto()
@@ -463,7 +466,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "DETERMINISTIC": TokenType.DETERMINISTIC,
         "DISTINCT": TokenType.DISTINCT,
         "DISTINCT FROM": TokenType.DISTINCT_FROM,
+        "DISTKEY": TokenType.DISTKEY,
         "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
+        "DISTSTYLE": TokenType.DISTSTYLE,
         "DIV": TokenType.DIV,
         "DROP": TokenType.DROP,
         "ELSE": TokenType.ELSE,
@@ -561,6 +566,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
         "SOME": TokenType.SOME,
+        "SORTKEY": TokenType.SORTKEY,
         "SORT BY": TokenType.SORT_BY,
         "STABLE": TokenType.STABLE,
         "STORED": TokenType.STORED,

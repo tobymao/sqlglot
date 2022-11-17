@@ -11,7 +11,7 @@ from sqlglot.optimizer.eliminate_joins import join_condition
 
 class Plan:
     def __init__(self, expression: exp.Expression) -> None:
-        self.expression = expression
+        self.expression = expression.copy()
         self.root = Step.from_expression(self.expression)
         self._dag: t.Dict[Step, t.Set[Step]] = {}
 

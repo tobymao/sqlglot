@@ -397,7 +397,7 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
-        TokenType.USE: lambda self: self._parse_use(),
+        TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
         TokenType.BEGIN: lambda self: self._parse_transaction(),
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
@@ -2641,9 +2641,6 @@ class Parser(metaclass=_Parser):
 
     def _parse_select_or_expression(self):
         return self._parse_select() or self._parse_expression()
-
-    def _parse_use(self):
-        return self.expression(exp.Use, this=self._parse_id_var())
 
     def _parse_transaction(self):
         this = None

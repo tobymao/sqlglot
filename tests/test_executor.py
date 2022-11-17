@@ -225,9 +225,9 @@ class TestExecutor(unittest.TestCase):
                 [("a",), ("b",), ("c",), ("d",)],
             ),
             (
-                "SELECT 1 AS a UNION SELECT 2 AS a",
+                "SELECT 1 AS a UNION SELECT 2 AS a UNION SELECT 3 AS a",
                 ["a"],
-                [(1,), (2,)],
+                [(1,), (2,), (3,)],
             ),
         ]:
             with self.subTest(sql):

@@ -1076,6 +1076,18 @@ class FileFormatProperty(Property):
     pass
 
 
+class DistKeyProperty(Property):
+    pass
+
+
+class SortKeyProperty(Property):
+    pass
+
+
+class DistStyleProperty(Property):
+    pass
+
+
 class LocationProperty(Property):
     pass
 
@@ -1133,6 +1145,9 @@ class Properties(Expression):
         "LOCATION": LocationProperty,
         "PARTITIONED_BY": PartitionedByProperty,
         "TABLE_FORMAT": TableFormatProperty,
+        "DISTKEY": DistKeyProperty,
+        "DISTSTYLE": DistStyleProperty,
+        "SORTKEY": SortKeyProperty,
     }
 
     @classmethod

@@ -159,6 +159,8 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE,
         TokenType.DESCRIBE,
         TokenType.DETERMINISTIC,
+        TokenType.DISTKEY,
+        TokenType.DISTSTYLE,
         TokenType.EXECUTE,
         TokenType.ENGINE,
         TokenType.ESCAPE,
@@ -199,6 +201,7 @@ class Parser(metaclass=_Parser):
         TokenType.SEMI,
         TokenType.SET,
         TokenType.SHOW,
+        TokenType.SORTKEY,
         TokenType.STABLE,
         TokenType.STORED,
         TokenType.TABLE,
@@ -408,7 +411,8 @@ class Parser(metaclass=_Parser):
             exp.Literal, this=token.text, is_string=False
         ),
         TokenType.STAR: lambda self, _: self.expression(
-            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
+            exp.Star,
+            **{"except": self._parse_except(), "replace": self._parse_replace()},
         ),
         TokenType.NULL: lambda self, _: self.expression(exp.Null),
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
@@ -452,6 +456,9 @@ class Parser(metaclass=_Parser):
         TokenType.PARTITIONED_BY: lambda self: self._parse_partitioned_by(),
         TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
         TokenType.STORED: lambda self: self._parse_stored(),
+        TokenType.DISTKEY: lambda self: self._parse_distkey(),
+        TokenType.DISTSTYLE: lambda self: self._parse_diststyle(),
+        TokenType.SORTKEY: lambda self: self._parse_sortkey(),
         TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
@@ -786,7 +793,11 @@ class Parser(metaclass=_Parser):
                 expression = self._parse_select_or_expression()
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
-        elif create_token.token_type in (TokenType.TABLE, TokenType.VIEW, TokenType.SCHEMA):
+        elif create_token.token_type in (
+            TokenType.TABLE,
+            TokenType.VIEW,
+            TokenType.SCHEMA,
+        ):
             this = self._parse_table(schema=True)
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
@@ -844,6 +855,37 @@ class Parser(metaclass=_Parser):
             exp.FileFormatProperty,
             this=exp.Literal.string("FORMAT"),
             value=exp.Literal.string(self._parse_var().name),
+        )
+
+    def _parse_distkey(self):
+        self._match_l_paren()
+        this = exp.Literal.string("DISTKEY")
+        value = exp.Literal.string(self._parse_var().name)
+        self._match_r_paren()
+        return self.expression(
+            exp.DistKeyProperty,
+            this=this,
+            value=value,
+        )
+
+    def _parse_sortkey(self):
+        self._match_l_paren()
+        this = exp.Literal.string("SORTKEY")
+        value = exp.Literal.string(self._parse_var().name)
+        self._match_r_paren()
+        return self.expression(
+            exp.SortKeyProperty,
+            this=this,
+            value=value,
+        )
+
+    def _parse_diststyle(self):
+        this = exp.Literal.string("DISTSTYLE")
+        value = exp.Literal.string(self._parse_var().name)
+        return self.expression(
+            exp.DistStyleProperty,
+            this=this,
+            value=value,
         )
 
     def _parse_auto_increment(self):

@@ -158,6 +158,8 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE,
         TokenType.DESCRIBE,
         TokenType.DETERMINISTIC,
+        TokenType.DISTKEY,
+        TokenType.DISTSTYLE,
         TokenType.EXECUTE,
         TokenType.ENGINE,
         TokenType.ESCAPE,
@@ -198,6 +200,7 @@ class Parser(metaclass=_Parser):
         TokenType.SEMI,
         TokenType.SET,
         TokenType.SHOW,
+        TokenType.SORTKEY,
         TokenType.STABLE,
         TokenType.STORED,
         TokenType.TABLE,
@@ -450,6 +453,9 @@ class Parser(metaclass=_Parser):
         TokenType.PARTITIONED_BY: lambda self: self._parse_partitioned_by(),
         TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
         TokenType.STORED: lambda self: self._parse_stored(),
+        TokenType.DISTKEY: lambda self: self._parse_distkey(),
+        TokenType.DISTSTYLE: lambda self: self._parse_diststyle(),
+        TokenType.SORTKEY: lambda self: self._parse_sortkey(),
         TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
@@ -843,6 +849,38 @@ class Parser(metaclass=_Parser):
             this=exp.Literal.string("FORMAT"),
             value=exp.Literal.string(self._parse_var().name),
         )
+    
+    def _parse_distkey(self):
+        self._match_l_paren()
+        this = exp.Literal.string("DISTKEY")
+        value = exp.Literal.string(self._parse_var().name)
+        self._match_r_paren()
+        return self.expression(
+            exp.DistKeyProperty,
+            this=this,
+            value=value,
+        )
+
+    def _parse_sortkey(self):
+        self._match_l_paren()
+        this = exp.Literal.string("SORTKEY")
+        value = exp.Literal.string(self._parse_var().name)
+        self._match_r_paren()
+        return self.expression(
+            exp.SortKeyProperty,
+            this=this,
+            value=value,
+        )
+
+    def _parse_diststyle(self):
+        this = exp.Literal.string("DISTSTYLE")
+        value = exp.Literal.string(self._parse_var().name)
+        return self.expression(
+            exp.DistStyleProperty,
+            this=this,
+            value=value,
+        )
+    
 
     def _parse_auto_increment(self):
         self._match(TokenType.EQ)

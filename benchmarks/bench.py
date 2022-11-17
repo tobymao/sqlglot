@@ -5,8 +5,10 @@ collections.Iterable = collections.abc.Iterable
 import gc
 import timeit
 
-import moz_sql_parser
 import numpy as np
+
+import sqlfluff
+import moz_sql_parser
 import sqloxide
 import sqlparse
 import sqltree
@@ -177,6 +179,10 @@ def sqloxide_parse(sql):
     sqloxide.parse_sql(sql, dialect="ansi")
 
 
+def sqlfluff_parse(sql):
+    sqlfluff.parse(sql)
+
+
 def border(columns):
     columns = " | ".join(columns)
     return f"| {columns} |"
@@ -193,6 +199,7 @@ def diff(row, column):
 
 libs = [
     "sqlglot",
+    "sqlfluff",
     "sqltree",
     "sqlparse",
     "moz_sql_parser",
@@ -206,7 +213,8 @@ for name, sql in {"tpch": tpch, "short": short, "long": long, "crazy": crazy}.it
     for lib in libs:
         try:
             row[lib] = np.mean(timeit.repeat(lambda: globals()[lib + "_parse"](sql), number=3))
-        except:
+        except Exception as e:
+            print(e)
             row[lib] = "error"
 
 columns = ["Query"] + libs

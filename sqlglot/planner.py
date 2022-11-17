@@ -257,7 +257,7 @@ class Scan(Step):
 
         step = Scan()
         step.name = alias_
-        step.source = expression  # type: ignore
+        step.source = expression
         if ctes and table.name in ctes:
             step.add_dependency(ctes[table.name])
 
@@ -265,14 +265,10 @@ class Scan(Step):
 
     def __init__(self) -> None:
         super().__init__()
-        self.source = None
+        self.source: t.Optional[exp.Expression] = None
 
     def _to_s(self, indent: str) -> t.List[str]:
         return [f"{indent}Source: {self.source.sql()}"]  # type: ignore
-
-
-class Write(Step):
-    pass
 
 
 class Join(Step):

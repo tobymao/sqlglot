@@ -850,7 +850,6 @@ class Parser(metaclass=_Parser):
 
     def _parse_stored(self):
         self._match(TokenType.ALIAS)
-        self._match(TokenType.EQ)
         return self.expression(
             exp.FileFormatProperty,
             this=exp.Literal.string("FORMAT"),
@@ -893,7 +892,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.AutoIncrementProperty,
             this=exp.Literal.string("AUTO_INCREMENT"),
-            value=self._parse_var() or self._parse_number(),
+            value=self._parse_number(),
         )
 
     def _parse_schema_comment(self):

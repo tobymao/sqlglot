@@ -1759,7 +1759,7 @@ class Select(Subqueryable):
             )
 
         if join_alias:
-            join.set("this", alias_(join.args["this"], join_alias, table=True))
+            join.set("this", alias_(join.this, join_alias, table=True))
         return _apply_list_builder(
             join,
             instance=self,

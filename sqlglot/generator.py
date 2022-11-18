@@ -67,7 +67,7 @@ class Generator:
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
-        exp.VolatilityProperty: lambda self, e: self.sql(e.name),
+        exp.VolatilityProperty: lambda self, e: f"{e.name}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed

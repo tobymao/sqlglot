@@ -354,12 +354,6 @@ class PythonExecutor:
         return self.context({step.name: sink})
 
 
-def _interval_py(self, expression):
-    this = self.sql(e, "this")
-    unit = e.text("unit").lower()
-    return f"INTERVAL({this}, '{unit}')"
-
-
 def _ordered_py(self, expression):
     this = self.sql(expression, "this")
     desc = "True" if expression.args.get("desc") else "False"
@@ -378,6 +372,19 @@ def _rename(self, e):
         raise Exception(f"Could not rename {repr(e)}") from ex
 
 
+def _case_sql(self, expression):
+    this = self.sql(expression, "this")
+    chain = self.sql(expression, "default") or "None"
+
+    for e in reversed(expression.args["ifs"]):
+        true = self.sql(e, "true")
+        condition = self.sql(e, "this")
+        condition = f"{this} = ({condition})" if this else condition
+        chain = f"{true} if {condition} else ({chain})"
+
+    return chain
+
+
 class Python(Dialect):
     class Tokenizer(tokens.Tokenizer):
         ESCAPES = ["\\"]
@@ -386,6 +393,7 @@ class Python(Dialect):
         TRANSFORMS = {
             **{klass: _rename for klass in subclasses(exp.__name__, exp.Binary)},
             **{klass: _rename for klass in exp.ALL_FUNCTIONS},
+            exp.Case: _case_sql,
             exp.Alias: lambda self, e: self.sql(e.this),
             exp.Array: inline_array_sql,
             exp.And: lambda self, e: self.binary(e, "and"),
@@ -395,7 +403,6 @@ class Python(Dialect):
             exp.Column: lambda self, e: f"scope[{self.sql(e, 'table') or None}][{self.sql(e.this)}]",
             exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
             exp.In: lambda self, e: f"{self.sql(e, 'this')} in {self.expressions(e)}",
-            exp.Interval: _interval_py,
             exp.Is: lambda self, e: self.binary(e, "is"),
             exp.Not: lambda self, e: f"not {self.sql(e.this)}",
             exp.Null: lambda *_: "None",
@@ -403,15 +410,3 @@ class Python(Dialect):
             exp.Ordered: _ordered_py,
             exp.Star: lambda *_: "1",
         }
-
-        def case_sql(self, expression):
-            this = self.sql(expression, "this")
-            chain = self.sql(expression, "default") or "None"
-
-            for e in reversed(expression.args["ifs"]):
-                true = self.sql(e, "true")
-                condition = self.sql(e, "this")
-                condition = f"{this} = ({condition})" if this else condition
-                chain = f"{true} if {condition} else ({chain})"
-
-            return chain

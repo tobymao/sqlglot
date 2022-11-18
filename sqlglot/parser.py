@@ -2156,7 +2156,10 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.ColumnDef, this=this, kind=kind, constraints=constraints)
 
     def _parse_column_constraint(self):
-        this = None
+        this = self._parse_references()
+
+        if this:
+            return this
 
         if self._match(TokenType.CONSTRAINT):
             this = self._parse_id_var()
@@ -2187,7 +2190,7 @@ class Parser(metaclass=_Parser):
                 kind = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
             self._match_pair(TokenType.ALIAS, TokenType.IDENTITY)
         else:
-            return None
+            return this
 
         return self.expression(exp.ColumnConstraint, this=this, kind=kind)
 
@@ -2213,28 +2216,26 @@ class Parser(metaclass=_Parser):
         return self.CONSTRAINT_PARSERS[self._prev.token_type](self)
 
     def _parse_check(self):
-        self._match(TokenType.CHECK)
         self._match_l_paren()
         expression = self._parse_conjunction()
         self._match_r_paren()
-
         return self.expression(exp.Check, this=expression)
 
     def _parse_unique(self):
-        self._match(TokenType.UNIQUE)
-        columns = self._parse_wrapped_id_vars()
+        return self.expression(exp.Unique, expressions=self._parse_wrapped_id_vars())
 
-        return self.expression(exp.Unique, expressions=columns)
-
-    def _parse_foreign_key(self):
-        self._match(TokenType.FOREIGN_KEY)
-
-        expressions = self._parse_wrapped_id_vars()
-        reference = self._match(TokenType.REFERENCES) and self.expression(
+    def _parse_references(self):
+        if not self._match(TokenType.REFERENCES):
+            return None
+        return self.expression(
             exp.Reference,
             this=self._parse_id_var(),
             expressions=self._parse_wrapped_id_vars(),
         )
+
+    def _parse_foreign_key(self):
+        expressions = self._parse_wrapped_id_vars()
+        reference = self._parse_references()
         options = {}
 
         while self._match(TokenType.ON):

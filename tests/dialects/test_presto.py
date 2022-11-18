@@ -429,3 +429,67 @@ class TestPresto(Validator):
         )
         self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+
+    def test_encode_decode(self):
+        self.validate_all(
+            "TO_UTF8(x)",
+            write={
+                "spark": "ENCODE(x, 'utf-8')",
+            },
+        )
+        self.validate_all(
+            "FROM_UTF8(x)",
+            write={
+                "spark": "DECODE(x, 'utf-8')",
+            },
+        )
+        self.validate_all(
+            "ENCODE(x, 'utf-8')",
+            write={
+                "presto": "TO_UTF8(x)",
+            },
+        )
+        self.validate_all(
+            "DECODE(x, 'utf-8')",
+            write={
+                "presto": "FROM_UTF8(x)",
+            },
+        )
+        self.validate_all(
+            "ENCODE(x, 'invalid')",
+            write={
+                "presto": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "DECODE(x, 'invalid')",
+            write={
+                "presto": UnsupportedError,
+            },
+        )
+
+    def test_hex_unhex(self):
+        self.validate_all(
+            "TO_HEX(x)",
+            write={
+                "spark": "HEX(x)",
+            },
+        )
+        self.validate_all(
+            "FROM_HEX(x)",
+            write={
+                "spark": "UNHEX(x)",
+            },
+        )
+        self.validate_all(
+            "HEX(x)",
+            write={
+                "presto": "TO_HEX(x)",
+            },
+        )
+        self.validate_all(
+            "UNHEX(x)",
+            write={
+                "presto": "FROM_HEX(x)",
+            },
+        )

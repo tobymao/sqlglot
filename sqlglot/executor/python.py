@@ -181,6 +181,9 @@ class PythonExecutor:
                     for name, column_range in column_ranges.items()
                 }
             )
+            condition = self.generate(join["condition"])
+            if condition:
+                source_context.filter(condition)
 
         condition = self.generate(step.condition)
         projections = self.generate_tuple(step.projections)
@@ -249,20 +252,33 @@ class PythonExecutor:
         return table
 
     def aggregate(self, step, context):
-        source = step.source
-        group_by = self.generate_tuple(step.group)
+        group_by = self.generate_tuple(step.group.values())
         aggregations = self.generate_tuple(step.aggregations)
         operands = self.generate_tuple(step.operands)
 
         if operands:
-            source_table = context.tables[source]
-            operand_table = Table(source_table.columns + self.table(step.operands).columns)
+            operand_table = Table(self.table(step.operands).columns)
 
             for reader, ctx in context:
-                operand_table.append(reader.row + ctx.eval_tuple(operands))
+                operand_table.append(ctx.eval_tuple(operands))
+
+            for i, (a, b) in enumerate(zip(context.table.rows, operand_table.rows)):
+                context.table.rows[i] = a + b
+
+            width = len(context.columns)
+            context.add_columns(*operand_table.columns)
+
+            operand_table = Table(
+                context.columns,
+                context.table.rows,
+                range(width, width + len(operand_table.columns)),
+            )
 
             context = self.context(
-                {None: operand_table, **{table: operand_table for table in context.tables}}
+                {
+                    None: operand_table,
+                    **context.tables,
+                }
             )
 
         context.sort(group_by)
@@ -270,8 +286,8 @@ class PythonExecutor:
         group = None
         start = 0
         end = 1
-        length = len(context.tables[source])
-        table = self.table(step.group + step.aggregations)
+        length = len(context.table)
+        table = self.table(list(step.group) + step.aggregations)
 
         for i in range(length):
             context.set_index(i)
@@ -344,6 +360,8 @@ def _cast_py(self, expression):
 
     if to == exp.DataType.Type.DATE:
         return f"datetime.date.fromisoformat({this})"
+    if to == exp.DataType.Type.DATETIME:
+        return f"datetime.datetime.fromisoformat({this})"
     if to in exp.DataType.TEXT_TYPES:
         return f"str({this})"
     if to in {exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE}:
@@ -357,6 +375,12 @@ def _column_py(self, expression):
     table = self.sql(expression, "table") or None
     this = self.sql(expression, "this")
     return f"scope[{table}][{this}]"
+
+
+def _extract_py(self, expression):
+    to = expression.name.lower()
+    expression = self.sql(expression, "expression")
+    return f"{expression}.{to}"
 
 
 def _interval_py(self, expression):
@@ -393,6 +417,7 @@ class Python(Dialect):
             exp.Cast: _cast_py,
             exp.Column: _column_py,
             exp.EQ: lambda self, e: self.binary(e, "=="),
+            exp.Extract: _extract_py,
             exp.NEQ: lambda self, e: self.binary(e, "!="),
             exp.In: lambda self, e: f"{self.sql(e, 'this')} in {self.expressions(e)}",
             exp.Interval: _interval_py,

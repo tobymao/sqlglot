@@ -160,7 +160,15 @@ class Step:
                 alias(operand, alias_) for operand, alias_ in operands.items()
             )
             aggregate.aggregations = aggregations
-            aggregate.group = group.expressions if group else []
+            # give aggregates names and replace projections with references to them
+            aggregate.group = {
+                f"_g{i}": e for i, e in enumerate(group.expressions if group else [])
+            }
+            for projection in projections:
+                for i, e in aggregate.group.items():
+                    for child, _, _ in projection.walk():
+                        if child == e:
+                            child.replace(exp.column(i, step.name))
             aggregate.add_dependency(step)
             step = aggregate
 
@@ -317,7 +325,7 @@ class Aggregate(Step):
         super().__init__()
         self.aggregations: t.List[exp.Expression] = []
         self.operands: t.Tuple[exp.Expression, ...] = ()
-        self.group: t.List[exp.Expression] = []
+        self.group: t.Dict[str, exp.Expression] = {}
         self.source: t.Optional[str] = None
 
     def _to_s(self, indent: str) -> t.List[str]:
@@ -328,7 +336,7 @@ class Aggregate(Step):
 
         if self.group:
             lines.append(f"{indent}Group:")
-            for expression in self.group:
+            for expression in self.group.values():
                 lines.append(f"{indent}  - {expression.sql()}")
         if self.operands:
             lines.append(f"{indent}Operands:")

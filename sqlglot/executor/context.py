@@ -48,6 +48,10 @@ class Context:
                     raise Exception(f"Rows are different.")
         return self._table
 
+    def add_columns(self, *columns: str) -> None:
+        for table in self.tables.values():
+            table.add_columns(*columns)
+
     @property
     def columns(self) -> t.Tuple:
         return self.table.columns
@@ -65,14 +69,18 @@ class Context:
         for reader in self.tables[table]:
             yield reader, self
 
-    def sort(self, key) -> None:
-        table = self.table
+    def filter(self, condition) -> None:
+        rows = [reader.row for reader, _ in self if self.eval(condition)]
 
+        for table in self.tables.values():
+            table.rows = rows
+
+    def sort(self, key) -> None:
         def sort_key(row: t.Tuple) -> t.Tuple:
-            table.reader.row = row
+            self.set_row(row)
             return self.eval_tuple(key)
 
-        table.rows.sort(key=sort_key)
+        self.table.rows.sort(key=sort_key)
 
     def set_row(self, row: t.Tuple) -> None:
         for table in self.tables.values():

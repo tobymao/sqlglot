@@ -484,7 +484,9 @@ class Parser(metaclass=_Parser):
     }
 
     CONSTRAINT_PARSERS = {
-        TokenType.CHECK: lambda self: self.expression(exp.Check, this=self._parse_wrapped(lambda: self._parse_conjunction())),
+        TokenType.CHECK: lambda self: self.expression(
+            exp.Check, this=self._parse_wrapped(lambda: self._parse_conjunction())
+        ),
         TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
         TokenType.UNIQUE: lambda self: self._parse_unique(),
     }

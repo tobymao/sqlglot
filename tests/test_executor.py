@@ -1,4 +1,5 @@
 import unittest
+from datetime import date
 
 import duckdb
 import pandas as pd
@@ -457,6 +458,10 @@ class TestExecutor(unittest.TestCase):
             ("1 > 1", False),
             ("1 >= 1", True),
             ("1 + NULL", None),
+            ("IF(true, 1, 0)", 1),
+            ("IF(false, 1, 0)", 0),
+            ("CASE WHEN 0 = 1 THEN 'foo' ELSE 'bar' END", "bar"),
+            ("CAST('2022-01-01' AS DATE) + INTERVAL '1' DAY", date(2022, 1, 2)),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

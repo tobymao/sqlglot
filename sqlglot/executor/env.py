@@ -149,6 +149,7 @@ ENV = {
     "GT": null_if_any(lambda this, e: this > e),
     "GTE": null_if_any(lambda this, e: this >= e),
     "IFNULL": lambda e, alt: alt if e is None else e,
+    "IF": lambda predicate, true, false: true if predicate else false,
     "INTDIV": null_if_any(lambda e, this: e // this),
     "INTERVAL": interval,
     "LIKE": null_if_any(

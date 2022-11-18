@@ -69,16 +69,17 @@ class TestExecutor(unittest.TestCase):
         def to_csv(expression):
             if isinstance(expression, exp.Table):
                 return parse_one(
-                    f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.name}"
+                    f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
 
-        for sql, _ in self.sqls[:6]:
-            a = self.cached_execute(sql)
-            sql = parse_one(sql).transform(to_csv).sql(pretty=True)
-            table = execute(sql, TPCH_SCHEMA)
-            b = pd.DataFrame(table.rows, columns=table.columns)
-            assert_frame_equal(a, b, check_dtype=False)
+        for i, (sql, _) in enumerate(self.sqls[0:7]):
+            with self.subTest(f"tpch-h {i + 1}"):
+                a = self.cached_execute(sql)
+                sql = parse_one(sql).transform(to_csv).sql(pretty=True)
+                table = execute(sql, TPCH_SCHEMA)
+                b = pd.DataFrame(table.rows, columns=table.columns)
+                assert_frame_equal(a, b, check_dtype=False)
 
     def test_execute_callable(self):
         tables = {

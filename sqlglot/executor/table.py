@@ -9,11 +9,18 @@ class Table:
         self.columns = tuple(columns)
         self.column_range = column_range
         self.reader = RowReader(self.columns, self.column_range)
-
         self.rows = rows or []
         if rows:
             assert len(rows[0]) == len(self.columns)
         self.range_reader = RangeReader(self)
+
+    def add_columns(self, *columns: str) -> None:
+        self.columns += columns
+        if self.column_range:
+            self.column_range = range(
+                self.column_range.start, self.column_range.stop + len(columns)
+            )
+        self.reader = RowReader(self.columns, self.column_range)
 
     def append(self, row):
         assert len(row) == len(self.columns)

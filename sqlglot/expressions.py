@@ -2617,8 +2617,16 @@ class Day(Func):
     pass
 
 
+class Decode(Func):
+    arg_types = {"this": True, "charset": True}
+
+
 class DiToDate(Func):
     pass
+
+
+class Encode(Func):
+    arg_types = {"this": True, "charset": True}
 
 
 class Exp(Func):
@@ -2640,6 +2648,10 @@ class Greatest(Func):
 
 class GroupConcat(Func):
     arg_types = {"this": True, "separator": False}
+
+
+class Hex(Func):
+    pass
 
 
 class If(Func):
@@ -2890,6 +2902,10 @@ class TsOrDsToDate(Func):
 
 
 class TsOrDiToDi(Func):
+    pass
+
+
+class Unhex(Func):
     pass
 
 

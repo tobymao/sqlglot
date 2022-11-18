@@ -546,36 +546,20 @@ class Generator:
 
     def root_properties(self, properties):
         if properties.expressions:
-            return self.sep() + self.expressions(
-                properties,
-                indent=False,
-                sep=" ",
-            )
+            return self.sep() + self.expressions(properties, indent=False, sep=" ")
         return ""
 
     def properties(self, properties, prefix="", sep=", "):
         if properties.expressions:
-            expressions = self.expressions(
-                properties,
-                sep=sep,
-                indent=False,
-            )
+            expressions = self.expressions(properties, sep=sep, indent=False)
             return f"{self.seg(prefix)}{' ' if prefix else ''}{self.wrap(expressions)}"
         return ""
 
     def with_properties(self, properties):
-        return self.properties(
-            properties,
-            prefix="WITH",
-        )
+        return self.properties(properties, prefix="WITH")
 
     def property_sql(self, expression):
-        if isinstance(expression.this, exp.Literal):
-            key = expression.this.this
-        else:
-            key = expression.name
-        value = self.sql(expression, "value")
-        return f"{key}={value}"
+        return f"{expression.name}={self.sql(expression, 'value')}"
 
     def insert_sql(self, expression):
         overwrite = expression.args.get("overwrite")

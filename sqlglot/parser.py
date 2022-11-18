@@ -2170,7 +2170,7 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.COLLATE):
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
-            kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_field())
+            kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_conjunction())
         elif self._match_pair(TokenType.NOT, TokenType.NULL):
             kind = exp.NotNullColumnConstraint()
         elif self._match(TokenType.SCHEMA_COMMENT):

@@ -482,9 +482,9 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(column.text("expression"), "c")
         self.assertEqual(column.text("y"), "")
         self.assertEqual(parse_one("select * from x.y").find(exp.Table).text("db"), "x")
-        self.assertEqual(parse_one("select *").text("this"), "")
-        self.assertEqual(parse_one("1 + 1").text("this"), "1")
-        self.assertEqual(parse_one("'a'").text("this"), "a")
+        self.assertEqual(parse_one("select *").name, "")
+        self.assertEqual(parse_one("1 + 1").name, "1")
+        self.assertEqual(parse_one("'a'").name, "a")
 
     def test_alias(self):
         self.assertEqual(alias("foo", "bar").sql(), "foo AS bar")

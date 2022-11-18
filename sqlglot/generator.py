@@ -1216,10 +1216,7 @@ class Generator:
     def intdiv_sql(self, expression):
         return self.sql(
             exp.Cast(
-                this=exp.Div(
-                    this=expression.args["this"],
-                    expression=expression.args["expression"],
-                ),
+                this=exp.Div(this=expression.this, expression=expression.expression),
                 to=exp.DataType(this=exp.DataType.Type.INT),
             )
         )

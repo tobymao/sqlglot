@@ -83,7 +83,7 @@ def _no_sort_array(self, expression):
 
 def _schema_sql(self, expression):
     if isinstance(expression.parent, exp.Property):
-        columns = ", ".join(f"'{c.text('this')}'" for c in expression.expressions)
+        columns = ", ".join(f"'{c.name}'" for c in expression.expressions)
         return f"ARRAY[{columns}]"
 
     for schema in expression.parent.find_all(exp.Schema):

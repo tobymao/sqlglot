@@ -9,7 +9,7 @@ from sqlglot.errors import ExecuteError
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import RowReader, Table
-from sqlglot.helper import csv_reader
+from sqlglot.helper import csv_reader, subclasses
 
 
 class PythonExecutor:
@@ -354,53 +354,28 @@ class PythonExecutor:
         return self.context({step.name: sink})
 
 
-def _cast_py(self, expression):
-    to = expression.args["to"].this
-    this = self.sql(expression, "this")
-
-    if to == exp.DataType.Type.DATE:
-        return f"datetime.date.fromisoformat({this})"
-    if to == exp.DataType.Type.DATETIME:
-        return f"datetime.datetime.fromisoformat({this})"
-    if to in exp.DataType.TEXT_TYPES:
-        return f"str({this})"
-    if to in {exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE}:
-        return f"float({this})"
-    if to in exp.DataType.NUMERIC_TYPES:
-        return f"int({this})"
-    raise NotImplementedError
-
-
-def _column_py(self, expression):
-    table = self.sql(expression, "table") or None
-    this = self.sql(expression, "this")
-    return f"scope[{table}][{this}]"
-
-
-def _extract_py(self, expression):
-    to = expression.name.lower()
-    expression = self.sql(expression, "expression")
-    return f"{expression}.{to}"
-
-
 def _interval_py(self, expression):
-    this = self.sql(expression, "this")
-    unit = expression.text("unit").upper()
-    if unit == "DAY":
-        return f"datetime.timedelta(days=float({this}))"
-    raise NotImplementedError
-
-
-def _like_py(self, expression):
-    this = self.sql(expression, "this")
-    expression = self.sql(expression, "expression")
-    return f"""bool(re.match({expression}.replace("_", ".").replace("%", ".*"), {this}))"""
+    this = self.sql(e, "this")
+    unit = e.text("unit").lower()
+    return f"INTERVAL({this}, '{unit}')"
 
 
 def _ordered_py(self, expression):
     this = self.sql(expression, "this")
-    desc = expression.args.get("desc")
-    return f"desc({this})" if desc else this
+    desc = "True" if expression.args.get("desc") else "False"
+    nulls_first = "True" if expression.args.get("nulls_first") else "False"
+    return f"ORDERED({this}, {desc}, {nulls_first})"
+
+
+def _rename(self, e):
+    try:
+        if "expressions" in e.args:
+            this = self.sql(e, "this")
+            this = f"{this}, " if this else ""
+            return f"{e.key.upper()}({this}{self.expressions(e)})"
+        return f"{e.key.upper()}({self.format_args(*e.args.values())})"
+    except Exception as ex:
+        raise Exception(f"Could not rename {repr(e)}") from ex
 
 
 class Python(Dialect):
@@ -409,20 +384,19 @@ class Python(Dialect):
 
     class Generator(generator.Generator):
         TRANSFORMS = {
+            **{klass: _rename for klass in subclasses(exp.__name__, exp.Binary)},
+            **{klass: _rename for klass in exp.ALL_FUNCTIONS},
             exp.Alias: lambda self, e: self.sql(e.this),
             exp.Array: inline_array_sql,
             exp.And: lambda self, e: self.binary(e, "and"),
-            exp.Between: lambda self, e: f"{self.sql(e, 'low')} <= {self.sql(e, 'this')} and {self.sql(e, 'this')} <= {self.sql(e, 'high')}",
+            exp.Between: _rename,
             exp.Boolean: lambda self, e: "True" if e.this else "False",
-            exp.Cast: _cast_py,
-            exp.Column: _column_py,
-            exp.EQ: lambda self, e: self.binary(e, "=="),
-            exp.Extract: _extract_py,
-            exp.NEQ: lambda self, e: self.binary(e, "!="),
+            exp.Cast: lambda self, e: f"CAST({self.sql(e.this)}, exp.DataType.Type.{e.args['to']})",
+            exp.Column: lambda self, e: f"scope[{self.sql(e, 'table') or None}][{self.sql(e.this)}]",
+            exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
             exp.In: lambda self, e: f"{self.sql(e, 'this')} in {self.expressions(e)}",
             exp.Interval: _interval_py,
             exp.Is: lambda self, e: self.binary(e, "is"),
-            exp.Like: _like_py,
             exp.Not: lambda self, e: f"not {self.sql(e.this)}",
             exp.Null: lambda *_: "None",
             exp.Or: lambda self, e: self.binary(e, "or"),

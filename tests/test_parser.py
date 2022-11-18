@@ -84,14 +84,14 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        assert expression.expressions[0].text("this") == "a"
-        assert expression.expressions[1].text("this") == "b"
-        assert expression.expressions[2].text("alias") == "c"
-        assert expression.expressions[3].text("alias") == "D"
-        assert expression.expressions[4].text("alias") == "y|z'"
+        assert expression.expressions[0].name == "a"
+        assert expression.expressions[1].name == "b"
+        assert expression.expressions[2].alias == "c"
+        assert expression.expressions[3].alias == "D"
+        assert expression.expressions[4].alias == "y|z'"
         table = expression.args["from"].expressions[0]
-        assert table.args["this"].args["this"] == "z"
-        assert table.args["db"].args["this"] == "y"
+        assert table.this.name == "z"
+        assert table.args["db"].name == "y"
 
     def test_multi(self):
         expressions = parse(
@@ -101,8 +101,8 @@ class TestParser(unittest.TestCase):
         )
 
         assert len(expressions) == 2
-        assert expressions[0].args["from"].expressions[0].args["this"].args["this"] == "a"
-        assert expressions[1].args["from"].expressions[0].args["this"].args["this"] == "b"
+        assert expressions[0].args["from"].expressions[0].this.name == "a"
+        assert expressions[1].args["from"].expressions[0].this.name == "b"
 
     def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)

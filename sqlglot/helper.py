@@ -151,7 +151,7 @@ def apply_index_offset(expressions: t.List[E], offset: int) -> t.List[E]:
     if expression.is_int:
         expression = expression.copy()
         logger.warning("Applying array index offset (%s)", offset)
-        expression.args["this"] = str(int(expression.args["this"]) + offset)
+        expression.args["this"] = str(int(expression.this) + offset)
         return [expression]
 
     return expressions

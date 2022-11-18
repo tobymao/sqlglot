@@ -67,7 +67,7 @@ class Generator:
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
-        exp.VolatilityProperty: lambda self, e: self.sql(e.name),
+        exp.VolatilityProperty: lambda self, e: e.name,
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
@@ -1216,10 +1216,7 @@ class Generator:
     def intdiv_sql(self, expression):
         return self.sql(
             exp.Cast(
-                this=exp.Div(
-                    this=expression.args["this"],
-                    expression=expression.args["expression"],
-                ),
+                this=exp.Div(this=expression.this, expression=expression.expression),
                 to=exp.DataType(this=exp.DataType.Type.INT),
             )
         )

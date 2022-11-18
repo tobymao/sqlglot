@@ -484,7 +484,7 @@ class Parser(metaclass=_Parser):
     }
 
     CONSTRAINT_PARSERS = {
-        TokenType.CHECK: lambda self: self._parse_check(),
+        TokenType.CHECK: lambda self: self.expression(exp.Check, this=self._parse_wrapped(lambda: self._parse_conjunction())),
         TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
         TokenType.UNIQUE: lambda self: self._parse_unique(),
     }
@@ -1078,12 +1078,7 @@ class Parser(metaclass=_Parser):
         options = []
 
         if self._match(TokenType.OPTIONS):
-            self._match_l_paren()
-            k = self._parse_string()
-            self._match(TokenType.EQ)
-            v = self._parse_string()
-            options = [k, v]
-            self._match_r_paren()
+            options = self._parse_wrapped_csv(lambda: self._parse_string(), sep=TokenType.EQ)
 
         self._match(TokenType.ALIAS)
         return self.expression(
@@ -1099,27 +1094,13 @@ class Parser(metaclass=_Parser):
             return None
 
         def parse_values():
-            key = self._parse_var()
-            value = None
+            props = self._parse_csv(lambda: self._parse_var_or_string(), sep=TokenType.EQ)
+            return exp.Property(this=seq_get(props, 0), value=seq_get(props, 1))
 
-            if self._match(TokenType.EQ):
-                value = self._parse_string()
-
-            return exp.Property(this=key, value=value)
-
-        self._match_l_paren()
-        values = self._parse_csv(parse_values)
-        self._match_r_paren()
-
-        return self.expression(
-            exp.Partition,
-            this=values,
-        )
+        return self.expression(exp.Partition, this=self._parse_wrapped_csv(lambda: parse_values()))
 
     def _parse_value(self):
-        self._match_l_paren()
-        expressions = self._parse_csv(self._parse_conjunction)
-        self._match_r_paren()
+        expressions = self._parse_wrapped_csv(lambda: self._parse_conjunction())
         return self.expression(exp.Tuple, expressions=expressions)
 
     def _parse_select(self, nested=False, table=False):
@@ -1190,7 +1171,6 @@ class Parser(metaclass=_Parser):
         recursive = self._match(TokenType.RECURSIVE)
 
         expressions = []
-
         while True:
             expressions.append(self._parse_cte())
 
@@ -1199,11 +1179,7 @@ class Parser(metaclass=_Parser):
             else:
                 self._match(TokenType.WITH)
 
-        return self.expression(
-            exp.With,
-            expressions=expressions,
-            recursive=recursive,
-        )
+        return self.expression(exp.With, expressions=expressions, recursive=recursive)
 
     def _parse_cte(self):
         alias = self._parse_table_alias()
@@ -1213,13 +1189,9 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.ALIAS):
             self.raise_error("Expected AS in CTE")
 
-        self._match_l_paren()
-        expression = self._parse_statement()
-        self._match_r_paren()
-
         return self.expression(
             exp.CTE,
-            this=expression,
+            this=self._parse_wrapped(lambda: self._parse_statement()),
             alias=alias,
         )
 
@@ -1309,26 +1281,18 @@ class Parser(metaclass=_Parser):
             columns = self._parse_csv(self._parse_id_var)
         elif self._match(TokenType.L_PAREN):
             columns = self._parse_csv(self._parse_id_var)
-            self._match(TokenType.R_PAREN)
+            self._match_r_paren()
 
         expression = self.expression(
             exp.Lateral,
             this=this,
             view=view,
             outer=outer,
-            alias=self.expression(
-                exp.TableAlias,
-                this=table_alias,
-                columns=columns,
-            ),
+            alias=self.expression(exp.TableAlias, this=table_alias, columns=columns),
         )
 
         if outer_apply or cross_apply:
-            return self.expression(
-                exp.Join,
-                this=expression,
-                side=None if cross_apply else "LEFT",
-            )
+            return self.expression(exp.Join, this=expression, side=None if cross_apply else "LEFT")
 
         return expression
 
@@ -1437,12 +1401,8 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.UNNEST):
             return None
 
-        self._match_l_paren()
-        expressions = self._parse_csv(self._parse_column)
-        self._match_r_paren()
-
+        expressions = self._parse_wrapped_csv(lambda: self._parse_column())
         ordinality = bool(self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY))
-
         alias = self._parse_table_alias()
 
         if alias and self.unnest_column_only:
@@ -1452,10 +1412,7 @@ class Parser(metaclass=_Parser):
             alias.set("this", None)
 
         return self.expression(
-            exp.Unnest,
-            expressions=expressions,
-            ordinality=ordinality,
-            alias=alias,
+            exp.Unnest, expressions=expressions, ordinality=ordinality, alias=alias
         )
 
     def _parse_derived_table_values(self):
@@ -1468,13 +1425,7 @@ class Parser(metaclass=_Parser):
         if is_derived:
             self._match_r_paren()
 
-        alias = self._parse_table_alias()
-
-        return self.expression(
-            exp.Values,
-            expressions=expressions,
-            alias=alias,
-        )
+        return self.expression(exp.Values, expressions=expressions, alias=self._parse_table_alias())
 
     def _parse_table_sample(self):
         if not self._match(TokenType.TABLE_SAMPLE):
@@ -1510,9 +1461,7 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
 
         if self._match(TokenType.SEED):
-            self._match_l_paren()
-            seed = self._parse_number()
-            self._match_r_paren()
+            seed = self._parse_wrapped(lambda: self._parse_number())
 
         return self.expression(
             exp.TableSample,
@@ -1563,12 +1512,7 @@ class Parser(metaclass=_Parser):
 
         self._match_r_paren()
 
-        return self.expression(
-            exp.Pivot,
-            expressions=expressions,
-            field=field,
-            unpivot=unpivot,
-        )
+        return self.expression(exp.Pivot, expressions=expressions, field=field, unpivot=unpivot)
 
     def _parse_where(self, skip_where_token=False):
         if not skip_where_token and not self._match(TokenType.WHERE):
@@ -1589,11 +1533,7 @@ class Parser(metaclass=_Parser):
     def _parse_grouping_sets(self):
         if not self._match(TokenType.GROUPING_SETS):
             return None
-
-        self._match_l_paren()
-        grouping_sets = self._parse_csv(self._parse_grouping_set)
-        self._match_r_paren()
-        return grouping_sets
+        return self._parse_wrapped_csv(lambda: self._parse_grouping_set())
 
     def _parse_grouping_set(self):
         if self._match(TokenType.L_PAREN):
@@ -1623,7 +1563,6 @@ class Parser(metaclass=_Parser):
     def _parse_sort(self, token_type, exp_class):
         if not self._match(token_type):
             return None
-
         return self.expression(exp_class, expressions=self._parse_csv(self._parse_ordered))
 
     def _parse_ordered(self):
@@ -1652,9 +1591,12 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.TOP if top else TokenType.LIMIT):
             limit_paren = self._match(TokenType.L_PAREN)
             limit_exp = self.expression(exp.Limit, this=this, expression=self._parse_number())
+
             if limit_paren:
-                self._match(TokenType.R_PAREN)
+                self._match_r_paren()
+
             return limit_exp
+
         if self._match(TokenType.FETCH):
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
             direction = self._prev.text if direction else "FIRST"
@@ -1662,11 +1604,13 @@ class Parser(metaclass=_Parser):
             self._match_set((TokenType.ROW, TokenType.ROWS))
             self._match(TokenType.ONLY)
             return self.expression(exp.Fetch, direction=direction, count=count)
+
         return this
 
     def _parse_offset(self, this=None):
         if not self._match_set((TokenType.OFFSET, TokenType.COMMA)):
             return this
+
         count = self._parse_number()
         self._match_set((TokenType.ROW, TokenType.ROWS))
         return self.expression(exp.Offset, this=this, expression=count)
@@ -1728,6 +1672,7 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.DISTINCT_FROM):
             klass = exp.NullSafeEQ if negate else exp.NullSafeNEQ
             return self.expression(klass, this=this, expression=self._parse_expression())
+
         this = self.expression(
             exp.Is,
             this=this,
@@ -1804,11 +1749,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_type(self):
         if self._match(TokenType.INTERVAL):
-            return self.expression(
-                exp.Interval,
-                this=self._parse_term(),
-                unit=self._parse_var(),
-            )
+            return self.expression(exp.Interval, this=self._parse_term(), unit=self._parse_var())
 
         index = self._index
         type_token = self._parse_types(check_func=True)
@@ -1874,30 +1815,18 @@ class Parser(metaclass=_Parser):
         value = None
         if type_token in self.TIMESTAMPS:
             if self._match(TokenType.WITH_TIME_ZONE) or type_token == TokenType.TIMESTAMPTZ:
-                value = exp.DataType(
-                    this=exp.DataType.Type.TIMESTAMPTZ,
-                    expressions=expressions,
-                )
+                value = exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ, expressions=expressions)
             elif (
                 self._match(TokenType.WITH_LOCAL_TIME_ZONE) or type_token == TokenType.TIMESTAMPLTZ
             ):
-                value = exp.DataType(
-                    this=exp.DataType.Type.TIMESTAMPLTZ,
-                    expressions=expressions,
-                )
+                value = exp.DataType(this=exp.DataType.Type.TIMESTAMPLTZ, expressions=expressions)
             elif self._match(TokenType.WITHOUT_TIME_ZONE):
-                value = exp.DataType(
-                    this=exp.DataType.Type.TIMESTAMP,
-                    expressions=expressions,
-                )
+                value = exp.DataType(this=exp.DataType.Type.TIMESTAMP, expressions=expressions)
 
             maybe_func = maybe_func and value is None
 
             if value is None:
-                value = exp.DataType(
-                    this=exp.DataType.Type.TIMESTAMP,
-                    expressions=expressions,
-                )
+                value = exp.DataType(this=exp.DataType.Type.TIMESTAMP, expressions=expressions)
 
         if maybe_func and check_func:
             index2 = self._index
@@ -1922,6 +1851,7 @@ class Parser(metaclass=_Parser):
         this = self._parse_id_var()
         self._match(TokenType.COLON)
         data_type = self._parse_types()
+
         if not data_type:
             return None
         return self.expression(exp.StructKwarg, this=this, expression=data_type)
@@ -1929,7 +1859,6 @@ class Parser(metaclass=_Parser):
     def _parse_at_time_zone(self, this):
         if not self._match(TokenType.AT_TIME_ZONE):
             return this
-
         return self.expression(exp.AtTimeZone, this=this, zone=self._parse_unary())
 
     def _parse_column(self):
@@ -2034,16 +1963,14 @@ class Parser(metaclass=_Parser):
         else:
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
 
-            if subquery_predicate and self._curr.token_type in (
-                TokenType.SELECT,
-                TokenType.WITH,
-            ):
+            if subquery_predicate and self._curr.token_type in (TokenType.SELECT, TokenType.WITH):
                 this = self.expression(subquery_predicate, this=self._parse_select())
                 self._match_r_paren()
                 return this
 
             if functions is None:
                 functions = self.FUNCTIONS
+
             function = functions.get(upper)
             args = self._parse_csv(self._parse_lambda)
 
@@ -2064,6 +1991,7 @@ class Parser(metaclass=_Parser):
 
         if not self._match(TokenType.L_PAREN):
             return this
+
         expressions = self._parse_csv(self._parse_udf_kwarg)
         self._match_r_paren()
         return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
@@ -2071,25 +1999,19 @@ class Parser(metaclass=_Parser):
     def _parse_introducer(self, token):
         literal = self._parse_primary()
         if literal:
-            return self.expression(
-                exp.Introducer,
-                this=token.text,
-                expression=literal,
-            )
+            return self.expression(exp.Introducer, this=token.text, expression=literal)
 
         return self.expression(exp.Identifier, this=token.text)
 
     def _parse_session_parameter(self):
         kind = None
         this = self._parse_id_var() or self._parse_primary()
+
         if self._match(TokenType.DOT):
             kind = this.name
             this = self._parse_var() or self._parse_primary()
-        return self.expression(
-            exp.SessionParameter,
-            this=this,
-            kind=kind,
-        )
+
+        return self.expression(exp.SessionParameter, this=this, kind=kind)
 
     def _parse_udf_kwarg(self):
         this = self._parse_id_var()
@@ -2167,9 +2089,8 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.AUTO_INCREMENT):
             kind = exp.AutoIncrementColumnConstraint()
         elif self._match(TokenType.CHECK):
-            self._match_l_paren()
-            kind = self.expression(exp.CheckColumnConstraint, this=self._parse_conjunction())
-            self._match_r_paren()
+            constraint = self._parse_wrapped(lambda: self._parse_conjunction())
+            kind = self.expression(exp.CheckColumnConstraint, this=constraint)
         elif self._match(TokenType.COLLATE):
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
@@ -2212,14 +2133,7 @@ class Parser(metaclass=_Parser):
     def _parse_unnamed_constraint(self):
         if not self._match_set(self.CONSTRAINT_PARSERS):
             return None
-
         return self.CONSTRAINT_PARSERS[self._prev.token_type](self)
-
-    def _parse_check(self):
-        self._match_l_paren()
-        expression = self._parse_conjunction()
-        self._match_r_paren()
-        return self.expression(exp.Check, this=expression)
 
     def _parse_unique(self):
         return self.expression(exp.Unique, expressions=self._parse_wrapped_id_vars())
@@ -2241,6 +2155,7 @@ class Parser(metaclass=_Parser):
         while self._match(TokenType.ON):
             if not self._match_set((TokenType.DELETE, TokenType.UPDATE)):
                 self.raise_error("Expected DELETE or UPDATE")
+
             kind = self._prev.text.lower()
 
             if self._match(TokenType.NO_ACTION):
@@ -2251,6 +2166,7 @@ class Parser(metaclass=_Parser):
             else:
                 self._advance()
                 action = self._prev.text.upper()
+
             options[kind] = action
 
         return self.expression(
@@ -2414,20 +2330,14 @@ class Parser(metaclass=_Parser):
 
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):
-            self._match_l_paren()
-            this = self.expression(exp.Filter, this=this, expression=self._parse_where())
-            self._match_r_paren()
+            where = self._parse_wrapped(lambda: self._parse_where())
+            this = self.expression(exp.Filter, this=this, expression=where)
 
         # T-SQL allows the OVER (...) syntax after WITHIN GROUP.
         # https://learn.microsoft.com/en-us/sql/t-sql/functions/percentile-disc-transact-sql?view=sql-server-ver16
         if self._match(TokenType.WITHIN_GROUP):
-            self._match_l_paren()
-            this = self.expression(
-                exp.WithinGroup,
-                this=this,
-                expression=self._parse_order(),
-            )
-            self._match_r_paren()
+            order = self._parse_wrapped(lambda: self._parse_order())
+            this = self.expression(exp.WithinGroup, this=this, expression=order)
 
         # SQL spec defines an optional [ { IGNORE | RESPECT } NULLS ] OVER
         # Some dialects choose to implement and some do not.
@@ -2455,18 +2365,11 @@ class Parser(metaclass=_Parser):
             return this
 
         if not self._match(TokenType.L_PAREN):
-            alias = self._parse_id_var(False)
-
-            return self.expression(
-                exp.Window,
-                this=this,
-                alias=alias,
-            )
-
-        partition = None
+            return self.expression(exp.Window, this=this, alias=self._parse_id_var(False))
 
         alias = self._parse_id_var(False)
 
+        partition = None
         if self._match(TokenType.PARTITION_BY):
             partition = self._parse_csv(self._parse_conjunction)
 
@@ -2603,17 +2506,13 @@ class Parser(metaclass=_Parser):
     def _parse_replace(self):
         if not self._match(TokenType.REPLACE):
             return None
+        return self._parse_wrapped_csv(lambda: self._parse_alias(self._parse_expression()))
 
-        self._match_l_paren()
-        columns = self._parse_csv(lambda: self._parse_alias(self._parse_expression()))
-        self._match_r_paren()
-        return columns
-
-    def _parse_csv(self, parse_method):
+    def _parse_csv(self, parse_method, sep=TokenType.COMMA):
         parse_result = parse_method()
         items = [parse_result] if parse_result is not None else []
 
-        while self._match(TokenType.COMMA):
+        while self._match(sep):
             if parse_result and self._prev_comment is not None:
                 parse_result.comment = self._prev_comment
 
@@ -2634,10 +2533,16 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_wrapped_id_vars(self):
+        return self._parse_wrapped_csv(lambda: self._parse_id_var())
+
+    def _parse_wrapped_csv(self, parse_method, sep=TokenType.COMMA):
+        return self._parse_wrapped(lambda: self._parse_csv(parse_method, sep=sep))
+
+    def _parse_wrapped(self, parse_method):
         self._match_l_paren()
-        expressions = self._parse_csv(self._parse_id_var)
+        parse_result = parse_method()
         self._match_r_paren()
-        return expressions
+        return parse_result
 
     def _parse_select_or_expression(self):
         return self._parse_select() or self._parse_expression()

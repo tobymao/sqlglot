@@ -414,6 +414,7 @@ class TestExecutor(unittest.TestCase):
         for sql, expected in [
             ("CONCAT('a', 'b')", "ab"),
             ("CONCAT('a', NULL)", None),
+            ("CONCAT_WS('_', 'a', 'b')", "a_b"),
             ("STR_POSITION('bar', 'foobarbar')", 4),
             ("STR_POSITION('bar', 'foobarbar', 5)", 7),
             ("STR_POSITION(NULL, 'foobarbar')", None),
@@ -447,6 +448,14 @@ class TestExecutor(unittest.TestCase):
             ("COALESCE(NULL, NULL)", None),
             ("COALESCE(NULL, 'b')", "b"),
             ("COALESCE('a', 'b')", "a"),
+            ("1 << 1", 2),
+            ("1 >> 1", 0),
+            ("1 & 1", 1),
+            ("1 | 1", 1),
+            ("1 < 1", False),
+            ("1 <= 1", True),
+            ("1 > 1", False),
+            ("1 >= 1", True),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

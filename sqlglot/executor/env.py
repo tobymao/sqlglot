@@ -4,6 +4,7 @@ import re
 import statistics
 from functools import wraps
 
+from sqlglot import exp
 from sqlglot.helper import PYTHON_VERSION
 
 
@@ -92,28 +93,78 @@ def substring(this, start=None, length=None):
     return this[start:end]
 
 
+@null_if_any
+def cast(this, to):
+    if to == exp.DataType.Type.DATE:
+        return datetime.date.fromisoformat(this)
+    if to == exp.DataType.Type.DATETIME:
+        return datetime.datetime.fromisoformat(this)
+    if to in exp.DataType.TEXT_TYPES:
+        return str(this)
+    if to in {exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE}:
+        return float(this)
+    if to in exp.DataType.NUMERIC_TYPES:
+        return int(this)
+    raise NotImplementedError(f"Casting to '{to}' not implemented.")
+
+
+def ordered(this, desc, nulls_first):
+    if desc:
+        return reverse_key(this)
+    return this
+
+
+@null_if_any
+def interval(this, unit):
+    if unit == "DAY":
+        return datetime.timedelta(days=float(this))
+    raise NotImplementedError
+
+
 ENV = {
     "__builtins__": {},
-    "datetime": datetime,
-    "locals": locals,
-    "re": re,
-    "bool": bool,
-    "float": float,
-    "int": int,
-    "str": str,
-    "desc": reverse_key,
+    "exp": exp,
+    # aggs
     "SUM": filter_nulls(sum),
     "AVG": filter_nulls(statistics.fmean if PYTHON_VERSION >= (3, 8) else statistics.mean),  # type: ignore
     "COUNT": filter_nulls(lambda acc: sum(1 for _ in acc)),
     "MAX": filter_nulls(max),
     "MIN": filter_nulls(min),
-    "POW": pow,
-    "CONCAT": null_if_any(lambda *args: "".join(args)),
-    "STR_POSITION": str_position,
-    "UPPER": null_if_any(lambda arg: arg.upper()),
-    "LOWER": null_if_any(lambda arg: arg.lower()),
-    "ORD": null_if_any(ord),
-    "IFNULL": lambda e, alt: alt if e is None else e,
-    "SUBSTRING": substring,
+    # scalar functions
+    "ABS": null_if_any(lambda this: abs(this)),
+    "ADD": null_if_any(lambda e, this: e + this),
+    "BETWEEN": null_if_any(lambda this, low, high: low <= this and this <= high),
+    "BITWISEAND": null_if_any(lambda this, e: this & e),
+    "BITWISELEFTSHIFT": null_if_any(lambda this, e: this << e),
+    "BITWISEOR": null_if_any(lambda this, e: this | e),
+    "BITWISERIGHTSHIFT": null_if_any(lambda this, e: this >> e),
+    "BITWISEXOR": null_if_any(lambda this, e: this ^ e),
+    "CAST": cast,
     "COALESCE": lambda *args: next((a for a in args if a is not None), None),
+    "CONCAT": null_if_any(lambda *args: "".join(args)),
+    "CONCATWS": null_if_any(lambda this, *args: this.join(args)),
+    "DIV": null_if_any(lambda e, this: e / this),
+    "EQ": null_if_any(lambda this, e: this == e),
+    "EXTRACT": null_if_any(lambda this, e: getattr(e, this)),
+    "GT": null_if_any(lambda this, e: this > e),
+    "GTE": null_if_any(lambda this, e: this >= e),
+    "IFNULL": lambda e, alt: alt if e is None else e,
+    "INTDIV": null_if_any(lambda e, this: e // this),
+    "INTERVAL": interval,
+    "LIKE": null_if_any(
+        lambda this, e: bool(re.match(e.replace("_", ".").replace("%", ".*"), this))
+    ),
+    "LOWER": null_if_any(lambda arg: arg.lower()),
+    "LT": null_if_any(lambda this, e: this < e),
+    "LTE": null_if_any(lambda this, e: this <= e),
+    "MOD": null_if_any(lambda e, this: e % this),
+    "MUL": null_if_any(lambda e, this: e * this),
+    "NEQ": null_if_any(lambda this, e: this != e),
+    "ORD": null_if_any(ord),
+    "ORDERED": ordered,
+    "POW": pow,
+    "STRPOSITION": str_position,
+    "SUB": null_if_any(lambda e, this: e - this),
+    "SUBSTRING": substring,
+    "UPPER": null_if_any(lambda arg: arg.upper()),
 }

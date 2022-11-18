@@ -456,6 +456,7 @@ class TestExecutor(unittest.TestCase):
             ("1 <= 1", True),
             ("1 > 1", False),
             ("1 >= 1", True),
+            ("1 + NULL", None),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

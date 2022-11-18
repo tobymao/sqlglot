@@ -949,13 +949,10 @@ class Parser(metaclass=_Parser):
 
         while True:
             if self._match(TokenType.WITH):
-                self._match_l_paren()
-                properties.extend(self._parse_csv(lambda: self._parse_property()))
-                self._match_r_paren()
+                properties.extend(self._parse_wrapped_csv(lambda: self._parse_property()))
             elif self._match(TokenType.PROPERTIES):
-                self._match_l_paren()
                 properties.extend(
-                    self._parse_csv(
+                    self._parse_wrapped_csv(
                         lambda: self.expression(
                             exp.AnonymousProperty,
                             this=self._parse_string(),
@@ -963,19 +960,18 @@ class Parser(metaclass=_Parser):
                         )
                     )
                 )
-                self._match_r_paren()
             else:
                 identified_property = self._parse_property()
                 if not identified_property:
                     break
                 properties.append(identified_property)
+
         if properties:
             return self.expression(exp.Properties, expressions=properties)
         return None
 
     def _parse_describe(self):
         self._match(TokenType.TABLE)
-
         return self.expression(exp.Describe, this=self._parse_id_var())
 
     def _parse_insert(self):

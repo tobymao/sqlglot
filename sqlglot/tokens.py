@@ -130,6 +130,7 @@ class TokenType(AutoName):
     COMMAND = auto()
     COMMENT = auto()
     COMMIT = auto()
+    COMPOUND = auto()
     CONSTRAINT = auto()
     CREATE = auto()
     CROSS = auto()
@@ -452,6 +453,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COLLATE": TokenType.COLLATE,
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
+        "COMPOUND": TokenType.COMPOUND,
         "CONSTRAINT": TokenType.CONSTRAINT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,

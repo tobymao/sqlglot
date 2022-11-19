@@ -98,7 +98,7 @@ class Spark(Hive):
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,  # type: ignore
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
-            exp.FileFormatProperty: lambda self, e: f"USING {e.text('value').upper()}",
+            exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),

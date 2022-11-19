@@ -58,11 +58,11 @@ class Generator:
     """
 
     TRANSFORMS = {
-        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
         exp.VarMap: lambda self, e: f"MAP({self.format_args(e.args['keys'], e.args['values'])})",
+        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'this')}",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
@@ -100,7 +100,7 @@ class Generator:
     }
 
     WITH_PROPERTIES = {
-        exp.AnonymousProperty,
+        exp.Property,
         exp.FileFormatProperty,
         exp.PartitionedByProperty,
         exp.TableFormatProperty,
@@ -546,36 +546,28 @@ class Generator:
 
     def root_properties(self, properties):
         if properties.expressions:
-            return self.sep() + self.expressions(
-                properties,
-                indent=False,
-                sep=" ",
-            )
+            return self.sep() + self.expressions(properties, indent=False, sep=" ")
         return ""
 
     def properties(self, properties, prefix="", sep=", "):
         if properties.expressions:
-            expressions = self.expressions(
-                properties,
-                sep=sep,
-                indent=False,
-            )
+            expressions = self.expressions(properties, sep=sep, indent=False)
             return f"{self.seg(prefix)}{' ' if prefix else ''}{self.wrap(expressions)}"
         return ""
 
     def with_properties(self, properties):
-        return self.properties(
-            properties,
-            prefix="WITH",
-        )
+        return self.properties(properties, prefix="WITH")
 
     def property_sql(self, expression):
-        if isinstance(expression.this, exp.Literal):
-            key = expression.this.this
-        else:
-            key = expression.name
-        value = self.sql(expression, "value")
-        return f"{key}={value}"
+        property_cls = expression.__class__
+        if property_cls == exp.Property:
+            return f"{expression.name}={self.sql(expression, 'value')}"
+
+        property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
+        if not property_name:
+            self.unsupported(f"Unsupported property {property_name}")
+
+        return f"{property_name}={self.sql(expression, 'this')}"
 
     def insert_sql(self, expression):
         overwrite = expression.args.get("overwrite")
@@ -1354,7 +1346,10 @@ class Generator:
         return f"{self.seg(op)}{self.sep() if expressions_sql else ''}{expressions_sql}"
 
     def naked_property(self, expression):
-        return f"{expression.name} {self.sql(expression, 'value')}"
+        property_name = exp.Properties.PROPERTY_TO_NAME.get(expression.__class__)
+        if not property_name:
+            self.unsupported(f"Unsupported property {expression.__class__.__name__}")
+        return f"{property_name} {self.sql(expression, 'this')}"
 
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")

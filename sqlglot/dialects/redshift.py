@@ -35,3 +35,16 @@ class Redshift(Postgres):
             exp.DataType.Type.VARBINARY: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
         }
+
+        ROOT_PROPERTIES = {
+            exp.DistKeyProperty,
+            exp.SortKeyProperty,
+            exp.DistStyleProperty,
+        }
+
+        TRANSFORMS = {
+            **Postgres.Generator.TRANSFORMS,  # type: ignore
+            exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
+            exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.DistStyleProperty: lambda self, e: self.naked_property(e),
+        }

@@ -25,6 +25,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
    * [AST Introspection](#ast-introspection)
    * [AST Diff](#ast-diff)
    * [Custom Dialects](#custom-dialects)
+   * [SQL Execution](#sql-execution)
 * [Benchmarks](#benchmarks)
 * [Optional Dependencies](#optional-dependencies)
 
@@ -366,6 +367,53 @@ class Custom(Dialect):
         }
 
 print(Dialect["custom"])
+```
+
+### SQL Execution
+
+One can even interpret SQL queries using SQLGlot, where the tables are represented as Python dictionaries. Although the engine is not very fast (it's not supposed to be) and is in a relatively early stage of development, it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels (arrow, pandas). Below is an example showcasing the execution of a SELECT expression that involves aggregations and JOINs:
+
+```python
+from sqlglot.executor import execute
+
+tables = {
+    "sushi": [
+        {"id": 1, "price": 1.0},
+        {"id": 2, "price": 2.0},
+        {"id": 3, "price": 3.0},
+    ],
+    "order_items": [
+        {"sushi_id": 1, "order_id": 1},
+        {"sushi_id": 1, "order_id": 1},
+        {"sushi_id": 2, "order_id": 1},
+        {"sushi_id": 3, "order_id": 2},
+    ],
+    "orders": [
+        {"id": 1, "user_id": 1},
+        {"id": 2, "user_id": 2},
+    ],
+}
+
+execute(
+	"""
+	SELECT
+	  o.user_id,
+	  SUM(s.price) AS price
+	FROM orders o
+	JOIN order_items i
+	  ON o.id = i.order_id
+	JOIN sushi s
+	  ON i.sushi_id = s.id
+	GROUP BY o.user_id
+	""",
+	tables=tables
+)
+```
+
+```python
+user_id price
+      1   4.0
+      2   3.0
 ```
 
 ```python

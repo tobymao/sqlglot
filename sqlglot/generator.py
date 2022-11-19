@@ -100,7 +100,7 @@ class Generator:
     }
 
     WITH_PROPERTIES = {
-        exp.AnonymousProperty,
+        exp.Property,
         exp.FileFormatProperty,
         exp.PartitionedByProperty,
         exp.TableFormatProperty,
@@ -559,7 +559,15 @@ class Generator:
         return self.properties(properties, prefix="WITH")
 
     def property_sql(self, expression):
-        return f"{expression.name}={self.sql(expression, 'value')}"
+        property_cls = expression.__class__
+        if property_cls == exp.Property:
+            return f"{expression.name}={self.sql(expression, 'value')}"
+
+        property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
+        if not property_name:
+            self.unsupported(f"Unsupported property {property_name}")
+
+        return f"{property_name}={self.sql(expression, 'value')}"
 
     def insert_sql(self, expression):
         overwrite = expression.args.get("overwrite")
@@ -1338,7 +1346,10 @@ class Generator:
         return f"{self.seg(op)}{self.sep() if expressions_sql else ''}{expressions_sql}"
 
     def naked_property(self, expression):
-        return f"{expression.name} {self.sql(expression, 'value')}"
+        property_name = exp.Properties.PROPERTY_TO_NAME.get(expression.__class__)
+        if not property_name:
+            self.unsupported(f"Unsupported property {expression.__class__.__name__}")
+        return f"{property_name} {self.sql(expression, 'value')}"
 
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")

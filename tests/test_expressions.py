@@ -534,9 +534,7 @@ class TestExpressions(unittest.TestCase):
                             expressions=[exp.to_identifier("a"), exp.to_identifier("b")]
                         ),
                     ),
-                    exp.AnonymousProperty(
-                        this=exp.Literal.string("custom"), value=exp.Literal.number(1)
-                    ),
+                    exp.Property(this=exp.Literal.string("custom"), value=exp.Literal.number(1)),
                     exp.TableFormatProperty(
                         this=exp.Literal.string("TABLE_FORMAT"),
                         value=exp.to_identifier("test_format"),

@@ -250,7 +250,7 @@ class Hive(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             **transforms.UNALIAS_GROUP,  # type: ignore
-            exp.AnonymousProperty: _property_sql,
+            exp.Property: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArrayConcat: rename_func("CONCAT"),
@@ -302,7 +302,7 @@ class Hive(Dialect):
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
         }
 
-        WITH_PROPERTIES = {exp.AnonymousProperty}
+        WITH_PROPERTIES = {exp.Property}
 
         ROOT_PROPERTIES = {
             exp.PartitionedByProperty,

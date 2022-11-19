@@ -176,9 +176,9 @@ class Presto(Dialect):
         }
 
         WITH_PROPERTIES = {
+            exp.Property,
             exp.PartitionedByProperty,
             exp.FileFormatProperty,
-            exp.AnonymousProperty,
             exp.TableFormatProperty,
         }
 

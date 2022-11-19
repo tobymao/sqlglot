@@ -200,9 +200,7 @@ class BigQuery(Dialect):
             exp.VolatilityProperty,
         }
 
-        WITH_PROPERTIES = {
-            exp.AnonymousProperty,
-        }
+        WITH_PROPERTIES = {exp.Property}
 
         EXPLICIT_UNION = True
 

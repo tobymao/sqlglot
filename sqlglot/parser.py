@@ -830,7 +830,7 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.EQ)
 
             return self.expression(
-                exp.AnonymousProperty,
+                exp.Property,
                 this=exp.Literal.string(key),
                 value=self._parse_column(),
             )
@@ -956,7 +956,7 @@ class Parser(metaclass=_Parser):
                 properties.extend(
                     self._parse_wrapped_csv(
                         lambda: self.expression(
-                            exp.AnonymousProperty,
+                            exp.Property,
                             this=self._parse_string(),
                             value=self._match(TokenType.EQ) and self._parse_string(),
                         )

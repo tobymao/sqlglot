@@ -1112,10 +1112,6 @@ class SchemaCommentProperty(Property):
     pass
 
 
-class AnonymousProperty(Property):
-    pass
-
-
 class ReturnsProperty(Property):
     arg_types = {"this": True, "value": True, "is_table": False}
 
@@ -1135,26 +1131,31 @@ class VolatilityProperty(Property):
 class Properties(Expression):
     arg_types = {"expressions": True}
 
-    PROPERTY_KEY_MAPPING = {
+    NAME_TO_PROPERTY = {
+        "TABLE_FORMAT": TableFormatProperty,
+        "PARTITIONED_BY": PartitionedByProperty,
+        "FORMAT": FileFormatProperty,
+        "DISTKEY": DistKeyProperty,
+        "SORTKEY": SortKeyProperty,
+        "DISTSTYLE": DistStyleProperty,
+        "LOCATION": LocationProperty,
+        "ENGINE": EngineProperty,
         "AUTO_INCREMENT": AutoIncrementProperty,
-        "CHARACTER_SET": CharacterSetProperty,
+        "CHARACTER SET": CharacterSetProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
-        "ENGINE": EngineProperty,
-        "FORMAT": FileFormatProperty,
-        "LOCATION": LocationProperty,
-        "PARTITIONED_BY": PartitionedByProperty,
-        "TABLE_FORMAT": TableFormatProperty,
-        "DISTKEY": DistKeyProperty,
-        "DISTSTYLE": DistStyleProperty,
-        "SORTKEY": SortKeyProperty,
+        "RETURNS": ReturnsProperty,
+        "LANGUAGE": LanguageProperty,
+        "EXECUTE AS": ExecuteAsProperty,
     }
+
+    PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}
 
     @classmethod
     def from_dict(cls, properties_dict) -> Properties:
         expressions = []
         for key, value in properties_dict.items():
-            property_cls = cls.PROPERTY_KEY_MAPPING.get(key.upper(), AnonymousProperty)
+            property_cls = cls.NAME_TO_PROPERTY.get(key.upper(), Property)
             expressions.append(property_cls(this=Literal.string(key), value=convert(value)))
         return cls(expressions=expressions)
 

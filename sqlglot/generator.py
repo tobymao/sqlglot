@@ -58,11 +58,11 @@ class Generator:
     """
 
     TRANSFORMS = {
-        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'value')}",
         exp.DateAdd: lambda self, e: f"DATE_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
         exp.VarMap: lambda self, e: f"MAP({self.format_args(e.args['keys'], e.args['values'])})",
+        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'this')}",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
@@ -567,7 +567,7 @@ class Generator:
         if not property_name:
             self.unsupported(f"Unsupported property {property_name}")
 
-        return f"{property_name}={self.sql(expression, 'value')}"
+        return f"{property_name}={self.sql(expression, 'this')}"
 
     def insert_sql(self, expression):
         overwrite = expression.args.get("overwrite")
@@ -1349,7 +1349,7 @@ class Generator:
         property_name = exp.Properties.PROPERTY_TO_NAME.get(expression.__class__)
         if not property_name:
             self.unsupported(f"Unsupported property {expression.__class__.__name__}")
-        return f"{property_name} {self.sql(expression, 'value')}"
+        return f"{property_name} {self.sql(expression, 'this')}"
 
     def set_operation(self, expression, op):
         this = self.sql(expression, "this")

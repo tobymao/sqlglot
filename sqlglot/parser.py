@@ -446,18 +446,18 @@ class Parser(metaclass=_Parser):
     }
 
     PROPERTY_PARSERS = {
-        TokenType.AUTO_INCREMENT: lambda self: self._parse_auto_increment(),
-        TokenType.CHARACTER_SET: lambda self: self._parse_character_set(),
-        TokenType.LOCATION: lambda self: self.expression(
-            exp.LocationProperty,
-            this=exp.Literal.string("LOCATION"),
-            value=self._parse_string(),
+        TokenType.AUTO_INCREMENT: lambda self: self._parse_property_assignment(
+            exp.AutoIncrementProperty
         ),
+        TokenType.CHARACTER_SET: lambda self: self._parse_character_set(),
+        TokenType.LOCATION: lambda self: self._parse_property_assignment(exp.LocationProperty),
         TokenType.PARTITIONED_BY: lambda self: self._parse_partitioned_by(),
-        TokenType.SCHEMA_COMMENT: lambda self: self._parse_schema_comment(),
+        TokenType.SCHEMA_COMMENT: lambda self: self._parse_property_assignment(
+            exp.SchemaCommentProperty
+        ),
         TokenType.STORED: lambda self: self._parse_stored(),
         TokenType.DISTKEY: lambda self: self._parse_distkey(),
-        TokenType.DISTSTYLE: lambda self: self._parse_diststyle(),
+        TokenType.DISTSTYLE: lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         TokenType.SORTKEY: lambda self: self._parse_sortkey(),
         TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
@@ -826,93 +826,38 @@ class Parser(metaclass=_Parser):
             return self._parse_character_set(True)
 
         if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
-            key = self._parse_var().this
+            key = self._parse_var()
             self._match(TokenType.EQ)
-
-            return self.expression(
-                exp.Property,
-                this=exp.Literal.string(key),
-                value=self._parse_column(),
-            )
+            return self.expression(exp.Property, this=key, value=self._parse_column())
 
         return None
 
     def _parse_property_assignment(self, exp_class):
-        prop = self._prev.text
         self._match(TokenType.EQ)
-        return self.expression(exp_class, this=prop, value=self._parse_var_or_string())
+        return self.expression(exp_class, this=self._parse_var_or_string() or self._parse_number())
 
     def _parse_partitioned_by(self):
         self._match(TokenType.EQ)
         return self.expression(
             exp.PartitionedByProperty,
-            this=exp.Literal.string("PARTITIONED_BY"),
-            value=self._parse_schema() or self._parse_bracket(self._parse_field()),
+            this=self._parse_schema() or self._parse_bracket(self._parse_field()),
         )
 
     def _parse_stored(self):
         self._match(TokenType.ALIAS)
         self._match(TokenType.EQ)
-        return self.expression(
-            exp.FileFormatProperty,
-            this=exp.Literal.string("FORMAT"),
-            value=exp.Literal.string(self._parse_var_or_string().name),
-        )
+        return self.expression(exp.FileFormatProperty, this=self._parse_var_or_string())
 
     def _parse_distkey(self):
-        self._match_l_paren()
-        this = exp.Literal.string("DISTKEY")
-        value = exp.Literal.string(self._parse_var().name)
-        self._match_r_paren()
-        return self.expression(
-            exp.DistKeyProperty,
-            this=this,
-            value=value,
-        )
+        return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_var))
 
     def _parse_sortkey(self):
-        self._match_l_paren()
-        this = exp.Literal.string("SORTKEY")
-        value = exp.Literal.string(self._parse_var().name)
-        self._match_r_paren()
-        return self.expression(
-            exp.SortKeyProperty,
-            this=this,
-            value=value,
-        )
-
-    def _parse_diststyle(self):
-        this = exp.Literal.string("DISTSTYLE")
-        value = exp.Literal.string(self._parse_var().name)
-        return self.expression(
-            exp.DistStyleProperty,
-            this=this,
-            value=value,
-        )
-
-    def _parse_auto_increment(self):
-        self._match(TokenType.EQ)
-        return self.expression(
-            exp.AutoIncrementProperty,
-            this=exp.Literal.string("AUTO_INCREMENT"),
-            value=self._parse_number(),
-        )
-
-    def _parse_schema_comment(self):
-        self._match(TokenType.EQ)
-        return self.expression(
-            exp.SchemaCommentProperty,
-            this=exp.Literal.string("COMMENT"),
-            value=self._parse_string(),
-        )
+        return self.expression(exp.SortKeyProperty, this=self._parse_wrapped_csv(self._parse_var))
 
     def _parse_character_set(self, default=False):
         self._match(TokenType.EQ)
         return self.expression(
-            exp.CharacterSetProperty,
-            this=exp.Literal.string("CHARACTER_SET"),
-            value=self._parse_var_or_string(),
-            default=default,
+            exp.CharacterSetProperty, this=self._parse_var_or_string(), default=default
         )
 
     def _parse_returns(self):
@@ -931,20 +876,11 @@ class Parser(metaclass=_Parser):
         else:
             value = self._parse_types()
 
-        return self.expression(
-            exp.ReturnsProperty,
-            this=exp.Literal.string("RETURNS"),
-            value=value,
-            is_table=is_table,
-        )
+        return self.expression(exp.ReturnsProperty, this=value, is_table=is_table)
 
     def _parse_execute_as(self):
         self._match(TokenType.ALIAS)
-        return self.expression(
-            exp.ExecuteAsProperty,
-            this=exp.Literal.string("EXECUTE AS"),
-            value=self._parse_var(),
-        )
+        return self.expression(exp.ExecuteAsProperty, this=self._parse_var())
 
     def _parse_properties(self):
         properties = []

@@ -61,9 +61,7 @@ def _array_sort(self, expression):
 
 
 def _property_sql(self, expression):
-    key = expression.name
-    value = self.sql(expression, "value")
-    return f"'{key}'={value}"
+    return f"'{expression.name}'={self.sql(expression, 'value')}"
 
 
 def _str_to_unix(self, expression):
@@ -262,7 +260,7 @@ class Hive(Dialect):
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
-            exp.FileFormatProperty: lambda self, e: f"STORED AS {e.text('value').upper()}",
+            exp.FileFormatProperty: lambda self, e: f"STORED AS {e.name.upper()}",
             exp.If: if_sql,
             exp.Index: _index_sql,
             exp.ILike: no_ilike_sql,
@@ -285,7 +283,7 @@ class Hive(Dialect):
             exp.StrToTime: _str_to_time,
             exp.StrToUnix: _str_to_unix,
             exp.StructExtract: struct_extract_sql,
-            exp.TableFormatProperty: lambda self, e: f"USING {self.sql(e, 'value')}",
+            exp.TableFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
@@ -298,7 +296,7 @@ class Hive(Dialect):
             exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.format_args(e.this, _time_format(self, e))})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
-            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'value')}",
+            exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
         }
 

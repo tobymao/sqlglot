@@ -1065,63 +1065,63 @@ class Property(Expression):
 
 
 class TableFormatProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class PartitionedByProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class FileFormatProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class DistKeyProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class SortKeyProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class DistStyleProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class LocationProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class EngineProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class AutoIncrementProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class CharacterSetProperty(Property):
-    arg_types = {"this": True, "value": True, "default": True}
+    arg_types = {"this": True, "default": True}
 
 
 class CollateProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class SchemaCommentProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "value": True, "is_table": False}
+    arg_types = {"this": True, "is_table": False}
 
 
 class LanguageProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class ExecuteAsProperty(Property):
-    pass
+    arg_types = {"this": True}
 
 
 class VolatilityProperty(Property):
@@ -1155,8 +1155,12 @@ class Properties(Expression):
     def from_dict(cls, properties_dict) -> Properties:
         expressions = []
         for key, value in properties_dict.items():
-            property_cls = cls.NAME_TO_PROPERTY.get(key.upper(), Property)
-            expressions.append(property_cls(this=Literal.string(key), value=convert(value)))
+            property_cls = cls.NAME_TO_PROPERTY.get(key.upper())
+            if property_cls:
+                expressions.append(property_cls(this=convert(value)))
+            else:
+                expressions.append(Property(this=Literal.string(key), value=convert(value)))
+
         return cls(expressions=expressions)
 
 

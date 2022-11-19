@@ -369,6 +369,10 @@ class Custom(Dialect):
 print(Dialect["custom"])
 ```
 
+```python
+<class '__main__.Custom'>
+```
+
 ### SQL Execution
 
 One can even interpret SQL queries using SQLGlot, where the tables are represented as Python dictionaries. Although the engine is not very fast (it's not supposed to be) and is in a relatively early stage of development, it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels (arrow, pandas). Below is an example showcasing the execution of a SELECT expression that involves aggregations and JOINs:
@@ -414,10 +418,6 @@ execute(
 user_id price
       1   4.0
       2   3.0
-```
-
-```python
-<class '__main__.Custom'>
 ```
 
 ## Benchmarks

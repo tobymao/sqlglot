@@ -1081,7 +1081,7 @@ class DistKeyProperty(Property):
 
 
 class SortKeyProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "compound": False}
 
 
 class DistStyleProperty(Property):

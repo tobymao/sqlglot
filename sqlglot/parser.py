@@ -822,8 +822,12 @@ class Parser(metaclass=_Parser):
     def _parse_property(self):
         if self._match_set(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.token_type](self)
+
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
             return self._parse_character_set(True)
+
+        if self._match_pair(TokenType.COMPOUND, TokenType.SORTKEY):
+            return self._parse_sortkey(compound=True)
 
         if self._match_pair(TokenType.VAR, TokenType.EQ, advance=False):
             key = self._parse_var()
@@ -851,8 +855,10 @@ class Parser(metaclass=_Parser):
     def _parse_distkey(self):
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_var))
 
-    def _parse_sortkey(self):
-        return self.expression(exp.SortKeyProperty, this=self._parse_wrapped_csv(self._parse_var))
+    def _parse_sortkey(self, compound=False):
+        return self.expression(
+            exp.SortKeyProperty, this=self._parse_wrapped_csv(self._parse_var), compound=compound
+        )
 
     def _parse_character_set(self, default=False):
         self._match(TokenType.EQ)

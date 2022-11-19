@@ -399,18 +399,18 @@ tables = {
 }
 
 execute(
-	"""
-	SELECT
-	  o.user_id,
-	  SUM(s.price) AS price
-	FROM orders o
-	JOIN order_items i
-	  ON o.id = i.order_id
-	JOIN sushi s
-	  ON i.sushi_id = s.id
-	GROUP BY o.user_id
-	""",
-	tables=tables
+    """
+    SELECT
+      o.user_id,
+      SUM(s.price) AS price
+    FROM orders o
+    JOIN order_items i
+      ON o.id = i.order_id
+    JOIN sushi s
+      ON i.sushi_id = s.id
+    GROUP BY o.user_id
+    """,
+    tables=tables
 )
 ```
 

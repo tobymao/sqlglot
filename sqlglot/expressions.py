@@ -1132,21 +1132,21 @@ class Properties(Expression):
     arg_types = {"expressions": True}
 
     NAME_TO_PROPERTY = {
-        "TABLE_FORMAT": TableFormatProperty,
-        "PARTITIONED_BY": PartitionedByProperty,
-        "FORMAT": FileFormatProperty,
-        "DISTKEY": DistKeyProperty,
-        "SORTKEY": SortKeyProperty,
-        "DISTSTYLE": DistStyleProperty,
-        "LOCATION": LocationProperty,
-        "ENGINE": EngineProperty,
         "AUTO_INCREMENT": AutoIncrementProperty,
         "CHARACTER SET": CharacterSetProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
-        "RETURNS": ReturnsProperty,
-        "LANGUAGE": LanguageProperty,
+        "DISTKEY": DistKeyProperty,
+        "DISTSTYLE": DistStyleProperty,
+        "ENGINE": EngineProperty,
         "EXECUTE AS": ExecuteAsProperty,
+        "FORMAT": FileFormatProperty,
+        "LANGUAGE": LanguageProperty,
+        "LOCATION": LocationProperty,
+        "PARTITIONED_BY": PartitionedByProperty,
+        "RETURNS": ReturnsProperty,
+        "SORTKEY": SortKeyProperty,
+        "TABLE_FORMAT": TableFormatProperty,
     }
 
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}

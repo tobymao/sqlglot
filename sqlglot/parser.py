@@ -153,6 +153,7 @@ class Parser(metaclass=_Parser):
         TokenType.COLLATE,
         TokenType.COMMAND,
         TokenType.COMMIT,
+        TokenType.COMPOUND,
         TokenType.CONSTRAINT,
         TokenType.CURRENT_TIME,
         TokenType.DEFAULT,

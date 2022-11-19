@@ -56,12 +56,12 @@ def _derived_table_values_to_unnest(self, expression):
 
 
 def _returnsproperty_sql(self, expression):
-    value = expression.args.get("value")
-    if isinstance(value, exp.Schema):
-        value = f"{value.this} <{self.expressions(value)}>"
+    this = expression.this
+    if isinstance(this, exp.Schema):
+        this = f"{this.this} <{self.expressions(this)}>"
     else:
-        value = self.sql(value)
-    return f"RETURNS {value}"
+        this = self.sql(this)
+    return f"RETURNS {this}"
 
 
 def _create_sql(self, expression):
@@ -200,9 +200,7 @@ class BigQuery(Dialect):
             exp.VolatilityProperty,
         }
 
-        WITH_PROPERTIES = {
-            exp.AnonymousProperty,
-        }
+        WITH_PROPERTIES = {exp.Property}
 
         EXPLICIT_UNION = True
 

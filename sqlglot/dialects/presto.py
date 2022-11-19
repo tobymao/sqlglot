@@ -171,16 +171,7 @@ class Presto(Dialect):
 
         STRUCT_DELIMITER = ("(", ")")
 
-        ROOT_PROPERTIES = {
-            exp.SchemaCommentProperty,
-        }
-
-        WITH_PROPERTIES = {
-            exp.PartitionedByProperty,
-            exp.FileFormatProperty,
-            exp.AnonymousProperty,
-            exp.TableFormatProperty,
-        }
+        ROOT_PROPERTIES = {exp.SchemaCommentProperty}
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -231,7 +222,8 @@ class Presto(Dialect):
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.StructExtract: struct_extract_sql,
-            exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT = '{e.text('value').upper()}'",
+            exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT='{e.name.upper()}'",
+            exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.TimeStrToDate: _date_parse_sql,
             exp.TimeStrToTime: _date_parse_sql,
             exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.time_format}))",

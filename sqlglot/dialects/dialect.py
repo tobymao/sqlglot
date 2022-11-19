@@ -336,18 +336,13 @@ def create_with_partitions_sql(self, expression):
     if has_schema and is_partitionable:
         expression = expression.copy()
         prop = expression.find(exp.PartitionedByProperty)
-        value = prop and prop.args.get("value")
-        if prop and not isinstance(value, exp.Schema):
+        this = prop and prop.this
+        if prop and not isinstance(this, exp.Schema):
             schema = expression.this
-            columns = {v.name.upper() for v in value.expressions}
+            columns = {v.name.upper() for v in this.expressions}
             partitions = [col for col in schema.expressions if col.name.upper() in columns]
-            schema.set(
-                "expressions",
-                [e for e in schema.expressions if e not in partitions],
-            )
-            prop.replace(
-                exp.PartitionedByProperty(this=prop.this, value=exp.Schema(expressions=partitions))
-            )
+            schema.set("expressions", [e for e in schema.expressions if e not in partitions])
+            prop.replace(exp.PartitionedByProperty(this=exp.Schema(expressions=partitions)))
             expression.set("this", schema)
 
     return self.create_sql(expression)

@@ -153,7 +153,7 @@ class Drill(Dialect):
             exp.If: if_sql,
             exp.ILike: lambda self, e: f" {self.sql(e, 'this')} `ILIKE` {self.sql(e, 'expression')}",
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
-            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Pivot: no_pivot_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.StrPosition: str_position_sql,

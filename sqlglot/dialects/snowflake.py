@@ -203,7 +203,7 @@ class Snowflake(Dialect):
             exp.Array: inline_array_sql,
             exp.StrPosition: rename_func("POSITION"),
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
-            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'value')}",
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
         }
 

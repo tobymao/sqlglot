@@ -311,11 +311,9 @@ class PythonExecutor:
 
     def sort(self, step, context):
         projections = self.generate_tuple(step.projections)
-
         projection_columns = [p.alias_or_name for p in step.projections]
         all_columns = list(context.columns) + projection_columns
         sink = self.table(all_columns)
-
         for reader, ctx in context:
             sink.append(reader.row + ctx.eval_tuple(projections))
 

@@ -131,17 +131,18 @@ class Step:
         sequence = itertools.count()
 
         for e in expression.expressions:
-            aggregation = e.find(exp.AggFunc)
+            aggs = list(e.find_all(exp.AggFunc))
 
-            if aggregation:
+            if aggs:
                 projections.append(exp.column(e.alias_or_name, step.name, quoted=True))
                 aggregations.append(e)
-                for operand in aggregation.unnest_operands():
-                    if isinstance(operand, exp.Column):
-                        continue
-                    if operand not in operands:
-                        operands[operand] = f"_a_{next(sequence)}"
-                    operand.replace(exp.column(operands[operand], quoted=True))
+                for agg in aggs:
+                    for operand in agg.unnest_operands():
+                        if isinstance(operand, exp.Column):
+                            continue
+                        if operand not in operands:
+                            operands[operand] = f"_a_{next(sequence)}"
+                        operand.replace(exp.column(operands[operand], quoted=True))
             else:
                 projections.append(e)
 

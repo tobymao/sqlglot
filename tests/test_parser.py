@@ -24,6 +24,12 @@ class TestParser(unittest.TestCase):
     def test_float(self):
         self.assertEqual(parse_one(".2"), parse_one("0.2"))
 
+    def test_unary_plus(self):
+        unary_plus = parse("+15")
+        assert len(unary_plus) == 1
+
+        assert unary_plus[0].this.sql() == "15"
+
     def test_table(self):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
         self.assertEqual(tables, ["a", "b.c", "d"])

@@ -75,9 +75,6 @@ class Column:
     def __neg__(self) -> Column:
         return self.unary_op(exp.Neg)
 
-    def __pos__(self) -> Column:
-        return self.unary_op(exp.Pos)
-
     def __radd__(self, other: ColumnOrLiteral) -> Column:
         return self.inverse_binary_op(exp.Add, other)
 

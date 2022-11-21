@@ -1127,9 +1127,6 @@ class Generator:
         sep = " " if this_sql[0] == "-" else ""
         return f"-{sep}{this_sql}"
 
-    def pos_sql(self, expression):
-        return self.sql(expression, "this")
-
     def not_sql(self, expression):
         return f"NOT {self.sql(expression, 'this')}"
 

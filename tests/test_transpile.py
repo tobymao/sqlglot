@@ -26,6 +26,7 @@ class TestTranspile(unittest.TestCase):
         )
         self.assertEqual(transpile("SELECT 1 current_date")[0], "SELECT 1 AS current_date")
         self.assertEqual(transpile("SELECT 1 current_datetime")[0], "SELECT 1 AS current_datetime")
+        self.assertEqual(transpile("SELECT 1 row")[0], "SELECT 1 AS row")
 
         for key in ("union", "filter", "over", "from", "join"):
             with self.subTest(f"alias {key}"):

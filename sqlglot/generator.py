@@ -388,9 +388,9 @@ class Generator:
         return "NOT NULL"
 
     def primarykeycolumnconstraint_sql(self, expression):
-        is_ascending = expression.args.get("is_ascending")
-        if is_ascending is not None:
-            return f"PRIMARY KEY{' ASC' if is_ascending else ' DESC'}"
+        desc = expression.args.get("desc")
+        if desc is not None:
+            return f"PRIMARY KEY{' DESC' if desc else ' ASC'}"
         return f"PRIMARY KEY"
 
     def uniquecolumnconstraint_sql(self, _):

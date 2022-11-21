@@ -767,7 +767,7 @@ class NotNullColumnConstraint(ColumnConstraintKind):
 
 
 class PrimaryKeyColumnConstraint(ColumnConstraintKind):
-    arg_types = {"is_ascending": False}
+    arg_types = {"desc": False}
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):

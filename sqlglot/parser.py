@@ -1686,6 +1686,8 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.BitwiseNot, this=self._parse_unary())
         if self._match(TokenType.DASH):
             return self.expression(exp.Neg, this=self._parse_unary())
+        if self._match(TokenType.PLUS):
+            return self.expression(exp.Pos, this=self._parse_unary())
         return self._parse_at_time_zone(self._parse_type())
 
     def _parse_type(self):

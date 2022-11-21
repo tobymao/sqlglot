@@ -195,6 +195,7 @@ class Parser(metaclass=_Parser):
         TokenType.RANGE,
         TokenType.REFERENCES,
         TokenType.RETURNS,
+        TokenType.ROW,
         TokenType.ROWS,
         TokenType.SCHEMA,
         TokenType.SCHEMA_COMMENT,

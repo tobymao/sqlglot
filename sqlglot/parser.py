@@ -1027,7 +1027,12 @@ class Parser(metaclass=_Parser):
         options = []
 
         if self._match(TokenType.OPTIONS):
-            options = self._parse_wrapped_csv(self._parse_string, sep=TokenType.EQ)
+            self._match_l_paren()
+            k = self._parse_string()
+            self._match(TokenType.EQ)
+            v = self._parse_string()
+            options = [k, v]
+            self._match_r_paren()
 
         self._match(TokenType.ALIAS)
         return self.expression(

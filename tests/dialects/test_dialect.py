@@ -998,6 +998,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "CONCAT(a)",
+            write={
+                "mysql": "a",
+                "tsql": "a",
+            },
+        )
+        self.validate_all(
             "IF(x > 1, 1, 0)",
             write={
                 "drill": "`IF`(x > 1, 1, 0)",

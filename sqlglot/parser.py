@@ -405,6 +405,13 @@ class Parser(metaclass=_Parser):
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
     }
 
+    UNARY_PARSERS = {
+        TokenType.NOT: lambda self: self.expression(exp.Not, this=self._parse_equality()),
+        TokenType.TILDA: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
+        TokenType.DASH: lambda self: self.expression(exp.Neg, this=self._parse_unary()),
+        TokenType.PLUS: lambda self: self.expression(exp.Pos, this=self._parse_unary()),
+    }
+
     PRIMARY_PARSERS = {
         TokenType.STRING: lambda self, token: self.expression(
             exp.Literal, this=token.text, is_string=True
@@ -1681,14 +1688,8 @@ class Parser(metaclass=_Parser):
         return self._parse_tokens(self._parse_unary, self.FACTOR)
 
     def _parse_unary(self):
-        if self._match(TokenType.NOT):
-            return self.expression(exp.Not, this=self._parse_equality())
-        if self._match(TokenType.TILDA):
-            return self.expression(exp.BitwiseNot, this=self._parse_unary())
-        if self._match(TokenType.DASH):
-            return self.expression(exp.Neg, this=self._parse_unary())
-        if self._match(TokenType.PLUS):
-            return self.expression(exp.Pos, this=self._parse_unary())
+        if self._match_set(self.UNARY_PARSERS):
+            return self.UNARY_PARSERS[self._prev.token_type](self)
         return self._parse_at_time_zone(self._parse_type())
 
     def _parse_type(self):

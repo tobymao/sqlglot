@@ -388,8 +388,10 @@ class Generator:
         return "NOT NULL"
 
     def primarykeycolumnconstraint_sql(self, expression):
-        order = f" {expression.name}" if expression.this else ""
-        return f"PRIMARY KEY{order}"
+        is_ascending = expression.args.get("is_ascending")
+        if is_ascending is not None:
+            return f"PRIMARY KEY{' ASC' if is_ascending else ' DESC'}"
+        return f"PRIMARY KEY"
 
     def uniquecolumnconstraint_sql(self, _):
         return "UNIQUE"

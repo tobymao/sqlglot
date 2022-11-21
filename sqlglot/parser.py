@@ -2050,10 +2050,10 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.SCHEMA_COMMENT):
             kind = self.expression(exp.CommentColumnConstraint, this=self._parse_string())
         elif self._match(TokenType.PRIMARY_KEY):
-            order = None
+            is_ascending = None
             if self._match(TokenType.ASC) or self._match(TokenType.DESC):
-                order = self.expression(exp.Var, this=self._prev.text)
-            kind = exp.PrimaryKeyColumnConstraint(this=order)
+                is_ascending = self._prev.text == "ASC"
+            kind = exp.PrimaryKeyColumnConstraint(is_ascending=is_ascending)
         elif self._match(TokenType.UNIQUE):
             kind = exp.UniqueColumnConstraint()
         elif self._match(TokenType.GENERATED):

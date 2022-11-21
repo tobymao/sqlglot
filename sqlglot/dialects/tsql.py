@@ -301,8 +301,3 @@ class TSQL(Dialect):
             exp.NumberToStr: generate_format_sql,
             exp.TimeToStr: generate_format_sql,
         }
-
-        def concat_sql(self, expression):
-            if len(expression.expressions) == 1:
-                return self.sql(expression.expressions[0])
-            return self.function_fallback_sql(expression)

@@ -25,13 +25,6 @@ class TestTSQL(Validator):
                 "tsql": "CAST(CAST('444.75' AS NUMERIC) AS INTEGER)",
             },
         )
-        self.validate_all(
-            "SELECT CONCAT(a)",
-            write={
-                "mysql": "SELECT CONCAT(a)",
-                "tsql": "SELECT a",
-            },
-        )
 
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")

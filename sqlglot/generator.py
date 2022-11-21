@@ -1117,7 +1117,9 @@ class Generator:
         return self.prepend_ctes(expression, sql)
 
     def neg_sql(self, expression):
-        return f"-{self.sql(expression, 'this')}"
+        # This makes sure we don't convert "- - 5" to "--5", which is a comment
+        sep = " " if isinstance(expression.this, exp.Neg) else ""
+        return f"-{sep}{self.sql(expression, 'this')}"
 
     def not_sql(self, expression):
         return f"NOT {self.sql(expression, 'this')}"

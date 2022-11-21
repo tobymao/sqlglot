@@ -2276,10 +2276,6 @@ class Paren(Unary, Condition):
     arg_types = {"this": True, "with": False}
 
 
-class Pos(Unary):
-    pass
-
-
 class Neg(Unary):
     pass
 

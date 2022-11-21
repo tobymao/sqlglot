@@ -387,8 +387,11 @@ class Generator:
     def notnullcolumnconstraint_sql(self, _):
         return "NOT NULL"
 
-    def primarykeycolumnconstraint_sql(self, _):
-        return "PRIMARY KEY"
+    def primarykeycolumnconstraint_sql(self, expression):
+        desc = expression.args.get("desc")
+        if desc is not None:
+            return f"PRIMARY KEY{' DESC' if desc else ' ASC'}"
+        return f"PRIMARY KEY"
 
     def uniquecolumnconstraint_sql(self, _):
         return "UNIQUE"

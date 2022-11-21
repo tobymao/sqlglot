@@ -239,6 +239,10 @@ def simplify_literals(expression):
             if value[0] == "-":
                 return exp.Literal.number(value[1:])
             return exp.Literal.number(f"-{value}")
+    elif isinstance(expression, exp.Pos):
+        this = expression.this
+        if this.is_number:
+            return exp.Literal.number(this.name)
 
     return expression
 

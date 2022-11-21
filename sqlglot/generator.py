@@ -1053,6 +1053,11 @@ class Generator:
         else:
             return f"TRIM({target})"
 
+    def concat_sql(self, expression):
+        if len(expression.expressions) == 1:
+            return self.sql(expression.expressions[0])
+        return self.function_fallback_sql(expression)
+
     def check_sql(self, expression):
         this = self.sql(expression, key="this")
         return f"CHECK ({this})"

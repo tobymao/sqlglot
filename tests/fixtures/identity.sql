@@ -36,6 +36,7 @@ x >> 1
 x >> 1 | 1 & 1 ^ 1
 x || y
 1 - -1
+- -5
 dec.x + y
 a.filter
 a.b.c

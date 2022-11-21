@@ -25,7 +25,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parse_one(".2"), parse_one("0.2"))
 
     def test_unary_plus(self):
-        assert parse_one("+15") == exp.Pos(this=exp.Literal.number(15))
+        self.assertEqual(parse_one("+15"), exp.Pos(this=exp.Literal.number(15)))
 
     def test_table(self):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]

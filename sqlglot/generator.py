@@ -1128,7 +1128,7 @@ class Generator:
         return f"-{sep}{this_sql}"
 
     def pos_sql(self, expression):
-        return f"+{self.sql(expression, 'this')}"
+        return f"{self.sql(expression, 'this')}"
 
     def not_sql(self, expression):
         return f"NOT {self.sql(expression, 'this')}"

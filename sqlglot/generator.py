@@ -6,7 +6,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_errors
-from sqlglot.helper import apply_index_offset, csv
+from sqlglot.helper import apply_index_offset, csv, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -1118,8 +1118,9 @@ class Generator:
 
     def neg_sql(self, expression):
         # This makes sure we don't convert "- - 5" to "--5", which is a comment
-        sep = " " if isinstance(expression.this, exp.Neg) else ""
-        return f"-{sep}{self.sql(expression, 'this')}"
+        this_sql = self.sql(expression, "this")
+        sep = " " if seq_get(this_sql, 0) == "-" else ""
+        return f"-{sep}{this_sql}"
 
     def not_sql(self, expression):
         return f"NOT {self.sql(expression, 'this')}"

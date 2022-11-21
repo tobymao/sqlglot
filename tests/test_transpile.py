@@ -39,6 +39,11 @@ class TestTranspile(unittest.TestCase):
     def test_asc(self):
         self.validate("SELECT x FROM y ORDER BY x ASC", "SELECT x FROM y ORDER BY x")
 
+    def test_unary(self):
+        self.validate("+++1", "1")
+        self.validate("+-1", "-1")
+        self.validate("+- - -1", "- - -1")
+
     def test_paren(self):
         with self.assertRaises(ParseError):
             transpile("1 + (2 + 3")

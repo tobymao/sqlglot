@@ -406,10 +406,10 @@ class Parser(metaclass=_Parser):
     }
 
     UNARY_PARSERS = {
+        TokenType.PLUS: lambda self: self._parse_unary(),  # Unary + is handled as a no-op
         TokenType.NOT: lambda self: self.expression(exp.Not, this=self._parse_equality()),
         TokenType.TILDA: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
         TokenType.DASH: lambda self: self.expression(exp.Neg, this=self._parse_unary()),
-        TokenType.PLUS: lambda self: self.expression(exp.Pos, this=self._parse_unary()),
     }
 
     PRIMARY_PARSERS = {

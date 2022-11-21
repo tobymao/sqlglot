@@ -94,6 +94,13 @@ TBLPROPERTIES (
             pretty=True,
         )
 
+        self.validate_all(
+            "CACHE TABLE testCache OPTIONS ('storageLevel' 'DISK_ONLY') SELECT * FROM testData",
+            write={
+                "spark": "CACHE TABLE testCache OPTIONS('storageLevel' = 'DISK_ONLY') AS SELECT * FROM testData"
+            },
+        )
+
     def test_to_date(self):
         self.validate_all(
             "TO_DATE(x, 'yyyy-MM-dd')",

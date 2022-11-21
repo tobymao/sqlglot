@@ -6,6 +6,10 @@ class TestSQLite(Validator):
 
     def test_ddl(self):
         self.validate_all(
+            "CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)",
+            write={"sqlite": "CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)"},
+        )
+        self.validate_all(
             """
             CREATE TABLE "Track"
             (

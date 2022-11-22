@@ -431,31 +431,10 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 "highlight": "(",
                 "end_context": "",
             },
-            {
-                "description": "Expecting )",
-                "line": 1,
-                "col": 4,
-                "start_context": "(((",
-                "highlight": "(",
-                "end_context": "",
-            },
-            {
-                "description": "Expecting )",
-                "line": 1,
-                "col": 4,
-                "start_context": "(((",
-                "highlight": "(",
-                "end_context": "",
-            },
-            {
-                "description": "Expecting )",
-                "line": 1,
-                "col": 4,
-                "start_context": "(((",
-                "highlight": "(",
-                "end_context": "",
-            },
         ]
+        # Also expect three trailing structured errors that match the first
+        expected_errors += [expected_errors[0]] * 3
+
         with self.assertRaises(ParseError) as ctx:
             transpile(more_than_max_errors, error_level=ErrorLevel.RAISE)
         self.assertEqual(str(ctx.exception), expected_messages)

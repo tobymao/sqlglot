@@ -374,7 +374,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 8.\n  x + 1. \033[4m(\033[0m",
             "Expecting ). Line 1, Col: 8.\n  x + 1. \033[4m(\033[0m",
         ]
-        expected_error_props = [
+        expected_errors = [
             {
                 "description": "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>",
                 "line": 1,
@@ -400,12 +400,12 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         with self.assertRaises(ParseError) as ctx:
             transpile(invalid, error_level=ErrorLevel.IMMEDIATE)
         self.assertEqual(str(ctx.exception), expected_messages[0])
-        self.assertEqual(ctx.exception.error_props[0], expected_error_props[0])
+        self.assertEqual(ctx.exception.errors[0], expected_errors[0])
 
         with self.assertRaises(ParseError) as ctx:
             transpile(invalid, error_level=ErrorLevel.RAISE)
         self.assertEqual(str(ctx.exception), "\n\n".join(expected_messages))
-        self.assertEqual(ctx.exception.error_props, expected_error_props)
+        self.assertEqual(ctx.exception.errors, expected_errors)
 
         more_than_max_errors = "(((("
         expected_messages = (
@@ -414,7 +414,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
             "... and 2 more"
         )
-        expected_error_props = [
+        expected_errors = [
             {
                 "description": "Expecting )",
                 "line": 1,
@@ -439,11 +439,27 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 "highlight": "(",
                 "end_context": "",
             },
+            {
+                "description": "Expecting )",
+                "line": 1,
+                "col": 4,
+                "start_context": "(((",
+                "highlight": "(",
+                "end_context": "",
+            },
+            {
+                "description": "Expecting )",
+                "line": 1,
+                "col": 4,
+                "start_context": "(((",
+                "highlight": "(",
+                "end_context": "",
+            },
         ]
         with self.assertRaises(ParseError) as ctx:
             transpile(more_than_max_errors, error_level=ErrorLevel.RAISE)
         self.assertEqual(str(ctx.exception), expected_messages)
-        self.assertEqual(ctx.exception.error_props, expected_error_props)
+        self.assertEqual(ctx.exception.errors, expected_errors)
 
     @mock.patch("sqlglot.generator.logger")
     def test_unsupported_level(self, logger):

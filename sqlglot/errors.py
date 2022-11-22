@@ -25,26 +25,35 @@ class ParseError(SqlglotError):
     def __init__(
         self,
         message: str,
+        errors: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
+    ):
+        super().__init__(message)
+        self.errors = errors or []
+
+    @classmethod
+    def new(
+        cls,
+        message: str,
         description: t.Optional[str] = None,
         line: t.Optional[int] = None,
         col: t.Optional[int] = None,
         start_context: t.Optional[str] = None,
         highlight: t.Optional[str] = None,
         end_context: t.Optional[str] = None,
-        error_props: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
-    ):
-        super().__init__(message)
-        self.error_props = error_props or []
-        props = {
-            "description": description,
-            "line": line,
-            "col": col,
-            "start_context": start_context,
-            "highlight": highlight,
-            "end_context": end_context,
-        }
-        if any(p is not None for p in props.values()):
-            self.error_props.append(props)
+    ) -> ParseError:
+        return cls(
+            message,
+            [
+                {
+                    "description": description,
+                    "line": line,
+                    "col": col,
+                    "start_context": start_context,
+                    "highlight": highlight,
+                    "end_context": end_context,
+                }
+            ],
+        )
 
 
 class TokenError(SqlglotError):
@@ -71,5 +80,5 @@ def concat_errors(errors: t.Sequence[t.Any], maximum: int) -> str:
     return "\n\n".join(msg)
 
 
-def concat_error_props(errors: t.Sequence[ParseError], maximum: int) -> t.List[t.Dict[str, t.Any]]:
-    return [props for e in errors[:maximum] for props in e.error_props]
+def concat_struct_errors(errors: t.Sequence[ParseError]) -> t.List[t.Dict[str, t.Any]]:
+    return [e_dict for error in errors for e_dict in error.errors]

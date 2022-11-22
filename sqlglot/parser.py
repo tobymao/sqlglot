@@ -4,7 +4,7 @@ import logging
 import typing as t
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, ParseError, concat_error_props, concat_errors
+from sqlglot.errors import ErrorLevel, ParseError, concat_errors, concat_struct_errors
 from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
@@ -625,7 +625,7 @@ class Parser(metaclass=_Parser):
                 return self._parse(parser, raw_tokens, sql)
             except ParseError as e:
                 error = e
-        raise ParseError(f"Failed to parse into {expression_types}") from error
+        raise ParseError.new(f"Failed to parse into {expression_types}") from error
 
     def _parse(self, parse_method, raw_tokens, sql=None):
         self.reset()
@@ -661,7 +661,7 @@ class Parser(metaclass=_Parser):
         elif self.error_level == ErrorLevel.RAISE and self.errors:
             raise ParseError(
                 concat_errors(self.errors, self.max_errors),
-                error_props=concat_error_props(self.errors, self.max_errors),
+                errors=concat_struct_errors(self.errors),
             )
 
     def raise_error(self, message, token=None):
@@ -671,7 +671,7 @@ class Parser(metaclass=_Parser):
         start_context = self.sql[max(start - self.error_message_context, 0) : start]
         highlight = self.sql[start:end]
         end_context = self.sql[end : end + self.error_message_context]
-        error = ParseError(
+        error = ParseError.new(
             f"{message}. Line {token.line}, Col: {token.col}.\n"
             f"  {start_context}\033[4m{highlight}\033[0m{end_context}",
             description=message,

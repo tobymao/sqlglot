@@ -205,8 +205,8 @@ class TestParser(unittest.TestCase):
     def test_comments(self):
         expression = parse_one(
             """
-            --comment1
-            SELECT /* this won't be used */
+            --comment1.1
+            SELECT /*comment1.2*/
                 a, --comment2
                 b as B, --comment3:testing
                 "test--annotation",
@@ -217,13 +217,13 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        self.assertEqual(expression.comment, "comment1")
-        self.assertEqual(expression.expressions[0].comment, "comment2")
-        self.assertEqual(expression.expressions[1].comment, "comment3:testing")
-        self.assertEqual(expression.expressions[2].comment, None)
-        self.assertEqual(expression.expressions[3].comment, "comment4 --foo")
-        self.assertEqual(expression.expressions[4].comment, "")
-        self.assertEqual(expression.expressions[5].comment, " space")
+        self.assertEqual(expression.comments, ["comment1.1", "comment1.2"])
+        self.assertEqual(expression.expressions[0].comments, ["comment2"])
+        self.assertEqual(expression.expressions[1].comments, ["comment3:testing"])
+        self.assertEqual(expression.expressions[2].comments, [])
+        self.assertEqual(expression.expressions[3].comments, ["comment4 --foo"])
+        self.assertEqual(expression.expressions[4].comments, [""])
+        self.assertEqual(expression.expressions[5].comments, [" space"])
 
     def test_type_literals(self):
         self.assertEqual(parse_one("int 1"), parse_one("CAST(1 AS INT)"))

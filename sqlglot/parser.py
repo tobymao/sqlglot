@@ -567,7 +567,7 @@ class Parser(metaclass=_Parser):
         "_curr",
         "_next",
         "_prev",
-        "_prev_comment",
+        "_prev_comments",
         "_show_trie",
         "_set_trie",
     )
@@ -600,7 +600,7 @@ class Parser(metaclass=_Parser):
         self._curr = None
         self._next = None
         self._prev = None
-        self._prev_comment = None
+        self._prev_comments: t.List[str] = []
 
     def parse(self, raw_tokens, sql=None):
         """
@@ -694,9 +694,9 @@ class Parser(metaclass=_Parser):
 
     def expression(self, exp_class, **kwargs):
         instance = exp_class(**kwargs)
-        if self._prev_comment:
-            instance.comment = self._prev_comment
-            self._prev_comment = None
+        if self._prev_comments:
+            instance.comments = self._prev_comments
+            self._prev_comments = []
         self.validate_expression(instance)
         return instance
 
@@ -739,10 +739,10 @@ class Parser(metaclass=_Parser):
         self._next = seq_get(self._tokens, self._index + 1)
         if self._index > 0:
             self._prev = self._tokens[self._index - 1]
-            self._prev_comment = self._prev.comment
+            self._prev_comments = self._prev.comments
         else:
             self._prev = None
-            self._prev_comment = None
+            self._prev_comments = []
 
     def _retreat(self, index):
         self._advance(index - self._index)
@@ -1088,7 +1088,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error(f"{this.key} does not support CTE")
                 this = cte
         elif self._match(TokenType.SELECT):
-            comment = self._prev_comment
+            comments = self._prev_comments
 
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
@@ -1113,7 +1113,7 @@ class Parser(metaclass=_Parser):
                 expressions=expressions,
                 limit=limit,
             )
-            this.comment = comment
+            this.comments = comments
             from_ = self._parse_from()
             if from_:
                 this.set("from", from_)
@@ -1872,7 +1872,7 @@ class Parser(metaclass=_Parser):
             return exp.Literal.number(f"0.{self._prev.text}")
 
         if self._match(TokenType.L_PAREN):
-            comment = self._prev_comment
+            comments = self._prev_comments
             query = self._parse_select()
 
             if query:
@@ -1892,8 +1892,8 @@ class Parser(metaclass=_Parser):
                 this = self.expression(exp.Tuple, expressions=expressions)
             else:
                 this = self.expression(exp.Paren, this=this)
-            if comment:
-                this.comment = comment
+            if comments:
+                this.comments = comments
             return this
 
         return None
@@ -2160,7 +2160,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.R_BRACKET):
             self.raise_error("Expected ]")
 
-        this.comment = self._prev_comment
+        this.comments = self._prev_comments
         return self._parse_bracket(this)
 
     def _parse_case(self):
@@ -2482,8 +2482,8 @@ class Parser(metaclass=_Parser):
         items = [parse_result] if parse_result is not None else []
 
         while self._match(sep):
-            if parse_result and self._prev_comment is not None:
-                parse_result.comment = self._prev_comment
+            if parse_result and self._prev_comments:
+                parse_result.comments = self._prev_comments
 
             parse_result = parse_method()
             if parse_result is not None:
@@ -2622,14 +2622,14 @@ class Parser(metaclass=_Parser):
     def _match_l_paren(self, expression=None):
         if not self._match(TokenType.L_PAREN):
             self.raise_error("Expecting (")
-        if expression and self._prev_comment:
-            expression.comment = self._prev_comment
+        if expression and self._prev_comments:
+            expression.comments = self._prev_comments
 
     def _match_r_paren(self, expression=None):
         if not self._match(TokenType.R_PAREN):
             self.raise_error("Expecting )")
-        if expression and self._prev_comment:
-            expression.comment = self._prev_comment
+        if expression and self._prev_comments:
+            expression.comments = self._prev_comments
 
     def _match_texts(self, texts):
         if self._curr and self._curr.text.upper() in texts:

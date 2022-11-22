@@ -43,14 +43,14 @@ class Expression(metaclass=_Expression):
 
     key = "Expression"
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key", "type", "comment")
+    __slots__ = ("args", "parent", "arg_key", "type", "comments")
 
     def __init__(self, **args):
         self.args = args
         self.parent = None
         self.arg_key = None
         self.type = None
-        self.comment = None
+        self.comments = []
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
@@ -88,18 +88,18 @@ class Expression(metaclass=_Expression):
             return field.this
         return ""
 
-    def find_comment(self, key: str) -> str:
+    def find_comments(self, key: str) -> t.List[str]:
         """
-        Finds the comment that is attached to a specified child node.
+        Finds the comments that are attached to a specified child node.
 
         Args:
             key: the key of the target child node (e.g. "this", "expression", etc).
 
         Returns:
-            The comment attached to the child node, or the empty string, if it doesn't exist.
+            The comments attached to the child node, or the empty list, if it doesn't exist.
         """
         field = self.args.get(key)
-        return field.comment if isinstance(field, Expression) else ""
+        return field.comments if isinstance(field, Expression) else []
 
     @property
     def is_string(self):
@@ -137,7 +137,7 @@ class Expression(metaclass=_Expression):
 
     def __deepcopy__(self, memo):
         copy = self.__class__(**deepcopy(self.args))
-        copy.comment = self.comment
+        copy.comments = self.comments
         copy.type = self.type
         return copy
 
@@ -369,7 +369,7 @@ class Expression(metaclass=_Expression):
             )
             for k, vs in self.args.items()
         }
-        args["comment"] = self.comment
+        args["comments"] = self.comments
         args["type"] = self.type
         args = {k: v for k, v in args.items() if v or not hide_missing}
 

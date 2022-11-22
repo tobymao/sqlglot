@@ -227,7 +227,7 @@ class Generator:
         return f"{self.sep(sep)}{sql}"
 
     def maybe_comment(self, sql, expression, single_line=False):
-        comment = expression.comment if self._comments else None
+        comment = seq_get(expression.comments, 0) if self._comments else None
 
         if not comment:
             return sql

@@ -6,6 +6,9 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_ddl(self):
+        self.validate_identity("CREATE TABLE test (foo HSTORE)")
+        self.validate_identity("CREATE TABLE test (foo JSONB)")
+        self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
         self.validate_all(
             "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
             write={

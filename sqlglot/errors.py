@@ -21,15 +21,6 @@ class UnsupportedError(SqlglotError):
     pass
 
 
-class ParseErrorProps(t.TypedDict):
-    description: t.Optional[str]
-    line: t.Optional[int]
-    col: t.Optional[int]
-    start_context: t.Optional[str]
-    highlight: t.Optional[str]
-    end_context: t.Optional[str]
-
-
 class ParseError(SqlglotError):
     def __init__(
         self,
@@ -40,11 +31,11 @@ class ParseError(SqlglotError):
         start_context: t.Optional[str] = None,
         highlight: t.Optional[str] = None,
         end_context: t.Optional[str] = None,
-        error_props: t.Optional[t.List[ParseErrorProps]] = None,
+        error_props: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
     ):
         super().__init__(message)
         self.error_props = error_props if error_props is not None else []
-        props: ParseErrorProps = {
+        props = {
             "description": description,
             "line": line,
             "col": col,
@@ -80,5 +71,5 @@ def concat_errors(errors: t.Sequence[t.Any], maximum: int) -> str:
     return "\n\n".join(msg)
 
 
-def concat_error_props(errors: t.Sequence[ParseError], maximum: int) -> t.List[ParseErrorProps]:
+def concat_error_props(errors: t.Sequence[ParseError], maximum: int) -> t.List[t.Dict[str, t.Any]]:
     return [props for e in errors[:maximum] for props in e.error_props]

@@ -104,6 +104,7 @@ class Parser(metaclass=_Parser):
         TokenType.BINARY,
         TokenType.VARBINARY,
         TokenType.JSON,
+        TokenType.JSONB,
         TokenType.INTERVAL,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
@@ -115,6 +116,7 @@ class Parser(metaclass=_Parser):
         TokenType.GEOGRAPHY,
         TokenType.GEOMETRY,
         TokenType.HLLSKETCH,
+        TokenType.HSTORE,
         TokenType.SUPER,
         TokenType.SERIAL,
         TokenType.SMALLSERIAL,
@@ -1727,17 +1729,6 @@ class Parser(metaclass=_Parser):
         expressions = None
         maybe_func = False
 
-        if not nested and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-            return exp.DataType(
-                this=exp.DataType.Type.ARRAY,
-                expressions=[exp.DataType.build(type_token.value)],
-                nested=True,
-            )
-
-        if self._match(TokenType.L_BRACKET):
-            self._retreat(index)
-            return None
-
         if self._match(TokenType.L_PAREN):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_kwargs)
@@ -1752,6 +1743,17 @@ class Parser(metaclass=_Parser):
 
             self._match_r_paren()
             maybe_func = True
+
+        if not nested and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
+            return exp.DataType(
+                this=exp.DataType.Type.ARRAY,
+                expressions=[exp.DataType.build(type_token.value, expressions=expressions)],
+                nested=True,
+            )
+
+        if self._match(TokenType.L_BRACKET):
+            self._retreat(index)
+            return None
 
         if nested and self._match(TokenType.LT):
             if is_struct:

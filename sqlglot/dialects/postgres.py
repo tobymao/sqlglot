@@ -74,6 +74,12 @@ def _trim_sql(self, expression):
     return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
 
 
+def _datatype_sql(self, expression):
+    if expression.this == exp.DataType.Type.ARRAY:
+        return f"{self.expressions(expression, flat=True)}[]"
+    return self.datatype_sql(expression)
+
+
 def _auto_increment_to_serial(expression):
     auto = expression.find(exp.AutoIncrementColumnConstraint)
 
@@ -191,25 +197,27 @@ class Postgres(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ALWAYS": TokenType.ALWAYS,
-            "BY DEFAULT": TokenType.BY_DEFAULT,
-            "IDENTITY": TokenType.IDENTITY,
-            "GENERATED": TokenType.GENERATED,
-            "DOUBLE PRECISION": TokenType.DOUBLE,
-            "BIGSERIAL": TokenType.BIGSERIAL,
-            "SERIAL": TokenType.SERIAL,
-            "SMALLSERIAL": TokenType.SMALLSERIAL,
-            "UUID": TokenType.UUID,
-            "TEMP": TokenType.TEMPORARY,
-            "BEGIN TRANSACTION": TokenType.BEGIN,
             "BEGIN": TokenType.COMMAND,
+            "BEGIN TRANSACTION": TokenType.BEGIN,
+            "BIGSERIAL": TokenType.BIGSERIAL,
+            "BY DEFAULT": TokenType.BY_DEFAULT,
             "COMMENT ON": TokenType.COMMAND,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
+            "DOUBLE PRECISION": TokenType.DOUBLE,
+            "GENERATED": TokenType.GENERATED,
+            "GRANT": TokenType.COMMAND,
+            "HSTORE": TokenType.HSTORE,
+            "IDENTITY": TokenType.IDENTITY,
+            "JSONB": TokenType.JSONB,
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,
             "REVOKE": TokenType.COMMAND,
-            "GRANT": TokenType.COMMAND,
+            "SERIAL": TokenType.SERIAL,
+            "SMALLSERIAL": TokenType.SMALLSERIAL,
+            "TEMP": TokenType.TEMPORARY,
+            "UUID": TokenType.UUID,
             **{f"CREATE {kind}": TokenType.COMMAND for kind in CREATABLES},
             **{f"DROP {kind}": TokenType.COMMAND for kind in CREATABLES},
         }
@@ -265,4 +273,5 @@ class Postgres(Dialect):
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
+            exp.DataType: _datatype_sql,
         }

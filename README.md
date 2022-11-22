@@ -190,6 +190,28 @@ sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
               ~~~~
 ```
 
+Structured syntax error details are also accessible for progammatic use:
+
+```python
+import sqlglot
+try:
+  sqlglot.transpile("SELECT foo( FROM bar")
+except sqlglot.errors.ParseError as e:
+  print(e.error_props)
+```
+
+Output:
+```python
+[{
+  'description': 'Expecting )',
+  'line': 1,
+  'col': 13,
+  'start_context': 'SELECT foo( ',
+  'highlight': 'FROM',
+  'end_context': ' bar'
+}]
+```
+
 ### Unsupported Errors
 
 Presto `APPROX_DISTINCT` supports the accuracy argument which is not supported in Hive:

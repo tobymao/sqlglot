@@ -4,7 +4,7 @@ import logging
 import typing as t
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, ParseError, concat_errors
+from sqlglot.errors import ErrorLevel, ParseError, concat_error_props, concat_errors
 from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
@@ -659,7 +659,10 @@ class Parser(metaclass=_Parser):
             for error in self.errors:
                 logger.error(str(error))
         elif self.error_level == ErrorLevel.RAISE and self.errors:
-            raise ParseError(concat_errors(self.errors, self.max_errors))
+            raise ParseError(
+                concat_errors(self.errors, self.max_errors),
+                error_props=concat_error_props(self.errors, self.max_errors),
+            )
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
@@ -670,7 +673,13 @@ class Parser(metaclass=_Parser):
         end_context = self.sql[end : end + self.error_message_context]
         error = ParseError(
             f"{message}. Line {token.line}, Col: {token.col}.\n"
-            f"  {start_context}\033[4m{highlight}\033[0m{end_context}"
+            f"  {start_context}\033[4m{highlight}\033[0m{end_context}",
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
         )
         if self.error_level == ErrorLevel.IMMEDIATE:
             raise error

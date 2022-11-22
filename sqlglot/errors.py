@@ -34,7 +34,7 @@ class ParseError(SqlglotError):
         error_props: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
     ):
         super().__init__(message)
-        self.error_props = error_props if error_props is not None else []
+        self.error_props = error_props or []
         props = {
             "description": description,
             "line": line,
@@ -43,7 +43,7 @@ class ParseError(SqlglotError):
             "highlight": highlight,
             "end_context": end_context,
         }
-        if any([p is not None for p in props.values()]):
+        if any(p is not None for p in props.values()):
             self.error_props.append(props)
 
 

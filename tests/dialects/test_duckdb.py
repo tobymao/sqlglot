@@ -89,6 +89,7 @@ class TestDuckDB(Validator):
                 "presto": "CAST(COL AS ARRAY(BIGINT))",
                 "hive": "CAST(COL AS ARRAY<BIGINT>)",
                 "spark": "CAST(COL AS ARRAY<LONG>)",
+                "postgres": "CAST(COL AS BIGINT[])",
             },
         )
 

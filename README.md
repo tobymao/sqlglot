@@ -190,14 +190,14 @@ sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
               ~~~~
 ```
 
-Structured syntax error details are also accessible for progammatic use:
+Structured syntax errors are accessible for programmatic use:
 
 ```python
 import sqlglot
 try:
-  sqlglot.transpile("SELECT foo( FROM bar")
+    sqlglot.transpile("SELECT foo( FROM bar")
 except sqlglot.errors.ParseError as e:
-  print(e.error_props)
+    print(e.errors)
 ```
 
 Output:

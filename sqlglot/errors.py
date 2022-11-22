@@ -40,6 +40,7 @@ class ParseError(SqlglotError):
         start_context: t.Optional[str] = None,
         highlight: t.Optional[str] = None,
         end_context: t.Optional[str] = None,
+        into_expression: t.Optional[str] = None,
     ) -> ParseError:
         return cls(
             message,
@@ -51,6 +52,7 @@ class ParseError(SqlglotError):
                     "start_context": start_context,
                     "highlight": highlight,
                     "end_context": end_context,
+                    "into_expression": into_expression,
                 }
             ],
         )
@@ -72,7 +74,7 @@ class ExecuteError(SqlglotError):
     pass
 
 
-def concat_errors(errors: t.Sequence[t.Any], maximum: int) -> str:
+def concat_messages(errors: t.Sequence[t.Any], maximum: int) -> str:
     msg = [str(e) for e in errors[:maximum]]
     remaining = len(errors) - maximum
     if remaining > 0:
@@ -80,5 +82,5 @@ def concat_errors(errors: t.Sequence[t.Any], maximum: int) -> str:
     return "\n\n".join(msg)
 
 
-def concat_struct_errors(errors: t.Sequence[ParseError]) -> t.List[t.Dict[str, t.Any]]:
+def merge_errors(errors: t.Sequence[ParseError]) -> t.List[t.Dict[str, t.Any]]:
     return [e_dict for error in errors for e_dict in error.errors]

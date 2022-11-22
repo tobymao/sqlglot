@@ -382,6 +382,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 "start_context": "x + 1. ",
                 "highlight": "(",
                 "end_context": "",
+                "into_expression": None,
             },
             {
                 "description": "Expecting )",
@@ -390,6 +391,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 "start_context": "x + 1. ",
                 "highlight": "(",
                 "end_context": "",
+                "into_expression": None,
             },
         ]
 
@@ -422,6 +424,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 "start_context": "(((",
                 "highlight": "(",
                 "end_context": "",
+                "into_expression": None,
             },
             {
                 "description": "Required keyword: 'this' missing for <class 'sqlglot.expressions.Paren'>",
@@ -430,6 +433,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 "start_context": "(((",
                 "highlight": "(",
                 "end_context": "",
+                "into_expression": None,
             },
         ]
         # Also expect three trailing structured errors that match the first

@@ -4,7 +4,7 @@ import logging
 import typing as t
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, ParseError, concat_errors, concat_struct_errors
+from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
 from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
@@ -617,6 +617,7 @@ class Parser(metaclass=_Parser):
         )
 
     def parse_into(self, expression_types, raw_tokens, sql=None):
+        errors = []
         for expression_type in ensure_collection(expression_types):
             parser = self.EXPRESSION_PARSERS.get(expression_type)
             if not parser:
@@ -624,8 +625,12 @@ class Parser(metaclass=_Parser):
             try:
                 return self._parse(parser, raw_tokens, sql)
             except ParseError as e:
-                error = e
-        raise ParseError.new(f"Failed to parse into {expression_types}") from error
+                e.errors[0]["into_expression"] = expression_type
+                errors.append(e)
+        raise ParseError(
+            f"Failed to parse into {expression_types}",
+            errors=merge_errors(errors),
+        ) from errors[-1]
 
     def _parse(self, parse_method, raw_tokens, sql=None):
         self.reset()
@@ -660,8 +665,8 @@ class Parser(metaclass=_Parser):
                 logger.error(str(error))
         elif self.error_level == ErrorLevel.RAISE and self.errors:
             raise ParseError(
-                concat_errors(self.errors, self.max_errors),
-                errors=concat_struct_errors(self.errors),
+                concat_messages(self.errors, self.max_errors),
+                errors=merge_errors(self.errors),
             )
 
     def raise_error(self, message, token=None):

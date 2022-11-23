@@ -4,7 +4,7 @@ import logging
 import typing as t
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, ParseError, concat_errors
+from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
 from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
@@ -619,6 +619,7 @@ class Parser(metaclass=_Parser):
         )
 
     def parse_into(self, expression_types, raw_tokens, sql=None):
+        errors = []
         for expression_type in ensure_collection(expression_types):
             parser = self.EXPRESSION_PARSERS.get(expression_type)
             if not parser:
@@ -626,8 +627,12 @@ class Parser(metaclass=_Parser):
             try:
                 return self._parse(parser, raw_tokens, sql)
             except ParseError as e:
-                error = e
-        raise ParseError(f"Failed to parse into {expression_types}") from error
+                e.errors[0]["into_expression"] = expression_type
+                errors.append(e)
+        raise ParseError(
+            f"Failed to parse into {expression_types}",
+            errors=merge_errors(errors),
+        ) from errors[-1]
 
     def _parse(self, parse_method, raw_tokens, sql=None):
         self.reset()
@@ -661,7 +666,10 @@ class Parser(metaclass=_Parser):
             for error in self.errors:
                 logger.error(str(error))
         elif self.error_level == ErrorLevel.RAISE and self.errors:
-            raise ParseError(concat_errors(self.errors, self.max_errors))
+            raise ParseError(
+                concat_messages(self.errors, self.max_errors),
+                errors=merge_errors(self.errors),
+            )
 
     def raise_error(self, message, token=None):
         token = token or self._curr or self._prev or Token.string("")
@@ -670,9 +678,15 @@ class Parser(metaclass=_Parser):
         start_context = self.sql[max(start - self.error_message_context, 0) : start]
         highlight = self.sql[start:end]
         end_context = self.sql[end : end + self.error_message_context]
-        error = ParseError(
+        error = ParseError.new(
             f"{message}. Line {token.line}, Col: {token.col}.\n"
-            f"  {start_context}\033[4m{highlight}\033[0m{end_context}"
+            f"  {start_context}\033[4m{highlight}\033[0m{end_context}",
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
         )
         if self.error_level == ErrorLevel.IMMEDIATE:
             raise error

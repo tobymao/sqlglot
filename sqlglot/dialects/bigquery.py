@@ -142,6 +142,11 @@ class BigQuery(Dialect):
             ),
         }
 
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+        }
+        FUNCTION_PARSERS.pop("TRIM")
+
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
@@ -174,6 +179,7 @@ class BigQuery(Dialect):
             exp.Values: _derived_table_values_to_unnest,
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Create: _create_sql,
+            exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
             exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC"
             if e.name == "IMMUTABLE"
             else "NOT DETERMINISTIC",

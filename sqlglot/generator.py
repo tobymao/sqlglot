@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
 import typing as t
 
 from sqlglot import exp
@@ -11,8 +10,6 @@ from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 logger = logging.getLogger("sqlglot")
-
-NEWLINE_RE = re.compile("\r\n?|\n")
 
 
 class Generator:
@@ -238,7 +235,7 @@ class Generator:
             return sql
 
         sep = "\n" if self.pretty else " "
-        comments = sep.join([f"/*{self.pad_comment(comment)}*/" for comment in comments])
+        comments = sep.join(f"/*{self.pad_comment(comment)}*/" for comment in comments)
 
         if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return f"{comments}{self.sep()}{sql}"

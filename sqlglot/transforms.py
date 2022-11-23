@@ -64,7 +64,7 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
     ):
         outer_selects = []
         nested_selects = []
-        on = expression.args["distinct"].args.get("on")
+        on = expression.args["distinct"].args["on"]
 
         if isinstance(on, exp.Alias):
             outer_selects = [exp.column(on.alias, quoted=False)]

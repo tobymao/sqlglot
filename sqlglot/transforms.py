@@ -120,3 +120,4 @@ def delegate(attr: str) -> t.Callable:
 
 
 UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
+ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on], delegate("select_sql"))}

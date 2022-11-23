@@ -50,6 +50,12 @@ class TestRedshift(Validator):
                 "redshift": 'SELECT tablename, "column" FROM pg_table_def WHERE "column" LIKE \'%start\\\\_%\' LIMIT 5'
             },
         )
+        self.validate_all(
+            "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
+            write={
+                "redshift": 'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS "_row_number" FROM x) WHERE "_row_number" = 1',
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("CAST('bla' AS SUPER)")

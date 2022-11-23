@@ -599,9 +599,9 @@ FROM foo""",
             """SELECT
   a,
   b AS B,
-  c, -- comment
-  d AS D, -- another comment
-  CAST(x AS INT) -- final comment
+  c, /* comment */
+  d AS D, /* another comment */
+  CAST(x AS INT) /* final comment */
 FROM foo""",
         )
 

@@ -57,3 +57,8 @@ class TestTime(unittest.TestCase):
             "SELECT DISTINCT a, b FROM x ORDER BY c DESC",
             "SELECT DISTINCT a, b FROM x ORDER BY c DESC",
         )
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (_row_number) _row_number FROM x ORDER BY c DESC",
+            'SELECT _row_number FROM (SELECT _row_number, ROW_NUMBER() OVER (PARTITION BY _row_number ORDER BY c DESC) AS "_row_number_2" FROM x) WHERE "_row_number_2" = 1',
+        )

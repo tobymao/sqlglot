@@ -5,7 +5,7 @@ import re
 import typing as t
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, UnsupportedError, concat_errors
+from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.helper import apply_index_offset, csv
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -211,7 +211,7 @@ class Generator:
             for msg in self.unsupported_messages:
                 logger.warning(msg)
         elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
-            raise UnsupportedError(concat_errors(self.unsupported_messages, self.max_unsupported))
+            raise UnsupportedError(concat_messages(self.unsupported_messages, self.max_unsupported))
 
         return sql
 

@@ -15,6 +15,51 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
 
+    def test_parse_into_error(self):
+        expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>]"
+        expected_errors = [
+            {
+                "description": "Invalid expression / Unexpected token",
+                "line": 1,
+                "col": 1,
+                "start_context": "",
+                "highlight": "SELECT",
+                "end_context": " 1;",
+                "into_expression": exp.From,
+            }
+        ]
+        with self.assertRaises(ParseError) as ctx:
+            parse_one("SELECT 1;", "sqlite", [exp.From])
+        self.assertEqual(str(ctx.exception), expected_message)
+        self.assertEqual(ctx.exception.errors, expected_errors)
+
+    def test_parse_into_errors(self):
+        expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>, <class 'sqlglot.expressions.Join'>]"
+        expected_errors = [
+            {
+                "description": "Invalid expression / Unexpected token",
+                "line": 1,
+                "col": 1,
+                "start_context": "",
+                "highlight": "SELECT",
+                "end_context": " 1;",
+                "into_expression": exp.From,
+            },
+            {
+                "description": "Invalid expression / Unexpected token",
+                "line": 1,
+                "col": 1,
+                "start_context": "",
+                "highlight": "SELECT",
+                "end_context": " 1;",
+                "into_expression": exp.Join,
+            },
+        ]
+        with self.assertRaises(ParseError) as ctx:
+            parse_one("SELECT 1;", "sqlite", [exp.From, exp.Join])
+        self.assertEqual(str(ctx.exception), expected_message)
+        self.assertEqual(ctx.exception.errors, expected_errors)
+
     def test_column(self):
         columns = parse_one("select a, ARRAY[1] b, case when 1 then 1 end").find_all(exp.Column)
         assert len(list(columns)) == 1

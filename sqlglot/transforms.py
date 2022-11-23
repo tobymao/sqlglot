@@ -61,24 +61,39 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         isinstance(expression, exp.Select)
         and expression.args.get("distinct")
         and expression.args["distinct"].args.get("on")
-        and isinstance(expression.args["distinct"].args["on"], exp.Tuple)
     ):
-        distinct_cols = [e.copy() for e in expression.args["distinct"].args["on"].expressions]
-        outer_selects = [e.copy() for e in expression.expressions]
+        outer_selects = []
+        nested_selects = []
+        on = expression.args["distinct"].args.get("on")
+
+        if isinstance(on, exp.Alias):
+            outer_selects = [exp.column(on.alias, quoted=False)]
+            nested_selects = [exp.column(on.alias, quoted=False)]
+            on = on.this
+
+        distinct_cols = [e.copy() for e in on.expressions]
+        outer_selects.extend(e.copy() for e in expression.expressions)
+
         nested = expression.copy()
         nested.args["distinct"].pop()
-        row_number = find_new_name(expression.named_selects, "_row_number")
-        window = exp.Window(
-            this=exp.RowNumber(),
-            partition_by=distinct_cols,
-        )
+
+        window = exp.Window(this=exp.RowNumber(), partition_by=distinct_cols)
         order = nested.args.get("order")
+
         if order:
             window.set("order", order.copy())
             order.pop()
-        window = exp.alias_(window, row_number)
-        nested.select(window, copy=False)
+
+        named_outer_selects = [e.alias_or_name for e in outer_selects]
+        row_number = find_new_name(named_outer_selects, "_row_number")
+        alias = exp.alias_(window, row_number)
+
+        nested_selects.extend(nested.expressions)
+        nested_selects.append(alias)
+        nested.select(*nested_selects, append=False, copy=False)
+
         return exp.select(*outer_selects).from_(nested.subquery()).where(f'"{row_number}" = 1')
+
     return expression
 
 

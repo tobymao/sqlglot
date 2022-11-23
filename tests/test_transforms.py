@@ -4,7 +4,7 @@ from sqlglot import parse_one
 from sqlglot.transforms import eliminate_distinct_on, unalias_group
 
 
-class TestTime(unittest.TestCase):
+class TestTransforms(unittest.TestCase):
     def validate(self, transform, sql, target):
         with self.subTest(sql):
             self.assertEqual(parse_one(sql).transform(transform).sql(), target)

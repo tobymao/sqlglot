@@ -231,14 +231,14 @@ class Generator:
         comment = comment + " " if comment[-1].strip() else comment
         return comment
 
-    def maybe_comment(self, sql, expression, single_line=False):
+    def maybe_comment(self, sql, expression):
         comments = expression.comments if self._comments else None
 
         if not comments:
             return sql
 
-        comments = [f"/*{self.pad_comment(comment)}*/" for comment in comments]
-        comments = "\n".join(comments) if self.pretty else " ".join(comments)
+        sep = "\n" if self.pretty else " "
+        comments = sep.join([f"/*{self.pad_comment(comment)}*/" for comment in comments])
 
         if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return f"{comments}{self.sep()}{sql}"
@@ -1336,7 +1336,7 @@ class Generator:
         result_sqls = []
         for i, e in enumerate(expressions):
             sql = self.sql(e, comment=False)
-            comments = self.maybe_comment("", e, single_line=True)
+            comments = self.maybe_comment("", e)
 
             if self.pretty:
                 if self._leading_comma:

@@ -2779,6 +2779,10 @@ class Round(Func):
     arg_types = {"this": True, "decimals": False}
 
 
+class RowNumber(Func):
+    arg_types: t.Dict[str, t.Any] = {}
+
+
 class SafeDivide(Func):
     arg_types = {"this": True, "expression": True}
 

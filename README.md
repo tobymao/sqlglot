@@ -148,9 +148,9 @@ print(sqlglot.transpile(sql, read='mysql', pretty=True)[0])
 */
 SELECT
   tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
-  CAST(x AS INT), -- comment 3
-  y -- comment 4
-FROM bar /* comment 5 */, tbl /*          comment 6*/
+  CAST(x AS INT), /* comment 3 */
+  y /* comment 4 */
+FROM bar /* comment 5 */, tbl /*          comment 6 */
 ```
 
 

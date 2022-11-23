@@ -1095,10 +1095,8 @@ class Parser(metaclass=_Parser):
             distinct = self._match(TokenType.DISTINCT)
 
             if distinct:
-                distinct = self.expression(
-                    exp.Distinct,
-                    on=self._parse_value() if self._match(TokenType.ON) else None,
-                )
+                on = self._parse_alias(self._parse_value()) if self._match(TokenType.ON) else None
+                distinct = self.expression(exp.Distinct, on=on)
 
             if all_ and distinct:
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")

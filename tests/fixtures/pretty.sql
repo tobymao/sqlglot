@@ -322,3 +322,7 @@ SELECT
   * /* multi
      line
      comment */;
+SELECT DISTINCT ON (x) AS x, y FROM z;
+SELECT DISTINCT ON (x) AS x,
+  y
+FROM z;

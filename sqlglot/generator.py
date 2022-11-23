@@ -1204,7 +1204,9 @@ class Generator:
 
         on = self.sql(expression, "on")
         on = f" ON {on}" if on else ""
-        return f"DISTINCT{this}{on}"
+        return (
+            f"DISTINCT{this}{on}{',' if isinstance(expression.args.get('on'), exp.Alias) else ''}"
+        )
 
     def ignorenulls_sql(self, expression):
         return f"{self.sql(expression, 'this')} IGNORE NULLS"

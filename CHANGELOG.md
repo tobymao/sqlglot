@@ -1,6 +1,47 @@
 Changelog
 =========
 
+v10.1.0
+------
+
+Changes:
+
+- Breaking: [refactored](https://github.com/tobymao/sqlglot/commit/6b0da1e1a2b5d6bdf7b5b918400456422d30a1d4) the way SQL comments are handled. Before at most one comment could be attached to an expression, now multiple comments may be stored in a list.
+
+- Breaking: [refactored](https://github.com/tobymao/sqlglot/commit/be332d10404f36b43ea6ece956a73bf451348641) the way properties are represented and parsed. The argument `this` now stores a property's attributes instead of its name.
+
+- New: added structured ParseError properties.
+
+- New: the executor now handles set operations.
+
+- New: sqlglot can [now execute SQL queries](https://github.com/tobymao/sqlglot/commit/62d3496e761a4f38dfa61af793062690923dce74) using python objects.
+
+- New: added support for the [Drill dialect](https://github.com/tobymao/sqlglot/commit/543eca314546e0bd42f97c354807b4e398ab36ec).
+
+- New: added a `canonicalize` method which leverages existing type information for an expression to apply various transformations to it.
+
+- New: TRIM function support for Snowflake and Bigquery.
+
+- New: added support for SQLite primary key ordering constraints (ASC, DESC).
+
+- New: added support for Redshift DISTKEY / SORTKEY / DISTSTYLE properties.
+
+- New: added support for SET TRANSACTION MySQL statements.
+
+- New: added `null`, `true`, `false` helper methods to avoid using singleton expressions.
+
+- Improvement: allow multiple aggregations in an expression.
+
+- Improvement: execution of left / right joins.
+
+- Improvement: execution of aggregations without the GROUP BY clause.
+
+- Improvement: static query execution (e.g. SELECT 1, SELECT CONCAT('a', 'b') AS x, etc).
+
+- Improvement: include a rule for type inference in the optimizer.
+
+- Improvement: transaction, commit expressions parsed [at finer granularity](https://github.com/tobymao/sqlglot/commit/148282e710fd79512bb7d32e6e519d631df8115d).
+
 v10.0.0
 ------
 

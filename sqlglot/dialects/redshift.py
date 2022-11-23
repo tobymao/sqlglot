@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, transforms
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.tokens import TokenType
 
@@ -44,6 +44,7 @@ class Redshift(Postgres):
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,  # type: ignore
+            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),

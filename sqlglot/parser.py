@@ -600,7 +600,7 @@ class Parser(metaclass=_Parser):
         self._curr = None
         self._next = None
         self._prev = None
-        self._prev_comments: t.List[str] = []
+        self._prev_comments = None
 
     def parse(self, raw_tokens, sql=None):
         """
@@ -696,7 +696,7 @@ class Parser(metaclass=_Parser):
         instance = exp_class(**kwargs)
         if self._prev_comments:
             instance.comments = self._prev_comments
-            self._prev_comments = []
+            self._prev_comments = None
         self.validate_expression(instance)
         return instance
 
@@ -742,7 +742,7 @@ class Parser(metaclass=_Parser):
             self._prev_comments = self._prev.comments
         else:
             self._prev = None
-            self._prev_comments = []
+            self._prev_comments = None
 
     def _retreat(self, index):
         self._advance(index - self._index)

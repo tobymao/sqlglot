@@ -50,7 +50,7 @@ class Expression(metaclass=_Expression):
         self.parent = None
         self.arg_key = None
         self.type = None
-        self.comments = []
+        self.comments = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
@@ -87,19 +87,6 @@ class Expression(metaclass=_Expression):
         if isinstance(field, (Identifier, Literal, Var)):
             return field.this
         return ""
-
-    def find_comments(self, key: str) -> t.List[str]:
-        """
-        Finds the comments that are attached to a specified child node.
-
-        Args:
-            key: the key of the target child node (e.g. "this", "expression", etc).
-
-        Returns:
-            The comments attached to the child node, or the empty list, if it doesn't exist.
-        """
-        field = self.args.get(key)
-        return field.comments if isinstance(field, Expression) else []
 
     @property
     def is_string(self):

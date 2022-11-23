@@ -581,6 +581,7 @@ SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)
 SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)
 SELECT CAST(x AS INT) /* comment */ FROM foo
 SELECT a /* x */, b /* x */
+SELECT a /* x */ /* y */ /* z */, b /* k */ /* m */
 SELECT * FROM foo /* x */, bla /* x */
 SELECT 1 /* comment */ + 1
 SELECT 1 /* c1 */ + 2 /* c2 */

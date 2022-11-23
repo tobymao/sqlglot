@@ -226,25 +226,24 @@ class Generator:
     def seg(self, sql, sep=" "):
         return f"{self.sep(sep)}{sql}"
 
-    def maybe_comment(self, sql, expression, single_line=False):
-        comment = seq_get(expression.comments, 0) if self._comments else None
-
-        if not comment:
-            return sql
-
+    def pad_comment(self, comment):
         comment = " " + comment if comment[0].strip() else comment
         comment = comment + " " if comment[-1].strip() else comment
+        return comment
+
+    def maybe_comment(self, sql, expression, single_line=False):
+        comments = expression.comments if self._comments else None
+
+        if not comments:
+            return sql
+
+        comments = [f"/*{self.pad_comment(comment)}*/" for comment in comments]
+        comments = "\n".join(comments) if self.pretty else " ".join(comments)
 
         if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
-            return f"/*{comment}*/{self.sep()}{sql}"
+            return f"{comments}{self.sep()}{sql}"
 
-        if not self.pretty:
-            return f"{sql} /*{comment}*/"
-
-        if not NEWLINE_RE.search(comment):
-            return f"{sql} --{comment.rstrip()}" if single_line else f"{sql} /*{comment}*/"
-
-        return f"/*{comment}*/\n{sql}" if sql else f" /*{comment}*/"
+        return f"{sql} {comments}"
 
     def wrap(self, expression):
         this_sql = self.indent(
@@ -1337,15 +1336,15 @@ class Generator:
         result_sqls = []
         for i, e in enumerate(expressions):
             sql = self.sql(e, comment=False)
-            comment = self.maybe_comment("", e, single_line=True)
+            comments = self.maybe_comment("", e, single_line=True)
 
             if self.pretty:
                 if self._leading_comma:
-                    result_sqls.append(f"{sep if i > 0 else pad}{sql}{comment}")
+                    result_sqls.append(f"{sep if i > 0 else pad}{sql}{comments}")
                 else:
-                    result_sqls.append(f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{comment}")
+                    result_sqls.append(f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{comments}")
             else:
-                result_sqls.append(f"{sql}{comment}{sep if i + 1 < num_sqls else ''}")
+                result_sqls.append(f"{sql}{comments}{sep if i + 1 < num_sqls else ''}")
 
         result_sqls = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
         return self.indent(result_sqls, skip_first=False) if indent else result_sqls

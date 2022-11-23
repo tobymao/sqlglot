@@ -64,7 +64,7 @@ class TestTranspile(unittest.TestCase):
         )
         self.validate(
             "SELECT FOO, /*x*/\nBAR, /*y*/\nBAZ",
-            "SELECT\n    FOO -- x\n  , BAR -- y\n  , BAZ",
+            "SELECT\n    FOO /* x */\n  , BAR /* y */\n  , BAZ",
             leading_comma=True,
             pretty=True,
         )
@@ -84,7 +84,8 @@ class TestTranspile(unittest.TestCase):
     def test_comments(self):
         self.validate("SELECT */*comment*/", "SELECT * /* comment */")
         self.validate(
-            "SELECT * FROM table /*comment 1*/ /*comment 2*/", "SELECT * FROM table /* comment 1 */"
+            "SELECT * FROM table /*comment 1*/ /*comment 2*/",
+            "SELECT * FROM table /* comment 1 */ /* comment 2 */",
         )
         self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment */")
         self.validate("SELECT --+5\nx FROM foo", "/* +5 */ SELECT x FROM foo")
@@ -118,6 +119,53 @@ class TestTranspile(unittest.TestCase):
         )
         self.validate(
             """
+-- comment 1
+-- comment 2
+-- comment 3
+SELECT * FROM foo
+            """,
+            "/* comment 1 */ /* comment 2 */ /* comment 3 */ SELECT * FROM foo",
+        )
+        self.validate(
+            """
+-- comment 1
+-- comment 2
+-- comment 3
+SELECT * FROM foo""",
+            """/* comment 1 */
+/* comment 2 */
+/* comment 3 */
+SELECT
+  *
+FROM foo""",
+            pretty=True,
+        )
+        self.validate(
+            """
+SELECT * FROM tbl /*line1
+line2
+line3*/ /*another comment*/ where 1=1 -- comment at the end""",
+            """SELECT * FROM tbl /* line1
+line2
+line3 */ /* another comment */ WHERE 1 = 1 /* comment at the end */""",
+        )
+        self.validate(
+            """
+SELECT * FROM tbl /*line1
+line2
+line3*/ /*another comment*/ where 1=1 -- comment at the end""",
+            """SELECT
+  *
+FROM tbl /* line1
+line2
+line3 */
+/* another comment */
+WHERE
+  1 = 1 /* comment at the end */""",
+            pretty=True,
+        )
+        self.validate(
+            """
             /* multi
                line
                comment
@@ -136,8 +184,8 @@ class TestTranspile(unittest.TestCase):
             */
 SELECT
   tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
-  CAST(x AS INT), -- comment 3
-  y -- comment 4
+  CAST(x AS INT), /* comment 3 */
+  y /* comment 4 */
 FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             read="mysql",
             pretty=True,

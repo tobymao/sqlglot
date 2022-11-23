@@ -221,7 +221,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
         self.assertEqual(expression.expressions[0].comments, ["comment2"])
         self.assertEqual(expression.expressions[1].comments, ["comment3:testing"])
-        self.assertEqual(expression.expressions[2].comments, [])
+        self.assertEqual(expression.expressions[2].comments, None)
         self.assertEqual(expression.expressions[3].comments, ["comment4 --foo"])
         self.assertEqual(expression.expressions[4].comments, [""])
         self.assertEqual(expression.expressions[5].comments, [" space"])

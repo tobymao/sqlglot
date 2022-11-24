@@ -103,7 +103,7 @@ class Generator:
         exp.TableFormatProperty,
     }
 
-    WITH_SEPARATED_COMMENTS = (exp.Select,)
+    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
 
     __slots__ = (
         "time_mapping",

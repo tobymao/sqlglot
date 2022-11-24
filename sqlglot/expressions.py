@@ -1075,8 +1075,10 @@ class SortKeyProperty(Property):
 class DistStyleProperty(Property):
     arg_types = {"this": True}
 
+
 class IncludingProperty(Property):
     arg_types = {"this": True}
+
 
 class LocationProperty(Property):
     arg_types = {"this": True}

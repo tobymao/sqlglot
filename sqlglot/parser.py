@@ -692,8 +692,7 @@ class Parser(metaclass=_Parser):
             raise error
         self.errors.append(error)
 
-    def expression(self, exp_class, **kwargs):
-        comments = kwargs.pop("comments", None)
+    def expression(self, exp_class, comments=None, **kwargs):
         instance = exp_class(**kwargs)
         if self._prev_comments:
             instance.comments = self._prev_comments

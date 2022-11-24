@@ -1080,6 +1080,10 @@ class IncludingProperty(Property):
     arg_types = {"this": True}
 
 
+class ExcludingProperty(Property):
+    arg_types = {"this": True}
+
+
 class LocationProperty(Property):
     arg_types = {"this": True}
 
@@ -1134,6 +1138,7 @@ class Properties(Expression):
         "EXECUTE AS": ExecuteAsProperty,
         "FORMAT": FileFormatProperty,
         "INCLUDING": IncludingProperty,
+        "EXCLUDING": ExcludingProperty,
         "LANGUAGE": LanguageProperty,
         "LOCATION": LocationProperty,
         "PARTITIONED_BY": PartitionedByProperty,

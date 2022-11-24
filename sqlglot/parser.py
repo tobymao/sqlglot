@@ -472,6 +472,7 @@ class Parser(metaclass=_Parser):
         TokenType.DISTSTYLE: lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         TokenType.SORTKEY: lambda self: self._parse_sortkey(),
         TokenType.INCLUDING: lambda self: self._parse_property_assignment(exp.IncludingProperty),
+        TokenType.EXCLUDING: lambda self: self._parse_property_assignment(exp.ExcludingProperty),
         TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
@@ -838,7 +839,7 @@ class Parser(metaclass=_Parser):
                     exp.Like, this=this, expression=self._parse_table(schema=True)
                 )
             elif self._match_pair(TokenType.L_PAREN, TokenType.LIKE):
-                # create table a (like b including constraints including statistics)
+                # create table a (like b including constraints excluding statistics)
                 expression = self.expression(
                     exp.Like, this=this, expression=self._parse_table(schema=True)
                 )

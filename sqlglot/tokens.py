@@ -159,6 +159,7 @@ class TokenType(AutoName):
     ENGINE = auto()
     ESCAPE = auto()
     EXCEPT = auto()
+    EXCLUDING = auto()
     EXECUTE = auto()
     EXISTS = auto()
     FALSE = auto()
@@ -481,6 +482,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ENGINE": TokenType.ENGINE,
         "ESCAPE": TokenType.ESCAPE,
         "EXCEPT": TokenType.EXCEPT,
+        "EXCLUDING": TokenType.EXCLUDING,
         "EXECUTE": TokenType.EXECUTE,
         "EXISTS": TokenType.EXISTS,
         "FALSE": TokenType.FALSE,

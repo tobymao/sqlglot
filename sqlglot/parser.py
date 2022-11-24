@@ -1223,8 +1223,10 @@ class Parser(metaclass=_Parser):
     def _parse_from(self):
         if not self._match(TokenType.FROM):
             return None
-
-        return self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
+        comments = self._prev_comments
+        this = self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
+        this.comments = comments
+        return this
 
     def _parse_lateral(self):
         outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY)
@@ -2495,9 +2497,11 @@ class Parser(metaclass=_Parser):
         this = parse_method()
 
         while self._match_set(expressions):
+            comments = self._prev_comments
             this = self.expression(
                 expressions[self._prev.token_type], this=this, expression=parse_method()
             )
+            this.comments = comments
 
         return this
 

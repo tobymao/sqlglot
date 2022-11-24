@@ -608,6 +608,7 @@ class Create(Expression):
         "this": True,
         "kind": True,
         "expression": False,
+        "like_properties": False,
         "exists": False,
         "properties": False,
         "temporary": False,
@@ -1074,6 +1075,8 @@ class SortKeyProperty(Property):
 class DistStyleProperty(Property):
     arg_types = {"this": True}
 
+class IncludingProperty(Property):
+    arg_types = {"this": True}
 
 class LocationProperty(Property):
     arg_types = {"this": True}
@@ -1128,6 +1131,7 @@ class Properties(Expression):
         "ENGINE": EngineProperty,
         "EXECUTE AS": ExecuteAsProperty,
         "FORMAT": FileFormatProperty,
+        "INCLUDING": IncludingProperty,
         "LANGUAGE": LanguageProperty,
         "LOCATION": LocationProperty,
         "PARTITIONED_BY": PartitionedByProperty,

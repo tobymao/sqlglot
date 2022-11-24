@@ -175,6 +175,7 @@ class Parser(metaclass=_Parser):
         TokenType.GENERATED,
         TokenType.IDENTITY,
         TokenType.IF,
+        TokenType.INCLUDING,
         TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.IMMUTABLE,
@@ -470,6 +471,7 @@ class Parser(metaclass=_Parser):
         TokenType.DISTKEY: lambda self: self._parse_distkey(),
         TokenType.DISTSTYLE: lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         TokenType.SORTKEY: lambda self: self._parse_sortkey(),
+        TokenType.INCLUDING: lambda self: self._parse_property_assignment(exp.IncludingProperty),
         TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
@@ -812,6 +814,7 @@ class Parser(metaclass=_Parser):
         this = None
         expression = None
         properties = None
+        like_properties = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function()
@@ -829,12 +832,29 @@ class Parser(metaclass=_Parser):
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
                 expression = self._parse_select(nested=True)
+            elif self._match(TokenType.LIKE):
+                # create table a like b
+                expression = self.expression(
+                    exp.Like, this=this, expression=self._parse_table(schema=True)
+                )
+            elif self._match_pair(TokenType.L_PAREN, TokenType.LIKE):
+                # create table a (like b including constraints including statistics)
+                expression = self.expression(
+                    exp.Like, this=this, expression=self._parse_table(schema=True)
+                )
+                
+                like_properties = self._parse_properties()
+                # while self._match(TokenType.INCLUDING):
+                    # bruh = self._parse_var()
+
+                self._match_r_paren()
 
         return self.expression(
             exp.Create,
             this=this,
             kind=create_token.text,
             expression=expression,
+            like_properties = like_properties,
             exists=exists,
             properties=properties,
             temporary=temporary,
@@ -2017,8 +2037,9 @@ class Parser(metaclass=_Parser):
         return self._parse_alias(self._parse_limit(self._parse_order(this)))
 
     def _parse_schema(self, this=None):
+
         index = self._index
-        if not self._match(TokenType.L_PAREN) or self._match(TokenType.SELECT):
+        if self._match_pair(TokenType.L_PAREN, TokenType.LIKE) or not self._match(TokenType.L_PAREN) or self._match(TokenType.SELECT):
             self._retreat(index)
             return this
 

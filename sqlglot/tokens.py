@@ -184,6 +184,7 @@ class TokenType(AutoName):
     ILIKE = auto()
     IMMUTABLE = auto()
     IN = auto()
+    INCLUDING = auto()
     INDEX = auto()
     INNER = auto()
     INSERT = auto()
@@ -501,6 +502,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "IMMUTABLE": TokenType.IMMUTABLE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
+        "INCLUDING": TokenType.INCLUDING,
         "INDEX": TokenType.INDEX,
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,

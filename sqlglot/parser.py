@@ -842,10 +842,8 @@ class Parser(metaclass=_Parser):
                 expression = self.expression(
                     exp.Like, this=this, expression=self._parse_table(schema=True)
                 )
-                
+
                 like_properties = self._parse_properties()
-                # while self._match(TokenType.INCLUDING):
-                    # bruh = self._parse_var()
 
                 self._match_r_paren()
 
@@ -854,7 +852,7 @@ class Parser(metaclass=_Parser):
             this=this,
             kind=create_token.text,
             expression=expression,
-            like_properties = like_properties,
+            like_properties=like_properties,
             exists=exists,
             properties=properties,
             temporary=temporary,
@@ -2039,7 +2037,11 @@ class Parser(metaclass=_Parser):
     def _parse_schema(self, this=None):
 
         index = self._index
-        if self._match_pair(TokenType.L_PAREN, TokenType.LIKE) or not self._match(TokenType.L_PAREN) or self._match(TokenType.SELECT):
+        if (
+            self._match_pair(TokenType.L_PAREN, TokenType.LIKE)
+            or not self._match(TokenType.L_PAREN)
+            or self._match(TokenType.SELECT)
+        ):
             self._retreat(index)
             return this
 

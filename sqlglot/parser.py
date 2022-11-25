@@ -692,11 +692,13 @@ class Parser(metaclass=_Parser):
             raise error
         self.errors.append(error)
 
-    def expression(self, exp_class, **kwargs):
+    def expression(self, exp_class, comments=None, **kwargs):
         instance = exp_class(**kwargs)
         if self._prev_comments:
             instance.comments = self._prev_comments
             self._prev_comments = None
+        if comments:
+            instance.comments = comments
         self.validate_expression(instance)
         return instance
 
@@ -1223,8 +1225,9 @@ class Parser(metaclass=_Parser):
     def _parse_from(self):
         if not self._match(TokenType.FROM):
             return None
-
-        return self.expression(exp.From, expressions=self._parse_csv(self._parse_table))
+        return self.expression(
+            exp.From, comments=self._prev_comments, expressions=self._parse_csv(self._parse_table)
+        )
 
     def _parse_lateral(self):
         outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY)
@@ -1487,7 +1490,9 @@ class Parser(metaclass=_Parser):
     def _parse_where(self, skip_where_token=False):
         if not skip_where_token and not self._match(TokenType.WHERE):
             return None
-        return self.expression(exp.Where, this=self._parse_conjunction())
+        return self.expression(
+            exp.Where, comments=self._prev_comments, this=self._parse_conjunction()
+        )
 
     def _parse_group(self, skip_group_by_token=False):
         if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
@@ -2496,7 +2501,10 @@ class Parser(metaclass=_Parser):
 
         while self._match_set(expressions):
             this = self.expression(
-                expressions[self._prev.token_type], this=this, expression=parse_method()
+                expressions[self._prev.token_type],
+                this=this,
+                comments=self._prev_comments,
+                expression=parse_method(),
             )
 
         return this

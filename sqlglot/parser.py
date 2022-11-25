@@ -467,7 +467,7 @@ class Parser(metaclass=_Parser):
         TokenType.SCHEMA_COMMENT: lambda self: self._parse_property_assignment(
             exp.SchemaCommentProperty
         ),
-        TokenType.STORED: lambda self: self._parse_stored(),
+        TokenType.STORED: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         TokenType.DISTKEY: lambda self: self._parse_distkey(),
         TokenType.DISTSTYLE: lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         TokenType.SORTKEY: lambda self: self._parse_sortkey(),
@@ -481,7 +481,7 @@ class Parser(metaclass=_Parser):
         ),
         TokenType.USING: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         TokenType.LANGUAGE: lambda self: self._parse_property_assignment(exp.LanguageProperty),
-        TokenType.EXECUTE: lambda self: self._parse_execute_as(),
+        TokenType.EXECUTE: lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
         TokenType.DETERMINISTIC: lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
@@ -798,7 +798,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_create(self):
-        replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
+        replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
         transient = self._match(TokenType.TRANSIENT)
         unique = self._match(TokenType.UNIQUE)
@@ -868,6 +868,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_property_assignment(self, exp_class):
         self._match(TokenType.EQ)
+        self._match(TokenType.ALIAS)
         return self.expression(exp_class, this=self._parse_var_or_string() or self._parse_number())
 
     def _parse_partitioned_by(self):
@@ -876,11 +877,6 @@ class Parser(metaclass=_Parser):
             exp.PartitionedByProperty,
             this=self._parse_schema() or self._parse_bracket(self._parse_field()),
         )
-
-    def _parse_stored(self):
-        self._match(TokenType.ALIAS)
-        self._match(TokenType.EQ)
-        return self.expression(exp.FileFormatProperty, this=self._parse_var_or_string())
 
     def _parse_distkey(self):
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_var))
@@ -926,10 +922,6 @@ class Parser(metaclass=_Parser):
             value = self._parse_types()
 
         return self.expression(exp.ReturnsProperty, this=value, is_table=is_table)
-
-    def _parse_execute_as(self):
-        self._match(TokenType.ALIAS)
-        return self.expression(exp.ExecuteAsProperty, this=self._parse_var())
 
     def _parse_properties(self):
         properties = []

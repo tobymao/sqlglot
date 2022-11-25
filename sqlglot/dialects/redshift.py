@@ -18,12 +18,14 @@ class Redshift(Postgres):
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,  # type: ignore
+            "COPY": TokenType.COMMAND,
             "GEOMETRY": TokenType.GEOMETRY,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
             "TIME": TokenType.TIMESTAMP,
             "TIMETZ": TokenType.TIMESTAMPTZ,
+            "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
             "SIMILAR TO": TokenType.SIMILAR_TO,
         }

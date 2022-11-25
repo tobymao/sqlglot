@@ -262,12 +262,7 @@ class Scan(Step):
         cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
     ) -> Step:
         table = expression
-        alias_ = expression.alias
-
-        if not alias_:
-            raise UnsupportedError(
-                "Tables/Subqueries must be aliased. Run it through the optimizer"
-            )
+        alias_ = expression.alias_or_name
 
         if isinstance(expression, exp.Subquery):
             table = expression.this

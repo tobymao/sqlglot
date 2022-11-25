@@ -217,6 +217,7 @@ class Parser(metaclass=_Parser):
         TokenType.TRUE,
         TokenType.UNBOUNDED,
         TokenType.UNIQUE,
+        TokenType.UNLOGGED,
         TokenType.UNPIVOT,
         TokenType.PROPERTIES,
         TokenType.PROCEDURE,

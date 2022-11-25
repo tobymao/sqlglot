@@ -591,6 +591,7 @@ SELECT x FROM a.b.c /* x */, e.f.g /* x */
 SELECT FOO(x /* c */) /* FOO */, b /* b */
 SELECT FOO(x /* c1 */ + y /* c2 */ + BLA(5 /* c3 */)) FROM VALUES (1 /* c4 */, "test" /* c5 */) /* c6 */
 SELECT a FROM x WHERE a COLLATE 'utf8_general_ci' = 'b'
+SELECT x AS INTO FROM bla
 SELECT * INTO newevent FROM event
 SELECT * INTO TEMPORARY newevent FROM event
 SELECT * INTO UNLOGGED newevent FROM event

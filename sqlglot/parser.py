@@ -797,7 +797,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_create(self):
-        replace = self._match(TokenType.OR) and self._match(TokenType.REPLACE)
+        replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
         transient = self._match(TokenType.TRANSIENT)
         unique = self._match(TokenType.UNIQUE)

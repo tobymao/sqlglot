@@ -134,7 +134,6 @@ class TokenType(AutoName):
     COMMIT = auto()
     COMPOUND = auto()
     CONSTRAINT = auto()
-    COPY = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
@@ -275,7 +274,6 @@ class TokenType(AutoName):
     UNBOUNDED = auto()
     UNCACHE = auto()
     UNION = auto()
-    UNLOAD = auto()
     UNNEST = auto()
     UNPIVOT = auto()
     UPDATE = auto()
@@ -671,12 +669,10 @@ class Tokenizer(metaclass=_Tokenizer):
 
     COMMANDS = {
         TokenType.COMMAND,
-        TokenType.COPY,
         TokenType.EXECUTE,
         TokenType.FETCH,
         TokenType.SET,
         TokenType.SHOW,
-        TokenType.UNLOAD,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

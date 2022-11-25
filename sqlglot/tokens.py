@@ -159,7 +159,6 @@ class TokenType(AutoName):
     ENGINE = auto()
     ESCAPE = auto()
     EXCEPT = auto()
-    EXCLUDING = auto()
     EXECUTE = auto()
     EXISTS = auto()
     FALSE = auto()
@@ -185,7 +184,6 @@ class TokenType(AutoName):
     ILIKE = auto()
     IMMUTABLE = auto()
     IN = auto()
-    INCLUDING = auto()
     INDEX = auto()
     INNER = auto()
     INSERT = auto()
@@ -482,7 +480,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "ENGINE": TokenType.ENGINE,
         "ESCAPE": TokenType.ESCAPE,
         "EXCEPT": TokenType.EXCEPT,
-        "EXCLUDING": TokenType.EXCLUDING,
         "EXECUTE": TokenType.EXECUTE,
         "EXISTS": TokenType.EXISTS,
         "FALSE": TokenType.FALSE,
@@ -504,7 +501,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "IMMUTABLE": TokenType.IMMUTABLE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
-        "INCLUDING": TokenType.INCLUDING,
         "INDEX": TokenType.INDEX,
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,

@@ -175,7 +175,6 @@ class Parser(metaclass=_Parser):
         TokenType.GENERATED,
         TokenType.IDENTITY,
         TokenType.IF,
-        TokenType.INCLUDING,
         TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.IMMUTABLE,
@@ -471,8 +470,7 @@ class Parser(metaclass=_Parser):
         TokenType.DISTKEY: lambda self: self._parse_distkey(),
         TokenType.DISTSTYLE: lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         TokenType.SORTKEY: lambda self: self._parse_sortkey(),
-        TokenType.INCLUDING: lambda self: self._parse_property_assignment(exp.IncludingProperty),
-        TokenType.EXCLUDING: lambda self: self._parse_property_assignment(exp.ExcludingProperty),
+        TokenType.LIKE: lambda self: self._parse_create_like(),
         TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
@@ -503,6 +501,7 @@ class Parser(metaclass=_Parser):
         ),
         TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
         TokenType.UNIQUE: lambda self: self._parse_unique(),
+        TokenType.LIKE: lambda self: self._parse_create_like(),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {
@@ -815,7 +814,6 @@ class Parser(metaclass=_Parser):
         this = None
         expression = None
         properties = None
-        like_properties = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function()
@@ -833,27 +831,12 @@ class Parser(metaclass=_Parser):
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
                 expression = self._parse_select(nested=True)
-            elif self._match(TokenType.LIKE):
-                # create table a like b
-                expression = self.expression(
-                    exp.Like, this=this, expression=self._parse_table(schema=True)
-                )
-            elif self._match_pair(TokenType.L_PAREN, TokenType.LIKE):
-                # create table a (like b including constraints excluding statistics)
-                expression = self.expression(
-                    exp.Like, this=this, expression=self._parse_table(schema=True)
-                )
-
-                like_properties = self._parse_properties()
-
-                self._match_r_paren()
 
         return self.expression(
             exp.Create,
             this=this,
             kind=create_token.text,
             expression=expression,
-            like_properties=like_properties,
             exists=exists,
             properties=properties,
             temporary=temporary,
@@ -898,6 +881,19 @@ class Parser(metaclass=_Parser):
 
     def _parse_distkey(self):
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_var))
+
+    def _parse_create_like(self):
+        table = self._parse_table(schema=True)
+        options = []
+        while self._match_texts(("INCLUDING", "EXCLUDING")):
+            options.append(
+                self.expression(
+                    exp.Property,
+                    this=self._prev.text.upper(),
+                    value=exp.Var(this=self._parse_id_var().this.upper()),
+                )
+            )
+        return self.expression(exp.LikeProperty, this=table, expressions=options)
 
     def _parse_sortkey(self, compound=False):
         return self.expression(
@@ -2036,13 +2032,8 @@ class Parser(metaclass=_Parser):
         return self._parse_alias(self._parse_limit(self._parse_order(this)))
 
     def _parse_schema(self, this=None):
-
         index = self._index
-        if (
-            self._match_pair(TokenType.L_PAREN, TokenType.LIKE)
-            or not self._match(TokenType.L_PAREN)
-            or self._match(TokenType.SELECT)
-        ):
+        if not self._match(TokenType.L_PAREN) or self._match(TokenType.SELECT):
             self._retreat(index)
             return this
 

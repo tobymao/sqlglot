@@ -23,6 +23,8 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT TRIM('bla' FROM ' XXX ')")
         self.validate_identity("@@GLOBAL.max_connections")
 
+        self.validate_identity("CREATE TABLE A LIKE B")
+
         # SET Commands
         self.validate_identity("SET @var_name = expr")
         self.validate_identity("SET @name = 43")

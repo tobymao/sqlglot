@@ -453,6 +453,7 @@ class MySQL(Dialect):
             exp.CharacterSetProperty,
             exp.CollateProperty,
             exp.SchemaCommentProperty,
+            exp.LikeProperty,
         }
 
         WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()

@@ -68,13 +68,13 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_tpch(self):
         def to_csv(expression):
-            if isinstance(expression, exp.Table):
+            if isinstance(expression, exp.Table) and expression.name not in ("revenue"):
                 return parse_one(
                     f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
 
-        for i, (sql, _) in enumerate(self.sqls[0:14]):
+        for i, (sql, _) in enumerate(self.sqls[0:16]):
             with self.subTest(f"tpch-h {i + 1}"):
                 a = self.cached_execute(sql)
                 sql = parse_one(sql).transform(to_csv).sql(pretty=True)

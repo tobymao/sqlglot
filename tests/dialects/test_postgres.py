@@ -98,6 +98,10 @@ class TestPostgres(Validator):
                 "spark": "CREATE TABLE x (a UUID, b BINARY)",
             },
         )
+
+        self.validate_identity(
+            "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"
+        )
         self.validate_all(
             "SELECT SUM(x) OVER (PARTITION BY a ORDER BY d ROWS 1 PRECEDING)",
             write={

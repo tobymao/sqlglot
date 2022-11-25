@@ -1075,6 +1075,10 @@ class DistStyleProperty(Property):
     arg_types = {"this": True}
 
 
+class LikeProperty(Property):
+    arg_types = {"this": True, "expressions": False}
+
+
 class LocationProperty(Property):
     arg_types = {"this": True}
 

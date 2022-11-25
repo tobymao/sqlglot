@@ -470,6 +470,7 @@ class Parser(metaclass=_Parser):
         TokenType.DISTKEY: lambda self: self._parse_distkey(),
         TokenType.DISTSTYLE: lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         TokenType.SORTKEY: lambda self: self._parse_sortkey(),
+        TokenType.LIKE: lambda self: self._parse_create_like(),
         TokenType.RETURNS: lambda self: self._parse_returns(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
@@ -500,6 +501,7 @@ class Parser(metaclass=_Parser):
         ),
         TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
         TokenType.UNIQUE: lambda self: self._parse_unique(),
+        TokenType.LIKE: lambda self: self._parse_create_like(),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {
@@ -881,6 +883,19 @@ class Parser(metaclass=_Parser):
 
     def _parse_distkey(self):
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_var))
+
+    def _parse_create_like(self):
+        table = self._parse_table(schema=True)
+        options = []
+        while self._match_texts(("INCLUDING", "EXCLUDING")):
+            options.append(
+                self.expression(
+                    exp.Property,
+                    this=self._prev.text.upper(),
+                    value=exp.Var(this=self._parse_id_var().this.upper()),
+                )
+            )
+        return self.expression(exp.LikeProperty, this=table, expressions=options)
 
     def _parse_sortkey(self, compound=False):
         return self.expression(

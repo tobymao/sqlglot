@@ -806,6 +806,12 @@ class Unique(Expression):
     arg_types = {"expressions": True}
 
 
+# https://www.postgresql.org/docs/9.1/sql-selectinto.html
+# https://docs.aws.amazon.com/redshift/latest/dg/r_SELECT_INTO.html#r_SELECT_INTO-examples
+class Into(Expression):
+    arg_types = {"this": True, "temporary": False, "unlogged": False}
+
+
 class From(Expression):
     arg_types = {"expressions": True}
 
@@ -1379,6 +1385,7 @@ class Select(Subqueryable):
         "expressions": False,
         "hint": False,
         "distinct": False,
+        "into": False,
         "from": False,
         **QUERY_MODIFIERS,
     }

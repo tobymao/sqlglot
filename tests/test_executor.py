@@ -74,7 +74,7 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        for i, (sql, _) in enumerate(self.sqls[0:10]):
+        for i, (sql, _) in enumerate(self.sqls[0:14]):
             with self.subTest(f"tpch-h {i + 1}"):
                 a = self.cached_execute(sql)
                 sql = parse_one(sql).transform(to_csv).sql(pretty=True)
@@ -343,6 +343,28 @@ class TestExecutor(unittest.TestCase):
             [
                 (1, 1, "b"),
                 (None, 3, "c"),
+            ],
+        )
+
+    def test_execute_subqueries(self):
+        tables = {
+            "table": [
+                {"a": 1, "b": 1},
+                {"a": 2, "b": 2},
+            ],
+        }
+
+        self.assertEqual(
+            execute(
+                """
+            SELECT *
+            FROM table
+            WHERE a = (SELECT MAX(a) FROM table)
+        """,
+                tables=tables,
+            ).rows,
+            [
+                (2, 2),
             ],
         )
 

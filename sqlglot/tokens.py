@@ -274,6 +274,7 @@ class TokenType(AutoName):
     UNBOUNDED = auto()
     UNCACHE = auto()
     UNION = auto()
+    UNLOGGED = auto()
     UNNEST = auto()
     UNPIVOT = auto()
     UPDATE = auto()
@@ -587,6 +588,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
         "UNPIVOT": TokenType.UNPIVOT,
+        "UNLOGGED": TokenType.UNLOGGED,
         "UNNEST": TokenType.UNNEST,
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,

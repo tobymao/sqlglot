@@ -122,7 +122,6 @@ def interval(this, unit):
 
 
 ENV = {
-    "__builtins__": {},
     "exp": exp,
     # aggs
     "SUM": filter_nulls(sum),

@@ -697,6 +697,11 @@ class Generator:
     def var_sql(self, expression):
         return self.sql(expression, "this")
 
+    def into_sql(self, expression):
+        temporary = " TEMPORARY" if expression.args.get("temporary") else ""
+        unlogged = " UNLOGGED" if expression.args.get("unlogged") else ""
+        return f"{self.seg('INTO')}{temporary or unlogged} {self.sql(expression, 'this')}"
+
     def from_sql(self, expression):
         expressions = self.expressions(expression, flat=True)
         return f"{self.seg('FROM')} {expressions}"
@@ -880,6 +885,7 @@ class Generator:
         sql = self.query_modifiers(
             expression,
             f"SELECT{hint}{distinct}{expressions}",
+            self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )
         return self.prepend_ctes(expression, sql)

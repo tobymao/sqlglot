@@ -217,6 +217,7 @@ class Parser(metaclass=_Parser):
         TokenType.TRUE,
         TokenType.UNBOUNDED,
         TokenType.UNIQUE,
+        TokenType.UNLOGGED,
         TokenType.UNPIVOT,
         TokenType.PROPERTIES,
         TokenType.PROCEDURE,
@@ -1123,9 +1124,15 @@ class Parser(metaclass=_Parser):
                 limit=limit,
             )
             this.comments = comments
+
+            into = self._parse_into()
+            if into:
+                this.set("into", into)
+
             from_ = self._parse_from()
             if from_:
                 this.set("from", from_)
+
             self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
             this = self._parse_table() if table else self._parse_select(nested=True)
@@ -1228,6 +1235,18 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Expected */ after HINT")
             return self.expression(exp.Hint, expressions=hints)
         return None
+
+    def _parse_into(self):
+        if not self._match(TokenType.INTO):
+            return None
+
+        temp = self._match(TokenType.TEMPORARY)
+        unlogged = self._match(TokenType.UNLOGGED)
+        self._match(TokenType.TABLE)
+
+        return self.expression(
+            exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
+        )
 
     def _parse_from(self):
         if not self._match(TokenType.FROM):

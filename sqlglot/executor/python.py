@@ -288,6 +288,11 @@ class PythonExecutor:
         end = 1
         length = len(context.table)
         table = self.table(list(step.group) + step.aggregations)
+        condition = self.generate(step.condition)
+
+        def add_row():
+            if not condition or context.eval(condition):
+                table.append(group + context.eval_tuple(aggregations))
 
         for i in range(length):
             context.set_index(i)
@@ -296,12 +301,12 @@ class PythonExecutor:
             end += 1
             if key != group:
                 context.set_range(start, end - 2)
-                table.append(group + context.eval_tuple(aggregations))
+                add_row()
                 group = key
                 start = end - 2
             if i == length - 1:
                 context.set_range(start, end - 1)
-                table.append(group + context.eval_tuple(aggregations))
+                add_row()
 
         context = self.context({step.name: table, **{name: table for name in context.tables}})
 
@@ -400,7 +405,7 @@ class Python(Dialect):
             exp.Cast: lambda self, e: f"CAST({self.sql(e.this)}, exp.DataType.Type.{e.args['to']})",
             exp.Column: lambda self, e: f"scope[{self.sql(e, 'table') or None}][{self.sql(e.this)}]",
             exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
-            exp.In: lambda self, e: f"{self.sql(e, 'this')} in {self.expressions(e)}",
+            exp.In: lambda self, e: f"{self.sql(e, 'this')} in ({self.expressions(e, flat=True)})",
             exp.Is: lambda self, e: self.binary(e, "is"),
             exp.Not: lambda self, e: f"not {self.sql(e.this)}",
             exp.Null: lambda *_: "None",

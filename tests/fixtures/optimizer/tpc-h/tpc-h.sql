@@ -666,11 +666,20 @@ WITH "supplier_2" AS (
   FROM "nation" AS "nation"
   WHERE
     "nation"."n_name" = 'GERMANY'
+), "_u_0" AS (
+  SELECT
+    SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") * 0.0001 AS "_col_0"
+  FROM "partsupp" AS "partsupp"
+  JOIN "supplier_2" AS "supplier"
+    ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
+  JOIN "nation_2" AS "nation"
+    ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 )
 SELECT
   "partsupp"."ps_partkey" AS "ps_partkey",
   SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") AS "value"
 FROM "partsupp" AS "partsupp"
+CROSS JOIN "_u_0" AS "_u_0"
 JOIN "supplier_2" AS "supplier"
   ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
 JOIN "nation_2" AS "nation"
@@ -678,15 +687,7 @@ JOIN "nation_2" AS "nation"
 GROUP BY
   "partsupp"."ps_partkey"
 HAVING
-  SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") > (
-    SELECT
-      SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") * 0.0001 AS "_col_0"
-    FROM "partsupp" AS "partsupp"
-    JOIN "supplier_2" AS "supplier"
-      ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
-    JOIN "nation_2" AS "nation"
-      ON "supplier"."s_nationkey" = "nation"."n_nationkey"
-  )
+  SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") > MAX("_u_0"."_col_0")
 ORDER BY
   "value" DESC;
 
@@ -880,6 +881,10 @@ WITH "revenue" AS (
     AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1996-01-01' AS DATE)
   GROUP BY
     "lineitem"."l_suppkey"
+), "_u_0" AS (
+  SELECT
+    MAX("revenue"."total_revenue") AS "_col_0"
+  FROM "revenue"
 )
 SELECT
   "supplier"."s_suppkey" AS "s_suppkey",
@@ -889,12 +894,9 @@ SELECT
   "revenue"."total_revenue" AS "total_revenue"
 FROM "supplier" AS "supplier"
 JOIN "revenue"
-  ON "revenue"."total_revenue" = (
-    SELECT
-      MAX("revenue"."total_revenue") AS "_col_0"
-    FROM "revenue"
-  )
-  AND "supplier"."s_suppkey" = "revenue"."supplier_no"
+  ON "supplier"."s_suppkey" = "revenue"."supplier_no"
+JOIN "_u_0" AS "_u_0"
+  ON "revenue"."total_revenue" = "_u_0"."_col_0"
 ORDER BY
   "s_suppkey";
 
@@ -1395,7 +1397,14 @@ order by
         cntrycode;
 WITH "_u_0" AS (
   SELECT
-    "orders"."o_custkey" AS "_u_1"
+    AVG("customer"."c_acctbal") AS "_col_0"
+  FROM "customer" AS "customer"
+  WHERE
+    "customer"."c_acctbal" > 0.00
+    AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
+), "_u_1" AS (
+  SELECT
+    "orders"."o_custkey" AS "_u_2"
   FROM "orders" AS "orders"
   GROUP BY
     "orders"."o_custkey"
@@ -1405,18 +1414,12 @@ SELECT
   COUNT(*) AS "numcust",
   SUM("customer"."c_acctbal") AS "totacctbal"
 FROM "customer" AS "customer"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "customer"."c_custkey"
+JOIN "_u_0" AS "_u_0"
+  ON "customer"."c_acctbal" > "_u_0"."_col_0"
+LEFT JOIN "_u_1" AS "_u_1"
+  ON "_u_1"."_u_2" = "customer"."c_custkey"
 WHERE
-  "_u_0"."_u_1" IS NULL
-  AND "customer"."c_acctbal" > (
-    SELECT
-      AVG("customer"."c_acctbal") AS "_col_0"
-    FROM "customer" AS "customer"
-    WHERE
-      "customer"."c_acctbal" > 0.00
-      AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
-  )
+  "_u_1"."_u_2" IS NULL
   AND SUBSTRING("customer"."c_phone", 1, 2) IN ('13', '31', '23', '29', '30', '18', '17')
 GROUP BY
   SUBSTRING("customer"."c_phone", 1, 2)

@@ -94,6 +94,7 @@ class Generator:
         exp.DistStyleProperty,
         exp.DistKeyProperty,
         exp.SortKeyProperty,
+        exp.LikeProperty,
     }
 
     WITH_PROPERTIES = {
@@ -567,6 +568,11 @@ class Generator:
             self.unsupported(f"Unsupported property {property_name}")
 
         return f"{property_name}={self.sql(expression, 'this')}"
+
+    def likeproperty_sql(self, expression):
+        options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)
+        options = f" {options}" if options else ""
+        return f"LIKE {self.sql(expression, 'this')}{options}"
 
     def insert_sql(self, expression):
         overwrite = expression.args.get("overwrite")

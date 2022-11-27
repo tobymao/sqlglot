@@ -165,6 +165,7 @@ class Parser(metaclass=_Parser):
         TokenType.DISTKEY,
         TokenType.DISTSTYLE,
         TokenType.EXECUTE,
+        TokenType.END,
         TokenType.ENGINE,
         TokenType.ESCAPE,
         TokenType.FALSE,
@@ -404,8 +405,9 @@ class Parser(metaclass=_Parser):
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
         TokenType.BEGIN: lambda self: self._parse_transaction(),
-        TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
-        TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
+        TokenType.COMMIT: lambda self: self._parse_commit_or_end(),
+        TokenType.END: lambda self: self._parse_commit_or_end(),
+        TokenType.ROLLBACK: lambda self: self._parse_rollback(),
     }
 
     UNARY_PARSERS = {
@@ -2570,19 +2572,30 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Transaction, this=this, modes=modes)
 
-    def _parse_commit_or_rollback(self):
+    def _parse_rollback(self):
         savepoint = None
-        is_rollback = self._prev.token_type == TokenType.ROLLBACK
-
         self._match_texts({"TRANSACTION", "WORK"})
 
         if self._match_text_seq("TO"):
             self._match_text_seq("SAVEPOINT")
             savepoint = self._parse_id_var()
 
-        if is_rollback:
-            return self.expression(exp.Rollback, savepoint=savepoint)
-        return self.expression(exp.Commit)
+        return self.expression(exp.Rollback, savepoint=savepoint)
+
+    def _parse_commit_or_end(self):
+        chain = None
+        is_commit = self._prev.token_type == TokenType.COMMIT
+        self._match_texts({"TRANSACTION", "WORK"})  # optional, have no effect
+
+        if self._match_text_seq("AND"):
+            self._match_text_seq("CHAIN")
+            chain = True
+
+        if is_commit:
+            return self.expression(exp.Commit, chain=chain)
+
+        else:
+            return self.expression(exp.End, chain=chain)
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)

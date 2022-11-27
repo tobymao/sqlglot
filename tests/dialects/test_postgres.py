@@ -88,6 +88,7 @@ class TestPostgres(Validator):
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+        self.validate_identity("END AND CHAIN")
 
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",

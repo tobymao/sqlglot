@@ -142,6 +142,7 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP": _snowflake_to_timestamp,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
+            "DECODE": exp.Matches.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
@@ -195,16 +196,17 @@ class Snowflake(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.If: rename_func("IFF"),
-            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.UnixToTime: _unix_to_time_sql,
-            exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
-            exp.Array: inline_array_sql,
-            exp.StrPosition: rename_func("POSITION"),
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.Matches: rename_func("DECODE"),
+            exp.StrPosition: rename_func("POSITION"),
+            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
+            exp.UnixToTime: _unix_to_time_sql,
         }
 
         TYPE_MAPPING = {

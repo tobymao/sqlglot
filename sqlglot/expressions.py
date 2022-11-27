@@ -2731,6 +2731,11 @@ class VarMap(Func):
     is_var_len_args = True
 
 
+class Matches(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+
+
 class Max(AggFunc):
     pass
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from sqlglot import exp, generator, tokens, transforms
-from sqlglot.dialects.dialect import Dialect, no_ilike_sql
+from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func
 from sqlglot.helper import csv
 from sqlglot.tokens import TokenType
 
@@ -37,6 +37,12 @@ class Oracle(Dialect):
         "YYYY": "%Y",  # 2015
     }
 
+    class Parser(parser.Parser):
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "DECODE": exp.Matches.from_arg_list,
+        }
+
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -58,6 +64,7 @@ class Oracle(Dialect):
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,
+            exp.Matches: rename_func("DECODE"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",

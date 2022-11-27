@@ -184,6 +184,17 @@ class TestSnowflake(Validator):
                 "bigquery": "TRIM(date_column)",
             },
         )
+        self.validate_all(
+            "DECODE(x, a, b, c, d)",
+            read={
+                "": "MATCHES(x, a, b, c, d)",
+            },
+            write={
+                "": "MATCHES(x, a, b, c, d)",
+                "oracle": "DECODE(x, a, b, c, d)",
+                "snowflake": "DECODE(x, a, b, c, d)",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

@@ -2736,6 +2736,11 @@ class VarMap(Func):
 
 
 class Matches(Func):
+    """Oracle/Snowflake decode.
+    https://docs.oracle.com/cd/B19306_01/server.102/b14200/functions040.htm
+    Pattern matching MATCHES(value, search1, result1, ...searchN, resultN, else)
+    """
+
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 

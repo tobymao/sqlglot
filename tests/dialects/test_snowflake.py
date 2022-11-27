@@ -489,3 +489,25 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') f, LATERAL F
             },
             pretty=True,
         )
+
+    def test_decode_conditional(self):
+        self.validate_all(
+            r"""SELECT COLUMN1, DECODE(COLUMN1,1,'ONE',2,'TWO',NULL,'-NULL-','OTHER') AS DECODE_RESULT FROM D""",
+            write={
+                "snowflake": r"""SELECT COLUMN1, DECODE(COLUMN1, 1, 'ONE', 2, 'TWO', NULL, '-NULL-', 'OTHER') AS DECODE_RESULT FROM D"""
+            },
+        )
+
+        self.validate_all(
+            r"""decode(min( case when table1.fieldname = 'ID' then table1.column1 end ), null, table2.column2, min( case when table1.fieldname = 'ID' then table1.column2 end ))""",
+            write={
+                "snowflake": r"""DECODE(MIN(CASE WHEN table1.fieldname = 'ID' THEN table1.column1 END), NULL, table2.column2, MIN(CASE WHEN table1.fieldname = 'ID' THEN table1.column2 END))"""
+            },
+        )
+
+        self.validate_all(
+            r"""DECODE(DECODE(MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN1 END), NULL, TABLE2.ID, MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN2 END)), NULL, '', 'ID: ' || DECODE(MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN1 END), NULL, TABLE2.ID, MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN2 END)) || '; ')""",
+            write={
+                "snowflake": r"""DECODE(DECODE(MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN1 END), NULL, TABLE2.ID, MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN2 END)), NULL, '', 'ID: ' || DECODE(MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN1 END), NULL, TABLE2.ID, MIN(CASE WHEN TABLE1.FIELDNAME = 'ID' THEN TABLE1.COLUMN2 END)) || '; ')"""
+            },
+        )

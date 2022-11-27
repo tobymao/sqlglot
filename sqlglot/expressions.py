@@ -904,9 +904,9 @@ class Literal(Condition):
 
     def __eq__(self, other):
         return (
-            isinstance(other, Literal)
-            and self.this == other.this
-            and self.args["is_string"] == other.args["is_string"]
+                isinstance(other, Literal)
+                and self.this == other.this
+                and self.args["is_string"] == other.args["is_string"]
         )
 
     def __hash__(self):
@@ -1224,14 +1224,14 @@ class Subqueryable(Unionable):
         raise NotImplementedError("Subqueryable objects must implement `named_selects`")
 
     def with_(
-        self,
-        alias,
-        as_,
-        recursive=None,
-        append=True,
-        dialect=None,
-        copy=True,
-        **opts,
+            self,
+            alias,
+            as_,
+            recursive=None,
+            append=True,
+            dialect=None,
+            copy=True,
+            **opts,
     ):
         """
         Append to or set the common table expressions.
@@ -1683,16 +1683,16 @@ class Select(Subqueryable):
         )
 
     def join(
-        self,
-        expression,
-        on=None,
-        using=None,
-        append=True,
-        join_type=None,
-        join_alias=None,
-        dialect=None,
-        copy=True,
-        **opts,
+            self,
+            expression,
+            on=None,
+            using=None,
+            append=True,
+            join_type=None,
+            join_alias=None,
+            dialect=None,
+            copy=True,
+            **opts,
     ) -> Select:
         """
         Append to or set the JOIN expressions.
@@ -2626,6 +2626,10 @@ class Decode(Func):
     arg_types = {"this": True, "charset": True}
 
 
+class DecodeConditional(Func):
+    arg_types = {"expressions": True}
+
+
 class DiToDate(Func):
     pass
 
@@ -2983,12 +2987,12 @@ ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 
 def maybe_parse(
-    sql_or_expression,
-    *,
-    into=None,
-    dialect=None,
-    prefix=None,
-    **opts,
+        sql_or_expression,
+        *,
+        into=None,
+        dialect=None,
+        prefix=None,
+        **opts,
 ) -> t.Optional[Expression]:
     """Gracefully handle a possible string or expression.
 
@@ -3031,14 +3035,14 @@ def _is_wrong_expression(expression, into):
 
 
 def _apply_builder(
-    expression,
-    instance,
-    arg,
-    copy=True,
-    prefix=None,
-    into=None,
-    dialect=None,
-    **opts,
+        expression,
+        instance,
+        arg,
+        copy=True,
+        prefix=None,
+        into=None,
+        dialect=None,
+        **opts,
 ):
     if _is_wrong_expression(expression, into):
         expression = into(this=expression)
@@ -3055,16 +3059,16 @@ def _apply_builder(
 
 
 def _apply_child_list_builder(
-    *expressions,
-    instance,
-    arg,
-    append=True,
-    copy=True,
-    prefix=None,
-    into=None,
-    dialect=None,
-    properties=None,
-    **opts,
+        *expressions,
+        instance,
+        arg,
+        append=True,
+        copy=True,
+        prefix=None,
+        into=None,
+        dialect=None,
+        properties=None,
+        **opts,
 ):
     instance = _maybe_copy(instance, copy)
     parsed = []
@@ -3092,15 +3096,15 @@ def _apply_child_list_builder(
 
 
 def _apply_list_builder(
-    *expressions,
-    instance,
-    arg,
-    append=True,
-    copy=True,
-    prefix=None,
-    into=None,
-    dialect=None,
-    **opts,
+        *expressions,
+        instance,
+        arg,
+        append=True,
+        copy=True,
+        prefix=None,
+        into=None,
+        dialect=None,
+        **opts,
 ):
     inst = _maybe_copy(instance, copy)
 
@@ -3124,14 +3128,14 @@ def _apply_list_builder(
 
 
 def _apply_conjunction_builder(
-    *expressions,
-    instance,
-    arg,
-    into=None,
-    append=True,
-    copy=True,
-    dialect=None,
-    **opts,
+        *expressions,
+        instance,
+        arg,
+        into=None,
+        append=True,
+        copy=True,
+        dialect=None,
+        **opts,
 ):
     expressions = [exp for exp in expressions if exp is not None and exp != ""]
     if not expressions:

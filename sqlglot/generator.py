@@ -59,7 +59,8 @@ class Generator:
         exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
         exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
         exp.VarMap: lambda self, e: f"MAP({self.format_args(e.args['keys'], e.args['values'])})",
-        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'this')}",
+        exp.CharacterSetProperty: lambda self,
+                                         e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'this')}",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
@@ -136,29 +137,29 @@ class Generator:
     )
 
     def __init__(
-        self,
-        time_mapping=None,
-        time_trie=None,
-        pretty=None,
-        quote_start=None,
-        quote_end=None,
-        identifier_start=None,
-        identifier_end=None,
-        identify=False,
-        normalize=False,
-        escape=None,
-        pad=2,
-        indent=2,
-        index_offset=0,
-        unnest_column_only=False,
-        alias_post_tablesample=False,
-        normalize_functions="upper",
-        unsupported_level=ErrorLevel.WARN,
-        null_ordering=None,
-        max_unsupported=3,
-        leading_comma=False,
-        max_text_width=80,
-        comments=True,
+            self,
+            time_mapping=None,
+            time_trie=None,
+            pretty=None,
+            quote_start=None,
+            quote_end=None,
+            identifier_start=None,
+            identifier_end=None,
+            identify=False,
+            normalize=False,
+            escape=None,
+            pad=2,
+            indent=2,
+            index_offset=0,
+            unnest_column_only=False,
+            alias_post_tablesample=False,
+            normalize_functions="upper",
+            unsupported_level=ErrorLevel.WARN,
+            null_ordering=None,
+            max_unsupported=3,
+            leading_comma=False,
+            max_text_width=80,
+            comments=True,
     ):
         import sqlglot
 
@@ -839,13 +840,13 @@ class Generator:
         sort_order = " DESC" if desc else ""
         nulls_sort_change = ""
         if nulls_first and (
-            (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last
+                (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last
         ):
             nulls_sort_change = " NULLS FIRST"
         elif (
-            nulls_last
-            and ((asc and nulls_are_small) or (desc and nulls_are_large))
-            and not nulls_are_last
+                nulls_last
+                and ((asc and nulls_are_small) or (desc and nulls_are_large))
+                and not nulls_are_last
         ):
             nulls_sort_change = " NULLS LAST"
 
@@ -992,8 +993,8 @@ class Generator:
         kind = self.sql(expression, "kind")
         start = csv(self.sql(expression, "start"), self.sql(expression, "start_side"), sep=" ")
         end = (
-            csv(self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" ")
-            or "CURRENT ROW"
+                csv(self.sql(expression, "end"), self.sql(expression, "end_side"), sep=" ")
+                or "CURRENT ROW"
         )
         return f"{kind} BETWEEN {start} AND {end}"
 
@@ -1397,3 +1398,7 @@ class Generator:
 
     def kwarg_sql(self, expression):
         return self.binary(expression, "=>")
+
+    def decodeconditional_sql(self, expression):
+        _expressions = self.expressions(expression, flat=True)
+        return f"DECODE({_expressions})"

@@ -81,11 +81,11 @@ def _parse_date_part(self):
     name = this.name.upper()
     if name.startswith("EPOCH"):
         if name.startswith("EPOCH_MILLISECOND"):
-            scale = 10 ** 3
+            scale = 10**3
         elif name.startswith("EPOCH_MICROSECOND"):
-            scale = 10 ** 6
+            scale = 10**6
         elif name.startswith("EPOCH_NANOSECOND"):
-            scale = 10 ** 9
+            scale = 10**9
         else:
             scale = None
 

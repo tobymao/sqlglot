@@ -190,7 +190,7 @@ class TestMySQL(Validator):
                 "mysql": "GROUP_CONCAT(x ORDER BY y SEPARATOR z)",
                 "sqlite": "GROUP_CONCAT(x, z)",
                 "tsql": "STRING_AGG(x, z) WITHIN GROUP (ORDER BY y)",
-                "postgres": "STRING_AGG(x, z ORDER BY y)",
+                "postgres": "STRING_AGG(x, z ORDER BY y NULLS FIRST)",
             },
         )
         self.validate_all(

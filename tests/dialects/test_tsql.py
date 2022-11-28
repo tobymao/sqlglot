@@ -17,12 +17,18 @@ class TestTSQL(Validator):
                 "spark": "SELECT CAST(`a`.`b` AS SHORT) FROM foo",
             },
         )
-
         self.validate_all(
             "CONVERT(INT, CONVERT(NUMERIC, '444.75'))",
             write={
                 "mysql": "CAST(CAST('444.75' AS DECIMAL) AS INT)",
                 "tsql": "CAST(CAST('444.75' AS NUMERIC) AS INTEGER)",
+            },
+        )
+        self.validate_all(
+            "STRING_AGG(x, y) WITHIN GROUP (ORDER BY z DESC)",
+            write={
+                "tsql": "STRING_AGG(x, y) WITHIN GROUP (ORDER BY z DESC)",
+                "mysql": "GROUP_CONCAT(x ORDER BY z DESC SEPARATOR y)",
             },
         )
 

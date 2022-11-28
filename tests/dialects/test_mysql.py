@@ -180,6 +180,14 @@ class TestMySQL(Validator):
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",
                 "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+                "tsql": "STRING_AGG(x, ',') WITHIN GROUP (ORDER BY y DESC)",
+            },
+        )
+        self.validate_all(
+            "GROUP_CONCAT(x ORDER BY y SEPARATOR z)",
+            write={
+                "mysql": "GROUP_CONCAT(x ORDER BY y SEPARATOR z)",
+                "tsql": "STRING_AGG(x, z) WITHIN GROUP (ORDER BY y)",
             },
         )
         self.validate_all(

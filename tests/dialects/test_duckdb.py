@@ -106,6 +106,10 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT ARRAY_LENGTH([0], 1) AS x",
+            write={"duckdb": "SELECT ARRAY_LENGTH(LIST_VALUE(0), 1) AS x"},
+        )
+        self.validate_all(
             "REGEXP_MATCHES(x, y)",
             write={
                 "duckdb": "REGEXP_MATCHES(x, y)",

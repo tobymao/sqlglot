@@ -2447,7 +2447,7 @@ class ArrayFilter(Func):
 
 
 class ArraySize(Func):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class ArraySort(Func):

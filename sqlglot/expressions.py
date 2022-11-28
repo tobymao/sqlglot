@@ -2114,7 +2114,7 @@ class Transaction(Command):
 
 
 class Commit(Command):
-    arg_types = {}  # type: ignore
+    arg_types = {"chain": False}
 
 
 class Rollback(Command):

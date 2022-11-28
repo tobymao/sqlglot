@@ -405,6 +405,7 @@ class Parser(metaclass=_Parser):
         TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
         TokenType.BEGIN: lambda self: self._parse_transaction(),
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
+        TokenType.END: lambda self: self._parse_commit_or_rollback(),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
     }
 
@@ -2571,6 +2572,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Transaction, this=this, modes=modes)
 
     def _parse_commit_or_rollback(self):
+        chain = None
         savepoint = None
         is_rollback = self._prev.token_type == TokenType.ROLLBACK
 
@@ -2580,9 +2582,13 @@ class Parser(metaclass=_Parser):
             self._match_text_seq("SAVEPOINT")
             savepoint = self._parse_id_var()
 
+        if self._match(TokenType.AND):
+            chain = not self._match_text_seq("NO")
+            self._match_text_seq("CHAIN")
+
         if is_rollback:
             return self.expression(exp.Rollback, savepoint=savepoint)
-        return self.expression(exp.Commit)
+        return self.expression(exp.Commit, chain=chain)
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)

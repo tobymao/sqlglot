@@ -90,6 +90,14 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
 
         self.validate_all(
+            "END WORK AND NO CHAIN",
+            write={"postgres": "COMMIT AND NO CHAIN"},
+        )
+        self.validate_all(
+            "END AND CHAIN",
+            write={"postgres": "COMMIT AND CHAIN"},
+        )
+        self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",
             write={
                 "duckdb": "CREATE TABLE x (a UUID, b VARBINARY)",

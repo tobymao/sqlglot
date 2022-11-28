@@ -1202,8 +1202,12 @@ class Generator:
     def transaction_sql(self, *_):
         return "BEGIN"
 
-    def commit_sql(self, *_):
-        return "COMMIT"
+    def commit_sql(self, expression):
+        chain = expression.args.get("chain")
+        if chain is not None:
+            chain = " AND CHAIN" if chain else " AND NO CHAIN"
+
+        return f"COMMIT{chain or ''}"
 
     def rollback_sql(self, expression):
         savepoint = expression.args.get("savepoint")

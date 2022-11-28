@@ -17,6 +17,7 @@ FULL_FORMAT_TIME_MAPPING = {
     "mm": "%B",
     "m": "%B",
 }
+
 DATE_DELTA_INTERVAL = {
     "year": "year",
     "yyyy": "year",
@@ -37,11 +38,12 @@ DATE_DELTA_INTERVAL = {
 
 
 DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})")
+
 # N = Numeric, C=Currency
 TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 
 
-def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
+def _format_time_lambda(exp_class, full_format_mapping=None, default=None):
     def _format_time(args):
         return exp_class(
             this=seq_get(args, 1),
@@ -58,7 +60,7 @@ def tsql_format_time_lambda(exp_class, full_format_mapping=None, default=None):
     return _format_time
 
 
-def parse_format(args):
+def _parse_format(args):
     fmt = seq_get(args, 1)
     number_fmt = fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.this)
     if number_fmt:
@@ -78,13 +80,35 @@ def generate_date_delta_with_unit_sql(self, e):
     return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
 
 
-def generate_format_sql(self, e):
+def _format_sql(self, e):
     fmt = (
         e.args["format"]
         if isinstance(e, exp.NumberToStr)
         else exp.Literal.string(format_time(e.text("format"), TSQL.inverse_time_mapping))
     )
     return f"FORMAT({self.format_args(e.this, fmt)})"
+
+
+def _string_agg_sql(self, e):
+    e = e.copy()
+
+    this = e.this
+    distinct = e.find(exp.Distinct)
+    if distinct:
+        # exp.Distinct can appear below an exp.Order or an exp.GroupConcat expression
+        self.unsupported("T-SQL STRING_AGG doesn't support DISTINCT.")
+        this = distinct.expressions[0]
+        distinct.pop()
+
+    order = ""
+    if isinstance(e.this, exp.Order):
+        if e.this.this:
+            this = e.this.this
+            e.this.this.pop()
+        order = f" WITHIN GROUP ({self.sql(e.this)[1:]})"
+
+    separator = e.args.get("separator") or exp.Literal.string(",")
+    return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 
 class TSQL(Dialect):
@@ -228,14 +252,14 @@ class TSQL(Dialect):
             "ISNULL": exp.Coalesce.from_arg_list,
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
             "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
-            "DATENAME": tsql_format_time_lambda(exp.TimeToStr, full_format_mapping=True),
-            "DATEPART": tsql_format_time_lambda(exp.TimeToStr),
+            "DATENAME": _format_time_lambda(exp.TimeToStr, full_format_mapping=True),
+            "DATEPART": _format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentDate.from_arg_list,
             "IIF": exp.If.from_arg_list,
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
-            "FORMAT": parse_format,
+            "FORMAT": _parse_format,
         }
 
         VAR_LENGTH_DATATYPES = {
@@ -298,6 +322,7 @@ class TSQL(Dialect):
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
             exp.If: rename_func("IIF"),
-            exp.NumberToStr: generate_format_sql,
-            exp.TimeToStr: generate_format_sql,
+            exp.NumberToStr: _format_sql,
+            exp.TimeToStr: _format_sql,
+            exp.GroupConcat: _string_agg_sql,
         }

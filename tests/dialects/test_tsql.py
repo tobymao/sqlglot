@@ -17,12 +17,38 @@ class TestTSQL(Validator):
                 "spark": "SELECT CAST(`a`.`b` AS SHORT) FROM foo",
             },
         )
-
         self.validate_all(
             "CONVERT(INT, CONVERT(NUMERIC, '444.75'))",
             write={
                 "mysql": "CAST(CAST('444.75' AS DECIMAL) AS INT)",
                 "tsql": "CAST(CAST('444.75' AS NUMERIC) AS INTEGER)",
+            },
+        )
+        self.validate_all(
+            "STRING_AGG(x, y) WITHIN GROUP (ORDER BY z DESC)",
+            write={
+                "tsql": "STRING_AGG(x, y) WITHIN GROUP (ORDER BY z DESC)",
+                "mysql": "GROUP_CONCAT(x ORDER BY z DESC SEPARATOR y)",
+                "sqlite": "GROUP_CONCAT(x, y)",
+                "postgres": "STRING_AGG(x, y ORDER BY z DESC NULLS LAST)",
+            },
+        )
+        self.validate_all(
+            "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z ASC)",
+            write={
+                "tsql": "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z)",
+                "mysql": "GROUP_CONCAT(x ORDER BY z SEPARATOR '|')",
+                "sqlite": "GROUP_CONCAT(x, '|')",
+                "postgres": "STRING_AGG(x, '|' ORDER BY z NULLS FIRST)",
+            },
+        )
+        self.validate_all(
+            "STRING_AGG(x, '|')",
+            write={
+                "tsql": "STRING_AGG(x, '|')",
+                "mysql": "GROUP_CONCAT(x SEPARATOR '|')",
+                "sqlite": "GROUP_CONCAT(x, '|')",
+                "postgres": "STRING_AGG(x, '|')",
             },
         )
 

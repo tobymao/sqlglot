@@ -108,7 +108,7 @@ def _string_agg_sql(self, e):
         order = f" WITHIN GROUP ({self.sql(e.this)[1:]})"
 
     separator = e.args.get("separator")
-    separator = separator.name if separator else exp.Literal.string(",")
+    separator = separator or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 

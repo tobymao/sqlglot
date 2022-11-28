@@ -520,6 +520,7 @@ class Parser(metaclass=_Parser):
         "TRIM": lambda self: self._parse_trim(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "TRY_CAST": lambda self: self._parse_cast(False),
+        "STRING_AGG": lambda self: self._parse_string_agg(),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -2258,6 +2259,26 @@ class Parser(metaclass=_Parser):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+
+    def _parse_string_agg(self):
+        # Parses <expression> , <separator>
+        args = self._parse_csv(self._parse_conjunction)
+
+        index = self._index
+        self._match(TokenType.R_PAREN)
+
+        # Checks if we can parse an order clause: WITHIN GROUP (ORDER BY <order_by_expression_list> [ASC | DESC]).
+        # This is done "manually", instead of letting _parse_window parse it into an exp.WithinGroup node, so that
+        # the STRING_AGG call is parsed like in MySQL / SQLite and can thus be transpiled more easily to them.
+        if not self._match(TokenType.WITHIN_GROUP):
+            self._retreat(index)
+            this = exp.GroupConcat.from_arg_list(args)
+            self.validate_expression(this, args)
+            return this
+
+        self._match(TokenType.L_PAREN)
+        order = self._parse_order(this=seq_get(args, 0))
+        return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
 
     def _parse_convert(self, strict):
         this = self._parse_column()

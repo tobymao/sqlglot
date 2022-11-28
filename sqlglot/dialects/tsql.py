@@ -107,8 +107,7 @@ def _string_agg_sql(self, e):
             e.this.this.pop()
         order = f" WITHIN GROUP ({self.sql(e.this)[1:]})"
 
-    separator = e.args.get("separator")
-    separator = separator or exp.Literal.string(",")
+    separator = e.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 
@@ -247,11 +246,6 @@ class TSQL(Dialect):
         }
 
     class Parser(parser.Parser):
-        FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
-            "STRING_AGG": lambda self: self._parse_string_agg(),
-        }
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CHARINDEX": exp.StrPosition.from_arg_list,
@@ -311,26 +305,6 @@ class TSQL(Dialect):
 
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
-
-        def _parse_string_agg(self):
-            # Parses <expression> , <separator>
-            args = self._parse_csv(self._parse_conjunction)
-
-            index = self._index
-            self._match_r_paren()
-
-            # Checks if we can parse an order clause: WITHIN GROUP (ORDER BY <order_by_expression_list> [ASC | DESC]).
-            # This is done "manually", instead of letting _parse_window parse it into an exp.WithinGroup node, so that
-            # the STRING_AGG call is parsed like in MySQL / SQLite and can thus be transpiled more easily to them.
-            if not self._match(TokenType.WITHIN_GROUP):
-                self._retreat(index)
-                this = exp.GroupConcat.from_arg_list(args)
-                self.validate_expression(this, args)
-                return this
-
-            self._match_l_paren()  # match_r_paren will be called inside _parse_function (caller)
-            order = self._parse_order(this=seq_get(args, 0))
-            return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {

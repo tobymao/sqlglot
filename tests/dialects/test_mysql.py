@@ -179,22 +179,27 @@ class TestMySQL(Validator):
             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",
-                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+                "sqlite": "GROUP_CONCAT(DISTINCT x)",
                 "tsql": "STRING_AGG(x, ',') WITHIN GROUP (ORDER BY y DESC)",
+                "postgres": "STRING_AGG(x, ',' ORDER BY y DESC NULLS LAST)",
             },
         )
         self.validate_all(
             "GROUP_CONCAT(x ORDER BY y SEPARATOR z)",
             write={
                 "mysql": "GROUP_CONCAT(x ORDER BY y SEPARATOR z)",
+                "sqlite": "GROUP_CONCAT(x, z)",
                 "tsql": "STRING_AGG(x, z) WITHIN GROUP (ORDER BY y)",
+                "postgres": "STRING_AGG(x, z ORDER BY y)",
             },
         )
         self.validate_all(
             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
-                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC, '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT x, '')",
+                "tsql": "STRING_AGG(x, '') WITHIN GROUP (ORDER BY y DESC)",
+                "postgres": "STRING_AGG(x, '' ORDER BY y DESC NULLS LAST)",
             },
         )
         self.validate_identity(

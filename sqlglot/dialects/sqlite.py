@@ -13,6 +13,23 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
+# https://www.sqlite.org/lang_aggfunc.html#group_concat
+def _group_concat_sql(self, expression):
+    this = expression.this
+    distinct = expression.find(exp.Distinct)
+    if distinct:
+        this = distinct.expressions[0]
+        distinct = "DISTINCT "
+
+    if isinstance(expression.this, exp.Order):
+        self.unsupported("SQLite GROUP_CONCAT doesn't support ORDER BY.")
+        if expression.this.this and not distinct:
+            this = expression.this.this
+
+    separator = expression.args.get("separator")
+    return f"GROUP_CONCAT({distinct or ''}{self.format_args(this, separator)})"
+
+
 class SQLite(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -62,6 +79,7 @@ class SQLite(Dialect):
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
+            exp.GroupConcat: _group_concat_sql,
         }
 
         def transaction_sql(self, expression):

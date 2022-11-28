@@ -26,7 +26,7 @@ def _group_concat_sql(self, expression):
         if expression.this.this and not distinct:
             this = expression.this.this
 
-    separator = expression.args.get('separator')
+    separator = expression.args.get("separator")
     return f"GROUP_CONCAT({distinct or ''}{self.format_args(this, separator)})"
 
 

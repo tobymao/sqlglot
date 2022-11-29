@@ -32,6 +32,7 @@ class TestSpark(Validator):
                 "presto": "CREATE TABLE db.example_table (col_a ARRAY(INTEGER), col_b ARRAY(ARRAY(INTEGER)))",
                 "hive": "CREATE TABLE db.example_table (col_a ARRAY<INT>, col_b ARRAY<ARRAY<INT>>)",
                 "spark": "CREATE TABLE db.example_table (col_a ARRAY<INT>, col_b ARRAY<ARRAY<INT>>)",
+                "snowflake": "CREATE TABLE db.example_table (col_a ARRAY, col_b ARRAY)",
             },
         )
         self.validate_all(
@@ -278,6 +279,7 @@ TBLPROPERTIES (
                 "presto": "MAP(ARRAY[1], c)",
                 "hive": "MAP(ARRAY(1), c)",
                 "spark": "MAP_FROM_ARRAYS(ARRAY(1), c)",
+                "snowflake": "OBJECT_CONSTRUCT([1], c)",
             },
         )
         self.validate_all(

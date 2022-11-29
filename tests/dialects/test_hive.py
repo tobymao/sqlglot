@@ -459,6 +459,7 @@ class TestHive(Validator):
                 "hive": "MAP(a, b, c, d)",
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
                 "spark": "MAP(a, b, c, d)",
+                "snowflake": "OBJECT_CONSTRUCT(a, b, c, d)",
             },
             write={
                 "": "MAP(ARRAY(a, c), ARRAY(b, d))",
@@ -467,6 +468,7 @@ class TestHive(Validator):
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
                 "hive": "MAP(a, b, c, d)",
                 "spark": "MAP(a, b, c, d)",
+                "snowflake": "OBJECT_CONSTRUCT(a, b, c, d)",
             },
         )
         self.validate_all(
@@ -476,6 +478,7 @@ class TestHive(Validator):
                 "presto": "MAP(ARRAY[a], ARRAY[b])",
                 "hive": "MAP(a, b)",
                 "spark": "MAP(a, b)",
+                "snowflake": "OBJECT_CONSTRUCT(a, b)",
             },
         )
         self.validate_all(

@@ -115,6 +115,9 @@ class PythonExecutor:
             sink = self.table(context.columns)
 
         for reader in table_iter:
+            if len(sink) >= step.limit:
+                break
+
             if condition and not context.eval(condition):
                 continue
 
@@ -122,9 +125,6 @@ class PythonExecutor:
                 sink.append(context.eval_tuple(projections))
             else:
                 sink.append(reader.row)
-
-            if len(sink) >= step.limit:
-                break
 
         return self.context({step.name: sink})
 
@@ -305,10 +305,12 @@ class PythonExecutor:
                     add_row()
                     group = key
                     start = end - 2
+                if len(table.rows) >= step.limit:
+                    break
                 if i == length - 1:
                     context.set_range(start, end - 1)
                     add_row()
-        else:
+        elif step.limit > 0:
             context.set_range(0, 0)
             table.append(context.eval_tuple(group_by) + context.eval_tuple(aggregations))
 

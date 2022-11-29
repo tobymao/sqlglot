@@ -105,7 +105,7 @@ def _string_agg_sql(self, e):
         if e.this.this:
             this = e.this.this
             e.this.this.pop()
-        order = f" WITHIN GROUP ({self.sql(e.this)[1:]})"
+        order = f" WITHIN GROUP ({self.sql(e.this)[1:]})"  # Order has a leading space
 
     separator = e.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}){order}"

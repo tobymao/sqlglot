@@ -152,6 +152,7 @@ class Snowflake(Dialect):
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
             "DECODE": exp.Matches.from_arg_list,
+            "OBJECT_CONSTRUCT": parser.parse_var_map,
         }
 
         FUNCTION_PARSERS = {

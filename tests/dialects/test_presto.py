@@ -13,6 +13,7 @@ class TestPresto(Validator):
                 "duckdb": "CAST(a AS INT[])",
                 "presto": "CAST(a AS ARRAY(INTEGER))",
                 "spark": "CAST(a AS ARRAY<INT>)",
+                "snowflake": "CAST(a AS ARRAY)",
             },
         )
         self.validate_all(
@@ -31,6 +32,7 @@ class TestPresto(Validator):
                 "duckdb": "CAST(LIST_VALUE(1, 2) AS BIGINT[])",
                 "presto": "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
                 "spark": "CAST(ARRAY(1, 2) AS ARRAY<LONG>)",
+                "snowflake": "CAST([1, 2] AS ARRAY)",
             },
         )
         self.validate_all(
@@ -41,6 +43,7 @@ class TestPresto(Validator):
                 "presto": "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INTEGER, INTEGER))",
                 "hive": "CAST(MAP(1, 1) AS MAP<INT, INT>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY(1), ARRAY(1)) AS MAP<INT, INT>)",
+                "snowflake": "CAST(OBJECT_CONSTRUCT(1, 1) AS OBJECT)",
             },
         )
         self.validate_all(
@@ -51,6 +54,7 @@ class TestPresto(Validator):
                 "presto": "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
                 "hive": "CAST(MAP('a', ARRAY(1), 'b', ARRAY(2), 'c', ARRAY(3)) AS MAP<STRING, ARRAY<INT>>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY('a', 'b', 'c'), ARRAY(ARRAY(1), ARRAY(2), ARRAY(3))) AS MAP<STRING, ARRAY<INT>>)",
+                "snowflake": "CAST(OBJECT_CONSTRUCT('a', [1], 'b', [2], 'c', [3]) AS OBJECT)",
             },
         )
         self.validate_all(
@@ -393,6 +397,7 @@ class TestPresto(Validator):
             write={
                 "hive": UnsupportedError,
                 "spark": "MAP_FROM_ARRAYS(a, b)",
+                "snowflake": UnsupportedError,
             },
         )
         self.validate_all(
@@ -401,6 +406,7 @@ class TestPresto(Validator):
                 "hive": "MAP(a, c, b, d)",
                 "presto": "MAP(ARRAY[a, b], ARRAY[c, d])",
                 "spark": "MAP_FROM_ARRAYS(ARRAY(a, b), ARRAY(c, d))",
+                "snowflake": "OBJECT_CONSTRUCT(a, c, b, d)",
             },
         )
         self.validate_all(
@@ -409,6 +415,7 @@ class TestPresto(Validator):
                 "hive": "MAP('a', 'b')",
                 "presto": "MAP(ARRAY['a'], ARRAY['b'])",
                 "spark": "MAP_FROM_ARRAYS(ARRAY('a'), ARRAY('b'))",
+                "snowflake": "OBJECT_CONSTRUCT('a', 'b')",
             },
         )
         self.validate_all(

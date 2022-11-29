@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     format_time_lambda,
     inline_array_sql,
     rename_func,
+    var_map_sql,
 )
 from sqlglot.expressions import Literal
 from sqlglot.helper import seq_get
@@ -98,6 +99,14 @@ def _parse_date_part(self):
         return to_unix
 
     return self.expression(exp.Extract, this=this, expression=expression)
+
+
+def _datatype_sql(self, expression):
+    if expression.this == exp.DataType.Type.ARRAY:
+        return "ARRAY"
+    elif expression.this == exp.DataType.Type.MAP:
+        return "OBJECT"
+    return self.datatype_sql(expression)
 
 
 class Snowflake(Dialect):
@@ -198,7 +207,10 @@ class Snowflake(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.DataType: _datatype_sql,
             exp.If: rename_func("IFF"),
+            exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),

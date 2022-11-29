@@ -90,6 +90,7 @@ class TestDuckDB(Validator):
                 "hive": "CAST(COL AS ARRAY<BIGINT>)",
                 "spark": "CAST(COL AS ARRAY<LONG>)",
                 "postgres": "CAST(COL AS BIGINT[])",
+                "snowflake": "CAST(COL AS ARRAY)",
             },
         )
 

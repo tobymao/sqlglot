@@ -45,7 +45,6 @@ def execute(sql, schema=None, read=None, tables=None):
     logger.debug("Optimization finished: %f", time.time() - now)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))
     plan = Plan(expression)
-    print(plan)
     logger.debug("Logical Plan: %s", plan)
     now = time.time()
     result = PythonExecutor(tables=tables).execute(plan)

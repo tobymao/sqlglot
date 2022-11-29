@@ -76,23 +76,16 @@ def _trim_sql(self, expression):
 
 def _string_agg_sql(self, expression):
     expression = expression.copy()
-
-    this = expression.this
-    distinct = expression.find(exp.Distinct)
-    if distinct:
-        # exp.Distinct can appear below an exp.Order or an exp.GroupConcat expression
-        self.unsupported("PostgreSQL STRING_AGG doesn't support DISTINCT.")
-        this = distinct.expressions[0]
-        distinct.pop()
+    separator = expression.args.get("separator") or exp.Literal.string(",")
 
     order = ""
-    if isinstance(expression.this, exp.Order):
-        if expression.this.this:
-            this = expression.this.this
-            expression.this.this.pop()
+    this = expression.this
+    if isinstance(this, exp.Order):
+        if this.this:
+            this = this.this
+            this.pop()
         order = self.sql(expression.this)  # Order has a leading space
 
-    separator = expression.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}{order})"
 
 
@@ -297,4 +290,5 @@ class Postgres(Dialect):
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.DataType: _datatype_sql,
             exp.GroupConcat: _string_agg_sql,
+            exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
         }

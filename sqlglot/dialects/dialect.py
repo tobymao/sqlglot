@@ -289,19 +289,19 @@ def struct_extract_sql(self, expression):
     return f"{this}.{struct_key}"
 
 
-def var_map_sql(self, expression):
+def var_map_sql(self, expression, map_func_name="MAP"):
     keys = expression.args["keys"]
     values = expression.args["values"]
 
     if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
         self.unsupported("Cannot convert array columns into map.")
-        return f"MAP({self.format_args(keys, values)})"
+        return f"{map_func_name}({self.format_args(keys, values)})"
 
     args = []
     for key, value in zip(keys.expressions, values.expressions):
         args.append(self.sql(key))
         args.append(self.sql(value))
-    return f"MAP({self.format_args(*args)})"
+    return f"{map_func_name}({self.format_args(*args)})"
 
 
 def format_time_lambda(exp_class, dialect, default=None):

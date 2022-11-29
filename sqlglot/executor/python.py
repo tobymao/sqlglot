@@ -294,19 +294,23 @@ class PythonExecutor:
             if not condition or context.eval(condition):
                 table.append(group + context.eval_tuple(aggregations))
 
-        for i in range(length):
-            context.set_index(i)
-            key = context.eval_tuple(group_by)
-            group = key if group is None else group
-            end += 1
-            if key != group:
-                context.set_range(start, end - 2)
-                add_row()
-                group = key
-                start = end - 2
-            if i == length - 1:
-                context.set_range(start, end - 1)
-                add_row()
+        if length:
+            for i in range(length):
+                context.set_index(i)
+                key = context.eval_tuple(group_by)
+                group = key if group is None else group
+                end += 1
+                if key != group:
+                    context.set_range(start, end - 2)
+                    add_row()
+                    group = key
+                    start = end - 2
+                if i == length - 1:
+                    context.set_range(start, end - 1)
+                    add_row()
+        else:
+            context.set_range(0, 0)
+            table.append(context.eval_tuple(group_by) + context.eval_tuple(aggregations))
 
         context = self.context({step.name: table, **{name: table for name in context.tables}})
 

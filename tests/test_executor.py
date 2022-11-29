@@ -423,6 +423,7 @@ class TestExecutor(unittest.TestCase):
             ("SELECT CONCAT('a', 'b') AS x", ["x"], [("ab",)]),
             ("SELECT 1 AS x, 2 AS y", ["x", "y"], [(1, 2)]),
             ("SELECT 'foo' LIMIT 1", ["_col_0"], [("foo",)]),
+            ("SELECT SUM(x) FROM (SELECT 1 AS x WHERE FALSE)", ["_col_0"], [(0,)]),
         ]:
             result = execute(sql)
             self.assertEqual(result.columns, tuple(cols))

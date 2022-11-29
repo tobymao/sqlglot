@@ -25,7 +25,6 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
     Returns:
         sqlglot.Expression: expression annotated with types
     """
-
     schema = ensure_schema(schema)
 
     return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)

@@ -68,6 +68,9 @@ def eliminate_subqueries(expression):
     for cte_scope in root.cte_scopes:
         # Append all the new CTEs from this existing CTE
         for scope in cte_scope.traverse():
+            if scope is cte_scope:
+                # Don't try to eliminate this CTE itself
+                continue
             new_cte = _eliminate(scope, existing_ctes, taken)
             if new_cte:
                 new_ctes.append(new_cte)
@@ -96,6 +99,9 @@ def _eliminate(scope, existing_ctes, taken):
 
     if scope.is_derived_table and not isinstance(scope.expression, exp.UDTF):
         return _eliminate_derived_table(scope, existing_ctes, taken)
+
+    if scope.is_cte:
+        return _eliminate_cte(scope, existing_ctes, taken)
 
 
 def _eliminate_union(scope, existing_ctes, taken):
@@ -127,6 +133,37 @@ def _eliminate_union(scope, existing_ctes, taken):
 
 
 def _eliminate_derived_table(scope, existing_ctes, taken):
+    parent = scope.expression.parent
+    name, alias, cte = _new_cte(scope, existing_ctes, taken)
+
+    table = exp.alias_(exp.table_(name), alias=alias)
+    parent.replace(table)
+
+    return cte
+
+
+def _eliminate_cte(scope, existing_ctes, taken):
+    parent = scope.expression.parent
+    name, _, cte = _new_cte(scope, existing_ctes, taken)
+
+    with_ = parent.parent
+    parent.pop()
+    if not with_.expressions:
+        with_.pop()
+
+    return cte
+
+
+def _new_cte(scope, existing_ctes, taken):
+    """
+    Get a new name for a CTE.
+
+    Returns:
+        tuple of (name, alias, cte):
+        - name: Name for this CTE in the root scope
+        - alias: Alias for the table in the immediate parent scope
+        - cte: New CTE instance. If this CTE duplicates an existing CTE, this is None.
+    """
     duplicate_cte_alias = existing_ctes.get(scope.expression)
     parent = scope.expression.parent
     name = alias = parent.alias
@@ -141,12 +178,12 @@ def _eliminate_derived_table(scope, existing_ctes, taken):
 
     taken[name] = scope
 
-    table = exp.alias_(exp.table_(name), alias=alias)
-    parent.replace(table)
-
     if not duplicate_cte_alias:
         existing_ctes[scope.expression] = name
-        return exp.CTE(
+        cte = exp.CTE(
             this=scope.expression,
             alias=exp.TableAlias(this=exp.to_identifier(name)),
         )
+    else:
+        cte = None
+    return name, alias, cte

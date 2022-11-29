@@ -276,3 +276,18 @@ SELECT /*+ COALESCE(3),
 FROM `x` AS `x`
 JOIN `y` AS `y`
   ON `x`.`b` = `y`.`b`;
+
+WITH cte1 AS (
+  WITH cte2 AS (
+    SELECT a, b FROM x
+  )
+  SELECT a1
+  FROM (
+    WITH cte3 AS (SELECT 1)
+    SELECT a AS a1, b AS b1 FROM cte2
+  )
+)
+SELECT a1 FROM cte1;
+SELECT
+  "x"."a" AS "a1"
+FROM "x" AS "x";

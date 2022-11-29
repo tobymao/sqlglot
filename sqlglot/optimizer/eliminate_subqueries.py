@@ -134,9 +134,9 @@ def _eliminate_union(scope, existing_ctes, taken):
 
 def _eliminate_derived_table(scope, existing_ctes, taken):
     parent = scope.expression.parent
-    name, alias, cte = _new_cte(scope, existing_ctes, taken)
+    name, cte = _new_cte(scope, existing_ctes, taken)
 
-    table = exp.alias_(exp.table_(name), alias=alias)
+    table = exp.alias_(exp.table_(name), alias=parent.alias or name)
     parent.replace(table)
 
     return cte
@@ -144,7 +144,7 @@ def _eliminate_derived_table(scope, existing_ctes, taken):
 
 def _eliminate_cte(scope, existing_ctes, taken):
     parent = scope.expression.parent
-    name, _, cte = _new_cte(scope, existing_ctes, taken)
+    name, cte = _new_cte(scope, existing_ctes, taken)
 
     with_ = parent.parent
     parent.pop()
@@ -166,22 +166,21 @@ def _new_cte(scope, existing_ctes, taken):
     Get a new name for a CTE.
 
     Returns:
-        tuple of (name, alias, cte):
+        tuple of (name, cte), where:
         - name: Name for this CTE in the root scope
-        - alias: Alias for the table in the immediate parent scope
         - cte: New CTE instance. If this CTE duplicates an existing CTE, this is None.
     """
     duplicate_cte_alias = existing_ctes.get(scope.expression)
     parent = scope.expression.parent
-    name = alias = parent.alias
+    name = parent.alias
 
-    if not alias:
-        name = alias = find_new_name(taken=taken, base="cte")
+    if not name:
+        name = find_new_name(taken=taken, base="cte")
 
     if duplicate_cte_alias:
         name = duplicate_cte_alias
-    elif taken.get(alias):
-        name = find_new_name(taken=taken, base=alias)
+    elif taken.get(name):
+        name = find_new_name(taken=taken, base=name)
 
     taken[name] = scope
 
@@ -193,4 +192,4 @@ def _new_cte(scope, existing_ctes, taken):
         )
     else:
         cte = None
-    return name, alias, cte
+    return name, cte

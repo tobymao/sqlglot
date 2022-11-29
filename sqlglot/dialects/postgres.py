@@ -76,16 +76,16 @@ def _trim_sql(self, expression):
 
 def _string_agg_sql(self, expression):
     expression = expression.copy()
+    separator = expression.args.get("separator") or exp.Literal.string(",")
 
     order = ""
     this = expression.this
-    if isinstance(expression.this, exp.Order):
-        if expression.this.this:
-            this = expression.this.this
-            expression.this.this.pop()
+    if isinstance(this, exp.Order):
+        if this.this:
+            this = this.this
+            this.pop()
         order = self.sql(expression.this)  # Order has a leading space
 
-    separator = expression.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}{order})"
 
 

@@ -188,6 +188,16 @@ class TestExecutor(unittest.TestCase):
                 ["a"],
                 [],
             ),
+            (
+                "SELECT a FROM x GROUP BY a LIMIT 0",
+                ["a"],
+                [],
+            ),
+            (
+                "SELECT a FROM x LIMIT 0",
+                ["a"],
+                [],
+            ),
         ]:
             with self.subTest(sql):
                 result = execute(sql, schema=schema, tables=tables)

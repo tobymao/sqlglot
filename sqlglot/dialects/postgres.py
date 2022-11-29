@@ -78,7 +78,7 @@ def _string_agg_sql(self, expression):
     expression = expression.copy()
 
     order = ""
-    this = expression.find(exp.Distinct) or expression.this
+    this = expression.this
     if isinstance(expression.this, exp.Order):
         if expression.this.this:
             this = expression.this.this

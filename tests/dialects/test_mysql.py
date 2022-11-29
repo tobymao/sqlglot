@@ -181,7 +181,7 @@ class TestMySQL(Validator):
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",
                 "sqlite": "GROUP_CONCAT(DISTINCT x)",
                 "tsql": "STRING_AGG(x, ',') WITHIN GROUP (ORDER BY y DESC)",
-                "postgres": "STRING_AGG(x, ',' ORDER BY y DESC NULLS LAST)",
+                "postgres": "STRING_AGG(DISTINCT x, ',' ORDER BY y DESC NULLS LAST)",
             },
         )
         self.validate_all(
@@ -199,7 +199,7 @@ class TestMySQL(Validator):
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
                 "sqlite": "GROUP_CONCAT(DISTINCT x, '')",
                 "tsql": "STRING_AGG(x, '') WITHIN GROUP (ORDER BY y DESC)",
-                "postgres": "STRING_AGG(x, '' ORDER BY y DESC NULLS LAST)",
+                "postgres": "STRING_AGG(DISTINCT x, '' ORDER BY y DESC NULLS LAST)",
             },
         )
         self.validate_identity(

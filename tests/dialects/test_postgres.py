@@ -63,6 +63,12 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
+        self.validate_identity("SELECT ARRAY[1, 2, 3]")
+        self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2, 3], 1)")
+        self.validate_identity("STRING_AGG(x, y)")
+        self.validate_identity("STRING_AGG(x, ',' ORDER BY y)")
+        self.validate_identity("STRING_AGG(x, ',' ORDER BY y DESC)")
+        self.validate_identity("STRING_AGG(DISTINCT x, ',' ORDER BY y DESC)")
         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
         self.validate_identity(
             "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END"

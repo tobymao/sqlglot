@@ -196,7 +196,6 @@ class Step:
             distinct = Aggregate()
             distinct.source = step.name
             distinct.name = step.name
-            distinct.aggregations = []
             distinct.group = {
                 e.alias_or_name: exp.column(col=e.alias_or_name, table=step.name)
                 for e in projections or expression.expressions

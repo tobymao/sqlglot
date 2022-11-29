@@ -192,6 +192,18 @@ class Step:
 
         step.projections = projections
 
+        if isinstance(expression, exp.Select) and expression.args.get("distinct"):
+            distinct = Aggregate()
+            distinct.source = step.name
+            distinct.name = step.name
+            distinct.aggregations = []
+            distinct.group = {
+                e.alias_or_name: exp.column(col=e.alias_or_name, table=step.name)
+                for e in projections or expression.expressions
+            }
+            distinct.add_dependency(step)
+            step = distinct
+
         limit = expression.args.get("limit")
 
         if limit:
@@ -234,6 +246,9 @@ class Step:
 
         if self.condition:
             lines.append(f"{nested}Condition: {self.condition.sql()}")
+
+        if self.limit is not math.inf:
+            lines.append(f"{nested}Limit: {self.limit}")
 
         if self.dependencies:
             lines.append(f"{nested}Dependencies:")

@@ -165,6 +165,29 @@ class TestExecutor(unittest.TestCase):
                 ["a"],
                 [("a",)],
             ),
+            (
+                "SELECT DISTINCT a FROM (SELECT 1 AS a UNION ALL SELECT 1 AS a)",
+                ["a"],
+                [(1,)],
+            ),
+            (
+                "SELECT DISTINCT a, SUM(b) AS b "
+                "FROM (SELECT 'a' AS a, 1 AS b UNION ALL SELECT 'a' AS a, 2 AS b UNION ALL SELECT 'b' AS a, 1 AS b) "
+                "GROUP BY a "
+                "LIMIT 1",
+                ["a", "b"],
+                [("a", 3)],
+            ),
+            (
+                "SELECT COUNT(1) AS a FROM (SELECT 1)",
+                ["a"],
+                [(1,)],
+            ),
+            (
+                "SELECT COUNT(1) AS a FROM (SELECT 1) LIMIT 0",
+                ["a"],
+                [],
+            ),
         ]:
             with self.subTest(sql):
                 result = execute(sql, schema=schema, tables=tables)

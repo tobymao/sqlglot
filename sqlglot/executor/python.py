@@ -305,10 +305,12 @@ class PythonExecutor:
                     add_row()
                     group = key
                     start = end - 2
+                if len(table.rows) >= step.limit:
+                    break
                 if i == length - 1:
                     context.set_range(start, end - 1)
                     add_row()
-        else:
+        elif step.limit > 0:
             context.set_range(0, 0)
             table.append(context.eval_tuple(group_by) + context.eval_tuple(aggregations))
 

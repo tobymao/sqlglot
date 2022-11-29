@@ -151,6 +151,13 @@ def _eliminate_cte(scope, existing_ctes, taken):
     if not with_.expressions:
         with_.pop()
 
+    # Rename references to this CTE
+    for child_scope in scope.parent.traverse():
+        for table, source in child_scope.selected_sources.values():
+            if source is scope:
+                new_table = exp.alias_(exp.table_(name), alias=table.alias_or_name)
+                table.replace(new_table)
+
     return cte
 
 

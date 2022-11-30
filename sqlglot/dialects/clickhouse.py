@@ -21,14 +21,15 @@ class ClickHouse(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "FINAL": TokenType.FINAL,
+            "ASOF": TokenType.ASOF,
             "DATETIME64": TokenType.DATETIME,
-            "INT8": TokenType.TINYINT,
+            "FINAL": TokenType.FINAL,
+            "FLOAT32": TokenType.FLOAT,
+            "FLOAT64": TokenType.DOUBLE,
             "INT16": TokenType.SMALLINT,
             "INT32": TokenType.INT,
             "INT64": TokenType.BIGINT,
-            "FLOAT32": TokenType.FLOAT,
-            "FLOAT64": TokenType.DOUBLE,
+            "INT8": TokenType.TINYINT,
             "TUPLE": TokenType.STRUCT,
         }
 
@@ -37,6 +38,10 @@ class ClickHouse(Dialect):
             **parser.Parser.FUNCTIONS,
             "MAP": parse_var_map,
         }
+
+        JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}
+
+        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}
 
         def _parse_table(self, schema=False):
             this = super()._parse_table(schema)

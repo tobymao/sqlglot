@@ -10,6 +10,10 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM x AS y FINAL")
         self.validate_identity("'a' IN mapKeys(map('a', 1, 'b', 2))")
         self.validate_identity("CAST((1, 2) AS Tuple(a Int8, b Int16))")
+        self.validate_identity("SELECT * FROM foo LEFT ANY JOIN bla")
+        self.validate_identity("SELECT * FROM foo LEFT ASOF JOIN bla")
+        self.validate_identity("SELECT * FROM foo ASOF JOIN bla")
+        self.validate_identity("SELECT * FROM foo ANY JOIN bla")
 
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",

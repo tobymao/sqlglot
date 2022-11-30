@@ -6,6 +6,7 @@ from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
+from sqlglot.optimizer.lower_identities import lower_identities
 from sqlglot.optimizer.merge_subqueries import merge_subqueries
 from sqlglot.optimizer.normalize import normalize
 from sqlglot.optimizer.optimize_joins import optimize_joins
@@ -17,6 +18,7 @@ from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 
 RULES = (
+    lower_identities,
     qualify_tables,
     isolate_table_selects,
     qualify_columns,

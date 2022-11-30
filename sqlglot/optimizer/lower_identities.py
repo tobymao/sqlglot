@@ -4,7 +4,9 @@ from sqlglot.helper import ensure_collection
 
 def lower_identities(expression):
     """
-    Convert all unquoted identitifiers to lower case, essentially making them case insensitive.
+    Convert all unquoted identifiers to lower case.
+
+    Assuming the schema is all lower case, this essentially makes identifiers case-insensitive.
 
     Example:
         >>> import sqlglot

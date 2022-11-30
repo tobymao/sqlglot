@@ -85,9 +85,8 @@ class TestOptimizer(unittest.TestCase):
             if leave_tables_isolated is not None:
                 func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
-            optimized = func(parse_one(sql, read=dialect), **func_kwargs)
-
             with self.subTest(title):
+                optimized = func(parse_one(sql, read=dialect), **func_kwargs)
                 self.assertEqual(
                     expected,
                     optimized.sql(pretty=pretty, dialect=dialect),
@@ -167,6 +166,9 @@ class TestOptimizer(unittest.TestCase):
 
     def test_quote_identities(self):
         self.check_file("quote_identities", optimizer.quote_identities.quote_identities)
+
+    def test_lower_identities(self):
+        self.check_file("lower_identities", optimizer.lower_identities.lower_identities)
 
     def test_pushdown_projection(self):
         def pushdown_projections(expression, **kwargs):

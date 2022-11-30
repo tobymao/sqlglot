@@ -17,28 +17,25 @@ def lower_identities(expression):
     Returns:
         sqlglot.Expression: quoted expression
     """
-    arg_types = set(expression.arg_types)
+    args = set(expression.arg_types)
 
     if isinstance(expression, exp.Subquery):
         lower_identities(expression.this)
-        arg_types -= {"this"}
+        args -= {"this"}
 
     if isinstance(expression, exp.Union):
         lower_identities(expression.left)
         lower_identities(expression.right)
-        arg_types -= {"this", "expression"}
+        args -= {"this", "expression"}
 
-    for arg in arg_types:
+    for arg in args:
         if arg == "expressions":
-            # Leave output aliases as-is
             _lower_expressions(expression)
 
         elif arg == "order":
-            # Don't lower references to output aliases in an ORDER BY clause
             _lower_order(expression)
 
         elif arg == "having":
-            # Don't lower references to output aliases in a HAVING clause
             _lower_having(expression)
 
         else:
@@ -51,6 +48,7 @@ def lower_identities(expression):
 
 def _lower_expressions(expression):
     for e in expression.expressions:
+        # Leave output aliases as-is
         e.unalias().transform(_lower, copy=False)
 
 
@@ -62,13 +60,13 @@ def _lower_order(expression):
         return
 
     for ordered in order.expressions:
-        if (
+        # Don't lower references to output aliases
+        if not (
             isinstance(ordered.this, exp.Column)
             and not ordered.this.table
             and ordered.this.name in aliases
         ):
-            continue
-        ordered.transform(_lower, copy=False)
+            ordered.transform(_lower, copy=False)
 
 
 def _lower_having(expression):
@@ -77,6 +75,7 @@ def _lower_having(expression):
     if not having:
         return
 
+    # Don't lower references to output aliases
     for agg in having.find_all(exp.AggFunc):
         agg.transform(_lower, copy=False)
 

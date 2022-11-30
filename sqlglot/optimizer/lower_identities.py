@@ -19,36 +19,39 @@ def lower_identities(expression):
     Returns:
         sqlglot.Expression: quoted expression
     """
-    args = set(expression.arg_types)
+    # We need to leave the output aliases unchanged, so the selects need special handling
+    _lower_selects(expression)
+
+    # These clauses can reference output aliases and also need special handling
+    _lower_order(expression)
+    _lower_having(expression)
+
+    # We've already handled these args, so don't traverse into them
+    traversed = {"expressions", "order", "having"}
 
     if isinstance(expression, exp.Subquery):
+        # Root subquery, e.g. (SELECT A AS A FROM X) LIMIT 1
         lower_identities(expression.this)
-        args -= {"this"}
+        traversed |= {"this"}
 
     if isinstance(expression, exp.Union):
+        # Union, e.g. SELECT A AS A FROM X UNION SELECT A AS A FROM X
         lower_identities(expression.left)
         lower_identities(expression.right)
-        args -= {"this", "expression"}
+        traversed |= {"this", "expression"}
 
-    for arg in args:
-        if arg == "expressions":
-            _lower_expressions(expression)
+    for k, v in expression.args.items():
+        if k in traversed:
+            continue
 
-        elif arg == "order":
-            _lower_order(expression)
-
-        elif arg == "having":
-            _lower_having(expression)
-
-        else:
-            for e in ensure_collection(expression.args.get(arg)):
-                if isinstance(e, exp.Expression):
-                    e.transform(_lower, copy=False)
+        for child in ensure_collection(v):
+            if isinstance(child, exp.Expression):
+                child.transform(_lower, copy=False)
 
     return expression
 
 
-def _lower_expressions(expression):
+def _lower_selects(expression):
     for e in expression.expressions:
         # Leave output aliases as-is
         e.unalias().transform(_lower, copy=False)
@@ -56,17 +59,18 @@ def _lower_expressions(expression):
 
 def _lower_order(expression):
     order = expression.args.get("order")
-    aliases = {e.alias for e in expression.expressions if isinstance(e, exp.Alias)}
 
     if not order:
         return
+
+    output_aliases = {e.alias for e in expression.expressions if isinstance(e, exp.Alias)}
 
     for ordered in order.expressions:
         # Don't lower references to output aliases
         if not (
             isinstance(ordered.this, exp.Column)
             and not ordered.this.table
-            and ordered.this.name in aliases
+            and ordered.this.name in output_aliases
         ):
             ordered.transform(_lower, copy=False)
 

@@ -115,6 +115,7 @@ class TokenType(AutoName):
     APPLY = auto()
     ARRAY = auto()
     ASC = auto()
+    ASOF = auto()
     AT_TIME_ZONE = auto()
     AUTO_INCREMENT = auto()
     BEGIN = auto()

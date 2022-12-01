@@ -871,7 +871,7 @@ class Generator:
 
         return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
 
-    def query_modifiers(self, expression: exp.Expression, *sqls: t.Iterable[str]) -> str:
+    def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
         return csv(
             *sqls,
             *[self.sql(sql) for sql in expression.args.get("laterals", [])],

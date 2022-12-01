@@ -189,7 +189,7 @@ class Generator:
         self._max_text_width = max_text_width
         self._comments = comments
 
-    def generate(self, expression: exp.Expression) -> str:
+    def generate(self, expression: t.Optional[exp.Expression]) -> str:
         """
         Generates a SQL string by interpreting the given syntax tree.
 

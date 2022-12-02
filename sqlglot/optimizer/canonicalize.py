@@ -40,9 +40,7 @@ def coerce_type(node: exp.Expression) -> exp.Expression:
 
 def remove_redundant_casts(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Cast) and expression.to.type == expression.this.type:
-        expression.replace(expression.this)
         return expression.this
-
     return expression
 
 

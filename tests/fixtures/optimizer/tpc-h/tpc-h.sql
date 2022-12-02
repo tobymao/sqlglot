@@ -190,7 +190,7 @@ SELECT
   SUM("lineitem"."l_extendedprice" * (
     1 - "lineitem"."l_discount"
   )) AS "revenue",
-  CAST("orders"."o_orderdate" AS TEXT) AS "o_orderdate",
+  "orders"."o_orderdate" AS "o_orderdate",
   "orders"."o_shippriority" AS "o_shippriority"
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"

@@ -456,11 +456,16 @@ class TestExecutor(unittest.TestCase):
             ("SELECT CONCAT('a', 'b') AS x", ["x"], [("ab",)]),
             ("SELECT 1 AS x, 2 AS y", ["x", "y"], [(1, 2)]),
             ("SELECT 'foo' LIMIT 1", ["_col_0"], [("foo",)]),
-            ("SELECT SUM(x) FROM (SELECT 1 AS x WHERE FALSE)", ["_col_0"], [(0,)]),
+            (
+                "SELECT SUM(x), COUNT(x) FROM (SELECT 1 AS x WHERE FALSE)",
+                ["_col_0", "_col_1"],
+                [(None, 0)],
+            ),
         ]:
-            result = execute(sql)
-            self.assertEqual(result.columns, tuple(cols))
-            self.assertEqual(result.rows, rows)
+            with self.subTest(sql):
+                result = execute(sql)
+                self.assertEqual(result.columns, tuple(cols))
+                self.assertEqual(result.rows, rows)
 
     def test_aggregate_without_group_by(self):
         result = execute("SELECT SUM(x) FROM t", tables={"t": [{"x": 1}, {"x": 2}]})

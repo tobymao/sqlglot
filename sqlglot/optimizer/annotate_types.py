@@ -263,10 +263,10 @@ class TypeAnnotator:
                         }
                 # First annotate the current scope's column references
                 for col in scope.columns:
-                    source = scope.sources[col.table]
+                    source = scope.sources.get(col.table)
                     if isinstance(source, exp.Table):
                         col.type = self.schema.get_column_type(source, col)
-                    else:
+                    elif source:
                         col.type = selects[col.table][col.name].type
                 # Then (possibly) annotate the remaining expressions in the scope
                 self._maybe_annotate(scope.expression)

@@ -326,7 +326,8 @@ SELECT
   SUM("lineitem"."l_extendedprice" * "lineitem"."l_discount") AS "revenue"
 FROM "lineitem" AS "lineitem"
 WHERE
-  "lineitem"."l_discount" BETWEEN 0.05 AND 0.07
+  "lineitem"."l_discount" <= 0.07
+  AND "lineitem"."l_discount" >= 0.05
   AND "lineitem"."l_quantity" < 24
   AND CAST("lineitem"."l_shipdate" AS DATE) < CAST('1995-01-01' AS DATE)
   AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1994-01-01' AS DATE);
@@ -390,7 +391,8 @@ SELECT
   )) AS "revenue"
 FROM "supplier" AS "supplier"
 JOIN "lineitem" AS "lineitem"
-  ON CAST("lineitem"."l_shipdate" AS DATE) BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
+  ON CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1996-12-31' AS DATE)
+  AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1995-01-01' AS DATE)
   AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
@@ -477,7 +479,8 @@ JOIN "customer" AS "customer"
   ON "customer"."c_nationkey" = "nation"."n_nationkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_custkey" = "customer"."c_custkey"
-  AND CAST("orders"."o_orderdate" AS DATE) BETWEEN CAST('1995-01-01' AS DATE) AND CAST('1996-12-31' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) <= CAST('1996-12-31' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1995-01-01' AS DATE)
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "part"."p_partkey" = "lineitem"."l_partkey"
@@ -1129,19 +1132,22 @@ JOIN "part" AS "part"
     "part"."p_brand" = 'Brand#12'
     AND "part"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
-    AND "part"."p_size" BETWEEN 1 AND 5
+    AND "part"."p_size" <= 5
+    AND "part"."p_size" >= 1
   )
   OR (
     "part"."p_brand" = 'Brand#23'
     AND "part"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
-    AND "part"."p_size" BETWEEN 1 AND 10
+    AND "part"."p_size" <= 10
+    AND "part"."p_size" >= 1
   )
   OR (
     "part"."p_brand" = 'Brand#34'
     AND "part"."p_container" IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
-    AND "part"."p_size" BETWEEN 1 AND 15
+    AND "part"."p_size" <= 15
+    AND "part"."p_size" >= 1
   )
 WHERE
   (
@@ -1152,7 +1158,8 @@ WHERE
     AND "part"."p_brand" = 'Brand#12'
     AND "part"."p_container" IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
-    AND "part"."p_size" BETWEEN 1 AND 5
+    AND "part"."p_size" <= 5
+    AND "part"."p_size" >= 1
   )
   OR (
     "lineitem"."l_quantity" <= 20
@@ -1162,7 +1169,8 @@ WHERE
     AND "part"."p_brand" = 'Brand#23'
     AND "part"."p_container" IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
-    AND "part"."p_size" BETWEEN 1 AND 10
+    AND "part"."p_size" <= 10
+    AND "part"."p_size" >= 1
   )
   OR (
     "lineitem"."l_quantity" <= 30
@@ -1172,7 +1180,8 @@ WHERE
     AND "part"."p_brand" = 'Brand#34'
     AND "part"."p_container" IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
     AND "part"."p_partkey" = "lineitem"."l_partkey"
-    AND "part"."p_size" BETWEEN 1 AND 15
+    AND "part"."p_size" <= 15
+    AND "part"."p_size" >= 1
   );
 
 --------------------------------------

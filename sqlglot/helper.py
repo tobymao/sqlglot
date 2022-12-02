@@ -385,3 +385,13 @@ def dict_depth(d: t.Dict) -> int:
     except StopIteration:
         # d.values() returns an empty sequence
         return 1
+
+
+def first(it: t.Iterable[T]) -> T:
+    """Returns the first element from an iterable.
+
+    Useful for sets.
+    """
+    for i in it:
+        return i
+    raise StopIteration

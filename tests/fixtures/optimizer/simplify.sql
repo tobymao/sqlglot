@@ -79,14 +79,16 @@ NULL;
 NULL = NULL;
 NULL;
 
+-- Can't optimize this because different engines do different things
+-- mysql converts to 0 and 1 but tsql does true and false
 NULL <=> NULL;
-TRUE;
+NULL IS NOT DISTINCT FROM NULL;
 
 a IS NOT DISTINCT FROM a;
-TRUE;
+a IS NOT DISTINCT FROM a;
 
 NULL IS DISTINCT FROM NULL;
-FALSE;
+NULL IS DISTINCT FROM NULL;
 
 NOT (NOT TRUE);
 TRUE;
@@ -239,10 +241,10 @@ TRUE;
 FALSE;
 
 ((NOT FALSE) AND (x = x)) AND (TRUE OR 1 <> 3);
-TRUE;
+x = x;
 
 ((NOT FALSE) AND (x = x)) AND (FALSE OR 1 <> 2);
-TRUE;
+x = x;
 
 (('a' = 'a') AND TRUE and NOT FALSE);
 TRUE;
@@ -372,3 +374,171 @@ CAST('1998-12-01' AS DATE) - INTERVAL '90' foo;
 
 date '1998-12-01' + interval '90' foo;
 CAST('1998-12-01' AS DATE) + INTERVAL '90' foo;
+
+--------------------------------------
+-- Comparisons
+--------------------------------------
+x < 0 OR x > 1;
+x < 0 OR x > 1;
+
+x < 0 OR x > 0;
+x < 0 OR x > 0;
+
+x < 1 OR x > 0;
+x < 1 OR x > 0;
+
+x < 1 OR x >= 0;
+x < 1 OR x >= 0;
+
+x <= 1 OR x > 0;
+x <= 1 OR x > 0;
+
+x <= 1 OR x >= 0;
+x <= 1 OR x >= 0;
+
+x <= 1 AND x <= 0;
+x <= 0;
+
+x <= 1 AND x > 0;
+x <= 1 AND x > 0;
+
+x <= 1 OR x > 0;
+x <= 1 OR x > 0;
+
+x <= 0 OR x < 0;
+x <= 0;
+
+x >= 0 OR x > 0;
+x >= 0;
+
+x >= 0 OR x > 1;
+x > 1;
+
+x <= 0 OR x >= 0;
+x <= 0 OR x >= 0;
+
+x <= 0 AND x >= 0;
+x <= 0 AND x >= 0;
+
+x < 1 AND x < 2;
+x < 1;
+
+x < 1 OR x < 2;
+x < 1;
+
+x < 2 AND x < 1;
+x < 1;
+
+x < 2 OR x < 1;
+x < 1;
+
+x < 1 AND x < 1;
+x < 1;
+
+x < 1 OR x < 1;
+x < 1;
+
+x <= 1 AND x < 1;
+x < 1;
+
+x <= 1 OR x < 1;
+x <= 1;
+
+x < 1 AND x <= 1;
+x < 1;
+
+x < 1 OR x <= 1;
+x <= 1;
+
+x > 1 AND x > 2;
+x > 2;
+
+x > 1 OR x > 2;
+x > 2;
+
+x > 2 AND x > 1;
+x > 2;
+
+x > 2 OR x > 1;
+x > 2;
+
+x > 1 AND x > 1;
+x > 1;
+
+x > 1 OR x > 1;
+x > 1;
+
+x >= 1 AND x > 1;
+x > 1;
+
+x >= 1 OR x > 1;
+x >= 1;
+
+x > 1 AND x >= 1;
+x > 1;
+
+x > 1 OR x >= 1;
+x >= 1;
+
+x > 1 AND x >= 2;
+x >= 2;
+
+x > 1 OR x >= 2;
+x >= 2;
+
+x > 1 AND x >= 2 AND x > 3 AND x > 0;
+x > 3;
+
+(x > 1 AND x >= 2 AND x > 3 AND x > 0) OR x > 0;
+x > 0;
+
+x > 1 AND x < 2 AND x > 3;
+FALSE;
+
+x > 1 AND x < 1;
+FALSE;
+
+x < 2 AND x > 1;
+x < 2 AND x > 1;
+
+x = 1 AND x < 1;
+FALSE;
+
+x = 1 AND x < 1.1;
+x = 1;
+
+x = 1 AND x <= 1;
+x = 1;
+
+x = 1 AND x <= 0.9;
+FALSE;
+
+x = 1 AND x > 0.9;
+x = 1;
+
+x = 1 AND x > 1;
+FALSE;
+
+x = 1 AND x >= 1;
+x = 1;
+
+x = 1 AND x >= 2;
+FALSE;
+
+x = 1 AND x <> 2;
+x = 1;
+
+x <> 1 AND x = 1;
+FALSE;
+
+x BETWEEN 0 AND 5 AND x > 3;
+x <= 5 AND x > 3;
+
+x > 3 AND 5 > x AND x BETWEEN 0 AND 10;
+x < 5 AND x > 3;
+
+x > 3 AND 5 < x AND x BETWEEN 9 AND 10;
+x <= 10 AND x >= 9;
+
+1 < x AND 3 < x;
+x > 3;

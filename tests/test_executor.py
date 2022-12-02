@@ -74,13 +74,13 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        for i, (sql, _) in enumerate(self.sqls[0:16]):
+        for i, (sql, _) in enumerate(self.sqls[0:18]):
             with self.subTest(f"tpch-h {i + 1}"):
                 a = self.cached_execute(sql)
                 sql = parse_one(sql).transform(to_csv).sql(pretty=True)
                 table = execute(sql, TPCH_SCHEMA)
                 b = pd.DataFrame(table.rows, columns=table.columns)
-                assert_frame_equal(a, b, check_dtype=False)
+                assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
 
     def test_execute_callable(self):
         tables = {

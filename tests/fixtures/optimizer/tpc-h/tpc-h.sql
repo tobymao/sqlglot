@@ -1016,7 +1016,7 @@ select
         o_orderkey,
         o_orderdate,
         o_totalprice,
-        sum(l_quantity)
+        sum(l_quantity) total_quantity
 from
         customer,
         orders,
@@ -1060,7 +1060,7 @@ SELECT
   "orders"."o_orderkey" AS "o_orderkey",
   "orders"."o_orderdate" AS "o_orderdate",
   "orders"."o_totalprice" AS "o_totalprice",
-  SUM("lineitem"."l_quantity") AS "_col_5"
+  SUM("lineitem"."l_quantity") AS "total_quantity"
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"

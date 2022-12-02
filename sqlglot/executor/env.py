@@ -19,10 +19,13 @@ class reverse_key:
         return other.obj < self.obj
 
 
-def filter_nulls(func):
+def filter_nulls(func, empty_null=True):
     @wraps(func)
     def _func(values):
-        return func(v for v in values if v is not None)
+        filtered = tuple(v for v in values if v is not None)
+        if not filtered and empty_null:
+            return None
+        return func(filtered)
 
     return _func
 
@@ -126,7 +129,7 @@ ENV = {
     # aggs
     "SUM": filter_nulls(sum),
     "AVG": filter_nulls(statistics.fmean if PYTHON_VERSION >= (3, 8) else statistics.mean),  # type: ignore
-    "COUNT": filter_nulls(lambda acc: sum(1 for _ in acc)),
+    "COUNT": filter_nulls(lambda acc: sum(1 for _ in acc), False),
     "MAX": filter_nulls(max),
     "MIN": filter_nulls(min),
     # scalar functions

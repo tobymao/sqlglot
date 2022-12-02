@@ -310,9 +310,9 @@ class PythonExecutor:
                 if i == length - 1:
                     context.set_range(start, end - 1)
                     add_row()
-        elif step.limit > 0:
+        elif step.limit > 0 and not group_by:
             context.set_range(0, 0)
-            table.append(context.eval_tuple(group_by) + context.eval_tuple(aggregations))
+            table.append(context.eval_tuple(aggregations))
 
         context = self.context({step.name: table, **{name: table for name in context.tables}})
 

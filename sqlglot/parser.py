@@ -1372,7 +1372,7 @@ class Parser(metaclass=_Parser):
                 table = self._parse_id_var()
 
         if not table:
-            self.raise_error("Expected table name")
+            self.raise_error(f"Expected table name but got {self._curr}")
 
         this = self.expression(
             exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()

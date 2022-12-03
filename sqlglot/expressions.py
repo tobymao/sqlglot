@@ -43,14 +43,14 @@ class Expression(metaclass=_Expression):
 
     key = "Expression"
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key", "type", "comments")
+    __slots__ = ("args", "parent", "arg_key", "comments", "_type")
 
     def __init__(self, **args):
         self.args = args
         self.parent = None
         self.arg_key = None
-        self.type = None
         self.comments = None
+        self._type: t.Optional[DataType] = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
@@ -121,6 +121,16 @@ class Expression(metaclass=_Expression):
         if isinstance(self, Null):
             return "NULL"
         return self.alias or self.name
+
+    @property
+    def type(self) -> t.Optional[DataType]:
+        return self._type
+
+    @type.setter
+    def type(self, dtype: t.Optional[DataType | DataType.Type | str]) -> None:
+        if dtype and not isinstance(dtype, DataType):
+            dtype = DataType.build(dtype)
+        self._type = dtype  # type: ignore
 
     def __deepcopy__(self, memo):
         copy = self.__class__(**deepcopy(self.args))
@@ -348,7 +358,7 @@ class Expression(metaclass=_Expression):
         indent += "".join(["  "] * level)
         left = f"({self.key.upper()} "
 
-        args = {
+        args: t.Dict[str, t.Any] = {
             k: ", ".join(
                 v.to_s(hide_missing=hide_missing, level=level + 1) if hasattr(v, "to_s") else str(v)
                 for v in ensure_collection(vs)

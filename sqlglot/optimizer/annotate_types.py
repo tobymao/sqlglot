@@ -14,7 +14,7 @@ def annotate_types(expression, schema=None, annotators=None, coerces_to=None):
         >>> schema = {"y": {"cola": "SMALLINT"}}
         >>> sql = "SELECT x.cola + 2.5 AS cola FROM (SELECT y.cola AS cola FROM y AS y) AS x"
         >>> annotated_expr = annotate_types(sqlglot.parse_one(sql), schema=schema)
-        >>> annotated_expr.expressions[0].type  # Get the type of "x.cola + 2.5 AS cola"
+        >>> annotated_expr.expressions[0].type.this  # Get the type of "x.cola + 2.5 AS cola"
         <Type.DOUBLE: 'DOUBLE'>
 
     Args:
@@ -295,6 +295,11 @@ class TypeAnnotator:
 
     def _maybe_coerce(self, type1, type2):
         # We propagate the NULL / UNKNOWN types upwards if found
+        if isinstance(type1, exp.DataType):
+            type1 = type1.this
+        if isinstance(type2, exp.DataType):
+            type2 = type2.this
+
         if exp.DataType.Type.NULL in (type1, type2):
             return exp.DataType.Type.NULL
         if exp.DataType.Type.UNKNOWN in (type1, type2):
@@ -305,8 +310,8 @@ class TypeAnnotator:
     def _annotate_binary(self, expression):
         self._annotate_args(expression)
 
-        left_type = expression.left.type
-        right_type = expression.right.type
+        left_type = expression.left.type.this
+        right_type = expression.right.type.this
 
         if isinstance(expression, (exp.And, exp.Or)):
             if left_type == exp.DataType.Type.NULL and right_type == exp.DataType.Type.NULL:

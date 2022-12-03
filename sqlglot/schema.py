@@ -237,9 +237,11 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         column_name = column if isinstance(column, str) else column.name
         table_ = exp.to_table(table)
         if table_:
-            table_schema = self.find(table_)
-            schema_type = table_schema.get(column_name).upper()  # type: ignore
-            return self._convert_type(schema_type)
+            table_schema = self.find(table_, raise_on_missing=False)
+            if table_schema:
+                schema_type = table_schema.get(column_name).upper()  # type: ignore
+                return self._convert_type(schema_type)
+            return exp.DataType.Type.UNKNOWN
         raise SchemaError(f"Could not convert table '{table}'")
 
     def _convert_type(self, schema_type: str) -> exp.DataType.Type:

@@ -56,8 +56,19 @@ class TestRedshift(Validator):
                 "redshift": 'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS "_row_number" FROM x) WHERE "_row_number" = 1',
             },
         )
+        self.validate_all(
+            "DECODE(x, a, b, c, d)",
+            write={
+                "": "MATCHES(x, a, b, c, d)",
+                "oracle": "DECODE(x, a, b, c, d)",
+                "snowflake": "DECODE(x, a, b, c, d)",
+            },
+        )
 
     def test_identity(self):
+        self.validate_identity(
+            "SELECT DECODE(COL1, 'replace_this', 'with_this', 'replace_that', 'with_that')"
+        )
         self.validate_identity("CAST('bla' AS SUPER)")
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")
         self.validate_identity("CAST('foo' AS HLLSKETCH)")

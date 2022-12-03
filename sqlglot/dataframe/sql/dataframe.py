@@ -317,7 +317,7 @@ class DataFrame:
                 sqlglot.schema.add_table(
                     cache_table_name,
                     {
-                        expression.alias_or_name: expression.type.name
+                        expression.alias_or_name: expression.type.sql("spark")
                         for expression in select_expression.expressions
                     },
                 )

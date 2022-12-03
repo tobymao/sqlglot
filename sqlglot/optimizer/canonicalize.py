@@ -19,7 +19,7 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
 
 
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:
-    if isinstance(node, exp.Add) and node.type in exp.DataType.TEXT_TYPES:
+    if isinstance(node, exp.Add) and node.type and node.type.this in exp.DataType.TEXT_TYPES:
         node = exp.Concat(this=node.this, expression=node.expression)
     return node
 
@@ -30,14 +30,19 @@ def coerce_type(node: exp.Expression) -> exp.Expression:
     elif isinstance(node, exp.Between):
         _coerce_date(node.this, node.args["low"])
     elif isinstance(node, exp.Extract):
-        if node.expression.type not in exp.DataType.TEMPORAL_TYPES:
+        if node.expression.type.this not in exp.DataType.TEMPORAL_TYPES:
             _replace_cast(node.expression, "datetime")
     return node
 
 
 def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
     for a, b in itertools.permutations([a, b]):
-        if a.type == exp.DataType.Type.DATE and b.type != exp.DataType.Type.DATE:
+        if (
+            a.type
+            and a.type.this == exp.DataType.Type.DATE
+            and b.type
+            and b.type.this != exp.DataType.Type.DATE
+        ):
             _replace_cast(b, "date")
 
 

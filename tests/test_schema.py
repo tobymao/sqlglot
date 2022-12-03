@@ -151,31 +151,33 @@ class TestSchema(unittest.TestCase):
 
     def test_schema_get_column_type(self):
         schema = MappingSchema({"a": {"b": "varchar"}})
-        self.assertEqual(schema.get_column_type("a", "b"), exp.DataType.Type.VARCHAR)
+        self.assertEqual(schema.get_column_type("a", "b").this, exp.DataType.Type.VARCHAR)
         self.assertEqual(
-            schema.get_column_type(exp.Table(this="a"), exp.Column(this="b")),
+            schema.get_column_type(exp.Table(this="a"), exp.Column(this="b")).this,
             exp.DataType.Type.VARCHAR,
         )
         self.assertEqual(
-            schema.get_column_type("a", exp.Column(this="b")), exp.DataType.Type.VARCHAR
+            schema.get_column_type("a", exp.Column(this="b")).this, exp.DataType.Type.VARCHAR
         )
         self.assertEqual(
-            schema.get_column_type(exp.Table(this="a"), "b"), exp.DataType.Type.VARCHAR
+            schema.get_column_type(exp.Table(this="a"), "b").this, exp.DataType.Type.VARCHAR
         )
         schema = MappingSchema({"a": {"b": {"c": "varchar"}}})
         self.assertEqual(
-            schema.get_column_type(exp.Table(this="b", db="a"), exp.Column(this="c")),
+            schema.get_column_type(exp.Table(this="b", db="a"), exp.Column(this="c")).this,
             exp.DataType.Type.VARCHAR,
         )
         self.assertEqual(
-            schema.get_column_type(exp.Table(this="b", db="a"), "c"), exp.DataType.Type.VARCHAR
+            schema.get_column_type(exp.Table(this="b", db="a"), "c").this, exp.DataType.Type.VARCHAR
         )
         schema = MappingSchema({"a": {"b": {"c": {"d": "varchar"}}}})
         self.assertEqual(
-            schema.get_column_type(exp.Table(this="c", db="b", catalog="a"), exp.Column(this="d")),
+            schema.get_column_type(
+                exp.Table(this="c", db="b", catalog="a"), exp.Column(this="d")
+            ).this,
             exp.DataType.Type.VARCHAR,
         )
         self.assertEqual(
-            schema.get_column_type(exp.Table(this="c", db="b", catalog="a"), "d"),
+            schema.get_column_type(exp.Table(this="c", db="b", catalog="a"), "d").this,
             exp.DataType.Type.VARCHAR,
         )

@@ -871,7 +871,10 @@ class Parser(metaclass=_Parser):
     def _parse_property_assignment(self, exp_class):
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
-        return self.expression(exp_class, this=self._parse_var_or_string() or self._parse_number())
+        return self.expression(
+            exp_class,
+            this=self._parse_var_or_string() or self._parse_number() or self._parse_id_var(),
+        )
 
     def _parse_partitioned_by(self):
         self._match(TokenType.EQ)
@@ -881,7 +884,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_distkey(self):
-        return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_var))
+        return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))
 
     def _parse_create_like(self):
         table = self._parse_table(schema=True)
@@ -898,7 +901,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_sortkey(self, compound=False):
         return self.expression(
-            exp.SortKeyProperty, this=self._parse_wrapped_csv(self._parse_var), compound=compound
+            exp.SortKeyProperty, this=self._parse_wrapped_csv(self._parse_id_var), compound=compound
         )
 
     def _parse_character_set(self, default=False):
@@ -2092,6 +2095,8 @@ class Parser(metaclass=_Parser):
             kind = self.expression(exp.CheckColumnConstraint, this=constraint)
         elif self._match(TokenType.COLLATE):
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
+        elif self._match(TokenType.COMPRESSION):
+            kind = self.expression(exp.CompressionColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
             kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_conjunction())
         elif self._match_pair(TokenType.NOT, TokenType.NULL):

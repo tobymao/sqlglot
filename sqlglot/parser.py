@@ -307,7 +307,6 @@ class Parser(metaclass=_Parser):
         TokenType.UNION,
         TokenType.INTERSECT,
         TokenType.EXCEPT,
-        TokenType.MINUS,
     }
 
     JOIN_SIDES = {

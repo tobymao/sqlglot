@@ -1630,7 +1630,7 @@ class Parser(metaclass=_Parser):
 
         if token_type == TokenType.UNION:
             expression = exp.Union
-        elif token_type in [TokenType.EXCEPT, TokenType.MINUS]:
+        elif token_type in (TokenType.EXCEPT, TokenType.MINUS):
             expression = exp.Except
         else:
             expression = exp.Intersect

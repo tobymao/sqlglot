@@ -500,3 +500,11 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') f, LATERAL F
             },
             pretty=True,
         )
+
+    def test_set_operations(self):
+        self.validate_all(
+            r"""SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE1 MINUS SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE2""",
+            write={
+                "snowflake": r"""SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE1 EXCEPT SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE2"""
+            },
+        )

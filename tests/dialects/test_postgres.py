@@ -256,3 +256,11 @@ class TestPostgres(Validator):
             "SELECT $$Dianne's horse$$",
             write={"postgres": "SELECT 'Dianne''s horse'"},
         )
+
+    def test_set_operations(self):
+        self.validate_all(
+            r"""SELECT DISTINCT UPPER(NAME) FROM TABLE1 EXCEPT SELECT DISTINCT UPPER(NAME) FROM TABLE2""",
+            write={
+                "snowflake": r"""SELECT DISTINCT UPPER(NAME) FROM TABLE1 EXCEPT SELECT DISTINCT UPPER(NAME) FROM TABLE2"""
+            },
+        )

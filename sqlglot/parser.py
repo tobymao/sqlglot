@@ -307,6 +307,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNION,
         TokenType.INTERSECT,
         TokenType.EXCEPT,
+        TokenType.MINUS,
     }
 
     JOIN_SIDES = {
@@ -1629,7 +1630,7 @@ class Parser(metaclass=_Parser):
 
         if token_type == TokenType.UNION:
             expression = exp.Union
-        elif token_type == TokenType.EXCEPT:
+        elif token_type in [TokenType.EXCEPT, TokenType.MINUS]:
             expression = exp.Except
         else:
             expression = exp.Intersect

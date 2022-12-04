@@ -209,7 +209,6 @@ class TokenType(AutoName):
     MAP = auto()
     MATERIALIZED = auto()
     MOD = auto()
-    MINUS = auto()
     NATURAL = auto()
     NEXT = auto()
     NO_ACTION = auto()

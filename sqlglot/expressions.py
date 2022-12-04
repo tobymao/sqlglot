@@ -754,6 +754,10 @@ class DefaultColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class EncodeColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
     arg_types = {"this": True, "expression": False}

@@ -156,6 +156,7 @@ class TokenType(AutoName):
     DIV = auto()
     DROP = auto()
     ELSE = auto()
+    ENCODE = auto()
     END = auto()
     ENGINE = auto()
     ESCAPE = auto()

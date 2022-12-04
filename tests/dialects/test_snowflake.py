@@ -501,10 +501,11 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') f, LATERAL F
             pretty=True,
         )
 
-    def test_set_operations(self):
+    def test_minus(self):
         self.validate_all(
-            r"""SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE1 MINUS SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE2""",
-            write={
-                "snowflake": r"""SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE1 EXCEPT SELECT DISTINCT UPPER(NAME) FROM DB.SCHEMA.TABLE2"""
+            "SELECT 1 EXCEPT SELECT 1",
+            read={
+                "oracle": "SELECT 1 MINUS SELECT 1",
+                "snowflake": "SELECT 1 MINUS SELECT 1",
             },
         )

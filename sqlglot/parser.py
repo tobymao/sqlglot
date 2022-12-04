@@ -2095,8 +2095,8 @@ class Parser(metaclass=_Parser):
             kind = self.expression(exp.CheckColumnConstraint, this=constraint)
         elif self._match(TokenType.COLLATE):
             kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
-        elif self._match(TokenType.COMPRESSION):
-            kind = self.expression(exp.CompressionColumnConstraint, this=self._parse_var())
+        elif self._match(TokenType.ENCODE):
+            kind = self.expression(exp.EncodeColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
             kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_conjunction())
         elif self._match_pair(TokenType.NOT, TokenType.NULL):

@@ -386,9 +386,9 @@ class Generator:
         collate = self.sql(expression, "this")
         return f"COLLATE {collate}"
 
-    def compressioncolumnconstraint_sql(self, expression: exp.CompressionColumnConstraint) -> str:
-        compression = self.sql(expression, "this")
-        return f"ENCODE {compression}"
+    def encodecolumnconstraint_sql(self, expression: exp.EncodeColumnConstraint) -> str:
+        encode = self.sql(expression, "this")
+        return f"ENCODE {encode}"
 
     def defaultcolumnconstraint_sql(self, expression: exp.DefaultColumnConstraint) -> str:
         default = self.sql(expression, "this")

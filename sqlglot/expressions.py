@@ -740,12 +740,12 @@ class CommentColumnConstraint(ColumnConstraintKind):
     pass
 
 
-class CompressionColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": True}
-
-
 class DefaultColumnConstraint(ColumnConstraintKind):
     pass
+
+
+class EncodeColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True}
 
 
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):

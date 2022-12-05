@@ -36,7 +36,7 @@ class TestDataframeSession(DataFrameSQLValidator):
 
     def test_cdf_str_schema(self):
         df = self.spark.createDataFrame([[1, "test"]], "cola: INT, colb: STRING")
-        expected = "SELECT CAST(`a2`.`cola` AS INT) AS `cola`, CAST(`a2`.`colb` AS STRING) AS `colb` FROM VALUES (1, 'test') AS `a2`(`cola`, `colb`)"
+        expected = "SELECT `a2`.`cola` AS `cola`, CAST(`a2`.`colb` AS STRING) AS `colb` FROM VALUES (1, 'test') AS `a2`(`cola`, `colb`)"
         self.compare_sql(df, expected)
 
     def test_typed_schema_basic(self):
@@ -47,7 +47,7 @@ class TestDataframeSession(DataFrameSQLValidator):
             ]
         )
         df = self.spark.createDataFrame([[1, "test"]], schema)
-        expected = "SELECT CAST(`a2`.`cola` AS INT) AS `cola`, CAST(`a2`.`colb` AS STRING) AS `colb` FROM VALUES (1, 'test') AS `a2`(`cola`, `colb`)"
+        expected = "SELECT `a2`.`cola` AS `cola`, CAST(`a2`.`colb` AS STRING) AS `colb` FROM VALUES (1, 'test') AS `a2`(`cola`, `colb`)"
         self.compare_sql(df, expected)
 
     def test_typed_schema_nested(self):

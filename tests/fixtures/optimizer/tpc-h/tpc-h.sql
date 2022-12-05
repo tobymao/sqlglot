@@ -190,7 +190,7 @@ SELECT
   SUM("lineitem"."l_extendedprice" * (
     1 - "lineitem"."l_discount"
   )) AS "revenue",
-  CAST("orders"."o_orderdate" AS TEXT) AS "o_orderdate",
+  "orders"."o_orderdate" AS "o_orderdate",
   "orders"."o_shippriority" AS "o_shippriority"
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
@@ -344,7 +344,7 @@ from
                 select
                         n1.n_name as supp_nation,
                         n2.n_name as cust_nation,
-                        extract(year from l_shipdate) as l_year,
+                        extract(year from cast(l_shipdate as date)) as l_year,
                         l_extendedprice * (1 - l_discount) as volume
                 from
                         supplier,
@@ -384,7 +384,7 @@ WITH "n1" AS (
 SELECT
   "n1"."n_name" AS "supp_nation",
   "n2"."n_name" AS "cust_nation",
-  EXTRACT(year FROM CAST("lineitem"."l_shipdate" AS DATETIME)) AS "l_year",
+  EXTRACT(year FROM CAST("lineitem"."l_shipdate" AS DATE)) AS "l_year",
   SUM("lineitem"."l_extendedprice" * (
     1 - "lineitem"."l_discount"
   )) AS "revenue"
@@ -409,7 +409,7 @@ JOIN "n1" AS "n2"
 GROUP BY
   "n1"."n_name",
   "n2"."n_name",
-  EXTRACT(year FROM CAST("lineitem"."l_shipdate" AS DATETIME))
+  EXTRACT(year FROM CAST("lineitem"."l_shipdate" AS DATE))
 ORDER BY
   "supp_nation",
   "cust_nation",
@@ -427,7 +427,7 @@ select
 from
         (
                 select
-                        extract(year from o_orderdate) as o_year,
+                        extract(year from cast(o_orderdate as date)) as o_year,
                         l_extendedprice * (1 - l_discount) as volume,
                         n2.n_name as nation
                 from
@@ -456,7 +456,7 @@ group by
 order by
         o_year;
 SELECT
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATETIME)) AS "o_year",
+  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE)) AS "o_year",
   SUM(
     CASE
       WHEN "nation_2"."n_name" = 'BRAZIL'
@@ -488,7 +488,7 @@ JOIN "nation" AS "nation_2"
 WHERE
   "part"."p_type" = 'ECONOMY ANODIZED STEEL'
 GROUP BY
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATETIME))
+  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE))
 ORDER BY
   "o_year";
 
@@ -503,7 +503,7 @@ from
         (
                 select
                         n_name as nation,
-                        extract(year from o_orderdate) as o_year,
+                        extract(year from cast(o_orderdate as date)) as o_year,
                         l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount
                 from
                         part,
@@ -529,7 +529,7 @@ order by
         o_year desc;
 SELECT
   "nation"."n_name" AS "nation",
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATETIME)) AS "o_year",
+  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE)) AS "o_year",
   SUM(
     "lineitem"."l_extendedprice" * (
       1 - "lineitem"."l_discount"
@@ -551,7 +551,7 @@ WHERE
   "part"."p_name" LIKE '%green%'
 GROUP BY
   "nation"."n_name",
-  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATETIME))
+  EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE))
 ORDER BY
   "nation",
   "o_year" DESC;

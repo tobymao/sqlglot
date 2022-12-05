@@ -184,7 +184,7 @@ class BigQuery(Dialect):
             exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC"
             if e.name == "IMMUTABLE"
             else "NOT DETERMINISTIC",
-            exp.RegexpLike: lambda self, e: f"REGEXP_CONTAINS({self.format_args(e.this, e.expression)})",
+            exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
         }
 
         TYPE_MAPPING = {

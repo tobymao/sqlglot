@@ -1035,7 +1035,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Update,
             **{
-                "this": self._parse_table(schema=True),
+                "this": self._parse_table(),
                 "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
                 "from": self._parse_from(),
                 "where": self._parse_where(),

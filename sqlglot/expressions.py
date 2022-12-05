@@ -764,11 +764,7 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
 
 
 class NotNullColumnConstraint(ColumnConstraintKind):
-    pass
-
-
-class NullColumnConstraint(ColumnConstraintKind):
-    pass
+    arg_types = {"allow_null": False}
 
 
 class PrimaryKeyColumnConstraint(ColumnConstraintKind):

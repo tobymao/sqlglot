@@ -2100,7 +2100,7 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.DEFAULT):
             kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_conjunction())
         elif self._match_pair(TokenType.NOT, TokenType.NULL):
-            kind = exp.NotNullColumnConstraint(allow_null=False)
+            kind = exp.NotNullColumnConstraint()
         elif self._match(TokenType.NULL):
             kind = exp.NotNullColumnConstraint(allow_null=True)
         elif self._match(TokenType.SCHEMA_COMMENT):

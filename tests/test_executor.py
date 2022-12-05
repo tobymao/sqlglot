@@ -26,12 +26,12 @@ class TestExecutor(unittest.TestCase):
     def setUpClass(cls):
         cls.conn = duckdb.connect()
 
-        for table in TPCH_SCHEMA:
+        for table, columns in TPCH_SCHEMA.items():
             cls.conn.execute(
                 f"""
                 CREATE VIEW {table} AS
                 SELECT *
-                FROM READ_CSV_AUTO('{DIR}{table}.csv.gz')
+                FROM READ_CSV('{DIR}{table}.csv.gz', delim='|', header=True, columns={columns})
                 """
             )
 

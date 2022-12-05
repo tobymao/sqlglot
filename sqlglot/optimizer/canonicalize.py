@@ -13,8 +13,11 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
         expression: The expression to canonicalize.
     """
     exp.replace_children(expression, canonicalize)
+
     expression = add_text_to_concat(expression)
     expression = coerce_type(expression)
+    expression = remove_redundant_casts(expression)
+
     return expression
 
 
@@ -33,6 +36,17 @@ def coerce_type(node: exp.Expression) -> exp.Expression:
         if node.expression.type.this not in exp.DataType.TEMPORAL_TYPES:
             _replace_cast(node.expression, "datetime")
     return node
+
+
+def remove_redundant_casts(expression: exp.Expression) -> exp.Expression:
+    if (
+        isinstance(expression, exp.Cast)
+        and expression.to.type
+        and expression.this.type
+        and expression.to.type.this == expression.this.type.this
+    ):
+        return expression.this
+    return expression
 
 
 def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:

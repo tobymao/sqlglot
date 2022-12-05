@@ -392,6 +392,4 @@ def first(it: t.Iterable[T]) -> T:
 
     Useful for sets.
     """
-    for i in it:
-        return i
-    raise StopIteration
+    return next(i for i in it)

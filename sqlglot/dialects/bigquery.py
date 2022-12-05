@@ -110,17 +110,17 @@ class BigQuery(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "BEGIN": TokenType.COMMAND,
+            "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
-            "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
+            "INT64": TokenType.BIGINT,
+            "NOT DETERMINISTIC": TokenType.VOLATILE,
             "QUALIFY": TokenType.QUALIFY,
             "UNKNOWN": TokenType.NULL,
             "WINDOW": TokenType.WINDOW,
-            "NOT DETERMINISTIC": TokenType.VOLATILE,
-            "BEGIN": TokenType.COMMAND,
-            "BEGIN TRANSACTION": TokenType.BEGIN,
         }
         KEYWORDS.pop("DIV")
 
@@ -131,6 +131,7 @@ class BigQuery(Dialect):
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
+            "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "TIME_ADD": _date_add(exp.TimeAdd),
             "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
             "DATE_SUB": _date_add(exp.DateSub),
@@ -183,6 +184,7 @@ class BigQuery(Dialect):
             exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC"
             if e.name == "IMMUTABLE"
             else "NOT DETERMINISTIC",
+            exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
         }
 
         TYPE_MAPPING = {

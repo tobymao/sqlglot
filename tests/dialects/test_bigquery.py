@@ -7,6 +7,11 @@ class TestBigQuery(Validator):
 
     def test_bigquery(self):
         self.validate_all(
+            "REGEXP_CONTAINS('foo', '.*')",
+            read={"bigquery": "REGEXP_CONTAINS('foo', '.*')"},
+            write={"mysql": "REGEXP_LIKE('foo', '.*')"},
+        ),
+        self.validate_all(
             '"""x"""',
             write={
                 "bigquery": "'x'",

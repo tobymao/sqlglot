@@ -144,6 +144,7 @@ class BigQuery(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
+            "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -161,7 +162,6 @@ class BigQuery(Dialect):
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.Array: inline_array_sql,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
@@ -210,24 +210,31 @@ class BigQuery(Dialect):
 
         EXPLICIT_UNION = True
 
-        def transaction_sql(self, *_):
+        def array_sql(self, expression: exp.Array) -> str:
+            first_arg = seq_get(expression.expressions, 0)
+            if isinstance(first_arg, exp.Subqueryable):
+                return f"ARRAY{self.wrap(self.sql(first_arg))}"
+
+            return inline_array_sql(self, expression)
+
+        def transaction_sql(self, *_) -> str:
             return "BEGIN TRANSACTION"
 
-        def commit_sql(self, *_):
+        def commit_sql(self, *_) -> str:
             return "COMMIT TRANSACTION"
 
-        def rollback_sql(self, *_):
+        def rollback_sql(self, *_) -> str:
             return "ROLLBACK TRANSACTION"
 
-        def in_unnest_op(self, unnest):
-            return self.sql(unnest)
+        def in_unnest_op(self, expression: exp.Unnest) -> str:
+            return self.sql(expression)
 
-        def except_op(self, expression):
+        def except_op(self, expression: exp.Except) -> str:
             if not expression.args.get("distinct", False):
                 self.unsupported("EXCEPT without DISTINCT is not supported in BigQuery")
             return f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 
-        def intersect_op(self, expression):
+        def intersect_op(self, expression: exp.Intersect) -> str:
             if not expression.args.get("distinct", False):
                 self.unsupported("INTERSECT without DISTINCT is not supported in BigQuery")
             return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"

@@ -94,6 +94,10 @@ class TestBigQuery(Validator):
                 "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS (x)",
             },
         )
+        self.validate_all(
+            "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)",
+            write={"bigquery": "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)"},
+        )
 
         self.validate_all(
             "x IS unknown",

@@ -203,7 +203,6 @@ class Parser(metaclass=_Parser):
         TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
         TokenType.SEMI,
-        TokenType.SET,
         TokenType.SHOW,
         TokenType.SORTKEY,
         TokenType.STABLE,

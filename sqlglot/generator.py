@@ -402,6 +402,9 @@ class Generator:
     def notnullcolumnconstraint_sql(self, _) -> str:
         return "NOT NULL"
 
+    def nullcolumnconstraint_sql(self, _) -> str:
+        return "NULL"
+
     def primarykeycolumnconstraint_sql(self, expression: exp.PrimaryKeyColumnConstraint) -> str:
         desc = expression.args.get("desc")
         if desc is not None:

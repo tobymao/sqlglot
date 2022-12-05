@@ -767,6 +767,10 @@ class NotNullColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class NullColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class PrimaryKeyColumnConstraint(ColumnConstraintKind):
     arg_types = {"desc": False}
 

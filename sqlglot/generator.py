@@ -399,7 +399,7 @@ class Generator:
     ) -> str:
         return f"GENERATED {'ALWAYS' if expression.this else 'BY DEFAULT'} AS IDENTITY"
 
-    def nullcolumnconstraint_sql(self, expression: exp.NullColumnConstraint) -> str:
+    def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"
 
     def primarykeycolumnconstraint_sql(self, expression: exp.PrimaryKeyColumnConstraint) -> str:

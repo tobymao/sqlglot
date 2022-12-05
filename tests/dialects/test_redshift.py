@@ -64,6 +64,14 @@ class TestRedshift(Validator):
                 "snowflake": "DECODE(x, a, b, c, d)",
             },
         )
+        self.validate_all(
+            "NVL(a, b, c, d)",
+            write={
+                "redshift": "COALESCE(a, b, c, d)",
+                "mysql": "COALESCE(a, b, c, d)",
+                "postgres": "COALESCE(a, b, c, d)",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity(

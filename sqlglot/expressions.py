@@ -763,7 +763,7 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     arg_types = {"this": True, "expression": False}
 
 
-class NotNullColumnConstraint(ColumnConstraintKind):
+class NullColumnConstraint(ColumnConstraintKind):
     arg_types = {"allow_null": False}
 
 

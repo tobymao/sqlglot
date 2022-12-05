@@ -64,6 +64,14 @@ class TestRedshift(Validator):
                 "snowflake": "DECODE(x, a, b, c, d)",
             },
         )
+        self.validate_all(
+            "NVL(a, b, c, d)",
+            write={
+                "redshift": "COALESCE(a, b, c, d)",
+                "mysql": "COALESCE(a, b, c, d)",
+                "postgres": "COALESCE(a, b, c, d)",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity(
@@ -92,5 +100,5 @@ class TestRedshift(Validator):
             "UNLOAD ('select * from venue') TO 's3://mybucket/unload/' IAM_ROLE 'arn:aws:iam::0123456789012:role/MyRedshiftRole'"
         )
         self.validate_identity(
-            "CREATE TABLE SOUP (SOUP1 VARCHAR(50) ENCODE ZSTD, SOUP2 VARCHAR(70) ENCODE DELTA)"
+            "CREATE TABLE SOUP (SOUP1 VARCHAR(50) NOT NULL ENCODE ZSTD, SOUP2 VARCHAR(70) NULL ENCODE DELTA)"
         )

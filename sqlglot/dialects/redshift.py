@@ -18,6 +18,7 @@ class Redshift(Postgres):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,  # type: ignore
             "DECODE": exp.Matches.from_arg_list,
+            "NVL": exp.Coalesce.from_arg_list,
         }
 
     class Tokenizer(Postgres.Tokenizer):

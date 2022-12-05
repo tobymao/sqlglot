@@ -42,6 +42,7 @@ class TypeAnnotator:
             for expr_type in subclasses(exp.__name__, exp.Binary)
         },
         exp.Cast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"].this),
+        exp.TryCast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"].this),
         exp.DataType: lambda self, expr: self._annotate_with_type(expr, expr.this),
         exp.Alias: lambda self, expr: self._annotate_unary(expr),
         exp.Literal: lambda self, expr: self._annotate_literal(expr),

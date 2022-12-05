@@ -98,6 +98,16 @@ class TestBigQuery(Validator):
             "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)",
             write={"bigquery": "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)"},
         )
+        self.validate_all(
+            "SELECT ARRAY(SELECT DISTINCT x FROM UNNEST(some_numbers) AS x) AS unique_numbers",
+            write={
+                "bigquery": "SELECT ARRAY(SELECT DISTINCT x FROM UNNEST(some_numbers) AS x) AS unique_numbers"
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY(SELECT * FROM foo JOIN bla ON x = y)",
+            write={"bigquery": "SELECT ARRAY(SELECT * FROM foo JOIN bla ON x = y)"},
+        )
 
         self.validate_all(
             "x IS unknown",

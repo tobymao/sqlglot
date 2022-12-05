@@ -1,6 +1,43 @@
 Changelog
 =========
 
+v10.2.0
+------
+
+Changes:
+
+- Breaking: types inferred from annotate_types are now DataType objects, instead of DataType.Type.
+
+- New: the optimizer can now simplify [BETWEEN expressions expressed as explicit comparisons](https://github.com/tobymao/sqlglot/commit/e24d0317dfa644104ff21d009b790224bf84d698).
+
+- New: the optimizer now removes redundant casts.
+
+- New: added support for Redshift's ENCODE/DECODE.
+
+- New: the optimizer now [treats identifiers as case-insensitive](https://github.com/tobymao/sqlglot/commit/638ed265f195219d7226f4fbae128f1805ae8988).
+
+- New: the optimizer now [handles nested CTEs](https://github.com/tobymao/sqlglot/commit/1bdd652792889a8aaffb1c6d2c8aa1fe4a066281).
+
+- New: the executor can now execute SELECT DISTINCT expressions.
+
+- New: added support for Redshift's COPY and UNLOAD commands.
+
+- New: added ability to parse LIKE in CREATE TABLE statement.
+
+- New: the optimizer now [unnests scalar subqueries as cross joins](https://github.com/tobymao/sqlglot/commit/4373ad8518ede4ef1fda8b247b648c680a93d12d).
+
+- Improvement: fixed Bigquery's ARRAY function parsing, so that it can now handle a SELECT expression as an argument.
+
+- Improvement: improved Snowflake's [ARRAY and MAP constructs](https://github.com/tobymao/sqlglot/commit/0506657dba55fe71d004c81c907e23cdd2b37d82).
+
+- Improvement: fixed transpilation between STRING_AGG and GROUP_CONCAT.
+
+- Improvement: the INTO clause can now be parsed in SELECT expressions.
+
+- Improvement: improve executor; it currently executes all TPC-H queries up to TPC-H 17 (inclusive).
+
+- Improvement: DISTINCT ON is now transpiled to a SELECT expression from a subquery for Redshift.
+
 v10.1.0
 ------
 

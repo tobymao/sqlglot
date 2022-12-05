@@ -203,6 +203,7 @@ class Parser(metaclass=_Parser):
         TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
         TokenType.SEMI,
+        TokenType.SET,
         TokenType.SHOW,
         TokenType.SORTKEY,
         TokenType.STABLE,
@@ -1187,7 +1188,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_table_alias(self):
         any_token = self._match(TokenType.ALIAS)
-        alias = self._parse_id_var(any_token=any_token, tokens=self.TABLE_ALIAS_TOKENS)
+        if self._tokens[self._index - 2].token_type == TokenType.UPDATE:
+            alias = self._parse_id_var(
+                any_token=any_token, tokens=self.TABLE_ALIAS_TOKENS - {TokenType.SET}
+            )
+        else:
+            alias = self._parse_id_var(any_token=any_token, tokens=self.TABLE_ALIAS_TOKENS)
         columns = None
 
         if self._match(TokenType.L_PAREN):

@@ -94,6 +94,7 @@ class TestPostgres(Validator):
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+        self.validate_identity("UPDATE MYTABLE AS T1 SET T1.COL = 13")
 
         self.validate_all(
             "END WORK AND NO CHAIN",

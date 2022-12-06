@@ -1188,12 +1188,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_table_alias(self, is_update=False):
         any_token = self._match(TokenType.ALIAS)
-        if is_update:
-            alias = self._parse_id_var(
-                any_token=any_token, tokens=self.TABLE_ALIAS_TOKENS - {TokenType.SET}
-            )
-        else:
-            alias = self._parse_id_var(any_token=any_token, tokens=self.TABLE_ALIAS_TOKENS)
+        alias = self._parse_id_var(
+            any_token=any_token,
+            tokens=self.TABLE_ALIAS_TOKENS - {TokenType.SET}
+            if is_update
+            else self.TABLE_ALIAS_TOKENS,
+        )
         columns = None
 
         if self._match(TokenType.L_PAREN):

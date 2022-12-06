@@ -420,13 +420,24 @@ class Generator:
         transient = (
             " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""
         )
+        external = " EXTERNAL" if expression.args.get("external") else ""
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         properties = self.sql(expression, "properties")
 
-        expression_sql = f"CREATE{replace}{temporary}{transient}{unique}{materialized} {kind}{exists_sql} {this}{properties} {expression_sql}"
+        modifiers = "".join(
+            (
+                replace,
+                temporary,
+                transient,
+                external,
+                unique,
+                materialized,
+            )
+        )
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:
@@ -622,7 +633,7 @@ class Generator:
     def introducer_sql(self, expression: exp.Introducer) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
-    def rowformat_sql(self, expression: exp.RowFormat) -> str:
+    def rowformatdelimitedproperty_sql(self, expression: exp.RowFormatDelimitedProperty) -> str:
         fields = expression.args.get("fields")
         fields = f" FIELDS TERMINATED BY {fields}" if fields else ""
         escaped = expression.args.get("escaped")

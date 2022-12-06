@@ -297,6 +297,7 @@ class Hive(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
+            exp.RowFormatSerdeProperty: lambda self, e: f"ROW FORMAT SERDE {self.sql(e, 'this')}",
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
         }
 
@@ -308,6 +309,8 @@ class Hive(Dialect):
             exp.SchemaCommentProperty,
             exp.LocationProperty,
             exp.TableFormatProperty,
+            exp.RowFormatDelimitedProperty,
+            exp.RowFormatSerdeProperty,
         }
 
         def with_properties(self, properties):

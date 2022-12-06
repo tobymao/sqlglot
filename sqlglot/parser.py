@@ -211,7 +211,6 @@ class Parser(metaclass=_Parser):
         TokenType.TABLE,
         TokenType.TABLE_FORMAT,
         TokenType.TEMPORARY,
-        TokenType.TRANSIENT,
         TokenType.TOP,
         TokenType.TRAILING,
         TokenType.TRUE,
@@ -474,6 +473,7 @@ class Parser(metaclass=_Parser):
         TokenType.SORTKEY: lambda self: self._parse_sortkey(),
         TokenType.LIKE: lambda self: self._parse_create_like(),
         TokenType.RETURNS: lambda self: self._parse_returns(),
+        TokenType.ROW: lambda self: self._parse_row(),
         TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
         TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
         TokenType.FORMAT: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
@@ -802,7 +802,8 @@ class Parser(metaclass=_Parser):
     def _parse_create(self):
         replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
         temporary = self._match(TokenType.TEMPORARY)
-        transient = self._match(TokenType.TRANSIENT)
+        transient = self._match_text_seq("TRANSIENT")
+        external = self._match_text_seq("EXTERNAL")
         unique = self._match(TokenType.UNIQUE)
         materialized = self._match(TokenType.MATERIALIZED)
 
@@ -846,6 +847,7 @@ class Parser(metaclass=_Parser):
             properties=properties,
             temporary=temporary,
             transient=transient,
+            external=external,
             replace=replace,
             unique=unique,
             materialized=materialized,
@@ -966,7 +968,7 @@ class Parser(metaclass=_Parser):
                 exp.Directory,
                 this=self._parse_var_or_string(),
                 local=local,
-                row_format=self._parse_row_format(),
+                row_format=self._parse_row_format(match_row=True),
             )
         else:
             self._match(TokenType.INTO)
@@ -981,9 +983,17 @@ class Parser(metaclass=_Parser):
             overwrite=overwrite,
         )
 
-    def _parse_row_format(self):
-        if not self._match_pair(TokenType.ROW, TokenType.FORMAT):
+    def _parse_row(self):
+        if not self._match(TokenType.FORMAT):
             return None
+        return self._parse_row_format()
+
+    def _parse_row_format(self, match_row=False):
+        if match_row and not self._match_pair(TokenType.ROW, TokenType.FORMAT):
+            return None
+
+        if self._match_text_seq("SERDE"):
+            return self.expression(exp.RowFormatSerdeProperty, this=self._parse_string())
 
         self._match_text_seq("DELIMITED")
 
@@ -1001,7 +1011,7 @@ class Parser(metaclass=_Parser):
             kwargs["lines"] = self._parse_string()
         if self._match_text_seq("NULL", "DEFINED", "AS"):
             kwargs["null"] = self._parse_string()
-        return self.expression(exp.RowFormat, **kwargs)
+        return self.expression(exp.RowFormatDelimitedProperty, **kwargs)
 
     def _parse_load_data(self):
         local = self._match(TokenType.LOCAL)

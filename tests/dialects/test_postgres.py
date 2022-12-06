@@ -94,7 +94,6 @@ class TestPostgres(Validator):
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
-        self.validate_identity("UPDATE MYTABLE AS T1 SET T1.COL = 13")
 
         self.validate_all(
             "END WORK AND NO CHAIN",
@@ -256,4 +255,8 @@ class TestPostgres(Validator):
         self.validate_all(
             "SELECT $$Dianne's horse$$",
             write={"postgres": "SELECT 'Dianne''s horse'"},
+        )
+        self.validate_all(
+            "UPDATE MYTABLE T1 SET T1.COL = 13",
+            write={"postgres": "UPDATE MYTABLE AS T1 SET T1.COL = 13"},
         )

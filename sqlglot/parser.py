@@ -496,6 +496,7 @@ class Parser(metaclass=_Parser):
             exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
         ),
         TokenType.WITH: lambda self: self._parse_wrapped_csv(self._parse_property),
+        TokenType.PROPERTIES: lambda self: self._parse_wrapped_csv(self._parse_property),
     }
 
     CONSTRAINT_PARSERS = {
@@ -939,22 +940,11 @@ class Parser(metaclass=_Parser):
         properties = []
 
         while True:
-            if self._match(TokenType.PROPERTIES):
-                properties.extend(
-                    self._parse_wrapped_csv(
-                        lambda: self.expression(
-                            exp.Property,
-                            this=self._parse_string(),
-                            value=self._match(TokenType.EQ) and self._parse_string(),
-                        )
-                    )
-                )
-            else:
-                identified_property = self._parse_property()
-                if not identified_property:
-                    break
-                for p in ensure_collection(identified_property):
-                    properties.append(p)
+            identified_property = self._parse_property()
+            if not identified_property:
+                break
+            for p in ensure_collection(identified_property):
+                properties.append(p)
 
         if properties:
             return self.expression(exp.Properties, expressions=properties)

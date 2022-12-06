@@ -190,6 +190,7 @@ class Hive(Dialect):
             "ADD FILES": TokenType.COMMAND,
             "ADD JAR": TokenType.COMMAND,
             "ADD JARS": TokenType.COMMAND,
+            "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
 
     class Parser(parser.Parser):
@@ -236,6 +237,13 @@ class Hive(Dialect):
             "TO_DATE": format_time_lambda(exp.TsOrDsToDate, "hive"),
             "UNIX_TIMESTAMP": format_time_lambda(exp.StrToUnix, "hive", True),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
+        }
+
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            TokenType.SERDE_PROPERTIES: lambda self: exp.SerdeProperties(
+                expressions=self._parse_wrapped_csv(self._parse_property)
+            ),
         }
 
     class Generator(generator.Generator):
@@ -298,6 +306,7 @@ class Hive(Dialect):
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
             exp.RowFormatSerdeProperty: lambda self, e: f"ROW FORMAT SERDE {self.sql(e, 'this')}",
+            exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
         }
 
@@ -311,12 +320,13 @@ class Hive(Dialect):
             exp.TableFormatProperty,
             exp.RowFormatDelimitedProperty,
             exp.RowFormatSerdeProperty,
+            exp.SerdeProperties,
         }
 
         def with_properties(self, properties):
             return self.properties(
                 properties,
-                prefix="TBLPROPERTIES",
+                prefix=self.seg("TBLPROPERTIES"),
             )
 
         def datatype_sql(self, expression):

@@ -256,6 +256,7 @@ class TokenType(AutoName):
     SELECT = auto()
     SEMI = auto()
     SEPARATOR = auto()
+    SERDE_PROPERTIES = auto()
     SET = auto()
     SHOW = auto()
     SIMILAR_TO = auto()

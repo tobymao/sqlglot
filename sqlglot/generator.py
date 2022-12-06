@@ -581,11 +581,11 @@ class Generator:
     def properties(self, properties: exp.Properties, prefix: str = "", sep: str = ", ") -> str:
         if properties.expressions:
             expressions = self.expressions(properties, sep=sep, indent=False)
-            return f"{self.seg(prefix)}{' ' if prefix else ''}{self.wrap(expressions)}"
+            return f"{prefix}{' ' if prefix else ''}{self.wrap(expressions)}"
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
-        return self.properties(properties, prefix="WITH")
+        return self.properties(properties, prefix=self.seg("WITH"))
 
     def property_sql(self, expression: exp.Property) -> str:
         property_cls = expression.__class__

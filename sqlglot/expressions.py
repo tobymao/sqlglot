@@ -1157,6 +1157,10 @@ class RowFormatSerdeProperty(Property):
     arg_types = {"this": True}
 
 
+class SerdeProperties(Property):
+    arg_types = {"expressions": True}
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 

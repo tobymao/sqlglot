@@ -622,6 +622,7 @@ class Create(Expression):
         "properties": False,
         "temporary": False,
         "transient": False,
+        "external": False,
         "replace": False,
         "unique": False,
         "materialized": False,
@@ -1139,6 +1140,23 @@ class VolatilityProperty(Property):
     arg_types = {"this": True}
 
 
+class RowFormatDelimitedProperty(Property):
+    # https://cwiki.apache.org/confluence/display/hive/languagemanual+dml
+    arg_types = {
+        "fields": False,
+        "escaped": False,
+        "collection_items": False,
+        "map_keys": False,
+        "lines": False,
+        "null": False,
+        "serde": False,
+    }
+
+
+class RowFormatSerdeProperty(Property):
+    arg_types = {"this": True}
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 
@@ -1181,18 +1199,6 @@ class Qualify(Expression):
 
 class Reference(Expression):
     arg_types = {"this": True, "expressions": True}
-
-
-class RowFormat(Expression):
-    # https://cwiki.apache.org/confluence/display/hive/languagemanual+dml
-    arg_types = {
-        "fields": False,
-        "escaped": False,
-        "collection_items": False,
-        "map_keys": False,
-        "lines": False,
-        "null": False,
-    }
 
 
 class Tuple(Expression):

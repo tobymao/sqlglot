@@ -145,6 +145,10 @@ class TestHive(Validator):
             },
         )
 
+        self.validate_identity(
+            "CREATE EXTERNAL TABLE x (y INT) ROW FORMAT SERDE 'serde' ROW FORMAT DELIMITED FIELDS TERMINATED BY '1'",
+        )
+
     def test_lateral_view(self):
         self.validate_all(
             "SELECT a, b FROM x LATERAL VIEW EXPLODE(y) t AS a LATERAL VIEW EXPLODE(z) u AS b",

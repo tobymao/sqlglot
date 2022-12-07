@@ -228,6 +228,8 @@ class Parser(metaclass=_Parser):
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY}
 
+    UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
+
     TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
     FUNC_TOKENS = {
@@ -1039,7 +1041,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Update,
             **{
-                "this": self._parse_table(schema=True),
+                "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
                 "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
                 "from": self._parse_from(),
                 "where": self._parse_where(),
@@ -1190,9 +1192,11 @@ class Parser(metaclass=_Parser):
             alias=alias,
         )
 
-    def _parse_table_alias(self):
+    def _parse_table_alias(self, alias_tokens=None):
         any_token = self._match(TokenType.ALIAS)
-        alias = self._parse_id_var(any_token=any_token, tokens=self.TABLE_ALIAS_TOKENS)
+        alias = self._parse_id_var(
+            any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
+        )
         columns = None
 
         if self._match(TokenType.L_PAREN):
@@ -1344,7 +1348,7 @@ class Parser(metaclass=_Parser):
             columns=self._parse_expression(),
         )
 
-    def _parse_table(self, schema=False):
+    def _parse_table(self, schema=False, alias_tokens=None):
         lateral = self._parse_lateral()
 
         if lateral:
@@ -1391,7 +1395,7 @@ class Parser(metaclass=_Parser):
         if self.alias_post_tablesample:
             table_sample = self._parse_table_sample()
 
-        alias = self._parse_table_alias()
+        alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
 
         if alias:
             this.set("alias", alias)

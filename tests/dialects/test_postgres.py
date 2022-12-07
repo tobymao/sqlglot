@@ -256,3 +256,7 @@ class TestPostgres(Validator):
             "SELECT $$Dianne's horse$$",
             write={"postgres": "SELECT 'Dianne''s horse'"},
         )
+        self.validate_all(
+            "UPDATE MYTABLE T1 SET T1.COL = 13",
+            write={"postgres": "UPDATE MYTABLE AS T1 SET T1.COL = 13"},
+        )

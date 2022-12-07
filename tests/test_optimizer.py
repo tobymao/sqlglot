@@ -434,7 +434,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(inner_addition.left.type.this, exp.DataType.Type.VARCHAR)
         self.assertEqual(inner_addition.right.type.this, exp.DataType.Type.TEXT)
 
-        # Where colc = True
+        # WHERE tbl.colc = True
         self.assertEqual(expression.args["where"].this.type.this, exp.DataType.Type.BOOLEAN)
 
         cte_select = expression.args["with"].expressions[0].this

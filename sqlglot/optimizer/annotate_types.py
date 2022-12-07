@@ -45,6 +45,8 @@ class TypeAnnotator:
         exp.TryCast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"].this),
         exp.DataType: lambda self, expr: self._annotate_with_type(expr, expr.this),
         exp.Alias: lambda self, expr: self._annotate_unary(expr),
+        exp.Between: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
+        exp.In: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
         exp.Literal: lambda self, expr: self._annotate_literal(expr),
         exp.Boolean: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
         exp.Null: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.NULL),
@@ -306,7 +308,7 @@ class TypeAnnotator:
         if exp.DataType.Type.UNKNOWN in (type1, type2):
             return exp.DataType.Type.UNKNOWN
 
-        return type2 if type2 in self.coerces_to[type1] else type1
+        return type2 if type2 in self.coerces_to.get(type1, {}) else type1
 
     def _annotate_binary(self, expression):
         self._annotate_args(expression)

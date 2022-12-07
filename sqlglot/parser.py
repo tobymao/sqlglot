@@ -229,6 +229,8 @@ class Parser(metaclass=_Parser):
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY}
 
+    UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
+
     TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
     FUNC_TOKENS = {
@@ -1035,7 +1037,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Update,
             **{
-                "this": self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.SET}),
+                "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
                 "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
                 "from": self._parse_from(),
                 "where": self._parse_where(),

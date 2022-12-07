@@ -402,21 +402,22 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(addition.expression.type.this, exp.DataType.Type.FLOAT)
 
     def test_cte_column_annotation(self):
-        schema = {"x": {"cola": "CHAR"}, "y": {"colb": "TEXT"}}
+        schema = {"x": {"cola": "CHAR"}, "y": {"colb": "TEXT", "colc": "BOOLEAN"}}
         sql = """
             WITH tbl AS (
-                SELECT x.cola + 'bla' AS cola, y.colb AS colb
+                SELECT x.cola + 'bla' AS cola, y.colb AS colb, y.colc AS colc
                 FROM (
                     SELECT x.cola AS cola
                     FROM x AS x
                 ) AS x
                 JOIN (
-                    SELECT y.colb AS colb
+                    SELECT y.colb AS colb, y.colc AS colc
                     FROM y AS y
                 ) AS y
             )
             SELECT tbl.cola + tbl.colb + 'foo' AS col
             FROM tbl AS tbl
+            WHERE tbl.colc = True
         """
 
         expression = annotate_types(parse_one(sql), schema=schema)
@@ -433,6 +434,9 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(inner_addition.left.type.this, exp.DataType.Type.VARCHAR)
         self.assertEqual(inner_addition.right.type.this, exp.DataType.Type.TEXT)
 
+        # Where colc = True
+        self.assertEqual(expression.args["where"].this.type.this, exp.DataType.Type.BOOLEAN)
+
         cte_select = expression.args["with"].expressions[0].this
         self.assertEqual(
             cte_select.expressions[0].type.this, exp.DataType.Type.VARCHAR
@@ -440,6 +444,9 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(
             cte_select.expressions[1].type.this, exp.DataType.Type.TEXT
         )  # y.colb AS colb
+        self.assertEqual(
+            cte_select.expressions[2].type.this, exp.DataType.Type.BOOLEAN
+        )  # y.colc AS colc
 
         cte_select_addition = cte_select.expressions[0].this  # x.cola + 'bla'
         self.assertEqual(cte_select_addition.type.this, exp.DataType.Type.VARCHAR)
@@ -518,3 +525,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.type, nullable)
         self.assertEqual(expression.left.type.this, exp.DataType.Type.NULL)
         self.assertEqual(expression.right.type.this, exp.DataType.Type.BOOLEAN)
+
+    def test_predicate_annotation(self):
+        expression = annotate_types(parse_one("x BETWEEN a AND b"))
+        self.assertEqual(expression.type.this, exp.DataType.Type.BOOLEAN)
+
+        expression = annotate_types(parse_one("x IN (a, b, c, d)"))
+        self.assertEqual(expression.type.this, exp.DataType.Type.BOOLEAN)

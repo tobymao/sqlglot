@@ -41,9 +41,9 @@ class TypeAnnotator:
             expr_type: lambda self, expr: self._annotate_binary(expr)
             for expr_type in subclasses(exp.__name__, exp.Binary)
         },
-        exp.Cast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"].this),
-        exp.TryCast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"].this),
-        exp.DataType: lambda self, expr: self._annotate_with_type(expr, expr.this),
+        exp.Cast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"]),
+        exp.TryCast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"]),
+        exp.DataType: lambda self, expr: self._annotate_with_type(expr, expr),
         exp.Alias: lambda self, expr: self._annotate_unary(expr),
         exp.Between: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
         exp.In: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
@@ -283,6 +283,7 @@ class TypeAnnotator:
             return expression  # We've already inferred the expression's type
 
         annotator = self.annotators.get(expression.__class__)
+
         return (
             annotator(self, expression)
             if annotator

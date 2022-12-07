@@ -347,11 +347,13 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_cast_type_annotation(self):
         expression = annotate_types(parse_one("CAST('2020-01-01' AS TIMESTAMPTZ(9))"))
-
         self.assertEqual(expression.type.this, exp.DataType.Type.TIMESTAMPTZ)
         self.assertEqual(expression.this.type.this, exp.DataType.Type.VARCHAR)
         self.assertEqual(expression.args["to"].type.this, exp.DataType.Type.TIMESTAMPTZ)
         self.assertEqual(expression.args["to"].expressions[0].type.this, exp.DataType.Type.INT)
+
+        expression = annotate_types(parse_one("ARRAY(1)::ARRAY<INT>"))
+        self.assertEqual(expression.type, parse_one("ARRAY<INT>", into=exp.DataType))
 
     def test_cache_annotation(self):
         expression = annotate_types(

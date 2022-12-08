@@ -185,6 +185,7 @@ class Parser(metaclass=_Parser):
         TokenType.LOCAL,
         TokenType.LOCATION,
         TokenType.MATERIALIZED,
+        TokenType.MERGE,
         TokenType.NATURAL,
         TokenType.NEXT,
         TokenType.ONLY,

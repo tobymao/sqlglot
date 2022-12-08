@@ -534,3 +534,24 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
         expression = annotate_types(parse_one("x IN (a, b, c, d)"))
         self.assertEqual(expression.type.this, exp.DataType.Type.BOOLEAN)
+
+    def test_aggfunc_annotation(self):
+        schema = {"x": {"cola": "SMALLINT", "colb": "FLOAT", "colc": "TEXT", "cold": "DATE"}}
+
+        tests = {
+            ("AVG", "cola"): exp.DataType.Type.DOUBLE,
+            ("SUM", "cola"): exp.DataType.Type.BIGINT,
+            ("SUM", "colb"): exp.DataType.Type.DOUBLE,
+            ("MIN", "cola"): exp.DataType.Type.SMALLINT,
+            ("MIN", "colb"): exp.DataType.Type.FLOAT,
+            ("MAX", "colc"): exp.DataType.Type.TEXT,
+            ("MAX", "cold"): exp.DataType.Type.DATE,
+            ("COUNT", "colb"): exp.DataType.Type.BIGINT,
+            ("STDDEV", "cola"): exp.DataType.Type.DOUBLE,
+        }
+
+        for (func, col), target_type in tests.items():
+            expression = annotate_types(
+                parse_one(f"SELECT {func}(x.{col}) AS _col_0 FROM x AS x"), schema=schema
+            )
+            self.assertEqual(expression.expressions[0].type.this, target_type)

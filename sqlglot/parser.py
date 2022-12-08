@@ -243,6 +243,7 @@ class Parser(metaclass=_Parser):
         TokenType.FORMAT,
         TokenType.IDENTIFIER,
         TokenType.ISNULL,
+        TokenType.MERGE,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
         TokenType.REPLACE,

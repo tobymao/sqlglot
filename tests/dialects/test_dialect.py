@@ -1318,3 +1318,29 @@ SELECT
             "BEGIN IMMEDIATE TRANSACTION",
             write={"sqlite": "BEGIN IMMEDIATE TRANSACTION"},
         )
+
+    def test_merge(self):
+        self.validate_all(
+            """
+            MERGE INTO target USING source ON target.id = source.id
+                WHEN NOT MATCHED THEN INSERT (id) values (source.id)
+            """,
+            write={
+                "bigquery": "MERGE INTO target USING source ON target.id = source.id WHEN NOT MATCHED THEN INSERT (id) VALUES (source.id)",
+                "snowflake": "MERGE INTO target USING source ON target.id = source.id WHEN NOT MATCHED THEN INSERT (id) VALUES (source.id)",
+                "spark": "MERGE INTO target USING source ON target.id = source.id WHEN NOT MATCHED THEN INSERT (id) VALUES (source.id)",
+            },
+        )
+        self.validate_all(
+            """
+            MERGE INTO target USING source ON target.id = source.id
+                WHEN MATCHED AND source.is_deleted = 1 THEN DELETE
+                WHEN MATCHED THEN UPDATE SET val = source.val
+                WHEN NOT MATCHED THEN INSERT (id, val) VALUES (source.id, source.val)
+            """,
+            write={
+                "bigquery": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED AND source.is_deleted = 1 THEN DELETE WHEN MATCHED THEN UPDATE SET val = source.val WHEN NOT MATCHED THEN INSERT (id, val) VALUES (source.id, source.val)",
+                "snowflake": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED AND source.is_deleted = 1 THEN DELETE WHEN MATCHED THEN UPDATE SET val = source.val WHEN NOT MATCHED THEN INSERT (id, val) VALUES (source.id, source.val)",
+                "spark": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED AND source.is_deleted = 1 THEN DELETE WHEN MATCHED THEN UPDATE SET val = source.val WHEN NOT MATCHED THEN INSERT (id, val) VALUES (source.id, source.val)",
+            },
+        )

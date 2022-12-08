@@ -2663,7 +2663,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.ON)
         on = self._parse_conjunction()
 
-        ifs = []
+        whens = []
         while self._match(TokenType.WHEN):
             this = self._parse_conjunction()
             self._match(TokenType.THEN)
@@ -2683,14 +2683,14 @@ class Parser(metaclass=_Parser):
             elif self._match(TokenType.DELETE):
                 then = self.expression(exp.Var, this=TokenType.DELETE.name)
 
-            ifs.append(self.expression(exp.If, this=this, true=then))
+            whens.append(self.expression(exp.When, this=this, then=then))
 
         return self.expression(
             exp.Merge,
             this=target,
             using=using,
             on=on,
-            expressions=ifs,
+            expressions=whens,
         )
 
     def _parse_set(self):

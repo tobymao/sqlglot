@@ -3001,6 +3001,10 @@ class Merge(Expression):
     arg_types = {"this": True, "using": True, "on": True, "expressions": True}
 
 
+class When(Func):
+    arg_types = {"this": True, "then": True}
+
+
 def _norm_args(expression):
     args = {}
 

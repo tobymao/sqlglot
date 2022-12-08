@@ -408,6 +408,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
         TokenType.END: lambda self: self._parse_commit_or_rollback(),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
+        TokenType.MERGE: lambda self: self._parse_merge(),
     }
 
     UNARY_PARSERS = {
@@ -2649,6 +2650,46 @@ class Parser(metaclass=_Parser):
     def _parse_set_item(self):
         parser = self._find_parser(self.SET_PARSERS, self._set_trie)
         return parser(self) if parser else self._default_parse_set_item()
+
+    def _parse_merge(self):
+        self._match(TokenType.INTO)
+        target = self._parse_table(schema=True)
+
+        self._match(TokenType.USING)
+        using = self._parse_table()
+
+        self._match(TokenType.ON)
+        on = self._parse_conjunction()
+
+        ifs = []
+        while self._match(TokenType.WHEN):
+            this = self._parse_conjunction()
+            self._match(TokenType.THEN)
+
+            if self._match(TokenType.INSERT):
+                then = self.expression(
+                    exp.Insert,
+                    this=self._parse_value(),
+                    expression=self._match(TokenType.VALUES) and self._parse_value(),
+                )
+            elif self._match(TokenType.UPDATE):
+                then = self.expression(
+                    exp.Update,
+                    expressions=self._match(TokenType.SET)
+                    and self._parse_csv(self._parse_equality),
+                )
+            elif self._match(TokenType.DELETE):
+                then = self.expression(exp.Var, this=TokenType.DELETE.name)
+
+            ifs.append(self.expression(exp.If, this=this, true=then))
+
+        return self.expression(
+            exp.Merge,
+            this=target,
+            using=using,
+            on=on,
+            expressions=ifs,
+        )
 
     def _parse_set(self):
         return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))

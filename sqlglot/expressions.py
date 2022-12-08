@@ -781,7 +781,7 @@ class Constraint(Expression):
 
 
 class Delete(Expression):
-    arg_types = {"with": False, "this": True, "using": False, "where": False}
+    arg_types = {"with": False, "this": False, "using": False, "where": False}
 
 
 class Drop(Expression):
@@ -1380,7 +1380,7 @@ class Unnest(UDTF):
 class Update(Expression):
     arg_types = {
         "with": False,
-        "this": True,
+        "this": False,
         "expressions": True,
         "from": False,
         "where": False,
@@ -2995,6 +2995,10 @@ class Year(Func):
 
 class Use(Expression):
     pass
+
+
+class Merge(Expression):
+    arg_types = {"this": True, "using": True, "on": True, "expressions": True}
 
 
 def _norm_args(expression):

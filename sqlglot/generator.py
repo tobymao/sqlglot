@@ -1437,3 +1437,9 @@ class Generator:
 
     def kwarg_sql(self, expression: exp.Kwarg) -> str:
         return self.binary(expression, "=>")
+
+    def merge_sql(self, expression: exp.Merge) -> str:
+        this = self.sql(expression, "this")
+        using = f" USING {self.sql(expression, 'using')}"
+        on = f" ON {self.sql(expression, 'on')}"
+        return f"MERGE INTO {this}{using}{on}{self.expressions(expression)}"

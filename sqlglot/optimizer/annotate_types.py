@@ -55,6 +55,9 @@ class TypeAnnotator:
             expr, exp.DataType.Type.BIGINT
         ),
         exp.Avg: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DOUBLE),
+        exp.Min: lambda self, expr: self._annotate_by_args(expr, "this"),
+        exp.Max: lambda self, expr: self._annotate_by_args(expr, "this"),
+        exp.Sum: lambda self, expr: self._annotate_by_args(expr, "this", promote=True),
         exp.Ceil: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
         exp.Count: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BIGINT),
         exp.CurrentDate: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DATE),
@@ -357,7 +360,7 @@ class TypeAnnotator:
         expression.type = target_type
         return self._annotate_args(expression)
 
-    def _annotate_by_args(self, expression, *args):
+    def _annotate_by_args(self, expression, *args, promote=False):
         self._annotate_args(expression)
         expressions = []
         for arg in args:
@@ -369,4 +372,11 @@ class TypeAnnotator:
             last_datatype = self._maybe_coerce(last_datatype or expr.type, expr.type)
 
         expression.type = last_datatype or exp.DataType.Type.UNKNOWN
+
+        if promote:
+            if expression.type.this in exp.DataType.INTEGER_TYPES:
+                expression.type = exp.DataType.Type.BIGINT
+            elif expression.type.this in exp.DataType.FLOAT_TYPES:
+                expression.type = exp.DataType.Type.DOUBLE
+
         return expression

@@ -2081,14 +2081,19 @@ class DataType(Expression):
         Type.TEXT,
     }
 
-    NUMERIC_TYPES = {
+    INTEGER_TYPES = {
         Type.INT,
         Type.TINYINT,
         Type.SMALLINT,
         Type.BIGINT,
+    }
+
+    FLOAT_TYPES = {
         Type.FLOAT,
         Type.DOUBLE,
     }
+
+    NUMERIC_TYPES = {*INTEGER_TYPES, *FLOAT_TYPES}
 
     TEMPORAL_TYPES = {
         Type.TIMESTAMP,

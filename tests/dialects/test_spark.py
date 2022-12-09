@@ -296,3 +296,23 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT IIF(cond, 'True', 'False')", write={"spark": "SELECT IF(cond, 'True', 'False')"}
         )
+
+    def test_merge(self):
+        self.validate_all(
+            """
+            MERGE INTO target USING source ON target.id = source.id
+                WHEN NOT MATCHED THEN INSERT *
+            """,
+            write={
+                "spark": "MERGE INTO target USING source ON target.id = source.id WHEN NOT MATCHED THEN INSERT *",
+            },
+        )
+        self.validate_all(
+            """
+            MERGE INTO target USING source ON target.id = source.id
+                WHEN MATCHED THEN UPDATE *
+            """,
+            write={
+                "spark": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE *",
+            },
+        )

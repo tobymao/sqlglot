@@ -87,6 +87,24 @@ class Spark(Hive):
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
+        def _parse_merge_insert(self):
+            this = self._parse_star()
+            if this:
+                return self.expression(
+                    exp.Insert,
+                    this=this,
+                )
+            return super()._parse_merge_insert()
+
+        def _parse_merge_update(self):
+            this = self._parse_star()
+            if this:
+                return self.expression(
+                    exp.Update,
+                    expressions=this,
+                )
+            return super()._parse_merge_update()
+
     class Generator(Hive.Generator):
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,  # type: ignore

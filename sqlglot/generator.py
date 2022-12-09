@@ -1439,14 +1439,20 @@ class Generator:
         return self.binary(expression, "=>")
 
     def when_sql(self, expression: exp.When) -> str:
+        this = self.sql(expression, "this")
         then_expression = expression.args.get("then")
         if isinstance(then_expression, exp.Insert):
-            then = f"INSERT {self.sql(then_expression, 'this')} VALUES {self.sql(then_expression, 'expression')}"
+            then = f"INSERT {self.sql(then_expression, 'this')}"
+            if "expression" in then_expression.args:
+                then += f" VALUES {self.sql(then_expression, 'expression')}"
         elif isinstance(then_expression, exp.Update):
-            then = f"UPDATE SET {self.expressions(then_expression, flat=True)}"
+            if isinstance(then_expression.args.get("expressions"), exp.Star):
+                then = f"UPDATE {self.sql(then_expression, 'expressions')}"
+            else:
+                then = f"UPDATE SET {self.expressions(then_expression, flat=True)}"
         else:
             then = self.sql(then_expression)
-        return f"WHEN {self.sql(expression, 'this')} THEN {then}"
+        return f"WHEN {this} THEN {then}"
 
     def merge_sql(self, expression: exp.Merge) -> str:
         this = self.sql(expression, "this")

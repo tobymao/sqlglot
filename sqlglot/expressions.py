@@ -865,7 +865,7 @@ class Insert(Expression):
     arg_types = {
         "with": False,
         "this": True,
-        "expression": True,
+        "expression": False,
         "overwrite": False,
         "exists": False,
         "partition": False,

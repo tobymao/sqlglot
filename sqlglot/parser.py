@@ -2653,19 +2653,6 @@ class Parser(metaclass=_Parser):
         parser = self._find_parser(self.SET_PARSERS, self._set_trie)
         return parser(self) if parser else self._default_parse_set_item()
 
-    def _parse_merge_insert(self):
-        return self.expression(
-            exp.Insert,
-            this=self._parse_value(),
-            expression=self._match(TokenType.VALUES) and self._parse_value(),
-        )
-
-    def _parse_merge_update(self):
-        return self.expression(
-            exp.Update,
-            expressions=self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
-        )
-
     def _parse_merge(self):
         self._match(TokenType.INTO)
         target = self._parse_table(schema=True)
@@ -2682,9 +2669,25 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.THEN)
 
             if self._match(TokenType.INSERT):
-                then = self._parse_merge_insert()
+                _this = self._parse_star()
+                if _this:
+                    then = self.expression(exp.Insert, this=_this)
+                else:
+                    then = self.expression(
+                        exp.Insert,
+                        this=self._parse_value(),
+                        expression=self._match(TokenType.VALUES) and self._parse_value(),
+                    )
             elif self._match(TokenType.UPDATE):
-                then = self._parse_merge_update()
+                expressions = self._parse_star()
+                if expressions:
+                    then = self.expression(exp.Update, expressions=expressions)
+                else:
+                    then = self.expression(
+                        exp.Update,
+                        expressions=self._match(TokenType.SET)
+                        and self._parse_csv(self._parse_equality),
+                    )
             elif self._match(TokenType.DELETE):
                 then = self.expression(exp.Var, this=self._prev.text)
 

@@ -1344,3 +1344,13 @@ SELECT
                 "spark": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED AND source.is_deleted = 1 THEN DELETE WHEN MATCHED THEN UPDATE SET val = source.val WHEN NOT MATCHED THEN INSERT (id, val) VALUES (source.id, source.val)",
             },
         )
+        self.validate_all(
+            """
+            MERGE INTO target USING source ON target.id = source.id
+                WHEN MATCHED THEN UPDATE *
+                WHEN NOT MATCHED THEN INSERT *
+            """,
+            write={
+                "spark": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE * WHEN NOT MATCHED THEN INSERT *",
+            },
+        )

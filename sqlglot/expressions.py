@@ -1232,6 +1232,9 @@ class Subqueryable(Unionable):
             alias=TableAlias(this=to_identifier(alias)),
         )
 
+    def limit(self, expression, dialect=None, copy=True, **opts) -> Select:
+        raise NotImplementedError
+
     @property
     def ctes(self):
         with_ = self.args.get("with")
@@ -1343,6 +1346,32 @@ class Union(Subqueryable):
         "distinct": False,
         **QUERY_MODIFIERS,
     }
+
+    def limit(self, expression, dialect=None, copy=True, **opts) -> Select:
+        """
+        Set the LIMIT expression.
+
+        Example:
+            >>> select("1").union(select("1")).limit(1).sql()
+            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS "_l_0" LIMIT 1'
+
+        Args:
+            expression (str | int | Expression): the SQL code string to parse.
+                This can also be an integer.
+                If a `Limit` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Limit`.
+            dialect (str): the dialect used to parse the input expression.
+            copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
+
+        Returns:
+            Select: The limited subqueryable.
+        """
+        return (
+            select("*")
+            .from_(self.subquery(alias="_l_0", copy=copy))
+            .limit(expression, dialect=dialect, copy=False, **opts)
+        )
 
     @property
     def named_selects(self):

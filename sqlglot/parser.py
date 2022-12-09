@@ -562,7 +562,7 @@ class Parser(metaclass=_Parser):
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
     STRICT_CAST = True
-    TREAT_LAT_FUNC_AS_LAT_VIEW = False
+    LATERAL_FUNCTION_AS_VIEW = False
 
     __slots__ = (
         "error_level",
@@ -1288,13 +1288,16 @@ class Parser(metaclass=_Parser):
             return None
 
         if not this:
-            this = self._parse_function() or self._parse_id_var(False)
+            this = self._parse_function() or self._parse_id_var(any_token=False)
             while self._match(TokenType.DOT):
-                this = exp.Dot(this=this, expression=self._parse_function() or self._parse_id_var())
+                this = exp.Dot(
+                    this=this,
+                    expression=self._parse_function() or self._parse_id_var(any_token=False),
+                )
 
         columns = None
         table_alias = None
-        if view or self.TREAT_LAT_FUNC_AS_LAT_VIEW:
+        if view or self.LATERAL_FUNCTION_AS_VIEW:
             table_alias = self._parse_id_var(any_token=False)
             if self._match(TokenType.ALIAS):
                 columns = self._parse_csv(self._parse_id_var)
@@ -1311,7 +1314,7 @@ class Parser(metaclass=_Parser):
             this=this,
             view=view,
             outer=outer,
-            alias=exp.TableAlias(this=table_alias, columns=columns),
+            alias=self.expression(exp.TableAlias, this=table_alias, columns=columns),
         )
 
         if outer_apply or cross_apply:

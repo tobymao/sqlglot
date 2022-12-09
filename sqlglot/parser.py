@@ -2686,7 +2686,7 @@ class Parser(metaclass=_Parser):
             elif self._match(TokenType.UPDATE):
                 then = self._parse_merge_update()
             elif self._match(TokenType.DELETE):
-                then = self.expression(exp.Var, this=TokenType.DELETE.name)
+                then = self.expression(exp.Var, this=self._prev.text)
 
             whens.append(self.expression(exp.When, this=this, then=then))
 

@@ -891,8 +891,8 @@ class Generator:
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
         return csv(
             *sqls,
-            *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             *[self.sql(sql) for sql in expression.args.get("joins", [])],
+            *[self.sql(sql) for sql in expression.args.get("laterals", [])],
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),

@@ -208,6 +208,7 @@ class TokenType(AutoName):
     LOCATION = auto()
     MAP = auto()
     MATERIALIZED = auto()
+    MERGE = auto()
     MOD = auto()
     NATURAL = auto()
     NEXT = auto()
@@ -524,6 +525,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LOCAL": TokenType.LOCAL,
         "LOCATION": TokenType.LOCATION,
         "MATERIALIZED": TokenType.MATERIALIZED,
+        "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
         "NO ACTION": TokenType.NO_ACTION,

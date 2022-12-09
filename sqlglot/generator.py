@@ -795,14 +795,16 @@ class Generator:
 
         alias = expression.args["alias"]
         table = alias.name
-        table = f" {table}" if table else table
         columns = self.expressions(alias, key="columns", flat=True)
-        columns = f" AS {columns}" if columns else ""
 
         if expression.args.get("view"):
+            table = f" {table}" if table else table
+            columns = f" AS {columns}" if columns else ""
             op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
             return f"{op_sql}{self.sep()}{this}{table}{columns}"
 
+        table = f" AS {table}" if table else table
+        columns = f"({columns})" if columns else ""
         return f"LATERAL {this}{table}{columns}"
 
     def limit_sql(self, expression: exp.Limit) -> str:

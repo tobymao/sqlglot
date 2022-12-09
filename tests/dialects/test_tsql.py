@@ -371,19 +371,19 @@ class TestTSQL(Validator):
         self.validate_all(
             "SELECT t.x, y.z FROM x CROSS APPLY tvfTest(t.x)y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x JOIN LATERAL TVFTEST(t.x) y AS z",
+                "spark": "SELECT t.x, y.z FROM x JOIN LATERAL TVFTEST(t.x) AS y(z)",
             },
         )
         self.validate_all(
             "SELECT t.x, y.z FROM x OUTER APPLY tvfTest(t.x)y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) y AS z",
+                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) AS y(z)",
             },
         )
         self.validate_all(
             "SELECT t.x, y.z FROM x OUTER APPLY a.b.tvfTest(t.x)y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL a.b.TVFTEST(t.x) y AS z",
+                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL a.b.TVFTEST(t.x) AS y(z)",
             },
         )
 

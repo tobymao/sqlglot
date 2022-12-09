@@ -244,6 +244,7 @@ class Postgres(Dialect):
 
     class Parser(parser.Parser):
         STRICT_CAST = False
+        TREAT_LAT_FUNC_AS_LAT_VIEW = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

@@ -380,6 +380,12 @@ class TestTSQL(Validator):
                 "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) y AS z",
             },
         )
+        self.validate_all(
+            "SELECT t.x, y.z FROM x OUTER APPLY a.b.tvfTest(t.x)y(z)",
+            write={
+                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL a.b.TVFTEST(t.x) y AS z",
+            },
+        )
 
     def test_top(self):
         self.validate_all(

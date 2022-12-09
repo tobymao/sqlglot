@@ -1287,7 +1287,9 @@ class Parser(metaclass=_Parser):
             return None
 
         if not this:
-            this = self._parse_function()
+            this = self._parse_function() or self._parse_id_var(False)
+            while self._match(TokenType.DOT):
+                this = exp.Dot(this=this, expression=self._parse_function() or self._parse_id_var())
 
         table_alias = self._parse_id_var(any_token=False)
 
@@ -1303,7 +1305,11 @@ class Parser(metaclass=_Parser):
             this=this,
             view=view,
             outer=outer,
-            alias=self.expression(exp.TableAlias, this=table_alias, columns=columns),
+            alias=self.expression(
+                exp.TableAlias,
+                this=table_alias,
+                columns=columns,
+            ),
         )
 
         if outer_apply or cross_apply:

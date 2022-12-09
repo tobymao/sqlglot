@@ -427,3 +427,17 @@ class TestTSQL(Validator):
         self.validate_all(
             "SELECT FORMAT(num_col, 'c')", write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"}
         )
+
+    def test_string(self):
+        self.validate_all(
+            "SELECT N'test'",
+            write={"spark": "SELECT 'test'"},
+        )
+        self.validate_all(
+            "SELECT n'test'",
+            write={"spark": "SELECT 'test'"},
+        )
+        self.validate_all(
+            "SELECT '''test'''",
+            write={"spark": r"SELECT '\'test\''"},
+        )

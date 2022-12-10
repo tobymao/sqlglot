@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import Tokenizer, TokenType
 
 
 class TestTokens(unittest.TestCase):
@@ -17,3 +17,48 @@ class TestTokens(unittest.TestCase):
 
         for sql, comment in sql_comment:
             self.assertEqual(tokenizer.tokenize(sql)[0].comments, comment)
+
+    def test_jinja(self):
+        tokenizer = Tokenizer()
+
+        tokens = tokenizer.tokenize(
+            """
+            SELECT
+               {{ x }},
+               {{- x -}},
+               {% for x in y -%}
+               a {{+ b }}
+               {% endfor %};
+        """
+        )
+
+        tokens = [(token.token_type, token.text) for token in tokens]
+
+        self.assertEqual(
+            tokens,
+            [
+                (TokenType.SELECT, "SELECT"),
+                (TokenType.BLOCK_START, "{{"),
+                (TokenType.VAR, "x"),
+                (TokenType.BLOCK_END, "}}"),
+                (TokenType.COMMA, ","),
+                (TokenType.BLOCK_START, "{{-"),
+                (TokenType.VAR, "x"),
+                (TokenType.BLOCK_END, "-}}"),
+                (TokenType.COMMA, ","),
+                (TokenType.BLOCK_START, "{%"),
+                (TokenType.FOR, "for"),
+                (TokenType.VAR, "x"),
+                (TokenType.IN, "in"),
+                (TokenType.VAR, "y"),
+                (TokenType.BLOCK_END, "-%}"),
+                (TokenType.VAR, "a"),
+                (TokenType.BLOCK_START, "{{+"),
+                (TokenType.VAR, "b"),
+                (TokenType.BLOCK_END, "}}"),
+                (TokenType.BLOCK_START, "{%"),
+                (TokenType.VAR, "endfor"),
+                (TokenType.BLOCK_END, "%}"),
+                (TokenType.SEMICOLON, ";"),
+            ],
+        )

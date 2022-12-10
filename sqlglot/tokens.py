@@ -49,6 +49,9 @@ class TokenType(AutoName):
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
 
+    BLOCK_START = auto()
+    BLOCK_END = auto()
+
     SPACE = auto()
     BREAK = auto()
 
@@ -422,6 +425,16 @@ class Tokenizer(metaclass=_Tokenizer):
     ESCAPES = ["'"]
 
     KEYWORDS = {
+        **{
+            f"{key}{postfix}": TokenType.BLOCK_START
+            for key in ("{{", "{%", "{#")
+            for postfix in ("", "+", "-")
+        },
+        **{
+            f"{prefix}{key}": TokenType.BLOCK_END
+            for key in ("}}", "%}", "#}")
+            for prefix in ("", "+", "-")
+        },
         "/*+": TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,

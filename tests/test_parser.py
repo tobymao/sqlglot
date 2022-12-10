@@ -85,7 +85,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(parse_one("select * from (select 1) x cross join y").args["joins"]), 1)
         self.assertEqual(
             parse_one("""SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)""").sql(),
-            """SELECT * FROM x, z LATERAL VIEW EXPLODE(y) CROSS JOIN y""",
+            """SELECT * FROM x, z CROSS JOIN y LATERAL VIEW EXPLODE(y)""",
         )
 
     def test_command(self):

@@ -371,13 +371,19 @@ class TestTSQL(Validator):
         self.validate_all(
             "SELECT t.x, y.z FROM x CROSS APPLY tvfTest(t.x)y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x JOIN LATERAL TVFTEST(t.x) y AS z",
+                "spark": "SELECT t.x, y.z FROM x JOIN LATERAL TVFTEST(t.x) AS y(z)",
             },
         )
         self.validate_all(
             "SELECT t.x, y.z FROM x OUTER APPLY tvfTest(t.x)y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) y AS z",
+                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) AS y(z)",
+            },
+        )
+        self.validate_all(
+            "SELECT t.x, y.z FROM x OUTER APPLY a.b.tvfTest(t.x)y(z)",
+            write={
+                "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL a.b.TVFTEST(t.x) AS y(z)",
             },
         )
 
@@ -420,4 +426,18 @@ class TestTSQL(Validator):
         )
         self.validate_all(
             "SELECT FORMAT(num_col, 'c')", write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"}
+        )
+
+    def test_string(self):
+        self.validate_all(
+            "SELECT N'test'",
+            write={"spark": "SELECT 'test'"},
+        )
+        self.validate_all(
+            "SELECT n'test'",
+            write={"spark": "SELECT 'test'"},
+        )
+        self.validate_all(
+            "SELECT '''test'''",
+            write={"spark": r"SELECT '\'test\''"},
         )

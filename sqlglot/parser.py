@@ -562,6 +562,7 @@ class Parser(metaclass=_Parser):
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
     STRICT_CAST = True
+    LATERAL_FUNCTION_AS_VIEW = False
 
     __slots__ = (
         "error_level",
@@ -1287,16 +1288,26 @@ class Parser(metaclass=_Parser):
             return None
 
         if not this:
-            this = self._parse_function()
-
-        table_alias = self._parse_id_var(any_token=False)
+            this = self._parse_function() or self._parse_id_var(any_token=False)
+            while self._match(TokenType.DOT):
+                this = exp.Dot(
+                    this=this,
+                    expression=self._parse_function() or self._parse_id_var(any_token=False),
+                )
 
         columns = None
-        if self._match(TokenType.ALIAS):
-            columns = self._parse_csv(self._parse_id_var)
-        elif self._match(TokenType.L_PAREN):
-            columns = self._parse_csv(self._parse_id_var)
-            self._match_r_paren()
+        table_alias = None
+        if view or self.LATERAL_FUNCTION_AS_VIEW:
+            table_alias = self._parse_id_var(any_token=False)
+            if self._match(TokenType.ALIAS):
+                columns = self._parse_csv(self._parse_id_var)
+        else:
+            self._match(TokenType.ALIAS)
+            table_alias = self._parse_id_var(any_token=False)
+
+            if self._match(TokenType.L_PAREN):
+                columns = self._parse_csv(self._parse_id_var)
+                self._match_r_paren()
 
         expression = self.expression(
             exp.Lateral,

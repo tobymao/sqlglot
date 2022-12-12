@@ -242,11 +242,12 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
                 if isinstance(column_type, exp.DataType):
                     return column_type
                 elif isinstance(column_type, str):
-                    return self._convert_type(column_type.upper())
+                    return self._to_data_type(column_type.upper())
+                raise SchemaError(f"Unknown column type '{column_type}'")
             return exp.DataType(this=exp.DataType.Type.UNKNOWN)
         raise SchemaError(f"Could not convert table '{table}'")
 
-    def _convert_type(self, schema_type: str) -> exp.DataType:
+    def _to_data_type(self, schema_type: str) -> exp.DataType:
         """
         Convert a type represented as a string to the corresponding :class:`sqlglot.exp.DataType` object.
 

@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot import exp, to_table
+from sqlglot import exp, parse_one, to_table
 from sqlglot.errors import SchemaError
 from sqlglot.schema import MappingSchema, ensure_schema
 
@@ -181,3 +181,6 @@ class TestSchema(unittest.TestCase):
             schema.get_column_type(exp.Table(this="c", db="b", catalog="a"), "d").this,
             exp.DataType.Type.VARCHAR,
         )
+
+        schema = MappingSchema({"foo": {"bar": parse_one("INT", into=exp.DataType)}})
+        self.assertEqual(schema.get_column_type("foo", "bar").this, exp.DataType.Type.INT)

@@ -22,7 +22,6 @@ from sqlglot.expressions import (
     or_,
     select,
     subquery,
-    DataType,
 )
 from sqlglot.expressions import table_ as table
 from sqlglot.expressions import to_column, to_table, union

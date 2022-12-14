@@ -13,8 +13,8 @@ from sqlglot import (
     parse_one,
     select,
     union,
-    DataType,
 )
+from sqlglot.expressions import DataType
 
 
 class TestBuild(unittest.TestCase):

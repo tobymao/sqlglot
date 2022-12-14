@@ -3674,7 +3674,7 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
 
 
 def values(
-    values: t.Iterable[t.Tuple[str | Expression, ...]],
+    values: t.Iterable[t.Tuple[t.Optional[str | Expression], ...]],
     alias: t.Optional[str] = None,
     columns: t.Optional[t.Iterable[str]] = None,
 ) -> Values:

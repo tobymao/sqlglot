@@ -14,7 +14,6 @@ from sqlglot import (
     select,
     union,
 )
-from sqlglot.expressions import DataType
 
 
 class TestBuild(unittest.TestCase):

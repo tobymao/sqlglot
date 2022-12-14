@@ -473,6 +473,10 @@ class TestBuild(unittest.TestCase):
             (lambda: exp.values([("1", 2)]), "VALUES ('1', 2)"),
             (lambda: exp.values([("1", 2)], "alias"), "(VALUES ('1', 2)) AS alias"),
             (lambda: exp.values([("1", 2), ("2", 3)]), "VALUES ('1', 2), ('2', 3)"),
+            (
+                lambda: exp.values([("1", 2), ("2", 3)], "alias", ["col1", "col2"]),
+                "(VALUES ('1', 2), ('2', 3)) AS alias(col1, col2)",
+            ),
             (lambda: exp.delete("y", where="x > 1"), "DELETE FROM y WHERE x > 1"),
             (lambda: exp.delete("y", where=exp.and_("x > 1")), "DELETE FROM y WHERE x > 1"),
         ]:

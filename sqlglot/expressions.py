@@ -3673,7 +3673,11 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
     )
 
 
-def values(values, alias=None) -> Values:
+def values(
+    values: t.Iterable[t.Tuple[str | Expression, ...]],
+    alias: t.Optional[str] = None,
+    columns: t.Optional[t.Iterable[str]] = None,
+) -> Values:
     """Build VALUES statement.
 
     Example:
@@ -3681,17 +3685,23 @@ def values(values, alias=None) -> Values:
         "VALUES (1, '2')"
 
     Args:
-        values (list[tuple[str | Expression]]): values statements that will be converted to SQL
-        alias (str): optional alias
-        dialect (str): the dialect used to parse the input expression.
-        **opts: other options to use to parse the input expressions.
+        values: values statements that will be converted to SQL
+        alias: optional alias
+        columns: Optional list of ordered column names. An alias is required when providing column names.
 
     Returns:
         Values: the Values expression object
     """
+    if columns and not alias:
+        raise ValueError("Alias is required when providing columns")
+    table_alias = (
+        TableAlias(this=to_identifier(alias), columns=[to_identifier(x) for x in columns])
+        if columns
+        else TableAlias(this=to_identifier(alias) if alias else None)
+    )
     return Values(
         expressions=[convert(tup) for tup in values],
-        alias=to_identifier(alias) if alias else None,
+        alias=table_alias,
     )
 
 

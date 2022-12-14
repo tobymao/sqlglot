@@ -3674,9 +3674,9 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
 
 
 def values(
-    values: t.Sequence[t.Tuple[str | Expression, ...]],
+    values: t.Iterable[t.Tuple[str | Expression, ...]],
     alias: t.Optional[str] = None,
-    columns_and_types: t.Optional[t.List[str | t.Tuple[str, str | DataType]]] = None,
+    columns_and_types: t.Optional[t.Iterable[str | t.Tuple[str, str | DataType]]] = None,
 ) -> Values:
     """Build VALUES statement.
 

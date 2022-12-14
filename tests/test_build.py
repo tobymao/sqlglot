@@ -13,6 +13,7 @@ from sqlglot import (
     parse_one,
     select,
     union,
+    DataType,
 )
 
 
@@ -473,6 +474,24 @@ class TestBuild(unittest.TestCase):
             (lambda: exp.values([("1", 2)]), "VALUES ('1', 2)"),
             (lambda: exp.values([("1", 2)], "alias"), "(VALUES ('1', 2)) AS alias"),
             (lambda: exp.values([("1", 2), ("2", 3)]), "VALUES ('1', 2), ('2', 3)"),
+            (
+                lambda: exp.values([("1", 2), ("2", 3)], "alias", ["col1", "col2"]),
+                "(VALUES ('1', 2), ('2', 3)) AS alias(col1, col2)",
+            ),
+            (
+                lambda: exp.values(
+                    [("1", 2), ("2", 3)], "alias", [("col1", "text"), ("col2", "int")]
+                ),
+                "(VALUES (CAST('1' AS TEXT), CAST(2 AS INT)), (CAST('2' AS TEXT), CAST(3 AS INT))) AS alias(col1, col2)",
+            ),
+            (
+                lambda: exp.values(
+                    [("1", 2), ("2", 3)],
+                    "alias",
+                    [("col1", DataType.build("text")), ("col2", DataType.build("int"))],
+                ),
+                "(VALUES (CAST('1' AS TEXT), CAST(2 AS INT)), (CAST('2' AS TEXT), CAST(3 AS INT))) AS alias(col1, col2)",
+            ),
             (lambda: exp.delete("y", where="x > 1"), "DELETE FROM y WHERE x > 1"),
             (lambda: exp.delete("y", where=exp.and_("x > 1")), "DELETE FROM y WHERE x > 1"),
         ]:

@@ -3673,7 +3673,11 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
     )
 
 
-def values(values, alias=None) -> Values:
+def values(
+    values: t.Sequence[t.Tuple[str | Expression, ...]],
+    alias: t.Optional[str] = None,
+    columns_and_types: t.Optional[t.List[str | t.Tuple[str, str | DataType]]] = None,
+) -> Values:
     """Build VALUES statement.
 
     Example:
@@ -3681,17 +3685,45 @@ def values(values, alias=None) -> Values:
         "VALUES (1, '2')"
 
     Args:
-        values (list[tuple[str | Expression]]): values statements that will be converted to SQL
-        alias (str): optional alias
-        dialect (str): the dialect used to parse the input expression.
-        **opts: other options to use to parse the input expressions.
+        values: values statements that will be converted to SQL
+        alias: optional alias
+        columns_and_types: Optional list of ordered column names or column names and types. If types are provided,
+            they will be used to cast the values. An alias is required when providing column names.
 
     Returns:
         Values: the Values expression object
     """
+    if columns_and_types and not alias:
+        raise ValueError("Alias is required when providing columns_and_types")
+    column_names = []
+    column_types = []
+    if columns_and_types is not None:
+        for column in columns_and_types:
+            if isinstance(column, tuple):
+                column_names.append(to_identifier(column[0]))
+                if isinstance(column[1], str):
+                    column_types.append(DataType.build(column[1]))
+                else:
+                    column_types.append(column[1])
+            else:
+                column_names.append(to_identifier(column))
+    if column_types:
+        casted_rows = []
+        for row in values:
+            casted_columns = []
+            for i, value in enumerate(row):
+                casted_columns.append(Cast(this=convert(value), to=column_types[i]))
+            casted_rows.append(tuple(casted_columns))
+        values = casted_rows
+    expressions = [convert(tup) for tup in values]
+    table_alias = (
+        TableAlias(this=to_identifier(alias), columns=column_names)
+        if column_names
+        else TableAlias(this=to_identifier(alias) if alias else None)
+    )
     return Values(
-        expressions=[convert(tup) for tup in values],
-        alias=to_identifier(alias) if alias else None,
+        expressions=expressions,
+        alias=table_alias,
     )
 
 

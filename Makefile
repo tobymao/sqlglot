@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pre-commit test style docs docs-serve
+.PHONY: install install-dev install-pre-commit test style check docs docs-serve
 
 install:
 	pip install -e .

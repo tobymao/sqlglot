@@ -60,8 +60,7 @@ make docs-serve
 ## Run Tests and Lint
 
 ```
-make style
-make test  # Set SKIP_INTEGRATION=1 to skip integration tests
+make check  # Set SKIP_INTEGRATION=1 to skip integration tests
 ```
 
 ## Examples

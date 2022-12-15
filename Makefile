@@ -15,6 +15,8 @@ test:
 style:
 	pre-commit run --all-files
 
+check: style test
+
 docs:
 	pdoc/cli.py -o pdoc/docs
 

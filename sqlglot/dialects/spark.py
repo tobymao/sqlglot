@@ -76,7 +76,7 @@ class Spark(Hive):
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,  # type: ignore
             "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
             "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
             "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),

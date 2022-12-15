@@ -175,10 +175,10 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SET, TokenType.SHOW}
 
     class Parser(parser.Parser):
-        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA}
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA}  # type: ignore
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATE_SUB": _date_add(exp.DateSub),
             "STR_TO_DATE": _str_to_date,
@@ -190,7 +190,7 @@ class MySQL(Dialect):
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,  # type: ignore
             "GROUP_CONCAT": lambda self: self.expression(
                 exp.GroupConcat,
                 this=self._parse_lambda(),
@@ -199,12 +199,12 @@ class MySQL(Dialect):
         }
 
         PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,
+            **parser.Parser.PROPERTY_PARSERS,  # type: ignore
             TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
         }
 
         STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
+            **parser.Parser.STATEMENT_PARSERS,  # type: ignore
             TokenType.SHOW: lambda self: self._parse_show(),
             TokenType.SET: lambda self: self._parse_set(),
         }
@@ -429,7 +429,7 @@ class MySQL(Dialect):
         NULL_ORDERING_SUPPORTED = False
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ILike: no_ilike_sql,

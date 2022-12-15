@@ -137,7 +137,7 @@ class Presto(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "CONTAINS": exp.ArrayContains.from_arg_list,
@@ -174,7 +174,7 @@ class Presto(Dialect):
         ROOT_PROPERTIES = {exp.SchemaCommentProperty}
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.BINARY: "VARBINARY",
@@ -184,7 +184,7 @@ class Presto(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",

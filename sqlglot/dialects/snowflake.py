@@ -206,7 +206,7 @@ class Snowflake(Dialect):
         CREATE_TRANSIENT = True
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.DataType: _datatype_sql,
@@ -224,7 +224,7 @@ class Snowflake(Dialect):
         }
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 

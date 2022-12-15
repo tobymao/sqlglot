@@ -253,7 +253,7 @@ class TSQL(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "CHARINDEX": exp.StrPosition.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
@@ -314,7 +314,7 @@ class TSQL(Dialect):
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.DECIMAL: "NUMERIC",

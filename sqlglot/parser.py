@@ -2120,7 +2120,7 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.ENCODE):
             kind = self.expression(exp.EncodeColumnConstraint, this=self._parse_var())
         elif self._match(TokenType.DEFAULT):
-            kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_conjunction())
+            kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_bitwise())
         elif self._match_pair(TokenType.NOT, TokenType.NULL):
             kind = exp.NotNullColumnConstraint()
         elif self._match(TokenType.NULL):

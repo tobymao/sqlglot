@@ -247,14 +247,14 @@ class Postgres(Dialect):
         LATERAL_FUNCTION_AS_VIEW = True
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
         }
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
@@ -264,7 +264,7 @@ class Postgres(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.ColumnDef: preprocess(
                 [
                     _auto_increment_to_serial,

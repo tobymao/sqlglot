@@ -42,13 +42,13 @@ class SQLite(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BOOLEAN: "INTEGER",
             exp.DataType.Type.TINYINT: "INTEGER",
             exp.DataType.Type.SMALLINT: "INTEGER",
@@ -70,7 +70,7 @@ class SQLite(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,

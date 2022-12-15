@@ -39,13 +39,13 @@ class Oracle(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "DECODE": exp.Matches.from_arg_list,
         }
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "NUMBER",
             exp.DataType.Type.SMALLINT: "NUMBER",
             exp.DataType.Type.INT: "NUMBER",
@@ -60,7 +60,7 @@ class Oracle(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,

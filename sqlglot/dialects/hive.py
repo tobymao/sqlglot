@@ -197,7 +197,7 @@ class Hive(Dialect):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
@@ -240,7 +240,7 @@ class Hive(Dialect):
         }
 
         PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,
+            **parser.Parser.PROPERTY_PARSERS,  # type: ignore
             TokenType.SERDE_PROPERTIES: lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
@@ -248,14 +248,14 @@ class Hive(Dialect):
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "BINARY",
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.Property: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,

@@ -33,6 +33,7 @@ setup(
             "pyspark",
             "python-dateutil",
             "pdoc",
+            "pre-commit",
         ],
     },
     classifiers=[

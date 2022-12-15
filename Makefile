@@ -5,6 +5,7 @@ install:
 
 install-dev:
 	pip install -e ".[dev]"
+	pre-commit install
 
 tests:
 	python -m unittest

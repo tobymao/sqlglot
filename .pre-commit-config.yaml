@@ -1,0 +1,31 @@
+repos:
+  - repo: local
+    hooks:
+      - id: autoflake
+        name: autoflake
+        entry: autoflake -i -r
+        language: system
+        types: [ python ]
+        require_serial: true
+        files: ^(sqlglot/|tests/|setup.py)
+      - id: isort
+        name: isort
+        entry: isort
+        language: system
+        types: [ python ]
+        files: ^(sqlglot/|tests/|setup.py)
+        require_serial: true
+      - id: black
+        name: black
+        entry: black --line-length 100
+        language: system
+        types: [ python ]
+        require_serial: true
+        files: ^(sqlglot/|tests/|setup.py)
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [ python ]
+        files: ^(sqlglot/|tests/)
+        require_serial: true

@@ -1,4 +1,6 @@
-"""## Python SQL parser, transpiler and optimizer."""
+"""
+.. include:: ../README.md
+"""
 
 from __future__ import annotations
 

@@ -22,6 +22,19 @@ setup(
     license="MIT",
     packages=find_packages(include=["sqlglot", "sqlglot.*"]),
     package_data={"sqlglot": ["py.typed"]},
+    extras_require={
+        "dev": [
+            "autoflake",
+            "black",
+            "duckdb",
+            "isort",
+            "mypy",
+            "pandas",
+            "pyspark",
+            "python-dateutil",
+            "pdoc",
+        ],
+    },
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

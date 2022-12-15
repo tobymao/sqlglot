@@ -40,13 +40,13 @@ pip3 install sqlglot
 Or with a local checkout:
 
 ```
-pip3 install -e .
+make install
 ```
 
 Requirements for development (optional):
 
 ```
-pip3 install -r dev-requirements.txt
+make install-dev
 ```
 
 ## Documentation
@@ -54,16 +54,15 @@ pip3 install -r dev-requirements.txt
 SQLGlot uses [pdocs](https://pdoc.dev/) to serve its API documentation:
 
 ```
-pdoc sqlglot --docformat google
+make docs-serve
 ```
 
 ## Run Tests and Lint
 
 ```
-# set `SKIP_INTEGRATION=1` to skip integration tests
-./run_checks.sh
+make style
+make tests  # Set SKIP_INTEGRATION=1 to skip integration tests
 ```
-
 
 ## Examples
 

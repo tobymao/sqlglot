@@ -87,7 +87,7 @@ class DuckDB(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
@@ -119,7 +119,7 @@ class DuckDB(Dialect):
         STRUCT_DELIMITER = ("(", ")")
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: rename_func("LIST_VALUE"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
@@ -163,7 +163,7 @@ class DuckDB(Dialect):
         }
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.VARCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
         }

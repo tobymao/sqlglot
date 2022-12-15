@@ -126,7 +126,7 @@ class BigQuery(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_TRUNC": _date_trunc,
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
@@ -144,25 +144,25 @@ class BigQuery(Dialect):
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,  # type: ignore
             "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
         NO_PAREN_FUNCTIONS = {
-            **parser.Parser.NO_PAREN_FUNCTIONS,
+            **parser.Parser.NO_PAREN_FUNCTIONS,  # type: ignore
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
             TokenType.CURRENT_TIME: exp.CurrentTime,
         }
 
         NESTED_TYPE_TOKENS = {
-            *parser.Parser.NESTED_TYPE_TOKENS,
+            *parser.Parser.NESTED_TYPE_TOKENS,  # type: ignore
             TokenType.TABLE,
         }
 
     class Generator(generator.Generator):
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
@@ -188,7 +188,7 @@ class BigQuery(Dialect):
         }
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.SMALLINT: "INT64",
             exp.DataType.Type.INT: "INT64",

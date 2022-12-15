@@ -1,13 +1,15 @@
-.PHONY: install install-dev tests style docs docs-serve
+.PHONY: install install-dev install-pre-commit test style docs docs-serve
 
 install:
 	pip install sqlglot
 
 install-dev:
 	pip install -e ".[dev]"
+
+install-pre-commit:
 	pre-commit install
 
-tests:
+test:
 	python -m unittest
 
 style:

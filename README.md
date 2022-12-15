@@ -61,7 +61,7 @@ make docs-serve
 
 ```
 make style
-make tests  # Set SKIP_INTEGRATION=1 to skip integration tests
+make test  # Set SKIP_INTEGRATION=1 to skip integration tests
 ```
 
 ## Examples

@@ -24,4 +24,4 @@ jobs:
     - name: Run checks (linter, code style, tests)
       run: |
         make style
-        make tests
+        make test

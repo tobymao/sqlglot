@@ -94,6 +94,10 @@ def decorrelate(select, parent_select, external_columns, sequence):
     if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
         return
 
+    # don't optimize subquery projections for now (we can optimize them into joins in the future)
+    if any(node is select.parent for node in parent_select.selects):
+        return
+
     table_alias = _alias(sequence)
     keys = []
 

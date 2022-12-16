@@ -200,3 +200,26 @@ WHERE
       y.a = x.a
     OFFSET 10
   );
+
+SELECT
+  (
+    SELECT
+      S.name
+    FROM student AS S
+    WHERE
+      S.sid = E.sid
+  ) AS sname
+FROM enrolled AS E
+WHERE
+  cid = '15-445';
+SELECT
+  (
+    SELECT
+      S.name
+    FROM student AS S
+    WHERE
+      S.sid = E.sid
+  ) AS sname
+FROM enrolled AS E
+WHERE
+  cid = '15-445';

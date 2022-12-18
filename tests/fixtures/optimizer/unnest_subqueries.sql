@@ -204,22 +204,25 @@ WHERE
 SELECT
   (
     SELECT
-      S.name
-    FROM student AS S
+      s.name AS name
+    FROM student AS s
     WHERE
-      S.sid = E.sid
+      s.sid = e.sid
   ) AS sname
-FROM enrolled AS E
+FROM enrolled AS e
 WHERE
-  cid = '15-445';
+  e.cid = '15-445';
 SELECT
-  (
-    SELECT
-      S.name
-    FROM student AS S
-    WHERE
-      S.sid = E.sid
-  ) AS sname
-FROM enrolled AS E
+  "_u_0".name AS sname
+FROM enrolled AS e
+LEFT JOIN (
+  SELECT
+    s.name AS name,
+    s.sid AS sid
+  FROM student AS s
+  WHERE
+    TRUE
+) AS "_u_0"
+  ON "_u_0".sid = e.sid
 WHERE
-  cid = '15-445';
+  e.cid = '15-445';

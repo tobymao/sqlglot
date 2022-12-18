@@ -89,39 +89,53 @@ def unnest(select, parent_select, sequence):
 
 
 def decorrelate(select, parent_select, external_columns, sequence):
+    if any(
+        node is select.parent and isinstance(node, exp.Subquery) for node in parent_select.selects
+    ):
+        decorrelate_projection(select, parent_select, external_columns, sequence)
+        return
+
+    decorrelate_filter(select, parent_select, external_columns, sequence)
+
+
+def decorrelate_projection(select, parent_select, external_columns, sequence):
     where = select.args.get("where")
 
     if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
         return
 
-    # don't optimize subquery projections for now (we can optimize them into joins in the future)
-    if any(node is select.parent for node in parent_select.selects):
+    table_alias = _alias(sequence)
+    keys = _extract_predicate_parts(external_columns, where)
+
+    if not any(isinstance(predicate, exp.EQ) for *_, predicate in keys):
+        return
+
+    value = select.selects[0]
+    alias = exp.alias_(exp.column(value.alias, table_alias), select.parent.alias)
+    select.parent.replace(alias)
+
+    for key, column, predicate in keys:
+        predicate.replace(exp.true())
+        select.select(exp.alias_(key.copy(), key.this), copy=False)
+        key.replace(exp.column(key.this, table_alias))
+
+    parent_select.join(
+        select,
+        on=[predicate for *_, predicate in keys if isinstance(predicate, exp.EQ)],
+        join_type="LEFT",
+        join_alias=table_alias,
+        copy=False,
+    )
+
+
+def decorrelate_filter(select, parent_select, external_columns, sequence):
+    where = select.args.get("where")
+
+    if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
         return
 
     table_alias = _alias(sequence)
-    keys = []
-
-    # for all external columns in the where statement,
-    # split out the relevant data to convert it into a join
-    for column in external_columns:
-        if column.find_ancestor(exp.Where) is not where:
-            return
-
-        predicate = column.find_ancestor(exp.Predicate)
-
-        if not predicate or predicate.find_ancestor(exp.Where) is not where:
-            return
-
-        if isinstance(predicate, exp.Binary):
-            key = (
-                predicate.right
-                if any(node is column for node, *_ in predicate.left.walk())
-                else predicate.left
-            )
-        else:
-            return
-
-        keys.append((key, column, predicate))
+    keys = _extract_predicate_parts(external_columns, where)
 
     if not any(isinstance(predicate, exp.EQ) for *_, predicate in keys):
         return
@@ -220,6 +234,33 @@ def decorrelate(select, parent_select, external_columns, sequence):
         join_alias=table_alias,
         copy=False,
     )
+
+
+def _extract_predicate_parts(columns, where):
+    """For each column in the where statement, split out the relevant data."""
+
+    keys = []
+    for column in columns:
+        if column.find_ancestor(exp.Where) is not where:
+            return
+
+        predicate = column.find_ancestor(exp.Predicate)
+
+        if not predicate or predicate.find_ancestor(exp.Where) is not where:
+            return
+
+        if isinstance(predicate, exp.Binary):
+            key = (
+                predicate.right
+                if any(node is column for node, *_ in predicate.left.walk())
+                else predicate.left
+            )
+        else:
+            return
+
+        keys.append((key, column, predicate))
+
+    return keys
 
 
 def _alias(sequence):

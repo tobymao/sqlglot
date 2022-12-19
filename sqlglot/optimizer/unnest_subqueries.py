@@ -105,7 +105,7 @@ def decorrelate_projection(select, parent_select, external_columns, sequence):
         return
 
     table_alias = _alias(sequence)
-    keys = _extract_predicate_parts(external_columns, where)
+    keys = _find_predicate_keys(external_columns, where)
 
     if not any(isinstance(predicate, exp.EQ) for *_, predicate in keys):
         return
@@ -116,8 +116,8 @@ def decorrelate_projection(select, parent_select, external_columns, sequence):
 
     for key, column, predicate in keys:
         predicate.replace(exp.true())
-        select.select(exp.alias_(key.copy(), key.this), copy=False)
-        key.replace(exp.column(key.this, table_alias))
+        select.select(exp.alias_(key.copy(), key.name), copy=False)
+        key.replace(exp.column(key.name, table_alias))
 
     parent_select.join(
         select,
@@ -135,7 +135,7 @@ def decorrelate_filter(select, parent_select, external_columns, sequence):
         return
 
     table_alias = _alias(sequence)
-    keys = _extract_predicate_parts(external_columns, where)
+    keys = _find_predicate_keys(external_columns, where)
 
     if not any(isinstance(predicate, exp.EQ) for *_, predicate in keys):
         return
@@ -236,7 +236,7 @@ def decorrelate_filter(select, parent_select, external_columns, sequence):
     )
 
 
-def _extract_predicate_parts(columns, where):
+def _find_predicate_keys(columns, where):
     """For each column in the where statement, split out the relevant data."""
 
     keys = []

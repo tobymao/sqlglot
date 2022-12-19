@@ -6,7 +6,7 @@ from sqlglot.optimizer.scope import Scope, traverse_scope
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
 
-# SELECTION TO USE IF SELECTION LIST IS EMPTY
+# Selection to use if selection list is empty
 DEFAULT_SELECTION = alias("1", "_")
 
 

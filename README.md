@@ -2,7 +2,7 @@
 
 SQLGlot is a no dependency Python SQL parser, transpiler, and optimizer. It can be used to format SQL or translate between different dialects like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically correct SQL in the targeted dialects.
 
-It is a very comprehensive generic SQL parser with a robust [test suite](tests). It is also quite [performant](#benchmarks) while being written purely in Python.
+It is a very comprehensive generic SQL parser with a robust [test suite](https://github.com/tobymao/sqlglot/blob/main/tests/). It is also quite [performant](#benchmarks) while being written purely in Python.
 
 You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL.
 
@@ -272,7 +272,7 @@ transformed_tree.sql()
 
 ### SQL Optimizer
 
-SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standardize queries or provide the foundations for implementing an actual engine. For example:
+SQLGlot can rewrite queries into an "optimized" form. It performs a variety of [techniques](https://github.com/tobymao/sqlglot/blob/main/sqlglot/optimizer/optimizer.py) to create a new canonical AST. This AST can be used to standardize queries or provide the foundations for implementing an actual engine. For example:
 
 ```python
 import sqlglot
@@ -290,7 +290,7 @@ print(
 )
 ```
 
-```
+```sql
 SELECT
   (
     "x"."A" OR "x"."B" OR "x"."C"
@@ -349,9 +349,11 @@ diff(parse_one("SELECT a + b, c, d"), parse_one("SELECT c, a - b, d"))
 ]
 ```
 
+See also: [Semantic Diff for SQL](https://github.com/tobymao/sqlglot/blob/main/posts/sql_diff.md).
+
 ### Custom Dialects
 
-[Dialects](sqlglot/dialects) can be added by subclassing `Dialect`:
+[Dialects](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects) can be added by subclassing `Dialect`:
 
 ```python
 from sqlglot import exp
@@ -389,7 +391,7 @@ class Custom(Dialect):
 print(Dialect["custom"])
 ```
 
-```python
+```
 <class '__main__.Custom'>
 ```
 
@@ -442,7 +444,7 @@ user_id price
 
 ## Benchmarks
 
-[Benchmarks](benchmarks) run on Python 3.10.5 in seconds.
+[Benchmarks](https://github.com/tobymao/sqlglot/blob/main/benchmarks/bench.py) run on Python 3.10.5 in seconds.
 
 |           Query |         sqlglot |        sqlfluff |         sqltree |        sqlparse |  moz_sql_parser |        sqloxide |
 | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- |

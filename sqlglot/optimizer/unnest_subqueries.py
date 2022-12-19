@@ -242,12 +242,12 @@ def _extract_predicate_parts(columns, where):
     keys = []
     for column in columns:
         if column.find_ancestor(exp.Where) is not where:
-            return
+            return []
 
         predicate = column.find_ancestor(exp.Predicate)
 
         if not predicate or predicate.find_ancestor(exp.Where) is not where:
-            return
+            return []
 
         if isinstance(predicate, exp.Binary):
             key = (
@@ -256,7 +256,7 @@ def _extract_predicate_parts(columns, where):
                 else predicate.left
             )
         else:
-            return
+            return []
 
         keys.append((key, column, predicate))
 

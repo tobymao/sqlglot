@@ -90,7 +90,7 @@ def unnest(select, parent_select, sequence):
 
 def decorrelate(select, parent_select, external_columns, sequence):
     if any(
-        node is select.parent and isinstance(node, exp.Subquery) for node in parent_select.selects
+        node is select.parent for node in parent_select.selects if isinstance(node, exp.Subquery)
     ):
         decorrelate_projection(select, parent_select, external_columns, sequence)
         return

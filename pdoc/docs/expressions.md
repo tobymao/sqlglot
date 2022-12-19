@@ -22,7 +22,7 @@ class Limit(Expression):
 
 ```
 
-Here, `Limit` declares that it expects to have one optional and one required child expression, which can be referenced through `this` and `expression`, correspondingly. The arg keys are generally arbitrary, but there are helper methods for keys like `this`, `expression` and `expressions` that abstract away dictionary lookups and related checks. For this reason, these keys are common throughout SQLGlot's codebase.
+Here, `Limit` declares that it expects to have one optional and one required child expression, which can be referenced through `this` and `expression`, respectively. The arg keys are generally arbitrary, but there are helper methods for keys like `this`, `expression` and `expressions` that abstract away dictionary lookups and related checks. For this reason, these keys are common throughout SQLGlot's codebase.
 
 #### parent
 

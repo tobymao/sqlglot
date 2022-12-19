@@ -1,3 +1,7 @@
+"""
+.. include:: ../posts/sql_diff.md
+"""
+
 from __future__ import annotations
 
 import typing as t

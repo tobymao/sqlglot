@@ -74,7 +74,7 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        for i, (sql, _) in enumerate(self.sqls[0:18]):
+        for i, (sql, _) in enumerate(self.sqls[0:20]):
             with self.subTest(f"tpch-h {i + 1}"):
                 a = self.cached_execute(sql)
                 sql = parse_one(sql).transform(to_csv).sql(pretty=True)

@@ -200,7 +200,7 @@ def decorrelate(select, parent_select, external_columns, sequence):
         nested = exp.column(key_aliases[key], table_alias)
 
         if is_subquery_projection:
-            key.replace(exp.column(key_aliases[key], table_alias))
+            key.replace(nested)
             continue
 
         if key in group_by:

@@ -311,6 +311,9 @@ def _qualify_outputs(scope):
             alias_ = alias(exp.column(""), alias=selection.name)
             alias_.set("this", selection)
             selection = alias_
+        elif isinstance(selection, exp.Subquery):
+            if not selection.alias:
+                selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
         elif not isinstance(selection, exp.Alias):
             alias_ = alias(exp.column(""), f"_col_{i}")
             alias_.set("this", selection)

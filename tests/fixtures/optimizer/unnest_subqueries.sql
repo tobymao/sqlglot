@@ -217,12 +217,14 @@ SELECT
 FROM enrolled AS e
 LEFT JOIN (
   SELECT
-    s.name AS name,
-    s.sid AS sid
+    MAX(s.name) AS name,
+    s.sid AS _u_1
   FROM student AS s
   WHERE
     TRUE
+  GROUP BY
+    s.sid
 ) AS "_u_0"
-  ON "_u_0".sid = e.sid
+  ON "_u_0"."_u_1" = e.sid
 WHERE
   e.cid = '15-445';

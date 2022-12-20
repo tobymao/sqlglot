@@ -122,11 +122,9 @@ def decorrelate(select, parent_select, external_columns, sequence):
     if not any(isinstance(predicate, exp.EQ) for *_, predicate in keys):
         return
 
-    if any(
+    is_subquery_projection = any(
         node is select.parent for node in parent_select.selects if isinstance(node, exp.Subquery)
-    ):
-        decorrelate_projection(select, parent_select, external_columns, sequence, keys, table_alias)
-        return
+    )
 
     value = select.selects[0]
     key_aliases = {}
@@ -148,9 +146,10 @@ def decorrelate(select, parent_select, external_columns, sequence):
     parent_predicate = select.find_ancestor(exp.Predicate)
 
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
-    # so that it can be grouped
+    # so that it can be grouped. For subquery projections, we use a MAX aggregation instead.
+    agg_func = "MAX" if is_subquery_projection else "ARRAY_AGG"
     if not value.find(exp.AggFunc) and value.this not in group_by:
-        select.select(f"ARRAY_AGG({value.this}) AS {value.alias}", append=False, copy=False)
+        select.select(f"{agg_func}({value.this}) AS {value.alias}", append=False, copy=False)
 
     # exists queries should not have any selects as it only checks if there are any rows
     # all selects will be added by the optimizer and only used for join keys
@@ -164,7 +163,7 @@ def decorrelate(select, parent_select, external_columns, sequence):
             if isinstance(parent_predicate, exp.Exists) or key != value.this:
                 select.select(f"{key} AS {alias}", copy=False)
         else:
-            select.select(f"ARRAY_AGG({key}) AS {alias}", copy=False)
+            select.select(f"{agg_func}({key}) AS {alias}", copy=False)
 
     alias = exp.column(value.alias, table_alias)
     other = _other_operand(parent_predicate)
@@ -192,11 +191,17 @@ def decorrelate(select, parent_select, external_columns, sequence):
                 f"ARRAY_ANY({alias}, _x -> _x = {parent_predicate.this})",
             )
     else:
+        if is_subquery_projection:
+            alias = exp.alias_(alias, select.parent.alias)
         select.parent.replace(alias)
 
     for key, column, predicate in keys:
         predicate.replace(exp.true())
         nested = exp.column(key_aliases[key], table_alias)
+
+        if is_subquery_projection:
+            key.replace(exp.column(key_aliases[key], table_alias))
+            continue
 
         if key in group_by:
             key.replace(nested)
@@ -217,25 +222,6 @@ def decorrelate(select, parent_select, external_columns, sequence):
 
     parent_select.join(
         select.group_by(*group_by, copy=False),
-        on=[predicate for *_, predicate in keys if isinstance(predicate, exp.EQ)],
-        join_type="LEFT",
-        join_alias=table_alias,
-        copy=False,
-    )
-
-
-def decorrelate_projection(select, parent_select, external_columns, sequence, keys, table_alias):
-    value = select.selects[0]
-    alias = exp.alias_(exp.column(value.alias, table_alias), select.parent.alias)
-    select.parent.replace(alias)
-
-    for key, column, predicate in keys:
-        predicate.replace(exp.true())
-        select.select(exp.alias_(key.copy(), key.name), copy=False)
-        key.replace(exp.column(key.name, table_alias))
-
-    parent_select.join(
-        select,
         on=[predicate for *_, predicate in keys if isinstance(predicate, exp.EQ)],
         join_type="LEFT",
         join_alias=table_alias,

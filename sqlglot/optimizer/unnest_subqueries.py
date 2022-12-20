@@ -147,9 +147,13 @@ def decorrelate(select, parent_select, external_columns, sequence):
 
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
     # so that it can be grouped. For subquery projections, we use a MAX aggregation instead.
-    agg_func = "MAX" if is_subquery_projection else "ARRAY_AGG"
+    agg_func = exp.Max if is_subquery_projection else exp.ArrayAgg
     if not value.find(exp.AggFunc) and value.this not in group_by:
-        select.select(f"{agg_func}({value.this}) AS {value.alias}", append=False, copy=False)
+        select.select(
+            exp.alias_(agg_func(this=value.this), value.alias, quoted=False),
+            append=False,
+            copy=False,
+        )
 
     # exists queries should not have any selects as it only checks if there are any rows
     # all selects will be added by the optimizer and only used for join keys
@@ -163,7 +167,7 @@ def decorrelate(select, parent_select, external_columns, sequence):
             if isinstance(parent_predicate, exp.Exists) or key != value.this:
                 select.select(f"{key} AS {alias}", copy=False)
         else:
-            select.select(f"{agg_func}({key}) AS {alias}", copy=False)
+            select.select(exp.alias_(agg_func(this=key.copy()), alias, quoted=False), copy=False)
 
     alias = exp.column(value.alias, table_alias)
     other = _other_operand(parent_predicate)

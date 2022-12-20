@@ -69,8 +69,9 @@ def _predicate_lengths(expression, dnf):
     left, right = expression.args.values()
 
     if isinstance(expression, exp.And if dnf else exp.Or):
-        x = [a + b for a in _predicate_lengths(left, dnf) for b in _predicate_lengths(right, dnf)]
-        return x
+        return [
+            a + b for a in _predicate_lengths(left, dnf) for b in _predicate_lengths(right, dnf)
+        ]
     return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
 
 

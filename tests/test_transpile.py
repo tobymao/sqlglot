@@ -28,7 +28,7 @@ class TestTranspile(unittest.TestCase):
         self.assertEqual(transpile("SELECT 1 current_datetime")[0], "SELECT 1 AS current_datetime")
         self.assertEqual(transpile("SELECT 1 row")[0], "SELECT 1 AS row")
 
-        for key in ("union", "filter", "over", "from", "join"):
+        for key in ("union", "over", "from", "join"):
             with self.subTest(f"alias {key}"):
                 self.validate(f"SELECT x AS {key}", f"SELECT x AS {key}")
                 self.validate(f'SELECT x "{key}"', f'SELECT x AS "{key}"')
@@ -262,6 +262,10 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         self.validate(
             "WITH a AS (SELECT 1), WITH b AS (SELECT 2) SELECT *",
             "WITH a AS (SELECT 1), b AS (SELECT 2) SELECT *",
+        )
+        self.validate(
+            "WITH A(filter) AS (VALUES 1, 2, 3) SELECT * FROM A WHERE filter >= 2",
+            "WITH A(filter) AS (VALUES (1), (2), (3)) SELECT * FROM A WHERE filter >= 2",
         )
 
     def test_time(self):

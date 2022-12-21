@@ -2051,7 +2051,9 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.L_PAREN):
             expressions = self._parse_csv(self._parse_id_var)
-            self._match(TokenType.R_PAREN)
+
+            if not self._match(TokenType.R_PAREN):
+                self._retreat(index)
         else:
             expressions = [self._parse_id_var()]
 

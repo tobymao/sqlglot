@@ -249,6 +249,13 @@ class TestPostgres(Validator):
             write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON)#>>'{a,2}'"""},
         )
         self.validate_all(
+            """SELECT JSON_ARRAY_ELEMENTS((foo->'sections')::JSON) AS sections""",
+            write={
+                "postgres": """SELECT JSON_ARRAY_ELEMENTS(CAST((foo->'sections') AS JSON)) AS sections""",
+                "presto": """SELECT JSON_ARRAY_ELEMENTS(CAST((JSON_EXTRACT(foo, 'sections')) AS JSON)) AS sections""",
+            },
+        )
+        self.validate_all(
             "SELECT $$a$$",
             write={"postgres": "SELECT 'a'"},
         )

@@ -1245,15 +1245,35 @@ class Generator:
         savepoint = f" TO {savepoint}" if savepoint else ""
         return f"ROLLBACK{savepoint}"
 
+    def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+        this = self.sql(expression, "this")
+
+        dtype = self.sql(expression, "dtype")
+        if dtype:
+            collate = self.sql(expression, "collate")
+            collate = f" COLLATE {collate}" if collate else ""
+            using = self.sql(expression, "using")
+            using = f" USING {using}" if using else ""
+            return f"ALTER COLUMN {this} TYPE {dtype}{collate}{using}"
+
+        default = self.sql(expression, "default")
+        if default:
+            return f"ALTER COLUMN {this} SET DEFAULT {default}"
+
+        if not expression.args.get("drop"):
+            self.unsupported("Invalid ALTER COLUMN syntax form")
+
+        return f"ALTER COLUMN {this} DROP DEFAULT"
+
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         action = expression.args["action"]
 
         if isinstance(action, exp.ColumnDef):
             action = f"ADD COLUMN {self.sql(action)}"
-        elif isinstance(action, exp.Drop):
+        elif isinstance(action, (exp.Drop, exp.AlterColumn)):
             action = self.sql(action)
         else:
-            action = ""
+            self.unsupported(f"Unsupported alter table action {action.__class__.__name__}")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {action}"

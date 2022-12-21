@@ -186,7 +186,7 @@ class Postgres(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
 
-        CREATABLES = (
+        CREATEABLE = (
             "AGGREGATE",
             "CAST",
             "CONVERSION",
@@ -233,8 +233,8 @@ class Postgres(Dialect):
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "TEMP": TokenType.TEMPORARY,
             "UUID": TokenType.UUID,
-            **{f"CREATE {kind}": TokenType.COMMAND for kind in CREATABLES},
-            **{f"DROP {kind}": TokenType.COMMAND for kind in CREATABLES},
+            **{f"CREATE {kind}": TokenType.COMMAND for kind in CREATEABLE},
+            **{f"DROP {kind}": TokenType.COMMAND for kind in CREATEABLE},
         }
         QUOTES = ["'", "$$"]
         SINGLE_TOKENS = {

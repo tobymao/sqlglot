@@ -553,7 +553,7 @@ class Parser(metaclass=_Parser):
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
-    CREATABLES = {
+    CREATEABLE = {
         TokenType.COLUMN,
         TokenType.FUNCTION,
         TokenType.INDEX,
@@ -786,13 +786,16 @@ class Parser(metaclass=_Parser):
         self._parse_query_modifiers(expression)
         return expression
 
-    def _parse_drop(self):
+    def _parse_drop(self, default_kind=None):
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match(TokenType.MATERIALIZED)
-        kind = self._match_set(self.CREATABLES) and self._prev.text
+        kind = self._match_set(self.CREATEABLE) and self._prev.text
         if not kind:
-            self.raise_error(f"Expected {self.CREATABLES}")
-            return
+            if default_kind:
+                kind = default_kind
+            else:
+                self.raise_error(f"Expected {self.CREATEABLE}")
+                return
 
         return self.expression(
             exp.Drop,
@@ -822,10 +825,10 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
 
-        create_token = self._match_set(self.CREATABLES) and self._prev
+        create_token = self._match_set(self.CREATEABLE) and self._prev
 
         if not create_token:
-            self.raise_error(f"Expected {self.CREATABLES}")
+            self.raise_error(f"Expected {self.CREATEABLE}")
             return
 
         exists = self._parse_exists(not_=True)
@@ -2672,9 +2675,26 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.COLUMN)
             action = self._parse_column_def(self._parse_field(any_token=True))
         elif self._match_text_seq("DROP"):
-            action = self._parse_drop()
+            action = self._parse_drop(default_kind="COLUMN")
         elif self._match_text_seq("ALTER"):
-            action = None  # TODO: implement this
+            self._match(TokenType.COLUMN)
+            column = self._parse_field(any_token=True)
+
+            if self._match_pair(TokenType.DROP, TokenType.DEFAULT):
+                action = self.expression(exp.AlterColumn, this=column, drop=True)
+            elif self._match_pair(TokenType.SET, TokenType.DEFAULT):
+                action = self.expression(
+                    exp.AlterColumn, this=column, default=self._parse_conjunction()
+                )
+            else:
+                self._match_text_seq("SET", "DATA")
+                action = self.expression(
+                    exp.AlterColumn,
+                    this=column,
+                    dtype=self._match_text_seq("TYPE") and self._parse_type(),
+                    collate=self._match(TokenType.COLLATE) and self._parse_term(),
+                    using=self._match(TokenType.USING) and self._parse_conjunction(),
+                )
 
         return self.expression(exp.AlterTable, this=this, exists=exists, action=action)
 

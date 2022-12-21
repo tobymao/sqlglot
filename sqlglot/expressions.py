@@ -731,6 +731,17 @@ class ColumnDef(Expression):
     }
 
 
+class AlterColumn(Expression):
+    arg_types = {
+        "this": True,
+        "dtype": False,
+        "collate": False,
+        "using": False,
+        "default": False,
+        "drop": False,
+    }
+
+
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 

@@ -472,6 +472,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CHECK": TokenType.CHECK,
         "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
+        "COLUMN": TokenType.COLUMN,
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
         "COMPOUND": TokenType.COMPOUND,

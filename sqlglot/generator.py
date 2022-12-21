@@ -1250,8 +1250,10 @@ class Generator:
 
         if isinstance(action, exp.ColumnDef):
             action = f"ADD COLUMN {self.sql(action)}"
+        elif isinstance(action, exp.Drop):
+            action = self.sql(action)
         else:
-            action = ""  # TODO: implement this
+            action = ""
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {action}"

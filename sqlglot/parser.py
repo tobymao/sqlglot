@@ -153,6 +153,7 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE,
         TokenType.CASCADE,
         TokenType.COLLATE,
+        TokenType.COLUMN,
         TokenType.COMMAND,
         TokenType.COMMIT,
         TokenType.COMPOUND,
@@ -553,12 +554,13 @@ class Parser(metaclass=_Parser):
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
     CREATABLES = {
-        TokenType.TABLE,
-        TokenType.VIEW,
+        TokenType.COLUMN,
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,
         TokenType.SCHEMA,
+        TokenType.TABLE,
+        TokenType.VIEW,
     }
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
@@ -2663,26 +2665,18 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Commit, chain=chain)
 
     def _parse_alter_table(self):
-
         exists = self._parse_exists()
         this = self._parse_table(schema=True)
 
         if self._match_text_seq("ADD"):
-            self._match_text_seq("COLUMN")
-            return self.expression(
-                exp.AlterTable,
-                this=this,
-                exists=exists,
-                action=self._parse_column_def(self._parse_field(any_token=True)),
-            )
+            self._match(TokenType.COLUMN)
+            action = self._parse_column_def(self._parse_field(any_token=True))
+        elif self._match_text_seq("DROP"):
+            action = self._parse_drop()
+        elif self._match_text_seq("ALTER"):
+            action = None  # TODO: implement this
 
-        if self._match_text_seq("DROP"):
-            return None  # TODO: implement this
-
-        if self._match_text_seq("ALTER"):
-            return None  # TODO: implement this
-
-        return None
+        return self.expression(exp.AlterTable, this=this, exists=exists, action=action)
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)

@@ -169,6 +169,7 @@ class Parser(metaclass=_Parser):
         TokenType.ESCAPE,
         TokenType.FALSE,
         TokenType.FIRST,
+        TokenType.FILTER,
         TokenType.FOLLOWING,
         TokenType.FORMAT,
         TokenType.FUNCTION,
@@ -1155,9 +1156,19 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
             this = self._parse_subquery(this)
         elif self._match(TokenType.VALUES):
+            if self._curr.token_type == TokenType.L_PAREN:
+                # We don't consume the left paren because it's consumed in _parse_value
+                expressions = self._parse_csv(self._parse_value)
+            else:
+                # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
+                # Source: https://prestodb.io/docs/current/sql/values.html
+                expressions = self._parse_csv(
+                    lambda: self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
+                )
+
             this = self.expression(
                 exp.Values,
-                expressions=self._parse_csv(self._parse_value),
+                expressions=expressions,
                 alias=self._parse_table_alias(),
             )
         else:

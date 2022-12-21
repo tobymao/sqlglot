@@ -111,6 +111,7 @@ class TokenType(AutoName):
 
     # keywords
     ALIAS = auto()
+    ALTER_TABLE = auto()
     ALWAYS = auto()
     ALL = auto()
     ANTI = auto()
@@ -451,6 +452,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
         "ALL": TokenType.ALL,
+        "ALTER TABLE": TokenType.ALTER_TABLE,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,

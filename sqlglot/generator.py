@@ -1245,6 +1245,17 @@ class Generator:
         savepoint = f" TO {savepoint}" if savepoint else ""
         return f"ROLLBACK{savepoint}"
 
+    def altertable_sql(self, expression: exp.AlterTable) -> str:
+        action = expression.args["action"]
+
+        if isinstance(action, exp.ColumnDef):
+            action = f"ADD COLUMN {self.sql(action)}"
+        else:
+            action = ""  # TODO: implement this
+
+        exists = " IF EXISTS" if expression.args.get("exists") else ""
+        return f"ALTER TABLE {self.sql(expression, 'this')}{exists} {action}"
+
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)
         this = f" {this}" if this else ""

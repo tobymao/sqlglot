@@ -411,6 +411,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
         TokenType.END: lambda self: self._parse_commit_or_rollback(),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
+        TokenType.ALTER_TABLE: lambda self: self._parse_alter_table(),
         TokenType.MERGE: lambda self: self._parse_merge(),
     }
 
@@ -2094,7 +2095,8 @@ class Parser(metaclass=_Parser):
             return this
 
         args = self._parse_csv(
-            lambda: self._parse_constraint() or self._parse_column_def(self._parse_field(True))
+            lambda: self._parse_constraint()
+            or self._parse_column_def(self._parse_field(any_token=True))
         )
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
@@ -2659,6 +2661,28 @@ class Parser(metaclass=_Parser):
         if is_rollback:
             return self.expression(exp.Rollback, savepoint=savepoint)
         return self.expression(exp.Commit, chain=chain)
+
+    def _parse_alter_table(self):
+
+        exists = self._parse_exists()
+        this = self._parse_table(schema=True)
+
+        if self._match_text_seq("ADD"):
+            self._match_text_seq("COLUMN")
+            return self.expression(
+                exp.AlterTable,
+                this=this,
+                exists=exists,
+                action=self._parse_column_def(self._parse_field(any_token=True)),
+            )
+
+        if self._match_text_seq("DROP"):
+            return None  # TODO: implement this
+
+        if self._match_text_seq("ALTER"):
+            return None  # TODO: implement this
+
+        return None
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)

@@ -2183,6 +2183,14 @@ class Rollback(Command):
     arg_types = {"savepoint": False}
 
 
+class AlterTable(Command):
+    arg_types = {
+        "this": True,
+        "exists": False,
+        "action": True,
+    }
+
+
 # Binary expressions like (ADD a b)
 class Binary(Expression):
     arg_types = {"this": True, "expression": True}

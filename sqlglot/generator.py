@@ -1254,7 +1254,7 @@ class Generator:
             action = ""  # TODO: implement this
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
-        return f"ALTER TABLE {self.sql(expression, 'this')}{exists} {action}"
+        return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {action}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)

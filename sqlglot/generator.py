@@ -1267,17 +1267,19 @@ class Generator:
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
     def altertable_sql(self, expression: exp.AlterTable) -> str:
-        action = expression.args["action"]
+        actions = expression.args["actions"]
 
-        if isinstance(action, exp.ColumnDef):
-            action = f"ADD COLUMN {self.sql(action)}"
-        elif isinstance(action, (exp.Drop, exp.AlterColumn)):
-            action = self.sql(action)
+        if isinstance(actions[0], exp.ColumnDef):
+            actions = self.expressions(expression, "actions", prefix="ADD COLUMN ")
+        elif isinstance(actions[0], exp.Drop):
+            actions = self.expressions(expression, "actions")
+        elif isinstance(actions[0], exp.AlterColumn):
+            actions = self.sql(actions[0])
         else:
-            self.unsupported(f"Unsupported ALTER TABLE action {action.__class__.__name__}")
+            self.unsupported(f"Unsupported ALTER TABLE action {actions[0].__class__.__name__}")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
-        return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {action}"
+        return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {actions}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)
@@ -1403,6 +1405,7 @@ class Generator:
         flat: bool = False,
         indent: bool = True,
         sep: str = ", ",
+        prefix: str = "",
     ) -> str:
         expressions = expression.args.get(key or "expressions")
 
@@ -1425,11 +1428,13 @@ class Generator:
 
             if self.pretty:
                 if self._leading_comma:
-                    result_sqls.append(f"{sep if i > 0 else pad}{sql}{comments}")
+                    result_sqls.append(f"{sep if i > 0 else pad}{prefix}{sql}{comments}")
                 else:
-                    result_sqls.append(f"{sql}{stripped_sep if i + 1 < num_sqls else ''}{comments}")
+                    result_sqls.append(
+                        f"{prefix}{sql}{stripped_sep if i + 1 < num_sqls else ''}{comments}"
+                    )
             else:
-                result_sqls.append(f"{sql}{comments}{sep if i + 1 < num_sqls else ''}")
+                result_sqls.append(f"{prefix}{sql}{comments}{sep if i + 1 < num_sqls else ''}")
 
         result_sql = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
         return self.indent(result_sql, skip_first=False) if indent else result_sql

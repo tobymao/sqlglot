@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
-from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
+from sqlglot.helper import apply_index_offset, ensure_collection, ensure_list, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
@@ -2667,6 +2667,13 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Rollback, savepoint=savepoint)
         return self.expression(exp.Commit, chain=chain)
 
+    def _parse_add_column(self):
+        self._match(TokenType.COLUMN)
+        exists_column = self._parse_exists(not_=True)
+        expression = self._parse_column_def(self._parse_field(any_token=True))
+        expression.set("exists", exists_column)
+        return expression
+
     def _parse_alter(self):
         if not self._match(TokenType.TABLE):
             return None
@@ -2674,26 +2681,28 @@ class Parser(metaclass=_Parser):
         exists = self._parse_exists()
         this = self._parse_table(schema=True)
 
-        if self._match_text_seq("ADD"):
-            self._match(TokenType.COLUMN)
-            exists_column = self._parse_exists(not_=True)
-            action = self._parse_column_def(self._parse_field(any_token=True))
-            action.set("exists", exists_column)
-        elif self._match_text_seq("DROP"):
-            action = self._parse_drop(default_kind="COLUMN")
+        actions = None
+        if self._match_text_seq("ADD", advance=False):
+            actions = self._parse_csv(
+                lambda: self._match_text_seq("ADD") and self._parse_add_column()
+            )
+        elif self._match_text_seq("DROP", advance=False):
+            actions = self._parse_csv(
+                lambda: self._match_text_seq("DROP") and self._parse_drop(default_kind="COLUMN")
+            )
         elif self._match_text_seq("ALTER"):
             self._match(TokenType.COLUMN)
             column = self._parse_field(any_token=True)
 
             if self._match_pair(TokenType.DROP, TokenType.DEFAULT):
-                action = self.expression(exp.AlterColumn, this=column, drop=True)
+                actions = self.expression(exp.AlterColumn, this=column, drop=True)
             elif self._match_pair(TokenType.SET, TokenType.DEFAULT):
-                action = self.expression(
+                actions = self.expression(
                     exp.AlterColumn, this=column, default=self._parse_conjunction()
                 )
             else:
                 self._match_text_seq("SET", "DATA")
-                action = self.expression(
+                actions = self.expression(
                     exp.AlterColumn,
                     this=column,
                     dtype=self._match_text_seq("TYPE") and self._parse_types(),
@@ -2701,7 +2710,8 @@ class Parser(metaclass=_Parser):
                     using=self._match(TokenType.USING) and self._parse_conjunction(),
                 )
 
-        return self.expression(exp.AlterTable, this=this, exists=exists, action=action)
+        actions = ensure_list(actions)
+        return self.expression(exp.AlterTable, this=this, exists=exists, actions=actions)
 
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)
@@ -2838,7 +2848,7 @@ class Parser(metaclass=_Parser):
             return True
         return False
 
-    def _match_text_seq(self, *texts):
+    def _match_text_seq(self, *texts, advance=True):
         index = self._index
         for text in texts:
             if self._curr and self._curr.text.upper() == text:
@@ -2846,6 +2856,10 @@ class Parser(metaclass=_Parser):
             else:
                 self._retreat(index)
                 return False
+
+        if not advance:
+            self._retreat(index)
+
         return True
 
     def _replace_columns_with_dots(self, this):

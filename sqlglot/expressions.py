@@ -2198,8 +2198,8 @@ class Rollback(Expression):
 class AlterTable(Expression):
     arg_types = {
         "this": True,
+        "actions": True,
         "exists": False,
-        "action": True,
     }
 
 

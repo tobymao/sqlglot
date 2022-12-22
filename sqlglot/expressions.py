@@ -728,6 +728,7 @@ class ColumnDef(Expression):
         "this": True,
         "kind": True,
         "constraints": False,
+        "exists": False,
     }
 
 

@@ -2676,7 +2676,9 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("ADD"):
             self._match(TokenType.COLUMN)
+            exists_column = self._parse_exists(not_=True)
             action = self._parse_column_def(self._parse_field(any_token=True))
+            action.set("exists", exists_column)
         elif self._match_text_seq("DROP"):
             action = self._parse_drop(default_kind="COLUMN")
         elif self._match_text_seq("ALTER"):

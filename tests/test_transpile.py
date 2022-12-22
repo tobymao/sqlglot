@@ -268,6 +268,21 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             "WITH A(filter) AS (VALUES (1), (2), (3)) SELECT * FROM A WHERE filter >= 2",
         )
 
+    def test_alter(self):
+        self.validate(
+            "ALTER TABLE integers ADD k INTEGER",
+            "ALTER TABLE integers ADD COLUMN k INT",
+        )
+        self.validate("ALTER TABLE integers DROP k", "ALTER TABLE integers DROP COLUMN k")
+        self.validate(
+            "ALTER TABLE integers ALTER i SET DATA TYPE VARCHAR",
+            "ALTER TABLE integers ALTER COLUMN i TYPE VARCHAR",
+        )
+        self.validate(
+            "ALTER TABLE integers ALTER i TYPE VARCHAR COLLATE foo USING bar",
+            "ALTER TABLE integers ALTER COLUMN i TYPE VARCHAR COLLATE foo USING bar",
+        )
+
     def test_time(self):
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
         self.validate("TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)")

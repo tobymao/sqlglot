@@ -728,6 +728,18 @@ class ColumnDef(Expression):
         "this": True,
         "kind": True,
         "constraints": False,
+        "exists": False,
+    }
+
+
+class AlterColumn(Expression):
+    arg_types = {
+        "this": True,
+        "dtype": False,
+        "collate": False,
+        "using": False,
+        "default": False,
+        "drop": False,
     }
 
 
@@ -2171,16 +2183,24 @@ class Command(Expression):
     arg_types = {"this": True, "expression": False}
 
 
-class Transaction(Command):
+class Transaction(Expression):
     arg_types = {"this": False, "modes": False}
 
 
-class Commit(Command):
+class Commit(Expression):
     arg_types = {"chain": False}
 
 
-class Rollback(Command):
+class Rollback(Expression):
     arg_types = {"savepoint": False}
+
+
+class AlterTable(Expression):
+    arg_types = {
+        "this": True,
+        "actions": True,
+        "exists": False,
+    }
 
 
 # Binary expressions like (ADD a b)

@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
-from sqlglot.helper import apply_index_offset, ensure_collection, seq_get
+from sqlglot.helper import apply_index_offset, ensure_collection, ensure_list, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
@@ -153,6 +153,7 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE,
         TokenType.CASCADE,
         TokenType.COLLATE,
+        TokenType.COLUMN,
         TokenType.COMMAND,
         TokenType.COMMIT,
         TokenType.COMPOUND,
@@ -397,21 +398,22 @@ class Parser(metaclass=_Parser):
     }
 
     STATEMENT_PARSERS = {
+        TokenType.ALTER: lambda self: self._parse_alter(),
+        TokenType.BEGIN: lambda self: self._parse_transaction(),
+        TokenType.CACHE: lambda self: self._parse_cache(),
+        TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
         TokenType.CREATE: lambda self: self._parse_create(),
+        TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
+        TokenType.END: lambda self: self._parse_commit_or_rollback(),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.LOAD_DATA: lambda self: self._parse_load_data(),
-        TokenType.UPDATE: lambda self: self._parse_update(),
-        TokenType.DELETE: lambda self: self._parse_delete(),
-        TokenType.CACHE: lambda self: self._parse_cache(),
-        TokenType.UNCACHE: lambda self: self._parse_uncache(),
-        TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
-        TokenType.BEGIN: lambda self: self._parse_transaction(),
-        TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
-        TokenType.END: lambda self: self._parse_commit_or_rollback(),
-        TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.MERGE: lambda self: self._parse_merge(),
+        TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
+        TokenType.UNCACHE: lambda self: self._parse_uncache(),
+        TokenType.UPDATE: lambda self: self._parse_update(),
+        TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
     }
 
     UNARY_PARSERS = {
@@ -552,12 +554,13 @@ class Parser(metaclass=_Parser):
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
     CREATABLES = {
-        TokenType.TABLE,
-        TokenType.VIEW,
+        TokenType.COLUMN,
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,
         TokenType.SCHEMA,
+        TokenType.TABLE,
+        TokenType.VIEW,
     }
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
@@ -783,13 +786,16 @@ class Parser(metaclass=_Parser):
         self._parse_query_modifiers(expression)
         return expression
 
-    def _parse_drop(self):
+    def _parse_drop(self, default_kind=None):
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match(TokenType.MATERIALIZED)
         kind = self._match_set(self.CREATABLES) and self._prev.text
         if not kind:
-            self.raise_error(f"Expected {self.CREATABLES}")
-            return
+            if default_kind:
+                kind = default_kind
+            else:
+                self.raise_error(f"Expected {self.CREATABLES}")
+                return
 
         return self.expression(
             exp.Drop,
@@ -2094,7 +2100,8 @@ class Parser(metaclass=_Parser):
             return this
 
         args = self._parse_csv(
-            lambda: self._parse_constraint() or self._parse_column_def(self._parse_field(True))
+            lambda: self._parse_constraint()
+            or self._parse_column_def(self._parse_field(any_token=True))
         )
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
@@ -2660,6 +2667,54 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Rollback, savepoint=savepoint)
         return self.expression(exp.Commit, chain=chain)
 
+    def _parse_add_column(self):
+        if not self._match_text_seq("ADD"):
+            return None
+
+        self._match(TokenType.COLUMN)
+        exists_column = self._parse_exists(not_=True)
+        expression = self._parse_column_def(self._parse_field(any_token=True))
+        expression.set("exists", exists_column)
+        return expression
+
+    def _parse_drop_column(self):
+        return self._match(TokenType.DROP) and self._parse_drop(default_kind="COLUMN")
+
+    def _parse_alter(self):
+        if not self._match(TokenType.TABLE):
+            return None
+
+        exists = self._parse_exists()
+        this = self._parse_table(schema=True)
+
+        actions = None
+        if self._match_text_seq("ADD", advance=False):
+            actions = self._parse_csv(self._parse_add_column)
+        elif self._match_text_seq("DROP", advance=False):
+            actions = self._parse_csv(self._parse_drop_column)
+        elif self._match_text_seq("ALTER"):
+            self._match(TokenType.COLUMN)
+            column = self._parse_field(any_token=True)
+
+            if self._match_pair(TokenType.DROP, TokenType.DEFAULT):
+                actions = self.expression(exp.AlterColumn, this=column, drop=True)
+            elif self._match_pair(TokenType.SET, TokenType.DEFAULT):
+                actions = self.expression(
+                    exp.AlterColumn, this=column, default=self._parse_conjunction()
+                )
+            else:
+                self._match_text_seq("SET", "DATA")
+                actions = self.expression(
+                    exp.AlterColumn,
+                    this=column,
+                    dtype=self._match_text_seq("TYPE") and self._parse_types(),
+                    collate=self._match(TokenType.COLLATE) and self._parse_term(),
+                    using=self._match(TokenType.USING) and self._parse_conjunction(),
+                )
+
+        actions = ensure_list(actions)
+        return self.expression(exp.AlterTable, this=this, exists=exists, actions=actions)
+
     def _parse_show(self):
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)
         if parser:
@@ -2795,7 +2850,7 @@ class Parser(metaclass=_Parser):
             return True
         return False
 
-    def _match_text_seq(self, *texts):
+    def _match_text_seq(self, *texts, advance=True):
         index = self._index
         for text in texts:
             if self._curr and self._curr.text.upper() == text:
@@ -2803,6 +2858,10 @@ class Parser(metaclass=_Parser):
             else:
                 self._retreat(index)
                 return False
+
+        if not advance:
+            self._retreat(index)
+
         return True
 
     def _replace_columns_with_dots(self, this):

@@ -87,6 +87,16 @@ class Spark(Hive):
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
+        def _parse_add_column(self):
+            return self._match_text_seq("ADD", "COLUMNS") and self._parse_schema()
+
+        def _parse_drop_column(self):
+            return self._match_text_seq("DROP", "COLUMNS") and self.expression(
+                exp.Drop,
+                this=self._parse_schema(),
+                kind="COLUMNS",
+            )
+
     class Generator(Hive.Generator):
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,  # type: ignore

@@ -111,6 +111,7 @@ class TokenType(AutoName):
 
     # keywords
     ALIAS = auto()
+    ALTER = auto()
     ALWAYS = auto()
     ALL = auto()
     ANTI = auto()
@@ -470,6 +471,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CHECK": TokenType.CHECK,
         "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
+        "COLUMN": TokenType.COLUMN,
         "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
         "COMPOUND": TokenType.COMPOUND,
@@ -667,7 +669,16 @@ class Tokenizer(metaclass=_Tokenizer):
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
         "VARIANT": TokenType.VARIANT,
-        "ALTER": TokenType.COMMAND,
+        "ALTER": TokenType.ALTER,
+        "ALTER AGGREGATE": TokenType.COMMAND,
+        "ALTER DEFAULT": TokenType.COMMAND,
+        "ALTER DOMAIN": TokenType.COMMAND,
+        "ALTER ROLE": TokenType.COMMAND,
+        "ALTER RULE": TokenType.COMMAND,
+        "ALTER SEQUENCE": TokenType.COMMAND,
+        "ALTER TYPE": TokenType.COMMAND,
+        "ALTER USER": TokenType.COMMAND,
+        "ALTER VIEW": TokenType.COMMAND,
         "ANALYZE": TokenType.COMMAND,
         "CALL": TokenType.COMMAND,
         "EXPLAIN": TokenType.COMMAND,

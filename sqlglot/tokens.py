@@ -59,7 +59,6 @@ class TokenType(AutoName):
     NUMBER = auto()
     IDENTIFIER = auto()
     COLUMN = auto()
-    COLUMNS = auto()
     COLUMN_DEF = auto()
     SCHEMA = auto()
     TABLE = auto()

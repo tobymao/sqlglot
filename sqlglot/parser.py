@@ -553,7 +553,7 @@ class Parser(metaclass=_Parser):
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
-    CREATABLE = {
+    CREATABLES = {
         TokenType.COLUMN,
         TokenType.FUNCTION,
         TokenType.INDEX,
@@ -789,12 +789,12 @@ class Parser(metaclass=_Parser):
     def _parse_drop(self, default_kind=None):
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match(TokenType.MATERIALIZED)
-        kind = self._match_set(self.CREATABLE) and self._prev.text
+        kind = self._match_set(self.CREATABLES) and self._prev.text
         if not kind:
             if default_kind:
                 kind = default_kind
             else:
-                self.raise_error(f"Expected {self.CREATABLE}")
+                self.raise_error(f"Expected {self.CREATABLES}")
                 return
 
         return self.expression(
@@ -825,10 +825,10 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
 
-        create_token = self._match_set(self.CREATABLE) and self._prev
+        create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
-            self.raise_error(f"Expected {self.CREATABLE}")
+            self.raise_error(f"Expected {self.CREATABLES}")
             return
 
         exists = self._parse_exists(not_=True)

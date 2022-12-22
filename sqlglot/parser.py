@@ -2668,11 +2668,17 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Commit, chain=chain)
 
     def _parse_add_column(self):
+        if not self._match_text_seq("ADD"):
+            return None
+
         self._match(TokenType.COLUMN)
         exists_column = self._parse_exists(not_=True)
         expression = self._parse_column_def(self._parse_field(any_token=True))
         expression.set("exists", exists_column)
         return expression
+
+    def _parse_drop_column(self):
+        return self._match(TokenType.DROP) and self._parse_drop(default_kind="COLUMN")
 
     def _parse_alter(self):
         if not self._match(TokenType.TABLE):
@@ -2683,13 +2689,9 @@ class Parser(metaclass=_Parser):
 
         actions = None
         if self._match_text_seq("ADD", advance=False):
-            actions = self._parse_csv(
-                lambda: self._match_text_seq("ADD") and self._parse_add_column()
-            )
+            actions = self._parse_csv(self._parse_add_column)
         elif self._match_text_seq("DROP", advance=False):
-            actions = self._parse_csv(
-                lambda: self._match_text_seq("DROP") and self._parse_drop(default_kind="COLUMN")
-            )
+            actions = self._parse_csv(self._parse_drop_column)
         elif self._match_text_seq("ALTER"):
             self._match(TokenType.COLUMN)
             column = self._parse_field(any_token=True)

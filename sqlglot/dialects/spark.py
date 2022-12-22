@@ -4,6 +4,7 @@ from sqlglot import exp, parser
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 def _create_sql(self, e):
@@ -87,6 +88,21 @@ class Spark(Hive):
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
+        CREATABLES = {
+            *Hive.Parser.CREATABLES,  # type: ignore
+            TokenType.COLUMNS,
+        }
+
+        def _parse_add_column(self):
+            return self._match_text_seq("ADD", "COLUMNS") and self._parse_schema()
+
+        def _parse_drop_column(self):
+            return self._match_text_seq("DROP", "COLUMNS") and self.expression(
+                exp.Drop,
+                this=self._parse_schema(),
+                kind="COLUMNS",
+            )
+
     class Generator(Hive.Generator):
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,  # type: ignore
@@ -122,3 +138,8 @@ class Spark(Hive):
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'")]
+
+        KEYWORDS = {
+            **Hive.Tokenizer.KEYWORDS,  # type: ignore
+            "COLUMNS": TokenType.COLUMNS,
+        }

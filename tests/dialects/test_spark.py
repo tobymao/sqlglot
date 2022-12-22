@@ -101,6 +101,18 @@ TBLPROPERTIES (
                 "spark": "CACHE TABLE testCache OPTIONS('storageLevel' = 'DISK_ONLY') AS SELECT * FROM testData"
             },
         )
+        self.validate_all(
+            "ALTER TABLE StudentInfo ADD COLUMNS (LastName STRING, DOB TIMESTAMP)",
+            write={
+                "spark": "ALTER TABLE StudentInfo ADD COLUMNS (LastName STRING, DOB TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
+            write={
+                "spark": "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
+            },
+        )
 
     def test_to_date(self):
         self.validate_all(

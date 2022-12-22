@@ -1271,6 +1271,8 @@ class Generator:
 
         if isinstance(actions[0], exp.ColumnDef):
             actions = self.expressions(expression, "actions", prefix="ADD COLUMN ")
+        elif isinstance(actions[0], exp.Schema):
+            actions = self.expressions(expression, "actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Drop):
             actions = self.expressions(expression, "actions")
         elif isinstance(actions[0], exp.AlterColumn):

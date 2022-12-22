@@ -111,7 +111,7 @@ class TokenType(AutoName):
 
     # keywords
     ALIAS = auto()
-    ALTER_TABLE = auto()
+    ALTER = auto()
     ALWAYS = auto()
     ALL = auto()
     ANTI = auto()
@@ -452,7 +452,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
         "ALL": TokenType.ALL,
-        "ALTER TABLE": TokenType.ALTER_TABLE,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,
@@ -670,7 +669,16 @@ class Tokenizer(metaclass=_Tokenizer):
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
         "VARIANT": TokenType.VARIANT,
-        "ALTER": TokenType.COMMAND,
+        "ALTER": TokenType.ALTER,
+        "ALTER AGGREGATE": TokenType.COMMAND,
+        "ALTER DEFAULT": TokenType.COMMAND,
+        "ALTER DOMAIN": TokenType.COMMAND,
+        "ALTER ROLE": TokenType.COMMAND,
+        "ALTER RULE": TokenType.COMMAND,
+        "ALTER SEQUENCE": TokenType.COMMAND,
+        "ALTER TYPE": TokenType.COMMAND,
+        "ALTER USER": TokenType.COMMAND,
+        "ALTER VIEW": TokenType.COMMAND,
         "ANALYZE": TokenType.COMMAND,
         "CALL": TokenType.COMMAND,
         "EXPLAIN": TokenType.COMMAND,

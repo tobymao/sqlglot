@@ -398,22 +398,22 @@ class Parser(metaclass=_Parser):
     }
 
     STATEMENT_PARSERS = {
+        TokenType.ALTER: lambda self: self._parse_alter(),
+        TokenType.BEGIN: lambda self: self._parse_transaction(),
+        TokenType.CACHE: lambda self: self._parse_cache(),
+        TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
         TokenType.CREATE: lambda self: self._parse_create(),
+        TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
+        TokenType.END: lambda self: self._parse_commit_or_rollback(),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.LOAD_DATA: lambda self: self._parse_load_data(),
-        TokenType.UPDATE: lambda self: self._parse_update(),
-        TokenType.DELETE: lambda self: self._parse_delete(),
-        TokenType.CACHE: lambda self: self._parse_cache(),
-        TokenType.UNCACHE: lambda self: self._parse_uncache(),
-        TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
-        TokenType.BEGIN: lambda self: self._parse_transaction(),
-        TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
-        TokenType.END: lambda self: self._parse_commit_or_rollback(),
-        TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
-        TokenType.ALTER_TABLE: lambda self: self._parse_alter_table(),
         TokenType.MERGE: lambda self: self._parse_merge(),
+        TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
+        TokenType.UNCACHE: lambda self: self._parse_uncache(),
+        TokenType.UPDATE: lambda self: self._parse_update(),
+        TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
     }
 
     UNARY_PARSERS = {
@@ -2667,7 +2667,10 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Rollback, savepoint=savepoint)
         return self.expression(exp.Commit, chain=chain)
 
-    def _parse_alter_table(self):
+    def _parse_alter(self):
+        if not self._match(TokenType.TABLE):
+            return None
+
         exists = self._parse_exists()
         this = self._parse_table(schema=True)
 
@@ -2691,7 +2694,7 @@ class Parser(metaclass=_Parser):
                 action = self.expression(
                     exp.AlterColumn,
                     this=column,
-                    dtype=self._match_text_seq("TYPE") and self._parse_type(),
+                    dtype=self._match_text_seq("TYPE") and self._parse_types(),
                     collate=self._match(TokenType.COLLATE) and self._parse_term(),
                     using=self._match(TokenType.USING) and self._parse_conjunction(),
                 )

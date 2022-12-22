@@ -1262,7 +1262,7 @@ class Generator:
             return f"ALTER COLUMN {this} SET DEFAULT {default}"
 
         if not expression.args.get("drop"):
-            self.unsupported("Invalid ALTER COLUMN syntax form")
+            self.unsupported("Unsupported ALTER COLUMN syntax")
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
@@ -1274,7 +1274,7 @@ class Generator:
         elif isinstance(action, (exp.Drop, exp.AlterColumn)):
             action = self.sql(action)
         else:
-            self.unsupported(f"Unsupported alter table action {action.__class__.__name__}")
+            self.unsupported(f"Unsupported ALTER TABLE action {action.__class__.__name__}")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {action}"

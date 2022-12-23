@@ -422,6 +422,14 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             with self.subTest(sql):
                 self.assertEqual(transpile(sql)[0], sql.strip())
 
+    def test_normalize_name(self):
+        self.assertEqual(
+            transpile("cardinality(x)", read="presto", write="presto", normalize_functions="lower")[
+                0
+            ],
+            "cardinality(x)",
+        )
+
     def test_partial(self):
         for sql in load_sql_fixtures("partial.sql"):
             with self.subTest(sql):

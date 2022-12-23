@@ -198,7 +198,7 @@ class Dialect(metaclass=_Dialect):
 def rename_func(name):
     def _rename(self, expression):
         args = flatten(expression.args.values())
-        return f"{name}({self.format_args(*args)})"
+        return f"{self.normalize_func(name)}({self.format_args(*args)})"
 
     return _rename
 

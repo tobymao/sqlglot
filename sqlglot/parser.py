@@ -1218,11 +1218,12 @@ class Parser(metaclass=_Parser):
         alias = self._parse_id_var(
             any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
         )
-        columns = None
 
         if self._match(TokenType.L_PAREN):
-            columns = self._parse_csv(lambda: self._parse_id_var(any_token))
+            columns = self._parse_csv(lambda: self._parse_column_def(self._parse_id_var()))
             self._match_r_paren()
+        else:
+            columns = None
 
         if not alias and not columns:
             return None

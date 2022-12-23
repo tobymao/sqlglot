@@ -38,8 +38,8 @@ def _datatype_sql(self, expression):
     return sql
 
 
-def _date_parse_sql(self, expression):
-    return f"DATE_PARSE({self.sql(expression, 'this')}, '%Y-%m-%d %H:%i:%s')"
+def _timestr_to_time_sql(self, expression):
+    return f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
 
 
 def _explode_to_unnest_sql(self, expression):
@@ -224,8 +224,8 @@ class Presto(Dialect):
             exp.StructExtract: struct_extract_sql,
             exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT='{e.name.upper()}'",
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
-            exp.TimeStrToDate: _date_parse_sql,
-            exp.TimeStrToTime: _date_parse_sql,
+            exp.TimeStrToDate: _timestr_to_time_sql,
+            exp.TimeStrToTime: _timestr_to_time_sql,
             exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.time_format}))",
             exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),

@@ -141,7 +141,7 @@ def _serial_to_generated(expression):
 
 def _to_timestamp(args):
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
-    if len(args) == 1 and args[0].is_number:
+    if len(args) == 1:
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TABLE
         return exp.UnixToTime.from_arg_list(args)
     # https://www.postgresql.org/docs/current/functions-formatting.html

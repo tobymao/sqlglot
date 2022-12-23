@@ -116,6 +116,10 @@ class TestPostgres(Validator):
             "123::CHARACTER VARYING",
             write={"postgres": "CAST(123 AS VARCHAR)"},
         )
+        self.validate_all(
+            "TO_TIMESTAMP(123::DOUBLE PRECISION)",
+            write={"postgres": "TO_TIMESTAMP(CAST(123 AS DOUBLE PRECISION))"},
+        )
 
         self.validate_identity(
             "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"

@@ -48,6 +48,7 @@ class TokenType(AutoName):
     DOLLAR = auto()
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
+    NATIONAL = auto()
 
     BLOCK_START = auto()
     BLOCK_END = auto()
@@ -347,7 +348,11 @@ class _Tokenizer(type):
     def __new__(cls, clsname, bases, attrs):  # type: ignore
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        klass._QUOTES = cls._delimeter_list_to_dict(klass.QUOTES)
+        klass._QUOTES = {
+            f"{prefix}{s}": e
+            for s, e in cls._delimeter_list_to_dict(klass.QUOTES).items()
+            for prefix in (("",) if s[0].isalpha() else ("", "n", "N"))
+        }
         klass._BIT_STRINGS = cls._delimeter_list_to_dict(klass.BIT_STRINGS)
         klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
         klass._BYTE_STRINGS = cls._delimeter_list_to_dict(klass.BYTE_STRINGS)
@@ -978,7 +983,7 @@ class Tokenizer(metaclass=_Tokenizer):
         text = self._extract_string(quote_end)
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text  # type: ignore
         text = text.replace("\\\\", "\\") if self._replace_backslash else text
-        self._add(TokenType.STRING, text)
+        self._add(TokenType.NATIONAL if quote[0].upper() == "N" else TokenType.STRING, text)
         return True
 
     # X'1234, b'0110', E'\\\\\' etc.

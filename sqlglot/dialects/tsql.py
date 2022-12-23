@@ -224,11 +224,7 @@ class TSQL(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]")]
 
-        QUOTES = [
-            (prefix + quote, quote) if prefix else quote
-            for quote in ["'", '"']
-            for prefix in ["", "n", "N"]
-        ]
+        QUOTES = ["'", '"']
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

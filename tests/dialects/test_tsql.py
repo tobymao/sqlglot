@@ -431,11 +431,11 @@ class TestTSQL(Validator):
     def test_string(self):
         self.validate_all(
             "SELECT N'test'",
-            write={"spark": "SELECT 'test'"},
+            write={"spark": "SELECT N'test'"},
         )
         self.validate_all(
             "SELECT n'test'",
-            write={"spark": "SELECT 'test'"},
+            write={"spark": "SELECT N'test'"},
         )
         self.validate_all(
             "SELECT '''test'''",

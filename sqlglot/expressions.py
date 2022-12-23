@@ -893,6 +893,11 @@ class Introducer(Expression):
     arg_types = {"this": True, "expression": True}
 
 
+# national char, like n'utf8'
+class National(Expression):
+    pass
+
+
 class LoadData(Expression):
     arg_types = {
         "this": True,

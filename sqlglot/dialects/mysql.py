@@ -161,8 +161,6 @@ class MySQL(Dialect):
             "_UCS2": TokenType.INTRODUCER,
             "_UJIS": TokenType.INTRODUCER,
             # https://dev.mysql.com/doc/refman/8.0/en/string-literals.html
-            "N": TokenType.INTRODUCER,
-            "n": TokenType.INTRODUCER,
             "_UTF8": TokenType.INTRODUCER,
             "_UTF16": TokenType.INTRODUCER,
             "_UTF16LE": TokenType.INTRODUCER,

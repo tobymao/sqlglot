@@ -59,7 +59,7 @@ class TestDuckDB(Validator):
             "TO_TIMESTAMP(x)",
             write={
                 "duckdb": "CAST(x AS TIMESTAMP)",
-                "presto": "DATE_PARSE(x, '%Y-%m-%d %H:%i:%s')",
+                "presto": "CAST(x AS TIMESTAMP)",
                 "hive": "CAST(x AS TIMESTAMP)",
             },
         )

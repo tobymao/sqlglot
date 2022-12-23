@@ -217,7 +217,12 @@ class Hive(Dialect):
                 ),
                 unit=exp.Literal.string("DAY"),
             ),
-            "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "hive"),
+            "DATE_FORMAT": lambda args: format_time_lambda(exp.TimeToStr, "hive")(
+                [
+                    exp.TimeStrToTime(this=seq_get(args, 0)),
+                    seq_get(args, 1),
+                ]
+            ),
             "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "FROM_UNIXTIME": format_time_lambda(exp.UnixToStr, "hive", True),
             "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,

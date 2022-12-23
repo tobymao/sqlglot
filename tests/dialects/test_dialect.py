@@ -333,7 +333,7 @@ class TestDialect(Validator):
                 "drill": "CAST('2020-01-01' AS DATE)",
                 "duckdb": "CAST('2020-01-01' AS DATE)",
                 "hive": "TO_DATE('2020-01-01')",
-                "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
+                "presto": "CAST('2020-01-01' AS TIMESTAMP)",
                 "starrocks": "TO_DATE('2020-01-01')",
             },
         )
@@ -343,7 +343,7 @@ class TestDialect(Validator):
                 "drill": "CAST('2020-01-01' AS TIMESTAMP)",
                 "duckdb": "CAST('2020-01-01' AS TIMESTAMP)",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
-                "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%s')",
+                "presto": "CAST('2020-01-01' AS TIMESTAMP)",
             },
         )
         self.validate_all(

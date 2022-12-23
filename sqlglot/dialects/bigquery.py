@@ -112,7 +112,6 @@ class BigQuery(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
-            "CREATE SESSION": TokenType.COMMAND,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
             "GEOGRAPHY": TokenType.GEOGRAPHY,

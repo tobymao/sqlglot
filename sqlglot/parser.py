@@ -567,7 +567,6 @@ class Parser(metaclass=_Parser):
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
     STRICT_CAST = True
-    LATERAL_FUNCTION_AS_VIEW = False
 
     __slots__ = (
         "error_level",
@@ -1313,26 +1312,19 @@ class Parser(metaclass=_Parser):
                     expression=self._parse_function() or self._parse_id_var(any_token=False),
                 )
 
-        columns = None
-        table_alias = None
-        if view or self.LATERAL_FUNCTION_AS_VIEW:
-            table_alias = self._parse_id_var(any_token=False)
-            if self._match(TokenType.ALIAS):
-                columns = self._parse_csv(self._parse_id_var)
+        if view:
+            table = self._parse_id_var(any_token=False)
+            columns = self._parse_csv(self._parse_id_var) if self._match(TokenType.ALIAS) else []
+            table_alias = self.expression(exp.TableAlias, this=table, columns=columns)
         else:
-            self._match(TokenType.ALIAS)
-            table_alias = self._parse_id_var(any_token=False)
-
-            if self._match(TokenType.L_PAREN):
-                columns = self._parse_csv(self._parse_id_var)
-                self._match_r_paren()
+            table_alias = self._parse_table_alias()
 
         expression = self.expression(
             exp.Lateral,
             this=this,
             view=view,
             outer=outer,
-            alias=self.expression(exp.TableAlias, this=table_alias, columns=columns),
+            alias=table_alias,
         )
 
         if outer_apply or cross_apply:

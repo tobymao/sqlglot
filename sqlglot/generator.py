@@ -550,6 +550,9 @@ class Generator:
             text = f"{self.identifier_start}{text}{self.identifier_end}"
         return text
 
+    def national_sql(self, expression: exp.National) -> str:
+        return f"N{self.sql(expression, 'this')}"
+
     def partition_sql(self, expression: exp.Partition) -> str:
         keys = csv(
             *[

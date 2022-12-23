@@ -91,12 +91,12 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
-            "N 'some text'",
+            "N'some text'",
             read={
-                "mysql": "N'some text'",
+                "mysql": "n'some text'",
             },
             write={
-                "mysql": "N 'some text'",
+                "mysql": "N'some text'",
             },
         )
         self.validate_all(

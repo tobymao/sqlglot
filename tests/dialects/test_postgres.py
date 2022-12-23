@@ -112,6 +112,10 @@ class TestPostgres(Validator):
                 "spark": "CREATE TABLE x (a UUID, b BINARY)",
             },
         )
+        self.validate_all(
+            "123::CHARACTER VARYING",
+            write={"postgres": "CAST(123 AS VARCHAR)"},
+        )
 
         self.validate_identity(
             "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"

@@ -216,6 +216,7 @@ class Postgres(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
             "BY DEFAULT": TokenType.BY_DEFAULT,
+            "CHARACTER VARYING": TokenType.VARCHAR,
             "COMMENT ON": TokenType.COMMAND,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,

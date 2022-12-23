@@ -12,7 +12,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     str_position_sql,
 )
-from sqlglot.dialects.postgres import _lateral_sql
 
 
 def _to_timestamp(args):
@@ -141,7 +140,6 @@ class Drill(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.Lateral: _lateral_sql,
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),
             exp.Create: create_with_partitions_sql,

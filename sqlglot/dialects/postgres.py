@@ -34,18 +34,6 @@ def _date_add_sql(kind):
     return func
 
 
-def _lateral_sql(self, expression):
-    this = self.sql(expression, "this")
-    if isinstance(expression.this, exp.Subquery):
-        return f"LATERAL{self.sep()}{this}"
-    alias = expression.args["alias"]
-    table = alias.name
-    table = f" {table}" if table else table
-    columns = self.expressions(alias, key="columns", flat=True)
-    columns = f" AS {columns}" if columns else ""
-    return f"LATERAL{self.sep()}{this}{table}{columns}"
-
-
 def _substring_sql(self, expression):
     this = self.sql(expression, "this")
     start = self.sql(expression, "start")
@@ -245,7 +233,6 @@ class Postgres(Dialect):
 
     class Parser(parser.Parser):
         STRICT_CAST = False
-        LATERAL_FUNCTION_AS_VIEW = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
@@ -281,7 +268,6 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
-            exp.Lateral: _lateral_sql,
             exp.StrPosition: str_position_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,

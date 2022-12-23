@@ -797,19 +797,17 @@ class Generator:
         if isinstance(expression.this, exp.Subquery):
             return f"LATERAL {this}"
 
-        alias = expression.args["alias"]
-        table = alias.name
-        columns = self.expressions(alias, key="columns", flat=True)
-
         if expression.args.get("view"):
-            table = f" {table}" if table else table
+            alias = expression.args["alias"]
+            columns = self.expressions(alias, key="columns", flat=True)
+            table = f" {alias.name}" if alias.name else ""
             columns = f" AS {columns}" if columns else ""
             op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
             return f"{op_sql}{self.sep()}{this}{table}{columns}"
 
-        table = f" AS {table}" if table else table
-        columns = f"({columns})" if columns else ""
-        return f"LATERAL {this}{table}{columns}"
+        alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else ""
+        return f"LATERAL {this}{alias}"
 
     def limit_sql(self, expression: exp.Limit) -> str:
         this = self.sql(expression, "this")

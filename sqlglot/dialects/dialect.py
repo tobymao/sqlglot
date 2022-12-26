@@ -217,11 +217,11 @@ def if_sql(self, expression):
 
 
 def arrow_json_extract_sql(self, expression):
-    return f"{self.sql(expression, 'this')}->{self.sql(expression, 'path')}"
+    return self.binary(expression, "->")
 
 
 def arrow_json_extract_scalar_sql(self, expression):
-    return f"{self.sql(expression, 'this')}->>{self.sql(expression, 'path')}"
+    return self.binary(expression, "->>")
 
 
 def inline_array_sql(self, expression):

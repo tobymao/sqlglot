@@ -2763,8 +2763,11 @@ class Initcap(Func):
     pass
 
 
-class JSONExtract(Func):
-    arg_types = {"this": True, "path": True}
+class JSONBContains(Binary):
+    _sql_names = ["JSONB_CONTAINS"]
+
+
+class JSONExtract(Binary, Func):
     _sql_names = ["JSON_EXTRACT"]
 
 

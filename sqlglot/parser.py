@@ -353,22 +353,27 @@ class Parser(metaclass=_Parser):
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
             this=this,
-            path=path,
+            expression=path,
         ),
         TokenType.DARROW: lambda self, this, path: self.expression(
             exp.JSONExtractScalar,
             this=this,
-            path=path,
+            expression=path,
         ),
         TokenType.HASH_ARROW: lambda self, this, path: self.expression(
             exp.JSONBExtract,
             this=this,
-            path=path,
+            expression=path,
         ),
         TokenType.DHASH_ARROW: lambda self, this, path: self.expression(
             exp.JSONBExtractScalar,
             this=this,
-            path=path,
+            expression=path,
+        ),
+        TokenType.PLACEHOLDER: lambda self, this, key: self.expression(
+            exp.JSONBContains,
+            this=this,
+            expression=key,
         ),
     }
 

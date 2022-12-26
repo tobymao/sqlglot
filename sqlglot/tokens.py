@@ -198,6 +198,7 @@ class TokenType(AutoName):
     INTERVAL = auto()
     INTO = auto()
     INTRODUCER = auto()
+    IRLIKE = auto()
     IS = auto()
     ISNULL = auto()
     JOIN = auto()
@@ -456,8 +457,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
-        "~~": TokenType.LIKE,
-        "~~*": TokenType.ILIKE,
         "ALL": TokenType.ALL,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,

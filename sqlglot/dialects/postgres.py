@@ -199,6 +199,10 @@ class Postgres(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "~~": TokenType.LIKE,
+            "~~*": TokenType.ILIKE,
+            "~*": TokenType.IRLIKE,
+            "~": TokenType.RLIKE,
             "ALWAYS": TokenType.ALWAYS,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
@@ -268,6 +272,8 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
+            exp.RegexpLike: lambda self, e: self.binary(e, "~"),
+            exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,

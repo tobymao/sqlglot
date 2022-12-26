@@ -2879,6 +2879,10 @@ class RegexpLike(Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 
+class RegexpILike(Func):
+    arg_types = {"this": True, "expression": True, "flag": False}
+
+
 class RegexpSplit(Func):
     arg_types = {"this": True, "expression": True}
 

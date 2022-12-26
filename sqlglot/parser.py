@@ -548,8 +548,8 @@ class Parser(metaclass=_Parser):
         "group": lambda self: self._parse_group(),
         "having": lambda self: self._parse_having(),
         "qualify": lambda self: self._parse_qualify(),
-        "window": lambda self: self._match(TokenType.WINDOW)
-        and self._parse_window(self._parse_id_var(), alias=True),
+        "windows": lambda self: self._match(TokenType.WINDOW)
+        and self._parse_csv(lambda: self._parse_window(self._parse_id_var(), alias=True)),
         "distribute": lambda self: self._parse_sort(TokenType.DISTRIBUTE_BY, exp.Distribute),
         "sort": lambda self: self._parse_sort(TokenType.SORT_BY, exp.Sort),
         "cluster": lambda self: self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),

@@ -225,12 +225,13 @@ class Parser(metaclass=_Parser):
         TokenType.PROPERTIES,
         TokenType.PROCEDURE,
         TokenType.VOLATILE,
+        TokenType.WINDOW,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
         *NO_PAREN_FUNCTIONS,
     }
 
-    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY}
+    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY, TokenType.WINDOW}
 
     UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
 
@@ -260,6 +261,7 @@ class Parser(metaclass=_Parser):
         TokenType.TABLE,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
+        TokenType.WINDOW,
         *TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }

@@ -227,7 +227,6 @@ class Postgres(Dialect):
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "TEMP": TokenType.TEMPORARY,
             "UUID": TokenType.UUID,
-            "WINDOW": TokenType.WINDOW,
             "CSTRING": TokenType.PSEUDO_TYPE,
             **{f"CREATE {kind}": TokenType.COMMAND for kind in CREATABLES},
             **{f"DROP {kind}": TokenType.COMMAND for kind in CREATABLES},

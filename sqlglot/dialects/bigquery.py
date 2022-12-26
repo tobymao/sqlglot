@@ -120,7 +120,6 @@ class BigQuery(Dialect):
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "QUALIFY": TokenType.QUALIFY,
             "UNKNOWN": TokenType.NULL,
-            "WINDOW": TokenType.WINDOW,
         }
         KEYWORDS.pop("DIV")
 

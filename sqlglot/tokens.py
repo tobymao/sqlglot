@@ -624,6 +624,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "VOLATILE": TokenType.VOLATILE,
         "WHEN": TokenType.WHEN,
         "WHERE": TokenType.WHERE,
+        "WINDOW": TokenType.WINDOW,
         "WITH": TokenType.WITH,
         "WITH TIME ZONE": TokenType.WITH_TIME_ZONE,
         "WITH LOCAL TIME ZONE": TokenType.WITH_LOCAL_TIME_ZONE,

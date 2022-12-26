@@ -284,6 +284,17 @@ class TestPostgres(Validator):
             write={"postgres": "UPDATE MYTABLE AS T1 SET T1.COL = 13"},
         )
 
+        self.validate_identity("x ~ 'y'")
+        self.validate_identity("x ~* 'y'")
+        self.validate_all(
+            "x !~ 'y'",
+            write={"postgres": "NOT x ~ 'y'"},
+        )
+        self.validate_all(
+            "x !~* 'y'",
+            write={"postgres": "NOT x ~* 'y'"},
+        )
+
         self.validate_all(
             "x ~~ 'y'",
             write={"postgres": "x LIKE 'y'"},

@@ -458,6 +458,9 @@ class Parser(metaclass=_Parser):
         TokenType.ILIKE: lambda self, this: self._parse_escape(
             self.expression(exp.ILike, this=this, expression=self._parse_bitwise())
         ),
+        TokenType.IRLIKE: lambda self, this: self.expression(
+            exp.RegexpILike, this=this, expression=self._parse_bitwise()
+        ),
         TokenType.RLIKE: lambda self, this: self.expression(
             exp.RegexpLike, this=this, expression=self._parse_bitwise()
         ),

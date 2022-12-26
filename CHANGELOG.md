@@ -1,6 +1,17 @@
 Changelog
 =========
 
+v10.3.0
+------
+
+Changes:
+
+- Breaking: Json ops changed to binary expressions.
+
+- New: Jinja tokenization.
+
+- Improvement: More robust type inference.
+
 v10.2.0
 ------
 

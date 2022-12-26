@@ -283,3 +283,20 @@ class TestPostgres(Validator):
             "UPDATE MYTABLE T1 SET T1.COL = 13",
             write={"postgres": "UPDATE MYTABLE AS T1 SET T1.COL = 13"},
         )
+
+        self.validate_all(
+            "x ~~ 'y'",
+            write={"postgres": "x LIKE 'y'"},
+        )
+        self.validate_all(
+            "x ~~* 'y'",
+            write={"postgres": "x ILIKE 'y'"},
+        )
+        self.validate_all(
+            "x !~~ 'y'",
+            write={"postgres": "NOT x LIKE 'y'"},
+        )
+        self.validate_all(
+            "x !~~* 'y'",
+            write={"postgres": "NOT x ILIKE 'y'"},
+        )

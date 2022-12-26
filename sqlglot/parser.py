@@ -2228,7 +2228,10 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.L_BRACKET):
             return this
 
-        expressions = self._parse_csv(self._parse_conjunction)
+        if self._match(TokenType.COLON):
+            expressions = [self.expression(exp.Slice, expression=self._parse_conjunction())]
+        else:
+            expressions = self._parse_csv(lambda: self._parse_slice(self._parse_conjunction()))
 
         if not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
@@ -2241,6 +2244,11 @@ class Parser(metaclass=_Parser):
 
         this.comments = self._prev_comments
         return self._parse_bracket(this)
+
+    def _parse_slice(self, this):
+        if self._match(TokenType.COLON):
+            return self.expression(exp.Slice, this=this, expression=self._parse_conjunction())
+        return this
 
     def _parse_case(self):
         ifs = []
@@ -2568,8 +2576,9 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.PLACEHOLDER):
             return self.expression(exp.Placeholder)
         elif self._match(TokenType.COLON):
-            self._advance()
-            return self.expression(exp.Placeholder, this=self._prev.text)
+            if self._match_set((TokenType.NUMBER, TokenType.VAR)):
+                return self.expression(exp.Placeholder, this=self._prev.text)
+            self._advance(-1)
         return None
 
     def _parse_except(self):

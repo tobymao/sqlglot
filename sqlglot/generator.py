@@ -1366,6 +1366,9 @@ class Generator:
     def or_sql(self, expression: exp.Or) -> str:
         return self.connector_sql(expression, "OR")
 
+    def slice_sql(self, expression: exp.Slice) -> str:
+        return self.binary(expression, ":")
+
     def sub_sql(self, expression: exp.Sub) -> str:
         return self.binary(expression, "-")
 

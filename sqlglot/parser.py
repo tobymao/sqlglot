@@ -1937,7 +1937,15 @@ class Parser(metaclass=_Parser):
 
     def _parse_primary(self):
         if self._match_set(self.PRIMARY_PARSERS):
-            return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
+            primary = self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
+
+            if self._prev.token_type == TokenType.STRING:
+                expressions = [primary]
+                while self._match(TokenType.STRING):
+                    expressions.append(exp.Literal.string(self._prev.text))
+                if len(expressions) > 1:
+                    return self.expression(exp.Concat, expressions=expressions)
+            return primary
 
         if self._match_pair(TokenType.DOT, TokenType.NUMBER):
             return exp.Literal.number(f"0.{self._prev.text}")

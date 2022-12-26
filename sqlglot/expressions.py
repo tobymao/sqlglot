@@ -2161,6 +2161,11 @@ class DataType(Expression):
         )
 
 
+# https://www.postgresql.org/docs/15/datatype-pseudo.html
+class PseudoType(Expression):
+    pass
+
+
 class StructKwarg(Expression):
     arg_types = {"this": True, "expression": True}
 

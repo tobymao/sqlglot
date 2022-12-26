@@ -117,6 +117,7 @@ class Parser(metaclass=_Parser):
         TokenType.GEOMETRY,
         TokenType.HLLSKETCH,
         TokenType.HSTORE,
+        TokenType.PSEUDO_TYPE,
         TokenType.SUPER,
         TokenType.SERIAL,
         TokenType.SMALLSERIAL,
@@ -1818,6 +1819,10 @@ class Parser(metaclass=_Parser):
             return None
 
         type_token = self._prev.token_type
+
+        if type_token == TokenType.PSEUDO_TYPE:
+            return self.expression(exp.PseudoType, this=self._prev.text)
+
         nested = type_token in self.NESTED_TYPE_TOKENS
         is_struct = type_token == TokenType.STRUCT
         expressions = None

@@ -244,6 +244,7 @@ class TokenType(AutoName):
     PRIMARY_KEY = auto()
     PROCEDURE = auto()
     PROPERTIES = auto()
+    PSEUDO_TYPE = auto()
     QUALIFY = auto()
     QUOTE = auto()
     RANGE = auto()

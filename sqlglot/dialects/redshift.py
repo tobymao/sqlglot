@@ -36,7 +36,6 @@ class Redshift(Postgres):
             "TIMETZ": TokenType.TIMESTAMPTZ,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
-            "SIMILAR TO": TokenType.SIMILAR_TO,
         }
 
     class Generator(Postgres.Generator):

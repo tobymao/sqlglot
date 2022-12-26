@@ -596,6 +596,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SEMI": TokenType.SEMI,
         "SET": TokenType.SET,
         "SHOW": TokenType.SHOW,
+        "SIMILAR TO": TokenType.SIMILAR_TO,
         "SOME": TokenType.SOME,
         "SORTKEY": TokenType.SORTKEY,
         "SORT BY": TokenType.SORT_BY,

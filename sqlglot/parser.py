@@ -1862,6 +1862,8 @@ class Parser(metaclass=_Parser):
 
             if value is None:
                 value = exp.DataType(this=exp.DataType.Type.TIMESTAMP, expressions=expressions)
+        elif type_token == TokenType.INTERVAL:
+            value = self.expression(exp.Interval, unit=self._parse_var())
 
         if maybe_func and check_func:
             index2 = self._index

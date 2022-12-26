@@ -2425,7 +2425,7 @@ class TimeUnit(Expression):
 
 
 class Interval(TimeUnit):
-    arg_types = {"this": True, "unit": False}
+    arg_types = {"this": False, "unit": False}
 
 
 class IgnoreNulls(Expression):

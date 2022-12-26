@@ -300,3 +300,7 @@ class TestPostgres(Validator):
             "x !~~* 'y'",
             write={"postgres": "NOT x ILIKE 'y'"},
         )
+        self.validate_all(
+            "'45 days'::interval day",
+            write={"postgres": "CAST('45 days' AS INTERVAL day)"},
+        )

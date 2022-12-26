@@ -1143,9 +1143,11 @@ class Generator:
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression: exp.Interval) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
         unit = self.sql(expression, "unit")
         unit = f" {unit}" if unit else ""
-        return f"INTERVAL {self.sql(expression, 'this')}{unit}"
+        return f"INTERVAL{this}{unit}"
 
     def reference_sql(self, expression: exp.Reference) -> str:
         this = self.sql(expression, "this")

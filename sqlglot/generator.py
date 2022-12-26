@@ -637,6 +637,9 @@ class Generator:
     def introducer_sql(self, expression: exp.Introducer) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
+    def pseudotype_sql(self, expression: exp.PseudoType) -> str:
+        return expression.name.upper()
+
     def rowformatdelimitedproperty_sql(self, expression: exp.RowFormatDelimitedProperty) -> str:
         fields = expression.args.get("fields")
         fields = f" FIELDS TERMINATED BY {fields}" if fields else ""

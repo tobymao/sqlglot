@@ -324,3 +324,8 @@ class TestPostgres(Validator):
             write={"postgres": "CONCAT('x', 'y', 'z')"},
         )
         self.validate_identity("SELECT ARRAY(SELECT 1)")
+
+        self.validate_all(
+            "x::cstring",
+            write={"postgres": "CAST(x AS CSTRING)"},
+        )

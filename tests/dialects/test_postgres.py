@@ -234,42 +234,46 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             "'[1,2,3]'::json->2",
-            write={"postgres": "CAST('[1,2,3]' AS JSON)->'2'"},
+            write={"postgres": "CAST('[1,2,3]' AS JSON) -> '2'"},
         )
         self.validate_all(
             """'{"a":1,"b":2}'::json->'b'""",
-            write={"postgres": """CAST('{"a":1,"b":2}' AS JSON)->'b'"""},
+            write={"postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'"""},
         )
         self.validate_all(
             """'{"x": {"y": 1}}'::json->'x'->'y'""",
-            write={"postgres": """CAST('{"x": {"y": 1}}' AS JSON)->'x'->'y'"""},
+            write={"postgres": """CAST('{"x": {"y": 1}}' AS JSON) -> 'x' -> 'y'"""},
         )
         self.validate_all(
             """'{"x": {"y": 1}}'::json->'x'::json->'y'""",
-            write={"postgres": """CAST(CAST('{"x": {"y": 1}}' AS JSON)->'x' AS JSON)->'y'"""},
+            write={"postgres": """CAST(CAST('{"x": {"y": 1}}' AS JSON) -> 'x' AS JSON) -> 'y'"""},
         )
         self.validate_all(
             """'[1,2,3]'::json->>2""",
-            write={"postgres": "CAST('[1,2,3]' AS JSON)->>'2'"},
+            write={"postgres": "CAST('[1,2,3]' AS JSON) ->> '2'"},
         )
         self.validate_all(
             """'{"a":1,"b":2}'::json->>'b'""",
-            write={"postgres": """CAST('{"a":1,"b":2}' AS JSON)->>'b'"""},
+            write={"postgres": """CAST('{"a":1,"b":2}' AS JSON) ->> 'b'"""},
         )
         self.validate_all(
             """'{"a":[1,2,3],"b":[4,5,6]}'::json#>'{a,2}'""",
-            write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON)#>'{a,2}'"""},
+            write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON) #> '{a,2}'"""},
         )
         self.validate_all(
             """'{"a":[1,2,3],"b":[4,5,6]}'::json#>>'{a,2}'""",
-            write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON)#>>'{a,2}'"""},
+            write={"postgres": """CAST('{"a":[1,2,3],"b":[4,5,6]}' AS JSON) #>> '{a,2}'"""},
         )
         self.validate_all(
             """SELECT JSON_ARRAY_ELEMENTS((foo->'sections')::JSON) AS sections""",
             write={
-                "postgres": """SELECT JSON_ARRAY_ELEMENTS(CAST((foo->'sections') AS JSON)) AS sections""",
+                "postgres": """SELECT JSON_ARRAY_ELEMENTS(CAST((foo -> 'sections') AS JSON)) AS sections""",
                 "presto": """SELECT JSON_ARRAY_ELEMENTS(CAST((JSON_EXTRACT(foo, 'sections')) AS JSON)) AS sections""",
             },
+        )
+        self.validate_all(
+            """x ? 'x'""",
+            write={"postgres": "x ? 'x'"},
         )
         self.validate_all(
             "SELECT $$a$$",

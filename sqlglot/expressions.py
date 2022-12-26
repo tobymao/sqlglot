@@ -2341,6 +2341,10 @@ class SimilarTo(Binary, Predicate):
     pass
 
 
+class Slice(Binary):
+    arg_types = {"this": False, "expression": False}
+
+
 class Sub(Binary):
     pass
 

@@ -2103,14 +2103,14 @@ class Parser(metaclass=_Parser):
                 exp.Distinct, expressions=self._parse_csv(self._parse_conjunction)
             )
         else:
-            this = self._parse_conjunction()
+            this = self._parse_select_or_expression()
 
         if self._match(TokenType.IGNORE_NULLS):
             this = self.expression(exp.IgnoreNulls, this=this)
         else:
             self._match(TokenType.RESPECT_NULLS)
 
-        return self._parse_alias(self._parse_limit(self._parse_order(this)))
+        return self._parse_limit(self._parse_order(this))
 
     def _parse_schema(self, this=None):
         index = self._index

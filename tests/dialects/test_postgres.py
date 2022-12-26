@@ -323,3 +323,4 @@ class TestPostgres(Validator):
             "'x' 'y' 'z'",
             write={"postgres": "CONCAT('x', 'y', 'z')"},
         )
+        self.validate_identity("SELECT ARRAY(SELECT 1)")

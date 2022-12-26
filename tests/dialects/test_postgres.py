@@ -304,3 +304,7 @@ class TestPostgres(Validator):
             "'45 days'::interval day",
             write={"postgres": "CAST('45 days' AS INTERVAL day)"},
         )
+        self.validate_all(
+            "'x' 'y' 'z'",
+            write={"postgres": "CONCAT('x', 'y', 'z')"},
+        )

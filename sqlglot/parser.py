@@ -1707,6 +1707,9 @@ class Parser(metaclass=_Parser):
         if negate:
             this = self.expression(exp.Not, this=this)
 
+        if self._match(TokenType.IS):
+            this = self._parse_is(this)
+
         return this
 
     def _parse_is(self, this):

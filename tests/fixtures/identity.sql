@@ -67,6 +67,8 @@ x BETWEEN 'a' || b AND 'c' || d
 NOT x IS NULL
 x IS TRUE
 x IS FALSE
+x IS TRUE IS TRUE
+x LIKE y IS TRUE
 time
 zone
 ARRAY<TEXT>

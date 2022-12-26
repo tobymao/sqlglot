@@ -329,3 +329,7 @@ class TestPostgres(Validator):
             "x::cstring",
             write={"postgres": "CAST(x AS CSTRING)"},
         )
+
+        self.validate_identity(
+            "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
+        )

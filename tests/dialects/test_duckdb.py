@@ -302,3 +302,6 @@ class TestDuckDB(Validator):
                 read="duckdb",
                 unsupported_level=ErrorLevel.IMMEDIATE,
             )
+
+    def test_array(self):
+        self.validate_identity("ARRAY(SELECT id FROM t)")

@@ -663,6 +663,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "VARCHAR2": TokenType.VARCHAR,
         "NVARCHAR": TokenType.NVARCHAR,
         "NVARCHAR2": TokenType.NVARCHAR,
+        "STR": TokenType.TEXT,
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,
         "CLOB": TokenType.TEXT,

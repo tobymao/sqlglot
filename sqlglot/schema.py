@@ -160,9 +160,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         super().__init__(schema)
         self.visible = visible or {}
         self.dialect = dialect
-        self._type_mapping_cache: t.Dict[str, exp.DataType] = {
-            "STR": exp.DataType.build("text"),
-        }
+        self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
 
     @classmethod
     def from_mapping_schema(cls, mapping_schema: MappingSchema) -> MappingSchema:

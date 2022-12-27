@@ -894,7 +894,7 @@ class Parser(metaclass=_Parser):
         ) or self._match_pair(TokenType.STRING, TokenType.EQ, advance=False)
 
         if assignment:
-            key = self._parse_var() or self._parse_string()
+            key = self._parse_var_or_string()
             self._match(TokenType.EQ)
             return self.expression(exp.Property, this=key, value=self._parse_column())
 
@@ -2555,11 +2555,9 @@ class Parser(metaclass=_Parser):
         if identifier:
             return identifier
 
-        if any_token and self._curr and self._curr.token_type not in self.RESERVED_KEYWORDS:
-            self._advance()
-        elif not self._match_set(tokens or self.ID_VAR_TOKENS):
-            return None
-        return exp.Identifier(this=self._prev.text, quoted=False)
+        if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
+            return exp.Identifier(this=self._prev.text, quoted=False)
+        return None
 
     def _parse_string(self):
         if self._match(TokenType.STRING):
@@ -2576,10 +2574,16 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Identifier, this=self._prev.text, quoted=True)
         return self._parse_placeholder()
 
-    def _parse_var(self):
-        if self._match(TokenType.VAR):
+    def _parse_var(self, any_token=False):
+        if (any_token and self._advance_any()) or self._match(TokenType.VAR):
             return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()
+
+    def _advance_any(self):
+        if self._curr and self._curr.token_type not in self.RESERVED_KEYWORDS:
+            self._advance()
+            return self._prev
+        return None
 
     def _parse_var_or_string(self):
         return self._parse_var() or self._parse_string()

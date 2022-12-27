@@ -127,14 +127,16 @@ def interval(this, unit):
 ENV = {
     "exp": exp,
     # aggs
-    "SUM": filter_nulls(sum),
+    "ARRAYAGG": list,
     "AVG": filter_nulls(statistics.fmean if PYTHON_VERSION >= (3, 8) else statistics.mean),  # type: ignore
     "COUNT": filter_nulls(lambda acc: sum(1 for _ in acc), False),
     "MAX": filter_nulls(max),
     "MIN": filter_nulls(min),
+    "SUM": filter_nulls(sum),
     # scalar functions
     "ABS": null_if_any(lambda this: abs(this)),
     "ADD": null_if_any(lambda e, this: e + this),
+    "ARRAYANY": null_if_any(lambda arr, func: any(func(e) for e in arr)),
     "BETWEEN": null_if_any(lambda this, low, high: low <= this and this <= high),
     "BITWISEAND": null_if_any(lambda this, e: this & e),
     "BITWISELEFTSHIFT": null_if_any(lambda this, e: this << e),

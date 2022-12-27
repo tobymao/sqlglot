@@ -29,10 +29,10 @@ class Context:
         self._table: t.Optional[Table] = None
         self.range_readers = {name: table.range_reader for name, table in self.tables.items()}
         self.row_readers = {name: table.reader for name, table in tables.items()}
-        self.env = {**(env or {}), "scope": self.row_readers}
+        self.env = {**ENV, **(env or {}), "scope": self.row_readers}
 
     def eval(self, code):
-        return eval(code, ENV, self.env)
+        return eval(code, self.env)
 
     def eval_tuple(self, codes):
         return tuple(self.eval(code) for code in codes)

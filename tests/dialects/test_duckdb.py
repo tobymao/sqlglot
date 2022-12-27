@@ -305,3 +305,11 @@ class TestDuckDB(Validator):
 
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")
+
+    def test_cast(self):
+        self.validate_all(
+            "123::CHARACTER VARYING",
+            write={
+                "duckdb": "CAST(123 AS TEXT)",
+            },
+        )

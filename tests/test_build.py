@@ -481,6 +481,19 @@ class TestBuild(unittest.TestCase):
             ),
             (lambda: exp.delete("y", where="x > 1"), "DELETE FROM y WHERE x > 1"),
             (lambda: exp.delete("y", where=exp.and_("x > 1")), "DELETE FROM y WHERE x > 1"),
+            (
+                lambda: select("AVG(a) OVER b")
+                .from_("table")
+                .window("b AS (PARTITION BY c ORDER BY d)"),
+                "SELECT AVG(a) OVER b FROM table WINDOW b AS (PARTITION BY c ORDER BY d)",
+            ),
+            (
+                lambda: select("AVG(a) OVER b", "MIN(c) OVER d")
+                .from_("table")
+                .window("b AS (PARTITION BY e ORDER BY f)")
+                .window("d AS (PARTITION BY g ORDER BY h)"),
+                "SELECT AVG(a) OVER b, MIN(c) OVER d FROM table WINDOW b AS (PARTITION BY e ORDER BY f), d AS (PARTITION BY g ORDER BY h)",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

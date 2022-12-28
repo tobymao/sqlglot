@@ -402,6 +402,7 @@ class Parser(metaclass=_Parser):
         exp.Ordered: lambda self: self._parse_ordered(),
         exp.Having: lambda self: self._parse_having(),
         exp.With: lambda self: self._parse_with(),
+        exp.Window: lambda self: self._parse_named_window(),
         "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 
@@ -550,8 +551,7 @@ class Parser(metaclass=_Parser):
         "group": lambda self: self._parse_group(),
         "having": lambda self: self._parse_having(),
         "qualify": lambda self: self._parse_qualify(),
-        "windows": lambda self: self._match(TokenType.WINDOW)
-        and self._parse_csv(lambda: self._parse_window(self._parse_id_var(), alias=True)),
+        "windows": lambda self: self._parse_window_clause(),
         "distribute": lambda self: self._parse_sort(TokenType.DISTRIBUTE_BY, exp.Distribute),
         "sort": lambda self: self._parse_sort(TokenType.SORT_BY, exp.Sort),
         "cluster": lambda self: self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
@@ -2439,6 +2439,12 @@ class Parser(metaclass=_Parser):
             expression=expression,
             collation=collation,
         )
+
+    def _parse_window_clause(self):
+        return self._match(TokenType.WINDOW) and self._parse_csv(lambda: self._parse_named_window())
+
+    def _parse_named_window(self):
+        return self._parse_window(self._parse_id_var(), alias=True)
 
     def _parse_window(self, this, alias=False):
         if self._match(TokenType.FILTER):

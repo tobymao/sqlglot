@@ -1337,7 +1337,7 @@ QUERY_MODIFIERS = {
     "group": False,
     "having": False,
     "qualify": False,
-    "window": False,
+    "windows": False,
     "distribute": False,
     "sort": False,
     "cluster": False,
@@ -1905,6 +1905,18 @@ class Select(Subqueryable):
             arg="having",
             append=append,
             into=Having,
+            dialect=dialect,
+            copy=copy,
+            **opts,
+        )
+
+    def window(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
+        return _apply_list_builder(
+            *expressions,
+            instance=self,
+            arg="windows",
+            append=append,
+            into=Window,
             dialect=dialect,
             copy=copy,
             **opts,

@@ -1910,9 +1910,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def window(
-        self, *expressions, append=True, dialect=None, copy=True, **opts
-    ) -> Select:
+    def window(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
         return _apply_list_builder(
             *expressions,
             instance=self,

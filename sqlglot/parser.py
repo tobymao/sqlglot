@@ -2441,9 +2441,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_window_clause(self):
-        return self._match(TokenType.WINDOW) and self._parse_csv(
-            lambda: self._parse_named_window()
-        )
+        return self._match(TokenType.WINDOW) and self._parse_csv(lambda: self._parse_named_window())
 
     def _parse_named_window(self):
         return self._parse_window(self._parse_id_var(), alias=True)

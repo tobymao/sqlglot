@@ -313,3 +313,9 @@ class TestDuckDB(Validator):
                 "duckdb": "CAST(123 AS TEXT)",
             },
         )
+
+    def test_bool_or(self):
+        self.validate_all(
+            "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
+            write={"duckdb": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
+        )

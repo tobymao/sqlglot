@@ -191,6 +191,7 @@ class Parser(metaclass=_Parser):
         TokenType.MERGE,
         TokenType.NATURAL,
         TokenType.NEXT,
+        TokenType.OFFSET,
         TokenType.ONLY,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
@@ -231,7 +232,12 @@ class Parser(metaclass=_Parser):
         *NO_PAREN_FUNCTIONS,
     }
 
-    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.NATURAL, TokenType.APPLY, TokenType.WINDOW}
+    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
+        TokenType.APPLY,
+        TokenType.NATURAL,
+        TokenType.OFFSET,
+        TokenType.WINDOW,
+    }
 
     UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
 

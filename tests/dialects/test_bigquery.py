@@ -318,3 +318,9 @@ class TestBigQuery(Validator):
         self.validate_identity(
             "CREATE TABLE FUNCTION a(x INT64) RETURNS TABLE <q STRING, r INT64> AS SELECT s, t"
         )
+
+    def test_group_concat(self):
+        self.validate_all(
+            "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
+            write={"bigquery": "SELECT a, STRING_AGG(b) FROM table GROUP BY a"},
+        )

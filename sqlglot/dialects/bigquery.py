@@ -1,3 +1,5 @@
+"""Supports BigQuery Standard SQL."""
+
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens
@@ -168,6 +170,7 @@ class BigQuery(Dialect):
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
+            exp.GroupConcat: rename_func("STRING_AGG"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",

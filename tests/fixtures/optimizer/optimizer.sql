@@ -291,3 +291,46 @@ SELECT a1 FROM cte1;
 SELECT
   "x"."a" AS "a1"
 FROM "x" AS "x";
+
+# title: recursive cte
+WITH RECURSIVE cte1 AS (
+  SELECT *
+  FROM (
+      SELECT 1 AS a, 2 AS b
+  ) base
+  CROSS JOIN (SELECT 3 c) y
+  UNION ALL
+  SELECT *
+  FROM cte1
+  WHERE a < 1
+)
+SELECT *
+FROM cte1;
+WITH RECURSIVE "base" AS (
+  SELECT
+    1 AS "a",
+    2 AS "b"
+), "y" AS (
+  SELECT
+    3 AS "c"
+), "cte1" AS (
+  SELECT
+    "base"."a" AS "a",
+    "base"."b" AS "b",
+    "y"."c" AS "c"
+  FROM "base" AS "base"
+  CROSS JOIN "y" AS "y"
+  UNION ALL
+  SELECT
+    "cte1"."a" AS "a",
+    "cte1"."b" AS "b",
+    "cte1"."c" AS "c"
+  FROM "cte1"
+  WHERE
+    "cte1"."a" < 1
+)
+SELECT
+  "cte1"."a" AS "a",
+  "cte1"."b" AS "b",
+  "cte1"."c" AS "c"
+FROM "cte1";

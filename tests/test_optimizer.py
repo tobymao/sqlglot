@@ -555,3 +555,29 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 parse_one(f"SELECT {func}(x.{col}) AS _col_0 FROM x AS x"), schema=schema
             )
             self.assertEqual(expression.expressions[0].type.this, target_type)
+
+    def test_recursive_cte(self):
+        query = parse_one(
+            """
+            with recursive t(n) AS
+            (
+              select 1
+              union all
+              select n + 1
+              FROM t
+              where n < 3
+            ), y AS (
+              select n
+              FROM t
+              union all
+              select n + 1
+              FROM y
+              where n < 2
+            )
+            select * from y
+            """
+        )
+
+        scope_t, scope_y = build_scope(query).cte_scopes
+        self.assertEqual(set(scope_t.cte_sources), {"t"})
+        self.assertEqual(set(scope_y.cte_sources), {"t", "y"})

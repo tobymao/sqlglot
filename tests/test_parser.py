@@ -76,6 +76,9 @@ class TestParser(unittest.TestCase):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
         self.assertEqual(tables, ["a", "b.c", "d"])
 
+    def test_union_order(self):
+        self.assertIsInstance(parse_one("SELECT * FROM (SELECT 1) UNION SELECT 2"), exp.Union)
+
     def test_select(self):
         self.assertIsNotNone(parse_one("select 1 natural"))
         self.assertIsNotNone(parse_one("select * from (select 1) x order by x.y").args["order"])

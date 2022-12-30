@@ -686,6 +686,10 @@ class CharacterSet(Expression):
 class With(Expression):
     arg_types = {"expressions": True, "recursive": False}
 
+    @property
+    def recursive(self) -> bool:
+        return bool(self.args.get("recursive"))
+
 
 class WithinGroup(Expression):
     arg_types = {"this": True, "expression": False}

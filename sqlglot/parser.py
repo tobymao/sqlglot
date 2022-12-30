@@ -1176,8 +1176,12 @@ class Parser(metaclass=_Parser):
         elif (table or nested) and self._match(TokenType.L_PAREN):
             this = self._parse_table() if table else self._parse_select(nested=True)
             self._parse_query_modifiers(this)
+            this = self._parse_set_operations(this)
             self._match_r_paren()
-            this = self._parse_subquery(this)
+            # early return so that subquery unions aren't parsed again
+            # SELECT * FROM (SELECT 1) UNION ALL SELECT 1
+            # Union ALL should be a property of the top select node, not the subquery
+            return self._parse_subquery(this)
         elif self._match(TokenType.VALUES):
             if self._curr.token_type == TokenType.L_PAREN:
                 # We don't consume the left paren because it's consumed in _parse_value
@@ -1197,7 +1201,7 @@ class Parser(metaclass=_Parser):
         else:
             this = None
 
-        return self._parse_set_operations(this) if this else None
+        return self._parse_set_operations(this)
 
     def _parse_with(self, skip_with_token=False):
         if not skip_with_token and not self._match(TokenType.WITH):

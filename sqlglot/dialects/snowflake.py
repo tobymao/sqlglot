@@ -110,17 +110,27 @@ def _datatype_sql(self, expression):
 
 
 def _values_sql(self, expression: exp.Values) -> str:
-    """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted."""
+    """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted.
+
+    We also want to make sure that after we find matches where we need to unquote a column that we prevent users
+    from adding quotes to the column by using the `identify` argument when generating the SQL.
+    """
     alias = expression.args.get("alias")
+    unquoted_a_column = False
     if alias:
         for column in alias.args.get("columns", []):
             column.set("quoted", False)
-    return self.no_identify(lambda: self.values_sql(expression))
+            unquoted_a_column = True
+    if unquoted_a_column:
+        return self.no_identify(lambda: self.values_sql(expression))
+    return self.values_sql(expression)
 
 
 def _select_sql(self, expression: exp.Select) -> str:
     """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted and also
-    that all columns in a SELECT are unquoted.
+    that all columns in a SELECT are unquoted. We also want to make sure that after we find matches where we need
+    to unquote a column that we prevent users from adding quotes to the column by using the `identify` argument when
+    generating the SQL.
 
     Note: We make an assumption that any columns referenced in a VALUES expression should be unquoted throughout the
     expression. This might not be true in a case where the same column name can be sourced from another table that can
@@ -132,11 +142,17 @@ def _select_sql(self, expression: exp.Select) -> str:
             [v.args.get("alias", exp.Alias()).args.get("columns", []) for v in values_expressions]
         )
     )
+    if not values_identifiers:
+        return self.select_sql(expression)
     all_identifiers = expression.find_all(exp.Identifier)
+    unquoted_a_column = False
     for identifier in all_identifiers:
         if identifier in values_identifiers:
             identifier.set("quoted", False)
-    return self.no_identify(lambda: self.select_sql(expression))
+            unquoted_a_column = True
+    if unquoted_a_column:
+        return self.no_identify(lambda: self.select_sql(expression))
+    return self.select_sql(expression)
 
 
 class Snowflake(Dialect):

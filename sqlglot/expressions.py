@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import datetime
+import math
 import numbers
 import re
 import typing as t
@@ -3795,6 +3796,8 @@ def convert(value) -> Expression:
         return Boolean(this=value)
     if isinstance(value, str):
         return Literal.string(value)
+    if isinstance(value, float) and math.isnan(value):
+        return NULL
     if isinstance(value, numbers.Number):
         return Literal.number(value)
     if isinstance(value, tuple):

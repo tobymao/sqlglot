@@ -1,4 +1,5 @@
 import datetime
+import math
 import unittest
 
 from sqlglot import alias, exp, parse_one
@@ -557,6 +558,7 @@ class TestExpressions(unittest.TestCase):
                 "TIME_STR_TO_TIME('2022-10-01 01:01:01.000000+0000')",
             ),
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
+            (math.nan, "NULL"),
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)

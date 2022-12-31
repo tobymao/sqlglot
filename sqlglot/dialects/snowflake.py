@@ -115,7 +115,7 @@ def _values_sql(self, expression: exp.Values) -> str:
     if alias:
         for column in alias.args.get("columns", []):
             column.set("quoted", False)
-    return self.values_sql(expression)
+    return self.no_identify(lambda: self.values_sql(expression))
 
 
 def _select_sql(self, expression: exp.Select) -> str:
@@ -136,7 +136,7 @@ def _select_sql(self, expression: exp.Select) -> str:
     for identifier in all_identifiers:
         if identifier in values_identifiers:
             identifier.set("quoted", False)
-    return self.select_sql(expression)
+    return self.no_identify(lambda: self.select_sql(expression))
 
 
 class Snowflake(Dialect):

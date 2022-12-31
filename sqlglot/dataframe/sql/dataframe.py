@@ -634,8 +634,8 @@ class DataFrame:
         all_columns = self._get_outer_select_columns(new_df.expression)
         all_column_mapping = {column.alias_or_name: column for column in all_columns}
         if isinstance(value, dict):
-            values = value.values()
-            columns = self._ensure_and_normalize_cols(list(value))
+            values = list(value.values())
+            columns = self._ensure_and_normalize_cols(value)
         if not columns:
             columns = self._ensure_and_normalize_cols(subset) if subset else all_columns
         if not values:

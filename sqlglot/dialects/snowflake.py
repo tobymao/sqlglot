@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
 )
 from sqlglot.expressions import Literal
-from sqlglot.helper import seq_get
+from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -107,6 +107,36 @@ def _datatype_sql(self, expression):
     elif expression.this == exp.DataType.Type.MAP:
         return "OBJECT"
     return self.datatype_sql(expression)
+
+
+def _values_sql(self, expression: exp.Values) -> str:
+    """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted."""
+    alias = expression.args.get("alias")
+    if alias:
+        for column in alias.args.get("columns", []):
+            column.set("quoted", False)
+    return self.values_sql(expression)
+
+
+def _select_sql(self, expression: exp.Select) -> str:
+    """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted and also
+    that all columns in a SELECT are unquoted.
+
+    Note: We make an assumption that any columns referenced in a VALUES expression should be unquoted throughout the
+    expression. This might not be true in a case where the same column name can be sourced from another table that can
+    properly quote but should be true in most cases.
+    """
+    values_expressions = expression.find_all(exp.Values)
+    values_identifiers = set(
+        flatten(
+            [v.args.get("alias", exp.Alias()).args.get("columns", []) for v in values_expressions]
+        )
+    )
+    all_identifiers = expression.find_all(exp.Identifier)
+    for identifier in all_identifiers:
+        if identifier in values_identifiers:
+            identifier.set("quoted", False)
+    return self.select_sql(expression)
 
 
 class Snowflake(Dialect):
@@ -216,11 +246,13 @@ class Snowflake(Dialect):
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),
+            exp.Select: _select_sql,
             exp.StrPosition: rename_func("POSITION"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
             exp.UnixToTime: _unix_to_time_sql,
+            exp.Values: _values_sql,
         }
 
         TYPE_MAPPING = {

@@ -116,13 +116,16 @@ def _values_sql(self, expression: exp.Values) -> str:
     from adding quotes to the column by using the `identify` argument when generating the SQL.
     """
     alias = expression.args.get("alias")
-    unquoted_a_column = False
     if alias:
-        for column in alias.args.get("columns", []):
-            column.set("quoted", False)
-            unquoted_a_column = True
-    if unquoted_a_column:
-        return self.no_identify(lambda: self.values_sql(expression))
+        expression = expression.transform(
+            lambda node: exp.Identifier(**{**node.args, "quoted": False})
+            if isinstance(node, exp.Identifier)
+            and isinstance(node.parent, exp.TableAlias)
+            and node.arg_key == "columns"
+            else node,
+        )
+        if alias.args.get("columns"):
+            return self.no_identify(lambda: self.values_sql(expression))
     return self.values_sql(expression)
 
 
@@ -144,13 +147,12 @@ def _select_sql(self, expression: exp.Select) -> str:
     )
     if not values_identifiers:
         return self.select_sql(expression)
-    all_identifiers = expression.find_all(exp.Identifier)
-    unquoted_a_column = False
-    for identifier in all_identifiers:
-        if identifier in values_identifiers:
-            identifier.set("quoted", False)
-            unquoted_a_column = True
-    if unquoted_a_column:
+    expression = expression.transform(
+        lambda node: exp.Identifier(**{**node.args, "quoted": False})
+        if isinstance(node, exp.Identifier) and node in values_identifiers
+        else node,
+    )
+    if values_identifiers:
         return self.no_identify(lambda: self.select_sql(expression))
     return self.select_sql(expression)
 

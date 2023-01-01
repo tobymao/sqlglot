@@ -278,10 +278,8 @@ class Snowflake(Dialect):
             values_expressions = expression.find_all(exp.Values)
             values_identifiers = set(
                 flatten(
-                    [
-                        v.args.get("alias", exp.Alias()).args.get("columns", [])
-                        for v in values_expressions
-                    ]
+                    v.args.get("alias", exp.Alias()).args.get("columns", [])
+                    for v in values_expressions
                 )
             )
             if values_identifiers:

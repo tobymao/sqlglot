@@ -635,7 +635,7 @@ class DataFrame:
         all_column_mapping = {column.alias_or_name: column for column in all_columns}
         if isinstance(value, dict):
             values = list(value.values())
-            columns = self._ensure_and_normalize_cols(value)
+            columns = self._ensure_and_normalize_cols(list(value))
         if not columns:
             columns = self._ensure_and_normalize_cols(subset) if subset else all_columns
         if not values:

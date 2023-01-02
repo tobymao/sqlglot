@@ -190,7 +190,7 @@ Joins multiple tables together.
 The logical plan is quite simple and contains the information required to convert it into a physical plan (execution).
 
 ## Executing
-Finally, we can actually execute the SQL query. The [Python engine](https://github.com/tobymao/sqlglot/blob/toby/post/sqlglot/executor/python.py) is not fast, but it's very small (~400 LOC)! It iterates the DAG with a queue and runs each step, passing each intermediary table to the next step.
+Finally, we can actually execute the SQL query. The [Python engine](https://github.com/tobymao/sqlglot/blob/main/sqlglot/executor/python.py) is not fast, but it's very small (~400 LOC)! It iterates the DAG with a queue and runs each step, passing each intermediary table to the next step.
 
 In order to keep things simple, it evaluates expressions with `eval`. Because SQLGlot was built primarily to be a transpiler, it was simple to create a "Python SQL" dialect. So a SQL expression `x + 1` can just be converted into `scope['x'] + 1`.
 

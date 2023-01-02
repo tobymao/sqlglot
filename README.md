@@ -13,8 +13,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 ## Table of Contents
 
 * [Install](#install)
-* [Documentation](#documentation)
-* [Run Tests and Lint](#run-tests-and-lint)
+* [Get in Touch](#get-in-touch)
 * [Examples](#examples)
    * [Formatting and Transpiling](#formatting-and-transpiling)
    * [Metadata](#metadata)
@@ -26,6 +25,8 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
    * [AST Diff](#ast-diff)
    * [Custom Dialects](#custom-dialects)
    * [SQL Execution](#sql-execution)
+* [Documentation](#documentation)
+* [Run Tests and Lint](#run-tests-and-lint)
 * [Benchmarks](#benchmarks)
 * [Optional Dependencies](#optional-dependencies)
 
@@ -49,19 +50,8 @@ Requirements for development (optional):
 make install-dev
 ```
 
-## Documentation
-
-SQLGlot uses [pdocs](https://pdoc.dev/) to serve its API documentation:
-
-```
-make docs-serve
-```
-
-## Run Tests and Lint
-
-```
-make check  # Set SKIP_INTEGRATION=1 to skip integration tests
-```
+## Get in Touch
+We'd love to hear from you. Join our community [Slack channel](https://join.slack.com/t/tobiko-data/shared_invite/zt-1ma66d79v-a4dbf4DUpLAQJ8ptQrJygg)!
 
 ## Examples
 
@@ -440,6 +430,20 @@ execute(
 user_id price
       1   4.0
       2   3.0
+```
+
+## Documentation
+
+SQLGlot uses [pdocs](https://pdoc.dev/) to serve its API documentation:
+
+```
+make docs-serve
+```
+
+## Run Tests and Lint
+
+```
+make check  # Set SKIP_INTEGRATION=1 to skip integration tests
 ```
 
 ## Benchmarks

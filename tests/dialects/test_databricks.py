@@ -58,28 +58,28 @@ class TestDatabricks(Validator):
             "SELECT DATEDIFF(week, 'start', 'end')",
             write={
                 "databricks": "SELECT DATEDIFF(week, 'start', 'end')",
-                "postgres": "SELECT CAST(EXTRACT(year FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 48 + EXTRACT(month FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 4 + EXTRACT(day FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) / 7 AS BIGINT)",
+                "postgres": "SELECT CAST(EXTRACT(year FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 48 + EXTRACT(month FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 4 + EXTRACT(day FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) / 7 AS BIGINT)",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(month, 'start', 'end')",
             write={
                 "databricks": "SELECT DATEDIFF(month, 'start', 'end')",
-                "postgres": "SELECT CAST(EXTRACT(year FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 12 + EXTRACT(month FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) AS BIGINT)",
+                "postgres": "SELECT CAST(EXTRACT(year FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 12 + EXTRACT(month FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) AS BIGINT)",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(quarter, 'start', 'end')",
             write={
                 "databricks": "SELECT DATEDIFF(quarter, 'start', 'end')",
-                "postgres": "SELECT CAST(EXTRACT(year FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 4 + EXTRACT(month FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) / 3 AS BIGINT)",
+                "postgres": "SELECT CAST(EXTRACT(year FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) * 4 + EXTRACT(month FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) / 3 AS BIGINT)",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(year, 'start', 'end')",
             write={
                 "databricks": "SELECT DATEDIFF(year, 'start', 'end')",
-                "postgres": "SELECT CAST(EXTRACT(year FROM age(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) AS BIGINT)",
+                "postgres": "SELECT CAST(EXTRACT(year FROM AGE(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))) AS BIGINT)",
             },
         )
 

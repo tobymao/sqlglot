@@ -54,7 +54,7 @@ def _date_diff_sql(self, expression):
     if factor is not None:
         return f"CAST(EXTRACT(epoch FROM {end} - {start}){factor} AS BIGINT)"
 
-    age = f"age({end}, {start})"
+    age = f"AGE({end}, {start})"
 
     if unit == "WEEK":
         extract = f"EXTRACT(year FROM {age}) * 48 + EXTRACT(month FROM {age}) * 4 + EXTRACT(day FROM {age}) / 7"

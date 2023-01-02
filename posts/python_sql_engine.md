@@ -77,7 +77,7 @@ Once we have our AST, we can transform it into an equivalent query that would pr
 
 1. It's easier to debug and [validate](https://github.com/tobymao/sqlglot/blob/main/tests/fixtures/optimizer) the optimizations when the input and output are both SQL.
 
-2. Rules can be applied a la carte transforming SQL into a more desireable form.
+2. Rules can be applied a la carte to transform SQL into a more desireable form.
 
 3. I wanted a way to generate 'canonical sql'. Having a canonical representation of SQL is useful for understanding if two queries are semantically equivalent (eg. `SELECT 1 + 1` and  `SELECT 2`).
 

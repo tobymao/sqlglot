@@ -509,3 +509,11 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
                 "snowflake": "SELECT 1 MINUS SELECT 1",
             },
         )
+
+    def test_values(self):
+        self.validate_all(
+            'SELECT c0, c1 FROM (VALUES (1, 2), (3, 4)) AS "t0"(c0, c1)',
+            read={
+                "spark": "SELECT `c0`, `c1` FROM (VALUES (1, 2), (3, 4)) AS `t0`(`c0`, `c1`)",
+            },
+        )

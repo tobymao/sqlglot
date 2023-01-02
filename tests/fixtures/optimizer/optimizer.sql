@@ -334,3 +334,38 @@ SELECT
   "cte1"."b" AS "b",
   "cte1"."c" AS "c"
 FROM "cte1";
+
+# title: right join should not push down to from
+SELECT x.a, y.b
+FROM x
+RIGHT JOIN y
+ON x.a = y.b
+WHERE x.b = 1;
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b"
+FROM "x" AS "x"
+RIGHT JOIN "y" AS "y"
+  ON "x"."a" = "y"."b"
+WHERE
+  "x"."b" = 1;
+
+# title: right join can push down to itself
+SELECT x.a, y.b
+FROM x
+RIGHT JOIN y
+ON x.a = y.b
+WHERE y.b = 1;
+WITH "y_2" AS (
+  SELECT
+    "y"."b" AS "b"
+  FROM "y" AS "y"
+  WHERE
+    "y"."b" = 1
+)
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b"
+FROM "x" AS "x"
+RIGHT JOIN "y_2" AS "y"
+  ON "x"."a" = "y"."b";

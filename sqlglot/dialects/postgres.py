@@ -15,6 +15,15 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import delegate, preprocess
 
+DATE_DIFF_FACTOR = {
+    "MICROSECOND": " * 1000000",
+    "MILLISECOND": " * 1000",
+    "SECOND": "",
+    "MINUTE": " / 60",
+    "HOUR": " / 3600",
+    "DAY": " / 86400",
+}
+
 
 def _date_add_sql(kind):
     def func(self, expression):
@@ -33,6 +42,19 @@ def _date_add_sql(kind):
         return f"{this} {kind} INTERVAL {expression} {unit}"
 
     return func
+
+
+def _date_diff_sql(self, expression):
+    unit = expression.text("unit").upper()
+    multiplier = DATE_DIFF_FACTOR.get(unit)
+
+    if multiplier is None:
+        self.unsupported(f"Unsupported date diff unit {unit}")
+
+    end = expression.this
+    start = expression.expression
+
+    return f"CAST(EXTRACT(epoch FROM CAST({end} AS TIMESTAMP) - CAST({start} AS TIMESTAMP)){multiplier} AS BIGINT)"
 
 
 def _substring_sql(self, expression):
@@ -275,6 +297,7 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
+            exp.DateDiff: _date_diff_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,

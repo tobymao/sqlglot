@@ -12,6 +12,48 @@ class TestDatabricks(Validator):
                 "databricks": "SELECT DATEDIFF(year, 'start', 'end')",
             },
         )
+        self.validate_all(
+            "SELECT DATEDIFF(microsecond, 'start', 'end')",
+            write={
+                "databricks": "SELECT DATEDIFF(microsecond, 'start', 'end')",
+                "postgres": "SELECT CAST(EXTRACT(epoch FROM CAST('end' AS TIMESTAMP) - CAST('start' AS TIMESTAMP)) * 1000000 AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(millisecond, 'start', 'end')",
+            write={
+                "databricks": "SELECT DATEDIFF(millisecond, 'start', 'end')",
+                "postgres": "SELECT CAST(EXTRACT(epoch FROM CAST('end' AS TIMESTAMP) - CAST('start' AS TIMESTAMP)) * 1000 AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(second, 'start', 'end')",
+            write={
+                "databricks": "SELECT DATEDIFF(second, 'start', 'end')",
+                "postgres": "SELECT CAST(EXTRACT(epoch FROM CAST('end' AS TIMESTAMP) - CAST('start' AS TIMESTAMP)) AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(minute, 'start', 'end')",
+            write={
+                "databricks": "SELECT DATEDIFF(minute, 'start', 'end')",
+                "postgres": "SELECT CAST(EXTRACT(epoch FROM CAST('end' AS TIMESTAMP) - CAST('start' AS TIMESTAMP)) / 60 AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(hour, 'start', 'end')",
+            write={
+                "databricks": "SELECT DATEDIFF(hour, 'start', 'end')",
+                "postgres": "SELECT CAST(EXTRACT(epoch FROM CAST('end' AS TIMESTAMP) - CAST('start' AS TIMESTAMP)) / 3600 AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(day, 'start', 'end')",
+            write={
+                "databricks": "SELECT DATEDIFF(day, 'start', 'end')",
+                "postgres": "SELECT CAST(EXTRACT(epoch FROM CAST('end' AS TIMESTAMP) - CAST('start' AS TIMESTAMP)) / 86400 AS BIGINT)",
+            },
+        )
 
     def test_add_date(self):
         self.validate_all(

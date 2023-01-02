@@ -24,7 +24,16 @@ In terms of practical use cases, I planned to use the Python SQL engine for unit
 
 Finally, the components that have been built to support execution can be used as a **foundation** for a faster engine. I'm inspired by what [Apache Calcite](https://github.com/apache/calcite) has done for the JVM world. Even though Python is commonly used for data, there hasn't been a Calcite for Python. So you could say that SQLGlot aims to be that framework. For example, it wouldn't take much work to replace the Python execution engine with numpy / pandas / arrow to become a respectably performing query engine. The implementation would be able to leverage the parser, optimizer, and logical planner, only needing to implement physical execution. There is a ton of work in the Python ecosystem around high performance vectorized computation which I think could benefit from a pure Python based [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) / [plan](https://en.wikipedia.org/wiki/Query_plan). Parsing and planning doesn't have to be fast when the bottleneck of running queries is processing terabytes of data. So having a Python based ecosystem around SQL is beneficial given the ease of development in Python despite not having bare metal performance.
 
-Parts of SQLGlot's toolkit are being used today by [Ibis](https://github.com/ibis-project/ibis), [mysql-mimic](https://github.com/kelsin/mysql-mimic), [Quokka](https://github.com/marsupialtail/quokka), and [Splink](https://github.com/moj-analytical-services/splink).
+Parts of SQLGlot's toolkit are being used today by
+
+* [Ibis](https://github.com/ibis-project/ibis): A Python library that provides a lightweight, universal interface for data wrangling.
+    - Uses the Python SQL expression builder and leverages the optimizer/planner to convert SQL into dataframe operations
+* [mysql-mimic](https://github.com/kelsin/mysql-mimic): Pure-Python implementation of the MySQL server wire protocol
+    - Parses / transforms SQL and executes INFORMATION_SCHEMA queries.
+* [Quokka](https://github.com/marsupialtail/quokka): Push-based vectorized query engine
+    - Parse and optimizes SQL.
+* [Splink](https://github.com/moj-analytical-services/splink): Fast, accurate and scalable probabilistic data linkage using your choice of SQL backend.
+    - Transpiles queries.
 
 ## How?
 

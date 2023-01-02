@@ -46,15 +46,28 @@ def _date_add_sql(kind):
 
 def _date_diff_sql(self, expression):
     unit = expression.text("unit").upper()
-    multiplier = DATE_DIFF_FACTOR.get(unit)
+    factor = DATE_DIFF_FACTOR.get(unit)
 
-    if multiplier is None:
-        self.unsupported(f"Unsupported date diff unit {unit}")
+    end = f"CAST({expression.this} AS TIMESTAMP)"
+    start = f"CAST({expression.expression} AS TIMESTAMP)"
 
-    end = expression.this
-    start = expression.expression
+    if factor is not None:
+        return f"CAST(EXTRACT(epoch FROM {end} - {start}){factor} AS BIGINT)"
 
-    return f"CAST(EXTRACT(epoch FROM CAST({end} AS TIMESTAMP) - CAST({start} AS TIMESTAMP)){multiplier} AS BIGINT)"
+    age = f"age({end}, {start})"
+
+    if unit == "WEEK":
+        extract = f"EXTRACT(year FROM {age}) * 48 + EXTRACT(month FROM {age}) * 4 + EXTRACT(day FROM {age}) / 7"
+    elif unit == "MONTH":
+        extract = f"EXTRACT(year FROM {age}) * 12 + EXTRACT(month FROM {age})"
+    elif unit == "QUARTER":
+        extract = f"EXTRACT(year FROM {age}) * 4 + EXTRACT(month FROM {age}) / 3"
+    elif unit == "YEAR":
+        extract = f"EXTRACT(year FROM {age})"
+    else:
+        self.unsupported(f"Unsupported DATEDIFF unit {unit}")
+
+    return f"CAST({extract} AS BIGINT)"
 
 
 def _substring_sql(self, expression):

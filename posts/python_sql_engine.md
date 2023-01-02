@@ -5,6 +5,14 @@
 
 When I first started writing SQLGlot in early 2021, my goal was just to translate SQL queries from SparkSQL to Presto and vice versa. However, over the last year and a half, I've ended up with a full-fledged SQL engine. SQLGlot can now parse and transpile between [18 SQL dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) and can execute all 24 [TPC-H](https://www.tpc.org/tpch/) SQL queries. The parser and engine are all handwritten from scratch with Python.
 
+This post will cover [why](#why) I went through the effort of creating a Python SQL engine and [how](#how) a simple query goes from a string to actually transforming data. The following steps are briefly summarized:
+
+* [Tokenizing](#tokenizing)
+* [Parsing](#parsing)
+* [Optimizing](#optimizing)
+* [Planning](#planning)
+* [Executing](#executing)
+
 ## Why?
 I started working on SQLGlot because of my work on the [experimentation and metrics platform](https://netflixtechblog.com/reimagining-experimentation-analysis-at-netflix-71356393af21) at Netflix, where I built tools that allowed data scientists to define and compute SQL based metrics. Netflix relied on multiple engines to query data (Spark, Presto, and Druid) so my team built the metrics platform around [PyPika](https://github.com/kayak/pypika), a Python SQL query builder so that definitions could be reused across multiple engines. However, it became quickly apparent that writing python code to programatically generate SQL was challenging for data scientists, especially those with academic backgrounds since they were mostly familiar with R and SQL. But at the time, the only Python SQL parser was [sqlparse]([https://github.com/andialbrecht/sqlparse) which is not actually a parser, but a tokenizer, so having users write raw SQL into the platform wasn't really an option. Some time later, I randomly stumbled across [Crafting Interpreters](https://craftinginterpreters.com/) and realized that I could use it as a guide towards creating my on SQL parser / transpiler.
 

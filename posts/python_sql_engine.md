@@ -3,11 +3,11 @@
 
 ## Introduction
 
-When I first started writing SQLGlot in early 2021, my goal was just to translate SQL queries from SparkSQL to Presto and vice versa. However, over the last year and a half due to scope creep, I've ended up with a full fledge SQL engine. SQLGlot can now parse and transpile between [18 SQL dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) and can execute all 24 [TPC-H](https://www.tpc.org/tpch/) SQL queries. The parser and engine are all handwritten from scratch with Python.
-
-I started working on SQLGlot because of my work on the [experimentation and metrics platform](https://netflixtechblog.com/reimagining-experimentation-analysis-at-netflix-71356393af21) at Netflix, where I built tools that allowed data scientists to define and compute SQL based metrics. Netflix relied on multiple engines to query data (Spark, Presto, and Druid) so my team built the metrics platform around [PyPika](https://github.com/kayak/pypika), a Python SQL query builder so that definitions could be reused across multiple engines. However, it became quickly apparent that writing python code to programatically generate SQL was challenging for data scientists, especially those with academic backgrounds since they were mostly familiar with R and SQL. But at the time, the only Python SQL parser was [sqlparse]([https://github.com/andialbrecht/sqlparse) which is not actually a parser, but a tokenizer, so having users write raw SQL into the platform wasn't really an option. Some time later, I randomly stumbled across [Crafting Interpreters](https://craftinginterpreters.com/) and realized that I could use it as a guide towards creating my on SQL parser / transpiler.
+When I first started writing SQLGlot in early 2021, my goal was just to translate SQL queries from SparkSQL to Presto and vice versa. However, over the last year and a half, I've ended up with a full-fledged SQL engine. SQLGlot can now parse and transpile between [18 SQL dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) and can execute all 24 [TPC-H](https://www.tpc.org/tpch/) SQL queries. The parser and engine are all handwritten from scratch with Python.
 
 ## Why?
+I started working on SQLGlot because of my work on the [experimentation and metrics platform](https://netflixtechblog.com/reimagining-experimentation-analysis-at-netflix-71356393af21) at Netflix, where I built tools that allowed data scientists to define and compute SQL based metrics. Netflix relied on multiple engines to query data (Spark, Presto, and Druid) so my team built the metrics platform around [PyPika](https://github.com/kayak/pypika), a Python SQL query builder so that definitions could be reused across multiple engines. However, it became quickly apparent that writing python code to programatically generate SQL was challenging for data scientists, especially those with academic backgrounds since they were mostly familiar with R and SQL. But at the time, the only Python SQL parser was [sqlparse]([https://github.com/andialbrecht/sqlparse) which is not actually a parser, but a tokenizer, so having users write raw SQL into the platform wasn't really an option. Some time later, I randomly stumbled across [Crafting Interpreters](https://craftinginterpreters.com/) and realized that I could use it as a guide towards creating my on SQL parser / transpiler.
+
 Why did I do this? Isn't a Python SQL engine going to be extremely slow?
 
 The main reason why I ended up building a SQL engine was ... just for **entertainment**. It's been fun learning about all the things required to actually run a SQL query and seeing it actually work is extremely rewarding. Before SQLGlot, I had zero experience with lexers, parsers, or compilers.
@@ -16,7 +16,7 @@ In terms of practical use cases, I planned to use the Python SQL engine for unit
 
 Finally, the components that have been built to support execution can be used as a **foundation** for a faster engine. I'm inspired by what [Apache Calcite](https://github.com/apache/calcite) has done for the JVM world. Even though Python is commonly used for data, there hasn't been a Calcite for Python. So you could say that SQLGlot aims to be that framework. For example, it wouldn't take much work to replace the Python execution engine with numpy / pandas / arrow to become a respectably performing query engine. The implementation would be able to leverage the parser, optimizer, and logical planner, only needing to implement physical execution. There is a ton of work in the Python ecosystem around high performance vectorized computation which I think could benefit from a pure Python based [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) / [plan](https://en.wikipedia.org/wiki/Query_plan). Parsing and planning doesn't have to be fast when the bottleneck of running queries is processing terabytes of data. So having a Python based ecosystem around SQL is beneficial given the ease of development in Python despite not having bare metal performance.
 
-Parts of SQLGlot's toolkit are being used today by [Ibis](https://github.com/ibis-project/ibis), [Quokka](https://github.com/marsupialtail/quokka), and [Splink](https://github.com/moj-analytical-services/splink).
+Parts of SQLGlot's toolkit are being used today by [Ibis](https://github.com/ibis-project/ibis), [mysql-mimic](https://github.com/kelsin/mysql-mimic), [Quokka](https://github.com/marsupialtail/quokka), and [Splink](https://github.com/moj-analytical-services/splink).
 
 ## How?
 
@@ -36,7 +36,7 @@ In this post, I'll walk through all the steps SQLGlot takes to run this query ov
 
 ## Tokenizing
 
-The first step is to convert the sql string into a list of tokens. SQLGlot's tokenizer is quite simple and can be found [here](https://github.com/tobymao/sqlglot/blob/main/sqlglot/tokens.py#L763). In a while loop, it checks each character and either appends the character to the current token or makes a new token.
+The first step is to convert the sql string into a list of tokens. SQLGlot's tokenizer is quite simple and can be found [here](https://github.com/tobymao/sqlglot/blob/main/sqlglot/tokens.py). In a while loop, it checks each character and either appends the character to the current token or makes a new token.
 
 Running the SQLGlot tokenizer shows the output.
 
@@ -56,11 +56,13 @@ The AST is a generic representation of a given SQL query. Each dialect can overr
 
 ## Optimizing
 
-Once we have our AST, we need to simplify it and put it into a consistent form to actually run queries efficiently. For example, how do you know which table column 'b' comes from in `SELECT bar.a, b FROM bar JOIN baz`. Given a schema, we can infer that b comes from table baz. When optimizing queries, most engines first convert the AST into a logical plan and then optimize the plan. However, I chose to **optimize the AST directly** for two reasons.
+Once we have our AST, we can transform it into an equivalent query that would produce the same results more efficiently. When optimizing queries, most engines first convert the AST into a logical plan and then optimize the plan. However, I chose to **optimize the AST directly** for two reasons.
 
-1. I wanted a way to generate 'canonical sql'. Given two SQL statements, I wanted to be able to identify if they are semantically equivalent. For example `select 2` and `select 1 + 1` are functionally the same even though the SQL query is the same. Having the optimizer output SQL would allow me to convert 1 + 1 into 2.
+1. It's easier to debug and [validate](https://github.com/tobymao/sqlglot/blob/main/tests/fixtures/optimizer) the optimizations when the input and output are both SQL.
 
-2. It's easier to debug and [validate](https://github.com/tobymao/sqlglot/blob/main/tests/fixtures/optimizer) the optimizations when the input and output are both SQL.
+2. Rules can be applied a la carte transforming SQL into a more desireable form.
+
+3. I wanted a way to generate 'canonical sql'. Having a canonical representation of SQL is useful for understanding if two queries are semantically equivalent (eg. `SELECT 1 + 1` and  `SELECT 2`).
 
 I've yet to find another engine that takes this approach, but I'm quite happy with this decision. The optimizer currently does not perform any "physical optimizations" like join reordering. Those are left to the execution layer as additional statistics and information could become relevant.
 
@@ -152,19 +154,19 @@ Infer all types throughout the AST given schema information and function type de
 After the SQL AST has been "optimized", it's much easier to [convert into a logical plan](https://github.com/tobymao/sqlglot/blob/main/sqlglot/planner.py). The AST is traversed and converted into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) consisting of one of five steps. The different types of steps are:
 
 ### Scan
-The scan step selects columns from a table, applies projections, and finally filters the table.
+Selects columns from a table, applies projections, and finally filters the table.
 
 ### Sort
-The sort step sorts a table.
+Sorts a table for order by expressions.
 
 ### Set
-The set step applies the operators union / union all / except / intersect.
+Applies the operators union / union all / except / intersect.
 
 ### Aggregate
-The aggregate step applies an aggregation / group by.
+Applies an aggregation / group by.
 
 ### Join
-The join step joins multiple tables together.
+Joins multiple tables together.
 
 ![Planner Output](python_sql_engine_images/planner.png)
 

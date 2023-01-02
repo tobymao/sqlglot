@@ -15,6 +15,15 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import delegate, preprocess
 
+DATE_DIFF_FACTOR = {
+    "MICROSECOND": " * 1000000",
+    "MILLISECOND": " * 1000",
+    "SECOND": "",
+    "MINUTE": " / 60",
+    "HOUR": " / 3600",
+    "DAY": " / 86400",
+}
+
 
 def _date_add_sql(kind):
     def func(self, expression):
@@ -33,6 +42,32 @@ def _date_add_sql(kind):
         return f"{this} {kind} INTERVAL {expression} {unit}"
 
     return func
+
+
+def _date_diff_sql(self, expression):
+    unit = expression.text("unit").upper()
+    factor = DATE_DIFF_FACTOR.get(unit)
+
+    end = f"CAST({expression.this} AS TIMESTAMP)"
+    start = f"CAST({expression.expression} AS TIMESTAMP)"
+
+    if factor is not None:
+        return f"CAST(EXTRACT(epoch FROM {end} - {start}){factor} AS BIGINT)"
+
+    age = f"AGE({end}, {start})"
+
+    if unit == "WEEK":
+        extract = f"EXTRACT(year FROM {age}) * 48 + EXTRACT(month FROM {age}) * 4 + EXTRACT(day FROM {age}) / 7"
+    elif unit == "MONTH":
+        extract = f"EXTRACT(year FROM {age}) * 12 + EXTRACT(month FROM {age})"
+    elif unit == "QUARTER":
+        extract = f"EXTRACT(year FROM {age}) * 4 + EXTRACT(month FROM {age}) / 3"
+    elif unit == "YEAR":
+        extract = f"EXTRACT(year FROM {age})"
+    else:
+        self.unsupported(f"Unsupported DATEDIFF unit {unit}")
+
+    return f"CAST({extract} AS BIGINT)"
 
 
 def _substring_sql(self, expression):
@@ -275,6 +310,7 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
+            exp.DateDiff: _date_diff_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,

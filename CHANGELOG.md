@@ -1,6 +1,26 @@
 Changelog
 =========
 
+v10.4.0
+------
+
+Changes:
+
+- Breaking: Removed the quote_identities optimizer rule.
+
+- New: ARRAYAGG, SUM, ARRAYANY support in the engine. SQLGlot is now able to execute all TPC-H queries.
+
+- Improvement: Transpile DATEDIFF to postgres.
+
+- Improvement: Right join pushdown fixes.
+
+- Improvement: Have Snowflake generate VALUES columns without quotes.
+
+- Improvement: Support NaN values in convert.
+
+- Improvement: Recursive CTE scope [fixes](https://github.com/tobymao/sqlglot/commit/bec36391d85152fa478222403d06beffa8d6ddfb).
+
+
 v10.3.0
 ------
 

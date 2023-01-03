@@ -3,7 +3,7 @@
 
 ## Introduction
 
-When I first started writing SQLGlot in early 2021, my goal was just to translate SQL queries from SparkSQL to Presto and vice versa. However, over the last year and a half, I've ended up with a full-fledged SQL engine. SQLGlot can now parse and transpile between [18 SQL dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) and can execute all 24 [TPC-H](https://www.tpc.org/tpch/) SQL queries. The parser and engine are all handwritten from scratch using Python.
+When I first started writing SQLGlot in early 2021, my goal was just to translate SQL queries from SparkSQL to Presto and vice versa. However, over the last year and a half, I've ended up with a full-fledged SQL engine. SQLGlot can now parse and transpile between [18 SQL dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) and can execute all 24 [TPC-H](https://www.tpc.org/tpch/) SQL queries. The parser and engine are all written from scratch using Python.
 
 This post will cover [why](#why) I went through the effort of creating a Python SQL engine and [how](#how) a simple query goes from a string to actually transforming data. The following steps are briefly summarized:
 
@@ -14,7 +14,7 @@ This post will cover [why](#why) I went through the effort of creating a Python 
 * [Executing](#executing)
 
 ## Why?
-I started working on SQLGlot because of my work on the [experimentation and metrics platform](https://netflixtechblog.com/reimagining-experimentation-analysis-at-netflix-71356393af21) at Netflix, where I built tools that allowed data scientists to define and compute SQL-based metrics. Netflix relied on multiple engines to query data (Spark, Presto, and Druid), so my team built the metrics platform around [PyPika](https://github.com/kayak/pypika), a Python SQL query builder. This way, definitions could be reused across multiple engines. However, it became quickly apparent that writing python code to programatically generate SQL was challenging for data scientists, especially those with academic backgrounds, since they were mostly familiar with R and SQL. But at the time, the only Python SQL parser was [sqlparse]([https://github.com/andialbrecht/sqlparse), which is not actually a parser but a tokenizer, so having users write raw SQL into the platform wasn't really an option. Some time later, I randomly stumbled across [Crafting Interpreters](https://craftinginterpreters.com/) and realized that I could use it as a guide towards creating my own SQL parser/transpiler.
+I started working on SQLGlot because of my work on the [experimentation and metrics platform](https://netflixtechblog.com/reimagining-experimentation-analysis-at-netflix-71356393af21) at Netflix, where I built tools that allowed data scientists to define and compute SQL-based metrics. Netflix relied on multiple engines to query data (Spark, Presto, and Druid), so my team built the metrics platform around [PyPika](https://github.com/kayak/pypika), a Python SQL query builder. This way, definitions could be reused across multiple engines. However, it became quickly apparent that writing python code to programatically generate SQL was challenging for data scientists, especially those with academic backgrounds, since they were mostly familiar with R and SQL. At the time, the only Python SQL parser was [sqlparse]([https://github.com/andialbrecht/sqlparse), which is not actually a parser but a tokenizer, so having users write raw SQL into the platform wasn't really an option. Some time later, I randomly stumbled across [Crafting Interpreters](https://craftinginterpreters.com/) and realized that I could use it as a guide towards creating my own SQL parser/transpiler.
 
 Why did I do this? Isn't a Python SQL engine going to be extremely slow?
 
@@ -42,7 +42,7 @@ There are many steps involved with actually running a simple query like:
 ```sql
 SELECT
   bar.a,
-  b + 'y' AS b
+  b + 1 AS b
 FROM bar
 JOIN baz
   ON bar.a = baz.a
@@ -94,7 +94,7 @@ Some example rules are:
 - Ensure each column is unambiguous and expand stars.
 
 ```sql
-SELECT * FROM x`;
+SELECT * FROM x;
 
 SELECT "db"."x" AS "x";
 ```
@@ -143,7 +143,7 @@ LEFT JOIN (
   GROUP BY y.a
 ) AS "_u_0"
   ON x.a = "_u_0".a
-WHERE ("_u_0".a = 1 AND NOT "_u_0".a IS NULL)'
+WHERE ("_u_0".a = 1 AND NOT "_u_0".a IS NULL)
 ```
 
 ### pushdown_predicates
@@ -198,6 +198,8 @@ In order to keep things simple, it evaluates expressions with `eval`. Because SQ
 
 ## What's next
 SQLGlot's main focus will always be on parsing/transpiling, but I plan to continue development on the execution engine. I'd like to pass [TPC-DS](https://www.tpc.org/tpcds/). If someone doesn't beat me to it, I may even take a stab at writing a Pandas/Arrow execution engine.
+
+I'm hoping that over time, SQLGlot will spark the Python SQL ecosystem just like Calcite has for Java.
 
 ## Special thanks
 SQLGlot would not be what it is without it's core contributors. In particular, the execution engine would not exist without [Barak Alon](https://github.com/barakalon) and [George Sittas](https://github.com/GeorgeSittas).

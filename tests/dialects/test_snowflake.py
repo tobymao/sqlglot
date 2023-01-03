@@ -7,6 +7,12 @@ class TestSnowflake(Validator):
 
     def test_snowflake(self):
         self.validate_all(
+            "SELECT * FROM xxx WHERE col ilike '%Don''t%'",
+            write={
+                "snowflake": "SELECT * FROM xxx WHERE col ILIKE '%Don\\'t%'",
+            },
+        )
+        self.validate_all(
             'x:a:"b c"',
             write={
                 "duckdb": "x['a']['b c']",

@@ -3806,11 +3806,13 @@ def convert(value) -> Expression:
         return Array(expressions=[convert(v) for v in value])
     if isinstance(value, dict):
         return Map(
-            keys=[convert(k) for k in value.keys()],
+            keys=[convert(k) for k in value],
             values=[convert(v) for v in value.values()],
         )
     if isinstance(value, datetime.datetime):
-        datetime_literal = Literal.string(value.strftime("%Y-%m-%d %H:%M:%S.%f%z"))
+        datetime_literal = Literal.string(
+            (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat()
+        )
         return TimeStrToTime(this=datetime_literal)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))

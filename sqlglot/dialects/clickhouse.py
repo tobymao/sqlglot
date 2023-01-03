@@ -35,13 +35,13 @@ class ClickHouse(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,  # type: ignore
             "MAP": parse_var_map,
         }
 
-        JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}
+        JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}  # type: ignore
 
-        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}
+        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}  # type: ignore
 
         def _parse_table(self, schema=False):
             this = super()._parse_table(schema)
@@ -55,7 +55,7 @@ class ClickHouse(Dialect):
         STRUCT_DELIMITER = ("(", ")")
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+            **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.NULLABLE: "Nullable",
             exp.DataType.Type.DATETIME: "DateTime64",
             exp.DataType.Type.MAP: "Map",
@@ -70,7 +70,7 @@ class ClickHouse(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,
+            **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",

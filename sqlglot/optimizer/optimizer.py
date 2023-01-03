@@ -14,7 +14,6 @@ from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
 from sqlglot.optimizer.pushdown_projections import pushdown_projections
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.qualify_tables import qualify_tables
-from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 
 RULES = (
@@ -34,7 +33,6 @@ RULES = (
     eliminate_ctes,
     annotate_types,
     canonicalize,
-    quote_identities,
 )
 
 

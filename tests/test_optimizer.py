@@ -164,9 +164,6 @@ class TestOptimizer(unittest.TestCase):
                 with self.assertRaises(OptimizeError):
                     optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=self.schema)
 
-    def test_quote_identities(self):
-        self.check_file("quote_identities", optimizer.quote_identities.quote_identities)
-
     def test_lower_identities(self):
         self.check_file("lower_identities", optimizer.lower_identities.lower_identities)
 

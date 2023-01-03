@@ -18,6 +18,9 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
     expression = coerce_type(expression)
     expression = remove_redundant_casts(expression)
 
+    if isinstance(expression, exp.Identifier):
+        expression.set("quoted", True)
+
     return expression
 
 

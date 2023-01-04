@@ -2055,11 +2055,11 @@ class Parser(metaclass=_Parser):
             args = self._parse_csv(self._parse_lambda)
 
             if function:
-                params = None
 
                 # Clickhouse supports function calls like foo(x, y)(z), so for these we need to also parse the
                 # second parameter list (i.e. "(z)") and the corresponding function will receive both arg lists.
                 if count_params(function) == 2:
+                    params = None
                     if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
                         params = self._parse_csv(self._parse_lambda)
 

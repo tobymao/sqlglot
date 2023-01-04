@@ -11,10 +11,10 @@ SELECT a FROM x JOIN (SELECT b, c FROM y) AS z ON x.b = z.b;
 SELECT x.a AS a FROM x AS x JOIN (SELECT y.b AS b FROM y AS y) AS z ON x.b = z.b;
 
 SELECT x1.a FROM (SELECT * FROM x) AS x1, (SELECT * FROM x) AS x2;
-SELECT x1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS x1, (SELECT 1 AS _ FROM x AS x) AS x2;
+SELECT x1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS x1, (SELECT 1 AS "_" FROM x AS x) AS x2;
 
 SELECT x1.a FROM (SELECT * FROM x) AS x1, (SELECT * FROM x) AS x2;
-SELECT x1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS x1, (SELECT 1 AS _ FROM x AS x) AS x2;
+SELECT x1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS x1, (SELECT 1 AS "_" FROM x AS x) AS x2;
 
 SELECT a FROM (SELECT DISTINCT a, b FROM x);
 SELECT _q_0.a AS a FROM (SELECT DISTINCT x.a AS a, x.b AS b FROM x AS x) AS _q_0;

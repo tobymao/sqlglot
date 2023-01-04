@@ -5,7 +5,13 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
-from sqlglot.helper import apply_index_offset, ensure_collection, ensure_list, seq_get
+from sqlglot.helper import (
+    apply_index_offset,
+    count_params,
+    ensure_collection,
+    ensure_list,
+    seq_get,
+)
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
@@ -2053,14 +2059,9 @@ class Parser(metaclass=_Parser):
 
                 # Clickhouse supports function calls like foo(x, y)(z), so for these we need to also parse the
                 # second parameter list (i.e. "(z)") and the corresponding function will receive both arg lists.
-                if function.__code__.co_name == "<lambda>" and function.__code__.co_argcount == 2:
-                    index = self._index
-                    self._match_r_paren()
-
-                    if self._match(TokenType.L_PAREN):
+                if count_params(function) == 2:
+                    if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
                         params = self._parse_csv(self._parse_lambda)
-                    else:
-                        self._retreat(index)
 
                     this = function(args, params)
                 else:

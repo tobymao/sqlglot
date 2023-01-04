@@ -7,7 +7,7 @@ from sqlglot.optimizer.scope import Scope, traverse_scope
 SELECT_ALL = object()
 
 # Selection to use if selection list is empty
-DEFAULT_SELECTION = alias("1", "_")
+DEFAULT_SELECTION = alias("1", '"_"')
 
 
 def pushdown_projections(expression):

@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     str_position_sql,
     struct_extract_sql,
+    timestrtotime_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.errors import UnsupportedError
@@ -36,10 +37,6 @@ def _datatype_sql(self, expression):
     if expression.this == exp.DataType.Type.TIMESTAMPTZ:
         sql = f"{sql} WITH TIME ZONE"
     return sql
-
-
-def _timestr_to_time_sql(self, expression):
-    return f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
 
 
 def _explode_to_unnest_sql(self, expression):
@@ -224,8 +221,8 @@ class Presto(Dialect):
             exp.StructExtract: struct_extract_sql,
             exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT='{e.name.upper()}'",
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
-            exp.TimeStrToDate: _timestr_to_time_sql,
-            exp.TimeStrToTime: _timestr_to_time_sql,
+            exp.TimeStrToDate: timestrtotime_sql,
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.time_format}))",
             exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),

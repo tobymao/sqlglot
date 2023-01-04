@@ -492,7 +492,7 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(alias("foo", "bar-1").sql(), 'foo AS "bar-1"')
         self.assertEqual(alias("foo", "bar_1").sql(), "foo AS bar_1")
         self.assertEqual(alias("foo * 2", "2bar").sql(), 'foo * 2 AS "2bar"')
-        self.assertEqual(alias('"foo"', "_bar").sql(), '"foo" AS "_bar"')
+        self.assertEqual(alias('"foo"', "_bar").sql(), '"foo" AS _bar')
         self.assertEqual(alias("foo", "bar", quoted=True).sql(), 'foo AS "bar"')
 
     def test_unit(self):
@@ -504,6 +504,8 @@ class TestExpressions(unittest.TestCase):
     def test_identifier(self):
         self.assertTrue(exp.to_identifier('"x"').quoted)
         self.assertFalse(exp.to_identifier("x").quoted)
+        self.assertTrue(exp.to_identifier("foo ").quoted)
+        self.assertFalse(exp.to_identifier("_x").quoted)
 
     def test_function_normalizer(self):
         self.assertEqual(parse_one("HELLO()").sql(normalize_functions="lower"), "hello()")

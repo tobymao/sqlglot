@@ -53,7 +53,7 @@ class TestRedshift(Validator):
         self.validate_all(
             "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
             write={
-                "redshift": 'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS "_row_number" FROM x) WHERE "_row_number" = 1',
+                "redshift": 'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) WHERE "_row_number" = 1',
             },
         )
         self.validate_all(

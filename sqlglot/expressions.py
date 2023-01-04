@@ -1379,7 +1379,7 @@ class Union(Subqueryable):
 
         Example:
             >>> select("1").union(select("1")).limit(1).sql()
-            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS "_l_0" LIMIT 1'
+            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS _l_0 LIMIT 1'
 
         Args:
             expression (str | int | Expression): the SQL code string to parse.
@@ -3594,7 +3594,7 @@ def paren(expression) -> Paren:
     return Paren(this=expression)
 
 
-SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
+SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 def to_identifier(alias, quoted=None) -> t.Optional[Identifier]:

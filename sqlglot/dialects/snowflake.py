@@ -3,9 +3,11 @@ from __future__ import annotations
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
     rename_func,
+    timestrtotime_sql,
     var_map_sql,
 )
 from sqlglot.expressions import Literal
@@ -209,6 +211,7 @@ class Snowflake(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
             exp.If: rename_func("IFF"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -218,6 +221,7 @@ class Snowflake(Dialect):
             exp.Matches: rename_func("DECODE"),
             exp.StrPosition: rename_func("POSITION"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
             exp.UnixToTime: _unix_to_time_sql,

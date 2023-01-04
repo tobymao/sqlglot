@@ -373,3 +373,11 @@ def strposition_to_local_sql(self, expression):
         expression.args.get("substr"), expression.this, expression.args.get("position")
     )
     return f"LOCATE({args})"
+
+
+def timestrtotime_sql(self, expression: exp.TimeStrToTime) -> str:
+    return f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
+
+
+def datestrtodate_sql(self, expression: exp.DateStrToDate) -> str:
+    return f"CAST({self.sql(expression, 'this')} AS DATE)"

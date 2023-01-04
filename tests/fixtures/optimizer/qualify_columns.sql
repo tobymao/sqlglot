@@ -21,15 +21,15 @@ SELECT x.a AS b FROM x AS x;
 
 # execute: false
 SELECT 1, 2 FROM x;
-SELECT 1 AS "_col_0", 2 AS "_col_1" FROM x AS x;
+SELECT 1 AS _col_0, 2 AS _col_1 FROM x AS x;
 
 # execute: false
 SELECT a + b FROM x;
-SELECT x.a + x.b AS "_col_0" FROM x AS x;
+SELECT x.a + x.b AS _col_0 FROM x AS x;
 
 # execute: false
 SELECT a, SUM(b) FROM x WHERE a > 1 AND b > 1 GROUP BY a;
-SELECT x.a AS a, SUM(x.b) AS "_col_1" FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
+SELECT x.a AS a, SUM(x.b) AS _col_1 FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
 
 SELECT SUM(a) AS c FROM x HAVING SUM(a) > 3;
 SELECT SUM(x.a) AS c FROM x AS x HAVING SUM(x.a) > 3;
@@ -59,7 +59,7 @@ SELECT SUM(x.a) AS c, SUM(x.b) AS d FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
 
 # execute: false
 SELECT SUM(a), SUM(b) AS c FROM x ORDER BY 1, 2;
-SELECT SUM(x.a) AS "_col_0", SUM(x.b) AS c FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
+SELECT SUM(x.a) AS _col_0, SUM(x.b) AS c FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
 
 SELECT a AS j, b FROM x GROUP BY j, b;
 SELECT x.a AS j, x.b AS b FROM x AS x GROUP BY x.a, x.b;
@@ -72,7 +72,7 @@ SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a, x.b;
 
 # execute: false
 SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
-SELECT DATE(x.a) AS "_col_0", DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
+SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
 SELECT SUM(x.a) AS c FROM x JOIN y ON x.b = y.b GROUP BY c;
 SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
@@ -130,10 +130,10 @@ SELECT a FROM (SELECT a FROM x AS x) y;
 SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y;
 
 SELECT a FROM (SELECT a AS a FROM x);
-SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x AS x) AS "_q_0";
+SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0;
 
 SELECT a FROM (SELECT a FROM (SELECT a FROM x));
-SELECT "_q_1".a AS a FROM (SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x AS x) AS "_q_0") AS "_q_1";
+SELECT _q_1.a AS a FROM (SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0) AS _q_1;
 
 SELECT x.a FROM x AS x JOIN (SELECT * FROM x) AS y ON x.a = y.a;
 SELECT x.a AS a FROM x AS x JOIN (SELECT x.a AS a, x.b AS b FROM x AS x) AS y ON x.a = y.a;
@@ -157,7 +157,7 @@ SELECT a FROM x UNION SELECT a FROM x UNION SELECT a FROM x;
 SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x;
 
 SELECT a FROM (SELECT a FROM x UNION SELECT a FROM x);
-SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x) AS "_q_0";
+SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x) AS _q_0;
 
 --------------------------------------
 -- Subqueries
@@ -167,10 +167,10 @@ SELECT x.a AS a FROM x AS x WHERE x.b IN (SELECT y.c AS c FROM y AS y);
 
 # execute: false
 SELECT (SELECT c FROM y) FROM x;
-SELECT (SELECT y.c AS c FROM y AS y) AS "_col_0" FROM x AS x;
+SELECT (SELECT y.c AS c FROM y AS y) AS _col_0 FROM x AS x;
 
 SELECT a FROM (SELECT a FROM x) WHERE a IN (SELECT b FROM (SELECT b FROM y));
-SELECT "_q_1".a AS a FROM (SELECT x.a AS a FROM x AS x) AS "_q_1" WHERE "_q_1".a IN (SELECT "_q_0".b AS b FROM (SELECT y.b AS b FROM y AS y) AS "_q_0");
+SELECT _q_1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_1 WHERE _q_1.a IN (SELECT _q_0.b AS b FROM (SELECT y.b AS b FROM y AS y) AS _q_0);
 
 --------------------------------------
 -- Correlated subqueries
@@ -215,10 +215,10 @@ SELECT x.*, y.* FROM x JOIN y ON x.b = y.b;
 SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
 
 SELECT a FROM (SELECT * FROM x);
-SELECT "_q_0".a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS "_q_0";
+SELECT _q_0.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS _q_0;
 
 SELECT * FROM (SELECT a FROM x);
-SELECT "_q_0".a AS a FROM (SELECT x.a AS a FROM x AS x) AS "_q_0";
+SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0;
 
 --------------------------------------
 -- CTEs

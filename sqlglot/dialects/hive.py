@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_to_local_sql,
     struct_extract_sql,
+    timestrtotime_sql,
     var_map_sql,
 )
 from sqlglot.helper import seq_get
@@ -299,7 +300,7 @@ class Hive(Dialect):
             exp.StructExtract: struct_extract_sql,
             exp.TableFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
             exp.TimeStrToDate: rename_func("TO_DATE"),
-            exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: _time_to_str,
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),

@@ -14,6 +14,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM foo LEFT ASOF JOIN bla")
         self.validate_identity("SELECT * FROM foo ASOF JOIN bla")
         self.validate_identity("SELECT * FROM foo ANY JOIN bla")
+        self.validate_identity("SELECT quantile(0.5)(a)")
 
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
@@ -37,4 +38,10 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT x #! comment",
             write={"": "SELECT x /* comment */"},
+        )
+        self.validate_all(
+            "SELECT quantileIf(0.5)(a, true)",
+            write={
+                "clickhouse": "SELECT quantileIf(0.5)(a, TRUE)",
+            },
         )

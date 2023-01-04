@@ -2049,7 +2049,23 @@ class Parser(metaclass=_Parser):
             args = self._parse_csv(self._parse_lambda)
 
             if function:
-                this = function(args)
+                params = None
+
+                # Clickhouse supports function calls like foo(x, y)(z), so for these we need to also parse the
+                # second parameter list (i.e. "(z)") and the corresponding function will receive both arg lists.
+                if function.__code__.co_name == "<lambda>" and function.__code__.co_argcount == 2:
+                    index = self._index
+                    self._match_r_paren()
+
+                    if self._match(TokenType.L_PAREN):
+                        params = self._parse_csv(self._parse_lambda)
+                    else:
+                        self._retreat(index)
+
+                    this = function(args, params)
+                else:
+                    this = function(args)
+
                 self.validate_expression(this, args)
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)

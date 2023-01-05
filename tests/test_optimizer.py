@@ -299,10 +299,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
             self.assertEqual(set(scopes[6].sources), {"q", "z", "r", "s"})
             self.assertEqual(len(scopes[6].columns), 6)
-            self.assertEqual(set(c.table for c in scopes[6].columns), {"r", "s"})
+            self.assertEqual({c.table for c in scopes[6].columns}, {"r", "s"})
             self.assertEqual(scopes[6].source_columns("q"), [])
             self.assertEqual(len(scopes[6].source_columns("r")), 2)
-            self.assertEqual(set(c.table for c in scopes[6].source_columns("r")), {"r"})
+            self.assertEqual({c.table for c in scopes[6].source_columns("r")}, {"r"})
 
             self.assertEqual({c.sql() for c in scopes[-1].find_all(exp.Column)}, {"r.b", "s.b"})
             self.assertEqual(scopes[-1].find(exp.Column).sql(), "r.b")

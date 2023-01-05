@@ -981,8 +981,12 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_describe(self):
-        self._match(TokenType.TABLE)
-        return self.expression(exp.Describe, this=self._parse_id_var())
+        kind = self._match_set(self.CREATABLES) and self._prev.text
+        this = self._parse_id_var()
+
+        while self._match(TokenType.DOT):
+            this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
+        return self.expression(exp.Describe, this=this, kind=kind)
 
     def _parse_insert(self):
         overwrite = self._match(TokenType.OVERWRITE)

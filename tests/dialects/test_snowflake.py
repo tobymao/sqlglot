@@ -523,3 +523,20 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
                 "spark": "SELECT `c0`, `c1` FROM (VALUES (1, 2), (3, 4)) AS `t0`(`c0`, `c1`)",
             },
         )
+
+    def test_describe_table(self):
+        self.validate_all(
+            "DESCRIBE TABLE db.table",
+            write={
+                "snowflake": "DESCRIBE TABLE db.table",
+                "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "DESCRIBE db.table",
+            write={
+                # This is invalid Snowflake SQL but the input is imprecise
+                "snowflake": "DESCRIBE db.table",
+                "spark": "DESCRIBE db.table",
+            },
+        )

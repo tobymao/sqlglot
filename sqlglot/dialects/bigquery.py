@@ -47,7 +47,7 @@ def _date_add_sql(data_type, kind):
 def _derived_table_values_to_unnest(self, expression):
     if not isinstance(expression.unnest().parent, exp.From):
         return self.values_sql(expression)
-    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.find_all(exp.Tuple)]
+    rows = [tuple_exp.expressions for tuple_exp in expression.find_all(exp.Tuple)]
     structs = []
     for row in rows:
         aliases = [

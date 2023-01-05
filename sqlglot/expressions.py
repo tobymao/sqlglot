@@ -2815,7 +2815,13 @@ class Length(Func):
 
 
 class Levenshtein(Func):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {
+        "this": True,
+        "expression": False,
+        "ins_cost": False,
+        "del_cost": False,
+        "sub_cost": False,
+    }
 
 
 class Ln(Func):

@@ -71,6 +71,12 @@ class TestTSQL(Validator):
                 "tsql": "CAST(x AS DATETIME2)",
             },
         )
+        self.validate_all(
+            "CAST(x AS DATETIME2(6))",
+            write={
+                "hive": "CAST(x AS TIMESTAMP)",
+            },
+        )
 
     def test_charindex(self):
         self.validate_all(
@@ -300,6 +306,12 @@ class TestTSQL(Validator):
                 "spark": "SELECT CAST(y.x AS VARCHAR(10)) AS z FROM testdb.dbo.test AS y",
             },
         )
+        self.validate_all(
+            "SELECT CAST((SELECT x FROM y) AS VARCHAR) AS test",
+            write={
+                "spark": "SELECT CAST((SELECT x FROM y) AS STRING) AS test",
+            },
+        )
 
     def test_add_date(self):
         self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
@@ -440,4 +452,14 @@ class TestTSQL(Validator):
         self.validate_all(
             "SELECT '''test'''",
             write={"spark": r"SELECT '\'test\''"},
+        )
+
+    def test_eomonth(self):
+        self.validate_all(
+            "EOMONTH(GETDATE())",
+            write={"spark": "LAST_DAY(CURRENT_TIMESTAMP())"},
+        )
+        self.validate_all(
+            "EOMONTH(GETDATE(), -1)",
+            write={"spark": "LAST_DAY(ADD_MONTHS(CURRENT_TIMESTAMP(), -1))"},
         )

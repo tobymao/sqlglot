@@ -225,7 +225,7 @@ def open_file(file_name: str) -> t.TextIO:
 
         return gzip.open(file_name, "rt", newline="")
 
-    return open(file_name, "rt", encoding="utf-8", newline="")
+    return open(file_name, encoding="utf-8", newline="")
 
 
 @contextmanager

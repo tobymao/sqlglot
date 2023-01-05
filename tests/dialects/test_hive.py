@@ -411,7 +411,7 @@ class TestHive(Validator):
             "INITCAP('new york')",
             write={
                 "duckdb": "INITCAP('new york')",
-                "presto": "REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+                "presto": r"REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",
             },

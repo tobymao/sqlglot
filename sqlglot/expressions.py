@@ -3633,7 +3633,7 @@ def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
 
-    catalog, db, table_name = [to_identifier(x) for x in split_num_words(sql_path, ".", 3)]
+    catalog, db, table_name = (to_identifier(x) for x in split_num_words(sql_path, ".", 3))
     return Table(this=table_name, db=db, catalog=catalog, **kwargs)
 
 
@@ -3652,7 +3652,7 @@ def to_column(sql_path: str, **kwargs) -> Column:
         return sql_path
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for column: {type(sql_path)}")
-    table_name, column_name = [to_identifier(x) for x in split_num_words(sql_path, ".", 2)]
+    table_name, column_name = (to_identifier(x) for x in split_num_words(sql_path, ".", 2))
     return Column(this=column_name, table=table_name, **kwargs)
 
 

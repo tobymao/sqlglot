@@ -50,7 +50,7 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
-        comments: Whether or not to preserve comments in the ouput SQL code.
+        comments: Whether or not to preserve comments in the output SQL code.
             Default: True
     """
 

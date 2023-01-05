@@ -635,7 +635,7 @@ class Create(Expression):
 
 
 class Describe(Expression):
-    pass
+    arg_types = {"this": True, "kind": False}
 
 
 class Set(Expression):

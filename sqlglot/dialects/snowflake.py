@@ -111,13 +111,6 @@ def _datatype_sql(self, expression):
     return self.datatype_sql(expression)
 
 
-def _describe_with_kind_sql(self, expression):
-    kind_value = expression.args.get("kind")
-    kind = f" {kind_value}" if kind_value else ""
-    this = f" {self.sql(expression, 'this')}"
-    return f"DESCRIBE{kind}{this}"
-
-
 class Snowflake(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
@@ -220,7 +213,6 @@ class Snowflake(Dialect):
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
-            exp.Describe: _describe_with_kind_sql,
             exp.If: rename_func("IFF"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -302,3 +294,9 @@ class Snowflake(Dialect):
                 )
                 return self.no_identify(lambda: super(self.__class__, self).select_sql(expression))
             return super().select_sql(expression)
+
+        def describe_sql(self, expression: exp.Describe) -> str:
+            kind_value = expression.args.get("kind")
+            kind = f" {kind_value}" if kind_value else ""
+            this = f" {self.sql(expression, 'this')}"
+            return f"DESCRIBE{kind}{this}"

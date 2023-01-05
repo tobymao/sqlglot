@@ -294,3 +294,10 @@ class Snowflake(Dialect):
                 )
                 return self.no_identify(lambda: super(self.__class__, self).select_sql(expression))
             return super().select_sql(expression)
+
+        def describe_sql(self, expression: exp.Describe) -> str:
+            # Default to table if kind is unknown
+            kind_value = expression.args.get("kind") or "TABLE"
+            kind = f" {kind_value}" if kind_value else ""
+            this = f" {self.sql(expression, 'this')}"
+            return f"DESCRIBE{kind}{this}"

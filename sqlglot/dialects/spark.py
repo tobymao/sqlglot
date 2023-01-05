@@ -128,7 +128,5 @@ class Spark(Hive):
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
 
-        WRAP_DERIVED_VALUES = False
-
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

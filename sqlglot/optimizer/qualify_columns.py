@@ -365,9 +365,9 @@ class _Resolver:
     def all_columns(self):
         """All available columns of all sources in this scope"""
         if self._all_columns is None:
-            self._all_columns = set(
+            self._all_columns = {
                 column for columns in self._get_all_source_columns().values() for column in columns
-            )
+            }
         return self._all_columns
 
     def get_source_columns(self, name, only_visible=False):

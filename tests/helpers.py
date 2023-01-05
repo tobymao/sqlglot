@@ -27,8 +27,7 @@ def assert_logger_contains(message, logger, level="error"):
 
 def load_sql_fixtures(filename):
     with open(os.path.join(FIXTURES_DIR, filename), encoding="utf-8") as f:
-        for sql in _filter_comments(f.read()).splitlines():
-            yield sql
+        yield from _filter_comments(f.read()).splitlines()
 
 
 def load_sql_fixture_pairs(filename):

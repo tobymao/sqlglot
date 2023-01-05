@@ -535,8 +535,21 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
         self.validate_all(
             "DESCRIBE db.table",
             write={
-                # This is invalid Snowflake SQL but the input is imprecise
-                "snowflake": "DESCRIBE db.table",
+                "snowflake": "DESCRIBE TABLE db.table",
+                "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "DESC TABLE db.table",
+            write={
+                "snowflake": "DESCRIBE TABLE db.table",
+                "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "DESC VIEW db.table",
+            write={
+                "snowflake": "DESCRIBE VIEW db.table",
                 "spark": "DESCRIBE db.table",
             },
         )

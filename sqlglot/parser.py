@@ -419,6 +419,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
         TokenType.CREATE: lambda self: self._parse_create(),
         TokenType.DELETE: lambda self: self._parse_delete(),
+        TokenType.DESC: lambda self: self._parse_describe(),
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.END: lambda self: self._parse_commit_or_rollback(),
@@ -982,10 +983,8 @@ class Parser(metaclass=_Parser):
 
     def _parse_describe(self):
         kind = self._match_set(self.CREATABLES) and self._prev.text
-        this = self._parse_id_var()
+        this = self._parse_table()
 
-        while self._match(TokenType.DOT):
-            this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
         return self.expression(exp.Describe, this=this, kind=kind)
 
     def _parse_insert(self):

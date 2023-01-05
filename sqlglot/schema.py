@@ -96,6 +96,27 @@ class AbstractMappingSchema(t.Generic[T]):
 
         return self._supported_table_args
 
+    def normalize(self) -> None:
+        schema = self.mapping
+        flattened_schema = flatten_schema(schema, depth=dict_depth(schema) - 1)
+
+        normalized_mapping: t.Dict = {}
+        for keys in flattened_schema:
+            columns = _nested_get(schema, *zip(keys, keys))
+            assert columns is not None
+
+            for column_name, column_type in columns.items():
+                column = exp.to_identifier(column_name)
+                assert column is not None
+
+                normalized_name = column.name
+                if not column.quoted:
+                    normalized_name = normalized_name.lower()
+
+                _nested_set(normalized_mapping, keys + [normalized_name], column_type)
+
+        self.mapping = normalized_mapping
+
     def table_parts(self, table: exp.Table) -> t.List[str]:
         if isinstance(table.this, exp.ReadCSV):
             return [table.this.name]

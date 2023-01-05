@@ -2679,7 +2679,7 @@ class DatetimeTrunc(Func, TimeUnit):
 
 
 class LastDateOfMonth(Func):
-    arg_types = {"this": True}
+    pass
 
 
 class Extract(Func):

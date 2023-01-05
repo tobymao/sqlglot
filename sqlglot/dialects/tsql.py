@@ -271,7 +271,7 @@ class TSQL(Dialect):
             "DATENAME": _format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _format_time_lambda(exp.TimeToStr),
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
-            # "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
+            "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
             "IIF": exp.If.from_arg_list,
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,

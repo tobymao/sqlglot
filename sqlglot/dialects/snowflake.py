@@ -112,7 +112,7 @@ def _datatype_sql(self, expression):
 
 
 def _describe_with_kind_sql(self, expression):
-    kind_value = expression.args["kind"]
+    kind_value = expression.args.get("kind")
     kind = f" {kind_value}" if kind_value else ""
     this = f" {self.sql(expression, 'this')}"
     return f"DESCRIBE{kind}{this}"

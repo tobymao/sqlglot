@@ -125,7 +125,7 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
-            "CURRENT_DATE",
+            "CURRENT_TIMESTAMP()",
             read={
                 "tsql": "GETDATE()",
             },

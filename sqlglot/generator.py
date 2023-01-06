@@ -434,6 +434,13 @@ class Generator:
             data = " WITH DATA"
         else:
             data = " WITH NO DATA"
+        statistics = expression.args.get("statistics")
+        if statistics is None:
+            statistics = ""
+        elif statistics:
+            statistics = " AND STATISTICS"
+        else:
+            statistics = " AND NO STATISTICS"
 
         modifiers = "".join(
             (
@@ -445,9 +452,7 @@ class Generator:
                 materialized,
             )
         )
-        expression_sql = (
-            f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}{data}"
-        )
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}{data}{statistics}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:

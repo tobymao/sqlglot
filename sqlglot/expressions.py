@@ -632,6 +632,7 @@ class Create(Expression):
         "unique": False,
         "materialized": False,
         "data": False,
+        "statistics": False,
     }
 
 

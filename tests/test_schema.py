@@ -193,3 +193,7 @@ class TestSchema(unittest.TestCase):
 
         self.assertEqual(schema.column_names("z"), ["a", "`B`"])
         self.assertEqual(schema.column_names("w"), ["c"])
+
+        # Clickhouse supports both `` and "" for identifier quotes; sqlglot uses "" when generating sql
+        schema = MappingSchema(schema={"x": {"`y`": "INT"}}, dialect="clickhouse")
+        self.assertEqual(schema.column_names("x"), ['"y"'])

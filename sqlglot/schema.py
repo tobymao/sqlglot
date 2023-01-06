@@ -181,7 +181,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             }
         )
 
-    def normalize(self, schema: dict) -> dict:
+    def normalize(self, schema: t.Dict) -> t.Dict:
         """
         Converts all identifiers in the schema into lowercase, unless they're quoted.
 

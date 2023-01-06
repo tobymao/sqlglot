@@ -1427,7 +1427,14 @@ class Parser(metaclass=_Parser):
 
         catalog = None
         db = None
-        table = (not schema and self._parse_function()) or self._parse_id_var(False)
+        table = not schema and self._parse_function()
+        if not table:
+            # https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-temporary#create-a-temporary-table
+            # if this needs to be transpiled, we should create a temp expression node instead
+            temp = self._match(TokenType.HASH)
+            table = self._parse_id_var(any_token=False)
+            if temp:
+                table.args["this"] = f"#{table.name}"
 
         while self._match(TokenType.DOT):
             if catalog:

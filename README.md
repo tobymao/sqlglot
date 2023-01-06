@@ -284,13 +284,13 @@ print(
 ```sql
 SELECT
   (
-    "x"."A" OR "x"."B" OR "x"."C"
+    "x"."a" OR "x"."b" OR "x"."c"
   ) AND (
-    "x"."A" OR "x"."B" OR "x"."D"
+    "x"."a" OR "x"."b" OR "x"."d"
   ) AS "_col_0"
 FROM "x" AS "x"
 WHERE
-  "x"."Z" = CAST('2021-02-01' AS DATE)
+  CAST("x"."z" AS DATE) = CAST('2021-02-01' AS DATE)
 ```
 
 ### AST Introspection

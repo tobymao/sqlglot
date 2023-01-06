@@ -193,7 +193,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
                 column = sqlglot.parse_one(column_name, read=self.dialect, into=exp.Identifier)  # type: ignore
                 assert isinstance(column, exp.Identifier)
 
-                normalized_name = column.sql()
+                normalized_name = column.sql(dialect=self.dialect)
                 if not column.quoted:
                     normalized_name = normalized_name.lower()
 

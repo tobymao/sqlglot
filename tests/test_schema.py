@@ -186,9 +186,10 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(schema.get_column_type("foo", "bar").this, exp.DataType.Type.INT)
 
     def test_schema_normalization(self):
-        schema = ensure_schema(
-            {"x": {"y": {"z": {"a": "INT", '"B"': "VARCHAR"}, "w": {"C": "INT"}}}}
+        schema = MappingSchema(
+            schema={"x": {"y": {"z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"C": "INT"}}}},
+            dialect="spark",
         )
-        expected_mapping = {"x": {"y": {"z": {"a": "INT", '"B"': "VARCHAR"}, "w": {"c": "INT"}}}}
+        expected_mapping = {"x": {"y": {"z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"c": "INT"}}}}
 
         self.assertEqual(schema.mapping, expected_mapping)

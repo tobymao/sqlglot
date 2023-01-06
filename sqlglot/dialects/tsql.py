@@ -82,11 +82,11 @@ def _parse_eomonth(args):
 
     if month_lag is None:
         return exp.LastDateOfMonth(this=date)
-    else:
-        # Remove month lag argument in parser as its compared with the number of arguments of the resulting class
-        args.remove(month_lag)
 
-        return exp.LastDateOfMonth(this=exp.DateAdd(this=date, expression=month_lag, unit=unit))
+    # Remove month lag argument in parser as its compared with the number of arguments of the resulting class
+    args.remove(month_lag)
+
+    return exp.LastDateOfMonth(this=exp.DateAdd(this=date, expression=month_lag, unit=unit))
 
 
 def generate_date_delta_with_unit_sql(self, e):

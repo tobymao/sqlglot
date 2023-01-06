@@ -1444,7 +1444,7 @@ class Generator:
         result_sqls = []
         for i, e in enumerate(expressions):
             sql = self.sql(e, comment=False)
-            comments = self.maybe_comment("", e)
+            comments = self.maybe_comment("", e) if isinstance(e, exp.Expression) else ""
 
             if self.pretty:
                 if self._leading_comma:

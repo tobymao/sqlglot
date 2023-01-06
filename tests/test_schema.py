@@ -190,6 +190,6 @@ class TestSchema(unittest.TestCase):
             schema={"x": {"y": {"z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"C": "INT"}}}},
             dialect="spark",
         )
-        expected_mapping = {"x": {"y": {"z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"c": "INT"}}}}
 
-        self.assertEqual(schema.mapping, expected_mapping)
+        self.assertEqual(schema.column_names("z"), ["a", "`B`"])
+        self.assertEqual(schema.column_names("w"), ["c"])

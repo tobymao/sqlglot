@@ -6,6 +6,8 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_identity('SELECT "x"."y" FROM foo')
+        self.validate_identity("SELECT * FROM #foo")
+        self.validate_identity("SELECT * FROM ##foo")
         self.validate_identity(
             "SELECT DISTINCT DepartmentName, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY BaseRate) OVER (PARTITION BY DepartmentName) AS MedianCont FROM dbo.DimEmployee"
         )

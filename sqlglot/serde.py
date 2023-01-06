@@ -1,7 +1,14 @@
+from __future__ import annotations
+
+import typing as t
+
 from sqlglot import expressions as exp
 
+JSON = t.Union[dict, list, str, float, int, bool]
+Node = t.Union[t.List["Node"], exp.DataType.Type, exp.Expression, JSON]
 
-def dump(node):
+
+def dump(node: Node) -> JSON:
     """
     Recursively dump an AST into a JSON-serializable dict.
     """
@@ -28,7 +35,7 @@ def dump(node):
     return node
 
 
-def load(obj):
+def load(obj: JSON) -> Node:
     """
     Recursively load a dict (as returned by `dump`) into an AST.
     """

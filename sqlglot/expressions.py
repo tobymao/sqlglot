@@ -1361,6 +1361,7 @@ class Table(Expression):
         "laterals": False,
         "joins": False,
         "pivots": False,
+        "hints": False,
     }
 
 

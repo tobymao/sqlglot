@@ -668,6 +668,8 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
+        hints = self.expressions(expression, key="hints", sep=", ", flat=True)
+        hints = f" WITH ({hints})" if hints else ""
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
         pivots = self.expressions(expression, key="pivots", sep="")
@@ -676,7 +678,7 @@ class Generator:
             pivots = f"{pivots}{alias}"
             alias = ""
 
-        return f"{table}{alias}{laterals}{joins}{pivots}"
+        return f"{table}{alias}{hints}{laterals}{joins}{pivots}"
 
     def tablesample_sql(self, expression: exp.TableSample) -> str:
         if self.alias_post_tablesample and expression.this.alias:

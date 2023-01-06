@@ -2919,6 +2919,16 @@ class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
+# Clickhouse-specific:
+# https://clickhouse.com/docs/en/sql-reference/aggregate-functions/reference/quantiles/#quantiles
+class Quantiles(AggFunc):
+    arg_types = {"parameters": True, "expressions": True}
+
+
+class QuantileIf(AggFunc):
+    arg_types = {"parameters": True, "expressions": True}
+
+
 class ApproxQuantile(Quantile):
     arg_types = {"this": True, "quantile": True, "accuracy": False}
 

@@ -11,13 +11,6 @@ def _lower_func(sql):
     return sql[:index].lower() + sql[index:]
 
 
-def _quantile_sql(self, expression: exp.Quantile) -> str:
-    if_suffix = "If" if len(expression.this) == 2 else ""
-    args = self.format_args(self.expressions(expression, "quantile"))
-    params = self.format_args(self.expressions(expression, "this"))
-    return f"quantile{if_suffix}({args})({params})"
-
-
 class ClickHouse(Dialect):
     normalize_functions = None
     null_ordering = "nulls_are_last"
@@ -44,8 +37,9 @@ class ClickHouse(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "MAP": parse_var_map,
-            "QUANTILE": lambda args, params: exp.Quantile(this=params, quantile=args),
-            "QUANTILEIF": lambda args, params: exp.Quantile(this=params, quantile=args),
+            "QUANTILE": lambda params, args: exp.Quantile(this=args, quantile=params),
+            "QUANTILES": lambda params, args: exp.Quantiles(parameters=params, expressions=args),
+            "QUANTILEIF": lambda params, args: exp.QuantileIf(parameters=params, expressions=args),
         }
 
         JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}  # type: ignore
@@ -85,7 +79,16 @@ class ClickHouse(Dialect):
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
-            exp.Quantile: _quantile_sql,
+            exp.Quantile: lambda self, e: f"quantile{self._param_args_sql(e, 'quantile', 'this')}",
+            exp.Quantiles: lambda self, e: f"quantiles{self._param_args_sql(e, 'parameters', 'expressions')}",
+            exp.QuantileIf: lambda self, e: f"quantileIf{self._param_args_sql(e, 'parameters', 'expressions')}",
         }
 
         EXPLICIT_UNION = True
+
+        def _param_args_sql(
+            self, expression: exp.Expression, params_name: str, args_name: str
+        ) -> str:
+            params = self.format_args(self.expressions(expression, params_name))
+            args = self.format_args(self.expressions(expression, args_name))
+            return f"({params})({args})"

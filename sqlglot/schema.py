@@ -182,6 +182,15 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         )
 
     def normalize(self, schema: dict) -> dict:
+        """
+        Converts all identifiers in the schema into lowercase, unless they're quoted.
+
+        Args:
+            schema: the schema to normalize.
+
+        Returns:
+            The normalized schema mapping.
+        """
         flattened_schema = flatten_schema(schema, depth=dict_depth(schema) - 1)
 
         normalized_mapping: t.Dict = {}
@@ -189,15 +198,26 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             columns = _nested_get(schema, *zip(keys, keys))
             assert columns is not None
 
-            for column_name, column_type in columns.items():
-                column = sqlglot.parse_one(column_name, read=self.dialect, into=exp.Identifier)  # type: ignore
-                assert isinstance(column, exp.Identifier)
+            normalized_keys = []
+            for key in keys:
+                key_id = sqlglot.parse_one(key, read=self.dialect, into=exp.Identifier)  # type: ignore
+                assert isinstance(key_id, exp.Identifier)
 
-                normalized_name = column.sql(dialect=self.dialect)
-                if not column.quoted:
+                normalized_name = key_id.sql(dialect=self.dialect)
+                if not key_id.quoted:
                     normalized_name = normalized_name.lower()
 
-                _nested_set(normalized_mapping, keys + [normalized_name], column_type)
+                normalized_keys.append(normalized_name)
+
+            for column_name, column_type in columns.items():
+                column_id = sqlglot.parse_one(column_name, read=self.dialect, into=exp.Identifier)  # type: ignore
+                assert isinstance(column_id, exp.Identifier)
+
+                normalized_name = column_id.sql(dialect=self.dialect)
+                if not column_id.quoted:
+                    normalized_name = normalized_name.lower()
+
+                _nested_set(normalized_mapping, normalized_keys + [normalized_name], column_type)
 
         return normalized_mapping
 

@@ -190,7 +190,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             assert columns is not None
 
             for column_name, column_type in columns.items():
-                column: exp.Identifier = sqlglot.parse_one(
+                column: t.Optional[exp.Identifier] = sqlglot.parse_one(
                     column_name, read=self.dialect, into=exp.Identifier  # type: ignore
                 )
                 assert column is not None

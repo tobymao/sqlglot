@@ -161,7 +161,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         self.dialect = dialect
         self.visible = visible or {}
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
-        super().__init__(self.normalize(schema or {}))
+        super().__init__(self._normalize(schema or {}))
 
     @classmethod
     def from_mapping_schema(cls, mapping_schema: MappingSchema) -> MappingSchema:
@@ -181,7 +181,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             }
         )
 
-    def normalize(self, schema: t.Dict) -> t.Dict:
+    def _normalize(self, schema: t.Dict) -> t.Dict:
         """
         Converts all identifiers in the schema into lowercase, unless they're quoted.
 

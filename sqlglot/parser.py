@@ -60,7 +60,7 @@ class Parser(metaclass=_Parser):
             Default: "nulls_are_small"
     """
 
-    FUNCTIONS = {
+    FUNCTIONS: dict[str, t.Callable] = {
         **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),

@@ -191,5 +191,4 @@ class TestSchema(unittest.TestCase):
         )
         expected_mapping = {"x": {"y": {"z": {"a": "INT", '"B"': "VARCHAR"}, "w": {"c": "INT"}}}}
 
-        schema.normalize()
         self.assertEqual(schema.mapping, expected_mapping)

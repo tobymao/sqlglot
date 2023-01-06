@@ -15,7 +15,7 @@ from sqlglot.optimizer.pushdown_projections import pushdown_projections
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
-from sqlglot.schema import AbstractMappingSchema, ensure_schema
+from sqlglot.schema import ensure_schema
 
 RULES = (
     lower_identities,
@@ -58,10 +58,6 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
         sqlglot.Expression: optimized expression
     """
     schema = ensure_schema(schema or sqlglot.schema)
-
-    if isinstance(schema, AbstractMappingSchema):
-        schema.normalize()
-
     possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
     expression = expression.copy()
     for rule in rules:

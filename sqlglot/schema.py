@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import typing as t
 
+import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.errors import SchemaError
 from sqlglot.helper import dict_depth
@@ -96,27 +97,6 @@ class AbstractMappingSchema(t.Generic[T]):
 
         return self._supported_table_args
 
-    def normalize(self) -> None:
-        schema = self.mapping
-        flattened_schema = flatten_schema(schema, depth=dict_depth(schema) - 1)
-
-        normalized_mapping: t.Dict = {}
-        for keys in flattened_schema:
-            columns = _nested_get(schema, *zip(keys, keys))
-            assert columns is not None
-
-            for column_name, column_type in columns.items():
-                column = exp.to_identifier(column_name)
-                assert column is not None
-
-                normalized_name = column.name
-                if not column.quoted:
-                    normalized_name = normalized_name.lower()
-
-                _nested_set(normalized_mapping, keys + [normalized_name], column_type)
-
-        self.mapping = normalized_mapping
-
     def table_parts(self, table: exp.Table) -> t.List[str]:
         if isinstance(table.this, exp.ReadCSV):
             return [table.this.name]
@@ -178,10 +158,10 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         visible: t.Optional[t.Dict] = None,
         dialect: t.Optional[str] = None,
     ) -> None:
-        super().__init__(schema)
-        self.visible = visible or {}
         self.dialect = dialect
+        self.visible = visible or {}
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
+        super().__init__(self.normalize(schema or {}))
 
     @classmethod
     def from_mapping_schema(cls, mapping_schema: MappingSchema) -> MappingSchema:
@@ -200,6 +180,28 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
                 **kwargs,
             }
         )
+
+    def normalize(self, schema: dict) -> dict:
+        flattened_schema = flatten_schema(schema, depth=dict_depth(schema) - 1)
+
+        normalized_mapping: t.Dict = {}
+        for keys in flattened_schema:
+            columns = _nested_get(schema, *zip(keys, keys))
+            assert columns is not None
+
+            for column_name, column_type in columns.items():
+                column: exp.Identifier = sqlglot.parse_one(
+                    column_name, read=self.dialect, into=exp.Identifier  # type: ignore
+                )
+                assert column is not None
+
+                normalized_name = column.sql()
+                if not column.quoted:
+                    normalized_name = normalized_name.lower()
+
+                _nested_set(normalized_mapping, keys + [normalized_name], column_type)
+
+        return normalized_mapping
 
     def add_table(
         self, table: exp.Table | str, column_mapping: t.Optional[ColumnMapping] = None

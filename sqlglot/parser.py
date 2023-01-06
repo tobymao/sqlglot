@@ -1264,12 +1264,12 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.TableAlias, this=alias, columns=columns)
 
-    def _parse_subquery(self, this):
+    def _parse_subquery(self, this, parse_alias=True):
         return self.expression(
             exp.Subquery,
             this=this,
             pivots=self._parse_pivots(),
-            alias=self._parse_table_alias(),
+            alias=self._parse_table_alias() if parse_alias else None,
         )
 
     def _parse_query_modifiers(self, this):
@@ -2018,7 +2018,9 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
 
             if isinstance(this, exp.Subqueryable):
-                this = self._parse_set_operations(self._parse_subquery(this))
+                this = self._parse_set_operations(
+                    self._parse_subquery(this=this, parse_alias=False)
+                )
             elif len(expressions) > 1:
                 this = self.expression(exp.Tuple, expressions=expressions)
             else:

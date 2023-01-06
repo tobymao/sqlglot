@@ -75,6 +75,20 @@ def _parse_format(args):
     )
 
 
+def _parse_eomonth(args):
+    date = seq_get(args, 0)
+    month_lag = seq_get(args, 1)
+    unit = DATE_DELTA_INTERVAL.get("month")
+
+    if month_lag is None:
+        return exp.LastDateOfMonth(this=date)
+
+    # Remove month lag argument in parser as its compared with the number of arguments of the resulting class
+    args.remove(month_lag)
+
+    return exp.LastDateOfMonth(this=exp.DateAdd(this=date, expression=month_lag, unit=unit))
+
+
 def generate_date_delta_with_unit_sql(self, e):
     func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
     return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
@@ -256,12 +270,14 @@ class TSQL(Dialect):
             "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": _format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _format_time_lambda(exp.TimeToStr),
-            "GETDATE": exp.CurrentDate.from_arg_list,
+            "GETDATE": exp.CurrentTimestamp.from_arg_list,
+            "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
             "IIF": exp.If.from_arg_list,
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
             "FORMAT": _parse_format,
+            "EOMONTH": _parse_eomonth,
         }
 
         VAR_LENGTH_DATATYPES = {
@@ -326,6 +342,7 @@ class TSQL(Dialect):
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
+            exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.If: rename_func("IIF"),
             exp.NumberToStr: _format_sql,
             exp.TimeToStr: _format_sql,

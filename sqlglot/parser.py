@@ -863,6 +863,7 @@ class Parser(metaclass=_Parser):
         this = None
         expression = None
         properties = None
+        data = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function()
@@ -881,6 +882,12 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.ALIAS):
                 expression = self._parse_select(nested=True)
 
+            if create_token.token_type == TokenType.TABLE:
+                if self._match_text_seq("WITH", "DATA"):
+                    data = True
+                elif self._match_text_seq("WITH", "NO", "DATA"):
+                    data = False
+
         return self.expression(
             exp.Create,
             this=this,
@@ -894,6 +901,7 @@ class Parser(metaclass=_Parser):
             replace=replace,
             unique=unique,
             materialized=materialized,
+            data=data,
         )
 
     def _parse_property(self):

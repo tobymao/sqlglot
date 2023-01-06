@@ -457,6 +457,23 @@ class Expression(metaclass=_Expression):
         assert isinstance(self, type_)
         return self
 
+    def dump(self):
+        """
+        Dump this Expression to a JSON-serializable dict.
+        """
+        from sqlglot.serde import dump
+
+        return dump(self)
+
+    @classmethod
+    def load(cls, obj):
+        """
+        Load a dict (as returned by `Expression.dump`) into an Expression instance.
+        """
+        from sqlglot.serde import load
+
+        return load(obj)
+
 
 class Condition(Expression):
     def and_(self, *expressions, dialect=None, **opts):

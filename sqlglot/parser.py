@@ -591,6 +591,9 @@ class Parser(metaclass=_Parser):
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
+    # allows tables to have special tokens as prefixes
+    TABLE_PREFIX_TOKENS: t.Set[TokenType] = set()
+
     STRICT_CAST = True
 
     __slots__ = (
@@ -1427,14 +1430,9 @@ class Parser(metaclass=_Parser):
 
         catalog = None
         db = None
-        table = not schema and self._parse_function()
-        if not table:
-            # https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-temporary#create-a-temporary-table
-            # if this needs to be transpiled, we should create a temp expression node instead
-            temp = self._match(TokenType.HASH)
-            table = self._parse_id_var(any_token=False)
-            if temp:
-                table.args["this"] = f"#{table.name}"
+        table = (not schema and self._parse_function()) or self._parse_id_var(
+            any_token=False, prefix_tokens=self.TABLE_PREFIX_TOKENS
+        )
 
         while self._match(TokenType.DOT):
             if catalog:
@@ -2601,14 +2599,20 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_id_var(self, any_token=True, tokens=None):
+    def _parse_id_var(self, any_token=True, tokens=None, prefix_tokens=None):
         identifier = self._parse_identifier()
 
         if identifier:
             return identifier
 
+        prefix = ""
+
+        if prefix_tokens:
+            while self._match_set(prefix_tokens):
+                prefix += self._prev.text
+
         if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
-            return exp.Identifier(this=self._prev.text, quoted=False)
+            return exp.Identifier(this=prefix + self._prev.text, quoted=False)
         return None
 
     def _parse_string(self):

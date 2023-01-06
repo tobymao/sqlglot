@@ -198,26 +198,13 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             columns = _nested_get(schema, *zip(keys, keys))
             assert columns is not None
 
-            normalized_keys = []
-            for key in keys:
-                key_id = sqlglot.parse_one(key, read=self.dialect, into=exp.Identifier)  # type: ignore
-                assert isinstance(key_id, exp.Identifier)
-
-                normalized_name = key_id.sql(dialect=self.dialect)
-                if not key_id.quoted:
-                    normalized_name = normalized_name.lower()
-
-                normalized_keys.append(normalized_name)
-
+            normalized_keys = [self._normalize_name(key) for key in keys]
             for column_name, column_type in columns.items():
-                column_id = sqlglot.parse_one(column_name, read=self.dialect, into=exp.Identifier)  # type: ignore
-                assert isinstance(column_id, exp.Identifier)
-
-                normalized_name = column_id.sql(dialect=self.dialect)
-                if not column_id.quoted:
-                    normalized_name = normalized_name.lower()
-
-                _nested_set(normalized_mapping, normalized_keys + [normalized_name], column_type)
+                _nested_set(
+                    normalized_mapping,
+                    normalized_keys + [self._normalize_name(column_name)],
+                    column_type,
+                )
 
         return normalized_mapping
 
@@ -244,6 +231,16 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             column_mapping,
         )
         self.mapping_trie = self._build_trie(self.mapping)
+
+    def _normalize_name(self, name: str) -> str:
+        identifier = sqlglot.parse_one(name, read=self.dialect, into=exp.Identifier)  # type: ignore
+        assert isinstance(identifier, exp.Identifier)
+
+        normalized_name = identifier.sql(dialect=self.dialect)
+        if not identifier.quoted:
+            normalized_name = normalized_name.lower()
+
+        return normalized_name
 
     def _depth(self) -> int:
         # The columns themselves are a mapping, but we don't want to include those

@@ -1,6 +1,6 @@
 # SQLGlot
 
-SQLGlot is a no dependency Python SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between different dialects like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically correct SQL in the targeted dialects.
+SQLGlot is a no dependency Python SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [18 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically correct SQL in the targeted dialects.
 
 It is a very comprehensive generic SQL parser with a robust [test suite](https://github.com/tobymao/sqlglot/blob/main/tests/). It is also quite [performant](#benchmarks) while being written purely in Python.
 
@@ -25,6 +25,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
    * [AST Diff](#ast-diff)
    * [Custom Dialects](#custom-dialects)
    * [SQL Execution](#sql-execution)
+* [Used By](#used-by)
 * [Documentation](#documentation)
 * [Run Tests and Lint](#run-tests-and-lint)
 * [Benchmarks](#benchmarks)
@@ -431,6 +432,14 @@ user_id price
       1   4.0
       2   3.0
 ```
+
+## Used By
+* [Fugue](https://github.com/fugue-project/fugue)
+* [ibis](https://github.com/ibis-project/ibis)
+* [mysql-mimic](https://github.com/kelsin/mysql-mimic)
+* [Querybook](https://github.com/pinterest/querybook)
+* [Quokka](https://github.com/marsupialtail/quokka)
+* [Splink](https://github.com/moj-analytical-services/splink)
 
 ## Documentation
 

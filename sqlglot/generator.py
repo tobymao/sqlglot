@@ -427,6 +427,13 @@ class Generator:
         unique = " UNIQUE" if expression.args.get("unique") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         properties = self.sql(expression, "properties")
+        data = expression.args.get("data")
+        if data is None:
+            data = ""
+        elif data:
+            data = " WITH DATA"
+        else:
+            data = " WITH NO DATA"
 
         modifiers = "".join(
             (
@@ -438,7 +445,9 @@ class Generator:
                 materialized,
             )
         )
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}"
+        expression_sql = (
+            f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}{data}"
+        )
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:

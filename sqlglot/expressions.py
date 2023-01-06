@@ -631,6 +631,7 @@ class Create(Expression):
         "replace": False,
         "unique": False,
         "materialized": False,
+        "data": False,
     }
 
 

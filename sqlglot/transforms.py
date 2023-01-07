@@ -82,6 +82,20 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expression:
+    """
+    Some dialects only allow the precision for parameterized types to be defined in the DDL and not in other expressions.
+    This transforms removes the precision from parameterized types in expressions.
+    """
+    expression = expression.copy()
+    expression = expression.transform(
+        lambda node: exp.DataType(**{**node.args, "expressions": None})
+        if isinstance(node, exp.DataType)
+        else node,
+    )
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
     to_sql: t.Callable[[Generator, exp.Expression], str],
@@ -121,3 +135,6 @@ def delegate(attr: str) -> t.Callable:
 
 UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
 ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on], delegate("select_sql"))}
+REMOVE_PRECISION_PARAMETERIZED_TYPES = {
+    exp.Select: preprocess([remove_precision_parameterized_types], delegate("select_sql"))
+}

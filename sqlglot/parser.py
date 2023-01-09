@@ -112,6 +112,7 @@ class Parser(metaclass=_Parser):
         TokenType.JSON,
         TokenType.JSONB,
         TokenType.INTERVAL,
+        TokenType.TIME,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.TIMESTAMPLTZ,
@@ -319,6 +320,7 @@ class Parser(metaclass=_Parser):
     }
 
     TIMESTAMPS = {
+        TokenType.TIME,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.TIMESTAMPLTZ,
@@ -1915,7 +1917,10 @@ class Parser(metaclass=_Parser):
             ):
                 value = exp.DataType(this=exp.DataType.Type.TIMESTAMPLTZ, expressions=expressions)
             elif self._match(TokenType.WITHOUT_TIME_ZONE):
-                value = exp.DataType(this=exp.DataType.Type.TIMESTAMP, expressions=expressions)
+                if type_token == TokenType.TIME:
+                    value = exp.DataType(this=exp.DataType.Type.TIME, expressions=expressions)
+                else:
+                    value = exp.DataType(this=exp.DataType.Type.TIMESTAMP, expressions=expressions)
 
             maybe_func = maybe_func and value is None
 

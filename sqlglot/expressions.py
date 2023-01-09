@@ -2130,6 +2130,7 @@ class DataType(Expression):
         JSON = auto()
         JSONB = auto()
         INTERVAL = auto()
+        TIME = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         TIMESTAMPLTZ = auto()

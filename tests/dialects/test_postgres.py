@@ -122,6 +122,10 @@ class TestPostgres(Validator):
             "TO_TIMESTAMP(123::DOUBLE PRECISION)",
             write={"postgres": "TO_TIMESTAMP(CAST(123 AS DOUBLE PRECISION))"},
         )
+        self.validate_all(
+            "SELECT to_timestamp(123)::time without time zone",
+            write={"postgres": "SELECT CAST(TO_TIMESTAMP(123) AS TIME)"},
+        )
 
         self.validate_identity(
             "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"

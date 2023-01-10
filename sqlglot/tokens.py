@@ -657,6 +657,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FLOAT4": TokenType.FLOAT,
         "FLOAT8": TokenType.DOUBLE,
         "DOUBLE": TokenType.DOUBLE,
+        "DOUBLE PRECISION": TokenType.DOUBLE,
         "JSON": TokenType.JSON,
         "CHAR": TokenType.CHAR,
         "NCHAR": TokenType.NCHAR,

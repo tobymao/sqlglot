@@ -195,7 +195,6 @@ class Snowflake(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
-            "DOUBLE PRECISION": TokenType.DOUBLE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,

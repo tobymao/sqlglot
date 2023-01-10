@@ -702,7 +702,10 @@ class Parser(metaclass=_Parser):
         ) from errors[-1]
 
     def _parse(
-        self, parse_method: t.Callable, raw_tokens: t.List[Token], sql: t.Optional[str] = None
+        self,
+        parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
+        raw_tokens: t.List[Token],
+        sql: t.Optional[str] = None,
     ) -> t.List[t.Optional[exp.Expression]]:
         self.reset()
         self.sql = sql or ""
@@ -772,7 +775,7 @@ class Parser(metaclass=_Parser):
         self.errors.append(error)
 
     def expression(
-        self, exp_class: exp._Expression, comments: t.Optional[t.List[str]] = None, **kwargs
+        self, exp_class: t.Type[exp.Expression], comments: t.Optional[t.List[str]] = None, **kwargs
     ) -> exp.Expression:
         """
         Creates a new, validated Expression.
@@ -987,7 +990,7 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _parse_property_assignment(self, exp_class: exp._Expression) -> exp.Expression:
+    def _parse_property_assignment(self, exp_class: t.Type[exp.Expression]) -> exp.Expression:
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
         return self.expression(
@@ -1753,7 +1756,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_sort(
-        self, token_type: TokenType, exp_class: exp._Expression
+        self, token_type: TokenType, exp_class: t.Type[exp.Expression]
     ) -> t.Optional[exp.Expression]:
         if not self._match(token_type):
             return None

@@ -806,7 +806,7 @@ class Parser(metaclass=_Parser):
 
         Args:
             expression: the expression to validate.
-            args: an optional list of items that was used to instantiate the expression, if it's is Func.
+            args: an optional list of items that was used to instantiate the expression, if it's a Func.
         """
         if self.error_level == ErrorLevel.IGNORE:
             return

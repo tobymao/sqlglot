@@ -749,7 +749,7 @@ class Column(Condition):
 class ColumnDef(Expression):
     arg_types = {
         "this": True,
-        "kind": True,
+        "kind": False,
         "constraints": False,
         "exists": False,
     }

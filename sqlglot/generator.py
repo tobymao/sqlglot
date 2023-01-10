@@ -441,6 +441,19 @@ class Generator:
             statistics = " AND STATISTICS"
         else:
             statistics = " AND NO STATISTICS"
+        no_primary_index = " NO PRIMARY INDEX" if expression.args.get("no_primary_index") else ""
+
+        indexes = expression.args.get("indexes")
+        index_sql = ""
+        if indexes is not None:
+            indexes_sql = []
+            for index in indexes:
+                ind_unique = " UNIQUE" if index.args.get("unique") else ""
+                ind_primary = " PRIMARY" if index.args.get("primary") else ""
+                ind_name = f' {index.args.get("this")}' if index.args.get("this") else ""
+                ind_columns = f' {self.sql(index.args.get("columns"))}'
+                indexes_sql.append(f"{ind_unique}{ind_primary} INDEX{ind_name}{ind_columns}")
+            index_sql = "".join(indexes_sql)
 
         modifiers = "".join(
             (
@@ -452,7 +465,10 @@ class Generator:
                 materialized,
             )
         )
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}{data}{statistics}"
+
+        post_expression_modifiers = "".join((data, statistics, no_primary_index))
+
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}{post_expression_modifiers}{index_sql}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:

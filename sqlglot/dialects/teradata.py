@@ -8,16 +8,16 @@ from sqlglot.tokens import TokenType
 class Teradata(Dialect):
     class Parser(parser.Parser):
         def _parse_create_table_index(self):
-            unique = self._match_texts("UNIQUE")
-            no_primary = self._match_text_seq("NO", "PRIMARY")
-            self._match_text_seq("PRIMARY")
+            unique = self._match_text_seq("UNIQUE")
+            primary = self._match_text_seq("PRIMARY")
             self._match(TokenType.INDEX)
             index = self._parse_id_var()
             return self.expression(
-                exp.CreateTableIndex,
+                exp.Index,
                 this=index,
-                table=self.expression(exp.Table, this=self._parse_id_var()),
-                columns=self._parse_expression(),
+                columns=self.expression(
+                    exp.Tuple, expressions=self._parse_wrapped_csv(self._parse_column)
+                ),
                 unique=unique,
-                no_primary=no_primary,
+                primary=primary,
             )

@@ -865,6 +865,8 @@ class Parser(metaclass=_Parser):
         properties = None
         data = None
         statistics = None
+        no_primary_index = None
+        indexes = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function()
@@ -881,7 +883,7 @@ class Parser(metaclass=_Parser):
             this = self._parse_table(schema=True)
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
-                expression = self._parse_select(nested=True)
+                expression = self._parse_select(nested=True, parse_subquery_alias=False)
 
             if create_token.token_type == TokenType.TABLE:
                 if self._match_text_seq("WITH", "DATA"):
@@ -893,6 +895,19 @@ class Parser(metaclass=_Parser):
                     statistics = True
                 elif self._match_text_seq("AND", "NO", "STATISTICS"):
                     statistics = False
+
+                no_primary_index = self._match_text_seq("NO", "PRIMARY", "INDEX")
+
+                indexes = []
+                while (
+                    self._match_text_seq("UNIQUE", advance=False)
+                    or (
+                        self._match_text_seq("PRIMARY", advance=False)
+                        and not self._match_text_seq("AMP", advance=False)
+                    )
+                    or self._match_text_seq("INDEX", advance=False)
+                ):
+                    indexes.append(self._parse_create_table_index())
 
         return self.expression(
             exp.Create,
@@ -909,6 +924,8 @@ class Parser(metaclass=_Parser):
             materialized=materialized,
             data=data,
             statistics=statistics,
+            no_primary_index=no_primary_index,
+            indexes=indexes,
         )
 
     def _parse_property(self):
@@ -1150,7 +1167,7 @@ class Parser(metaclass=_Parser):
         expressions = self._parse_wrapped_csv(self._parse_conjunction)
         return self.expression(exp.Tuple, expressions=expressions)
 
-    def _parse_select(self, nested=False, table=False):
+    def _parse_select(self, nested=False, table=False, parse_subquery_alias=True):
         cte = self._parse_with()
         if cte:
             this = self._parse_statement()
@@ -1209,7 +1226,7 @@ class Parser(metaclass=_Parser):
             # early return so that subquery unions aren't parsed again
             # SELECT * FROM (SELECT 1) UNION ALL SELECT 1
             # Union ALL should be a property of the top select node, not the subquery
-            return self._parse_subquery(this)
+            return self._parse_subquery(this, parse_alias=parse_subquery_alias)
         elif self._match(TokenType.VALUES):
             if self._curr.token_type == TokenType.L_PAREN:
                 # We don't consume the left paren because it's consumed in _parse_value
@@ -1420,6 +1437,21 @@ class Parser(metaclass=_Parser):
             this=index,
             table=self.expression(exp.Table, this=self._parse_id_var()),
             columns=self._parse_expression(),
+        )
+
+    def _parse_create_table_index(self):
+        unique = self._match_text_seq("UNIQUE")
+        primary = self._match_text_seq("PRIMARY")
+        self._match(TokenType.INDEX)
+        index = self._parse_id_var()
+        return self.expression(
+            exp.Index,
+            this=index,
+            columns=self.expression(
+                exp.Tuple, expressions=self._parse_wrapped_csv(self._parse_column)
+            ),
+            unique=unique,
+            primary=primary,
         )
 
     def _parse_table(self, schema=False, alias_tokens=None):

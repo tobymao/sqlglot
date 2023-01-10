@@ -675,8 +675,8 @@ class Parser(metaclass=_Parser):
     ) -> t.List[t.Optional[exp.Expression]]:
         """
         Parses a list of tokens into a given Expression type. If a collection of Expression
-        types is given instead, this method will try to parse the token list into one each
-        of them, stopping at the first one for which the parsing succeeds.
+        types is given instead, this method will try to parse the token list into each one
+        of them, stopping at the first for which the parsing succeeds.
 
         Args:
             expression_types: the expression type(s) to try and parse the token list into.

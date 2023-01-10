@@ -2313,15 +2313,15 @@ class Parser(metaclass=_Parser):
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         kind = self._parse_types()
 
-        if not kind:
-            return this
-
         constraints = []
         while True:
             constraint = self._parse_column_constraint()
             if not constraint:
                 break
             constraints.append(constraint)
+
+        if not kind and not constraints:
+            return this
 
         return self.expression(exp.ColumnDef, this=this, kind=kind, constraints=constraints)
 

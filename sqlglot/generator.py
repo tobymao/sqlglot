@@ -416,7 +416,7 @@ class Generator:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind").upper()
         expression_sql = self.sql(expression, "expression")
-        expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ""
+        expression_sql = f" AS{self.sep()}{expression_sql}" if expression_sql else ""
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         transient = (
             " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""
@@ -468,7 +468,7 @@ class Generator:
 
         post_expression_modifiers = "".join((data, statistics, no_primary_index))
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}{post_expression_modifiers}{index_sql}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties}{expression_sql}{post_expression_modifiers}{index_sql}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:

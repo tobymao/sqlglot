@@ -1141,6 +1141,8 @@ class Generator:
         query = expression.args.get("query")
         unnest = expression.args.get("unnest")
         field = expression.args.get("field")
+        is_global = " GLOBAL" if expression.args.get("is_global") else ""
+
         if query:
             in_sql = self.wrap(query)
         elif unnest:
@@ -1149,7 +1151,8 @@ class Generator:
             in_sql = self.sql(field)
         else:
             in_sql = f"({self.expressions(expression, flat=True)})"
-        return f"{self.sql(expression, 'this')} IN {in_sql}"
+
+        return f"{self.sql(expression, 'this')}{is_global} IN {in_sql}"
 
     def in_unnest_op(self, unnest: exp.Unnest) -> str:
         return f"(SELECT {self.sql(unnest)})"

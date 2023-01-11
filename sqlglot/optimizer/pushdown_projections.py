@@ -79,6 +79,7 @@ def _remove_unused_selections(scope, parent_selections):
         order_refs = set()
 
     new_selections = []
+    removed = False
     for i, selection in enumerate(scope.selects):
         if (
             SELECT_ALL in parent_selections
@@ -88,12 +89,15 @@ def _remove_unused_selections(scope, parent_selections):
             new_selections.append(selection)
         else:
             removed_indexes.append(i)
+            removed = True
 
     # If there are no remaining selections, just select a single constant
     if not new_selections:
         new_selections.append(DEFAULT_SELECTION.copy())
 
     scope.expression.set("expressions", new_selections)
+    if removed:
+        scope.clear_cache()
     return removed_indexes
 
 

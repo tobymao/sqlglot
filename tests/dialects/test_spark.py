@@ -207,6 +207,7 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
+        self.validate_identity("SELECT UNIX_TIMESTAMP()")
         self.validate_all(
             "ARRAY_SORT(x, (left, right) -> -1)",
             write={

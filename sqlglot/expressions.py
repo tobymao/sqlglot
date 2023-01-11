@@ -3002,8 +3002,10 @@ class StrToTime(Func):
     arg_types = {"this": True, "format": True}
 
 
+# Spark allows unix_timestamp()
+# https://spark.apache.org/docs/3.1.3/api/python/reference/api/pyspark.sql.functions.unix_timestamp.html
 class StrToUnix(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": False, "format": False}
 
 
 class NumberToStr(Func):

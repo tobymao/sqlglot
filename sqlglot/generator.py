@@ -362,10 +362,10 @@ class Generator:
         kind = self.sql(expression, "kind")
         constraints = self.expressions(expression, key="constraints", sep=" ", flat=True)
         exists = "IF NOT EXISTS " if expression.args.get("exists") else ""
+        kind = f" {kind}" if kind else ""
+        constraints = f" {constraints}" if constraints else ""
 
-        if not constraints:
-            return f"{exists}{column} {kind}"
-        return f"{exists}{column} {kind} {constraints}"
+        return f"{exists}{column}{kind}{constraints}"
 
     def columnconstraint_sql(self, expression: exp.ColumnConstraint) -> str:
         this = self.sql(expression, "this")

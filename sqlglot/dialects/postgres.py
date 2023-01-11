@@ -248,7 +248,6 @@ class Postgres(Dialect):
             "COMMENT ON": TokenType.COMMAND,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
-            "DOUBLE PRECISION": TokenType.DOUBLE,
             "GENERATED": TokenType.GENERATED,
             "GRANT": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,

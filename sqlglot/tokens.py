@@ -86,6 +86,7 @@ class TokenType(AutoName):
     VARBINARY = auto()
     JSON = auto()
     JSONB = auto()
+    TIME = auto()
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
     TIMESTAMPLTZ = auto()
@@ -656,6 +657,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FLOAT4": TokenType.FLOAT,
         "FLOAT8": TokenType.DOUBLE,
         "DOUBLE": TokenType.DOUBLE,
+        "DOUBLE PRECISION": TokenType.DOUBLE,
         "JSON": TokenType.JSON,
         "CHAR": TokenType.CHAR,
         "NCHAR": TokenType.NCHAR,
@@ -671,6 +673,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "BLOB": TokenType.VARBINARY,
         "BYTEA": TokenType.VARBINARY,
         "VARBINARY": TokenType.VARBINARY,
+        "TIME": TokenType.TIME,
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,

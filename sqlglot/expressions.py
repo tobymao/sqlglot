@@ -752,7 +752,7 @@ class Column(Condition):
 class ColumnDef(Expression):
     arg_types = {
         "this": True,
-        "kind": True,
+        "kind": False,
         "constraints": False,
         "exists": False,
     }
@@ -2140,6 +2140,7 @@ class DataType(Expression):
         JSON = auto()
         JSONB = auto()
         INTERVAL = auto()
+        TIME = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         TIMESTAMPLTZ = auto()

@@ -131,7 +131,7 @@ def subclasses(
     ]
 
 
-def apply_index_offset(expressions: t.List[E], offset: int) -> t.List[E]:
+def apply_index_offset(expressions: t.List[t.Optional[E]], offset: int) -> t.List[t.Optional[E]]:
     """
     Applies an offset to a given integer literal expression.
 
@@ -148,10 +148,10 @@ def apply_index_offset(expressions: t.List[E], offset: int) -> t.List[E]:
 
     expression = expressions[0]
 
-    if expression.is_int:
+    if expression and expression.is_int:
         expression = expression.copy()
         logger.warning("Applying array index offset (%s)", offset)
-        expression.args["this"] = str(int(expression.this) + offset)
+        expression.args["this"] = str(int(expression.this) + offset)  # type: ignore
         return [expression]
 
     return expressions

@@ -968,7 +968,7 @@ class Parser(metaclass=_Parser):
                     self._match_text_seq("UNIQUE", advance=False)
                     or (
                         self._match_text_seq("PRIMARY", advance=False)
-                        and not self._match_text_seq("AMP", advance=False)
+                        and not self._match_text_seq("PRIMARY", "AMP", advance=False)
                     )
                     or self._match_text_seq("INDEX", advance=False)
                 ):

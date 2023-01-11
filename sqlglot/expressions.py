@@ -2449,6 +2449,7 @@ class In(Predicate):
         "query": False,
         "unnest": False,
         "field": False,
+        "is_global": False,
     }
 
 

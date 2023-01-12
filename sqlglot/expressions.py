@@ -907,6 +907,7 @@ class Index(Expression):
         "columns": False,
         "unique": False,
         "primary": False,
+        "amp": False,  # teradata
     }
 
 

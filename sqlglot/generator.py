@@ -450,9 +450,12 @@ class Generator:
             for index in indexes:
                 ind_unique = " UNIQUE" if index.args.get("unique") else ""
                 ind_primary = " PRIMARY" if index.args.get("primary") else ""
-                ind_name = f' {index.args.get("this")}' if index.args.get("this") else ""
-                ind_columns = f' {self.sql(index.args.get("columns"))}'
-                indexes_sql.append(f"{ind_unique}{ind_primary} INDEX{ind_name}{ind_columns}")
+                ind_amp = " AMP" if index.args.get("amp") else ""
+                ind_name = f" {index.name}" if index.name else ""
+                ind_columns = f' ({self.expressions(index, key="columns", flat=True)})'
+                indexes_sql.append(
+                    f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
+                )
             index_sql = "".join(indexes_sql)
 
         modifiers = "".join(

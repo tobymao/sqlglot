@@ -965,12 +965,9 @@ class Parser(metaclass=_Parser):
 
                 indexes = []
                 while (
-                    self._match_text_seq("UNIQUE", advance=False)
-                    or (
-                        self._match_text_seq("PRIMARY", advance=False)
-                        and not self._match_text_seq("PRIMARY", "AMP", advance=False)
-                    )
-                    or self._match_text_seq("INDEX", advance=False)
+                    self._match(TokenType.UNIQUE)
+                    or self._match_text_seq("PRIMARY")
+                    or self._match(TokenType.INDEX)
                 ):
                     indexes.append(self._parse_create_table_index())
 
@@ -1536,18 +1533,19 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_create_table_index(self):
-        unique = self._match_text_seq("UNIQUE")
-        primary = self._match_text_seq("PRIMARY")
-        self._match(TokenType.INDEX)
+        unique = self._prev.token_type == TokenType.UNIQUE
+        primary = self._prev.text.upper() == "PRIMARY" or self._match_text_seq("PRIMARY")
+        amp = self._match_text_seq("AMP")
+        if not self._prev.token_type == TokenType.INDEX:
+            self._match(TokenType.INDEX)
         index = self._parse_id_var()
         return self.expression(
             exp.Index,
             this=index,
-            columns=self.expression(
-                exp.Tuple, expressions=self._parse_wrapped_csv(self._parse_column)
-            ),
+            columns=self._parse_wrapped_csv(self._parse_column),
             unique=unique,
             primary=primary,
+            amp=amp,
         )
 
     def _parse_table(

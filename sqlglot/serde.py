@@ -4,8 +4,9 @@ import typing as t
 
 from sqlglot import expressions as exp
 
-JSON = t.Union[dict, list, str, float, int, bool]
-Node = t.Union[t.List["Node"], exp.DataType.Type, exp.Expression, JSON]
+if t.TYPE_CHECKING:
+    JSON = t.Union[dict, list, str, float, int, bool]
+    Node = t.Union[t.List["Node"], exp.DataType.Type, exp.Expression, JSON]
 
 
 def dump(node: Node) -> JSON:

@@ -339,6 +339,12 @@ class TestHive(Validator):
 
     def test_hive(self):
         self.validate_all(
+            "SELECT A.1a AS b FROM test_a AS A",
+            write={
+                "spark": "SELECT A.1a AS b FROM test_a AS A",
+            },
+        )
+        self.validate_all(
             "PERCENTILE(x, 0.5)",
             write={
                 "duckdb": "QUANTILE(x, 0.5)",

@@ -3802,7 +3802,7 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
 def values(
     values: t.Iterable[t.Tuple[t.Any, ...]],
     alias: t.Optional[str] = None,
-    columns: t.Optional[t.Iterable[str]] = None,
+    columns: t.Optional[t.Iterable[str] | t.Dict[str, DataType]] = None,
 ) -> Values:
     """Build VALUES statement.
 
@@ -3813,7 +3813,10 @@ def values(
     Args:
         values: values statements that will be converted to SQL
         alias: optional alias
-        columns: Optional list of ordered column names. An alias is required when providing column names.
+        columns: Optional list of ordered column names or ordered dictionary of column names to types.
+         If either are provided then an alias is also required.
+         If a dictionary is provided then the first column of the values will be casted to the expected type
+         in order to help with type inference.
 
     Returns:
         Values: the Values expression object
@@ -3825,8 +3828,15 @@ def values(
         if columns
         else TableAlias(this=to_identifier(alias) if alias else None)
     )
+    expressions = [convert(tup) for tup in values]
+    if columns and isinstance(columns, dict):
+        types = list(columns.values())
+        expressions[0].set(
+            "expressions",
+            [Cast(this=x, to=types[i]) for i, x in enumerate(expressions[0].expressions)],
+        )
     return Values(
-        expressions=[convert(tup) for tup in values],
+        expressions=expressions,
         alias=table_alias,
     )
 

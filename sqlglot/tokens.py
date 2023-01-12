@@ -725,6 +725,8 @@ class Tokenizer(metaclass=_Tokenizer):
     COMMENTS = ["--", ("/*", "*/")]
     KEYWORD_TRIE = None  # autofilled
 
+    IDENTIFIER_CAN_START_WITH_DIGIT = False
+
     __slots__ = (
         "sql",
         "size",
@@ -943,16 +945,23 @@ class Tokenizer(metaclass=_Tokenizer):
                 scientific += 1
                 self._advance()
             elif self._peek.isalpha():  # type: ignore
-                self._add(TokenType.NUMBER)
+                number_text = self._text
                 literal = []
                 while self._peek.isalpha():  # type: ignore
                     literal.append(self._peek.upper())  # type: ignore
                     self._advance()
+
                 literal = "".join(literal)  # type: ignore
                 token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal))  # type: ignore
+
                 if token_type:
+                    self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)  # type: ignore
+                elif self.IDENTIFIER_CAN_START_WITH_DIGIT:
+                    return self._add(TokenType.VAR)
+
+                self._add(TokenType.NUMBER, number_text)
                 return self._advance(-len(literal))
             else:
                 return self._add(TokenType.NUMBER)

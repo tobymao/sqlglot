@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
@@ -46,8 +46,9 @@ def _date_add_sql(data_type, kind):
 
 def _derived_table_values_to_unnest(self, expression):
     if not isinstance(expression.unnest().parent, exp.From):
+        expression = transforms.remove_precision_parameterized_types(expression)
         return self.values_sql(expression)
-    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.find_all(exp.Tuple)]
+    rows = [tuple_exp.expressions for tuple_exp in expression.find_all(exp.Tuple)]
     structs = []
     for row in rows:
         aliases = [
@@ -118,6 +119,7 @@ class BigQuery(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
+            "DECLARE": TokenType.COMMAND,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,
@@ -166,6 +168,7 @@ class BigQuery(Dialect):
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),

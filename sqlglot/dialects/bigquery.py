@@ -119,6 +119,7 @@ class BigQuery(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
+            "DECLARE": TokenType.COMMAND,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,

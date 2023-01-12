@@ -89,10 +89,20 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     """
     expression = expression.copy()
     expression = expression.transform(
-        lambda node: exp.DataType(**{**node.args, "expressions": None})
+        lambda node: exp.DataType(
+            **{
+                **node.args,
+                "expressions": [
+                    node_expression
+                    for node_expression in node.expressions
+                    if isinstance(node_expression, exp.DataType)
+                ],
+            }
+        )
         if isinstance(node, exp.DataType)
         else node,
     )
+
     return expression
 
 

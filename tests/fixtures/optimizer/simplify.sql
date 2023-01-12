@@ -375,6 +375,18 @@ CAST('1998-12-01' AS DATE) - INTERVAL '90' foo;
 date '1998-12-01' + interval '90' foo;
 CAST('1998-12-01' AS DATE) + INTERVAL '90' foo;
 
+CAST(x AS DATE) + interval '1' week;
+CAST(x AS DATE) + INTERVAL '1' week;
+
+CAST('2008-11-11' AS DATETIME) + INTERVAL '5' MONTH;
+CAST('2009-04-11 00:00:00' AS DATETIME);
+
+datetime '1998-12-01' - interval '90' day;
+CAST('1998-09-02 00:00:00' AS DATETIME);
+
+CAST(x AS DATETIME) + interval '1' week;
+CAST(x AS DATETIME) + INTERVAL '1' week;
+
 --------------------------------------
 -- Comparisons
 --------------------------------------

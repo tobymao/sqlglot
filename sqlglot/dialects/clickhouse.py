@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
 from sqlglot.parser import parse_var_map
@@ -22,6 +24,7 @@ class ClickHouse(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ASOF": TokenType.ASOF,
+            "GLOBAL": TokenType.GLOBAL,
             "DATETIME64": TokenType.DATETIME,
             "FINAL": TokenType.FINAL,
             "FLOAT32": TokenType.FLOAT,
@@ -42,12 +45,27 @@ class ClickHouse(Dialect):
             "QUANTILEIF": lambda params, args: exp.QuantileIf(parameters=params, expressions=args),
         }
 
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.GLOBAL: lambda self, this: self._match(TokenType.IN)
+            and self._parse_in(this, is_global=True),
+        }
+
         JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}  # type: ignore
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}  # type: ignore
 
-        def _parse_table(self, schema=False):
-            this = super()._parse_table(schema)
+        def _parse_in(
+            self, this: t.Optional[exp.Expression], is_global: bool = False
+        ) -> exp.Expression:
+            this = super()._parse_in(this)
+            this.set("is_global", is_global)
+            return this
+
+        def _parse_table(
+            self, schema: bool = False, alias_tokens: t.Optional[t.Collection[TokenType]] = None
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_table(schema=schema, alias_tokens=alias_tokens)
 
             if self._match(TokenType.FINAL):
                 this = self.expression(exp.Final, this=this)

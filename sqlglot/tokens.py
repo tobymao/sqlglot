@@ -182,6 +182,7 @@ class TokenType(AutoName):
     FUNCTION = auto()
     FROM = auto()
     GENERATED = auto()
+    GLOBAL = auto()
     GROUP_BY = auto()
     GROUPING_SETS = auto()
     HAVING = auto()

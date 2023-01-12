@@ -311,3 +311,42 @@ FROM
   ON
     t1.cola = t2.cola;
 SELECT /*+ BROADCAST(a2) */ a1.cola AS cola, a2.cola AS cola FROM VALUES (1) AS a1(cola) JOIN VALUES (1) AS a2(cola) ON a1.cola = a2.cola;
+
+# title: Nested subquery selects from same table as another subquery
+WITH i AS (
+  SELECT
+    x.a AS a
+  FROM x AS x
+), j AS (
+  SELECT
+    x.a,
+    x.b
+  FROM x AS x
+), k AS (
+  SELECT
+    j.a,
+    j.b
+  FROM j AS j
+)
+SELECT
+  i.a,
+  k.b
+FROM i AS i
+LEFT JOIN k AS k
+ON  i.a = k.a;
+SELECT x.a AS a, x_2.b AS b FROM x AS x LEFT JOIN x AS x_2 ON x.a = x_2.a;
+
+# title: Outer select joins on inner select join
+WITH i AS (
+  SELECT
+    x.a AS a
+  FROM y AS y
+  JOIN x AS x
+    ON y.b = x.b
+)
+SELECT
+  x.a AS a
+FROM x AS x
+LEFT JOIN i AS i
+  ON x.a = i.a;
+WITH i AS (SELECT x.a AS a FROM y AS y JOIN x AS x ON y.b = x.b) SELECT x.a AS a FROM x AS x LEFT JOIN i AS i ON x.a = i.a;

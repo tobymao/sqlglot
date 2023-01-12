@@ -646,3 +646,19 @@ FROM foo""",
                 exp.Column(this=exp.to_identifier("colb")),
             ],
         )
+
+    def test_values(self):
+        self.assertEqual(
+            exp.values([(1, 2), (3, 4)], "t", ["a", "b"]).sql(),
+            "(VALUES (1, 2), (3, 4)) AS t(a, b)",
+        )
+        self.assertEqual(
+            exp.values(
+                [(1, 2), (3, 4)],
+                "t",
+                {"a": exp.DataType.build("TEXT"), "b": exp.DataType.build("TEXT")},
+            ).sql(),
+            "(VALUES (CAST(1 AS TEXT), CAST(2 AS TEXT)), (3, 4)) AS t(a, b)",
+        )
+        with self.assertRaises(ValueError):
+            exp.values([(1, 2), (3, 4)], columns=["a"])

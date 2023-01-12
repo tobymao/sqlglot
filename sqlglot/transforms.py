@@ -136,5 +136,5 @@ def delegate(attr: str) -> t.Callable:
 UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
 ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on], delegate("select_sql"))}
 REMOVE_PRECISION_PARAMETERIZED_TYPES = {
-    exp.Select: preprocess([remove_precision_parameterized_types], delegate("select_sql"))
+    exp.Cast: preprocess([remove_precision_parameterized_types], delegate("cast_sql"))
 }

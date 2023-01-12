@@ -256,7 +256,7 @@ def csv_reader(read_csv: exp.ReadCSV) -> t.Any:
         file.close()
 
 
-def find_new_name(taken: t.Sequence[str], base: str) -> str:
+def find_new_name(taken: t.Collection[str], base: str) -> str:
     """
     Searches for a new name.
 

@@ -87,8 +87,7 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     Some dialects only allow the precision for parameterized types to be defined in the DDL and not in other expressions.
     This transforms removes the precision from parameterized types in expressions.
     """
-    expression = expression.copy()
-    expression = expression.transform(
+    return expression.transform(
         lambda node: exp.DataType(
             **{
                 **node.args,
@@ -102,8 +101,6 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
         if isinstance(node, exp.DataType)
         else node,
     )
-
-    return expression
 
 
 def preprocess(

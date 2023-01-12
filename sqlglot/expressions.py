@@ -3785,7 +3785,7 @@ def values(
         types = list(columns.values())
         expressions[0].set(
             "expressions",
-            tuple(Cast(this=x, to=types[i]) for i, x in enumerate(expressions[0].expressions)),
+            [Cast(this=x, to=types[i]) for i, x in enumerate(expressions[0].expressions)],
         )
     return Values(
         expressions=expressions,

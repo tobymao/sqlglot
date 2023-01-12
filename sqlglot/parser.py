@@ -171,6 +171,7 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE,
         TokenType.DESCRIBE,
         TokenType.DETERMINISTIC,
+        TokenType.DIV,
         TokenType.DISTKEY,
         TokenType.DISTSTYLE,
         TokenType.EXECUTE,

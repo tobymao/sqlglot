@@ -28,7 +28,7 @@ setup(
             "black",
             "duckdb",
             "isort",
-            "mypy",
+            "mypy>=0.990",
             "pandas",
             "pyspark",
             "python-dateutil",

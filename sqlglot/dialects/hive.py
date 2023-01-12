@@ -175,14 +175,6 @@ class Hive(Dialect):
         ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
-        NUMERIC_LITERALS = {
-            "L": "BIGINT",
-            "S": "SMALLINT",
-            "Y": "TINYINT",
-            "D": "DOUBLE",
-            "F": "FLOAT",
-            "BD": "DECIMAL",
-        }
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ADD ARCHIVE": TokenType.COMMAND,
@@ -193,6 +185,17 @@ class Hive(Dialect):
             "ADD JARS": TokenType.COMMAND,
             "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
+
+        NUMERIC_LITERALS = {
+            "L": "BIGINT",
+            "S": "SMALLINT",
+            "Y": "TINYINT",
+            "D": "DOUBLE",
+            "F": "FLOAT",
+            "BD": "DECIMAL",
+        }
+
+        IDENTIFIER_CAN_START_WITH_DIGIT = True
 
     class Parser(parser.Parser):
         STRICT_CAST = False

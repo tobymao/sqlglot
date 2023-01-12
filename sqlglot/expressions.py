@@ -3754,7 +3754,7 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
 def values(
     values: t.Iterable[t.Tuple[t.Any, ...]],
     alias: t.Optional[str] = None,
-    columns: t.Optional[t.Iterable[str] | t.OrderedDict[str, DataType]] = None,
+    columns: t.Optional[t.Iterable[str] | t.Dict[str, DataType]] = None,
 ) -> Values:
     """Build VALUES statement.
 

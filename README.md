@@ -6,7 +6,7 @@ It is a very comprehensive generic SQL parser with a robust [test suite](https:/
 
 You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL.
 
-Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations.
+Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, it should be noted that the parser is very lenient when it comes to detecting errors, because it aims to consume as much SQL as possible. On one hand, this makes its implementation simpler, and thus more comprehensible, but on the other hand it means that syntax errors may sometimes go unnoticed.
 
 Contributions are very welcome in SQLGlot; read the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) to get started!
 
@@ -166,7 +166,7 @@ for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
 
 ### Parser Errors
 
-A syntax error will result in a parser error:
+When the parser detects an error in the syntax, it raises a ParserError:
 
 ```python
 import sqlglot

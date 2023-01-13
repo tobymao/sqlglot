@@ -416,7 +416,7 @@ class Generator:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind").upper()
         expression_sql = self.sql(expression, "expression")
-        expression_sql = f"AS{self.sep()}{expression_sql}" if expression_sql else ""
+        expression_sql = f" AS{self.sep()}{expression_sql}" if expression_sql else ""
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         transient = (
             " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""
@@ -434,6 +434,33 @@ class Generator:
             data = " WITH DATA"
         else:
             data = " WITH NO DATA"
+        statistics = expression.args.get("statistics")
+        if statistics is None:
+            statistics = ""
+        elif statistics:
+            statistics = " AND STATISTICS"
+        else:
+            statistics = " AND NO STATISTICS"
+        no_primary_index = " NO PRIMARY INDEX" if expression.args.get("no_primary_index") else ""
+
+        indexes = expression.args.get("indexes")
+        index_sql = ""
+        if indexes is not None:
+            indexes_sql = []
+            for index in indexes:
+                ind_unique = " UNIQUE" if index.args.get("unique") else ""
+                ind_primary = " PRIMARY" if index.args.get("primary") else ""
+                ind_amp = " AMP" if index.args.get("amp") else ""
+                ind_name = f" {index.name}" if index.name else ""
+                ind_columns = (
+                    f' ({self.expressions(index, key="columns", flat=True)})'
+                    if index.args.get("columns")
+                    else ""
+                )
+                indexes_sql.append(
+                    f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
+                )
+            index_sql = "".join(indexes_sql)
 
         modifiers = "".join(
             (
@@ -445,9 +472,10 @@ class Generator:
                 materialized,
             )
         )
-        expression_sql = (
-            f"CREATE{modifiers} {kind}{exists_sql} {this}{properties} {expression_sql}{data}"
-        )
+
+        post_expression_modifiers = "".join((data, statistics, no_primary_index))
+
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties}{expression_sql}{post_expression_modifiers}{index_sql}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:

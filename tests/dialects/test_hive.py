@@ -345,6 +345,18 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
+            "SELECT 1_a AS a FROM test_table",
+            write={
+                "spark": "SELECT 1_a AS a FROM test_table",
+            },
+        )
+        self.validate_all(
+            "SELECT a_b AS 1_a FROM test_table",
+            write={
+                "spark": "SELECT a_b AS 1_a FROM test_table",
+            },
+        )
+        self.validate_all(
             "PERCENTILE(x, 0.5)",
             write={
                 "duckdb": "QUANTILE(x, 0.5)",

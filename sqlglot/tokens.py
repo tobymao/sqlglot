@@ -944,10 +944,10 @@ class Tokenizer(metaclass=_Tokenizer):
             elif self._peek.upper() == "E" and not scientific:  # type: ignore
                 scientific += 1
                 self._advance()
-            elif self._peek.isalpha():  # type: ignore
+            elif self._peek.isidentifier():  # type: ignore
                 number_text = self._text
                 literal = []
-                while self._peek.isalpha():  # type: ignore
+                while self._peek.isidentifier():  # type: ignore
                     literal.append(self._peek.upper())  # type: ignore
                     self._advance()
 

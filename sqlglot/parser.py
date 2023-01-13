@@ -594,6 +594,8 @@ class Parser(metaclass=_Parser):
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
+    WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
+
     # allows tables to have special tokens as prefixes
     TABLE_PREFIX_TOKENS: t.Set[TokenType] = set()
 
@@ -2676,7 +2678,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.L_PAREN):
             return self.expression(exp.Window, this=this, alias=self._parse_id_var(False))
 
-        window_alias = self._parse_id_var(False)
+        window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
 
         partition = None
         if self._match(TokenType.PARTITION_BY):

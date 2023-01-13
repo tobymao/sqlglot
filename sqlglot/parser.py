@@ -965,12 +965,12 @@ class Parser(metaclass=_Parser):
                 no_primary_index = self._match_text_seq("NO", "PRIMARY", "INDEX")
 
                 indexes = []
-                while (
-                    self._match(TokenType.UNIQUE)
-                    or self._match_text_seq("PRIMARY")
-                    or self._match(TokenType.INDEX)
-                ):
-                    indexes.append(self._parse_create_table_index())
+                while True:
+                    index = self._parse_create_table_index()
+                    if not index:
+                        break
+                    else:
+                        indexes.append(index)
 
         return self.expression(
             exp.Create,
@@ -1533,12 +1533,12 @@ class Parser(metaclass=_Parser):
             columns=self._parse_expression(),
         )
 
-    def _parse_create_table_index(self):
-        unique = self._prev.token_type == TokenType.UNIQUE
-        primary = self._prev.text.upper() == "PRIMARY" or self._match_text_seq("PRIMARY")
+    def _parse_create_table_index(self) -> t.Optional[exp.Expression]:
+        unique = self._match(TokenType.UNIQUE)
+        primary = self._match_text_seq("PRIMARY")
         amp = self._match_text_seq("AMP")
-        if not self._prev.token_type == TokenType.INDEX:
-            self._match(TokenType.INDEX)
+        if not self._match(TokenType.INDEX):
+            return None
         index = self._parse_id_var()
         return self.expression(
             exp.Index,

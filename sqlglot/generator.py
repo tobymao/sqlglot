@@ -452,7 +452,11 @@ class Generator:
                 ind_primary = " PRIMARY" if index.args.get("primary") else ""
                 ind_amp = " AMP" if index.args.get("amp") else ""
                 ind_name = f" {index.name}" if index.name else ""
-                ind_columns = f' ({self.expressions(index, key="columns", flat=True)})'
+                ind_columns = (
+                    f' ({self.expressions(index, key="columns", flat=True)})'
+                    if index.args.get("columns")
+                    else ""
+                )
                 indexes_sql.append(
                     f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
                 )

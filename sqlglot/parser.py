@@ -1540,10 +1540,13 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.INDEX):
             return None
         index = self._parse_id_var()
+        columns = None
+        if self._curr and self._curr.token_type == TokenType.L_PAREN:
+            columns = self._parse_wrapped_csv(self._parse_column)
         return self.expression(
             exp.Index,
             this=index,
-            columns=self._parse_wrapped_csv(self._parse_column),
+            columns=columns,
             unique=unique,
             primary=primary,
             amp=amp,

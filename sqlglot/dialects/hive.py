@@ -183,6 +183,7 @@ class Hive(Dialect):
             "ADD FILES": TokenType.COMMAND,
             "ADD JAR": TokenType.COMMAND,
             "ADD JARS": TokenType.COMMAND,
+            "MSCK REPAIR": TokenType.COMMAND,
             "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
 

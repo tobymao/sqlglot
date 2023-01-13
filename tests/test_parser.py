@@ -90,6 +90,9 @@ class TestParser(unittest.TestCase):
             parse_one("""SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)""").sql(),
             """SELECT * FROM x, z CROSS JOIN y LATERAL VIEW EXPLODE(y)""",
         )
+        self.assertIsNone(
+            parse_one("create table a as (select b from c) index").find(exp.TableAlias)
+        )
 
     def test_command(self):
         expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1", read="hive")

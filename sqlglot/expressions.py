@@ -649,6 +649,9 @@ class Create(Expression):
         "unique": False,
         "materialized": False,
         "data": False,
+        "statistics": False,
+        "no_primary_index": False,
+        "indexes": False,
     }
 
 
@@ -897,7 +900,15 @@ class Identifier(Expression):
 
 
 class Index(Expression):
-    arg_types = {"this": False, "table": False, "where": False, "columns": False}
+    arg_types = {
+        "this": False,
+        "table": False,
+        "where": False,
+        "columns": False,
+        "unique": False,
+        "primary": False,
+        "amp": False,  # teradata
+    }
 
 
 class Insert(Expression):

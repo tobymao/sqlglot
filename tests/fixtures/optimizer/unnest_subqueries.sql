@@ -142,7 +142,7 @@ WHERE
     x.a > _u_6.b AND NOT _u_6._u_7 IS NULL
   )
   AND (
-    None = _u_8.a AND NOT _u_8.a IS NULL
+    x.a = _u_8.a AND NOT _u_8.a IS NULL
   )
   AND NOT (
     x.a = _u_9.a AND NOT _u_9.a IS NULL

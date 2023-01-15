@@ -951,7 +951,9 @@ class Parser(metaclass=_Parser):
             this = self._parse_table(schema=True)
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
-                expression = self._parse_select(nested=True, parse_subquery_alias=False)
+                expression = self._parse_select_or_expression(
+                    nested=True, parse_subquery_alias=False
+                )
 
             if create_token.token_type == TokenType.TABLE:
                 if self._match_text_seq("WITH", "DATA"):
@@ -1126,7 +1128,7 @@ class Parser(metaclass=_Parser):
             this=this,
             exists=self._parse_exists(),
             partition=self._parse_partition(),
-            expression=self._parse_select(nested=True),
+            expression=self._parse_select_or_expression(nested=True),
             overwrite=overwrite,
         )
 
@@ -2922,8 +2924,20 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
         return parse_result
 
-    def _parse_select_or_expression(self) -> t.Optional[exp.Expression]:
-        return self._parse_select() or self._parse_expression()
+    def _parse_select_or_expression(
+        self,
+        nested: bool = False,
+        table: bool = False,
+        parse_subquery_alias: bool = True,
+    ) -> t.Optional[exp.Expression]:
+        return (
+            self._parse_select(
+                nested=nested,
+                table=table,
+                parse_subquery_alias=parse_subquery_alias,
+            )
+            or self._parse_expression()
+        )
 
     def _parse_transaction(self) -> exp.Expression:
         this = None

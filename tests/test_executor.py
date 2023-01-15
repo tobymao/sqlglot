@@ -401,6 +401,36 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
+    def test_correlated_count(self):
+        tables = {
+            "parts": [{"pnum": 0, "qoh": 1}],
+            "supplies": [],
+        }
+
+        schema = {
+            "parts": {"pnum": "int", "qoh": "int"},
+            "supplies": {"pnum": "int", "shipdate": "int"},
+        }
+
+        self.assertEqual(
+            execute(
+                """
+			select *
+			from parts
+			where parts.qoh >= (
+			  select count(supplies.shipdate) + 1
+			  from supplies
+			  where supplies.pnum = parts.pnum and supplies.shipdate < 10
+            )
+        """,
+                tables=tables,
+                schema=schema,
+            ).rows,
+            [
+                (0, 1),
+            ],
+        )
+
     def test_table_depth_mismatch(self):
         tables = {"table": []}
         schema = {"db": {"table": {"col": "VARCHAR"}}}

@@ -236,7 +236,10 @@ class Generator:
             return sql
 
         sep = "\n" if self.pretty else " "
-        comments = sep.join(f"/*{self.pad_comment(comment)}*/" for comment in comments)
+        comments = sep.join(f"/*{self.pad_comment(comment)}*/" for comment in comments if comment)
+
+        if not comments:
+            return sql
 
         if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return f"{comments}{self.sep()}{sql}"

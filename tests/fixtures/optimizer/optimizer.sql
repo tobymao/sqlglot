@@ -105,7 +105,7 @@ LEFT JOIN "_u_0" AS "_u_0"
 JOIN "y" AS "y"
   ON "x"."b" = "y"."b"
 WHERE
-  "_u_0"."_col_0" >= 0 AND "x"."a" > 1 AND NOT "_u_0"."_u_1" IS NULL
+  "_u_0"."_col_0" >= 0 AND "x"."a" > 1
 GROUP BY
   "x"."a";
 

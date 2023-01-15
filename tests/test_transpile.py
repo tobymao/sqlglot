@@ -118,6 +118,11 @@ class TestTranspile(unittest.TestCase):
             "SELECT x FROM foo /*       x */",
         )
         self.validate(
+            """select x, --
+            from foo""",
+            "SELECT x FROM foo",
+        )
+        self.validate(
             """
 -- comment 1
 -- comment 2

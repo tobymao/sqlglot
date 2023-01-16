@@ -32,7 +32,7 @@ from sqlglot.parser import Parser
 from sqlglot.schema import MappingSchema
 from sqlglot.tokens import Tokenizer, TokenType
 
-__version__ = "10.5.1"
+__version__ = "10.5.2"
 
 pretty = False
 

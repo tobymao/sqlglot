@@ -2202,7 +2202,9 @@ class DataType(Expression):
     }
 
     @classmethod
-    def build(cls, dtype: str | DataType.Type, **kwargs) -> DataType:
+    def build(
+        cls, dtype: str | DataType.Type, dialect: t.Optional[str | Dialect] = None, **kwargs
+    ) -> DataType:
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
@@ -2210,7 +2212,7 @@ class DataType(Expression):
             if dtype.upper() in cls.Type.__members__:
                 data_type_exp = DataType(this=DataType.Type[dtype.upper()])
             else:
-                data_type_exp = parse_one(dtype, into=DataType)
+                data_type_exp = parse_one(dtype, read=dialect, into=DataType)
             if data_type_exp is None:
                 raise ValueError(f"Unparsable data type value: {dtype}")
         elif isinstance(dtype, DataType.Type):

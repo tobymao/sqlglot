@@ -1,27 +1,13 @@
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens, transforms
-from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func
+from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
 from sqlglot.helper import csv
 from sqlglot.tokens import TokenType
-
 
 def _limit_sql(self, expression):
     return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
 
-def _trim_sql(self, expression):
-    target = self.sql(expression, "this")
-    trim_type = self.sql(expression, "position")
-    remove_chars = self.sql(expression, "expression")
-
-    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't oracle-specific
-    if not remove_chars:
-        return self.trim_sql(expression)
-
-    trim_type = f"{trim_type} " if trim_type else ""
-    remove_chars = f"{remove_chars} " if remove_chars else ""
-    from_part = "FROM " if trim_type or remove_chars else ""
-    return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
 
 class Oracle(Dialect):
     # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212
@@ -77,7 +63,7 @@ class Oracle(Dialect):
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,
-            exp.Trim: _trim_sql,
+            exp.Trim: trim_sql,
             exp.Matches: rename_func("DECODE"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",

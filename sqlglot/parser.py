@@ -727,6 +727,7 @@ class Parser(metaclass=_Parser):
             self._index = -1
             self._tokens = tokens
             self._advance()
+
             expressions.append(parse_method(self))
 
             if self._index < len(self._tokens):

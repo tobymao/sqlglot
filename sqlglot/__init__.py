@@ -62,7 +62,7 @@ def parse_one(
     read: t.Optional[str | Dialect] = None,
     into: t.Optional[t.Type[Expression] | str] = None,
     **opts,
-) -> t.Optional[Expression]:
+) -> Expression:
     """
     Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.
 
@@ -83,7 +83,12 @@ def parse_one(
     else:
         result = dialect.parse(sql, **opts)
 
-    return result[0] if result else None
+    for expression in result:
+        if not expression:
+            raise ParseError(f"No expression was parsed from '{sql}'")
+        return expression
+    else:
+        raise ParseError(f"No expression was parsed from '{sql}'")
 
 
 def transpile(

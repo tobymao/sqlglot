@@ -8,7 +8,8 @@ from tests.helpers import assert_logger_contains
 
 class TestParser(unittest.TestCase):
     def test_parse_empty(self):
-        self.assertIsNone(parse_one(""))
+        with self.assertRaises(ParseError) as ctx:
+            parse_one("")
 
     def test_parse_into(self):
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
@@ -157,6 +158,11 @@ class TestParser(unittest.TestCase):
         assert len(expressions) == 2
         assert expressions[0].args["from"].expressions[0].this.name == "a"
         assert expressions[1].args["from"].expressions[0].this.name == "b"
+
+        expressions = parse("SELECT 1; ; SELECT 2")
+
+        assert len(expressions) == 3
+        assert expressions[1] is None
 
     def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)

@@ -2202,11 +2202,18 @@ class DataType(Expression):
     }
 
     @classmethod
-    def build(cls, dtype, **kwargs) -> DataType:
-        return DataType(
-            this=dtype if isinstance(dtype, DataType.Type) else DataType.Type[dtype.upper()],
-            **kwargs,
-        )
+    def build(cls, dtype: str | DataType.Type, **kwargs) -> DataType:
+        from sqlglot import parse_one
+
+        if isinstance(dtype, str):
+            data_type_exp = parse_one(dtype, into=DataType)
+            if data_type_exp is None:
+                raise ValueError(f"Unparsable data type value: {dtype}")
+        elif isinstance(dtype, DataType.Type):
+            data_type_exp = DataType(this=dtype)
+        else:
+            raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
+        return DataType(**{**data_type_exp.args, **kwargs})
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html

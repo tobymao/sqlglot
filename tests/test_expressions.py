@@ -662,3 +662,9 @@ FROM foo""",
         )
         with self.assertRaises(ValueError):
             exp.values([(1, 2), (3, 4)], columns=["a"])
+
+    def test_data_type_builder(self):
+        self.assertEqual(exp.DataType.build("TEXT").sql(), "TEXT")
+        self.assertEqual(exp.DataType.build("DECIMAL(10, 2)").sql(), "DECIMAL(10, 2)")
+        self.assertEqual(exp.DataType.build("VARCHAR(255)").sql(), "VARCHAR(255)")
+        self.assertEqual(exp.DataType.build("ARRAY<INT>").sql(), "ARRAY<INT>")

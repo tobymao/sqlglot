@@ -654,7 +654,7 @@ class Parser(metaclass=_Parser):
 
     def parse(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.List[exp.Expression]:
         """
         Parses a list of tokens and returns a list of syntax trees, one tree
         per parsed SQL statement.
@@ -675,7 +675,7 @@ class Parser(metaclass=_Parser):
         expression_types: str | exp.Expression | t.Collection[exp.Expression | str],
         raw_tokens: t.List[Token],
         sql: t.Optional[str] = None,
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.List[exp.Expression]:
         """
         Parses a list of tokens into a given Expression type. If a collection of Expression
         types is given instead, this method will try to parse the token list into each one
@@ -709,7 +709,7 @@ class Parser(metaclass=_Parser):
         parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
         raw_tokens: t.List[Token],
         sql: t.Optional[str] = None,
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.List[exp.Expression]:
         self.reset()
         self.sql = sql or ""
         total = len(raw_tokens)
@@ -727,7 +727,10 @@ class Parser(metaclass=_Parser):
             self._index = -1
             self._tokens = tokens
             self._advance()
-            expressions.append(parse_method(self))
+
+            expression = parse_method(self)
+            if expression:
+                expressions.append(expression)
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")

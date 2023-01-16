@@ -22,6 +22,7 @@ from sqlglot.helper import (
     split_num_words,
     subclasses,
 )
+from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
@@ -1848,7 +1849,12 @@ class Select(Subqueryable):
             join.this.replace(join.this.subquery())
 
         if join_type:
+            natural: t.Optional[Token]
+            side: t.Optional[Token]
+            kind: t.Optional[Token]
+
             natural, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)  # type: ignore
+
             if natural:
                 join.set("natural", True)
             if side:
@@ -3198,7 +3204,7 @@ def maybe_parse(
     dialect=None,
     prefix=None,
     **opts,
-) -> t.Optional[Expression]:
+) -> Expression:
     """Gracefully handle a possible string or expression.
 
     Example:

@@ -5,6 +5,7 @@ from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sq
 from sqlglot.helper import csv
 from sqlglot.tokens import TokenType
 
+
 def _limit_sql(self, expression):
     return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
 

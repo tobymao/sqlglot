@@ -86,7 +86,7 @@ def parse_one(
     for expression in result:
         if not expression:
             raise ParseError(f"No expression was parsed from '{sql}'")
-        return result[0]
+        return expression
     else:
         raise ParseError(f"No expression was parsed from '{sql}'")
 

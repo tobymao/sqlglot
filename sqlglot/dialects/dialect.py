@@ -389,7 +389,7 @@ def trim_sql(self, expression):
     remove_chars = self.sql(expression, "expression")
     collation = self.sql(expression, "collation")
 
-    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't postgres-specific
+    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't database-specific
     if not remove_chars and not collation:
         return self.trim_sql(expression)
 

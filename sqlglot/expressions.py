@@ -2207,8 +2207,8 @@ class DataType(Expression):
 
         if isinstance(dtype, str):
             data_type_exp: t.Optional[Expression]
-            if dtype.upper() == "UNKNOWN":
-                data_type_exp = DataType(this=DataType.Type.UNKNOWN)
+            if dtype.upper() in cls.Type.__members__:
+                data_type_exp = DataType(this=DataType.Type[dtype.upper()])
             else:
                 data_type_exp = parse_one(dtype, into=DataType)
             if data_type_exp is None:

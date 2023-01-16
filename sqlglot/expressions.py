@@ -2206,7 +2206,9 @@ class DataType(Expression):
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
-            data_type_exp = t.cast(DataType, parse_one(dtype, into=DataType))
+            data_type_exp = parse_one(dtype, into=DataType)
+            if data_type_exp is None:
+                raise ValueError(f"Unparsable data type value: {dtype}")
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
         else:

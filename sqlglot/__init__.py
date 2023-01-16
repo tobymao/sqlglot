@@ -83,7 +83,7 @@ def parse_one(
     else:
         result = dialect.parse(sql, **opts)
 
-    if not result:
+    if not result or not result[0]:
         raise ParseError(f"No expression was parsed from '{sql}'")
 
     return result[0]

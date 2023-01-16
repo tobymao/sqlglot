@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens, transforms
-from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func
+from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
 from sqlglot.helper import csv
 from sqlglot.tokens import TokenType
-
 
 def _limit_sql(self, expression):
     return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
@@ -64,6 +63,7 @@ class Oracle(Dialect):
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,
+            exp.Trim: trim_sql,
             exp.Matches: rename_func("DECODE"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",

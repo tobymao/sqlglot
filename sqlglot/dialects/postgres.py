@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     str_position_sql,
+    trim_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -79,23 +80,6 @@ def _substring_sql(self, expression):
     for_part = f" FOR {length}" if length else ""
 
     return f"SUBSTRING({this}{from_part}{for_part})"
-
-
-def _trim_sql(self, expression):
-    target = self.sql(expression, "this")
-    trim_type = self.sql(expression, "position")
-    remove_chars = self.sql(expression, "expression")
-    collation = self.sql(expression, "collation")
-
-    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't postgres-specific
-    if not remove_chars and not collation:
-        return self.trim_sql(expression)
-
-    trim_type = f"{trim_type} " if trim_type else ""
-    remove_chars = f"{remove_chars} " if remove_chars else ""
-    from_part = "FROM " if trim_type or remove_chars else ""
-    collation = f" COLLATE {collation}" if collation else ""
-    return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
 
 
 def _string_agg_sql(self, expression):
@@ -317,7 +301,7 @@ class Postgres(Dialect):
             exp.Substring: _substring_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
-            exp.Trim: _trim_sql,
+            exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.DataType: _datatype_sql,

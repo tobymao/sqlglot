@@ -397,6 +397,7 @@ class Parser(metaclass=_Parser):
     }
 
     EXPRESSION_PARSERS = {
+        exp.Column: lambda self: self._parse_column(),
         exp.DataType: lambda self: self._parse_types(),
         exp.From: lambda self: self._parse_from(),
         exp.Group: lambda self: self._parse_group(),

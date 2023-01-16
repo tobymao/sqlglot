@@ -578,3 +578,16 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         scope_t, scope_y = build_scope(query).cte_scopes
         self.assertEqual(set(scope_t.cte_sources), {"t"})
         self.assertEqual(set(scope_y.cte_sources), {"t", "y"})
+
+    def test_schema_with_spaces(self):
+        schema = {
+            "a": {
+                "b c": "text",
+                '"d e"': "text",
+            }
+        }
+
+        self.assertEqual(
+            optimizer.optimize(parse_one("SELECT * FROM a"), schema=schema),
+            parse_one('SELECT "a"."b c" AS "b c", "a"."d e" AS "d e" FROM "a" AS "a"'),
+        )

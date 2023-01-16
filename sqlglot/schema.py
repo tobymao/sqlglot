@@ -233,14 +233,15 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         self.mapping_trie = self._build_trie(self.mapping)
 
     def _normalize_name(self, name: str) -> str:
-        identifier = sqlglot.parse_one(name, read=self.dialect, into=exp.Identifier)  # type: ignore
+        try:
+            identifier = sqlglot.parse_one(name, read=self.dialect, into=exp.Identifier)  # type: ignore
+        except:
+            identifier = exp.to_identifier(name)
         assert isinstance(identifier, exp.Identifier)
 
-        normalized_name = identifier.sql(dialect=self.dialect)
-        if not identifier.quoted:
-            normalized_name = normalized_name.lower()
-
-        return normalized_name
+        if identifier.quoted:
+            return identifier.name
+        return identifier.name.lower()
 
     def _depth(self) -> int:
         # The columns themselves are a mapping, but we don't want to include those

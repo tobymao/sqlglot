@@ -83,10 +83,12 @@ def parse_one(
     else:
         result = dialect.parse(sql, **opts)
 
-    if not result or not result[0]:
+    for expression in result:
+        if not expression:
+            raise ParseError(f"No expression was parsed from '{sql}'")
+        return result[0]
+    else:
         raise ParseError(f"No expression was parsed from '{sql}'")
-
-    return result[0]
 
 
 def transpile(

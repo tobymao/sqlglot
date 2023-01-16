@@ -383,7 +383,7 @@ def datestrtodate_sql(self, expression: exp.DateStrToDate) -> str:
     return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
 
-def _trim_sql(self, expression):
+def trim_sql(self, expression):
     target = self.sql(expression, "this")
     trim_type = self.sql(expression, "position")
     remove_chars = self.sql(expression, "expression")

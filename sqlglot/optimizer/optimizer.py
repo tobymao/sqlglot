@@ -52,7 +52,10 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
             If no schema is provided then the default schema defined at `sqlgot.schema` will be used
         db (str): specify the default database, as might be set by a `USE DATABASE db` statement
         catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
-        rules (sequence): sequence of optimizer rules to use
+        rules (sequence): sequence of optimizer rules to use.
+            Many of the rules require tables and columns to be qualified.
+            Do not remove qualify_tables or qualify_columns from the sequence of rules unless you know
+            what you're doing!
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
     Returns:
         sqlglot.Expression: optimized expression

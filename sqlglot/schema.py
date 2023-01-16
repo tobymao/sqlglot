@@ -234,7 +234,9 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
 
     def _normalize_name(self, name: str) -> str:
         try:
-            identifier = sqlglot.parse_one(name, read=self.dialect, into=exp.Identifier)  # type: ignore
+            identifier: t.Optional[exp.Expression] = sqlglot.parse_one(
+                name, read=self.dialect, into=exp.Identifier
+            )
         except:
             identifier = exp.to_identifier(name)
         assert isinstance(identifier, exp.Identifier)

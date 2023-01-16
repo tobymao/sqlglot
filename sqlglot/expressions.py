@@ -3685,7 +3685,7 @@ def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
     return Table(this=table_name, db=db, catalog=catalog, **kwargs)
 
 
-def to_column(sql_path: str, **kwargs) -> Column:
+def to_column(sql_path: str | Column, **kwargs) -> Column:
     """
     Create a column from a `[table].[column]` sql path. Schema is optional.
 

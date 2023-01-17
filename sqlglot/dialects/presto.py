@@ -174,7 +174,11 @@ class Presto(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
             "FROM_UNIXTIME": _from_unixtime,
-            "STRPOS": exp.StrPosition.from_arg_list,
+            "STRPOS": lambda args: exp.StrPosition(
+                this=seq_get(args, 0),
+                substr=seq_get(args, 1),
+                instance=seq_get(args, 2),
+            ),
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "APPROX_PERCENTILE": _approx_percentile,
             "FROM_HEX": exp.Unhex.from_arg_list,

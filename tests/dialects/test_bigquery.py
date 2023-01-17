@@ -42,6 +42,15 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            r"'\\'",
+            write={
+                "bigquery": r"'\\'",
+                "duckdb": r"'\'",
+                "presto": r"'\'",
+                "hive": r"'\\'",
+            },
+        )
+        self.validate_all(
             R'R"""/\*.*\*/"""',
             write={
                 "bigquery": R"'/\\*.*\\*/'",

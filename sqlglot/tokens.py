@@ -434,6 +434,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
     ESCAPES = ["'"]
 
+    _ESCAPES: t.Set[str] = set()
+
     KEYWORDS = {
         **{
             f"{key}{postfix}": TokenType.BLOCK_START
@@ -746,7 +748,7 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(self) -> None:
-        self._replace_backslash = "\\" in self._ESCAPES  # type: ignore
+        self._replace_backslash = "\\" in self._ESCAPES
         self.reset()
 
     def reset(self) -> None:
@@ -771,7 +773,10 @@ class Tokenizer(metaclass=_Tokenizer):
         self.reset()
         self.sql = sql
         self.size = len(sql)
+        self._scan()
+        return self.tokens
 
+    def _scan(self, until: t.Optional[t.Callable] = None) -> None:
         while self.size and not self._end:
             self._start = self._current
             self._advance()
@@ -792,7 +797,9 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._scan_identifier(identifier_end)
             else:
                 self._scan_keywords()
-        return self.tokens
+
+            if until and until():
+                break
 
     def _chars(self, size: int) -> str:
         if size == 1:
@@ -832,11 +839,13 @@ class Tokenizer(metaclass=_Tokenizer):
         if token_type in self.COMMANDS and (
             len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON
         ):
-            self._start = self._current
-            while not self._end and self._peek != ";":
-                self._advance()
-            if self._start < self._current:
-                self._add(TokenType.STRING)
+            start = self._current
+            tokens = len(self.tokens)
+            self._scan(lambda: self._peek == ";")
+            self.tokens = self.tokens[:tokens]
+            text = self.sql[start : self._current].strip()
+            if text:
+                self._add(TokenType.STRING, text)
 
     def _scan_keywords(self) -> None:
         size = 0
@@ -1064,8 +1073,12 @@ class Tokenizer(metaclass=_Tokenizer):
         delim_size = len(delimiter)
 
         while True:
-            if self._char in self._ESCAPES and self._peek == delimiter:  # type: ignore
-                text += delimiter
+            if (
+                self._char in self._ESCAPES
+                and self._peek
+                and (self._peek == delimiter or self._peek in self._ESCAPES)
+            ):
+                text += self._peek
                 self._advance(2)
             else:
                 if self._chars(delim_size) == delimiter:

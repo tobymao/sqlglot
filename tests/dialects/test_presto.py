@@ -444,13 +444,6 @@ class TestPresto(Validator):
                 "spark": UnsupportedError,
             },
         )
-        self.validate_all(
-            "CONCAT_WS('a', 'b')",
-            write={
-                "presto": "ARRAY_JOIN('b', 'a')",
-                "trino": "CONCAT_WS('a', 'b')",
-            },
-        )
         self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")

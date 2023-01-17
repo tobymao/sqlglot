@@ -24,14 +24,6 @@ def _approx_distinct_sql(self, expression):
     return f"APPROX_DISTINCT({self.sql(expression, 'this')}{accuracy})"
 
 
-def _concat_ws_sql(self, expression):
-    sep, *args = expression.expressions
-    sep = self.sql(sep)
-    if len(args) > 1:
-        return f"ARRAY_JOIN(ARRAY[{self.format_args(*args)}], {sep})"
-    return f"ARRAY_JOIN({self.sql(args[0])}, {sep})"
-
-
 def _datatype_sql(self, expression):
     sql = self.datatype_sql(expression)
     if expression.this == exp.DataType.Type.TIMESTAMPTZ:
@@ -211,7 +203,6 @@ class Presto(Dialect):
             exp.BitwiseOr: lambda self, e: f"BITWISE_OR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.BitwiseRightShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_RIGHT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
-            exp.ConcatWs: _concat_ws_sql,
             exp.DataType: _datatype_sql,
             exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
             exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",

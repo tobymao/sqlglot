@@ -982,9 +982,10 @@ class TestDialect(Validator):
             "CONCAT_WS('-', 'a', 'b')",
             write={
                 "duckdb": "CONCAT_WS('-', 'a', 'b')",
-                "presto": "ARRAY_JOIN(ARRAY['a', 'b'], '-')",
+                "presto": "CONCAT_WS('-', 'a', 'b')",
                 "hive": "CONCAT_WS('-', 'a', 'b')",
                 "spark": "CONCAT_WS('-', 'a', 'b')",
+                "trino": "CONCAT_WS('-', 'a', 'b')",
             },
         )
 
@@ -992,9 +993,10 @@ class TestDialect(Validator):
             "CONCAT_WS('-', x)",
             write={
                 "duckdb": "CONCAT_WS('-', x)",
-                "presto": "ARRAY_JOIN(x, '-')",
                 "hive": "CONCAT_WS('-', x)",
+                "presto": "CONCAT_WS('-', x)",
                 "spark": "CONCAT_WS('-', x)",
+                "trino": "CONCAT_WS('-', x)",
             },
         )
         self.validate_all(

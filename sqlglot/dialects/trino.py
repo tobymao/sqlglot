@@ -10,7 +10,6 @@ class Trino(Presto):
             **Presto.Generator.TRANSFORMS,  # type: ignore
             exp.ArraySum: lambda self, e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
         }
-        TRANSFORMS.pop(exp.ConcatWs)
 
     class Tokenizer(Presto.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

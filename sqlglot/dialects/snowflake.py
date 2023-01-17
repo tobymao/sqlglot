@@ -218,7 +218,7 @@ class Snowflake(Dialect):
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),
-            exp.StrPosition: rename_func("POSITION"),
+            exp.StrPosition: lambda self, e: f"{self.normalize_func('POSITION')}({self.format_args(e.args.get('substr'), e.this, e.args.get('position'))})",
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",

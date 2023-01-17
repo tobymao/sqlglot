@@ -955,7 +955,7 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "STR_POSITION('a', x)",
+            "STR_POSITION(x, 'a')",
             write={
                 "drill": "STRPOS(x, 'a')",
                 "duckdb": "STRPOS(x, 'a')",

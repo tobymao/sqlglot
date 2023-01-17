@@ -233,6 +233,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNPIVOT,
         TokenType.PROPERTIES,
         TokenType.PROCEDURE,
+        TokenType.VIEW,
         TokenType.VOLATILE,
         TokenType.WINDOW,
         *SUBQUERY_PREDICATES,

@@ -971,7 +971,7 @@ class TestDialect(Validator):
             "POSITION('a', x, 3)",
             write={
                 "drill": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
-                "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
+                "presto": "STRPOS(x, 'a', 3)",
                 "spark": "LOCATE('a', x, 3)",
                 "clickhouse": "position(x, 'a', 3)",
                 "snowflake": "POSITION('a', x, 3)",

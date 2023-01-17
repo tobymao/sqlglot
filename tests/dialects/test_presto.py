@@ -464,6 +464,12 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "FROM_UTF8(x, y)",
+            write={
+                "presto": "FROM_UTF8(x, y)",
+            },
+        )
+        self.validate_all(
             "ENCODE(x, 'utf-8')",
             write={
                 "presto": "TO_UTF8(x)",

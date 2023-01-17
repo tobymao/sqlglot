@@ -74,6 +74,8 @@ x LIKE y IS TRUE
 MAP()
 GREATEST(x)
 LEAST(y)
+MAX(a, b)
+MIN(a, b)
 time
 zone
 ARRAY<TEXT>

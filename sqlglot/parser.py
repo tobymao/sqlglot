@@ -2106,6 +2106,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:
+        if self._curr and self._curr.token_type in self.TYPE_TOKENS:
+            return self._parse_types()
+
         this = self._parse_id_var()
         self._match(TokenType.COLON)
         data_type = self._parse_types()

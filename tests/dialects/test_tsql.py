@@ -5,6 +5,11 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
+        self.validate_identity("INSERT INTO @TestTable VALUES (1, 'Value1', 12, 20)")
+        self.validate_identity(
+            "SELECT x FROM @MyTableVar AS m JOIN Employee ON m.EmployeeID = Employee.EmployeeID"
+        )
         self.validate_identity('SELECT "x"."y" FROM foo')
         self.validate_identity("SELECT * FROM #foo")
         self.validate_identity("SELECT * FROM ##foo")

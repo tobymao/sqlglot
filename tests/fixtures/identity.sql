@@ -71,6 +71,9 @@ x IS TRUE
 x IS FALSE
 x IS TRUE IS TRUE
 x LIKE y IS TRUE
+MAP()
+GREATEST(x)
+LEAST(y)
 time
 zone
 ARRAY<TEXT>

@@ -947,7 +947,8 @@ class Tokenizer(metaclass=_Tokenizer):
             elif self._peek.isidentifier():  # type: ignore
                 number_text = self._text
                 literal = []
-                while self._peek.isidentifier():  # type: ignore
+
+                while self._peek.strip() and self._peek not in self.SINGLE_TOKENS:  # type: ignore
                     literal.append(self._peek.upper())  # type: ignore
                     self._advance()
 

@@ -1460,6 +1460,7 @@ class Unnest(UDTF):
         "expressions": True,
         "ordinality": False,
         "alias": False,
+        "offset": False,
     }
 
 

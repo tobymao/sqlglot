@@ -2924,11 +2924,11 @@ class Matches(Func):
 
 
 class Max(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Min(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Month(Func):

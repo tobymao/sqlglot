@@ -8,7 +8,6 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
     no_safe_divide_sql,
     rename_func,
-    str_position_sql,
     struct_extract_sql,
     timestrtotime_sql,
 )
@@ -240,7 +239,7 @@ class Presto(Dialect):
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.SortArray: _no_sort_array,
-            exp.StrPosition: str_position_sql,
+            exp.StrPosition: rename_func("STRPOS"),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",

@@ -444,7 +444,7 @@ class TestHive(Validator):
             "LOCATE('a', x, 3)",
             write={
                 "duckdb": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
-                "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
+                "presto": "STRPOS(x, 'a', 3)",
                 "hive": "LOCATE('a', x, 3)",
                 "spark": "LOCATE('a', x, 3)",
             },

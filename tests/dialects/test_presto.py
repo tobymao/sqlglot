@@ -446,6 +446,7 @@ class TestPresto(Validator):
         )
         self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
     def test_encode_decode(self):
         self.validate_all(

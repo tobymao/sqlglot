@@ -119,6 +119,23 @@ def _ensure_utf8(charset):
         raise UnsupportedError(f"Unsupported charset {charset}")
 
 
+def _approx_percentile(args):
+    if len(args) == 4:
+        return exp.ApproxQuantile(
+            this=seq_get(args, 0),
+            weight=seq_get(args, 1),
+            quantile=seq_get(args, 2),
+            accuracy=seq_get(args, 3),
+        )
+    if len(args) == 3:
+        return exp.ApproxQuantile(
+            this=seq_get(args, 0),
+            quantile=seq_get(args, 1),
+            accuracy=seq_get(args, 2),
+        )
+    return exp.ApproxQuantile.from_arg_list(args)
+
+
 class Presto(Dialect):
     index_offset = 1
     null_ordering = "nulls_are_last"
@@ -153,7 +170,7 @@ class Presto(Dialect):
             "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
             "STRPOS": exp.StrPosition.from_arg_list,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
-            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
+            "APPROX_PERCENTILE": _approx_percentile,
             "FROM_HEX": exp.Unhex.from_arg_list,
             "TO_HEX": exp.Hex.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(

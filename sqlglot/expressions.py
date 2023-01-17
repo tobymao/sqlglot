@@ -2963,7 +2963,7 @@ class QuantileIf(AggFunc):
 
 
 class ApproxQuantile(Quantile):
-    arg_types = {"this": True, "quantile": True, "accuracy": False}
+    arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 
 
 class ReadCSV(Func):

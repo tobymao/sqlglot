@@ -272,6 +272,11 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             "WITH A(filter) AS (VALUES 1, 2, 3) SELECT * FROM A WHERE filter >= 2",
             "WITH A(filter) AS (VALUES (1), (2), (3)) SELECT * FROM A WHERE filter >= 2",
         )
+        self.validate(
+            "SELECT BOOL_OR(a > 10) FROM (VALUES 1, 2, 15) AS T(a)",
+            "SELECT BOOL_OR(a > 10) FROM (VALUES (1), (2), (15)) AS T(a)",
+            write="presto",
+        )
 
     def test_alter(self):
         self.validate(

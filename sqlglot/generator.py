@@ -1036,7 +1036,9 @@ class Generator:
             alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else alias
         ordinality = " WITH ORDINALITY" if expression.args.get("ordinality") else ""
-        return f"UNNEST({args}){ordinality}{alias}"
+        offset = expression.args.get("offset")
+        offset = f" WITH OFFSET AS {self.sql(offset)}" if offset else ""
+        return f"UNNEST({args}){ordinality}{alias}{offset}"
 
     def where_sql(self, expression: exp.Where) -> str:
         this = self.indent(self.sql(expression, "this"))

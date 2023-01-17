@@ -322,3 +322,23 @@ SELECT
   * /* multi
      line
      comment */;
+WITH table_data AS (
+    SELECT 'bob' AS name, ARRAY['banana', 'apple', 'orange'] AS fruit_basket
+)
+SELECT
+    name,
+    fruit,
+    basket_index
+FROM table_data
+CROSS JOIN UNNEST(fruit_basket) AS fruit WITH OFFSET basket_index;
+WITH table_data AS (
+  SELECT
+    'bob' AS name,
+    ARRAY('banana', 'apple', 'orange') AS fruit_basket
+)
+SELECT
+  name,
+  fruit,
+  basket_index
+FROM table_data
+CROSS JOIN UNNEST(fruit_basket) AS fruit WITH OFFSET AS basket_index;

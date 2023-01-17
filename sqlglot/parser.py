@@ -1643,8 +1643,17 @@ class Parser(metaclass=_Parser):
             alias.set("columns", [alias.this])
             alias.set("this", None)
 
+        offset = None
+        if self._match_pair(TokenType.WITH, TokenType.OFFSET):
+            self._match(TokenType.ALIAS)
+            offset = self._parse_conjunction()
+
         return self.expression(
-            exp.Unnest, expressions=expressions, ordinality=ordinality, alias=alias
+            exp.Unnest,
+            expressions=expressions,
+            ordinality=ordinality,
+            alias=alias,
+            offset=offset,
         )
 
     def _parse_derived_table_values(self) -> t.Optional[exp.Expression]:

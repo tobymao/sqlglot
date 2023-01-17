@@ -1247,8 +1247,14 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Partition, this=self._parse_wrapped_csv(parse_values))
 
     def _parse_value(self) -> exp.Expression:
-        expressions = self._parse_wrapped_csv(self._parse_conjunction)
-        return self.expression(exp.Tuple, expressions=expressions)
+        if self._match(TokenType.L_PAREN):
+            expressions = self._parse_csv(self._parse_conjunction)
+            self._match_r_paren()
+            return self.expression(exp.Tuple, expressions=expressions)
+
+        # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
+        # Source: https://prestodb.io/docs/current/sql/values.html
+        return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
 
     def _parse_select(
         self, nested: bool = False, table: bool = False, parse_subquery_alias: bool = True
@@ -1314,19 +1320,9 @@ class Parser(metaclass=_Parser):
             # Union ALL should be a property of the top select node, not the subquery
             return self._parse_subquery(this, parse_alias=parse_subquery_alias)
         elif self._match(TokenType.VALUES):
-            if self._curr.token_type == TokenType.L_PAREN:
-                # We don't consume the left paren because it's consumed in _parse_value
-                expressions = self._parse_csv(self._parse_value)
-            else:
-                # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
-                # Source: https://prestodb.io/docs/current/sql/values.html
-                expressions = self._parse_csv(
-                    lambda: self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
-                )
-
             this = self.expression(
                 exp.Values,
-                expressions=expressions,
+                expressions=self._parse_csv(self._parse_value),
                 alias=self._parse_table_alias(),
             )
         else:

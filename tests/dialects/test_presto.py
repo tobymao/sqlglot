@@ -302,6 +302,7 @@ class TestPresto(Validator):
         )
 
     def test_presto(self):
+        self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
         self.validate_all(
             'SELECT a."b" FROM "foo"',
             write={

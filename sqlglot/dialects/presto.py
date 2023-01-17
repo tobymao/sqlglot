@@ -209,6 +209,7 @@ class Presto(Dialect):
             exp.Initcap: _initcap_sql,
             exp.Lateral: _explode_to_unnest_sql,
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
+            exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Quantile: _quantile_sql,
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.SafeDivide: no_safe_divide_sql,

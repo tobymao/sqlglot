@@ -368,7 +368,7 @@ def locate_to_strposition(args):
     )
 
 
-def strposition_to_local_sql(self, expression):
+def strposition_to_locate_sql(self, expression):
     args = self.format_args(
         expression.args.get("substr"), expression.this, expression.args.get("position")
     )

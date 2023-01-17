@@ -264,7 +264,11 @@ class TSQL(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "CHARINDEX": exp.StrPosition.from_arg_list,
+            "CHARINDEX": lambda args: exp.StrPosition(
+                this=seq_get(args, 1),
+                substr=seq_get(args, 0),
+                position=seq_get(args, 2),
+            ),
             "ISNULL": exp.Coalesce.from_arg_list,
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
             "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),

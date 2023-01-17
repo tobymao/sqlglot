@@ -128,6 +128,21 @@ def _approx_percentile(args):
     return exp.ApproxQuantile.from_arg_list(args)
 
 
+def _from_unixtime(args):
+    if len(args) == 3:
+        return exp.UnixToTime(
+            this=seq_get(args, 0),
+            hours=seq_get(args, 1),
+            minutes=seq_get(args, 2),
+        )
+    if len(args) == 2:
+        return exp.UnixToTime(
+            this=seq_get(args, 0),
+            zone=seq_get(args, 1),
+        )
+    return exp.UnixToTime.from_arg_list(args)
+
+
 class Presto(Dialect):
     index_offset = 1
     null_ordering = "nulls_are_last"
@@ -159,7 +174,7 @@ class Presto(Dialect):
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
-            "FROM_UNIXTIME": exp.UnixToTime.from_arg_list,
+            "FROM_UNIXTIME": _from_unixtime,
             "STRPOS": exp.StrPosition.from_arg_list,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "APPROX_PERCENTILE": _approx_percentile,

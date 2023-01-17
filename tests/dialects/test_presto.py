@@ -152,6 +152,8 @@ class TestPresto(Validator):
                 "spark": "FROM_UNIXTIME(x)",
             },
         )
+        self.validate_identity("FROM_UNIXTIME(a, b)")
+        self.validate_identity("FROM_UNIXTIME(a, b, c)")
         self.validate_all(
             "TO_UNIXTIME(x)",
             write={

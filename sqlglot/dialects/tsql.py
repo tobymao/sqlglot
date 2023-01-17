@@ -288,7 +288,7 @@ class TSQL(Dialect):
         }
 
         # https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-temporary#create-a-temporary-table
-        TABLE_PREFIX_TOKENS = {TokenType.HASH}
+        TABLE_PREFIX_TOKENS = {TokenType.HASH, TokenType.PARAMETER}
 
         def _parse_convert(self, strict):
             to = self._parse_types()

@@ -2816,7 +2816,7 @@ class Floor(Func):
 
 
 class Greatest(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
@@ -2862,7 +2862,7 @@ class JSONBExtractScalar(JSONExtract):
 
 
 class Least(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
@@ -2905,7 +2905,7 @@ class Lower(Func):
 
 
 class Map(Func):
-    arg_types = {"keys": True, "values": True}
+    arg_types = {"keys": False, "values": False}
 
 
 class VarMap(Func):

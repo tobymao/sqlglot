@@ -2008,7 +2008,7 @@ class Parser(metaclass=_Parser):
         this = self._parse_column()
 
         if type_token:
-            if this:
+            if this and not isinstance(this, exp.Star):
                 return self.expression(exp.Cast, this=this, to=type_token)
             if not type_token.args.get("expressions"):
                 self._retreat(index)

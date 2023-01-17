@@ -1613,13 +1613,12 @@ class Parser(metaclass=_Parser):
         if alias:
             this.set("alias", alias)
 
-        if self._match(TokenType.WITH):
+        if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
             this.set(
                 "hints",
-                self._parse_wrapped_csv(
-                    lambda: self._parse_function() or self._parse_var(any_token=True)
-                ),
+                self._parse_csv(lambda: self._parse_function() or self._parse_var(any_token=True)),
             )
+            self._match_r_paren()
 
         if not self.alias_post_tablesample:
             table_sample = self._parse_table_sample()

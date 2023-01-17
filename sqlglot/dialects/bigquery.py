@@ -165,6 +165,14 @@ class BigQuery(Dialect):
             TokenType.TABLE,
         }
 
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,  # type: ignore
+            TokenType.VALUES,
+            TokenType.VIEW,
+        }
+
+        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} | {TokenType.VIEW}  # type: ignore
+
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

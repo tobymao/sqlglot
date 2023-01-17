@@ -53,7 +53,7 @@ def _initcap_sql(self, expression):
 
 def _decode_sql(self, expression):
     _ensure_utf8(expression.args.get("charset"))
-    return f"FROM_UTF8({self.sql(expression, 'this')})"
+    return f"FROM_UTF8({self.format_args(expression.this, expression.args.get('replace'))})"
 
 
 def _encode_sql(self, expression):
@@ -184,7 +184,7 @@ class Presto(Dialect):
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
             "FROM_UTF8": lambda args: exp.Decode(
-                this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
+                this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
         }
 

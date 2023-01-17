@@ -2792,7 +2792,7 @@ class Day(Func):
 
 
 class Decode(Func):
-    arg_types = {"this": True, "charset": True}
+    arg_types = {"this": True, "charset": True, "replace": False}
 
 
 class DiToDate(Func):

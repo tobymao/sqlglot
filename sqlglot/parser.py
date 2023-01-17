@@ -553,7 +553,7 @@ class Parser(metaclass=_Parser):
         TokenType.IF: lambda self: self._parse_if(),
     }
 
-    FUNCTION_PARSERS = {
+    FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "TRY_CONVERT": lambda self: self._parse_convert(False),
         "EXTRACT": lambda self: self._parse_extract(),

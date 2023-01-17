@@ -1134,15 +1134,14 @@ class Generator:
         return f"EXTRACT({this} FROM {expression_sql})"
 
     def trim_sql(self, expression: exp.Trim) -> str:
-        target = self.sql(expression, "this")
         trim_type = self.sql(expression, "position")
 
         if trim_type == "LEADING":
-            return f"LTRIM({target})"
+            return f"{self.normalize_func('LTRIM')}({self.format_args(expression.this)})"
         elif trim_type == "TRAILING":
-            return f"RTRIM({target})"
+            return f"{self.normalize_func('RTRIM')}({self.format_args(expression.this)})"
         else:
-            return f"TRIM({target})"
+            return f"{self.normalize_func('TRIM')}({self.format_args(expression.this, expression.expression)})"
 
     def concat_sql(self, expression: exp.Concat) -> str:
         if len(expression.expressions) == 1:

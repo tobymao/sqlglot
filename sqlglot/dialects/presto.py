@@ -187,6 +187,8 @@ class Presto(Dialect):
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
         }
+        FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS.pop("TRIM")
 
     class Generator(generator.Generator):
 

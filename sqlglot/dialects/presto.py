@@ -259,6 +259,7 @@ class Presto(Dialect):
             exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
+            exp.VariancePop: rename_func("VAR_POP"),
         }
 
         def transaction_sql(self, expression):

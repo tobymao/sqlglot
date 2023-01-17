@@ -155,6 +155,7 @@ class TestPresto(Validator):
         self.validate_identity("FROM_UNIXTIME(a, b)")
         self.validate_identity("FROM_UNIXTIME(a, b, c)")
         self.validate_identity("TRIM(a, b)")
+        self.validate_identity("VAR_POP(a)")
         self.validate_all(
             "TO_UNIXTIME(x)",
             write={

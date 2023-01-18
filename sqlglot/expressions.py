@@ -2650,6 +2650,10 @@ class Cast(Func):
         return self.args["to"]
 
 
+class TranslateCharacterSet(Cast):
+    arg_types = {"this": True, "from": True, "to": True}
+
+
 class Collate(Binary):
     pass
 

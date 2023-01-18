@@ -452,6 +452,9 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 self.assertEqual(generated, pretty)
                 self.assertEqual(parse_one(sql), parse_one(pretty))
 
+    def test_pretty_line_breaks(self):
+        self.assertEqual(transpile("SELECT '1\n2'", pretty=True)[0], "SELECT\n  '1\n2'")
+
     @mock.patch("sqlglot.parser.logger")
     def test_error_level(self, logger):
         invalid = "x + 1. ("

@@ -2127,6 +2127,7 @@ class DataType(Expression):
         "this": True,
         "expressions": False,
         "nested": False,
+        "values": False,
     }
 
     class Type(AutoName):

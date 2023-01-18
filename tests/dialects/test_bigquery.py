@@ -6,6 +6,7 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",

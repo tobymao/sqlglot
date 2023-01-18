@@ -2056,6 +2056,7 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return None
 
+        values: t.Optional[t.List[t.Optional[exp.Expression]]] = None
         if nested and self._match(TokenType.LT):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_kwargs)
@@ -2064,6 +2065,10 @@ class Parser(metaclass=_Parser):
 
             if not self._match(TokenType.GT):
                 self.raise_error("Expecting >")
+
+            if self._match_set((TokenType.L_BRACKET, TokenType.L_PAREN)):
+                values = self._parse_csv(self._parse_conjunction)
+                self._match_set((TokenType.R_BRACKET, TokenType.R_PAREN))
 
         value: t.Optional[exp.Expression] = None
         if type_token in self.TIMESTAMPS:
@@ -2103,6 +2108,7 @@ class Parser(metaclass=_Parser):
             this=exp.DataType.Type[type_token.value.upper()],
             expressions=expressions,
             nested=nested,
+            values=values,
         )
 
     def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:

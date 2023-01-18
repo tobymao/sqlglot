@@ -1,7 +1,7 @@
 import itertools
 
 from sqlglot import alias, exp
-from sqlglot.errors import OptimizeError
+from sqlglot.errors import OptimizeError, SchemaError
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 
@@ -382,7 +382,7 @@ class _Resolver:
             try:
                 return self.schema.column_names(source, only_visible)
             except Exception as e:
-                raise OptimizeError(str(e)) from e
+                raise SchemaError(str(e)) from e
 
         if isinstance(source, Scope) and isinstance(source.expression, exp.Values):
             return source.expression.alias_column_names

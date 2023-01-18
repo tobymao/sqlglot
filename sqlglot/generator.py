@@ -105,6 +105,7 @@ class Generator:
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
+    SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
         "time_mapping",
@@ -211,6 +212,8 @@ class Generator:
         elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
             raise UnsupportedError(concat_messages(self.unsupported_messages, self.max_unsupported))
 
+        if self.pretty:
+            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
         return sql
 
     def unsupported(self, message: str) -> None:
@@ -517,13 +520,19 @@ class Generator:
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
         nested = ""
         interior = self.expressions(expression, flat=True)
+        values = ""
         if interior:
-            nested = (
-                f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
-                if expression.args.get("nested")
-                else f"({interior})"
-            )
-        return f"{type_sql}{nested}"
+            if expression.args.get("nested"):
+                nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
+                if expression.args.get("values") is not None:
+                    delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")
+                    values = (
+                        f"{delimiters[0]}{self.expressions(expression, 'values')}{delimiters[1]}"
+                    )
+            else:
+                nested = f"({interior})"
+
+        return f"{type_sql}{nested}{values}"
 
     def directory_sql(self, expression: exp.Directory) -> str:
         local = "LOCAL " if expression.args.get("local") else ""
@@ -868,6 +877,8 @@ class Generator:
             if self._replace_backslash:
                 text = text.replace("\\", "\\\\")
             text = text.replace(self.quote_end, self._escaped_quote_end)
+            if self.pretty:
+                text = text.replace("\n", self.SENTINEL_LINE_BREAK)
             text = f"{self.quote_start}{text}{self.quote_end}"
         return text
 
@@ -1036,7 +1047,9 @@ class Generator:
             alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else alias
         ordinality = " WITH ORDINALITY" if expression.args.get("ordinality") else ""
-        return f"UNNEST({args}){ordinality}{alias}"
+        offset = expression.args.get("offset")
+        offset = f" WITH OFFSET AS {self.sql(offset)}" if offset else ""
+        return f"UNNEST({args}){ordinality}{alias}{offset}"
 
     def where_sql(self, expression: exp.Where) -> str:
         this = self.indent(self.sql(expression, "this"))
@@ -1132,15 +1145,14 @@ class Generator:
         return f"EXTRACT({this} FROM {expression_sql})"
 
     def trim_sql(self, expression: exp.Trim) -> str:
-        target = self.sql(expression, "this")
         trim_type = self.sql(expression, "position")
 
         if trim_type == "LEADING":
-            return f"LTRIM({target})"
+            return f"{self.normalize_func('LTRIM')}({self.format_args(expression.this)})"
         elif trim_type == "TRAILING":
-            return f"RTRIM({target})"
+            return f"{self.normalize_func('RTRIM')}({self.format_args(expression.this)})"
         else:
-            return f"TRIM({target})"
+            return f"{self.normalize_func('TRIM')}({self.format_args(expression.this, expression.expression)})"
 
     def concat_sql(self, expression: exp.Concat) -> str:
         if len(expression.expressions) == 1:

@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
-    strposition_to_local_sql,
+    strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -442,7 +442,7 @@ class MySQL(Dialect):
             exp.Trim: _trim_sql,
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
-            exp.StrPosition: strposition_to_local_sql,
+            exp.StrPosition: strposition_to_locate_sql,
         }
 
         ROOT_PROPERTIES = {

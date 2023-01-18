@@ -233,6 +233,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNPIVOT,
         TokenType.PROPERTIES,
         TokenType.PROCEDURE,
+        TokenType.VIEW,
         TokenType.VOLATILE,
         TokenType.WINDOW,
         *SUBQUERY_PREDICATES,
@@ -252,6 +253,7 @@ class Parser(metaclass=_Parser):
     TRIM_TYPES = {TokenType.LEADING, TokenType.TRAILING, TokenType.BOTH}
 
     FUNC_TOKENS = {
+        TokenType.COMMAND,
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_DATETIME,
         TokenType.CURRENT_TIMESTAMP,
@@ -552,7 +554,7 @@ class Parser(metaclass=_Parser):
         TokenType.IF: lambda self: self._parse_if(),
     }
 
-    FUNCTION_PARSERS = {
+    FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "TRY_CONVERT": lambda self: self._parse_convert(False),
         "EXTRACT": lambda self: self._parse_extract(),
@@ -1246,8 +1248,14 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Partition, this=self._parse_wrapped_csv(parse_values))
 
     def _parse_value(self) -> exp.Expression:
-        expressions = self._parse_wrapped_csv(self._parse_conjunction)
-        return self.expression(exp.Tuple, expressions=expressions)
+        if self._match(TokenType.L_PAREN):
+            expressions = self._parse_csv(self._parse_conjunction)
+            self._match_r_paren()
+            return self.expression(exp.Tuple, expressions=expressions)
+
+        # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
+        # Source: https://prestodb.io/docs/current/sql/values.html
+        return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
 
     def _parse_select(
         self, nested: bool = False, table: bool = False, parse_subquery_alias: bool = True
@@ -1313,19 +1321,9 @@ class Parser(metaclass=_Parser):
             # Union ALL should be a property of the top select node, not the subquery
             return self._parse_subquery(this, parse_alias=parse_subquery_alias)
         elif self._match(TokenType.VALUES):
-            if self._curr.token_type == TokenType.L_PAREN:
-                # We don't consume the left paren because it's consumed in _parse_value
-                expressions = self._parse_csv(self._parse_value)
-            else:
-                # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
-                # Source: https://prestodb.io/docs/current/sql/values.html
-                expressions = self._parse_csv(
-                    lambda: self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
-                )
-
             this = self.expression(
                 exp.Values,
-                expressions=expressions,
+                expressions=self._parse_csv(self._parse_value),
                 alias=self._parse_table_alias(),
             )
         else:
@@ -1612,13 +1610,12 @@ class Parser(metaclass=_Parser):
         if alias:
             this.set("alias", alias)
 
-        if self._match(TokenType.WITH):
+        if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
             this.set(
                 "hints",
-                self._parse_wrapped_csv(
-                    lambda: self._parse_function() or self._parse_var(any_token=True)
-                ),
+                self._parse_csv(lambda: self._parse_function() or self._parse_var(any_token=True)),
             )
+            self._match_r_paren()
 
         if not self.alias_post_tablesample:
             table_sample = self._parse_table_sample()
@@ -1643,8 +1640,17 @@ class Parser(metaclass=_Parser):
             alias.set("columns", [alias.this])
             alias.set("this", None)
 
+        offset = None
+        if self._match_pair(TokenType.WITH, TokenType.OFFSET):
+            self._match(TokenType.ALIAS)
+            offset = self._parse_conjunction()
+
         return self.expression(
-            exp.Unnest, expressions=expressions, ordinality=ordinality, alias=alias
+            exp.Unnest,
+            expressions=expressions,
+            ordinality=ordinality,
+            alias=alias,
+            offset=offset,
         )
 
     def _parse_derived_table_values(self) -> t.Optional[exp.Expression]:
@@ -1999,7 +2005,7 @@ class Parser(metaclass=_Parser):
         this = self._parse_column()
 
         if type_token:
-            if this:
+            if this and not isinstance(this, exp.Star):
                 return self.expression(exp.Cast, this=this, to=type_token)
             if not type_token.args.get("expressions"):
                 self._retreat(index)
@@ -2050,6 +2056,7 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return None
 
+        values: t.Optional[t.List[t.Optional[exp.Expression]]] = None
         if nested and self._match(TokenType.LT):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_kwargs)
@@ -2058,6 +2065,10 @@ class Parser(metaclass=_Parser):
 
             if not self._match(TokenType.GT):
                 self.raise_error("Expecting >")
+
+            if self._match_set((TokenType.L_BRACKET, TokenType.L_PAREN)):
+                values = self._parse_csv(self._parse_conjunction)
+                self._match_set((TokenType.R_BRACKET, TokenType.R_PAREN))
 
         value: t.Optional[exp.Expression] = None
         if type_token in self.TIMESTAMPS:
@@ -2097,9 +2108,13 @@ class Parser(metaclass=_Parser):
             this=exp.DataType.Type[type_token.value.upper()],
             expressions=expressions,
             nested=nested,
+            values=values,
         )
 
     def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:
+        if self._curr and self._curr.token_type in self.TYPE_TOKENS:
+            return self._parse_types()
+
         this = self._parse_id_var()
         self._match(TokenType.COLON)
         data_type = self._parse_types()
@@ -2620,7 +2635,11 @@ class Parser(metaclass=_Parser):
             args.append(self._parse_bitwise())
 
         # Note: we're parsing in order needle, haystack, position
-        this = exp.StrPosition.from_arg_list(args)
+        this = exp.StrPosition(
+            this=seq_get(args, 1),
+            substr=seq_get(args, 0),
+            position=seq_get(args, 2),
+        )
         self.validate_expression(this, args)
 
         return this

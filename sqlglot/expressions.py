@@ -1460,6 +1460,7 @@ class Unnest(UDTF):
         "expressions": True,
         "ordinality": False,
         "alias": False,
+        "offset": False,
     }
 
 
@@ -2126,6 +2127,7 @@ class DataType(Expression):
         "this": True,
         "expressions": False,
         "nested": False,
+        "values": False,
     }
 
     class Type(AutoName):
@@ -2791,7 +2793,7 @@ class Day(Func):
 
 
 class Decode(Func):
-    arg_types = {"this": True, "charset": True}
+    arg_types = {"this": True, "charset": True, "replace": False}
 
 
 class DiToDate(Func):
@@ -2815,7 +2817,7 @@ class Floor(Func):
 
 
 class Greatest(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
@@ -2861,7 +2863,7 @@ class JSONBExtractScalar(JSONExtract):
 
 
 class Least(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
@@ -2904,7 +2906,7 @@ class Lower(Func):
 
 
 class Map(Func):
-    arg_types = {"keys": True, "values": True}
+    arg_types = {"keys": False, "values": False}
 
 
 class VarMap(Func):
@@ -2923,11 +2925,11 @@ class Matches(Func):
 
 
 class Max(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Min(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Month(Func):
@@ -2962,7 +2964,7 @@ class QuantileIf(AggFunc):
 
 
 class ApproxQuantile(Quantile):
-    arg_types = {"this": True, "quantile": True, "accuracy": False}
+    arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 
 
 class ReadCSV(Func):
@@ -3022,7 +3024,12 @@ class Substring(Func):
 
 
 class StrPosition(Func):
-    arg_types = {"substr": True, "this": True, "position": False}
+    arg_types = {
+        "this": True,
+        "substr": True,
+        "position": False,
+        "instance": False,
+    }
 
 
 class StrToDate(Func):
@@ -3129,8 +3136,10 @@ class UnixToStr(Func):
     arg_types = {"this": True, "format": False}
 
 
+# https://prestodb.io/docs/current/functions/datetime.html
+# presto has weird zone/hours/minutes
 class UnixToTime(Func):
-    arg_types = {"this": True, "scale": False}
+    arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False}
 
     SECONDS = Literal.string("seconds")
     MILLIS = Literal.string("millis")

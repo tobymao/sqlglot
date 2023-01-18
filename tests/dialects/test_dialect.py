@@ -955,7 +955,7 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "STR_POSITION('a', x)",
+            "STR_POSITION(x, 'a')",
             write={
                 "drill": "STRPOS(x, 'a')",
                 "duckdb": "STRPOS(x, 'a')",
@@ -971,7 +971,7 @@ class TestDialect(Validator):
             "POSITION('a', x, 3)",
             write={
                 "drill": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
-                "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
+                "presto": "STRPOS(x, 'a', 3)",
                 "spark": "LOCATE('a', x, 3)",
                 "clickhouse": "position(x, 'a', 3)",
                 "snowflake": "POSITION('a', x, 3)",
@@ -982,9 +982,10 @@ class TestDialect(Validator):
             "CONCAT_WS('-', 'a', 'b')",
             write={
                 "duckdb": "CONCAT_WS('-', 'a', 'b')",
-                "presto": "ARRAY_JOIN(ARRAY['a', 'b'], '-')",
+                "presto": "CONCAT_WS('-', 'a', 'b')",
                 "hive": "CONCAT_WS('-', 'a', 'b')",
                 "spark": "CONCAT_WS('-', 'a', 'b')",
+                "trino": "CONCAT_WS('-', 'a', 'b')",
             },
         )
 
@@ -992,9 +993,10 @@ class TestDialect(Validator):
             "CONCAT_WS('-', x)",
             write={
                 "duckdb": "CONCAT_WS('-', x)",
-                "presto": "ARRAY_JOIN(x, '-')",
                 "hive": "CONCAT_WS('-', x)",
+                "presto": "CONCAT_WS('-', x)",
                 "spark": "CONCAT_WS('-', x)",
+                "trino": "CONCAT_WS('-', x)",
             },
         )
         self.validate_all(

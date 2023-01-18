@@ -6,6 +6,8 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
+        self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",
             read={"bigquery": "REGEXP_CONTAINS('foo', '.*')"},
@@ -39,6 +41,15 @@ class TestBigQuery(Validator):
                 "presto": r"'/\*.*\*/'",
                 "hive": r"'/\\*.*\\*/'",
                 "spark": r"'/\\*.*\\*/'",
+            },
+        )
+        self.validate_all(
+            r"'\\'",
+            write={
+                "bigquery": r"'\\'",
+                "duckdb": r"'\'",
+                "presto": r"'\'",
+                "hive": r"'\\'",
             },
         )
         self.validate_all(

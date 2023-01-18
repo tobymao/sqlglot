@@ -152,6 +152,10 @@ class TestPresto(Validator):
                 "spark": "FROM_UNIXTIME(x)",
             },
         )
+        self.validate_identity("FROM_UNIXTIME(a, b)")
+        self.validate_identity("FROM_UNIXTIME(a, b, c)")
+        self.validate_identity("TRIM(a, b)")
+        self.validate_identity("VAR_POP(a)")
         self.validate_all(
             "TO_UNIXTIME(x)",
             write={
@@ -302,6 +306,7 @@ class TestPresto(Validator):
         )
 
     def test_presto(self):
+        self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
         self.validate_all(
             'SELECT a."b" FROM "foo"',
             write={
@@ -445,6 +450,7 @@ class TestPresto(Validator):
         )
         self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
     def test_encode_decode(self):
         self.validate_all(
@@ -457,6 +463,12 @@ class TestPresto(Validator):
             "FROM_UTF8(x)",
             write={
                 "spark": "DECODE(x, 'utf-8')",
+            },
+        )
+        self.validate_all(
+            "FROM_UTF8(x, y)",
+            write={
+                "presto": "FROM_UTF8(x, y)",
             },
         )
         self.validate_all(

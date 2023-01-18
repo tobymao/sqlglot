@@ -105,6 +105,7 @@ class Generator:
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
+    SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
         "time_mapping",
@@ -211,6 +212,8 @@ class Generator:
         elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
             raise UnsupportedError(concat_messages(self.unsupported_messages, self.max_unsupported))
 
+        if self.pretty:
+            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
         return sql
 
     def unsupported(self, message: str) -> None:
@@ -874,6 +877,8 @@ class Generator:
             if self._replace_backslash:
                 text = text.replace("\\", "\\\\")
             text = text.replace(self.quote_end, self._escaped_quote_end)
+            if self.pretty:
+                text = text.replace("\n", self.SENTINEL_LINE_BREAK)
             text = f"{self.quote_start}{text}{self.quote_end}"
         return text
 

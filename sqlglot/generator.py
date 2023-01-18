@@ -517,13 +517,19 @@ class Generator:
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
         nested = ""
         interior = self.expressions(expression, flat=True)
+        values = ""
         if interior:
-            nested = (
-                f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
-                if expression.args.get("nested")
-                else f"({interior})"
-            )
-        return f"{type_sql}{nested}"
+            if expression.args.get("nested"):
+                nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
+                if expression.args.get("values") is not None:
+                    delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")
+                    values = (
+                        f"{delimiters[0]}{self.expressions(expression, 'values')}{delimiters[1]}"
+                    )
+            else:
+                nested = f"({interior})"
+
+        return f"{type_sql}{nested}{values}"
 
     def directory_sql(self, expression: exp.Directory) -> str:
         local = "LOCAL " if expression.args.get("local") else ""

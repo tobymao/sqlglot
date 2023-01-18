@@ -133,7 +133,6 @@ class TokenType(AutoName):
     CASCADE = auto()
     CASE = auto()
     CHARACTER_SET = auto()
-    CHARSET_TRANSLATOR = auto()
     CHECK = auto()
     CLUSTER_BY = auto()
     COLLATE = auto()

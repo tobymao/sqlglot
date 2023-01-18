@@ -6,7 +6,7 @@ from pandas.testing import assert_frame_equal
 
 import sqlglot
 from sqlglot import exp, optimizer, parse_one
-from sqlglot.errors import OptimizeError
+from sqlglot.errors import OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
@@ -161,7 +161,7 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
             with self.subTest(sql):
-                with self.assertRaises(OptimizeError):
+                with self.assertRaises((OptimizeError, SchemaError)):
                     optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=self.schema)
 
     def test_lower_identities(self):

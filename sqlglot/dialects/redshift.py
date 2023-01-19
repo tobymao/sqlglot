@@ -75,13 +75,16 @@ class Redshift(Postgres):
             """
             if not isinstance(expression.unnest().parent, exp.From):
                 return super().values_sql(expression)
-            rows = [tuple_exp.expressions for tuple_exp in expression.find_all(exp.Tuple)]
+            rows = [tuple_exp.expressions for tuple_exp in expression.expressions]
             selects = []
             for i, row in enumerate(rows):
-                columns = [
-                    exp.alias_(value, column_name) if i == 0 else value
-                    for value, column_name in zip(row, expression.args["alias"].args["columns"])
-                ]
+                if i == 0:
+                    columns = [
+                        exp.alias_(value, column_name)
+                        for value, column_name in zip(row, expression.args["alias"].args["columns"])
+                    ]
+                else:
+                    columns = row
                 selects.append(exp.Select(expressions=columns))
             subquery_expression = selects[0]
             if len(selects) > 1:

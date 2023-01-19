@@ -17,6 +17,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT quantile(0.5)(a)")
         self.validate_identity("SELECT quantiles(0.5)(a) AS x FROM t")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
+        self.validate_identity("position(a, b)")
 
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",

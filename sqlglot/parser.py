@@ -2634,12 +2634,12 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.IN):
             args.append(self._parse_bitwise())
 
-        # Note: we're parsing in order needle, haystack, position
         this = exp.StrPosition(
             this=seq_get(args, 1),
             substr=seq_get(args, 0),
             position=seq_get(args, 2),
         )
+
         self.validate_expression(this, args)
 
         return this

@@ -72,6 +72,14 @@ class ClickHouse(Dialect):
 
             return this
 
+        def _parse_position(self) -> exp.Expression:
+            this = super()._parse_position()
+            # clickhouse position args are swapped
+            substr = this.this
+            this.args["this"] = this.args.get("substr")
+            this.args["substr"] = substr
+            return this
+
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 

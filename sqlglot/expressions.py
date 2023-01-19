@@ -2801,7 +2801,7 @@ class DiToDate(Func):
 
 
 class Encode(Func):
-    arg_types = {"this": True, "charset": True}
+    arg_types = {"this": True, "charset": True, "replace": False}
 
 
 class Exp(Func):

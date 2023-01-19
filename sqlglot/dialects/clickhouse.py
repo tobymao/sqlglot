@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
+from sqlglot.errors import ParseError
 from sqlglot.parser import parse_var_map
 from sqlglot.tokens import TokenType
 
@@ -80,6 +81,22 @@ class ClickHouse(Dialect):
             this.args["substr"] = substr
             return this
 
+        # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
+        def _parse_cte(self) -> exp.Expression:
+            index = self._index
+            try:
+                # WITH <identifier> AS <subquery expression>
+                return super()._parse_cte()
+            except ParseError:
+                # WITH <expression> AS <identifier>
+                self._retreat(index)
+                statement = self._parse_statement()
+
+                if statement and isinstance(statement.this, exp.Alias):
+                    self.raise_error("Expected CTE to have alias")
+
+                return self.expression(exp.CTE, this=statement, alias=statement and statement.this)
+
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 
@@ -118,3 +135,9 @@ class ClickHouse(Dialect):
             params = self.format_args(self.expressions(expression, params_name))
             args = self.format_args(self.expressions(expression, args_name))
             return f"({params})({args})"
+
+        def cte_sql(self, expression: exp.CTE) -> str:
+            if isinstance(expression.this, exp.Alias):
+                return self.sql(expression, "this")
+
+            return super().cte_sql(expression)

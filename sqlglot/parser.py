@@ -1357,10 +1357,10 @@ class Parser(metaclass=_Parser):
             or not alias.this
             or not self._match_pair(TokenType.ALIAS, TokenType.L_PAREN, advance=False)
         ):
-            statement: t.Optional[exp.Expression]
-
             if self._match(TokenType.ALIAS):
-                statement = self.expression(exp.Alias, this=alias, alias=self._parse_id_var())
+                statement: t.Optional[exp.Expression] = self.expression(
+                    exp.Alias, this=alias, alias=self._parse_id_var()
+                )
             else:
                 statement = self._parse_statement()
 

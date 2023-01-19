@@ -95,6 +95,7 @@ class Redshift(Postgres):
 
         def renametable_sql(self, expression: exp.RenameTable) -> str:
             """Redshift only supports defining the table name itself (not the db) when renaming tables"""
+            expression = expression.copy()
             target_table = expression.this
             for arg in target_table.args:
                 if arg != "this":
@@ -114,5 +115,5 @@ class Redshift(Postgres):
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")
                 if not precision:
-                    expression.set("expressions", [exp.to_identifier("max")])
+                    expression.append("expressions", exp.to_identifier("max"))
             return super().datatype_sql(expression)

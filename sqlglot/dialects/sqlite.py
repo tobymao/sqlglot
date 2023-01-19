@@ -13,6 +13,10 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
+def _fetch_sql(self, expression):
+    return self.limit_sql(exp.Limit(expression=expression.args.get("count")))
+
+
 # https://www.sqlite.org/lang_aggfunc.html#group_concat
 def _group_concat_sql(self, expression):
     this = expression.this
@@ -80,6 +84,7 @@ class SQLite(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
             exp.GroupConcat: _group_concat_sql,
+            exp.Fetch: _fetch_sql,
         }
 
         def transaction_sql(self, expression):

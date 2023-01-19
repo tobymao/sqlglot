@@ -1120,6 +1120,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT x FROM y OFFSET 10 FETCH FIRST 3 ROWS ONLY",
             write={
+                "sqlite": "SELECT x FROM y LIMIT 3 OFFSET 10",
                 "oracle": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
             },
         )

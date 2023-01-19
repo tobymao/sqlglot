@@ -8,6 +8,8 @@ from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
+import typing as t
+
 
 FULL_FORMAT_TIME_MAPPING = {
     "weekday": "%A",
@@ -294,6 +296,8 @@ class TSQL(Dialect):
 
         # https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-temporary#create-a-temporary-table
         TABLE_PREFIX_TOKENS = {TokenType.HASH, TokenType.PARAMETER}
+        PARAMETER_PREFIX_TOKENS = {TokenType.HASH, TokenType.PARAMETER}
+
 
         def _parse_convert(self, strict):
             to = self._parse_types()

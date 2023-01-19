@@ -601,6 +601,7 @@ class Parser(metaclass=_Parser):
 
     # allows tables to have special tokens as prefixes
     TABLE_PREFIX_TOKENS: t.Set[TokenType] = set()
+    PARAMETER_PREFIX_TOKENS : t.Set[TokenType] = set()
 
     STRICT_CAST = True
 
@@ -2313,7 +2314,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.SessionParameter, this=this, kind=kind)
 
     def _parse_udf_kwarg(self) -> t.Optional[exp.Expression]:
-        this = self._parse_id_var()
+        this = self._parse_id_var(prefix_tokens=self.PARAMETER_PREFIX_TOKENS)
         kind = self._parse_types()
 
         if not kind:

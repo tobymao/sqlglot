@@ -1350,24 +1350,8 @@ class Parser(metaclass=_Parser):
 
     def _parse_cte(self) -> exp.Expression:
         alias = self._parse_table_alias()
-
-        # Alternative Clickhouse syntax: https://clickhouse.com/docs/en/sql-reference/statements/select/with/
-        if (
-            not alias
-            or not alias.this
-            or not self._match_pair(TokenType.ALIAS, TokenType.L_PAREN, advance=False)
-        ):
-            if self._match(TokenType.ALIAS):
-                statement: t.Optional[exp.Expression] = self.expression(
-                    exp.Alias, this=alias, alias=self._parse_id_var()
-                )
-            else:
-                statement = self._parse_statement()
-
-            if not isinstance(statement, exp.Alias):
-                self.raise_error("Expected CTE to have alias")
-
-            return self.expression(exp.CTE, this=statement, alias=statement and statement.alias)
+        if not alias or not alias.this:
+            self.raise_error("Expected CTE to have alias")
 
         if not self._match(TokenType.ALIAS):
             self.raise_error("Expected AS in CTE")
@@ -1386,13 +1370,9 @@ class Parser(metaclass=_Parser):
             any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
         )
 
-        index = self._index
         if self._match(TokenType.L_PAREN):
             columns = self._parse_csv(lambda: self._parse_column_def(self._parse_id_var()))
-            self._match(TokenType.R_PAREN)
-
-            if not columns:
-                self._retreat(index)
+            self._match_r_paren()
         else:
             columns = None
 

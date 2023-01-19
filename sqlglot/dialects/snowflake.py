@@ -210,6 +210,7 @@ class Snowflake(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.DateAdd: rename_func("DATEADD"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
             exp.If: rename_func("IFF"),

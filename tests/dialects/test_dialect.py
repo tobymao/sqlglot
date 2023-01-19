@@ -488,7 +488,9 @@ class TestDialect(Validator):
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "postgres": "x + INTERVAL '1' 'day'",
                 "presto": "DATE_ADD('day', 1, x)",
+                "snowflake": "DATEADD(x, 1, 'day')",
                 "spark": "DATE_ADD(x, 1)",
+                "sqlite": "DATE(x, '1 day')",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "tsql": "DATEADD(day, 1, x)",
             },
@@ -1120,6 +1122,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT x FROM y OFFSET 10 FETCH FIRST 3 ROWS ONLY",
             write={
+                "sqlite": "SELECT x FROM y LIMIT 3 OFFSET 10",
                 "oracle": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
             },
         )

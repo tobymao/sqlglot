@@ -459,6 +459,7 @@ class TestPresto(Validator):
                 "spark": "ENCODE(x, 'utf-8')",
             },
         )
+        self.validate_identity("TO_UTF8(x, y)")
         self.validate_all(
             "FROM_UTF8(x)",
             write={

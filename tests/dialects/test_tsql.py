@@ -13,6 +13,7 @@ class TestTSQL(Validator):
         self.validate_identity('SELECT "x"."y" FROM foo')
         self.validate_identity("SELECT * FROM #foo")
         self.validate_identity("SELECT * FROM ##foo")
+        self.validate_identity("DECLARE @TestVar nvarchar(MAX)")
         self.validate_identity(
             "SELECT DISTINCT DepartmentName, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY BaseRate) OVER (PARTITION BY DepartmentName) AS MedianCont FROM dbo.DimEmployee"
         )

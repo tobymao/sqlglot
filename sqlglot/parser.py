@@ -3018,6 +3018,8 @@ class Parser(metaclass=_Parser):
             actions = self._parse_csv(self._parse_add_column)
         elif self._match_text_seq("DROP", advance=False):
             actions = self._parse_csv(self._parse_drop_column)
+        elif self._match_text_seq("RENAME", "TO"):
+            actions = self.expression(exp.RenameTable, this=self._parse_table(schema=True))
         elif self._match_text_seq("ALTER"):
             self._match(TokenType.COLUMN)
             column = self._parse_field(any_token=True)

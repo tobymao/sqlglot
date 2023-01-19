@@ -715,3 +715,9 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("OBJECT").sql(), "OBJECT")
         self.assertEqual(exp.DataType.build("NULL").sql(), "NULL")
         self.assertEqual(exp.DataType.build("UNKNOWN").sql(), "UNKNOWN")
+
+    def test_rename_table(self):
+        self.assertEqual(
+            exp.rename_table("t1", "t2").sql(),
+            "ALTER TABLE t1 RENAME TO t2",
+        )

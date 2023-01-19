@@ -770,6 +770,10 @@ class AlterColumn(Expression):
     }
 
 
+class RenameTable(Expression):
+    pass
+
+
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 
@@ -1266,7 +1270,7 @@ class Tuple(Expression):
 
 
 class Subqueryable(Unionable):
-    def subquery(self, alias=None, copy=True):
+    def subquery(self, alias=None, copy=True) -> Subquery:
         """
         Convert this expression to an aliased expression that can be used as a Subquery.
 
@@ -3866,6 +3870,26 @@ def values(
     return Values(
         expressions=expressions,
         alias=table_alias,
+    )
+
+
+def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:
+    """Build ALTER TABLE... RENAME... expression
+
+    Args:
+        old_name: The old name of the table
+        new_name: The new name of the table
+
+    Returns:
+        Alter table expression
+    """
+    old_table = to_table(old_name)
+    new_table = to_table(new_name)
+    return AlterTable(
+        this=old_table,
+        actions=[
+            RenameTable(this=new_table),
+        ],
     )
 
 

@@ -14,7 +14,7 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT * FROM #foo")
         self.validate_identity("SELECT * FROM ##foo")
         self.validate_identity("DECLARE @TestVar nvarchar(MAX)")
-        self.validate_identity("""
+        self.validate_all("""
         CREATE FUNCTION [TRANSF].[FS_Tester]
 (
 	@Offer nvarchar(2000)
@@ -26,7 +26,7 @@ BEGIN
 END
 
         """)
-        self.validate_identity("""
+        self.validate_all("""
         CREATE procedure [TRANSF].[SP_DO_STUFF]
 
    @Loadid INT 

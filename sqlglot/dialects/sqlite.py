@@ -34,6 +34,14 @@ def _group_concat_sql(self, expression):
     return f"GROUP_CONCAT({distinct or ''}{self.format_args(this, separator)})"
 
 
+def _date_add_sql(self, expression):
+    modifier = expression.expression
+    modifier = expression.name if modifier.is_string else self.sql(modifier)
+    unit = expression.args.get("unit")
+    modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
+    return f"{self.normalize_func('DATE')}({self.format_args(expression.this, modifier)})"
+
+
 class SQLite(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -75,6 +83,7 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            exp.DateAdd: _date_add_sql,
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,

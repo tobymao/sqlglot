@@ -344,6 +344,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST('2020-01-01' AS TIMESTAMP)",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "presto": "CAST('2020-01-01' AS TIMESTAMP)",
+                "sqlite": "'2020-01-01'",
             },
         )
         self.validate_all(
@@ -596,6 +597,7 @@ class TestDialect(Validator):
                 "hive": "TO_DATE(x)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
                 "spark": "TO_DATE(x)",
+                "sqlite": "x",
             },
         )
         self.validate_all(

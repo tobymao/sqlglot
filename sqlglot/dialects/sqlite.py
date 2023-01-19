@@ -91,6 +91,8 @@ class SQLite(Dialect):
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.TableSample: no_tablesample_sql,
+            exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
+            exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
             exp.TryCast: no_trycast_sql,
             exp.GroupConcat: _group_concat_sql,
             exp.Fetch: _fetch_sql,

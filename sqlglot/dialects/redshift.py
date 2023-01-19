@@ -79,13 +79,11 @@ class Redshift(Postgres):
             selects = []
             for i, row in enumerate(rows):
                 if i == 0:
-                    columns = [
+                    row = [
                         exp.alias_(value, column_name)
                         for value, column_name in zip(row, expression.args["alias"].args["columns"])
                     ]
-                else:
-                    columns = row
-                selects.append(exp.Select(expressions=columns))
+                selects.append(exp.Select(expressions=row))
             subquery_expression = selects[0]
             if len(selects) > 1:
                 for select in selects[1:]:

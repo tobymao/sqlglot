@@ -631,10 +631,14 @@ class Generator:
             return self.sep() + self.expressions(properties, indent=False, sep=" ")
         return ""
 
-    def properties(self, properties: exp.Properties, prefix: str = "", sep: str = ", ") -> str:
+    def properties(
+        self, properties: exp.Properties, prefix: str = "", sep: str = ", ", suffix: str = ""
+    ) -> str:
         if properties.expressions:
             expressions = self.expressions(properties, sep=sep, indent=False)
-            return f"{prefix}{' ' if prefix else ''}{self.wrap(expressions)}"
+            return (
+                f"{prefix}{' ' if prefix and prefix != ' ' else ''}{self.wrap(expressions)}{suffix}"
+            )
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
@@ -1329,6 +1333,10 @@ class Generator:
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
+    def renametable_sql(self, expression: exp.RenameTable) -> str:
+        this = self.sql(expression, "this")
+        return f"RENAME TO {this}"
+
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         actions = expression.args["actions"]
 
@@ -1338,7 +1346,7 @@ class Generator:
             actions = self.expressions(expression, "actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Drop):
             actions = self.expressions(expression, "actions")
-        elif isinstance(actions[0], exp.AlterColumn):
+        elif isinstance(actions[0], (exp.AlterColumn, exp.RenameTable)):
             actions = self.sql(actions[0])
         else:
             self.unsupported(f"Unsupported ALTER TABLE action {actions[0].__class__.__name__}")

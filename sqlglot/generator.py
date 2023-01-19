@@ -772,14 +772,15 @@ class Generator:
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:
-        alias = self.sql(expression, "alias")
         args = self.expressions(expression)
-        if not alias:
-            return f"VALUES{self.seg('')}{args}"
-        alias = f" AS {alias}" if alias else alias
-        if self.WRAP_DERIVED_VALUES:
-            return f"(VALUES{self.seg('')}{args}){alias}"
-        return f"VALUES{self.seg('')}{args}{alias}"
+        alias = self.sql(expression, "alias")
+        values = f"VALUES{self.seg('')}{args}"
+        values = (
+            f"({values})"
+            if self.WRAP_DERIVED_VALUES and (alias or isinstance(expression.parent, exp.From))
+            else values
+        )
+        return f"{values} AS {alias}" if alias else values
 
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")

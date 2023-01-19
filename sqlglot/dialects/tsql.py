@@ -259,7 +259,7 @@ class TSQL(Dialect):
             "NVARCHAR(MAX)": TokenType.TEXT,
             "VARCHAR(MAX)": TokenType.TEXT,
             "TOP": TokenType.TOP,
-            "DECLARE": TokenType.DECLARE
+            "DECLARE": TokenType.COMMAND
         }
 
     class Parser(parser.Parser):

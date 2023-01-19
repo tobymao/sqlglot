@@ -150,7 +150,6 @@ class TokenType(AutoName):
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     DEFAULT = auto()
-    DECLARE = auto()
     DELETE = auto()
     DESC = auto()
     DESCRIBE = auto()
@@ -719,7 +718,6 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.FETCH,
         TokenType.SET,
         TokenType.SHOW,
-        TokenType.DECLARE,
     }
 
     # handle numeric literals like in hive (3L = BIGINT)

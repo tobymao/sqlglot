@@ -118,3 +118,9 @@ class ClickHouse(Dialect):
             params = self.format_args(self.expressions(expression, params_name))
             args = self.format_args(self.expressions(expression, args_name))
             return f"({params})({args})"
+
+        def cte_sql(self, expression: exp.CTE) -> str:
+            if isinstance(expression.this, exp.Alias):
+                return self.sql(expression, "this")
+
+            return super().cte_sql(expression)

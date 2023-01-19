@@ -48,3 +48,9 @@ class TestClickhouse(Validator):
                 "clickhouse": "SELECT quantileIf(0.5)(a, TRUE)",
             },
         )
+
+    def test_cte(self):
+        self.validate_identity("WITH 'x' AS foo SELECT foo")
+        self.validate_identity("WITH sum(bytes) AS foo SELECT foo FROM system.parts")
+        self.validate_identity("WITH (SELECT foo) AS bar SELECT bar + 5")
+        self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")

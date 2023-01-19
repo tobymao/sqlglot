@@ -3697,6 +3697,16 @@ def to_identifier(alias, quoted=None) -> t.Optional[Identifier]:
     return identifier
 
 
+@t.overload
+def to_table(sql_path: str | Table, **kwargs) -> Table:
+    ...
+
+
+@t.overload
+def to_table(sql_path: t.Literal[None], **kwargs) -> None:
+    ...
+
+
 def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.

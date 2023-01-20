@@ -14,7 +14,7 @@ class Validator(unittest.TestCase):
         self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect))
         return expression
 
-    def validate_all(self, sql, read=None, write=None, pretty=False):
+    def validate_all(self, sql, read=None, write=None, pretty=False, identify=False):
         """
         Validate that:
         1. Everything in `read` transpiles to `sql`
@@ -32,7 +32,10 @@ class Validator(unittest.TestCase):
             with self.subTest(f"{read_dialect} -> {sql}"):
                 self.assertEqual(
                     parse_one(read_sql, read_dialect).sql(
-                        self.dialect, unsupported_level=ErrorLevel.IGNORE, pretty=pretty
+                        self.dialect,
+                        unsupported_level=ErrorLevel.IGNORE,
+                        pretty=pretty,
+                        identify=identify,
                     ),
                     sql,
                 )
@@ -48,6 +51,7 @@ class Validator(unittest.TestCase):
                             write_dialect,
                             unsupported_level=ErrorLevel.IGNORE,
                             pretty=pretty,
+                            identify=identify,
                         ),
                         write_sql,
                     )
@@ -76,7 +80,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
-                "redshift": "CAST(a AS VARCHAR(max))",
+                "redshift": "CAST(a AS VARCHAR(MAX))",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
@@ -155,7 +159,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
-                "redshift": "CAST(a AS VARCHAR(max))",
+                "redshift": "CAST(a AS VARCHAR(MAX))",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
@@ -374,7 +378,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST(x AS TEXT)",
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
-                "redshift": "CAST(x AS VARCHAR(max))",
+                "redshift": "CAST(x AS VARCHAR(MAX))",
             },
         )
         self.validate_all(
@@ -1204,7 +1208,7 @@ class TestDialect(Validator):
                 "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
                 "postgres": "CREATE TABLE t (b1 BYTEA, b2 BYTEA(1024), c1 TEXT, c2 TEXT(1024))",
                 "sqlite": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
-                "redshift": "CREATE TABLE t (b1 VARBYTE, b2 VARBYTE(1024), c1 VARCHAR(max), c2 VARCHAR(1024))",
+                "redshift": "CREATE TABLE t (b1 VARBYTE, b2 VARBYTE(1024), c1 VARCHAR(MAX), c2 VARCHAR(1024))",
             },
         )
 

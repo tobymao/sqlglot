@@ -165,3 +165,12 @@ class TestRedshift(Validator):
                 "redshift": "ALTER TABLE db.t1 RENAME TO t2",
             },
         )
+
+    def test_varchar_max(self):
+        self.validate_all(
+            "CREATE TABLE TEST (cola VARCHAR(MAX))",
+            write={
+                "redshift": 'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
+            },
+            identify=True,
+        )

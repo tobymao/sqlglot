@@ -2434,6 +2434,14 @@ class Parser(metaclass=_Parser):
                 self._match(TokenType.ALWAYS)
                 kind = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
             self._match_pair(TokenType.ALIAS, TokenType.IDENTITY)
+
+            if self._match(TokenType.L_PAREN):
+                if self._match_text_seq("START", "WITH"):
+                    kind.set("start", self._parse_bitwise())
+                if self._match_text_seq("INCREMENT", "BY"):
+                    kind.set("increment", self._parse_bitwise())
+
+                self._match_r_paren()
         else:
             return this
 

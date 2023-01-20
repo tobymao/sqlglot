@@ -1,3 +1,5 @@
+from sqlglot import parse_one
+
 from tests.dialects.test_dialect import Validator
 
 
@@ -164,4 +166,10 @@ class TestRedshift(Validator):
                 "spark": "ALTER TABLE db.t1 RENAME TO db.t2",
                 "redshift": "ALTER TABLE db.t1 RENAME TO t2",
             },
+        )
+
+    def test_varchar_max(self):
+        self.assertEqual(
+            parse_one("CREATE TABLE TEST (cola VARCHAR(MAX))").sql(dialect="redshift", identify=True),
+            'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
         )

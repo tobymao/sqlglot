@@ -116,5 +116,5 @@ class Redshift(Postgres):
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")
                 if not precision:
-                    expression.append("expressions", exp.to_identifier("max"))
+                    expression.append("expressions", exp.Var(this="max"))
             return super().datatype_sql(expression)

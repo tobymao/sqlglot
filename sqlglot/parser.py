@@ -601,9 +601,6 @@ class Parser(metaclass=_Parser):
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
 
-    # allows tables to have special tokens as prefixes
-    TABLE_PREFIX_TOKENS: t.Set[TokenType] = set()
-
     STRICT_CAST = True
 
     __slots__ = (
@@ -1586,9 +1583,7 @@ class Parser(metaclass=_Parser):
 
         catalog = None
         db = None
-        table = (not schema and self._parse_function()) or self._parse_id_var(
-            any_token=False, prefix_tokens=self.TABLE_PREFIX_TOKENS
-        )
+        table = (not schema and self._parse_function()) or self._parse_id_var(any_token=False)
 
         while self._match(TokenType.DOT):
             if catalog:

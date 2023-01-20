@@ -82,6 +82,8 @@ class TokenType(AutoName):
     VARCHAR = auto()
     NVARCHAR = auto()
     TEXT = auto()
+    MEDIUMTEXT = auto()
+    LONGTEXT = auto()
     BINARY = auto()
     VARBINARY = auto()
     JSON = auto()

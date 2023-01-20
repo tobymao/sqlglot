@@ -122,6 +122,8 @@ class MySQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "MEDIUMTEXT": TokenType.MEDIUMTEXT,
+            "LONGTEXT": TokenType.LONGTEXT,
             "START": TokenType.BEGIN,
             "SEPARATOR": TokenType.SEPARATOR,
             "_ARMSCII8": TokenType.INTRODUCER,
@@ -453,6 +455,10 @@ class MySQL(Dialect):
             exp.SchemaCommentProperty,
             exp.LikeProperty,
         }
+
+        TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
+        TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
+        TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
 
         WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()
 

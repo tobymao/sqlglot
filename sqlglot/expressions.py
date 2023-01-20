@@ -2140,6 +2140,8 @@ class DataType(Expression):
         VARCHAR = auto()
         NVARCHAR = auto()
         TEXT = auto()
+        MEDIUMTEXT = auto()
+        LONGTEXT = auto()
         BINARY = auto()
         VARBINARY = auto()
         INT = auto()

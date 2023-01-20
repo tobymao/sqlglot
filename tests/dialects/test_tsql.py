@@ -7,6 +7,7 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_identity("@x")
+        self.validate_identity("#x")
         self.validate_identity("DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'")
         self.validate_identity("PRINT @TestVariable")
         self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
@@ -476,7 +477,11 @@ class TestTSQL(Validator):
         )
 
     def test_variables(self):
-        # In TSQL @ can be used as a prefix for variables/identifiers
+        # In TSQL @, # can be used as a prefix for variables/identifiers
         expr = parse_one("@x", read="tsql")
+        self.assertIsInstance(expr, exp.Column)
+        self.assertIsInstance(expr.this, exp.Identifier)
+
+        expr = parse_one("#x", read="tsql")
         self.assertIsInstance(expr, exp.Column)
         self.assertIsInstance(expr.this, exp.Identifier)

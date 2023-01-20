@@ -1,3 +1,4 @@
+from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -5,6 +6,8 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("@x")
+        self.validate_identity("#x")
         self.validate_identity("DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'")
         self.validate_identity("PRINT @TestVariable")
         self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
@@ -472,3 +475,13 @@ class TestTSQL(Validator):
             "EOMONTH(GETDATE(), -1)",
             write={"spark": "LAST_DAY(ADD_MONTHS(CURRENT_TIMESTAMP(), -1))"},
         )
+
+    def test_variables(self):
+        # In TSQL @, # can be used as a prefix for variables/identifiers
+        expr = parse_one("@x", read="tsql")
+        self.assertIsInstance(expr, exp.Column)
+        self.assertIsInstance(expr.this, exp.Identifier)
+
+        expr = parse_one("#x", read="tsql")
+        self.assertIsInstance(expr, exp.Column)
+        self.assertIsInstance(expr.this, exp.Identifier)

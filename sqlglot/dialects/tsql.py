@@ -263,6 +263,11 @@ class TSQL(Dialect):
             "XML": TokenType.XML,
         }
 
+        # TSQL allows @, # to appear as a variable/identifier prefix
+        SINGLE_TOKENS = tokens.Tokenizer.SINGLE_TOKENS.copy()
+        SINGLE_TOKENS.pop("@")
+        SINGLE_TOKENS.pop("#")
+
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
@@ -292,9 +297,6 @@ class TSQL(Dialect):
             DataType.Type.CHAR,
             DataType.Type.NCHAR,
         }
-
-        # https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-temporary#create-a-temporary-table
-        TABLE_PREFIX_TOKENS = {TokenType.HASH, TokenType.PARAMETER}
 
         def _parse_convert(self, strict):
             to = self._parse_types()

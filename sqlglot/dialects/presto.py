@@ -57,7 +57,7 @@ def _decode_sql(self, expression):
 
 def _encode_sql(self, expression):
     _ensure_utf8(expression.args.get("charset"))
-    return f"TO_UTF8({self.format_args(expression.this, expression.args.get('replace'))})"
+    return f"TO_UTF8({self.sql(expression, 'this')})"
 
 
 def _no_sort_array(self, expression):
@@ -184,7 +184,7 @@ class Presto(Dialect):
             "FROM_HEX": exp.Unhex.from_arg_list,
             "TO_HEX": exp.Hex.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(
-                this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
+                this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
             "FROM_UTF8": lambda args: exp.Decode(
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")

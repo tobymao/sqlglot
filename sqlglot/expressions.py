@@ -653,6 +653,7 @@ class Create(Expression):
         "statistics": False,
         "no_primary_index": False,
         "indexes": False,
+        "no_schema_binding": False,
     }
 
 

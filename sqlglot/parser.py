@@ -941,6 +941,7 @@ class Parser(metaclass=_Parser):
         statistics = None
         no_primary_index = None
         indexes = None
+        no_schema_binding = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function()
@@ -979,6 +980,9 @@ class Parser(metaclass=_Parser):
                         break
                     else:
                         indexes.append(index)
+            elif create_token.token_type == TokenType.VIEW:
+                if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
+                    no_schema_binding = True
 
         return self.expression(
             exp.Create,
@@ -997,6 +1001,7 @@ class Parser(metaclass=_Parser):
             statistics=statistics,
             no_primary_index=no_primary_index,
             indexes=indexes,
+            no_schema_binding=no_schema_binding,
         )
 
     def _parse_property(self) -> t.Optional[exp.Expression]:

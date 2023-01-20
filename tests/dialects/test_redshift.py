@@ -174,3 +174,11 @@ class TestRedshift(Validator):
             },
             identify=True,
         )
+
+    def test_no_schema_binding(self):
+        self.validate_all(
+            "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
+            write={
+                "redshift": "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
+            },
+        )

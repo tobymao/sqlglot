@@ -326,6 +326,7 @@ class TSQL(Dialect):
             elif self._match(TokenType.ALL):
                 system_time = self.expression(exp.SystemTime, kind="ALL")
             else:
+            	system_time = None
                 self.raise_error("Unable to parse FOR SYSTEM_TIME clause")
 
             return system_time

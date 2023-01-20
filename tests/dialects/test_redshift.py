@@ -170,6 +170,7 @@ class TestRedshift(Validator):
         self.validate_all(
             "CREATE TABLE TEST (cola VARCHAR(MAX))",
             write={
-                "redshift": "CREATE TABLE TEST (cola VARCHAR(MAX))",
+                "redshift": 'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
             },
+            identify=True,
         )

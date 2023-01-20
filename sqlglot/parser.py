@@ -1884,7 +1884,7 @@ class Parser(metaclass=_Parser):
             expression,
             this=this,
             distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
-            expression=self._parse_select(nested=True),
+            expression=self._parse_set_operations(self._parse_select(nested=True)),
         )
 
     def _parse_expression(self) -> t.Optional[exp.Expression]:

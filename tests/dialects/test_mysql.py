@@ -65,6 +65,17 @@ class TestMySQL(Validator):
         self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE")
         self.validate_identity("SELECT SCHEMA()")
 
+    def test_types(self):
+        self.validate_all(
+            "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT)",
+            read={
+                "mysql": "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT)",
+            },
+            write={
+                "spark": "CAST(x AS TEXT) + CAST(y AS TEXT)",
+            },
+        )
+
     def test_canonical_functions(self):
         self.validate_identity("SELECT LEFT('str', 2)", "SELECT SUBSTRING('str', 1, 2)")
         self.validate_identity("SELECT INSTR('str', 'substr')", "SELECT LOCATE('substr', 'str')")

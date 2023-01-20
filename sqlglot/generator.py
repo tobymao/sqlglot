@@ -82,6 +82,8 @@ class Generator:
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
+        exp.DataType.Type.MEDIUMTEXT: "TEXT",
+        exp.DataType.Type.LONGTEXT: "TEXT",
     }
 
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}

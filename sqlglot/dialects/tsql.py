@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import typing as t
 
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
@@ -298,10 +299,50 @@ class TSQL(Dialect):
             DataType.Type.NCHAR,
         }
 
-        def _parse_convert(self, strict):
+        def _parse_system_time(self) -> t.Optional[exp.Expression]:
+            if not self._match_text_seq("FOR", "SYSTEM_TIME"):
+                return None
+
+            if self._match_text_seq("AS", "OF"):
+                system_time = self.expression(
+                    exp.SystemTime, this=self._parse_bitwise(), kind="AS OF"
+                )
+            elif self._match_set((TokenType.FROM, TokenType.BETWEEN)):
+                kind = self._prev.text
+                this = self._parse_bitwise()
+                self._match_texts(("TO", "AND"))
+                expression = self._parse_bitwise()
+                system_time = self.expression(
+                    exp.SystemTime, this=this, expression=expression, kind=kind
+                )
+            elif self._match_text_seq("CONTAINED", "IN"):
+                args = self._parse_wrapped_csv(self._parse_bitwise)
+                system_time = self.expression(
+                    exp.SystemTime,
+                    this=seq_get(args, 0),
+                    expression=seq_get(args, 1),
+                    kind="CONTAINED IN",
+                )
+            elif self._match(TokenType.ALL):
+                system_time = self.expression(exp.SystemTime, kind="ALL")
+            else:
+                system_time = None
+                self.raise_error("Unable to parse FOR SYSTEM_TIME clause")
+
+            return system_time
+
+        def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+            table = super()._parse_table_parts(schema=schema)
+            table.set("system_time", self._parse_system_time())
+            return table
+
+        def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
             to = self._parse_types()
             self._match(TokenType.COMMA)
             this = self._parse_conjunction()
+
+            if not to or not this:
+                return None
 
             # Retrieve length of datatype and override to default if not specified
             if seq_get(to.expressions, 0) is None and to.this in self.VAR_LENGTH_DATATYPES:
@@ -309,12 +350,15 @@ class TSQL(Dialect):
 
             # Check whether a conversion with format is applicable
             if self._match(TokenType.COMMA):
-                format_val = self._parse_number().name
-                if format_val not in TSQL.convert_format_mapping:
+                format_val = self._parse_number()
+                format_val_name = format_val.name if format_val else ""
+
+                if format_val_name not in TSQL.convert_format_mapping:
                     raise ValueError(
-                        f"CONVERT function at T-SQL does not support format style {format_val}"
+                        f"CONVERT function at T-SQL does not support format style {format_val_name}"
                     )
-                format_norm = exp.Literal.string(TSQL.convert_format_mapping[format_val])
+
+                format_norm = exp.Literal.string(TSQL.convert_format_mapping[format_val_name])
 
                 # Check whether the convert entails a string to date format
                 if to.this == DataType.Type.DATE:
@@ -356,3 +400,20 @@ class TSQL(Dialect):
             exp.TimeToStr: _format_sql,
             exp.GroupConcat: _string_agg_sql,
         }
+
+        def systemtime_sql(self, expression: exp.SystemTime) -> str:
+            kind = expression.args["kind"]
+            if kind == "ALL":
+                return "FOR SYSTEM_TIME ALL"
+
+            start = self.sql(expression, "this")
+            if kind == "AS OF":
+                return f"FOR SYSTEM_TIME AS OF {start}"
+
+            end = self.sql(expression, "expression")
+            if kind == "FROM":
+                return f"FOR SYSTEM_TIME FROM {start} TO {end}"
+            if kind == "BETWEEN":
+                return f"FOR SYSTEM_TIME BETWEEN {start} AND {end}"
+
+            return f"FOR SYSTEM_TIME CONTAINED IN ({start}, {end})"

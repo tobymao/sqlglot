@@ -485,3 +485,41 @@ class TestTSQL(Validator):
         expr = parse_one("#x", read="tsql")
         self.assertIsInstance(expr, exp.Column)
         self.assertIsInstance(expr.this, exp.Identifier)
+
+    def test_system_time(self):
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo'",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME AS OF 'foo'""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo' AS alias",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME AS OF 'foo' AS alias""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME FROM c TO d",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME FROM c TO d""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME BETWEEN c AND d",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME BETWEEN c AND d""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME CONTAINED IN (c, d)",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME CONTAINED IN (c, d)""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME ALL AS alias",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME ALL AS alias""",
+            },
+        )

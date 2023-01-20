@@ -1558,6 +1558,27 @@ class Parser(metaclass=_Parser):
             amp=amp,
         )
 
+    def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+        catalog = None
+        db = None
+        table = (not schema and self._parse_function()) or self._parse_id_var(any_token=False)
+
+        while self._match(TokenType.DOT):
+            if catalog:
+                # This allows nesting the table in arbitrarily many dot expressions if needed
+                table = self.expression(exp.Dot, this=table, expression=self._parse_id_var())
+            else:
+                catalog = db
+                db = table
+                table = self._parse_id_var()
+
+        if not table:
+            self.raise_error(f"Expected table name but got {self._curr}")
+
+        return self.expression(
+            exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
+        )
+
     def _parse_table(
         self, schema: bool = False, alias_tokens: t.Optional[t.Collection[TokenType]] = None
     ) -> t.Optional[exp.Expression]:
@@ -1581,25 +1602,7 @@ class Parser(metaclass=_Parser):
         if subquery:
             return subquery
 
-        catalog = None
-        db = None
-        table = (not schema and self._parse_function()) or self._parse_id_var(any_token=False)
-
-        while self._match(TokenType.DOT):
-            if catalog:
-                # This allows nesting the table in arbitrarily many dot expressions if needed
-                table = self.expression(exp.Dot, this=table, expression=self._parse_id_var())
-            else:
-                catalog = db
-                db = table
-                table = self._parse_id_var()
-
-        if not table:
-            self.raise_error(f"Expected table name but got {self._curr}")
-
-        this = self.expression(
-            exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
-        )
+        this = self._parse_table_parts(schema=schema)
 
         if schema:
             return self._parse_schema(this=this)
@@ -2626,7 +2629,7 @@ class Parser(metaclass=_Parser):
         order = self._parse_order(this=expression)
         return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
 
-    def _parse_convert(self, strict: bool) -> exp.Expression:
+    def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
         to: t.Optional[exp.Expression]
         this = self._parse_column()
 
@@ -2636,6 +2639,7 @@ class Parser(metaclass=_Parser):
             to = self._parse_types()
         else:
             to = None
+
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
     def _parse_position(self) -> exp.Expression:

@@ -741,12 +741,14 @@ class Generator:
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
         pivots = self.expressions(expression, key="pivots", sep="")
+        system_time = expression.args.get("system_time")
+        system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
 
         if alias and pivots:
             pivots = f"{pivots}{alias}"
             alias = ""
 
-        return f"{table}{alias}{hints}{laterals}{joins}{pivots}"
+        return f"{table}{system_time}{alias}{hints}{laterals}{joins}{pivots}"
 
     def tablesample_sql(self, expression: exp.TableSample) -> str:
         if self.alias_post_tablesample and expression.this.alias:

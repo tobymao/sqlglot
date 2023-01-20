@@ -1397,6 +1397,16 @@ class Table(Expression):
         "joins": False,
         "pivots": False,
         "hints": False,
+        "system_time": False,
+    }
+
+
+# See the TSQL "Querying data in a system-versioned temporal table" page
+class SystemTime(Expression):
+    arg_types = {
+        "this": False,
+        "expression": False,
+        "kind": True,
     }
 
 

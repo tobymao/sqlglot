@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.postgres import Postgres
@@ -20,6 +22,19 @@ class Redshift(Postgres):
             "DECODE": exp.Matches.from_arg_list,
             "NVL": exp.Coalesce.from_arg_list,
         }
+
+        def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
+            this = super()._parse_types(check_func=check_func)
+
+            if (
+                isinstance(this, exp.DataType)
+                and this.this == exp.DataType.Type.VARCHAR
+                and this.expressions
+                and this.expressions[0] == exp.column("MAX")
+            ):
+                this.set("expressions", [exp.Var(this="MAX")])
+
+            return this
 
     class Tokenizer(Postgres.Tokenizer):
         ESCAPES = ["\\"]
@@ -116,5 +131,5 @@ class Redshift(Postgres):
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")
                 if not precision:
-                    expression.append("expressions", exp.to_identifier("max"))
+                    expression.append("expressions", exp.Var(this="MAX"))
             return super().datatype_sql(expression)

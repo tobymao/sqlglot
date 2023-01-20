@@ -944,7 +944,11 @@ class Parser(metaclass=_Parser):
             this = self._parse_user_defined_function()
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
+                return_ = self._match_text_seq("RETURN")
                 expression = self._parse_select_or_expression()
+
+                if return_:
+                    expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (
@@ -1084,7 +1088,7 @@ class Parser(metaclass=_Parser):
                 if not self._match(TokenType.GT):
                     self.raise_error("Expecting >")
             else:
-                value = self._parse_schema(exp.Literal.string("TABLE"))
+                value = self._parse_schema(exp.Var(this="TABLE"))
         else:
             value = self._parse_types()
 
@@ -2369,10 +2373,6 @@ class Parser(metaclass=_Parser):
             or self._parse_column_def(self._parse_field(any_token=True))
         )
         self._match_r_paren()
-
-        if isinstance(this, exp.Literal):
-            this = this.name
-
         return self.expression(exp.Schema, this=this, expressions=args)
 
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

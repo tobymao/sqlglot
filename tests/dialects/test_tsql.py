@@ -6,6 +6,14 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
+        self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
+        self.validate_identity(
+            "CREATE FUNCTION foo(@bar INTEGER) RETURNS @foo TABLE (x INTEGER, y NUMERIC) AS RETURN SELECT 1"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION f() RETURNS @contacts TABLE (first_name VARCHAR(50), phone VARCHAR(25)) AS SELECT @fname, @phone"
+        )
         self.validate_identity("@x")
         self.validate_identity("#x")
         self.validate_identity("DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'")

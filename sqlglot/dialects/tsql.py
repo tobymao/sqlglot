@@ -299,6 +299,11 @@ class TSQL(Dialect):
             DataType.Type.NCHAR,
         }
 
+        RETURNS_TABLE_TOKENS = {*parser.Parser.ID_VAR_TOKENS} - {  # type: ignore
+            TokenType.TABLE,
+            *parser.Parser.TYPE_TOKENS,  # type: ignore
+        }
+
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
                 return None
@@ -335,6 +340,12 @@ class TSQL(Dialect):
             table = super()._parse_table_parts(schema=schema)
             table.set("system_time", self._parse_system_time())
             return table
+
+        def _parse_returns(self) -> exp.Expression:
+            table = self._parse_id_var(any_token=False, tokens=self.RETURNS_TABLE_TOKENS)
+            returns = super()._parse_returns()
+            returns.set("table", table)
+            return returns
 
         def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
             to = self._parse_types()
@@ -401,6 +412,8 @@ class TSQL(Dialect):
             exp.GroupConcat: _string_agg_sql,
         }
 
+        TRANSFORMS.pop(exp.ReturnsProperty)
+
         def systemtime_sql(self, expression: exp.SystemTime) -> str:
             kind = expression.args["kind"]
             if kind == "ALL":
@@ -417,3 +430,8 @@ class TSQL(Dialect):
                 return f"FOR SYSTEM_TIME BETWEEN {start} AND {end}"
 
             return f"FOR SYSTEM_TIME CONTAINED IN ({start}, {end})"
+
+        def returnsproperty_sql(self, expression: exp.ReturnsProperty) -> str:
+            table = expression.args.get("table")
+            table = f"{table} " if table else ""
+            return f"RETURNS {table}{self.sql(expression, 'this')}"

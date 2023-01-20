@@ -303,7 +303,7 @@ class TSQL(Dialect):
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
                 return None
 
-            if self._match(TokenType.ASOF):
+            if self._match_text_seq("AS", "OF"):
                 system_time: t.Optional[exp.Expression] = self.expression(
                     exp.SystemTime, this=self._parse_bitwise(), kind="AS OF"
                 )

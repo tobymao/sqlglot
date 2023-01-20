@@ -14,7 +14,7 @@ class Validator(unittest.TestCase):
         self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect))
         return expression
 
-    def validate_all(self, sql, read=None, write=None, pretty=False):
+    def validate_all(self, sql, read=None, write=None, pretty=False, identify=False):
         """
         Validate that:
         1. Everything in `read` transpiles to `sql`
@@ -32,7 +32,10 @@ class Validator(unittest.TestCase):
             with self.subTest(f"{read_dialect} -> {sql}"):
                 self.assertEqual(
                     parse_one(read_sql, read_dialect).sql(
-                        self.dialect, unsupported_level=ErrorLevel.IGNORE, pretty=pretty
+                        self.dialect,
+                        unsupported_level=ErrorLevel.IGNORE,
+                        pretty=pretty,
+                        identify=identify,
                     ),
                     sql,
                 )
@@ -48,6 +51,7 @@ class Validator(unittest.TestCase):
                             write_dialect,
                             unsupported_level=ErrorLevel.IGNORE,
                             pretty=pretty,
+                            identify=identify,
                         ),
                         write_sql,
                     )

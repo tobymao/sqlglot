@@ -21,6 +21,19 @@ class Redshift(Postgres):
             "NVL": exp.Coalesce.from_arg_list,
         }
 
+        def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
+            this = super()._parse_types(check_func=check_func)
+
+            if (
+                isinstance(this, exp.DataType)
+                and this.this == exp.DataType.Type.VARCHAR
+                and this.expressions
+                and this.expressions[0] == exp.column("MAX")
+            ):
+                this.set("expressions", [exp.Var(this="MAX")])
+
+            return this
+
     class Tokenizer(Postgres.Tokenizer):
         ESCAPES = ["\\"]
 

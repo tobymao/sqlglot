@@ -2035,8 +2035,6 @@ class Parser(metaclass=_Parser):
                 expressions = self._parse_csv(self._parse_struct_kwargs)
             elif nested:
                 expressions = self._parse_csv(self._parse_types)
-            elif self._match_text_seq("MAX", advance=False):
-                expressions = self._parse_csv(self._parse_var)
             else:
                 expressions = self._parse_csv(self._parse_conjunction)
 

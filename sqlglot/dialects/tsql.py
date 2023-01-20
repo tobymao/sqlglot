@@ -263,6 +263,10 @@ class TSQL(Dialect):
             "XML": TokenType.XML,
         }
 
+        # TSQL allows @ to appear as a variable/identifier prefix
+        SINGLE_TOKENS = tokens.Tokenizer.SINGLE_TOKENS.copy()
+        SINGLE_TOKENS.pop("@")
+
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore

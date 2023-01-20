@@ -8,16 +8,10 @@ import datetime
 import math
 import numbers
 import re
-import sys
 import typing as t
 from collections import deque
 from copy import deepcopy
 from enum import auto
-
-if sys.version_info >= (3, 8):
-    from typing import Literal as LiteralType
-else:
-    from typing_extensions import Literal as LiteralType
 
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
@@ -3709,7 +3703,7 @@ def to_table(sql_path: str | Table, **kwargs) -> Table:
 
 
 @t.overload
-def to_table(sql_path: LiteralType[None], **kwargs) -> None:
+def to_table(sql_path: None, **kwargs) -> None:
     ...
 
 

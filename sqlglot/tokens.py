@@ -471,6 +471,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ANY": TokenType.ANY,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
+        "AS OF": TokenType.ASOF,
         "AT TIME ZONE": TokenType.AT_TIME_ZONE,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,

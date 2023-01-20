@@ -243,7 +243,6 @@ class TSQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "AS OF": TokenType.ASOF,
             "BIT": TokenType.BOOLEAN,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,

@@ -406,7 +406,17 @@ class Generator:
     def generatedasidentitycolumnconstraint_sql(
         self, expression: exp.GeneratedAsIdentityColumnConstraint
     ) -> str:
-        return f"GENERATED {'ALWAYS' if expression.this else 'BY DEFAULT'} AS IDENTITY"
+        start = expression.args.get("start")
+        start = f"START WITH {start}" if start else ""
+        increment = expression.args.get("increment")
+        increment = f"INCREMENT BY {increment}" if increment else ""
+        sequence_opts = ""
+        if start or increment:
+            sequence_opts = f"{start} {increment}"
+            sequence_opts = f" ({sequence_opts.strip()})"
+        return (
+            f"GENERATED {'ALWAYS' if expression.this else 'BY DEFAULT'} AS IDENTITY{sequence_opts}"
+        )
 
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"

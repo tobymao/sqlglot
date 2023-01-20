@@ -304,10 +304,8 @@ class TSQL(Dialect):
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
                 return None
 
-            system_time: t.Optional[exp.Expression] = None
-
             if self._match(TokenType.ASOF):
-                system_time = self.expression(
+                system_time: t.Optional[exp.Expression] = self.expression(
                     exp.SystemTime, this=self._parse_bitwise(), kind="AS OF"
                 )
             elif self._match_set((TokenType.FROM, TokenType.BETWEEN)):

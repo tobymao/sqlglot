@@ -624,6 +624,10 @@ FROM foo""",
         self.assertEqual(catalog_db_and_table.args.get("catalog"), exp.to_identifier("catalog"))
         with self.assertRaises(ValueError):
             exp.to_table(1)
+        empty_string = exp.to_table("")
+        self.assertEqual(empty_string.name, "")
+        self.assertIsNone(table_only.args.get("db"))
+        self.assertIsNone(table_only.args.get("catalog"))
 
     def test_to_column(self):
         column_only = exp.to_column("column_name")

@@ -808,7 +808,7 @@ class EncodeColumnConstraint(ColumnConstraintKind):
 
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "start": False, "increment": False}
 
 
 class NotNullColumnConstraint(ColumnConstraintKind):

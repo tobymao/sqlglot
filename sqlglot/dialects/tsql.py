@@ -417,30 +417,3 @@ class TSQL(Dialect):
                 return f"FOR SYSTEM_TIME BETWEEN {start} AND {end}"
 
             return f"FOR SYSTEM_TIME CONTAINED IN ({start}, {end})"
-
-        def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
-            table = ".".join(
-                part
-                for part in [
-                    self.sql(expression, "catalog"),
-                    self.sql(expression, "db"),
-                    self.sql(expression, "this"),
-                ]
-                if part
-            )
-
-            alias = self.sql(expression, "alias")
-            alias = f"{sep}{alias}" if alias else ""
-            hints = self.expressions(expression, key="hints", sep=", ", flat=True)
-            hints = f" WITH ({hints})" if hints else ""
-            laterals = self.expressions(expression, key="laterals", sep="")
-            joins = self.expressions(expression, key="joins", sep="")
-            pivots = self.expressions(expression, key="pivots", sep="")
-            system_time = expression.args.get("system_time")
-            system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
-
-            if alias and pivots:
-                pivots = f"{pivots}{alias}"
-                alias = ""
-
-            return f"{table}{system_time}{alias}{hints}{laterals}{joins}{pivots}"

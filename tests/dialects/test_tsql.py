@@ -332,6 +332,38 @@ class TestTSQL(Validator):
                 "spark": "SELECT CAST((SELECT x FROM y) AS STRING) AS test",
             },
         )
+        self.validate_all(
+            """
+            CREATE FUNCTION udfProductInYear (
+                @model_year INT
+            )
+            RETURNS TABLE
+            AS
+            RETURN
+                SELECT
+                    product_name,
+                    model_year,
+                    list_price
+                FROM
+                    production.products
+                WHERE
+                    model_year = @model_year
+            """,
+            write={
+                "tsql": """CREATE FUNCTION udfProductInYear(
+    @model_year INTEGER
+)
+RETURNS TABLE AS
+RETURN SELECT
+  product_name,
+  model_year,
+  list_price
+FROM production.products
+WHERE
+  model_year = @model_year""",
+            },
+            pretty=True,
+        )
 
     def test_add_date(self):
         self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")

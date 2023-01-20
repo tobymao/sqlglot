@@ -307,5 +307,12 @@ TBLPROPERTIES (
 
     def test_iif(self):
         self.validate_all(
-            "SELECT IIF(cond, 'True', 'False')", write={"spark": "SELECT IF(cond, 'True', 'False')"}
+            "SELECT IIF(cond, 'True', 'False')",
+            write={"spark": "SELECT IF(cond, 'True', 'False')"},
+        )
+
+    def test_bool_or(self):
+        self.validate_all(
+            "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
+            write={"duckdb": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )

@@ -5,6 +5,8 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'")
+        self.validate_identity("PRINT @TestVariable")
         self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
         self.validate_identity("INSERT INTO @TestTable VALUES (1, 'Value1', 12, 20)")
         self.validate_identity(

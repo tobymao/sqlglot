@@ -149,6 +149,7 @@ class TokenType(AutoName):
     CURRENT_ROW = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
+    DECLARE = auto()
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()
@@ -233,6 +234,7 @@ class TokenType(AutoName):
     ORDERED = auto()
     ORDINALITY = auto()
     OUTER = auto()
+    OUT = auto()
     OUT_OF = auto()
     OVER = auto()
     OVERWRITE = auto()
@@ -244,7 +246,8 @@ class TokenType(AutoName):
     PLACEHOLDER = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
-    PROCEDURE = auto()
+    PRINT = auto()
+    PROCEDURE = auto()    
     PROPERTIES = auto()
     PSEUDO_TYPE = auto()
     QUALIFY = auto()
@@ -254,6 +257,7 @@ class TokenType(AutoName):
     REPLACE = auto()
     RESPECT_NULLS = auto()
     REFERENCES = auto()
+    RETURN = auto()
     RETURNS = auto()
     RIGHT = auto()
     RLIKE = auto()
@@ -702,6 +706,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PREPARE": TokenType.COMMAND,
         "TRUNCATE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
+        "DECLARE": TokenType.DECLARE
     }
 
     WHITE_SPACE = {

@@ -699,7 +699,7 @@ class UserDefinedFunction(Expression):
 
 
 class UserDefinedFunctionKwarg(Expression):
-    arg_types = {"this": True, "kind": True, "default": False}
+    arg_types = {"this": True, "kind": True, "default": False, "direction": False}
 
 
 class CharacterSet(Expression):
@@ -3173,6 +3173,15 @@ class Year(Func):
 class Use(Expression):
     pass
 
+class Print(Expression):
+    pass
+
+class Declare(Expression):
+    arg_types = {"this": True, "_type": True}
+    pass
+
+class Return(Expression):
+    pass
 
 class Merge(Expression):
     arg_types = {"this": True, "using": True, "on": True, "expressions": True}

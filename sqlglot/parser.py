@@ -443,6 +443,9 @@ class Parser(metaclass=_Parser):
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.UPDATE: lambda self: self._parse_update(),
         TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
+        TokenType.PRINT: lambda self: self._parse_print(),
+        TokenType.DECLARE: lambda self: self._parse_declare(),
+        TokenType.RETURN: lambda self: self._parse_return()
     }
 
     UNARY_PARSERS = {
@@ -717,13 +720,25 @@ class Parser(metaclass=_Parser):
         self.reset()
         self.sql = sql or ""
         total = len(raw_tokens)
-
+        prev = None
+        in_block = False
+        inner_count = 0
         for i, token in enumerate(raw_tokens):
-            if token.token_type == TokenType.SEMICOLON:
+            if token.token_type == TokenType.BEGIN and prev.token_type == TokenType.ALIAS:
+                in_block = True 
+                inner_count = inner_count + 1
+            if in_block and token.token_type == TokenType.BEGIN: # case and so on use end as well
+                inner_count = inner_count + 1
+            if in_block and token.token_type == TokenType.END:
+                inner_count = inner_count - 1
+                if inner_count == 0:
+                    in_block = False
+            if token.token_type == TokenType.SEMICOLON and not in_block:
                 if i < total - 1:
                     self._chunks.append([])
             else:
                 self._chunks[-1].append(token)
+            prev = token
 
         expressions = []
 
@@ -945,7 +960,10 @@ class Parser(metaclass=_Parser):
             this = self._parse_user_defined_function()
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
-                expression = self._parse_select_or_expression()
+                if self._match(TokenType.BEGIN):
+                    expression = self._parse_begin_end_statement()
+                else:
+                    expression = self._parse_select_or_expression()
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (
@@ -1214,6 +1232,7 @@ class Parser(metaclass=_Parser):
             exists=self._parse_exists(),
             this=self._parse_table(schema=True),
         )
+        
 
     def _parse_cache(self) -> exp.Expression:
         lazy = self._match(TokenType.LAZY)
@@ -2286,11 +2305,13 @@ class Parser(metaclass=_Parser):
         while self._match(TokenType.DOT):
             this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
 
-        if not self._match(TokenType.L_PAREN):
+        
+        if not self._match_set([TokenType.L_PAREN, TokenType.PARAMETER]):
             return this
-
+        hasopenparen = self._prev.token_type == TokenType.L_PAREN
         expressions = self._parse_csv(self._parse_udf_kwarg)
-        self._match_r_paren()
+        if hasopenparen:
+            self._match_r_paren()
         return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
     def _parse_introducer(self, token: Token) -> t.Optional[exp.Expression]:
@@ -2319,7 +2340,14 @@ class Parser(metaclass=_Parser):
 
         if not kind:
             return this
-
+        if self._match(TokenType.EQ):
+            default = self._parse_primary()
+            if not default:
+                self.raise_error("Expecting value")
+            if self._match_set([TokenType.IN, TokenType.OUT, TokenType.VAR]):
+                if self._prev.token_type == TokenType.VAR and self._prev.text.casefold() == "OUT".casefold():
+                    self._prev.token_type = TokenType.OUT   # feels a bit hacky. any better way todo this? tokentype should be out         
+            return self.expression(exp.UserDefinedFunctionKwarg, this=this, kind=kind, default=default, direction = self._prev)
         return self.expression(exp.UserDefinedFunctionKwarg, this=this, kind=kind)
 
     def _parse_lambda(self) -> t.Optional[exp.Expression]:
@@ -2900,16 +2928,16 @@ class Parser(metaclass=_Parser):
         return self._parse_wrapped_csv(lambda: self._parse_alias(self._parse_expression()))
 
     def _parse_csv(
-        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
+        self, parse_method_csv: t.Callable, sep: TokenType = TokenType.COMMA
     ) -> t.List[t.Optional[exp.Expression]]:
-        parse_result = parse_method()
+        parse_result = parse_method_csv()
         items = [parse_result] if parse_result is not None else []
 
         while self._match(sep):
             if parse_result and self._prev_comments:
                 parse_result.comments = self._prev_comments
 
-            parse_result = parse_method()
+            parse_result = parse_method_csv()
             if parse_result is not None:
                 items.append(parse_result)
 
@@ -2947,6 +2975,30 @@ class Parser(metaclass=_Parser):
     def _parse_select_or_expression(self) -> t.Optional[exp.Expression]:
         return self._parse_select() or self._parse_expression()
 
+    def _parse_begin_end_statement(self) -> t.List[exp.Expression]:
+        if self._match(TokenType.END):
+            self.raise_error("Not Expecting END")
+
+        subparser = Parser(self.error_level, self.error_message_context, self.index_offset, 
+            self.unnest_column_only, self.alias_post_tablesample, self.max_errors, self.null_ordering)
+        begincount = 1
+        tokens: list[Token] = []
+        
+        while not (self._curr.token_type == TokenType.END and begincount==0):
+            if self._curr.token_type == TokenType.BEGIN:
+                begincount = begincount+1
+            elif self._curr.token_type == TokenType.END:
+                begincount = begincount - 1
+                if begincount == 0:
+                    break
+            tokens.append(self._curr)
+            self._advance()
+        expr = subparser.parse(tokens, self.sql)
+        self._advance()
+        return expr
+
+
+
     def _parse_ddl_select(self) -> t.Optional[exp.Expression]:
         return self._parse_set_operations(
             self._parse_select(nested=True, parse_subquery_alias=False)
@@ -2971,6 +3023,32 @@ class Parser(metaclass=_Parser):
                 break
 
         return self.expression(exp.Transaction, this=this, modes=modes)
+
+    def _parse_print(self) -> exp.Expression:
+        this = self._prev.text
+        id_var = self._parse_id_var() or self._parse_primary()
+        if not id_var:
+            self.raise_error("Expecting something to print")       
+        return self.expression(exp.Print, this=id_var )
+        
+
+    def _parse_return(self) -> exp.Expression:
+        this = self._prev.text
+        id_var = self._parse_id_var() or self._parse_primary()
+        if id_var:
+            return self.expression(exp.Return, this=id_var )
+        else:
+            return self.expression(exp.Return, this=None) # Return does not need an expression
+
+    def _parse_declare(self) -> exp.Expression:
+        this = self._prev.text
+        id_var = self._parse_id_var()
+        if not id_var:
+            self.raise_error("Expecting identifier")        
+        dtype = self._pares_type()
+        if not dtype:
+            self.raise_error("Expecting type")        
+        return self.expression(exp.Declare, this=id_var, _type = dtype )
 
     def _parse_commit_or_rollback(self) -> exp.Expression:
         chain = None

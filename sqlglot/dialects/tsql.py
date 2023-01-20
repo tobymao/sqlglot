@@ -261,7 +261,8 @@ class TSQL(Dialect):
             "NVARCHAR(MAX)": TokenType.TEXT,
             "VARCHAR(MAX)": TokenType.TEXT,
             "TOP": TokenType.TOP,
-            "DECLARE": TokenType.COMMAND
+            "DECLARE": TokenType.COMMAND,
+            "RETURN": TokenType.COMMAND
         }
 
     class Parser(parser.Parser):
@@ -296,7 +297,7 @@ class TSQL(Dialect):
 
         # https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-tables-temporary#create-a-temporary-table
         TABLE_PREFIX_TOKENS = {TokenType.HASH, TokenType.PARAMETER}
-        PARAMETER_PREFIX_TOKENS = {TokenType.HASH, TokenType.PARAMETER}
+        PARAMETER_PREFIX_TOKENS = { TokenType.PARAMETER}
 
 
         def _parse_convert(self, strict):

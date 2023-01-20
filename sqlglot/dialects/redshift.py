@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.postgres import Postgres
@@ -129,5 +131,5 @@ class Redshift(Postgres):
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")
                 if not precision:
-                    expression.append("expressions", exp.Var(this="max"))
+                    expression.append("expressions", exp.Var(this="MAX"))
             return super().datatype_sql(expression)

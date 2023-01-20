@@ -480,10 +480,13 @@ class Generator:
                 materialized,
             )
         )
+        no_schema_binding = (
+            " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
+        )
 
         post_expression_modifiers = "".join((data, statistics, no_primary_index))
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties}{expression_sql}{post_expression_modifiers}{index_sql}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties}{expression_sql}{post_expression_modifiers}{index_sql}{no_schema_binding}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:

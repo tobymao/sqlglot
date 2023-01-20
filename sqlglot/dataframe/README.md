@@ -206,7 +206,7 @@ sql_statements = (
     .createDataFrame(data, schema)
     .groupBy(F.col("age"))
     .agg(F.countDistinct(F.col("employee_id")).alias("num_employees"))
-    .sql(dialect="bigquery")
+    .sql(dialect="spark")
 )
 
 pyspark = PySparkSession.builder.master("local[*]").getOrCreate()

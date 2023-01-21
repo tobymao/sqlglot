@@ -2966,6 +2966,14 @@ class Pow(Func):
     _sql_names = ["POWER", "POW"]
 
 
+class PercentileCont(AggFunc):
+    pass
+
+
+class PercentileDisc(AggFunc):
+    pass
+
+
 class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 

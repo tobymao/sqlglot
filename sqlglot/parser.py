@@ -3076,7 +3076,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_merge(self) -> exp.Expression:
         self._match(TokenType.INTO)
-        target = self._parse_table(schema=True)
+        target = self._parse_table()
 
         self._match(TokenType.USING)
         using = self._parse_table()

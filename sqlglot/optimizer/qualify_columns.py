@@ -306,16 +306,11 @@ def _qualify_outputs(scope):
     for i, (selection, aliased_column) in enumerate(
         itertools.zip_longest(scope.selects, scope.outer_column_list)
     ):
-        if isinstance(selection, exp.Column):
-            # convoluted setter because a simple selection.replace(alias) would require a copy
-            alias_ = alias(exp.column(""), alias=selection.name)
-            alias_.set("this", selection)
-            selection = alias_
-        elif isinstance(selection, exp.Subquery):
-            if not selection.alias:
+        if isinstance(selection, exp.Subquery):
+            if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
         elif not isinstance(selection, exp.Alias):
-            alias_ = alias(exp.column(""), f"_col_{i}")
+            alias_ = alias(exp.column(""), alias=selection.output_name or f"_col_{i}")
             alias_.set("this", selection)
             selection = alias_
 

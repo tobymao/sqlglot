@@ -230,7 +230,7 @@ class Scope:
                 column for scope in self.subquery_scopes for column in scope.external_columns
             ]
 
-            named_outputs = {e.alias_or_name for e in self.expression.expressions}
+            named_selects = set(self.expression.named_selects)
 
             self._columns = []
             for column in columns + external_columns:
@@ -238,7 +238,7 @@ class Scope:
                 if (
                     not ancestor
                     or column.table
-                    or (column.name not in named_outputs and not isinstance(ancestor, exp.Hint))
+                    or (column.name not in named_selects and not isinstance(ancestor, exp.Hint))
                 ):
                     self._columns.append(column)
 

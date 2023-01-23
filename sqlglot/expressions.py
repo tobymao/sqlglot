@@ -2158,6 +2158,8 @@ class DataType(Expression):
         TEXT = auto()
         MEDIUMTEXT = auto()
         LONGTEXT = auto()
+        MEDIUMBLOB = auto()
+        LONGBLOB = auto()
         BINARY = auto()
         VARBINARY = auto()
         INT = auto()

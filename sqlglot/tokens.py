@@ -84,6 +84,8 @@ class TokenType(AutoName):
     TEXT = auto()
     MEDIUMTEXT = auto()
     LONGTEXT = auto()
+    MEDIUMBLOB = auto()
+    LONGBLOB = auto()
     BINARY = auto()
     VARBINARY = auto()
     JSON = auto()

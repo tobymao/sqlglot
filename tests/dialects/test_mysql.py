@@ -75,6 +75,16 @@ class TestMySQL(Validator):
                 "spark": "CAST(x AS TEXT) + CAST(y AS TEXT)",
             },
         )
+        self.validate_all(
+            "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB)",
+            read={
+                "mysql": "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB)",
+            },
+            write={
+                "spark": "CAST(x AS BLOB) + CAST(y AS BLOB)",
+            },
+        )
+
 
     def test_canonical_functions(self):
         self.validate_identity("SELECT LEFT('str', 2)", "SELECT SUBSTRING('str', 1, 2)")

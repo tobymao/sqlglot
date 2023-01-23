@@ -6,6 +6,7 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("END")
         self.validate_identity("@x")
         self.validate_identity("#x")
         self.validate_identity("DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'")

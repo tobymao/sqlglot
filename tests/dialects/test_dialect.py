@@ -1365,3 +1365,19 @@ SELECT
                 "spark": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE * WHEN NOT MATCHED THEN INSERT *",
             },
         )
+        self.validate_all(
+            """
+            MERGE a b USING c d ON b.id = d.id
+            WHEN MATCHED AND EXISTS (
+                SELECT b.name
+                EXCEPT
+                SELECT d.name
+            )
+            THEN UPDATE SET b.name = d.name
+            """,
+            write={
+                "bigquery": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT DISTINCT SELECT d.name) THEN UPDATE SET b.name = d.name",
+                "snowflake": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT SELECT d.name) THEN UPDATE SET b.name = d.name",
+                "spark": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT SELECT d.name) THEN UPDATE SET b.name = d.name",
+            },
+        )

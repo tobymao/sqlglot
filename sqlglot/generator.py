@@ -106,6 +106,8 @@ class Generator:
         exp.TableFormatProperty,
     }
 
+    WITH_SINGLE_ALTER_TABLE_ACTION = (exp.AlterColumn, exp.RenameTable, exp.AddConstraint)
+
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
@@ -1367,13 +1369,33 @@ class Generator:
             actions = self.expressions(expression, "actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Drop):
             actions = self.expressions(expression, "actions")
-        elif isinstance(actions[0], (exp.AlterColumn, exp.RenameTable)):
+        elif isinstance(actions[0], self.WITH_SINGLE_ALTER_TABLE_ACTION):
             actions = self.sql(actions[0])
         else:
             self.unsupported(f"Unsupported ALTER TABLE action {actions[0].__class__.__name__}")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {actions}"
+
+    def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
+        this = self.sql(expression, "this")
+        check = self.sql(expression, "expression")
+        primary = expression.args.get("primary")
+        options = self.expressions(expression, "options", sep=" ")
+        options = f" {options}" if options else ""
+
+        add_constraint = f"ADD CONSTRAINT {this}" if this else "ADD CONSTRAINT"
+
+        if primary is None:
+            return f"{add_constraint} CHECK ({check}){options}"
+
+        columns = self.expressions(expression, "columns")
+        if primary:
+            return f"{add_constraint} PRIMARY KEY {self.wrap(columns)}{options}"
+
+        references = expression.args.get("references")
+        references = f" REFERENCES {self.sql(references)}" if references else ""
+        return f"{add_constraint} FOREIGN KEY {self.wrap(columns)}{options}{references}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)

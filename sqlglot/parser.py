@@ -601,6 +601,8 @@ class Parser(metaclass=_Parser):
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
 
+    ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
+
     STRICT_CAST = True
 
     __slots__ = (
@@ -3025,6 +3027,65 @@ class Parser(metaclass=_Parser):
     def _parse_drop_column(self) -> t.Optional[exp.Expression]:
         return self._match(TokenType.DROP) and self._parse_drop(default_kind="COLUMN")
 
+    def _parse_add_constraint(self) -> t.Optional[exp.Expression]:
+        this = None
+        options = None
+
+        kind = self._prev.token_type
+        if kind == TokenType.CONSTRAINT:
+            this = self._parse_id_var()
+
+            if self._match(TokenType.CHECK):
+                expression = self._parse_wrapped(self._parse_conjunction)
+
+                if self._match_text_seq("ENFORCED"):
+                    options = ["ENFORCED"]
+
+                return self.expression(
+                    exp.AddConstraint, this=this, expression=expression, options=options
+                )
+
+        if self._match_set((TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY)):
+            kind = self._prev.token_type
+
+        references = None
+        primary = kind == TokenType.PRIMARY_KEY
+        columns = self._parse_wrapped_csv(self._parse_column)
+
+        if self._match(TokenType.REFERENCES):
+            references = self._parse_table(schema=True)
+
+        options = []
+        while True:
+            if not self._curr:
+                break
+
+            if self._match_text_seq("NOT ENFORCED"):
+                options.append("NOT ENFORCED")
+            elif self._match_text_seq("DEFERRABLE"):
+                options.append("DEFERRABLE")
+            elif self._match_text_seq("INITIALLY DEFERRED"):
+                options.append("INITIALLY DEFERRED")
+            elif self._match_text_seq("NORELY"):
+                options.append("NORELY")
+            elif self._match_text_seq("MATCH FULL"):
+                options.append("MATCH FULL")
+            elif self._match_text_seq("ON UPDATE NO ACTION"):
+                options.append("ON UPDATE NO ACTION")
+            elif self._match_text_seq("ON DELETE NO ACTION"):
+                options.append("ON DELETE NO ACTION")
+            else:
+                self.raise_error(f"Invalid ADD CONSTRAINT option {self._curr.text}.")
+
+        return self.expression(
+            exp.AddConstraint,
+            this=this,
+            primary=primary,
+            columns=columns,
+            references=references,
+            options=options,
+        )
+
     def _parse_alter(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.TABLE):
             return None
@@ -3033,8 +3094,14 @@ class Parser(metaclass=_Parser):
         this = self._parse_table(schema=True)
 
         actions: t.Optional[exp.Expression | t.List[t.Optional[exp.Expression]]] = None
-        if self._match_text_seq("ADD", advance=False):
-            actions = self._parse_csv(self._parse_add_column)
+
+        index = self._index
+        if self._match_text_seq("ADD"):
+            if self._match_set(self.ADD_CONSTRAINT_TOKENS):
+                actions = self._parse_csv(self._parse_add_constraint)
+            else:
+                self._retreat(index)
+                actions = self._parse_csv(self._parse_add_column)
         elif self._match_text_seq("DROP", advance=False):
             actions = self._parse_csv(self._parse_drop_column)
         elif self._match_text_seq("RENAME", "TO"):

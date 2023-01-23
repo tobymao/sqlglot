@@ -247,11 +247,13 @@ class TSQL(Dialect):
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
+            "END": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NTEXT": TokenType.TEXT,
             "NVARCHAR(MAX)": TokenType.TEXT,
             "PRINT": TokenType.COMMAND,
+            "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
             "ROWVERSION": TokenType.ROWVERSION,
             "SMALLDATETIME": TokenType.DATETIME,
@@ -299,6 +301,11 @@ class TSQL(Dialect):
             DataType.Type.NCHAR,
         }
 
+        RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {  # type: ignore
+            TokenType.TABLE,
+            *parser.Parser.TYPE_TOKENS,  # type: ignore
+        }
+
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
                 return None
@@ -335,6 +342,12 @@ class TSQL(Dialect):
             table = super()._parse_table_parts(schema=schema)
             table.set("system_time", self._parse_system_time())
             return table
+
+        def _parse_returns(self) -> exp.Expression:
+            table = self._parse_id_var(any_token=False, tokens=self.RETURNS_TABLE_TOKENS)
+            returns = super()._parse_returns()
+            returns.set("table", table)
+            return returns
 
         def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
             to = self._parse_types()
@@ -379,6 +392,21 @@ class TSQL(Dialect):
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
+        def _parse_user_defined_function(
+            self, kind: t.Optional[TokenType] = None
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_user_defined_function(kind=kind)
+
+            if (
+                kind == TokenType.FUNCTION
+                or isinstance(this, exp.UserDefinedFunction)
+                or self._match(TokenType.ALIAS, advance=False)
+            ):
+                return this
+
+            expressions = self._parse_csv(self._parse_udf_kwarg)
+            return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
+
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
@@ -401,6 +429,8 @@ class TSQL(Dialect):
             exp.GroupConcat: _string_agg_sql,
         }
 
+        TRANSFORMS.pop(exp.ReturnsProperty)
+
         def systemtime_sql(self, expression: exp.SystemTime) -> str:
             kind = expression.args["kind"]
             if kind == "ALL":
@@ -417,3 +447,8 @@ class TSQL(Dialect):
                 return f"FOR SYSTEM_TIME BETWEEN {start} AND {end}"
 
             return f"FOR SYSTEM_TIME CONTAINED IN ({start}, {end})"
+
+        def returnsproperty_sql(self, expression: exp.ReturnsProperty) -> str:
+            table = expression.args.get("table")
+            table = f"{table} " if table else ""
+            return f"RETURNS {table}{self.sql(expression, 'this')}"

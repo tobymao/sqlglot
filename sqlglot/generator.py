@@ -1231,6 +1231,9 @@ class Generator:
         unit = f" {unit}" if unit else ""
         return f"INTERVAL{this}{unit}"
 
+    def return_sql(self, expression: exp.Return) -> str:
+        return f"RETURN {self.sql(expression, 'this')}"
+
     def reference_sql(self, expression: exp.Reference) -> str:
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)
@@ -1558,7 +1561,10 @@ class Generator:
     def userdefinedfunction_sql(self, expression: exp.UserDefinedFunction) -> str:
         this = self.sql(expression, "this")
         expressions = self.no_identify(lambda: self.expressions(expression))
-        return f"{this}({expressions})"
+        expressions = (
+            self.wrap(expressions) if expression.args.get("wrapped") else f" {expressions}"
+        )
+        return f"{this}{expressions}"
 
     def userdefinedfunctionkwarg_sql(self, expression: exp.UserDefinedFunctionKwarg) -> str:
         this = self.sql(expression, "this")

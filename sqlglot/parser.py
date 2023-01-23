@@ -941,10 +941,15 @@ class Parser(metaclass=_Parser):
         no_schema_binding = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
-            this = self._parse_user_defined_function()
+            this = self._parse_user_defined_function(kind=create_token.token_type)
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
-                expression = self._parse_select_or_expression()
+                self._match(TokenType.BEGIN)
+                return_ = self._match_text_seq("RETURN")
+                expression = self._parse_statement()
+
+                if return_:
+                    expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (
@@ -1084,7 +1089,7 @@ class Parser(metaclass=_Parser):
                 if not self._match(TokenType.GT):
                     self.raise_error("Expecting >")
             else:
-                value = self._parse_schema(exp.Literal.string("TABLE"))
+                value = self._parse_schema(exp.Var(this="TABLE"))
         else:
             value = self._parse_types()
 
@@ -1547,7 +1552,7 @@ class Parser(metaclass=_Parser):
             return None
         index = self._parse_id_var()
         columns = None
-        if self._curr and self._curr.token_type == TokenType.L_PAREN:
+        if self._match(TokenType.L_PAREN, advance=False):
             columns = self._parse_wrapped_csv(self._parse_column)
         return self.expression(
             exp.Index,
@@ -2284,7 +2289,9 @@ class Parser(metaclass=_Parser):
         self._match_r_paren(this)
         return self._parse_window(this)
 
-    def _parse_user_defined_function(self) -> t.Optional[exp.Expression]:
+    def _parse_user_defined_function(
+        self, kind: t.Optional[TokenType] = None
+    ) -> t.Optional[exp.Expression]:
         this = self._parse_id_var()
 
         while self._match(TokenType.DOT):
@@ -2295,7 +2302,9 @@ class Parser(metaclass=_Parser):
 
         expressions = self._parse_csv(self._parse_udf_kwarg)
         self._match_r_paren()
-        return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
+        return self.expression(
+            exp.UserDefinedFunction, this=this, expressions=expressions, wrapped=True
+        )
 
     def _parse_introducer(self, token: Token) -> t.Optional[exp.Expression]:
         literal = self._parse_primary()
@@ -2369,10 +2378,6 @@ class Parser(metaclass=_Parser):
             or self._parse_column_def(self._parse_field(any_token=True))
         )
         self._match_r_paren()
-
-        if isinstance(this, exp.Literal):
-            this = this.name
-
         return self.expression(exp.Schema, this=this, expressions=args)
 
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
@@ -3145,12 +3150,13 @@ class Parser(metaclass=_Parser):
         self._retreat(index)
         return None
 
-    def _match(self, token_type):
+    def _match(self, token_type, advance=True):
         if not self._curr:
             return None
 
         if self._curr.token_type == token_type:
-            self._advance()
+            if advance:
+                self._advance()
             return True
 
         return None

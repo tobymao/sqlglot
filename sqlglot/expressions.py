@@ -2175,15 +2175,9 @@ class Placeholder(Expression):
 class Null(Condition):
     arg_types: t.Dict[str, t.Any] = {}
 
-    @property
-    def output_name(self):
-        return self.name
-
 
 class Boolean(Condition):
-    @property
-    def output_name(self):
-        return self.name
+    pass
 
 
 class DataType(Expression):

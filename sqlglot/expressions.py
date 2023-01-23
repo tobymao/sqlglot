@@ -696,7 +696,7 @@ class Show(Expression):
 
 
 class UserDefinedFunction(Expression):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "wrapped": False}
 
 
 class UserDefinedFunctionKwarg(Expression):
@@ -1186,7 +1186,7 @@ class SchemaCommentProperty(Property):
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "is_table": False}
+    arg_types = {"this": True, "is_table": False, "table": False}
 
 
 class LanguageProperty(Property):
@@ -1259,6 +1259,11 @@ class Properties(Expression):
 
 
 class Qualify(Expression):
+    pass
+
+
+# https://www.ibm.com/docs/en/ias?topic=procedures-return-statement-in-sql
+class Return(Expression):
     pass
 
 

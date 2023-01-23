@@ -6,6 +6,7 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("END")
         self.validate_identity("@x")
         self.validate_identity("#x")
         self.validate_identity("DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'")
@@ -88,6 +89,63 @@ class TestTSQL(Validator):
             write={
                 "hive": "CAST(x AS TIMESTAMP)",
             },
+        )
+
+    def test_udf(self):
+        self.validate_identity(
+            "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
+        )
+        self.validate_identity(
+            "CREATE PROC foo @ID INTEGER, @AGE INTEGER AS SELECT DB_NAME(@ID) AS ThatDB"
+        )
+        self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz")
+        self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz")
+        self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
+        self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
+
+        # The following two cases don't necessarily correspond to valid TSQL, but they are used to verify
+        # that the syntax RETURNS @return_variable TABLE <table_type_definition> ... is parsed correctly.
+        #
+        # See also "Transact-SQL Multi-Statement Table-Valued Function Syntax"
+        # https://learn.microsoft.com/en-us/sql/t-sql/statements/create-function-transact-sql?view=sql-server-ver16
+        self.validate_identity(
+            "CREATE FUNCTION foo(@bar INTEGER) RETURNS @foo TABLE (x INTEGER, y NUMERIC) AS RETURN SELECT 1"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION foo() RETURNS @contacts TABLE (first_name VARCHAR(50), phone VARCHAR(25)) AS SELECT @fname, @phone"
+        )
+
+        self.validate_all(
+            """
+            CREATE FUNCTION udfProductInYear (
+                @model_year INT
+            )
+            RETURNS TABLE
+            AS
+            RETURN
+                SELECT
+                    product_name,
+                    model_year,
+                    list_price
+                FROM
+                    production.products
+                WHERE
+                    model_year = @model_year
+            """,
+            write={
+                "tsql": """CREATE FUNCTION udfProductInYear(
+    @model_year INTEGER
+)
+RETURNS TABLE AS
+RETURN SELECT
+  product_name,
+  model_year,
+  list_price
+FROM production.products
+WHERE
+  model_year = @model_year""",
+            },
+            pretty=True,
         )
 
     def test_charindex(self):

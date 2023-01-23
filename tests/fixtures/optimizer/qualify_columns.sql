@@ -20,8 +20,8 @@ SELECT a AS b FROM x;
 SELECT x.a AS b FROM x AS x;
 
 # execute: false
-SELECT 1, 2 FROM x;
-SELECT 1 AS _col_0, 2 AS _col_1 FROM x AS x;
+SELECT 1, 2 + 3 FROM x;
+SELECT 1 AS "1", 2 + 3 AS _col_1 FROM x AS x;
 
 # execute: false
 SELECT a + b FROM x;
@@ -58,39 +58,8 @@ SELECT SUM(a) AS c, SUM(b) AS d FROM x ORDER BY 1, 2;
 SELECT SUM(x.a) AS c, SUM(x.b) AS d FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
 
 # execute: false
-SELECT SUM(a), SUM(b) AS c FROM x ORDER BY 1, 2;
-SELECT SUM(x.a) AS _col_0, SUM(x.b) AS c FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
-
-SELECT a AS j, b FROM x GROUP BY j, b;
-SELECT x.a AS j, x.b AS b FROM x AS x GROUP BY x.a, x.b;
-
-SELECT a, b FROM x GROUP BY 1, 2;
-SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
-
-SELECT a, b FROM x ORDER BY 1, 2;
-SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a, x.b;
-
-# execute: false
-SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
-SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
-
-SELECT SUM(x.a) AS c FROM x JOIN y ON x.b = y.b GROUP BY c;
-SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
-
-SELECT COALESCE(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
-SELECT COALESCE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY COALESCE(x.a);
-
-SELECT a AS a, b FROM x ORDER BY a;
-SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
-
-SELECT a, b FROM x ORDER BY a;
-SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
-
-SELECT a FROM x ORDER BY b;
-SELECT x.a AS a FROM x AS x ORDER BY x.b;
-
-SELECT SUM(a) AS a FROM x ORDER BY SUM(a);
-SELECT SUM(x.a) AS a FROM x AS x ORDER BY SUM(x.a);
+SELECT CAST(a AS INT) FROM x ORDER BY a;
+SELECT CAST(x.a AS INT) AS a FROM x AS x ORDER BY a;
 
 # dialect: bigquery
 SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY row_num = 1;

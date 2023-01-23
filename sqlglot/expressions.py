@@ -129,6 +129,24 @@ class Expression(metaclass=_Expression):
         return self.alias or self.name
 
     @property
+    def output_name(self):
+        """
+        Name of the output column if this expression is a selection.
+
+        If the Expression has no output name, an empty string is returned.
+
+        Example:
+            >>> from sqlglot import parse_one
+            >>> parse_one("SELECT a").expressions[0].output_name
+            'a'
+            >>> parse_one("SELECT b AS c").expressions[0].output_name
+            'c'
+            >>> parse_one("SELECT 1 + 2").expressions[0].output_name
+            ''
+        """
+        return ""
+
+    @property
     def type(self) -> t.Optional[DataType]:
         return self._type
 
@@ -552,7 +570,7 @@ class DerivedTable(Expression):
 
     @property
     def named_selects(self):
-        return [select.alias_or_name for select in self.selects]
+        return [select.output_name for select in self.selects]
 
 
 class Unionable(Expression):
@@ -750,6 +768,10 @@ class Column(Condition):
     def table(self):
         return self.text("table")
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class ColumnDef(Expression):
     arg_types = {
@@ -904,6 +926,10 @@ class Identifier(Expression):
     def __hash__(self):
         return hash((self.key, self.this.lower()))
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class Index(Expression):
     arg_types = {
@@ -995,6 +1021,10 @@ class Literal(Condition):
     @classmethod
     def string(cls, string) -> Literal:
         return cls(this=str(string), is_string=True)
+
+    @property
+    def output_name(self):
+        return self.name
 
 
 class Join(Expression):
@@ -2042,7 +2072,7 @@ class Select(Subqueryable):
 
     @property
     def named_selects(self) -> t.List[str]:
-        return [e.alias_or_name for e in self.expressions if e.alias_or_name]
+        return [e.output_name for e in self.expressions if e.alias_or_name]
 
     @property
     def selects(self) -> t.List[Expression]:
@@ -2065,6 +2095,10 @@ class Subquery(DerivedTable, Unionable):
         while isinstance(expression, Subquery):
             expression = expression.this
         return expression
+
+    @property
+    def output_name(self):
+        return self.alias
 
 
 class TableSample(Expression):
@@ -2121,6 +2155,10 @@ class Star(Expression):
     def name(self):
         return "*"
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class Parameter(Expression):
     pass
@@ -2137,9 +2175,15 @@ class Placeholder(Expression):
 class Null(Condition):
     arg_types: t.Dict[str, t.Any] = {}
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class Boolean(Condition):
-    pass
+    @property
+    def output_name(self):
+        return self.name
 
 
 class DataType(Expression):
@@ -2480,6 +2524,10 @@ class Neg(Unary):
 class Alias(Expression):
     arg_types = {"this": True, "alias": False}
 
+    @property
+    def output_name(self):
+        return self.alias
+
 
 class Aliases(Expression):
     arg_types = {"this": True, "expressions": True}
@@ -2681,6 +2729,10 @@ class Cast(Func):
     @property
     def to(self):
         return self.args["to"]
+
+    @property
+    def output_name(self):
+        return self.name
 
 
 class Collate(Binary):

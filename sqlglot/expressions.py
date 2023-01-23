@@ -2297,10 +2297,17 @@ class Rollback(Expression):
 
 
 class AlterTable(Expression):
+    arg_types = {"this": True, "actions": True, "exists": False}
+
+
+class AddConstraint(Expression):
     arg_types = {
-        "this": True,
-        "actions": True,
-        "exists": False,
+        "this": False,
+        "expression": False,  # Only used in the CHECK constraint
+        "primary": False,  # None: CHECK, False: FOREIGN KEY, True: PRIMARY KEY
+        "columns": False,
+        "references": False,
+        "options": False,
     }
 
 

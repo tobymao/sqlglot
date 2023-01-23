@@ -92,6 +92,14 @@ class TestTSQL(Validator):
         )
 
     def test_udf(self):
+        self.validate_identity(
+            "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
+        )
+        self.validate_identity(
+            "CREATE PROC foo @ID INTEGER, @AGE INTEGER AS SELECT DB_NAME(@ID) AS ThatDB"
+        )
+        self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz")
+        self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz")
         self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
         self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
 

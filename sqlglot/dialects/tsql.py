@@ -253,6 +253,7 @@ class TSQL(Dialect):
             "NTEXT": TokenType.TEXT,
             "NVARCHAR(MAX)": TokenType.TEXT,
             "PRINT": TokenType.COMMAND,
+            "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
             "ROWVERSION": TokenType.ROWVERSION,
             "SMALLDATETIME": TokenType.DATETIME,
@@ -300,7 +301,7 @@ class TSQL(Dialect):
             DataType.Type.NCHAR,
         }
 
-        RETURNS_TABLE_TOKENS = {*parser.Parser.ID_VAR_TOKENS} - {  # type: ignore
+        RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {  # type: ignore
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,  # type: ignore
         }
@@ -390,6 +391,21 @@ class TSQL(Dialect):
 
             # Entails a simple cast without any format requirement
             return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+
+        def _parse_user_defined_function(
+            self, kind: t.Optional[TokenType] = None
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_user_defined_function(kind=kind)
+
+            if (
+                kind == TokenType.FUNCTION
+                or isinstance(this, exp.UserDefinedFunction)
+                or self._match(TokenType.ALIAS, advance=False)
+            ):
+                return this
+
+            expressions = self._parse_csv(self._parse_udf_kwarg)
+            return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {

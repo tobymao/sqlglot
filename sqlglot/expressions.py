@@ -696,7 +696,7 @@ class Show(Expression):
 
 
 class UserDefinedFunction(Expression):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "wrapped": False}
 
 
 class UserDefinedFunctionKwarg(Expression):

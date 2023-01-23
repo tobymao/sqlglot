@@ -1561,7 +1561,10 @@ class Generator:
     def userdefinedfunction_sql(self, expression: exp.UserDefinedFunction) -> str:
         this = self.sql(expression, "this")
         expressions = self.no_identify(lambda: self.expressions(expression))
-        return f"{this}{self.wrap(expressions)}"
+        expressions = (
+            self.wrap(expressions) if expression.args.get("wrapped") else f" {expressions}"
+        )
+        return f"{this}{expressions}"
 
     def userdefinedfunctionkwarg_sql(self, expression: exp.UserDefinedFunctionKwarg) -> str:
         this = self.sql(expression, "this")

@@ -85,7 +85,6 @@ class TestMySQL(Validator):
             },
         )
 
-
     def test_canonical_functions(self):
         self.validate_identity("SELECT LEFT('str', 2)", "SELECT SUBSTRING('str', 1, 2)")
         self.validate_identity("SELECT INSTR('str', 'substr')", "SELECT LOCATE('substr', 'str')")

@@ -1,4 +1,4 @@
-from sqlglot import exp, parse_one
+from sqlglot import exp, parse, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -147,6 +147,38 @@ WHERE
             },
             pretty=True,
         )
+
+        sql = """
+            CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
+                @Loadid INTEGER
+               ,@NumberOfRows INTEGER
+            AS
+            BEGIN
+                SET XACT_ABORT ON;
+
+                DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104);
+                DECLARE @DWH_DateModified DATETIME = CONVERT(DATETIME, getdate(), 104);
+                DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (SYSTEM_USER);
+                DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER);
+
+                DECLARE @SalesAmountBefore float;
+                SELECT @SalesAmountBefore=SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] S;
+            END
+        """
+
+        expected_sqls = [
+            'CREATE PROCEDURE "TRANSF"."SP_Merge_Sales_Real" @Loadid INTEGER, @NumberOfRows INTEGER AS BEGIN SET XACT_ABORT ON',
+            "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)",
+            "DECLARE @DWH_DateModified DATETIME = CONVERT(DATETIME, getdate(), 104)",
+            "DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (SYSTEM_USER)",
+            "DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER)",
+            "DECLARE @SalesAmountBefore float",
+            'SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF."Pre_Merge_Sales_Real" AS S',
+            "END",
+        ]
+
+        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
+            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
     def test_charindex(self):
         self.validate_all(

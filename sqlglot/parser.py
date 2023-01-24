@@ -877,10 +877,19 @@ class Parser(metaclass=_Parser):
             return self.STATEMENT_PARSERS[self._prev.token_type](self)
 
         if self._match_set(Tokenizer.COMMANDS):
+            command_kind = self._prev.text
+            command_body = self._curr.text if self._curr else ""
+
+            while self._curr:
+                self._advance()
+                if not self._curr:
+                    break
+                command_body += " " + self._curr.text
+
             return self.expression(
                 exp.Command,
-                this=self._prev.text,
-                expression=self._parse_string(),
+                this=command_kind,
+                expression=None if not command_body else exp.Literal.string(command_body),
             )
 
         expression = self._parse_expression()
@@ -943,12 +952,13 @@ class Parser(metaclass=_Parser):
         no_primary_index = None
         indexes = None
         no_schema_binding = None
+        begin = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
-                self._match(TokenType.BEGIN)
+                begin = self._match(TokenType.BEGIN)
                 return_ = self._match_text_seq("RETURN")
                 expression = self._parse_statement()
 
@@ -1008,6 +1018,7 @@ class Parser(metaclass=_Parser):
             no_primary_index=no_primary_index,
             indexes=indexes,
             no_schema_binding=no_schema_binding,
+            begin=begin,
         )
 
     def _parse_property(self) -> t.Optional[exp.Expression]:

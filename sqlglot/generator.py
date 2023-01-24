@@ -437,8 +437,9 @@ class Generator:
     def create_sql(self, expression: exp.Create) -> str:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind").upper()
+        begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
-        expression_sql = f" AS{self.sep()}{expression_sql}" if expression_sql else ""
+        expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         transient = (
             " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""

@@ -129,7 +129,7 @@ class SparkSession:
 
     @property
     def _random_name(self) -> str:
-        return uuid.uuid4().hex
+        return "r" + uuid.uuid4().hex
 
     @property
     def _random_branch_id(self) -> str:

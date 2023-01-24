@@ -73,13 +73,8 @@ class ClickHouse(Dialect):
 
             return this
 
-        def _parse_position(self) -> exp.Expression:
-            this = super()._parse_position()
-            # clickhouse position args are swapped
-            substr = this.this
-            this.args["this"] = this.args.get("substr")
-            this.args["substr"] = substr
-            return this
+        def _parse_position(self, haystack_first: bool = False) -> exp.Expression:
+            return super()._parse_position(haystack_first=True)
 
         # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
         def _parse_cte(self) -> exp.Expression:

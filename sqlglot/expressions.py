@@ -672,6 +672,7 @@ class Create(Expression):
         "no_primary_index": False,
         "indexes": False,
         "no_schema_binding": False,
+        "begin": False,
     }
 
 

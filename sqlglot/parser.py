@@ -2477,15 +2477,43 @@ class Parser(metaclass=_Parser):
     def _parse_unique(self) -> exp.Expression:
         return self.expression(exp.Unique, expressions=self._parse_wrapped_id_vars())
 
+    def _parse_key_constraint_options(self) -> t.List[str]:
+        options = []
+        while True:
+            if not self._curr:
+                break
+
+            if self._match_text_seq("NOT", "ENFORCED"):
+                options.append("NOT ENFORCED")
+            elif self._match_text_seq("DEFERRABLE"):
+                options.append("DEFERRABLE")
+            elif self._match_text_seq("INITIALLY", "DEFERRED"):
+                options.append("INITIALLY DEFERRED")
+            elif self._match_text_seq("NORELY"):
+                options.append("NORELY")
+            elif self._match_text_seq("MATCH", "FULL"):
+                options.append("MATCH FULL")
+            elif self._match_text_seq("ON", "UPDATE", "NO ACTION"):
+                options.append("ON UPDATE NO ACTION")
+            elif self._match_text_seq("ON", "DELETE", "NO ACTION"):
+                options.append("ON DELETE NO ACTION")
+            else:
+                break
+
+        return options
+
     def _parse_references(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.REFERENCES):
             return None
 
-        return self.expression(
-            exp.Reference,
-            this=self._parse_id_var(),
-            expressions=self._parse_wrapped_id_vars(),
-        )
+        expressions = None
+        this = self._parse_id_var()
+
+        if self._match(TokenType.L_PAREN, advance=False):
+            expressions = self._parse_wrapped_id_vars()
+
+        options = self._parse_key_constraint_options()
+        return self.expression(exp.Reference, this=this, expressions=expressions, options=options)
 
     def _parse_foreign_key(self) -> exp.Expression:
         expressions = self._parse_wrapped_id_vars()
@@ -2510,11 +2538,13 @@ class Parser(metaclass=_Parser):
             options[kind] = action
 
         return self.expression(
-            exp.ForeignKey,
-            expressions=expressions,
-            reference=reference,
-            **options,  # type: ignore
+            exp.ForeignKey, expressions=expressions, reference=reference, **options  # type: ignore
         )
+
+    def _parse_primary_key(self) -> exp.Expression:
+        expressions = self._parse_wrapped_id_vars()
+        options = self._parse_key_constraint_options()
+        return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 
     def _parse_bracket(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.L_BRACKET):
@@ -3031,62 +3061,25 @@ class Parser(metaclass=_Parser):
 
     def _parse_add_constraint(self) -> t.Optional[exp.Expression]:
         this = None
-        options = None
-
         kind = self._prev.token_type
+
         if kind == TokenType.CONSTRAINT:
             this = self._parse_id_var()
 
             if self._match(TokenType.CHECK):
                 expression = self._parse_wrapped(self._parse_conjunction)
-
-                if self._match_text_seq("ENFORCED"):
-                    options = ["ENFORCED"]
+                enforced = self._match_text_seq("ENFORCED")
 
                 return self.expression(
-                    exp.AddConstraint, this=this, expression=expression, options=options
+                    exp.AddConstraint, this=this, expression=expression, enforced=enforced
                 )
 
-        if self._match_set((TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY)):
-            kind = self._prev.token_type
+        if kind == TokenType.FOREIGN_KEY or self._match(TokenType.FOREIGN_KEY):
+            expression = self._parse_foreign_key()
+        elif kind == TokenType.PRIMARY_KEY or self._match(TokenType.PRIMARY_KEY):
+            expression = self._parse_primary_key()
 
-        references = None
-        primary = kind == TokenType.PRIMARY_KEY
-        columns = self._parse_wrapped_csv(self._parse_column)
-
-        if self._match(TokenType.REFERENCES):
-            references = self._parse_table(schema=True)
-
-        options = []
-        while True:
-            if not self._curr:
-                break
-
-            if self._match_text_seq("NOT ENFORCED"):
-                options.append("NOT ENFORCED")
-            elif self._match_text_seq("DEFERRABLE"):
-                options.append("DEFERRABLE")
-            elif self._match_text_seq("INITIALLY DEFERRED"):
-                options.append("INITIALLY DEFERRED")
-            elif self._match_text_seq("NORELY"):
-                options.append("NORELY")
-            elif self._match_text_seq("MATCH FULL"):
-                options.append("MATCH FULL")
-            elif self._match_text_seq("ON UPDATE NO ACTION"):
-                options.append("ON UPDATE NO ACTION")
-            elif self._match_text_seq("ON DELETE NO ACTION"):
-                options.append("ON DELETE NO ACTION")
-            else:
-                self.raise_error(f"Invalid ADD CONSTRAINT option {self._curr.text}.")
-
-        return self.expression(
-            exp.AddConstraint,
-            this=this,
-            primary=primary,
-            columns=columns,
-            references=references,
-            options=options,
-        )
+        return self.expression(exp.AddConstraint, this=this, expression=expression)
 
     def _parse_alter(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.TABLE):

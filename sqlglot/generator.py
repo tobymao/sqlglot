@@ -1199,6 +1199,12 @@ class Generator:
         update = f" ON UPDATE {update}" if update else ""
         return f"FOREIGN KEY ({expressions}){reference}{delete}{update}"
 
+    def primarykey_sql(self, expression: exp.ForeignKey) -> str:
+        expressions = self.expressions(expression, flat=True)
+        options = self.expressions(expression, "options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+        return f"PRIMARY KEY ({expressions}){options}"
+
     def unique_sql(self, expression: exp.Unique) -> str:
         columns = self.expressions(expression, key="expressions")
         return f"UNIQUE ({columns})"
@@ -1241,7 +1247,10 @@ class Generator:
     def reference_sql(self, expression: exp.Reference) -> str:
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)
-        return f"REFERENCES {this}({expressions})"
+        expressions = f"({expressions})" if expressions else ""
+        options = self.expressions(expression, "options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+        return f"REFERENCES {this}{expressions}{options}"
 
     def anonymous_sql(self, expression: exp.Anonymous) -> str:
         args = self.format_args(*expression.expressions)
@@ -1381,23 +1390,14 @@ class Generator:
 
     def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
         this = self.sql(expression, "this")
-        check = self.sql(expression, "expression")
-        primary = expression.args.get("primary")
-        options = self.expressions(expression, "options", sep=" ")
-        options = f" {options}" if options else ""
+        expression_ = self.sql(expression, "expression")
+        add_constraint = f"ADD CONSTRAINT {this}" if this else "ADD"
 
-        add_constraint = f"ADD CONSTRAINT {this}" if this else "ADD CONSTRAINT"
+        enforced = expression.args.get("enforced")
+        if enforced is not None:
+            return f"{add_constraint} CHECK ({expression_}){' ENFORCED' if enforced else ''}"
 
-        if primary is None:
-            return f"{add_constraint} CHECK ({check}){options}"
-
-        columns = self.expressions(expression, "columns")
-        if primary:
-            return f"{add_constraint} PRIMARY KEY {self.wrap(columns)}{options}"
-
-        references = expression.args.get("references")
-        references = f" REFERENCES {self.sql(references)}" if references else ""
-        return f"{add_constraint} FOREIGN KEY {self.wrap(columns)}{options}{references}"
+        return f"{add_constraint} {expression_}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)

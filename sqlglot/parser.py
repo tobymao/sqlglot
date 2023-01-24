@@ -2681,17 +2681,22 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
-    def _parse_position(self) -> exp.Expression:
+    def _parse_position(self, haystack_first: bool = False) -> exp.Expression:
         args = self._parse_csv(self._parse_bitwise)
 
         if self._match(TokenType.IN):
-            args.append(self._parse_bitwise())
+            return self.expression(
+                exp.StrPosition, this=self._parse_bitwise(), substr=seq_get(args, 0)
+            )
 
-        this = exp.StrPosition(
-            this=seq_get(args, 1),
-            substr=seq_get(args, 0),
-            position=seq_get(args, 2),
-        )
+        if haystack_first:
+            haystack = seq_get(args, 0)
+            needle = seq_get(args, 1)
+        else:
+            needle = seq_get(args, 0)
+            haystack = seq_get(args, 1)
+
+        this = exp.StrPosition(this=haystack, substr=needle, position=seq_get(args, 2))
 
         self.validate_expression(this, args)
 

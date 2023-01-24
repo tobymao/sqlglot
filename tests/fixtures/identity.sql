@@ -94,8 +94,8 @@ CONCAT_WS('-', 'a', 'b')
 CONCAT_WS('-', 'a', 'b', 'c')
 POSEXPLODE("x") AS ("a", "b")
 POSEXPLODE("x") AS ("a", "b", "c")
-STR_POSITION(x, 'a')
-STR_POSITION(x, 'a', 3)
+STR_POSITION(haystack, needle)
+STR_POSITION(haystack, needle, pos)
 LEVENSHTEIN('gumbo', 'gambol', 2, 1, 1)
 SPLIT(SPLIT(referrer, 'utm_source=')[OFFSET(1)], "&")[OFFSET(0)]
 x[ORDINAL(1)][SAFE_OFFSET(2)]

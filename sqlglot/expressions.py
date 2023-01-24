@@ -887,6 +887,10 @@ class ForeignKey(Expression):
     }
 
 
+class PrimaryKey(Expression):
+    arg_types = {"expressions": True, "options": False}
+
+
 class Unique(Expression):
     arg_types = {"expressions": True}
 
@@ -1298,7 +1302,7 @@ class Return(Expression):
 
 
 class Reference(Expression):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False, "options": False}
 
 
 class Tuple(Expression):
@@ -2341,14 +2345,7 @@ class AlterTable(Expression):
 
 
 class AddConstraint(Expression):
-    arg_types = {
-        "this": False,
-        "expression": False,  # Only used in the CHECK constraint
-        "primary": False,  # None: CHECK, False: FOREIGN KEY, True: PRIMARY KEY
-        "columns": False,
-        "references": False,
-        "options": False,
-    }
+    arg_types = {"this": False, "expression": False, "enforced": False}
 
 
 # Binary expressions like (ADD a b)

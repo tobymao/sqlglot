@@ -17,7 +17,8 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT quantile(0.5)(a)")
         self.validate_identity("SELECT quantiles(0.5)(a) AS x FROM t")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
-        self.validate_identity("position(a, b)")
+        self.validate_identity("position(haystack, needle)")
+        self.validate_identity("position(haystack, needle, position)")
 
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
@@ -47,6 +48,10 @@ class TestClickhouse(Validator):
             write={
                 "clickhouse": "SELECT quantileIf(0.5)(a, TRUE)",
             },
+        )
+        self.validate_all(
+            "SELECT position(needle IN haystack)",
+            write={"clickhouse": "SELECT position(haystack, needle)"},
         )
 
     def test_cte(self):

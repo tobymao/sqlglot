@@ -12,19 +12,19 @@ Currently many of the common operations are covered and more functionality will 
 * Prior to any `spark.read.table` or `spark.table` run `sqlglot.schema.add_table('<table_name>', <column_structure>)`.
   * The column structure can be defined the following ways:
     * Dictionary where the keys are column names and values are string of the Spark SQL type name.
-      * Ex: `{'cola': 'string', 'colb': 'int'}`.
+      * Ex: `{'cola': 'string', 'colb': 'int'}`
     * PySpark DataFrame `StructType` similar to when using `createDataFrame`.
-      * Ex: `StructType([StructField('cola', StringType()), StructField('colb', IntegerType())])`.
+      * Ex: `StructType([StructField('cola', StringType()), StructField('colb', IntegerType())])`
     * A string of names and types similar to what is supported in `createDataFrame`.
-      * Ex: `cola: STRING, colb: INT`.
+      * Ex: `cola: STRING, colb: INT`
     * [Not Recommended] A list of string column names without type.
-      * Ex: `['cola', 'colb']`.
+      * Ex: `['cola', 'colb']`
       * The lack of types may limit functionality in future releases.
   * See [Registering Custom Schema](#registering-custom-schema-class) for information on how to skip this step if the information is stored externally.
 * Add `.sql(pretty=True)` to your final DataFrame command to return a list of sql statements to run that command.
   * In most cases a single SQL statement is returned. Currently the only exception is when caching DataFrames which isn't supported in other dialects.  
   * Spark is the default output dialect. See [dialects](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects) for a full list of dialects.
-  * Ex: `.sql(pretty=True, dialect='bigquery')`.
+  * Ex: `.sql(pretty=True, dialect='bigquery')`
 
 ## Examples
 

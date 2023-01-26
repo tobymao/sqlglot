@@ -40,22 +40,23 @@ class _Parser(type):
 
 class Parser(metaclass=_Parser):
     """
-    Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
-    and produces a parsed syntax tree.
+    Parser consumes a list of tokens produced by the `sqlglot.tokens.Tokenizer` and produces
+    a parsed syntax tree.
 
-    Args
-        error_level (ErrorLevel): the desired error level. Default: ErrorLevel.RAISE.
-        error_message_context (int): determines the amount of context to capture from
-            a query string when displaying the error message (in number of characters).
+    Args:
+        error_level: the desired error level.
+            Default: ErrorLevel.RAISE
+        error_message_context: determines the amount of context to capture from a
+            query string when displaying the error message (in number of characters).
             Default: 50.
-        index_offset (int): Index offset for arrays eg ARRAY[0] vs ARRAY[1] as the head of a list
+        index_offset: Index offset for arrays eg ARRAY[0] vs ARRAY[1] as the head of a list.
             Default: 0
-        alias_post_tablesample (bool): If the table alias comes after tablesample
+        alias_post_tablesample: If the table alias comes after tablesample.
             Default: False
-        max_errors (int): Maximum number of error messages to include in a raised ParseError.
+        max_errors: Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
             Default: 3
-        null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
+        null_ordering: Indicates the default null ordering method to use if not explicitly set.
             Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
             Default: "nulls_are_small"
     """

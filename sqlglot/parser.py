@@ -822,24 +822,8 @@ class Parser(metaclass=_Parser):
         if self.error_level == ErrorLevel.IGNORE:
             return
 
-        for k in expression.args:
-            if k not in expression.arg_types:
-                self.raise_error(f"Unexpected keyword: '{k}' for {expression.__class__}")
-        for k, mandatory in expression.arg_types.items():
-            v = expression.args.get(k)
-            if mandatory and (v is None or (isinstance(v, list) and not v)):
-                self.raise_error(f"Required keyword: '{k}' missing for {expression.__class__}")
-
-        if (
-            args
-            and isinstance(expression, exp.Func)
-            and len(args) > len(expression.arg_types)
-            and not expression.is_var_len_args
-        ):
-            self.raise_error(
-                f"The number of provided arguments ({len(args)}) is greater than "
-                f"the maximum number of supported arguments ({len(expression.arg_types)})"
-            )
+        for error_message in expression.validate(args):
+            self.raise_error(error_message)
 
     def _find_token(self, token: Token, sql: str) -> int:
         line = 1

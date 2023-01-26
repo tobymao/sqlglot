@@ -189,6 +189,26 @@ class TestExpressions(unittest.TestCase):
             "SELECT * FROM (SELECT a FROM tbl1) WHERE b > 100",
         )
 
+    def test_function_building(self):
+        num_arg = exp.Literal.number(1)
+        str_arg = exp.Literal.string("foo")
+
+        self.assertEqual(exp.func("bla", num_arg, str_arg).sql(), "BLA(1, 'foo')")
+        self.assertEqual(exp.func("COUNT", exp.Star()).sql(), "COUNT(*)")
+        self.assertEqual(exp.func("bloo").sql(), "BLOO()")
+
+        self.assertIsInstance(exp.func("bla", num_arg, str_arg), exp.Anonymous)
+        self.assertIsInstance(
+            exp.func("cast", this=exp.Literal.number(5), to=exp.DataType.build("DOUBLE")),
+            exp.Cast,
+        )
+
+        with self.assertRaises(ValueError):
+            exp.func("some_func", num_arg, arg2=str_arg)
+
+        with self.assertRaises(ValueError):
+            exp.func("abs")
+
     def test_named_selects(self):
         expression = parse_one(
             "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"

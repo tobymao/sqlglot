@@ -659,7 +659,12 @@ class Create(Expression):
         "this": True,
         "kind": True,
         "expression": False,
+        "set": False,
+        "multiset": False,
+        "global_temporary": False,
+        "volatile": False,
         "exists": False,
+        "options": False,
         "properties": False,
         "temporary": False,
         "transient": False,
@@ -1289,6 +1294,80 @@ class Properties(Expression):
                 expressions.append(property_cls(this=convert(value)))
             else:
                 expressions.append(Property(this=Literal.string(key), value=convert(value)))
+
+        return cls(expressions=expressions)
+
+
+class Option(Expression):
+    arg_types = {"this": True, "value": True}
+
+
+class FallbackOption(Option):
+    arg_types = {"this": False, "no": True, "protection": True}
+
+
+class WithJournalTableOption(Option):
+    arg_types = {"this": True}
+
+
+class LogOption(Option):
+    arg_types = {"no": True}
+
+
+class JournalOption(Option):
+    arg_types = {"no": True, "dual": False, "before": False}
+
+
+class AfterJournalOption(Option):
+    arg_types = {"no": True, "dual": False, "local": False}
+
+
+class ChecksumOption(Option):
+    arg_types = {"this": False, "default": False}
+
+
+class FreespaceOption(Option):
+    arg_types = {"this": True, "percent": True}
+
+
+class MergeBlockRatioOption(Option):
+    arg_types = {"this": False, "no": False, "default": False, "ratio": False, "percent": False}
+
+
+class DataBlocksizeOption(Option):
+    arg_types = {"size": False, "units": False, "min": False, "default": False}
+
+
+class BlockCompressionOption(Option):
+    arg_types = {"autotemp": False, "default": True, "manual": True, "never": True}
+
+
+class IsolatedLoadingOption(Option):
+    arg_types = {"no": True, "concurrent": True, "for_all": True, "insert": True, "none": True}
+
+
+class Options(Expression):
+    arg_types = {"expressions": True}
+
+    NAME_TO_OPTION = {
+        "BLOCKCOMPRESSION": BlockCompressionOption,
+        "CHECKSUM": ChecksumOption,
+        "DATABLOCKSIZE": DataBlocksizeOption,
+        "FREESPACE": FreespaceOption,
+        "WITH_JOURNAL_TABLE": WithJournalTableOption,
+    }
+
+    OPTION_TO_NAME = {v: k for k, v in NAME_TO_OPTION.items()}
+
+    @classmethod
+    def from_dict(cls, options_dict) -> Options:
+        expressions = []
+        for key, value in options_dict.items():
+            option_cls = cls.NAME_TO_OPTION.get(key.upper())
+            if option_cls:
+                expressions.append(option_cls(this=convert(value)))
+            else:
+                expressions.append(Option(this=Literal.string(key), value=convert(value)))
 
         return cls(expressions=expressions)
 

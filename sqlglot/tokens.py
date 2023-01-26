@@ -130,6 +130,7 @@ class TokenType(AutoName):
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
+    BLOCKCOMPRESSION = auto()
     BOTH = auto()
     BUCKET = auto()
     BY_DEFAULT = auto()
@@ -138,6 +139,7 @@ class TokenType(AutoName):
     CASE = auto()
     CHARACTER_SET = auto()
     CHECK = auto()
+    CHECKSUM = auto()
     CLUSTER_BY = auto()
     COLLATE = auto()
     COMMAND = auto()
@@ -153,6 +155,7 @@ class TokenType(AutoName):
     CURRENT_ROW = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
+    DATABLOCKSIZE = auto()
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()
@@ -182,9 +185,10 @@ class TokenType(AutoName):
     FOR = auto()
     FOREIGN_KEY = auto()
     FORMAT = auto()
+    FREESPACE = auto()
+    FROM = auto()
     FULL = auto()
     FUNCTION = auto()
-    FROM = auto()
     GENERATED = auto()
     GLOBAL = auto()
     GROUP_BY = auto()
@@ -221,6 +225,7 @@ class TokenType(AutoName):
     MAP = auto()
     MATERIALIZED = auto()
     MERGE = auto()
+    MERGEBLOCKRATIO = auto()
     MOD = auto()
     NATURAL = auto()
     NEXT = auto()
@@ -303,6 +308,7 @@ class TokenType(AutoName):
     WHERE = auto()
     WINDOW = auto()
     WITH = auto()
+    WITH_JOURNAL_TABLE = auto()
     WITH_TIME_ZONE = auto()
     WITH_LOCAL_TIME_ZONE = auto()
     WITHIN_GROUP = auto()
@@ -477,6 +483,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,
+        "BLOCKCOMPRESSION": TokenType.BLOCKCOMPRESSION,
         "BOTH": TokenType.BOTH,
         "BUCKET": TokenType.BUCKET,
         "BY DEFAULT": TokenType.BY_DEFAULT,
@@ -486,6 +493,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CASCADE": TokenType.CASCADE,
         "CHARACTER SET": TokenType.CHARACTER_SET,
         "CHECK": TokenType.CHECK,
+        "CHECKSUM": TokenType.CHECKSUM,
         "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,
@@ -499,6 +507,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
+        "DATABLOCKSIZE": TokenType.DATABLOCKSIZE,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
@@ -522,6 +531,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FETCH": TokenType.FETCH,
         "FILTER": TokenType.FILTER,
         "FIRST": TokenType.FIRST,
+        "FREESPACE": TokenType.FREESPACE,
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,
         "FOLLOWING": TokenType.FOLLOWING,
@@ -560,6 +570,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LOCATION": TokenType.LOCATION,
         "MATERIALIZED": TokenType.MATERIALIZED,
         "MERGE": TokenType.MERGE,
+        "MERGEBLOCKRATIO": TokenType.MERGEBLOCKRATIO,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
         "NO ACTION": TokenType.NO_ACTION,
@@ -638,6 +649,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "WHERE": TokenType.WHERE,
         "WINDOW": TokenType.WINDOW,
         "WITH": TokenType.WITH,
+        "WITH JOURNAL TABLE": TokenType.WITH_JOURNAL_TABLE,
         "WITH TIME ZONE": TokenType.WITH_TIME_ZONE,
         "WITH LOCAL TIME ZONE": TokenType.WITH_LOCAL_TIME_ZONE,
         "WITHIN GROUP": TokenType.WITHIN_GROUP,

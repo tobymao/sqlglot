@@ -544,6 +544,15 @@ class Parser(metaclass=_Parser):
         TokenType.PROPERTIES: lambda self: self._parse_wrapped_csv(self._parse_property),
     }
 
+    OPTION_PARSERS = {
+        TokenType.BLOCKCOMPRESSION: lambda self: self._parse_blockcompression(),
+        TokenType.CHECKSUM: lambda self: self._parse_checksum(),
+        TokenType.DATABLOCKSIZE: lambda self: self._parse_datablocksize(),
+        TokenType.FREESPACE: lambda self: self._parse_freespace(),
+        TokenType.MERGEBLOCKRATIO: lambda self: self._parse_mergeblockratio(),
+        TokenType.WITH_JOURNAL_TABLE: lambda self: self._parse_withjournaltable(),
+    }
+
     CONSTRAINT_PARSERS = {
         TokenType.CHECK: lambda self: self.expression(
             exp.Check, this=self._parse_wrapped(self._parse_conjunction)
@@ -917,6 +926,10 @@ class Parser(metaclass=_Parser):
 
     def _parse_create(self) -> t.Optional[exp.Expression]:
         replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
+        set_ = self._match(TokenType.SET)  # Teradata
+        multiset = self._match_text_seq("MULTISET")  # Teradata
+        global_temporary = self._match_pair(TokenType.GLOBAL, TokenType.TEMPORARY)  # Teradata
+        volatile = self._match(TokenType.VOLATILE)  # Teradata
         temporary = self._match(TokenType.TEMPORARY)
         transient = self._match_text_seq("TRANSIENT")
         external = self._match_text_seq("EXTERNAL")
@@ -935,6 +948,7 @@ class Parser(metaclass=_Parser):
         exists = self._parse_exists(not_=True)
         this = None
         expression = None
+        options = None
         properties = None
         data = None
         statistics = None
@@ -960,7 +974,18 @@ class Parser(metaclass=_Parser):
             TokenType.VIEW,
             TokenType.SCHEMA,
         ):
-            this = self._parse_table(schema=True)
+            # table options may be present between table name and schema
+            index = self._index
+            table_parts = self._parse_table_parts()
+            if self._match(TokenType.COMMA):
+                options = self.expression(
+                    exp.Options, expressions=self._parse_csv(self._parse_option)
+                )
+                this = self._parse_schema(this=table_parts)
+            else:
+                self._retreat(index)
+                this = self._parse_table(schema=True)
+
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
                 expression = self._parse_ddl_select()
@@ -994,7 +1019,12 @@ class Parser(metaclass=_Parser):
             this=this,
             kind=create_token.text,
             expression=expression,
+            set=set_,
+            multiset=multiset,
+            global_temporary=global_temporary,
+            volatile=volatile,
             exists=exists,
+            options=options,
             properties=properties,
             temporary=temporary,
             transient=transient,
@@ -1038,6 +1068,185 @@ class Parser(metaclass=_Parser):
             exp_class,
             this=self._parse_var_or_string() or self._parse_number() or self._parse_id_var(),
         )
+
+    def _parse_properties(self) -> t.Optional[exp.Expression]:
+        properties = []
+
+        while True:
+            identified_property = self._parse_property()
+            if not identified_property:
+                break
+            for p in ensure_collection(identified_property):
+                properties.append(p)
+
+        if properties:
+            return self.expression(exp.Properties, expressions=properties)
+
+        return None
+
+    def _parse_option(self) -> t.Optional[exp.Expression]:
+        if self._match_text_seq("NO"):
+            if self._match_text_seq("FALLBACK"):
+                return self.expression(
+                    exp.FallbackOption, no=True, protection=self._match_text_seq("PROTECTION")
+                )
+            elif self._match_text_seq("LOG"):
+                return self.expression(exp.LogOption, no=True)
+            elif self._match_text_seq("MERGEBLOCKRATIO"):
+                return self.expression(exp.MergeBlockRatioOption, no=True)
+            elif self._match_text_seq("BEFORE"):
+                self._match_text_seq("JOURNAL")
+                return self.expression(exp.JournalOption, no=True, before=True)
+            elif self._match_text_seq("AFTER"):
+                self._match_text_seq("JOURNAL")
+                return self.expression(exp.AfterJournalOption, no=True)
+            elif self._match_text_seq("JOURNAL"):
+                return self.expression(exp.JournalOption, no=True)
+
+        if self._match(TokenType.DEFAULT):
+            if self._match_text_seq("MERGEBLOCKRATIO"):
+                return self.expression(exp.MergeBlockRatioOption, default=True)
+            elif self._match(TokenType.DATABLOCKSIZE):
+                return self.expression(exp.DataBlocksizeOption, default=True)
+
+        if self._match_text_seq("DUAL"):
+            if self._match_text_seq("JOURNAL"):
+                return self.expression(exp.JournalOption, dual=True)
+            elif self._match_text_seq("BEFORE", "JOURNAL"):
+                return self.expression(exp.JournalOption, before=True, dual=True)
+            if self._match_text_seq("AFTER", "JOURNAL"):
+                return self.expression(exp.AfterJournalOption, dual=True)
+
+        if self._match_text_seq("FALLBACK"):
+            return self.expression(
+                exp.FallbackOption, protection=self._match_text_seq("PROTECTION")
+            )
+
+        if self._match_text_seq("LOG"):
+            return self.expression(exp.LogOption, no=False)
+
+        if self._match_text_seq("JOURNAL"):
+            return self.expression(exp.JournalOption, no=False)
+        elif self._match_text_seq("BEFORE", "JOURNAL"):
+            return self.expression(exp.JournalOption, before=True)
+
+        if self._match_text_seq("NOT", "LOCAL", "AFTER", "JOURNAL"):
+            return self.expression(exp.AfterJournalOption, local=False)
+        elif self._match_text_seq("LOCAL", "AFTER", "JOURNAL"):
+            return self.expression(exp.AfterJournalOption, local=True)
+        elif self._match_text_seq("AFTER", "JOURNAL"):
+            return self.expression(exp.AfterJournalOption, no=False)
+
+        if self._match_texts(("MIN", "MINIMUM")):
+            self._match(TokenType.DATABLOCKSIZE)
+            return self.expression(exp.DataBlocksizeOption, min=True)
+        if self._match_texts(("MAX", "MAXIMUM")):
+            self._match(TokenType.DATABLOCKSIZE)
+            return self.expression(exp.DataBlocksizeOption, min=False)
+
+        if self._match(TokenType.WITH):
+            no = self._match_text_seq("NO")
+            concurrent = self._match_text_seq("CONCURRENT")
+            self._match_text_seq("ISOLATED", "LOADING")
+            for_all = self._match_text_seq("FOR", "ALL")
+            insert = self._match_text_seq("INSERT")
+            none_ = self._match_text_seq("NONE")
+            return self.expression(
+                exp.IsolatedLoadingOption,
+                no=no,
+                concurrent=concurrent,
+                for_all=for_all,
+                insert=insert,
+                none=none_,
+            )
+
+        if self._match_set(self.OPTION_PARSERS):
+            return self.OPTION_PARSERS[self._prev.token_type](self)
+
+        assignment = self._match_pair(
+            TokenType.VAR, TokenType.EQ, advance=False
+        ) or self._match_pair(TokenType.STRING, TokenType.EQ, advance=False)
+
+        if assignment:
+            key = self._parse_var_or_string()
+            self._match(TokenType.EQ)
+            return self.expression(exp.Option, this=key, value=self._parse_column())
+
+        return None
+
+    def _parse_options(self) -> t.Optional[exp.Expression]:
+        options = []
+
+        while True:
+            identified_option = self._parse_option()
+            if not identified_option:
+                break
+            for p in ensure_collection(identified_option):
+                options.append(p)
+
+        if options:
+            return self.expression(exp.Options, expressions=options)
+
+        return None
+
+    def _parse_blockcompression(self) -> exp.Expression:
+        self._match(TokenType.EQ)
+        always = self._match(TokenType.ALWAYS)
+        never = self._match_text_seq("NEVER")
+        default = self._match_text_seq("DEFAULT")
+        autotemp = None
+        if self._match_text_seq("AUTOTEMP"):
+            autotemp = self._parse_schema()
+
+        return self.expression(
+            exp.BlockCompressionOption,
+            always=always,
+            never=never,
+            default=default,
+            autotemp=autotemp,
+        )
+
+    def _parse_checksum(self) -> exp.Expression:
+        self._match(TokenType.EQ)
+
+        this = None
+        if self._match(TokenType.ON):
+            this = True
+        elif self._match_text_seq("OFF"):
+            this = False
+        default = self._match(TokenType.DEFAULT)
+
+        return self.expression(
+            exp.ChecksumOption,
+            this=this,
+            default=default,
+        )
+
+    def _parse_datablocksize(self) -> exp.Expression:
+        self._match(TokenType.EQ)
+        size = self._parse_number()
+        units = None
+        if self._match_texts(("BYTES", "KBYTES", "KILOBYTES")):
+            units = self._prev.text
+        return self.expression(exp.DataBlocksizeOption, size=size, units=units)
+
+    def _parse_freespace(self) -> exp.Expression:
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.FreespaceOption, this=self._parse_number(), percent=self._match(TokenType.PERCENT)
+        )
+
+    def _parse_mergeblockratio(self) -> exp.Expression:
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.MergeBlockRatioOption,
+            this=self._parse_number(),
+            percent=self._match(TokenType.PERCENT),
+        )
+
+    def _parse_withjournaltable(self) -> exp.Expression:
+        self._match(TokenType.EQ)
+        return self.expression(exp.WithJournalTableOption, this=self._parse_table_parts())
 
     def _parse_partitioned_by(self) -> exp.Expression:
         self._match(TokenType.EQ)
@@ -1098,21 +1307,6 @@ class Parser(metaclass=_Parser):
             value = self._parse_types()
 
         return self.expression(exp.ReturnsProperty, this=value, is_table=is_table)
-
-    def _parse_properties(self) -> t.Optional[exp.Expression]:
-        properties = []
-
-        while True:
-            identified_property = self._parse_property()
-            if not identified_property:
-                break
-            for p in ensure_collection(identified_property):
-                properties.append(p)
-
-        if properties:
-            return self.expression(exp.Properties, expressions=properties)
-
-        return None
 
     def _parse_describe(self) -> exp.Expression:
         kind = self._match_set(self.CREATABLES) and self._prev.text

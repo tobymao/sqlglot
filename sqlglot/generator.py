@@ -16,7 +16,7 @@ class Generator:
     """
     Generator interprets the given syntax tree and produces a SQL string as an output.
 
-    Args
+    Args:
         time_mapping (dict): the dictionary of custom time mappings in which the key
             represents a python time format and the output the target time format
         time_trie (trie): a trie of the time_mapping keys

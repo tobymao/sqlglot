@@ -82,6 +82,15 @@ class TestParser(unittest.TestCase):
 
     def test_select(self):
         self.assertIsNotNone(parse_one("select 1 natural"))
+        self.assertIsNotNone(parse_one("select top 1 * from table"))
+        self.assertIsNotNone(parse_one("select top 10 distinct * from table"))
+        self.assertIsNotNone(parse_one("select top 10 distinct * exclude a, b from table"))
+        self.assertIsNotNone(parse_one("select top 10 distinct * rename a as b from table"))
+        self.assertIsNotNone(
+            parse_one(
+                "select top 10 distinct t1.* rename a as b tbl2.* exclude c from table t1, table2 t2"
+            )
+        )
         self.assertIsNotNone(parse_one("select * from (select 1) x order by x.y").args["order"])
         self.assertIsNotNone(
             parse_one("select * from x where a = (select 1) order by x.y").args["order"]

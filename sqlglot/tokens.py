@@ -171,6 +171,7 @@ class TokenType(AutoName):
     ENGINE = auto()
     ESCAPE = auto()
     EXCEPT = auto()
+    EXCLUDE = auto()
     EXECUTE = auto()
     EXISTS = auto()
     FALSE = auto()
@@ -255,6 +256,7 @@ class TokenType(AutoName):
     QUOTE = auto()
     RANGE = auto()
     RECURSIVE = auto()
+    RENAME = auto()
     REPLACE = auto()
     RESPECT_NULLS = auto()
     REFERENCES = auto()
@@ -516,6 +518,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ENGINE": TokenType.ENGINE,
         "ESCAPE": TokenType.ESCAPE,
         "EXCEPT": TokenType.EXCEPT,
+        "EXCLUDE": TokenType.EXCLUDE,
         "EXECUTE": TokenType.EXECUTE,
         "EXISTS": TokenType.EXISTS,
         "FALSE": TokenType.FALSE,
@@ -592,6 +595,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
+        "RENAME": TokenType.RENAME,
         "REPLACE": TokenType.REPLACE,
         "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "REFERENCES": TokenType.REFERENCES,

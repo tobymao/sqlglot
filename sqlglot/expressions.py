@@ -1551,6 +1551,8 @@ class Select(Subqueryable):
         "expressions": False,
         "hint": False,
         "distinct": False,
+        "excludes": False,
+        "renames": False,
         "into": False,
         "from": False,
         **QUERY_MODIFIERS,
@@ -2036,6 +2038,51 @@ class Select(Subqueryable):
         """
         instance = _maybe_copy(self, copy)
         instance.set("distinct", Distinct() if distinct else None)
+        return instance
+
+    def exclude(self, columns=list, copy=True) -> Select:
+        """
+        Set the EXCLUDE expression.
+
+        Example:
+            >>> select("*").exclude(["x", "y"]).from_("tbl").sql()
+            'SELECT * EXCLUDE x, y FROM tbl'
+
+        Args:
+            columns (list[str]): columns to exclude from the SELECT * statement
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        if not isinstance(columns, list):
+            raise ValueError(f"expecting columns to be a list, not {type(columns)}")
+        instance = _maybe_copy(self, copy)
+        instance.set("exclude", Exclude(expressions=columns))
+        return instance
+
+    def rename(self, columns=dict, copy=True) -> Select:
+        """
+        Set the RENAME expression.
+
+        Example:
+            >>> select("*").rename({"x", "y"}).from_("tbl").sql()
+            'SELECT * EXCLUDE x, y FROM tbl'
+
+        Args:
+            columns (dict[str, str]): columns to alias in the SELECT * statement
+            copy (bool): if `False`, modify this expression instance in-place.
+
+        Returns:
+            Select: the modified expression.
+        """
+        if not isinstance(columns, dict):
+            raise ValueError(f"expecting columns to be a dict, not {type(columns)}")
+        instance = _maybe_copy(self, copy)
+        instance.set(
+            "rename",
+            Rename(expressions=[f"{k} AS {v}" for k, v in columns.items()]),
+        )
         return instance
 
     def ctas(self, table, properties=None, dialect=None, copy=True, **opts) -> Create:
@@ -2812,6 +2859,14 @@ class LastDateOfMonth(Func):
 
 class Extract(Func):
     arg_types = {"this": True, "expression": True}
+
+
+class Exclude(Expression):
+    arg_types = {"expressions": False}
+
+
+class Rename(Expression):
+    arg_types = {"expressions": False}
 
 
 class TimestampAdd(Func, TimeUnit):

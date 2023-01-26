@@ -405,6 +405,8 @@ class Parser(metaclass=_Parser):
     EXPRESSION_PARSERS = {
         exp.Column: lambda self: self._parse_column(),
         exp.DataType: lambda self: self._parse_types(),
+        exp.Exclude: lambda self: self._parse_exclude(),
+        exp.Rename: lambda self: self._parse_rename(),
         exp.From: lambda self: self._parse_from(),
         exp.Group: lambda self: self._parse_group(),
         exp.Identifier: lambda self: self._parse_id_var(),
@@ -1303,22 +1305,40 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
             limit = self._parse_limit(top=True)
-            expressions = self._parse_csv(self._parse_expression)
+
+            # These clauses can occur multiple times in a SELECT statement
+            expressions = []
+            excludes = None
+            renames = None
+            while not (into := self._parse_into()) and not (from_ := self._parse_from()):
+                expressions.extend(self._parse_csv(self._parse_expression))
+                if this_exclude := self._parse_exclude():
+                    columns = []
+                    if excludes:
+                        columns = excludes.expressions
+                    columns.extend(this_exclude.expressions)
+                    excludes = self.expression(exp.Exclude, expressions=columns)
+                if this_rename := self._parse_rename():
+                    columns = []
+                    if renames:
+                        columns = renames.expressions
+                    columns.extend(this_rename.expressions)
+                    renames = self.expression(exp.Rename, expressions=columns)
 
             this = self.expression(
                 exp.Select,
                 hint=hint,
                 distinct=distinct,
+                excludes=excludes,
+                renames=renames,
                 expressions=expressions,
                 limit=limit,
             )
             this.comments = comments
 
-            into = self._parse_into()
             if into:
                 this.set("into", into)
 
-            from_ = self._parse_from()
             if from_:
                 this.set("from", from_)
 
@@ -1848,6 +1868,16 @@ class Parser(metaclass=_Parser):
             nulls_first = True
 
         return self.expression(exp.Ordered, this=this, desc=desc, nulls_first=nulls_first)
+
+    def _parse_exclude(self) -> t.Optional[exp.Expression]:
+        if self._match(TokenType.EXCLUDE):
+            return self.expression(exp.Exclude, expressions=self._parse_csv(self._parse_expression))
+        return None
+
+    def _parse_rename(self) -> t.Optional[exp.Expression]:
+        if self._match(TokenType.RENAME):
+            return self.expression(exp.Rename, expressions=self._parse_csv(self._parse_expression))
+        return None
 
     def _parse_limit(
         self, this: t.Optional[exp.Expression] = None, top: bool = False

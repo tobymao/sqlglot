@@ -589,6 +589,12 @@ class Generator:
     def except_op(self, expression: exp.Except) -> str:
         return f"EXCEPT{'' if expression.args.get('distinct') else ' ALL'}"
 
+    def exclude_sql(self, expression: exp.Exclude) -> str:
+        return f" EXCLUDE {', '.join(expression.args.get('expressions'))}"
+
+    def rename_sql(self, expression: exp.Rename) -> str:
+        return f" RENAME {', '.join(expression.args.get('expressions'))}"
+
     def fetch_sql(self, expression: exp.Fetch) -> str:
         direction = expression.args.get("direction")
         direction = f" {direction.upper()}" if direction else ""
@@ -1003,6 +1009,8 @@ class Generator:
         sql = self.query_modifiers(
             expression,
             f"SELECT{hint}{distinct}{expressions}",
+            self.sql(expression, "excludes"),
+            self.sql(expression, "renames"),
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )

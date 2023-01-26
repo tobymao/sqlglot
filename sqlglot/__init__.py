@@ -1,5 +1,6 @@
 """
 .. include:: ../README.md
+----
 """
 
 from __future__ import annotations
@@ -35,8 +36,10 @@ from sqlglot.tokens import Tokenizer, TokenType
 __version__ = "10.5.7"
 
 pretty = False
+"""Whether to format generated SQL by default."""
 
 schema = MappingSchema()
+"""The default schema used by SQLGlot (e.g. in the optimizer)."""
 
 
 def parse(
@@ -48,7 +51,7 @@ def parse(
     Args:
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
-        **opts: other options.
+        **opts: other `sqlglot.parser.Parser` options.
 
     Returns:
         The resulting syntax tree collection.
@@ -70,7 +73,7 @@ def parse_one(
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
         into: the SQLGlot Expression to parse into.
-        **opts: other options.
+        **opts: other `sqlglot.parser.Parser` options.
 
     Returns:
         The syntax tree for the first parsed statement.
@@ -110,7 +113,7 @@ def transpile(
         identity: if set to `True` and if the target dialect is not specified the source dialect will be used as both:
             the source and the target dialect.
         error_level: the desired error level of the parser.
-        **opts: other options.
+        **opts: other `sqlglot.generator.Generator` options.
 
     Returns:
         The list of transpiled SQL statements.

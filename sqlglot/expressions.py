@@ -1,5 +1,11 @@
 """
-.. include:: ../pdoc/docs/expressions.md
+## Expressions
+
+Every AST node in SQLGlot is represented by a subclass of `Expression`.
+
+This module contains the implementation of all supported `Expression` types. Additionally,
+it exposes a number of helper functions, which are mainly used to programmatically build
+SQL expressions, such as `sqlglot.expressions.select`.
 """
 
 from __future__ import annotations
@@ -31,23 +37,48 @@ if t.TYPE_CHECKING:
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
+
+        # When an Expression class is created, its key is automatically set to be
+        # the lowercase version of the class' name.
         klass.key = clsname.lower()
+
+        # This is so that docstrings are not inherited in pdoc
+        klass.__doc__ = klass.__doc__ or ""
+
         return klass
 
 
 class Expression(metaclass=_Expression):
     """
-    The base class for all expressions in a syntax tree.
+    The base class for all expressions in a syntax tree. Each Expression encapsulates any necessary
+    context, such as its child expressions, their names (arg keys), and whether a given child expression
+    is optional or not.
 
     Attributes:
-        arg_types (dict): determines arguments supported by this expression.
-            The key in a dictionary defines a unique key of an argument using
-            which the argument's value can be retrieved. The value is a boolean
-            flag which indicates whether the argument's value is required (True)
-            or optional (False).
+        key: a unique key for each class in the Expression hierarchy. This is useful for hashing
+            and representing expressions as strings.
+        arg_types: determines what arguments (child nodes) are supported by an expression. It
+            maps arg keys to booleans that indicate whether the corresponding args are optional.
+
+    Example:
+        >>> class Foo(Expression):
+        ...     arg_types = {"this": True, "expression": False}
+
+        The above definition informs us that Foo is an Expression that requires an argument called
+        "this" and may also optionally receive an argument called "expression".
+
+    Args:
+        args: a mapping used for retrieving the arguments of an expression, given their arg keys.
+        parent: a reference to the parent expression (or None, in case of root expressions).
+        arg_key: the arg key an expression is associated with, i.e. the name its parent expression
+            uses to refer to it.
+        comments: a list of comments that are associated with a given expression. This is used in
+            order to preserve comments when transpiling SQL code.
+        _type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
+            optimizer, in order to enable some transformations that require type information.
     """
 
-    key = "Expression"
+    key = "expression"
     arg_types = {"this": True}
     __slots__ = ("args", "parent", "arg_key", "comments", "_type")
 
@@ -76,17 +107,30 @@ class Expression(metaclass=_Expression):
 
     @property
     def this(self):
+        """
+        Retrieves the argument with key "this".
+        """
         return self.args.get("this")
 
     @property
     def expression(self):
+        """
+        Retrieves the argument with key "expression".
+        """
         return self.args.get("expression")
 
     @property
     def expressions(self):
+        """
+        Retrieves the argument with key "expressions".
+        """
         return self.args.get("expressions") or []
 
     def text(self, key):
+        """
+        Returns a textual representation of the argument corresponding to "key". This can only be used
+        for args that are strings or leaf Expression instances, such as identifiers and literals.
+        """
         field = self.args.get(key)
         if isinstance(field, str):
             return field
@@ -96,14 +140,23 @@ class Expression(metaclass=_Expression):
 
     @property
     def is_string(self):
+        """
+        Checks whether a Literal expression is a string.
+        """
         return isinstance(self, Literal) and self.args["is_string"]
 
     @property
     def is_number(self):
+        """
+        Checks whether a Literal expression is a number.
+        """
         return isinstance(self, Literal) and not self.args["is_string"]
 
     @property
     def is_int(self):
+        """
+        Checks whether a Literal expression is an integer.
+        """
         if self.is_number:
             try:
                 int(self.name)
@@ -114,6 +167,9 @@ class Expression(metaclass=_Expression):
 
     @property
     def alias(self):
+        """
+        Returns the alias of the expression, or an empty string if it's not aliased.
+        """
         if isinstance(self.args.get("alias"), TableAlias):
             return self.args["alias"].name
         return self.text("alias")
@@ -163,6 +219,9 @@ class Expression(metaclass=_Expression):
         return copy
 
     def copy(self):
+        """
+        Returns a deep copy of the expression.
+        """
         new = deepcopy(self)
         for item, parent, _ in new.bfs():
             if isinstance(item, Expression) and parent:
@@ -187,7 +246,7 @@ class Expression(metaclass=_Expression):
         Sets `arg_key` to `value`.
 
         Args:
-            arg_key (str): name of the expression arg
+            arg_key (str): name of the expression arg.
             value: value to set the arg to.
         """
         self.args[arg_key] = value
@@ -221,8 +280,7 @@ class Expression(metaclass=_Expression):
             expression_types (type): the expression type(s) to match.
 
         Returns:
-            the node which matches the criteria or None if no node matching
-            the criteria was found.
+            The node which matches the criteria or None if no such node was found.
         """
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
@@ -235,7 +293,7 @@ class Expression(metaclass=_Expression):
             expression_types (type): the expression type(s) to match.
 
         Returns:
-            the generator object.
+            The generator object.
         """
         for expression, _, _ in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
@@ -249,7 +307,7 @@ class Expression(metaclass=_Expression):
             expression_types (type): the expression type(s) to match.
 
         Returns:
-            the parent node
+            The parent node.
         """
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
@@ -287,7 +345,7 @@ class Expression(metaclass=_Expression):
         the DFS (Depth-first) order.
 
         Returns:
-            the generator object.
+            The generator object.
         """
         parent = parent or self.parent
         yield self, parent, key
@@ -305,7 +363,7 @@ class Expression(metaclass=_Expression):
         the BFS (Breadth-first) order.
 
         Returns:
-            the generator object.
+            The generator object.
         """
         queue = deque([(self, self.parent, None)])
 
@@ -359,32 +417,33 @@ class Expression(metaclass=_Expression):
         return self.sql()
 
     def __repr__(self):
-        return self.to_s()
+        return self._to_s()
 
     def sql(self, dialect: Dialect | str | None = None, **opts) -> str:
         """
         Returns SQL string representation of this tree.
 
-        Args
-            dialect (str): the dialect of the output SQL string
-                (eg. "spark", "hive", "presto", "mysql").
-            opts (dict): other :class:`~sqlglot.generator.Generator` options.
+        Args:
+            dialect: the dialect of the output SQL string (eg. "spark", "hive", "presto", "mysql").
+            opts: other `sqlglot.generator.Generator` options.
 
-        Returns
-            the SQL string.
+        Returns:
+            The SQL string.
         """
         from sqlglot.dialects import Dialect
 
         return Dialect.get_or_raise(dialect)().generate(self, **opts)
 
-    def to_s(self, hide_missing: bool = True, level: int = 0) -> str:
+    def _to_s(self, hide_missing: bool = True, level: int = 0) -> str:
         indent = "" if not level else "\n"
         indent += "".join(["  "] * level)
         left = f"({self.key.upper()} "
 
         args: t.Dict[str, t.Any] = {
             k: ", ".join(
-                v.to_s(hide_missing=hide_missing, level=level + 1) if hasattr(v, "to_s") else str(v)
+                v._to_s(hide_missing=hide_missing, level=level + 1)
+                if hasattr(v, "_to_s")
+                else str(v)
                 for v in ensure_collection(vs)
                 if v is not None
             )
@@ -412,7 +471,7 @@ class Expression(metaclass=_Expression):
                 modified in place.
 
         Returns:
-            the transformed tree.
+            The transformed tree.
         """
         node = self.copy() if copy else self
         new_node = fun(node, *args, **kwargs)
@@ -441,8 +500,8 @@ class Expression(metaclass=_Expression):
         Args:
             expression (Expression|None): new node
 
-        Returns :
-            the new expression or expressions
+        Returns:
+            The new expression or expressions.
         """
         if not self.parent:
             return expression
@@ -3289,6 +3348,7 @@ def _norm_arg(arg):
 ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 
+# Helpers
 def maybe_parse(
     sql_or_expression,
     *,
@@ -4069,7 +4129,7 @@ def table_name(table) -> str:
     """Get the full name of a table as a string.
 
     Args:
-        table (exp.Table | str): Table expression node or string.
+        table (exp.Table | str): table expression node or string.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -4077,7 +4137,7 @@ def table_name(table) -> str:
         'a.b.c'
 
     Returns:
-        str: the table name
+        The table name.
     """
 
     table = maybe_parse(table, into=Table)
@@ -4100,8 +4160,8 @@ def replace_tables(expression, mapping):
     """Replace all tables in expression according to the mapping.
 
     Args:
-        expression (sqlglot.Expression): Expression node to be transformed and replaced
-        mapping (Dict[str, str]): Mapping of table names
+        expression (sqlglot.Expression): expression node to be transformed and replaced.
+        mapping (Dict[str, str]): mapping of table names.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -4109,7 +4169,7 @@ def replace_tables(expression, mapping):
         'SELECT * FROM c'
 
     Returns:
-        The mapped expression
+        The mapped expression.
     """
 
     def _replace_tables(node):
@@ -4129,9 +4189,9 @@ def replace_placeholders(expression, *args, **kwargs):
     """Replace placeholders in an expression.
 
     Args:
-        expression (sqlglot.Expression): Expression node to be transformed and replaced
-        args: Positional names that will substitute unnamed placeholders in the given order
-        kwargs: Keyword arguments that will substitute named placeholders
+        expression (sqlglot.Expression): expression node to be transformed and replaced.
+        args: positional names that will substitute unnamed placeholders in the given order.
+        kwargs: keyword arguments that will substitute named placeholders.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -4141,7 +4201,7 @@ def replace_placeholders(expression, *args, **kwargs):
         'SELECT * FROM foo WHERE a = b'
 
     Returns:
-        The mapped expression
+        The mapped expression.
     """
 
     def _replace_placeholders(node, args, **kwargs):
@@ -4161,14 +4221,23 @@ def replace_placeholders(expression, *args, **kwargs):
 
 
 def true():
+    """
+    Returns a true Boolean expression.
+    """
     return Boolean(this=True)
 
 
 def false():
+    """
+    Returns a false Boolean expression.
+    """
     return Boolean(this=False)
 
 
 def null():
+    """
+    Returns a Null expression.
+    """
     return Null()
 
 

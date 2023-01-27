@@ -33,6 +33,12 @@ from sqlglot.tokens import Token
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
 
+    IntoType = t.Union[
+        str,
+        t.Type[Expression],
+        t.Collection[t.Union[str, t.Type[Expression]]],
+    ]
+
 
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
@@ -3381,11 +3387,11 @@ ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 # Helpers
 def maybe_parse(
-    sql_or_expression,
+    sql_or_expression: str | Expression,
     *,
-    into=None,
-    dialect=None,
-    prefix=None,
+    into: t.Optional[IntoType] = None,
+    dialect: t.Optional[str] = None,
+    prefix: t.Optional[str] = None,
     **opts,
 ) -> Expression:
     """Gracefully handle a possible string or expression.
@@ -3397,11 +3403,11 @@ def maybe_parse(
         (IDENTIFIER this: x, quoted: False)
 
     Args:
-        sql_or_expression (str | Expression): the SQL code string or an expression
-        into (Expression): the SQLGlot Expression to parse into
-        dialect (str): the dialect used to parse the input expressions (in the case that an
+        sql_or_expression: the SQL code string or an expression
+        into: the SQLGlot Expression to parse into
+        dialect: the dialect used to parse the input expressions (in the case that an
             input expression is a SQL string).
-        prefix (str): a string to prefix the sql with before it gets parsed
+        prefix: a string to prefix the sql with before it gets parsed
             (automatically includes a space)
         **opts: other options to use to parse the input expressions (again, in the case
             that an input expression is a SQL string).

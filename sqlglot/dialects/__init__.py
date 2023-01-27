@@ -1,17 +1,18 @@
 """
 ## Dialects
 
-One of the core abstractions in SQLGlot is the concept of a "dialect". The `Dialect` class essentially implements a
-"SQLGlot dialect", which aims to be as generic and ANSI-compliant as possible. It relies on the base `Tokenizer`,
-`Parser` and `Generator` classes to achieve this goal, so these need to be very lenient when it comes to consuming
-SQL code.
+While there is a SQL standard, no database vendor fully implements it. Most SQL engines support a variation of
+that standard, which has led to a plethora of similar, yet different SQL dialects, each of them existing for its
+own special purposes. Under these circumstances, it's usually very difficult to write portable SQL code, as the
+syntax may vary from dialect to dialect. One common example is the usage of date/time functions, which can be
+especially hard to deal with.
 
-However, there are cases where the syntax of different SQL dialects varies wildly, even for common tasks. One such
-example is the date/time functions, which can be hard to deal with. For this reason, it's sometimes necessary to
-override the base dialect in order to specialize its behavior. This can be easily done in SQLGlot: supporting new
-dialects is as simple as subclassing from `Dialect` and overriding its various components (e.g. the `Parser` class),
-in order to implement the target behavior.
-
+SQLGlot aims to bridge all these dialects, by providing an extendible SQL transpilation framework. It achieves
+this by using a `Dialect` class hierarchy, where each `Dialect` implements a specific dialect. The base `Dialect`
+class itself implements a "SQLGlot" dialect that aims to be as generic and ANSI-compliant as possible. For this
+reason, it relies on the base `Tokenizer`, `Parser` and `Generator` classes, so these need to be very lenient when
+it comes to consuming SQL code. New dialects can thus be supported very easily, simply by subclassing from `Dialect`
+and overriding its various components (e.g. the `Parser` class), in order to implement the target behavior.
 
 ### Implementing a custom Dialect
 

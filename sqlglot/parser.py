@@ -822,7 +822,7 @@ class Parser(metaclass=_Parser):
         if self.error_level == ErrorLevel.IGNORE:
             return
 
-        for error_message in expression.validate(args):
+        for error_message in expression.error_messages(args):
             self.raise_error(error_message)
 
     def _find_token(self, token: Token, sql: str) -> int:

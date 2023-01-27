@@ -535,23 +535,26 @@ class Expression(metaclass=_Expression):
         assert isinstance(self, type_)
         return self
 
-    def validate(self, args: t.Optional[t.List] = None) -> t.Generator[str, None, None]:
+    def error_messages(self, args: t.Optional[t.Sequence] = None) -> t.List[str]:
         """
-        Checks if this expression is valid, making sure that all its mandatory arguments are set.
+        Checks if this expression is valid (e.g. all mandatory args are set).
 
         Args:
-            args: an optional list of items that was used to instantiate the expression, if it's a Func.
+            args: a sequence of values that were used to instantiate a Func expression. This is used
+                to check that the provided arguments don't exceed the function argument limit.
 
-        Yields:
-            Error messages for all possible errors that were found.
+        Returns:
+            A list of error messages for all possible errors that were found.
         """
+        errors: t.List[str] = []
+
         for k in self.args:
             if k not in self.arg_types:
-                yield f"Unexpected keyword: '{k}' for {self.__class__}"
+                errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
         for k, mandatory in self.arg_types.items():
             v = self.args.get(k)
             if mandatory and (v is None or (isinstance(v, list) and not v)):
-                yield f"Required keyword: '{k}' missing for {self.__class__}"
+                errors.append(f"Required keyword: '{k}' missing for {self.__class__}")
 
         if (
             args
@@ -559,10 +562,12 @@ class Expression(metaclass=_Expression):
             and len(args) > len(self.arg_types)
             and not self.is_var_len_args
         ):
-            yield (
+            errors.append(
                 f"The number of provided arguments ({len(args)}) is greater than "
                 f"the maximum number of supported arguments ({len(self.arg_types)})"
             )
+
+        return errors
 
     def dump(self):
         """
@@ -4246,22 +4251,21 @@ def replace_placeholders(expression, *args, **kwargs):
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
 
 
-def func(name: str, *args, **kwargs) -> Func:
+def func(name: str, *args, dialect: t.Optional[Dialect | str] = None, **kwargs) -> Func:
     """
     Returns a Func expression.
 
     Examples:
-        >>> abs = func("abs", this=Literal.number(5))
-        >>> abs.sql()
+        >>> func("abs", 5).sql()
         'ABS(5)'
-        >>>
-        >>> cast = func("cast", this=Literal.number(5), to=DataType.build("DOUBLE"))
-        >>> cast.sql()
+
+        >>> func("cast", this=5, to=DataType.build("DOUBLE")).sql()
         'CAST(5 AS DOUBLE)'
 
     Args:
         name: the name of the function to build.
         args: the args used to instantiate the function of interest.
+        dialect: the source dialect.
         kwargs: the kwargs used to instantiate the function of interest.
 
     Note:
@@ -4274,18 +4278,22 @@ def func(name: str, *args, **kwargs) -> Func:
     if args and kwargs:
         raise ValueError("Can't use both args and kwargs to instantiate a function.")
 
-    from sqlglot.parser import Parser
+    from sqlglot.dialects.dialect import Dialect
 
-    from_args_list = Parser.FUNCTIONS.get(camel_to_snake_case(name))
+    args = tuple(convert(arg) for arg in args)
+    kwargs = {key: convert(value) for key, value in kwargs.items()}
+
+    parser = Dialect.get_or_raise(dialect)().parser()
+    from_args_list = parser.FUNCTIONS.get(name.upper())
 
     if from_args_list:
-        function = from_args_list(*args) if args else from_args_list.__self__(**kwargs)  # type: ignore
+        function = from_args_list(args) if args else from_args_list.__self__(**kwargs)  # type: ignore
     else:
         function = (
             Anonymous(this=name, expressions=args) if args else Anonymous(this=name, **kwargs)
         )
 
-    for error_message in function.validate(args or None):
+    for error_message in function.error_messages(args):
         raise ValueError(error_message)
 
     return function

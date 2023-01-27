@@ -190,21 +190,22 @@ class TestExpressions(unittest.TestCase):
         )
 
     def test_function_building(self):
-        num_arg = exp.Literal.number(1)
-        str_arg = exp.Literal.string("foo")
-
-        self.assertEqual(exp.func("bla", num_arg, str_arg).sql(), "BLA(1, 'foo')")
+        self.assertEqual(exp.func("bla", 1, "foo").sql(), "BLA(1, 'foo')")
         self.assertEqual(exp.func("COUNT", exp.Star()).sql(), "COUNT(*)")
         self.assertEqual(exp.func("bloo").sql(), "BLOO()")
+        self.assertEqual(
+            exp.func("locate", "x", "xo", dialect="hive").sql("hive"), "LOCATE('x', 'xo')"
+        )
 
-        self.assertIsInstance(exp.func("bla", num_arg, str_arg), exp.Anonymous)
+        self.assertIsInstance(exp.func("instr", "x", "b", dialect="mysql"), exp.StrPosition)
+        self.assertIsInstance(exp.func("bla", 1, "foo"), exp.Anonymous)
         self.assertIsInstance(
             exp.func("cast", this=exp.Literal.number(5), to=exp.DataType.build("DOUBLE")),
             exp.Cast,
         )
 
         with self.assertRaises(ValueError):
-            exp.func("some_func", num_arg, arg2=str_arg)
+            exp.func("some_func", 1, arg2="foo")
 
         with self.assertRaises(ValueError):
             exp.func("abs")

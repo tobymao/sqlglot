@@ -31,7 +31,7 @@ class Node:
 def lineage(
     column: str | exp.Column,
     sql: str | exp.Expression,
-    schema: t.Optional[t.Dict | Schema],
+    schema: t.Optional[t.Dict | Schema] = None,
     dialect: t.Optional[str] = None,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.

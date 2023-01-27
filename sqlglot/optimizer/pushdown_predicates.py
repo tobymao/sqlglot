@@ -10,6 +10,7 @@ def pushdown_predicates(expression):
 
     Example:
         >>> import sqlglot
+        >>> from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
         >>> sql = "SELECT * FROM (SELECT * FROM x AS x) AS y WHERE y.a = 1"
         >>> expression = sqlglot.parse_one(sql)
         >>> pushdown_predicates(expression).sql()

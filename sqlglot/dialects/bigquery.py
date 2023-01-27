@@ -124,7 +124,6 @@ class BigQuery(Dialect):
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
-            "QUALIFY": TokenType.QUALIFY,
             "UNKNOWN": TokenType.NULL,
         }
         KEYWORDS.pop("DIV")

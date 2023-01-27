@@ -195,7 +195,6 @@ class Snowflake(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "EXCLUDE": TokenType.EXCEPT,
-            "QUALIFY": TokenType.QUALIFY,
             "RENAME": TokenType.REPLACE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,

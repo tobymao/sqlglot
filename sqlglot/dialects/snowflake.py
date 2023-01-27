@@ -234,6 +234,11 @@ class Snowflake(Dialect):
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 
+        STAR_MAPPING = {
+            "except": "EXCLUDE",
+            "replace": "RENAME",
+        }
+
         ROOT_PROPERTIES = {
             exp.PartitionedByProperty,
             exp.ReturnsProperty,
@@ -242,16 +247,6 @@ class Snowflake(Dialect):
             exp.ExecuteAsProperty,
             exp.VolatilityProperty,
         }
-
-        def star_sql(self, expression: exp.Star) -> str:
-            """
-            Override generator to support Snowflake's EXCLUDE and RENAME keywords
-            """
-            except_ = self.expressions(expression, key="except", flat=True)
-            except_ = f"{self.seg('EXCLUDE')} ({except_})" if except_ else ""
-            replace = self.expressions(expression, key="replace", flat=True)
-            replace = f"{self.seg('RENAME')} ({replace})" if replace else ""
-            return f"*{except_}{replace}"
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

@@ -32,7 +32,7 @@ class Plan:
         return self._dag
 
     @property
-    def leaves(self) -> t.Generator[Step, None, None]:
+    def leaves(self) -> t.Iterator[Step]:
         return (node for node, deps in self.dag.items() if not deps)
 
     def __repr__(self) -> str:
@@ -401,7 +401,7 @@ class SetOperation(Step):
             op=expression.__class__,
             left=left.name,
             right=right.name,
-            distinct=expression.args.get("distinct"),
+            distinct=bool(expression.args.get("distinct")),
         )
         step.add_dependency(left)
         step.add_dependency(right)

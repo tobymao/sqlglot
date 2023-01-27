@@ -89,11 +89,11 @@ class Expression(metaclass=_Expression):
     arg_types = {"this": True}
     __slots__ = ("args", "parent", "arg_key", "comments", "_type")
 
-    def __init__(self, **args):
-        self.args = args
-        self.parent = None
-        self.arg_key = None
-        self.comments = None
+    def __init__(self, **args: t.Any):
+        self.args: t.Dict[str, t.Any] = args
+        self.parent: t.Optional[Expression] = None
+        self.arg_key: t.Optional[str] = None
+        self.comments: t.Optional[t.List[str]] = None
         self._type: t.Optional[DataType] = None
 
         for arg_key, value in self.args.items():
@@ -2217,6 +2217,16 @@ class TableSample(Expression):
         "rows": False,
         "size": False,
         "seed": False,
+    }
+
+
+class Tag(Expression):
+    """Tags are used for generating arbitrary sql like SELECT <span>x</span>."""
+
+    arg_types = {
+        "this": False,
+        "prefix": False,
+        "postfix": False,
     }
 
 

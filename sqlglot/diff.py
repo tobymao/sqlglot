@@ -260,7 +260,7 @@ class ChangeDistiller:
         return bigram_histo
 
 
-def _get_leaves(expression: exp.Expression) -> t.Generator[exp.Expression, None, None]:
+def _get_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
     has_child_exprs = False
 
     for a in expression.args.values():

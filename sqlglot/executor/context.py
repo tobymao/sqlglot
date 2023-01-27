@@ -63,7 +63,7 @@ class Context:
                 reader = table[i]
             yield reader, self
 
-    def table_iter(self, table: str) -> t.Generator[t.Tuple[TableIter, Context], None, None]:
+    def table_iter(self, table: str) -> t.Iterator[t.Tuple[TableIter, Context]]:
         self.env["scope"] = self.row_readers
 
         for reader in self.tables[table]:

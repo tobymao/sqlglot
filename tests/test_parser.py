@@ -8,7 +8,8 @@ from tests.helpers import assert_logger_contains
 
 class TestParser(unittest.TestCase):
     def test_parse_empty(self):
-        self.assertIsNone(parse_one(""))
+        with self.assertRaises(ParseError) as ctx:
+            parse_one("")
 
     def test_parse_into(self):
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
@@ -76,6 +77,9 @@ class TestParser(unittest.TestCase):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
         self.assertEqual(tables, ["a", "b.c", "d"])
 
+    def test_union_order(self):
+        self.assertIsInstance(parse_one("SELECT * FROM (SELECT 1) UNION SELECT 2"), exp.Union)
+
     def test_select(self):
         self.assertIsNotNone(parse_one("select 1 natural"))
         self.assertIsNotNone(parse_one("select * from (select 1) x order by x.y").args["order"])
@@ -86,6 +90,9 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             parse_one("""SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)""").sql(),
             """SELECT * FROM x, z CROSS JOIN y LATERAL VIEW EXPLODE(y)""",
+        )
+        self.assertIsNone(
+            parse_one("create table a as (select b from c) index").find(exp.TableAlias)
         )
 
     def test_command(self):
@@ -151,6 +158,11 @@ class TestParser(unittest.TestCase):
         assert len(expressions) == 2
         assert expressions[0].args["from"].expressions[0].this.name == "a"
         assert expressions[1].args["from"].expressions[0].this.name == "b"
+
+        expressions = parse("SELECT 1; ; SELECT 2")
+
+        assert len(expressions) == 3
+        assert expressions[1] is None
 
     def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)
@@ -312,4 +324,10 @@ class TestParser(unittest.TestCase):
         assert_logger_contains(
             "Expected table name",
             logger,
+        )
+
+    def test_rename_table(self):
+        self.assertEqual(
+            parse_one("ALTER TABLE foo RENAME TO bar").sql(),
+            "ALTER TABLE foo RENAME TO bar",
         )

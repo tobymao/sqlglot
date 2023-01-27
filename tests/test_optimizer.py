@@ -6,7 +6,7 @@ from pandas.testing import assert_frame_equal
 
 import sqlglot
 from sqlglot import exp, optimizer, parse_one
-from sqlglot.errors import OptimizeError
+from sqlglot.errors import OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
@@ -161,11 +161,8 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
             with self.subTest(sql):
-                with self.assertRaises(OptimizeError):
+                with self.assertRaises((OptimizeError, SchemaError)):
                     optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=self.schema)
-
-    def test_quote_identities(self):
-        self.check_file("quote_identities", optimizer.quote_identities.quote_identities)
 
     def test_lower_identities(self):
         self.check_file("lower_identities", optimizer.lower_identities.lower_identities)
@@ -302,10 +299,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
             self.assertEqual(set(scopes[6].sources), {"q", "z", "r", "s"})
             self.assertEqual(len(scopes[6].columns), 6)
-            self.assertEqual(set(c.table for c in scopes[6].columns), {"r", "s"})
+            self.assertEqual({c.table for c in scopes[6].columns}, {"r", "s"})
             self.assertEqual(scopes[6].source_columns("q"), [])
             self.assertEqual(len(scopes[6].source_columns("r")), 2)
-            self.assertEqual(set(c.table for c in scopes[6].source_columns("r")), {"r"})
+            self.assertEqual({c.table for c in scopes[6].source_columns("r")}, {"r"})
 
             self.assertEqual({c.sql() for c in scopes[-1].find_all(exp.Column)}, {"r.b", "s.b"})
             self.assertEqual(scopes[-1].find(exp.Column).sql(), "r.b")
@@ -555,3 +552,42 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 parse_one(f"SELECT {func}(x.{col}) AS _col_0 FROM x AS x"), schema=schema
             )
             self.assertEqual(expression.expressions[0].type.this, target_type)
+
+    def test_recursive_cte(self):
+        query = parse_one(
+            """
+            with recursive t(n) AS
+            (
+              select 1
+              union all
+              select n + 1
+              FROM t
+              where n < 3
+            ), y AS (
+              select n
+              FROM t
+              union all
+              select n + 1
+              FROM y
+              where n < 2
+            )
+            select * from y
+            """
+        )
+
+        scope_t, scope_y = build_scope(query).cte_scopes
+        self.assertEqual(set(scope_t.cte_sources), {"t"})
+        self.assertEqual(set(scope_y.cte_sources), {"t", "y"})
+
+    def test_schema_with_spaces(self):
+        schema = {
+            "a": {
+                "b c": "text",
+                '"d e"': "text",
+            }
+        }
+
+        self.assertEqual(
+            optimizer.optimize(parse_one("SELECT * FROM a"), schema=schema),
+            parse_one('SELECT "a"."b c" AS "b c", "a"."d e" AS "d e" FROM "a" AS "a"'),
+        )

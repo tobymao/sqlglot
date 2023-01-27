@@ -111,16 +111,13 @@ class DataFrame:
         return DataFrameNaFunctions(self)
 
     def _replace_cte_names_with_hashes(self, expression: exp.Select):
-        expression = expression.copy()
-        ctes = expression.ctes
         replacement_mapping = {}
-        for cte in ctes:
+        for cte in expression.ctes:
             old_name_id = cte.args["alias"].this
             new_hashed_id = exp.to_identifier(
                 self._create_hash_from_expression(cte.this), quoted=old_name_id.args["quoted"]
             )
             replacement_mapping[old_name_id] = new_hashed_id
-            cte.set("alias", exp.TableAlias(this=new_hashed_id))
             expression = expression.transform(replace_id_value, replacement_mapping)
         return expression
 
@@ -634,7 +631,7 @@ class DataFrame:
         all_columns = self._get_outer_select_columns(new_df.expression)
         all_column_mapping = {column.alias_or_name: column for column in all_columns}
         if isinstance(value, dict):
-            values = value.values()
+            values = list(value.values())
             columns = self._ensure_and_normalize_cols(list(value))
         if not columns:
             columns = self._ensure_and_normalize_cols(subset) if subset else all_columns

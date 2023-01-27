@@ -13,6 +13,10 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
+def _fetch_sql(self, expression):
+    return self.limit_sql(exp.Limit(expression=expression.args.get("count")))
+
+
 # https://www.sqlite.org/lang_aggfunc.html#group_concat
 def _group_concat_sql(self, expression):
     this = expression.this
@@ -28,6 +32,14 @@ def _group_concat_sql(self, expression):
 
     separator = expression.args.get("separator")
     return f"GROUP_CONCAT({distinct or ''}{self.format_args(this, separator)})"
+
+
+def _date_add_sql(self, expression):
+    modifier = expression.expression
+    modifier = expression.name if modifier.is_string else self.sql(modifier)
+    unit = expression.args.get("unit")
+    modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
+    return f"{self.normalize_func('DATE')}({self.format_args(expression.this, modifier)})"
 
 
 class SQLite(Dialect):
@@ -71,6 +83,7 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            exp.DateAdd: _date_add_sql,
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
@@ -78,8 +91,11 @@ class SQLite(Dialect):
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.TableSample: no_tablesample_sql,
+            exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
+            exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
             exp.TryCast: no_trycast_sql,
             exp.GroupConcat: _group_concat_sql,
+            exp.Fetch: _fetch_sql,
         }
 
         def transaction_sql(self, expression):

@@ -1,29 +1,29 @@
 # PySpark DataFrame SQL Generator
 
-This is a drop-in replacement for the PysPark DataFrame API that will generate SQL instead of executing DataFrame operations directly. This, when combined with the transpiling support in SQLGlot, allows one to write PySpark DataFrame code and execute it on other engines like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). 
+This is a drop-in replacement for the PySpark DataFrame API that will generate SQL instead of executing DataFrame operations directly. This, when combined with the transpiling support in SQLGlot, allows one to write PySpark DataFrame code and execute it on other engines like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). 
 
 Currently many of the common operations are covered and more functionality will be added over time. Please [open an issue](https://github.com/tobymao/sqlglot/issues) or [PR](https://github.com/tobymao/sqlglot/pulls) with your feedback or contribution to help influence what should be prioritized next and make sure your use case is properly supported.
 
 # How to use
 
 ## Instructions
-* [Install SQLGlot](https://github.com/tobymao/sqlglot/blob/main/README.md#install) and that is all that is required to just generate SQL. [The examples](#examples) show generating SQL and then executing that SQL on a specific engine and that will require that engine's client library
-* Find/replace all `from pyspark.sql` with `from sqlglot.dataframe`
-* Prior to any `spark.read.table` or `spark.table` run `sqlglot.schema.add_table('<table_name>', <column_structure>)`
+* [Install SQLGlot](https://github.com/tobymao/sqlglot/blob/main/README.md#install) and that is all that is required to just generate SQL. [The examples](#examples) show generating SQL and then executing that SQL on a specific engine and that will require that engine's client library.
+* Find/replace all `from pyspark.sql` with `from sqlglot.dataframe`.
+* Prior to any `spark.read.table` or `spark.table` run `sqlglot.schema.add_table('<table_name>', <column_structure>)`.
   * The column structure can be defined the following ways:
-    * Dictionary where the keys are column names and values are string of the Spark SQL type name
-      * Ex: {'cola': 'string', 'colb': 'int'}
-    * PySpark DataFrame `StructType` similar to when using `createDataFrame`
+    * Dictionary where the keys are column names and values are string of the Spark SQL type name.
+      * Ex: `{'cola': 'string', 'colb': 'int'}`
+    * PySpark DataFrame `StructType` similar to when using `createDataFrame`.
       * Ex: `StructType([StructField('cola', StringType()), StructField('colb', IntegerType())])`
-    * A string of names and types similar to what is supported in `createDataFrame`
+    * A string of names and types similar to what is supported in `createDataFrame`.
       * Ex: `cola: STRING, colb: INT`
-    * [Not Recommended] A list of string column names without type
-      * Ex: ['cola', 'colb']
-      * The lack of types may limit functionality in future releases
-  * See [Registering Custom Schema](#registering-custom-schema-class) for information on how to skip this step if the information is stored externally
-* Add `.sql(pretty=True)` to your final DataFrame command to return a list of sql statements to run that command
+    * [Not Recommended] A list of string column names without type.
+      * Ex: `['cola', 'colb']`
+      * The lack of types may limit functionality in future releases.
+  * See [Registering Custom Schema](#registering-custom-schema-class) for information on how to skip this step if the information is stored externally.
+* Add `.sql(pretty=True)` to your final DataFrame command to return a list of sql statements to run that command.
   * In most cases a single SQL statement is returned. Currently the only exception is when caching DataFrames which isn't supported in other dialects.  
-  * Spark is the default output dialect. See [dialects](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects) for a full list of dialects
+  * Spark is the default output dialect. See [dialects](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects) for a full list of dialects.
   * Ex: `.sql(pretty=True, dialect='bigquery')`
 
 ## Examples
@@ -51,7 +51,7 @@ df = (
 
 print(df.sql(pretty=True))  # Spark will be the dialect used by default
 ```
-Output:
+
 ```sparksql
 SELECT
   `employee`.`age` AS `age`,
@@ -206,7 +206,7 @@ sql_statements = (
     .createDataFrame(data, schema)
     .groupBy(F.col("age"))
     .agg(F.countDistinct(F.col("employee_id")).alias("num_employees"))
-    .sql(dialect="bigquery")
+    .sql(dialect="spark")
 )
 
 pyspark = PySparkSession.builder.master("local[*]").getOrCreate()

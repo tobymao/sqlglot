@@ -7,6 +7,12 @@ class TestSnowflake(Validator):
 
     def test_snowflake(self):
         self.validate_all(
+            "SELECT * FROM xxx WHERE col ilike '%Don''t%'",
+            write={
+                "snowflake": "SELECT * FROM xxx WHERE col ILIKE '%Don\\'t%'",
+            },
+        )
+        self.validate_all(
             'x:a:"b c"',
             write={
                 "duckdb": "x['a']['b c']",
@@ -507,5 +513,43 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
             read={
                 "oracle": "SELECT 1 MINUS SELECT 1",
                 "snowflake": "SELECT 1 MINUS SELECT 1",
+            },
+        )
+
+    def test_values(self):
+        self.validate_all(
+            'SELECT c0, c1 FROM (VALUES (1, 2), (3, 4)) AS "t0"(c0, c1)',
+            read={
+                "spark": "SELECT `c0`, `c1` FROM (VALUES (1, 2), (3, 4)) AS `t0`(`c0`, `c1`)",
+            },
+        )
+
+    def test_describe_table(self):
+        self.validate_all(
+            "DESCRIBE TABLE db.table",
+            write={
+                "snowflake": "DESCRIBE TABLE db.table",
+                "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "DESCRIBE db.table",
+            write={
+                "snowflake": "DESCRIBE TABLE db.table",
+                "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "DESC TABLE db.table",
+            write={
+                "snowflake": "DESCRIBE TABLE db.table",
+                "spark": "DESCRIBE db.table",
+            },
+        )
+        self.validate_all(
+            "DESC VIEW db.table",
+            write={
+                "snowflake": "DESCRIBE VIEW db.table",
+                "spark": "DESCRIBE db.table",
             },
         )

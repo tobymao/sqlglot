@@ -118,6 +118,11 @@ class TestTranspile(unittest.TestCase):
             "SELECT x FROM foo /*       x */",
         )
         self.validate(
+            """select x, --
+            from foo""",
+            "SELECT x FROM foo",
+        )
+        self.validate(
             """
 -- comment 1
 -- comment 2
@@ -266,6 +271,11 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         self.validate(
             "WITH A(filter) AS (VALUES 1, 2, 3) SELECT * FROM A WHERE filter >= 2",
             "WITH A(filter) AS (VALUES (1), (2), (3)) SELECT * FROM A WHERE filter >= 2",
+        )
+        self.validate(
+            "SELECT BOOL_OR(a > 10) FROM (VALUES 1, 2, 15) AS T(a)",
+            "SELECT BOOL_OR(a > 10) FROM (VALUES (1), (2), (15)) AS T(a)",
+            write="presto",
         )
 
     def test_alter(self):
@@ -441,6 +451,9 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 generated = transpile(sql, pretty=True)[0]
                 self.assertEqual(generated, pretty)
                 self.assertEqual(parse_one(sql), parse_one(pretty))
+
+    def test_pretty_line_breaks(self):
+        self.assertEqual(transpile("SELECT '1\n2'", pretty=True)[0], "SELECT\n  '1\n2'")
 
     @mock.patch("sqlglot.parser.logger")
     def test_error_level(self, logger):

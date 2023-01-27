@@ -401,6 +401,36 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
+    def test_correlated_count(self):
+        tables = {
+            "parts": [{"pnum": 0, "qoh": 1}],
+            "supplies": [],
+        }
+
+        schema = {
+            "parts": {"pnum": "int", "qoh": "int"},
+            "supplies": {"pnum": "int", "shipdate": "int"},
+        }
+
+        self.assertEqual(
+            execute(
+                """
+			select *
+			from parts
+			where parts.qoh >= (
+			  select count(supplies.shipdate) + 1
+			  from supplies
+			  where supplies.pnum = parts.pnum and supplies.shipdate < 10
+            )
+        """,
+                tables=tables,
+                schema=schema,
+            ).rows,
+            [
+                (0, 1),
+            ],
+        )
+
     def test_table_depth_mismatch(self):
         tables = {"table": []}
         schema = {"db": {"table": {"col": "VARCHAR"}}}
@@ -451,11 +481,11 @@ class TestExecutor(unittest.TestCase):
 
     def test_static_queries(self):
         for sql, cols, rows in [
-            ("SELECT 1", ["_col_0"], [(1,)]),
+            ("SELECT 1", ["1"], [(1,)]),
             ("SELECT 1 + 2 AS x", ["x"], [(3,)]),
             ("SELECT CONCAT('a', 'b') AS x", ["x"], [("ab",)]),
             ("SELECT 1 AS x, 2 AS y", ["x", "y"], [(1, 2)]),
-            ("SELECT 'foo' LIMIT 1", ["_col_0"], [("foo",)]),
+            ("SELECT 'foo' LIMIT 1", ["foo"], [("foo",)]),
             (
                 "SELECT SUM(x), COUNT(x) FROM (SELECT 1 AS x WHERE FALSE)",
                 ["_col_0", "_col_1"],

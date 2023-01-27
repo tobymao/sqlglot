@@ -10,10 +10,20 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     str_position_sql,
+    trim_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import delegate, preprocess
+
+DATE_DIFF_FACTOR = {
+    "MICROSECOND": " * 1000000",
+    "MILLISECOND": " * 1000",
+    "SECOND": "",
+    "MINUTE": " / 60",
+    "HOUR": " / 3600",
+    "DAY": " / 86400",
+}
 
 
 def _date_add_sql(kind):
@@ -35,6 +45,32 @@ def _date_add_sql(kind):
     return func
 
 
+def _date_diff_sql(self, expression):
+    unit = expression.text("unit").upper()
+    factor = DATE_DIFF_FACTOR.get(unit)
+
+    end = f"CAST({expression.this} AS TIMESTAMP)"
+    start = f"CAST({expression.expression} AS TIMESTAMP)"
+
+    if factor is not None:
+        return f"CAST(EXTRACT(epoch FROM {end} - {start}){factor} AS BIGINT)"
+
+    age = f"AGE({end}, {start})"
+
+    if unit == "WEEK":
+        extract = f"EXTRACT(year FROM {age}) * 48 + EXTRACT(month FROM {age}) * 4 + EXTRACT(day FROM {age}) / 7"
+    elif unit == "MONTH":
+        extract = f"EXTRACT(year FROM {age}) * 12 + EXTRACT(month FROM {age})"
+    elif unit == "QUARTER":
+        extract = f"EXTRACT(year FROM {age}) * 4 + EXTRACT(month FROM {age}) / 3"
+    elif unit == "YEAR":
+        extract = f"EXTRACT(year FROM {age})"
+    else:
+        self.unsupported(f"Unsupported DATEDIFF unit {unit}")
+
+    return f"CAST({extract} AS BIGINT)"
+
+
 def _substring_sql(self, expression):
     this = self.sql(expression, "this")
     start = self.sql(expression, "start")
@@ -44,23 +80,6 @@ def _substring_sql(self, expression):
     for_part = f" FOR {length}" if length else ""
 
     return f"SUBSTRING({this}{from_part}{for_part})"
-
-
-def _trim_sql(self, expression):
-    target = self.sql(expression, "this")
-    trim_type = self.sql(expression, "position")
-    remove_chars = self.sql(expression, "expression")
-    collation = self.sql(expression, "collation")
-
-    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't postgres-specific
-    if not remove_chars and not collation:
-        return self.trim_sql(expression)
-
-    trim_type = f"{trim_type} " if trim_type else ""
-    remove_chars = f"{remove_chars} " if remove_chars else ""
-    from_part = "FROM " if trim_type or remove_chars else ""
-    collation = f" COLLATE {collation}" if collation else ""
-    return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
 
 
 def _string_agg_sql(self, expression):
@@ -204,20 +223,15 @@ class Postgres(Dialect):
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
-            "ALWAYS": TokenType.ALWAYS,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
-            "BY DEFAULT": TokenType.BY_DEFAULT,
             "CHARACTER VARYING": TokenType.VARCHAR,
             "COMMENT ON": TokenType.COMMAND,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
-            "DOUBLE PRECISION": TokenType.DOUBLE,
-            "GENERATED": TokenType.GENERATED,
             "GRANT": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
-            "IDENTITY": TokenType.IDENTITY,
             "JSONB": TokenType.JSONB,
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
@@ -275,14 +289,16 @@ class Postgres(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
+            exp.DateDiff: _date_diff_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,
+            exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
-            exp.Trim: _trim_sql,
+            exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.DataType: _datatype_sql,

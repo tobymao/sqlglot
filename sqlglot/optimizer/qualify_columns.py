@@ -1,7 +1,7 @@
 import itertools
 
 from sqlglot import alias, exp
-from sqlglot.errors import OptimizeError
+from sqlglot.errors import OptimizeError, SchemaError
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 
@@ -306,16 +306,11 @@ def _qualify_outputs(scope):
     for i, (selection, aliased_column) in enumerate(
         itertools.zip_longest(scope.selects, scope.outer_column_list)
     ):
-        if isinstance(selection, exp.Column):
-            # convoluted setter because a simple selection.replace(alias) would require a copy
-            alias_ = alias(exp.column(""), alias=selection.name)
-            alias_.set("this", selection)
-            selection = alias_
-        elif isinstance(selection, exp.Subquery):
-            if not selection.alias:
+        if isinstance(selection, exp.Subquery):
+            if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
         elif not isinstance(selection, exp.Alias):
-            alias_ = alias(exp.column(""), f"_col_{i}")
+            alias_ = alias(exp.column(""), alias=selection.output_name or f"_col_{i}")
             alias_.set("this", selection)
             selection = alias_
 
@@ -365,9 +360,9 @@ class _Resolver:
     def all_columns(self):
         """All available columns of all sources in this scope"""
         if self._all_columns is None:
-            self._all_columns = set(
+            self._all_columns = {
                 column for columns in self._get_all_source_columns().values() for column in columns
-            )
+            }
         return self._all_columns
 
     def get_source_columns(self, name, only_visible=False):
@@ -382,7 +377,7 @@ class _Resolver:
             try:
                 return self.schema.column_names(source, only_visible)
             except Exception as e:
-                raise OptimizeError(str(e)) from e
+                raise SchemaError(str(e)) from e
 
         if isinstance(source, Scope) and isinstance(source.expression, exp.Values):
             return source.expression.alias_column_names

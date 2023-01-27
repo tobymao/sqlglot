@@ -184,3 +184,19 @@ class TestSchema(unittest.TestCase):
 
         schema = MappingSchema({"foo": {"bar": parse_one("INT", into=exp.DataType)}})
         self.assertEqual(schema.get_column_type("foo", "bar").this, exp.DataType.Type.INT)
+
+    def test_schema_normalization(self):
+        schema = MappingSchema(
+            schema={"x": {"`y`": {"Z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"C": "INT"}}}},
+            dialect="spark",
+        )
+
+        table_z = exp.Table(this="z", db="y", catalog="x")
+        table_w = exp.Table(this="w", db="y", catalog="x")
+
+        self.assertEqual(schema.column_names(table_z), ["a", "B"])
+        self.assertEqual(schema.column_names(table_w), ["c"])
+
+        # Clickhouse supports both `` and "" for identifier quotes; sqlglot uses "" when generating sql
+        schema = MappingSchema(schema={"x": {"`y`": "INT"}}, dialect="clickhouse")
+        self.assertEqual(schema.column_names(exp.Table(this="x")), ["y"])

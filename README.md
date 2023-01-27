@@ -1,20 +1,19 @@
 # SQLGlot
 
-SQLGlot is a no dependency Python SQL parser, transpiler, and optimizer. It can be used to format SQL or translate between different dialects like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically correct SQL in the targeted dialects.
+SQLGlot is a no dependency Python SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [19 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/), [Spark](https://spark.apache.org/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically correct SQL in the targeted dialects.
 
 It is a very comprehensive generic SQL parser with a robust [test suite](https://github.com/tobymao/sqlglot/blob/main/tests/). It is also quite [performant](#benchmarks) while being written purely in Python.
 
 You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL.
 
-Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations.
+Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, it should be noted that the parser is very lenient when it comes to detecting errors, because it aims to consume as much SQL as possible. On one hand, this makes its implementation simpler, and thus more comprehensible, but on the other hand it means that syntax errors may sometimes go unnoticed.
 
 Contributions are very welcome in SQLGlot; read the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) to get started!
 
 ## Table of Contents
 
 * [Install](#install)
-* [Documentation](#documentation)
-* [Run Tests and Lint](#run-tests-and-lint)
+* [Get in Touch](#get-in-touch)
 * [Examples](#examples)
    * [Formatting and Transpiling](#formatting-and-transpiling)
    * [Metadata](#metadata)
@@ -26,6 +25,9 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
    * [AST Diff](#ast-diff)
    * [Custom Dialects](#custom-dialects)
    * [SQL Execution](#sql-execution)
+* [Used By](#used-by)
+* [Documentation](#documentation)
+* [Run Tests and Lint](#run-tests-and-lint)
 * [Benchmarks](#benchmarks)
 * [Optional Dependencies](#optional-dependencies)
 
@@ -49,19 +51,8 @@ Requirements for development (optional):
 make install-dev
 ```
 
-## Documentation
-
-SQLGlot uses [pdocs](https://pdoc.dev/) to serve its API documentation:
-
-```
-make docs-serve
-```
-
-## Run Tests and Lint
-
-```
-make check  # Set SKIP_INTEGRATION=1 to skip integration tests
-```
+## Get in Touch
+We'd love to hear from you. Join our community [Slack channel](https://join.slack.com/t/tobiko-data/shared_invite/zt-1ma66d79v-a4dbf4DUpLAQJ8ptQrJygg)!
 
 ## Examples
 
@@ -175,7 +166,7 @@ for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
 
 ### Parser Errors
 
-A syntax error will result in a parser error:
+When the parser detects an error in the syntax, it raises a ParserError:
 
 ```python
 import sqlglot
@@ -198,7 +189,6 @@ except sqlglot.errors.ParseError as e:
     print(e.errors)
 ```
 
-Output:
 ```python
 [{
   'description': 'Expecting )',
@@ -293,13 +283,13 @@ print(
 ```sql
 SELECT
   (
-    "x"."A" OR "x"."B" OR "x"."C"
+    "x"."a" OR "x"."b" OR "x"."c"
   ) AND (
-    "x"."A" OR "x"."B" OR "x"."D"
+    "x"."a" OR "x"."b" OR "x"."d"
   ) AS "_col_0"
 FROM "x" AS "x"
 WHERE
-  "x"."Z" = CAST('2021-02-01' AS DATE)
+  CAST("x"."z" AS DATE) = CAST('2021-02-01' AS DATE)
 ```
 
 ### AST Introspection
@@ -442,6 +432,28 @@ user_id price
       2   3.0
 ```
 
+## Used By
+* [Fugue](https://github.com/fugue-project/fugue)
+* [ibis](https://github.com/ibis-project/ibis)
+* [mysql-mimic](https://github.com/kelsin/mysql-mimic)
+* [Querybook](https://github.com/pinterest/querybook)
+* [Quokka](https://github.com/marsupialtail/quokka)
+* [Splink](https://github.com/moj-analytical-services/splink)
+
+## Documentation
+
+SQLGlot uses [pdocs](https://pdoc.dev/) to serve its API documentation:
+
+```
+make docs-serve
+```
+
+## Run Tests and Lint
+
+```
+make check  # Set SKIP_INTEGRATION=1 to skip integration tests
+```
+
 ## Benchmarks
 
 [Benchmarks](https://github.com/tobymao/sqlglot/blob/main/benchmarks/bench.py) run on Python 3.10.5 in seconds.
@@ -449,7 +461,7 @@ user_id price
 |           Query |         sqlglot |        sqlfluff |         sqltree |        sqlparse |  moz_sql_parser |        sqloxide |
 | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
 |            tpch |   0.01308 (1.0) | 1.60626 (122.7) | 0.01168 (0.893) | 0.04958 (3.791) | 0.08543 (6.531) | 0.00136 (0.104) |
-|           short |   0.00109 (1.0) | 0.14134 (129.2) | 0.00099 (0.906) | 0.00342 (3.131) | 0.00652 (5.970) | 8.76621 (0.080) |
+|           short |   0.00109 (1.0) | 0.14134 (129.2) | 0.00099 (0.906) | 0.00342 (3.131) | 0.00652 (5.970) | 8.76E-5 (0.080) |
 |            long |   0.01399 (1.0) | 2.12632 (151.9) | 0.01126 (0.805) | 0.04410 (3.151) | 0.06671 (4.767) | 0.00107 (0.076) |
 |           crazy |   0.03969 (1.0) | 24.3777 (614.1) | 0.03917 (0.987) | 11.7043 (294.8) | 1.03280 (26.02) | 0.00625 (0.157) |
 

@@ -1,4 +1,5 @@
 import datetime
+import math
 import unittest
 
 from sqlglot import alias, exp, parse_one
@@ -187,6 +188,27 @@ class TestExpressions(unittest.TestCase):
             ).sql(),
             "SELECT * FROM (SELECT a FROM tbl1) WHERE b > 100",
         )
+
+    def test_function_building(self):
+        self.assertEqual(exp.func("bla", 1, "foo").sql(), "BLA(1, 'foo')")
+        self.assertEqual(exp.func("COUNT", exp.Star()).sql(), "COUNT(*)")
+        self.assertEqual(exp.func("bloo").sql(), "BLOO()")
+        self.assertEqual(
+            exp.func("locate", "x", "xo", dialect="hive").sql("hive"), "LOCATE('x', 'xo')"
+        )
+
+        self.assertIsInstance(exp.func("instr", "x", "b", dialect="mysql"), exp.StrPosition)
+        self.assertIsInstance(exp.func("bla", 1, "foo"), exp.Anonymous)
+        self.assertIsInstance(
+            exp.func("cast", this=exp.Literal.number(5), to=exp.DataType.build("DOUBLE")),
+            exp.Cast,
+        )
+
+        with self.assertRaises(ValueError):
+            exp.func("some_func", 1, arg2="foo")
+
+        with self.assertRaises(ValueError):
+            exp.func("abs")
 
     def test_named_selects(self):
         expression = parse_one(
@@ -491,7 +513,7 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(alias("foo", "bar-1").sql(), 'foo AS "bar-1"')
         self.assertEqual(alias("foo", "bar_1").sql(), "foo AS bar_1")
         self.assertEqual(alias("foo * 2", "2bar").sql(), 'foo * 2 AS "2bar"')
-        self.assertEqual(alias('"foo"', "_bar").sql(), '"foo" AS "_bar"')
+        self.assertEqual(alias('"foo"', "_bar").sql(), '"foo" AS _bar')
         self.assertEqual(alias("foo", "bar", quoted=True).sql(), 'foo AS "bar"')
 
     def test_unit(self):
@@ -503,6 +525,8 @@ class TestExpressions(unittest.TestCase):
     def test_identifier(self):
         self.assertTrue(exp.to_identifier('"x"').quoted)
         self.assertFalse(exp.to_identifier("x").quoted)
+        self.assertTrue(exp.to_identifier("foo ").quoted)
+        self.assertFalse(exp.to_identifier("_x").quoted)
 
     def test_function_normalizer(self):
         self.assertEqual(parse_one("HELLO()").sql(normalize_functions="lower"), "hello()")
@@ -549,14 +573,15 @@ class TestExpressions(unittest.TestCase):
             ([1, "2", None], "ARRAY(1, '2', NULL)"),
             ({"x": None}, "MAP('x', NULL)"),
             (
-                datetime.datetime(2022, 10, 1, 1, 1, 1),
-                "TIME_STR_TO_TIME('2022-10-01 01:01:01.000000')",
+                datetime.datetime(2022, 10, 1, 1, 1, 1, 1),
+                "TIME_STR_TO_TIME('2022-10-01T01:01:01.000001+00:00')",
             ),
             (
                 datetime.datetime(2022, 10, 1, 1, 1, 1, tzinfo=datetime.timezone.utc),
-                "TIME_STR_TO_TIME('2022-10-01 01:01:01.000000+0000')",
+                "TIME_STR_TO_TIME('2022-10-01T01:01:01+00:00')",
             ),
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
+            (math.nan, "NULL"),
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)
@@ -620,6 +645,10 @@ FROM foo""",
         self.assertEqual(catalog_db_and_table.args.get("catalog"), exp.to_identifier("catalog"))
         with self.assertRaises(ValueError):
             exp.to_table(1)
+        empty_string = exp.to_table("")
+        self.assertEqual(empty_string.name, "")
+        self.assertIsNone(table_only.args.get("db"))
+        self.assertIsNone(table_only.args.get("catalog"))
 
     def test_to_column(self):
         column_only = exp.to_column("column_name")
@@ -641,4 +670,79 @@ FROM foo""",
                 exp.Column(this=exp.to_identifier("cola")),
                 exp.Column(this=exp.to_identifier("colb")),
             ],
+        )
+
+    def test_values(self):
+        self.assertEqual(
+            exp.values([(1, 2), (3, 4)], "t", ["a", "b"]).sql(),
+            "(VALUES (1, 2), (3, 4)) AS t(a, b)",
+        )
+        self.assertEqual(
+            exp.values(
+                [(1, 2), (3, 4)],
+                "t",
+                {"a": exp.DataType.build("TEXT"), "b": exp.DataType.build("TEXT")},
+            ).sql(),
+            "(VALUES (CAST(1 AS TEXT), CAST(2 AS TEXT)), (3, 4)) AS t(a, b)",
+        )
+        with self.assertRaises(ValueError):
+            exp.values([(1, 2), (3, 4)], columns=["a"])
+
+    def test_data_type_builder(self):
+        self.assertEqual(exp.DataType.build("TEXT").sql(), "TEXT")
+        self.assertEqual(exp.DataType.build("DECIMAL(10, 2)").sql(), "DECIMAL(10, 2)")
+        self.assertEqual(exp.DataType.build("VARCHAR(255)").sql(), "VARCHAR(255)")
+        self.assertEqual(exp.DataType.build("ARRAY<INT>").sql(), "ARRAY<INT>")
+        self.assertEqual(exp.DataType.build("CHAR").sql(), "CHAR")
+        self.assertEqual(exp.DataType.build("NCHAR").sql(), "CHAR")
+        self.assertEqual(exp.DataType.build("VARCHAR").sql(), "VARCHAR")
+        self.assertEqual(exp.DataType.build("NVARCHAR").sql(), "VARCHAR")
+        self.assertEqual(exp.DataType.build("TEXT").sql(), "TEXT")
+        self.assertEqual(exp.DataType.build("BINARY").sql(), "BINARY")
+        self.assertEqual(exp.DataType.build("VARBINARY").sql(), "VARBINARY")
+        self.assertEqual(exp.DataType.build("INT").sql(), "INT")
+        self.assertEqual(exp.DataType.build("TINYINT").sql(), "TINYINT")
+        self.assertEqual(exp.DataType.build("SMALLINT").sql(), "SMALLINT")
+        self.assertEqual(exp.DataType.build("BIGINT").sql(), "BIGINT")
+        self.assertEqual(exp.DataType.build("FLOAT").sql(), "FLOAT")
+        self.assertEqual(exp.DataType.build("DOUBLE").sql(), "DOUBLE")
+        self.assertEqual(exp.DataType.build("DECIMAL").sql(), "DECIMAL")
+        self.assertEqual(exp.DataType.build("BOOLEAN").sql(), "BOOLEAN")
+        self.assertEqual(exp.DataType.build("JSON").sql(), "JSON")
+        self.assertEqual(exp.DataType.build("JSONB").sql(), "JSONB")
+        self.assertEqual(exp.DataType.build("INTERVAL").sql(), "INTERVAL")
+        self.assertEqual(exp.DataType.build("TIME").sql(), "TIME")
+        self.assertEqual(exp.DataType.build("TIMESTAMP").sql(), "TIMESTAMP")
+        self.assertEqual(exp.DataType.build("TIMESTAMPTZ").sql(), "TIMESTAMPTZ")
+        self.assertEqual(exp.DataType.build("TIMESTAMPLTZ").sql(), "TIMESTAMPLTZ")
+        self.assertEqual(exp.DataType.build("DATE").sql(), "DATE")
+        self.assertEqual(exp.DataType.build("DATETIME").sql(), "DATETIME")
+        self.assertEqual(exp.DataType.build("ARRAY").sql(), "ARRAY")
+        self.assertEqual(exp.DataType.build("MAP").sql(), "MAP")
+        self.assertEqual(exp.DataType.build("UUID").sql(), "UUID")
+        self.assertEqual(exp.DataType.build("GEOGRAPHY").sql(), "GEOGRAPHY")
+        self.assertEqual(exp.DataType.build("GEOMETRY").sql(), "GEOMETRY")
+        self.assertEqual(exp.DataType.build("STRUCT").sql(), "STRUCT")
+        self.assertEqual(exp.DataType.build("NULLABLE").sql(), "NULLABLE")
+        self.assertEqual(exp.DataType.build("HLLSKETCH").sql(), "HLLSKETCH")
+        self.assertEqual(exp.DataType.build("HSTORE").sql(), "HSTORE")
+        self.assertEqual(exp.DataType.build("SUPER").sql(), "SUPER")
+        self.assertEqual(exp.DataType.build("SERIAL").sql(), "SERIAL")
+        self.assertEqual(exp.DataType.build("SMALLSERIAL").sql(), "SMALLSERIAL")
+        self.assertEqual(exp.DataType.build("BIGSERIAL").sql(), "BIGSERIAL")
+        self.assertEqual(exp.DataType.build("XML").sql(), "XML")
+        self.assertEqual(exp.DataType.build("UNIQUEIDENTIFIER").sql(), "UNIQUEIDENTIFIER")
+        self.assertEqual(exp.DataType.build("MONEY").sql(), "MONEY")
+        self.assertEqual(exp.DataType.build("SMALLMONEY").sql(), "SMALLMONEY")
+        self.assertEqual(exp.DataType.build("ROWVERSION").sql(), "ROWVERSION")
+        self.assertEqual(exp.DataType.build("IMAGE").sql(), "IMAGE")
+        self.assertEqual(exp.DataType.build("VARIANT").sql(), "VARIANT")
+        self.assertEqual(exp.DataType.build("OBJECT").sql(), "OBJECT")
+        self.assertEqual(exp.DataType.build("NULL").sql(), "NULL")
+        self.assertEqual(exp.DataType.build("UNKNOWN").sql(), "UNKNOWN")
+
+    def test_rename_table(self):
+        self.assertEqual(
+            exp.rename_table("t1", "t2").sql(),
+            "ALTER TABLE t1 RENAME TO t2",
         )

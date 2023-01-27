@@ -14,6 +14,11 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM foo LEFT ASOF JOIN bla")
         self.validate_identity("SELECT * FROM foo ASOF JOIN bla")
         self.validate_identity("SELECT * FROM foo ANY JOIN bla")
+        self.validate_identity("SELECT quantile(0.5)(a)")
+        self.validate_identity("SELECT quantiles(0.5)(a) AS x FROM t")
+        self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
+        self.validate_identity("position(haystack, needle)")
+        self.validate_identity("position(haystack, needle, position)")
 
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
@@ -38,3 +43,19 @@ class TestClickhouse(Validator):
             "SELECT x #! comment",
             write={"": "SELECT x /* comment */"},
         )
+        self.validate_all(
+            "SELECT quantileIf(0.5)(a, true)",
+            write={
+                "clickhouse": "SELECT quantileIf(0.5)(a, TRUE)",
+            },
+        )
+        self.validate_all(
+            "SELECT position(needle IN haystack)",
+            write={"clickhouse": "SELECT position(haystack, needle)"},
+        )
+
+    def test_cte(self):
+        self.validate_identity("WITH 'x' AS foo SELECT foo")
+        self.validate_identity("WITH SUM(bytes) AS foo SELECT foo FROM system.parts")
+        self.validate_identity("WITH (SELECT foo) AS bar SELECT bar + 5")
+        self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")

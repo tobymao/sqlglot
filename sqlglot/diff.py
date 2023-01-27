@@ -1,5 +1,6 @@
 """
 .. include:: ../posts/sql_diff.md
+----
 """
 
 from __future__ import annotations
@@ -75,12 +76,13 @@ def diff(source: exp.Expression, target: exp.Expression) -> t.List[Edit]:
         ]
 
     Args:
-        source (sqlglot.Expression): the source expression.
-        target (sqlglot.Expression): the target expression against which the diff should be calculated.
+        source: the source expression.
+        target: the target expression against which the diff should be calculated.
 
     Returns:
-        the list of Insert, Remove, Move, Update and Keep objects for each node in the source and the target expression trees.
-        This list represents a sequence of steps needed to transform the source expression tree into the target one.
+        the list of Insert, Remove, Move, Update and Keep objects for each node in the source and the
+        target expression trees. This list represents a sequence of steps needed to transform the source
+        expression tree into the target one.
     """
     return ChangeDistiller().diff(source.copy(), target.copy())
 

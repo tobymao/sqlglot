@@ -1,10 +1,17 @@
 """
-.. include:: ../pdoc/docs/expressions.md
+## Expressions
+
+Every AST node in SQLGlot is represented by a subclass of `Expression`.
+
+This module contains the implementation of all supported `Expression` types. Additionally,
+it exposes a number of helper functions, which are mainly used to programmatically build
+SQL expressions, such as `sqlglot.expressions.select`.
 """
 
 from __future__ import annotations
 
 import datetime
+import math
 import numbers
 import re
 import typing as t
@@ -21,6 +28,7 @@ from sqlglot.helper import (
     split_num_words,
     subclasses,
 )
+from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
@@ -29,23 +37,48 @@ if t.TYPE_CHECKING:
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
+
+        # When an Expression class is created, its key is automatically set to be
+        # the lowercase version of the class' name.
         klass.key = clsname.lower()
+
+        # This is so that docstrings are not inherited in pdoc
+        klass.__doc__ = klass.__doc__ or ""
+
         return klass
 
 
 class Expression(metaclass=_Expression):
     """
-    The base class for all expressions in a syntax tree.
+    The base class for all expressions in a syntax tree. Each Expression encapsulates any necessary
+    context, such as its child expressions, their names (arg keys), and whether a given child expression
+    is optional or not.
 
     Attributes:
-        arg_types (dict): determines arguments supported by this expression.
-            The key in a dictionary defines a unique key of an argument using
-            which the argument's value can be retrieved. The value is a boolean
-            flag which indicates whether the argument's value is required (True)
-            or optional (False).
+        key: a unique key for each class in the Expression hierarchy. This is useful for hashing
+            and representing expressions as strings.
+        arg_types: determines what arguments (child nodes) are supported by an expression. It
+            maps arg keys to booleans that indicate whether the corresponding args are optional.
+
+    Example:
+        >>> class Foo(Expression):
+        ...     arg_types = {"this": True, "expression": False}
+
+        The above definition informs us that Foo is an Expression that requires an argument called
+        "this" and may also optionally receive an argument called "expression".
+
+    Args:
+        args: a mapping used for retrieving the arguments of an expression, given their arg keys.
+        parent: a reference to the parent expression (or None, in case of root expressions).
+        arg_key: the arg key an expression is associated with, i.e. the name its parent expression
+            uses to refer to it.
+        comments: a list of comments that are associated with a given expression. This is used in
+            order to preserve comments when transpiling SQL code.
+        _type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
+            optimizer, in order to enable some transformations that require type information.
     """
 
-    key = "Expression"
+    key = "expression"
     arg_types = {"this": True}
     __slots__ = ("args", "parent", "arg_key", "comments", "_type")
 
@@ -74,17 +107,30 @@ class Expression(metaclass=_Expression):
 
     @property
     def this(self):
+        """
+        Retrieves the argument with key "this".
+        """
         return self.args.get("this")
 
     @property
     def expression(self):
+        """
+        Retrieves the argument with key "expression".
+        """
         return self.args.get("expression")
 
     @property
     def expressions(self):
+        """
+        Retrieves the argument with key "expressions".
+        """
         return self.args.get("expressions") or []
 
     def text(self, key):
+        """
+        Returns a textual representation of the argument corresponding to "key". This can only be used
+        for args that are strings or leaf Expression instances, such as identifiers and literals.
+        """
         field = self.args.get(key)
         if isinstance(field, str):
             return field
@@ -94,14 +140,23 @@ class Expression(metaclass=_Expression):
 
     @property
     def is_string(self):
+        """
+        Checks whether a Literal expression is a string.
+        """
         return isinstance(self, Literal) and self.args["is_string"]
 
     @property
     def is_number(self):
+        """
+        Checks whether a Literal expression is a number.
+        """
         return isinstance(self, Literal) and not self.args["is_string"]
 
     @property
     def is_int(self):
+        """
+        Checks whether a Literal expression is an integer.
+        """
         if self.is_number:
             try:
                 int(self.name)
@@ -112,6 +167,9 @@ class Expression(metaclass=_Expression):
 
     @property
     def alias(self):
+        """
+        Returns the alias of the expression, or an empty string if it's not aliased.
+        """
         if isinstance(self.args.get("alias"), TableAlias):
             return self.args["alias"].name
         return self.text("alias")
@@ -125,6 +183,24 @@ class Expression(metaclass=_Expression):
         if isinstance(self, Null):
             return "NULL"
         return self.alias or self.name
+
+    @property
+    def output_name(self):
+        """
+        Name of the output column if this expression is a selection.
+
+        If the Expression has no output name, an empty string is returned.
+
+        Example:
+            >>> from sqlglot import parse_one
+            >>> parse_one("SELECT a").expressions[0].output_name
+            'a'
+            >>> parse_one("SELECT b AS c").expressions[0].output_name
+            'c'
+            >>> parse_one("SELECT 1 + 2").expressions[0].output_name
+            ''
+        """
+        return ""
 
     @property
     def type(self) -> t.Optional[DataType]:
@@ -143,6 +219,9 @@ class Expression(metaclass=_Expression):
         return copy
 
     def copy(self):
+        """
+        Returns a deep copy of the expression.
+        """
         new = deepcopy(self)
         for item, parent, _ in new.bfs():
             if isinstance(item, Expression) and parent:
@@ -167,7 +246,7 @@ class Expression(metaclass=_Expression):
         Sets `arg_key` to `value`.
 
         Args:
-            arg_key (str): name of the expression arg
+            arg_key (str): name of the expression arg.
             value: value to set the arg to.
         """
         self.args[arg_key] = value
@@ -201,8 +280,7 @@ class Expression(metaclass=_Expression):
             expression_types (type): the expression type(s) to match.
 
         Returns:
-            the node which matches the criteria or None if no node matching
-            the criteria was found.
+            The node which matches the criteria or None if no such node was found.
         """
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
@@ -215,7 +293,7 @@ class Expression(metaclass=_Expression):
             expression_types (type): the expression type(s) to match.
 
         Returns:
-            the generator object.
+            The generator object.
         """
         for expression, _, _ in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
@@ -229,7 +307,7 @@ class Expression(metaclass=_Expression):
             expression_types (type): the expression type(s) to match.
 
         Returns:
-            the parent node
+            The parent node.
         """
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
@@ -267,7 +345,7 @@ class Expression(metaclass=_Expression):
         the DFS (Depth-first) order.
 
         Returns:
-            the generator object.
+            The generator object.
         """
         parent = parent or self.parent
         yield self, parent, key
@@ -285,7 +363,7 @@ class Expression(metaclass=_Expression):
         the BFS (Breadth-first) order.
 
         Returns:
-            the generator object.
+            The generator object.
         """
         queue = deque([(self, self.parent, None)])
 
@@ -339,32 +417,33 @@ class Expression(metaclass=_Expression):
         return self.sql()
 
     def __repr__(self):
-        return self.to_s()
+        return self._to_s()
 
     def sql(self, dialect: Dialect | str | None = None, **opts) -> str:
         """
         Returns SQL string representation of this tree.
 
-        Args
-            dialect (str): the dialect of the output SQL string
-                (eg. "spark", "hive", "presto", "mysql").
-            opts (dict): other :class:`~sqlglot.generator.Generator` options.
+        Args:
+            dialect: the dialect of the output SQL string (eg. "spark", "hive", "presto", "mysql").
+            opts: other `sqlglot.generator.Generator` options.
 
-        Returns
-            the SQL string.
+        Returns:
+            The SQL string.
         """
         from sqlglot.dialects import Dialect
 
         return Dialect.get_or_raise(dialect)().generate(self, **opts)
 
-    def to_s(self, hide_missing: bool = True, level: int = 0) -> str:
+    def _to_s(self, hide_missing: bool = True, level: int = 0) -> str:
         indent = "" if not level else "\n"
         indent += "".join(["  "] * level)
         left = f"({self.key.upper()} "
 
         args: t.Dict[str, t.Any] = {
             k: ", ".join(
-                v.to_s(hide_missing=hide_missing, level=level + 1) if hasattr(v, "to_s") else str(v)
+                v._to_s(hide_missing=hide_missing, level=level + 1)
+                if hasattr(v, "_to_s")
+                else str(v)
                 for v in ensure_collection(vs)
                 if v is not None
             )
@@ -392,7 +471,7 @@ class Expression(metaclass=_Expression):
                 modified in place.
 
         Returns:
-            the transformed tree.
+            The transformed tree.
         """
         node = self.copy() if copy else self
         new_node = fun(node, *args, **kwargs)
@@ -421,8 +500,8 @@ class Expression(metaclass=_Expression):
         Args:
             expression (Expression|None): new node
 
-        Returns :
-            the new expression or expressions
+        Returns:
+            The new expression or expressions.
         """
         if not self.parent:
             return expression
@@ -455,6 +534,57 @@ class Expression(metaclass=_Expression):
         """
         assert isinstance(self, type_)
         return self
+
+    def error_messages(self, args: t.Optional[t.Sequence] = None) -> t.List[str]:
+        """
+        Checks if this expression is valid (e.g. all mandatory args are set).
+
+        Args:
+            args: a sequence of values that were used to instantiate a Func expression. This is used
+                to check that the provided arguments don't exceed the function argument limit.
+
+        Returns:
+            A list of error messages for all possible errors that were found.
+        """
+        errors: t.List[str] = []
+
+        for k in self.args:
+            if k not in self.arg_types:
+                errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
+        for k, mandatory in self.arg_types.items():
+            v = self.args.get(k)
+            if mandatory and (v is None or (isinstance(v, list) and not v)):
+                errors.append(f"Required keyword: '{k}' missing for {self.__class__}")
+
+        if (
+            args
+            and isinstance(self, Func)
+            and len(args) > len(self.arg_types)
+            and not self.is_var_len_args
+        ):
+            errors.append(
+                f"The number of provided arguments ({len(args)}) is greater than "
+                f"the maximum number of supported arguments ({len(self.arg_types)})"
+            )
+
+        return errors
+
+    def dump(self):
+        """
+        Dump this Expression to a JSON-serializable dict.
+        """
+        from sqlglot.serde import dump
+
+        return dump(self)
+
+    @classmethod
+    def load(cls, obj):
+        """
+        Load a dict (as returned by `Expression.dump`) into an Expression instance.
+        """
+        from sqlglot.serde import load
+
+        return load(obj)
 
 
 class Condition(Expression):
@@ -533,7 +663,7 @@ class DerivedTable(Expression):
 
     @property
     def named_selects(self):
-        return [select.alias_or_name for select in self.selects]
+        return [select.output_name for select in self.selects]
 
 
 class Unionable(Expression):
@@ -630,11 +760,17 @@ class Create(Expression):
         "replace": False,
         "unique": False,
         "materialized": False,
+        "data": False,
+        "statistics": False,
+        "no_primary_index": False,
+        "indexes": False,
+        "no_schema_binding": False,
+        "begin": False,
     }
 
 
 class Describe(Expression):
-    pass
+    arg_types = {"this": True, "kind": False}
 
 
 class Set(Expression):
@@ -672,7 +808,7 @@ class Show(Expression):
 
 
 class UserDefinedFunction(Expression):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "wrapped": False}
 
 
 class UserDefinedFunctionKwarg(Expression):
@@ -685,6 +821,10 @@ class CharacterSet(Expression):
 
 class With(Expression):
     arg_types = {"expressions": True, "recursive": False}
+
+    @property
+    def recursive(self) -> bool:
+        return bool(self.args.get("recursive"))
 
 
 class WithinGroup(Expression):
@@ -722,11 +862,15 @@ class Column(Condition):
     def table(self):
         return self.text("table")
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class ColumnDef(Expression):
     arg_types = {
         "this": True,
-        "kind": True,
+        "kind": False,
         "constraints": False,
         "exists": False,
     }
@@ -741,6 +885,10 @@ class AlterColumn(Expression):
         "default": False,
         "drop": False,
     }
+
+
+class RenameTable(Expression):
+    pass
 
 
 class ColumnConstraint(Expression):
@@ -777,7 +925,7 @@ class EncodeColumnConstraint(ColumnConstraintKind):
 
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "start": False, "increment": False}
 
 
 class NotNullColumnConstraint(ColumnConstraintKind):
@@ -833,6 +981,10 @@ class ForeignKey(Expression):
     }
 
 
+class PrimaryKey(Expression):
+    arg_types = {"expressions": True, "options": False}
+
+
 class Unique(Expression):
     arg_types = {"expressions": True}
 
@@ -872,9 +1024,21 @@ class Identifier(Expression):
     def __hash__(self):
         return hash((self.key, self.this.lower()))
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class Index(Expression):
-    arg_types = {"this": False, "table": False, "where": False, "columns": False}
+    arg_types = {
+        "this": False,
+        "table": False,
+        "where": False,
+        "columns": False,
+        "unique": False,
+        "primary": False,
+        "amp": False,  # teradata
+    }
 
 
 class Insert(Expression):
@@ -955,6 +1119,10 @@ class Literal(Condition):
     @classmethod
     def string(cls, string) -> Literal:
         return cls(this=str(string), is_string=True)
+
+    @property
+    def output_name(self):
+        return self.name
 
 
 class Join(Expression):
@@ -1146,7 +1314,7 @@ class SchemaCommentProperty(Property):
 
 
 class ReturnsProperty(Property):
-    arg_types = {"this": True, "is_table": False}
+    arg_types = {"this": True, "is_table": False, "table": False}
 
 
 class LanguageProperty(Property):
@@ -1222,8 +1390,13 @@ class Qualify(Expression):
     pass
 
 
+# https://www.ibm.com/docs/en/ias?topic=procedures-return-statement-in-sql
+class Return(Expression):
+    pass
+
+
 class Reference(Expression):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False, "options": False}
 
 
 class Tuple(Expression):
@@ -1231,7 +1404,7 @@ class Tuple(Expression):
 
 
 class Subqueryable(Unionable):
-    def subquery(self, alias=None, copy=True):
+    def subquery(self, alias=None, copy=True) -> Subquery:
         """
         Convert this expression to an aliased expression that can be used as a Subquery.
 
@@ -1356,6 +1529,17 @@ class Table(Expression):
         "laterals": False,
         "joins": False,
         "pivots": False,
+        "hints": False,
+        "system_time": False,
+    }
+
+
+# See the TSQL "Querying data in a system-versioned temporal table" page
+class SystemTime(Expression):
+    arg_types = {
+        "this": False,
+        "expression": False,
+        "kind": True,
     }
 
 
@@ -1374,7 +1558,7 @@ class Union(Subqueryable):
 
         Example:
             >>> select("1").union(select("1")).limit(1).sql()
-            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS "_l_0" LIMIT 1'
+            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS _l_0 LIMIT 1'
 
         Args:
             expression (str | int | Expression): the SQL code string to parse.
@@ -1424,6 +1608,7 @@ class Unnest(UDTF):
         "expressions": True,
         "ordinality": False,
         "alias": False,
+        "offset": False,
     }
 
 
@@ -1813,7 +1998,12 @@ class Select(Subqueryable):
             join.this.replace(join.this.subquery())
 
         if join_type:
+            natural: t.Optional[Token]
+            side: t.Optional[Token]
+            kind: t.Optional[Token]
+
             natural, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)  # type: ignore
+
             if natural:
                 join.set("natural", True)
             if side:
@@ -1980,7 +2170,7 @@ class Select(Subqueryable):
 
     @property
     def named_selects(self) -> t.List[str]:
-        return [e.alias_or_name for e in self.expressions if e.alias_or_name]
+        return [e.output_name for e in self.expressions if e.alias_or_name]
 
     @property
     def selects(self) -> t.List[Expression]:
@@ -2003,6 +2193,10 @@ class Subquery(DerivedTable, Unionable):
         while isinstance(expression, Subquery):
             expression = expression.this
         return expression
+
+    @property
+    def output_name(self):
+        return self.alias
 
 
 class TableSample(Expression):
@@ -2059,6 +2253,10 @@ class Star(Expression):
     def name(self):
         return "*"
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class Parameter(Expression):
     pass
@@ -2085,6 +2283,7 @@ class DataType(Expression):
         "this": True,
         "expressions": False,
         "nested": False,
+        "values": False,
     }
 
     class Type(AutoName):
@@ -2093,6 +2292,10 @@ class DataType(Expression):
         VARCHAR = auto()
         NVARCHAR = auto()
         TEXT = auto()
+        MEDIUMTEXT = auto()
+        LONGTEXT = auto()
+        MEDIUMBLOB = auto()
+        LONGBLOB = auto()
         BINARY = auto()
         VARBINARY = auto()
         INT = auto()
@@ -2106,6 +2309,7 @@ class DataType(Expression):
         JSON = auto()
         JSONB = auto()
         INTERVAL = auto()
+        TIME = auto()
         TIMESTAMP = auto()
         TIMESTAMPTZ = auto()
         TIMESTAMPLTZ = auto()
@@ -2166,11 +2370,24 @@ class DataType(Expression):
     }
 
     @classmethod
-    def build(cls, dtype, **kwargs) -> DataType:
-        return DataType(
-            this=dtype if isinstance(dtype, DataType.Type) else DataType.Type[dtype.upper()],
-            **kwargs,
-        )
+    def build(
+        cls, dtype: str | DataType.Type, dialect: t.Optional[str | Dialect] = None, **kwargs
+    ) -> DataType:
+        from sqlglot import parse_one
+
+        if isinstance(dtype, str):
+            data_type_exp: t.Optional[Expression]
+            if dtype.upper() in cls.Type.__members__:
+                data_type_exp = DataType(this=DataType.Type[dtype.upper()])
+            else:
+                data_type_exp = parse_one(dtype, read=dialect, into=DataType)
+            if data_type_exp is None:
+                raise ValueError(f"Unparsable data type value: {dtype}")
+        elif isinstance(dtype, DataType.Type):
+            data_type_exp = DataType(this=dtype)
+        else:
+            raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
+        return DataType(**{**data_type_exp.args, **kwargs})
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -2218,11 +2435,11 @@ class Rollback(Expression):
 
 
 class AlterTable(Expression):
-    arg_types = {
-        "this": True,
-        "actions": True,
-        "exists": False,
-    }
+    arg_types = {"this": True, "actions": True, "exists": False}
+
+
+class AddConstraint(Expression):
+    arg_types = {"this": False, "expression": False, "enforced": False}
 
 
 # Binary expressions like (ADD a b)
@@ -2392,6 +2609,10 @@ class Neg(Unary):
 class Alias(Expression):
     arg_types = {"this": True, "alias": False}
 
+    @property
+    def output_name(self):
+        return self.alias
+
 
 class Aliases(Expression):
     arg_types = {"this": True, "expressions": True}
@@ -2424,6 +2645,7 @@ class In(Predicate):
         "query": False,
         "unnest": False,
         "field": False,
+        "is_global": False,
     }
 
 
@@ -2458,16 +2680,13 @@ class Func(Condition):
     """
     The base class for all function expressions.
 
-    Attributes
-        is_var_len_args (bool): if set to True the last argument defined in
-            arg_types will be treated as a variable length argument and the
-            argument's value will be stored as a list.
-        _sql_names (list): determines the SQL name (1st item in the list) and
-            aliases (subsequent items) for this function expression. These
-            values are used to map this node to a name during parsing as well
-            as to provide the function's name during SQL string generation. By
-            default the SQL name is set to the expression's class name transformed
-            to snake case.
+    Attributes:
+        is_var_len_args (bool): if set to True the last argument defined in arg_types will be
+            treated as a variable length argument and the argument's value will be stored as a list.
+        _sql_names (list): determines the SQL name (1st item in the list) and aliases (subsequent items)
+            for this function expression. These values are used to map this node to a name during parsing
+            as well as to provide the function's name during SQL string generation. By default the SQL
+            name is set to the expression's class name transformed to snake case.
     """
 
     is_var_len_args = False
@@ -2493,7 +2712,7 @@ class Func(Condition):
             raise NotImplementedError(
                 "SQL name is only supported by concrete function implementations"
             )
-        if not hasattr(cls, "_sql_names"):
+        if "_sql_names" not in cls.__dict__:
             cls._sql_names = [camel_to_snake_case(cls.__name__)]
         return cls._sql_names
 
@@ -2593,6 +2812,10 @@ class Cast(Func):
     def to(self):
         return self.args["to"]
 
+    @property
+    def output_name(self):
+        return self.name
+
 
 class Collate(Binary):
     pass
@@ -2673,6 +2896,10 @@ class DatetimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
+class LastDateOfMonth(Func):
+    pass
+
+
 class Extract(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -2731,7 +2958,7 @@ class Day(Func):
 
 
 class Decode(Func):
-    arg_types = {"this": True, "charset": True}
+    arg_types = {"this": True, "charset": True, "replace": False}
 
 
 class DiToDate(Func):
@@ -2755,7 +2982,7 @@ class Floor(Func):
 
 
 class Greatest(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
@@ -2801,7 +3028,7 @@ class JSONBExtractScalar(JSONExtract):
 
 
 class Least(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
@@ -2810,7 +3037,13 @@ class Length(Func):
 
 
 class Levenshtein(Func):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {
+        "this": True,
+        "expression": False,
+        "ins_cost": False,
+        "del_cost": False,
+        "sub_cost": False,
+    }
 
 
 class Ln(Func):
@@ -2838,7 +3071,7 @@ class Lower(Func):
 
 
 class Map(Func):
-    arg_types = {"keys": True, "values": True}
+    arg_types = {"keys": False, "values": False}
 
 
 class VarMap(Func):
@@ -2857,11 +3090,11 @@ class Matches(Func):
 
 
 class Max(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Min(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Month(Func):
@@ -2881,12 +3114,30 @@ class Pow(Func):
     _sql_names = ["POWER", "POW"]
 
 
+class PercentileCont(AggFunc):
+    pass
+
+
+class PercentileDisc(AggFunc):
+    pass
+
+
 class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
+# Clickhouse-specific:
+# https://clickhouse.com/docs/en/sql-reference/aggregate-functions/reference/quantiles/#quantiles
+class Quantiles(AggFunc):
+    arg_types = {"parameters": True, "expressions": True}
+
+
+class QuantileIf(AggFunc):
+    arg_types = {"parameters": True, "expressions": True}
+
+
 class ApproxQuantile(Quantile):
-    arg_types = {"this": True, "quantile": True, "accuracy": False}
+    arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 
 
 class ReadCSV(Func):
@@ -2946,7 +3197,12 @@ class Substring(Func):
 
 
 class StrPosition(Func):
-    arg_types = {"substr": True, "this": True, "position": False}
+    arg_types = {
+        "this": True,
+        "substr": True,
+        "position": False,
+        "instance": False,
+    }
 
 
 class StrToDate(Func):
@@ -2957,8 +3213,10 @@ class StrToTime(Func):
     arg_types = {"this": True, "format": True}
 
 
+# Spark allows unix_timestamp()
+# https://spark.apache.org/docs/3.1.3/api/python/reference/api/pyspark.sql.functions.unix_timestamp.html
 class StrToUnix(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": False, "format": False}
 
 
 class NumberToStr(Func):
@@ -3051,8 +3309,10 @@ class UnixToStr(Func):
     arg_types = {"this": True, "format": False}
 
 
+# https://prestodb.io/docs/current/functions/datetime.html
+# presto has weird zone/hours/minutes
 class UnixToTime(Func):
-    arg_types = {"this": True, "scale": False}
+    arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False}
 
     SECONDS = Literal.string("seconds")
     MILLIS = Literal.string("millis")
@@ -3119,6 +3379,7 @@ def _norm_arg(arg):
 ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 
+# Helpers
 def maybe_parse(
     sql_or_expression,
     *,
@@ -3126,7 +3387,7 @@ def maybe_parse(
     dialect=None,
     prefix=None,
     **opts,
-) -> t.Optional[Expression]:
+) -> Expression:
     """Gracefully handle a possible string or expression.
 
     Example:
@@ -3589,7 +3850,7 @@ def paren(expression) -> Paren:
     return Paren(this=expression)
 
 
-SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][\w]*$")
+SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 def to_identifier(alias, quoted=None) -> t.Optional[Identifier]:
@@ -3604,6 +3865,16 @@ def to_identifier(alias, quoted=None) -> t.Optional[Identifier]:
     else:
         raise ValueError(f"Alias needs to be a string or an Identifier, got: {alias.__class__}")
     return identifier
+
+
+@t.overload
+def to_table(sql_path: str | Table, **kwargs) -> Table:
+    ...
+
+
+@t.overload
+def to_table(sql_path: None, **kwargs) -> None:
+    ...
 
 
 def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
@@ -3622,11 +3893,11 @@ def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
 
-    catalog, db, table_name = [to_identifier(x) for x in split_num_words(sql_path, ".", 3)]
+    catalog, db, table_name = (to_identifier(x) for x in split_num_words(sql_path, ".", 3))
     return Table(this=table_name, db=db, catalog=catalog, **kwargs)
 
 
-def to_column(sql_path: str, **kwargs) -> Column:
+def to_column(sql_path: str | Column, **kwargs) -> Column:
     """
     Create a column from a `[table].[column]` sql path. Schema is optional.
 
@@ -3641,7 +3912,7 @@ def to_column(sql_path: str, **kwargs) -> Column:
         return sql_path
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for column: {type(sql_path)}")
-    table_name, column_name = [to_identifier(x) for x in split_num_words(sql_path, ".", 2)]
+    table_name, column_name = (to_identifier(x) for x in split_num_words(sql_path, ".", 2))
     return Column(this=column_name, table=table_name, **kwargs)
 
 
@@ -3743,7 +4014,7 @@ def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
 def values(
     values: t.Iterable[t.Tuple[t.Any, ...]],
     alias: t.Optional[str] = None,
-    columns: t.Optional[t.Iterable[str]] = None,
+    columns: t.Optional[t.Iterable[str] | t.Dict[str, DataType]] = None,
 ) -> Values:
     """Build VALUES statement.
 
@@ -3754,7 +4025,10 @@ def values(
     Args:
         values: values statements that will be converted to SQL
         alias: optional alias
-        columns: Optional list of ordered column names. An alias is required when providing column names.
+        columns: Optional list of ordered column names or ordered dictionary of column names to types.
+         If either are provided then an alias is also required.
+         If a dictionary is provided then the first column of the values will be casted to the expected type
+         in order to help with type inference.
 
     Returns:
         Values: the Values expression object
@@ -3766,9 +4040,36 @@ def values(
         if columns
         else TableAlias(this=to_identifier(alias) if alias else None)
     )
+    expressions = [convert(tup) for tup in values]
+    if columns and isinstance(columns, dict):
+        types = list(columns.values())
+        expressions[0].set(
+            "expressions",
+            [Cast(this=x, to=types[i]) for i, x in enumerate(expressions[0].expressions)],
+        )
     return Values(
-        expressions=[convert(tup) for tup in values],
+        expressions=expressions,
         alias=table_alias,
+    )
+
+
+def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:
+    """Build ALTER TABLE... RENAME... expression
+
+    Args:
+        old_name: The old name of the table
+        new_name: The new name of the table
+
+    Returns:
+        Alter table expression
+    """
+    old_table = to_table(old_name)
+    new_table = to_table(new_name)
+    return AlterTable(
+        this=old_table,
+        actions=[
+            RenameTable(this=new_table),
+        ],
     )
 
 
@@ -3791,6 +4092,8 @@ def convert(value) -> Expression:
         return Boolean(this=value)
     if isinstance(value, str):
         return Literal.string(value)
+    if isinstance(value, float) and math.isnan(value):
+        return NULL
     if isinstance(value, numbers.Number):
         return Literal.number(value)
     if isinstance(value, tuple):
@@ -3799,11 +4102,13 @@ def convert(value) -> Expression:
         return Array(expressions=[convert(v) for v in value])
     if isinstance(value, dict):
         return Map(
-            keys=[convert(k) for k in value.keys()],
+            keys=[convert(k) for k in value],
             values=[convert(v) for v in value.values()],
         )
     if isinstance(value, datetime.datetime):
-        datetime_literal = Literal.string(value.strftime("%Y-%m-%d %H:%M:%S.%f%z"))
+        datetime_literal = Literal.string(
+            (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat()
+        )
         return TimeStrToTime(this=datetime_literal)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
@@ -3855,7 +4160,7 @@ def table_name(table) -> str:
     """Get the full name of a table as a string.
 
     Args:
-        table (exp.Table | str): Table expression node or string.
+        table (exp.Table | str): table expression node or string.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -3863,7 +4168,7 @@ def table_name(table) -> str:
         'a.b.c'
 
     Returns:
-        str: the table name
+        The table name.
     """
 
     table = maybe_parse(table, into=Table)
@@ -3886,8 +4191,8 @@ def replace_tables(expression, mapping):
     """Replace all tables in expression according to the mapping.
 
     Args:
-        expression (sqlglot.Expression): Expression node to be transformed and replaced
-        mapping (Dict[str, str]): Mapping of table names
+        expression (sqlglot.Expression): expression node to be transformed and replaced.
+        mapping (Dict[str, str]): mapping of table names.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -3895,7 +4200,7 @@ def replace_tables(expression, mapping):
         'SELECT * FROM c'
 
     Returns:
-        The mapped expression
+        The mapped expression.
     """
 
     def _replace_tables(node):
@@ -3915,9 +4220,9 @@ def replace_placeholders(expression, *args, **kwargs):
     """Replace placeholders in an expression.
 
     Args:
-        expression (sqlglot.Expression): Expression node to be transformed and replaced
-        args: Positional names that will substitute unnamed placeholders in the given order
-        kwargs: Keyword arguments that will substitute named placeholders
+        expression (sqlglot.Expression): expression node to be transformed and replaced.
+        args: positional names that will substitute unnamed placeholders in the given order.
+        kwargs: keyword arguments that will substitute named placeholders.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -3927,7 +4232,7 @@ def replace_placeholders(expression, *args, **kwargs):
         'SELECT * FROM foo WHERE a = b'
 
     Returns:
-        The mapped expression
+        The mapped expression.
     """
 
     def _replace_placeholders(node, args, **kwargs):
@@ -3946,15 +4251,71 @@ def replace_placeholders(expression, *args, **kwargs):
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
 
 
+def func(name: str, *args, dialect: t.Optional[Dialect | str] = None, **kwargs) -> Func:
+    """
+    Returns a Func expression.
+
+    Examples:
+        >>> func("abs", 5).sql()
+        'ABS(5)'
+
+        >>> func("cast", this=5, to=DataType.build("DOUBLE")).sql()
+        'CAST(5 AS DOUBLE)'
+
+    Args:
+        name: the name of the function to build.
+        args: the args used to instantiate the function of interest.
+        dialect: the source dialect.
+        kwargs: the kwargs used to instantiate the function of interest.
+
+    Note:
+        The arguments `args` and `kwargs` are mutually exclusive.
+
+    Returns:
+        An instance of the function of interest, or an anonymous function, if `name` doesn't
+        correspond to an existing `sqlglot.expressions.Func` class.
+    """
+    if args and kwargs:
+        raise ValueError("Can't use both args and kwargs to instantiate a function.")
+
+    from sqlglot.dialects.dialect import Dialect
+
+    args = tuple(convert(arg) for arg in args)
+    kwargs = {key: convert(value) for key, value in kwargs.items()}
+
+    parser = Dialect.get_or_raise(dialect)().parser()
+    from_args_list = parser.FUNCTIONS.get(name.upper())
+
+    if from_args_list:
+        function = from_args_list(args) if args else from_args_list.__self__(**kwargs)  # type: ignore
+    else:
+        kwargs = kwargs or {"expressions": args}
+        function = Anonymous(this=name, **kwargs)
+
+    for error_message in function.error_messages(args):
+        raise ValueError(error_message)
+
+    return function
+
+
 def true():
+    """
+    Returns a true Boolean expression.
+    """
     return Boolean(this=True)
 
 
 def false():
+    """
+    Returns a false Boolean expression.
+    """
     return Boolean(this=False)
 
 
 def null():
+    """
+    Returns a Null expression.
+    """
     return Null()
 
 

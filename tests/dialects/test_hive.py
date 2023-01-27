@@ -339,6 +339,48 @@ class TestHive(Validator):
 
     def test_hive(self):
         self.validate_all(
+            "SELECT A.1a AS b FROM test_a AS A",
+            write={
+                "spark": "SELECT A.1a AS b FROM test_a AS A",
+            },
+        )
+        self.validate_all(
+            "SELECT 1_a AS a FROM test_table",
+            write={
+                "spark": "SELECT 1_a AS a FROM test_table",
+            },
+        )
+        self.validate_all(
+            "SELECT a_b AS 1_a FROM test_table",
+            write={
+                "spark": "SELECT a_b AS 1_a FROM test_table",
+            },
+        )
+        self.validate_all(
+            "SELECT 1a_1a FROM test_a",
+            write={
+                "spark": "SELECT 1a_1a FROM test_a",
+            },
+        )
+        self.validate_all(
+            "SELECT 1a AS 1a_1a FROM test_a",
+            write={
+                "spark": "SELECT 1a AS 1a_1a FROM test_a",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE test_table (1a STRING)",
+            write={
+                "spark": "CREATE TABLE test_table (1a STRING)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE test_table2 (1a_1a STRING)",
+            write={
+                "spark": "CREATE TABLE test_table2 (1a_1a STRING)",
+            },
+        )
+        self.validate_all(
             "PERCENTILE(x, 0.5)",
             write={
                 "duckdb": "QUANTILE(x, 0.5)",
@@ -402,7 +444,7 @@ class TestHive(Validator):
             "LOCATE('a', x, 3)",
             write={
                 "duckdb": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
-                "presto": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
+                "presto": "STRPOS(x, 'a', 3)",
                 "hive": "LOCATE('a', x, 3)",
                 "spark": "LOCATE('a', x, 3)",
             },
@@ -411,7 +453,7 @@ class TestHive(Validator):
             "INITCAP('new york')",
             write={
                 "duckdb": "INITCAP('new york')",
-                "presto": "REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+                "presto": r"REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",
             },

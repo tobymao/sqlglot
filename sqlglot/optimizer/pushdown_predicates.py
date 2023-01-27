@@ -27,7 +27,14 @@ def pushdown_predicates(expression):
         select = scope.expression
         where = select.args.get("where")
         if where:
-            pushdown(where.this, scope.selected_sources, scope_ref_count)
+            selected_sources = scope.selected_sources
+            # a right join can only push down to itself and not the source FROM table
+            for k, (node, source) in selected_sources.items():
+                parent = node.find_ancestor(exp.Join, exp.From)
+                if isinstance(parent, exp.Join) and parent.side == "RIGHT":
+                    selected_sources = {k: (node, source)}
+                    break
+            pushdown(where.this, selected_sources, scope_ref_count)
 
         # joins should only pushdown into itself, not to other joins
         # so we limit the selected sources to only itself
@@ -148,10 +155,13 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
 
         # a node can reference a CTE which should be pushed down
         if isinstance(node, exp.From) and not isinstance(source, exp.Table):
+            with_ = source.parent.expression.args.get("with")
+            if with_ and with_.recursive:
+                return {}
             node = source.expression
 
         if isinstance(node, exp.Join):
-            if node.side:
+            if node.side and node.side != "RIGHT":
                 return {}
             nodes[table] = node
         elif isinstance(node, exp.Select) and len(tables) == 1:

@@ -230,7 +230,7 @@ class Scope:
                 column for scope in self.subquery_scopes for column in scope.external_columns
             ]
 
-            named_outputs = {e.alias_or_name for e in self.expression.expressions}
+            named_selects = set(self.expression.named_selects)
 
             self._columns = []
             for column in columns + external_columns:
@@ -238,7 +238,7 @@ class Scope:
                 if (
                     not ancestor
                     or column.table
-                    or (column.name not in named_outputs and not isinstance(ancestor, exp.Hint))
+                    or (column.name not in named_selects and not isinstance(ancestor, exp.Hint))
                 ):
                     self._columns.append(column)
 
@@ -511,9 +511,20 @@ def _traverse_union(scope):
 
 def _traverse_derived_tables(derived_tables, scope, scope_type):
     sources = {}
+    is_cte = scope_type == ScopeType.CTE
 
     for derived_table in derived_tables:
-        top = None
+        recursive_scope = None
+
+        # if the scope is a recursive cte, it must be in the form of
+        # base_case UNION recursive. thus the recursive scope is the first
+        # section of the union.
+        if is_cte and scope.expression.args["with"].recursive:
+            union = derived_table.this
+
+            if isinstance(union, exp.Union):
+                recursive_scope = scope.branch(union.this, scope_type=ScopeType.CTE)
+
         for child_scope in _traverse_scope(
             scope.branch(
                 derived_table if isinstance(derived_table, exp.UDTF) else derived_table.this,
@@ -523,16 +534,23 @@ def _traverse_derived_tables(derived_tables, scope, scope_type):
             )
         ):
             yield child_scope
-            top = child_scope
+
             # Tables without aliases will be set as ""
             # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
             # Until then, this means that only a single, unaliased derived table is allowed (rather,
             # the latest one wins.
-            sources[derived_table.alias] = child_scope
-        if scope_type == ScopeType.CTE:
-            scope.cte_scopes.append(top)
+            alias = derived_table.alias
+            sources[alias] = child_scope
+
+            if recursive_scope:
+                child_scope.add_source(alias, recursive_scope)
+
+        # append the final child_scope yielded
+        if is_cte:
+            scope.cte_scopes.append(child_scope)
         else:
-            scope.derived_table_scopes.append(top)
+            scope.derived_table_scopes.append(child_scope)
+
     scope.sources.update(sources)
 
 

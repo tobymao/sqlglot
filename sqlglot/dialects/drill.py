@@ -6,11 +6,13 @@ from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     create_with_partitions_sql,
+    datestrtodate_sql,
     format_time_lambda,
     no_pivot_sql,
     no_trycast_sql,
     rename_func,
     str_position_sql,
+    timestrtotime_sql,
 )
 
 
@@ -144,7 +146,7 @@ class Drill(Dialect):
             exp.ArraySize: rename_func("REPEATED_COUNT"),
             exp.Create: create_with_partitions_sql,
             exp.DateAdd: _date_add_sql("ADD"),
-            exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+            exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateToDi: lambda self, e: f"CAST(TO_DATE({self.sql(e, 'this')}, {Drill.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS VARCHAR), {Drill.dateint_format})",
@@ -158,7 +160,7 @@ class Drill(Dialect):
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
-            exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),

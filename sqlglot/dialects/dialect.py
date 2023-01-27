@@ -33,6 +33,7 @@ class Dialects(str, Enum):
     TSQL = "tsql"
     DATABRICKS = "databricks"
     DRILL = "drill"
+    TERADATA = "teradata"
 
 
 class _Dialect(type):
@@ -368,8 +369,33 @@ def locate_to_strposition(args):
     )
 
 
-def strposition_to_local_sql(self, expression):
+def strposition_to_locate_sql(self, expression):
     args = self.format_args(
         expression.args.get("substr"), expression.this, expression.args.get("position")
     )
     return f"LOCATE({args})"
+
+
+def timestrtotime_sql(self, expression: exp.TimeStrToTime) -> str:
+    return f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
+
+
+def datestrtodate_sql(self, expression: exp.DateStrToDate) -> str:
+    return f"CAST({self.sql(expression, 'this')} AS DATE)"
+
+
+def trim_sql(self, expression):
+    target = self.sql(expression, "this")
+    trim_type = self.sql(expression, "position")
+    remove_chars = self.sql(expression, "expression")
+    collation = self.sql(expression, "collation")
+
+    # Use TRIM/LTRIM/RTRIM syntax if the expression isn't database-specific
+    if not remove_chars and not collation:
+        return self.trim_sql(expression)
+
+    trim_type = f"{trim_type} " if trim_type else ""
+    remove_chars = f"{remove_chars} " if remove_chars else ""
+    from_part = "FROM " if trim_type or remove_chars else ""
+    collation = f" COLLATE {collation}" if collation else ""
+    return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"

@@ -58,7 +58,9 @@ def eliminate_subqueries(expression):
     existing_ctes = {}
 
     with_ = root.expression.args.get("with")
+    recursive = False
     if with_:
+        recursive = with_.args.get("recursive")
         for cte in with_.expressions:
             existing_ctes[cte.this] = cte.alias
     new_ctes = []
@@ -88,7 +90,7 @@ def eliminate_subqueries(expression):
                 new_ctes.append(new_cte)
 
     if new_ctes:
-        expression.set("with", exp.With(expressions=new_ctes))
+        expression.set("with", exp.With(expressions=new_ctes, recursive=recursive))
 
     return expression
 

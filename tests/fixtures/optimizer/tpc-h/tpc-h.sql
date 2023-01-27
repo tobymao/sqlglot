@@ -150,7 +150,6 @@ WHERE
   "part"."p_size" = 15
   AND "part"."p_type" LIKE '%BRASS'
   AND "partsupp"."ps_supplycost" = "_u_0"."_col_0"
-  AND NOT "_u_0"."_u_1" IS NULL
 ORDER BY
   "s_acctbal" DESC,
   "n_name",
@@ -1008,7 +1007,7 @@ JOIN "part" AS "part"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "part"."p_partkey"
 WHERE
-  "lineitem"."l_quantity" < "_u_0"."_col_0" AND NOT "_u_0"."_u_1" IS NULL;
+  "lineitem"."l_quantity" < "_u_0"."_col_0";
 
 --------------------------------------
 -- TPC-H 18
@@ -1253,10 +1252,7 @@ WITH "_u_0" AS (
   LEFT JOIN "_u_3" AS "_u_3"
     ON "partsupp"."ps_partkey" = "_u_3"."p_partkey"
   WHERE
-    "partsupp"."ps_availqty" > "_u_0"."_col_0"
-    AND NOT "_u_0"."_u_1" IS NULL
-    AND NOT "_u_0"."_u_2" IS NULL
-    AND NOT "_u_3"."p_partkey" IS NULL
+    "partsupp"."ps_availqty" > "_u_0"."_col_0" AND NOT "_u_3"."p_partkey" IS NULL
   GROUP BY
     "partsupp"."ps_suppkey"
 )

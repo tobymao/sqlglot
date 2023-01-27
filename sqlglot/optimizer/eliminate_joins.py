@@ -57,7 +57,7 @@ def _join_is_used(scope, join, alias):
     # But columns in the ON clause shouldn't count.
     on = join.args.get("on")
     if on:
-        on_clause_columns = set(id(column) for column in on.find_all(exp.Column))
+        on_clause_columns = {id(column) for column in on.find_all(exp.Column)}
     else:
         on_clause_columns = set()
     return any(
@@ -71,7 +71,7 @@ def _is_joined_on_all_unique_outputs(scope, join):
         return False
 
     _, join_keys, _ = join_condition(join)
-    remaining_unique_outputs = unique_outputs - set(c.name for c in join_keys)
+    remaining_unique_outputs = unique_outputs - {c.name for c in join_keys}
     return not remaining_unique_outputs
 
 

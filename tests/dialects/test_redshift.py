@@ -53,7 +53,7 @@ class TestRedshift(Validator):
         self.validate_all(
             "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
             write={
-                "redshift": 'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS "_row_number" FROM x) WHERE "_row_number" = 1',
+                "redshift": 'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) WHERE "_row_number" = 1',
             },
         )
         self.validate_all(
@@ -89,7 +89,9 @@ class TestRedshift(Validator):
         self.validate_identity(
             "SELECT COUNT(*) FROM event WHERE eventname LIKE '%Ring%' OR eventname LIKE '%Die%'"
         )
-        self.validate_identity("CREATE TABLE SOUP DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL")
+        self.validate_identity(
+            "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL"
+        )
         self.validate_identity(
             "CREATE TABLE sales (salesid INTEGER NOT NULL) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE AUTO"
         )
@@ -101,4 +103,82 @@ class TestRedshift(Validator):
         )
         self.validate_identity(
             "CREATE TABLE SOUP (SOUP1 VARCHAR(50) NOT NULL ENCODE ZSTD, SOUP2 VARCHAR(70) NULL ENCODE DELTA)"
+        )
+
+    def test_values(self):
+        self.validate_all(
+            "SELECT a, b FROM (VALUES (1, 2)) AS t (a, b)",
+            write={
+                "redshift": "SELECT a, b FROM (SELECT 1 AS a, 2 AS b) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
+            write={
+                "redshift": "SELECT a, b FROM (SELECT 1 AS a, 2 AS b UNION ALL SELECT 3, 4) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT a, b FROM (VALUES (1, 2), (3, 4), (5, 6), (7, 8)) AS t (a, b)",
+            write={
+                "redshift": "SELECT a, b FROM (SELECT 1 AS a, 2 AS b UNION ALL SELECT 3, 4 UNION ALL SELECT 5, 6 UNION ALL SELECT 7, 8) AS t",
+            },
+        )
+        self.validate_all(
+            "INSERT INTO t(a) VALUES (1), (2), (3)",
+            write={
+                "redshift": "INSERT INTO t (a) VALUES (1), (2), (3)",
+            },
+        )
+        self.validate_all(
+            "INSERT INTO t(a, b) SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
+            write={
+                "redshift": "INSERT INTO t (a, b) SELECT a, b FROM (SELECT 1 AS a, 2 AS b UNION ALL SELECT 3, 4) AS t",
+            },
+        )
+        self.validate_all(
+            "INSERT INTO t(a, b) VALUES (1, 2), (3, 4)",
+            write={
+                "redshift": "INSERT INTO t (a, b) VALUES (1, 2), (3, 4)",
+            },
+        )
+
+    def test_create_table_like(self):
+        self.validate_all(
+            "CREATE TABLE t1 LIKE t2",
+            write={
+                "redshift": "CREATE TABLE t1 (LIKE t2)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL",
+            write={
+                "redshift": "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL",
+            },
+        )
+
+    def test_rename_table(self):
+        self.validate_all(
+            "ALTER TABLE db.t1 RENAME TO db.t2",
+            write={
+                "spark": "ALTER TABLE db.t1 RENAME TO db.t2",
+                "redshift": "ALTER TABLE db.t1 RENAME TO t2",
+            },
+        )
+
+    def test_varchar_max(self):
+        self.validate_all(
+            "CREATE TABLE TEST (cola VARCHAR(MAX))",
+            write={
+                "redshift": 'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
+            },
+            identify=True,
+        )
+
+    def test_no_schema_binding(self):
+        self.validate_all(
+            "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
+            write={
+                "redshift": "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
+            },
         )

@@ -3,13 +3,15 @@ from __future__ import annotations
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
     rename_func,
+    timestrtotime_sql,
     var_map_sql,
 )
 from sqlglot.expressions import Literal
-from sqlglot.helper import seq_get
+from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -183,7 +185,7 @@ class Snowflake(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
-        ESCAPES = ["\\"]
+        ESCAPES = ["\\", "'"]
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
@@ -193,7 +195,6 @@ class Snowflake(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "QUALIFY": TokenType.QUALIFY,
-            "DOUBLE PRECISION": TokenType.DOUBLE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
@@ -209,6 +210,8 @@ class Snowflake(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.DateAdd: rename_func("DATEADD"),
+            exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
             exp.If: rename_func("IFF"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -216,8 +219,9 @@ class Snowflake(Dialect):
             exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),
-            exp.StrPosition: rename_func("POSITION"),
+            exp.StrPosition: lambda self, e: f"{self.normalize_func('POSITION')}({self.format_args(e.args.get('substr'), e.this, e.args.get('position'))})",
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
             exp.UnixToTime: _unix_to_time_sql,
@@ -246,3 +250,54 @@ class Snowflake(Dialect):
             if not expression.args.get("distinct", False):
                 self.unsupported("INTERSECT with All is not supported in Snowflake")
             return super().intersect_op(expression)
+
+        def values_sql(self, expression: exp.Values) -> str:
+            """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted.
+
+            We also want to make sure that after we find matches where we need to unquote a column that we prevent users
+            from adding quotes to the column by using the `identify` argument when generating the SQL.
+            """
+            alias = expression.args.get("alias")
+            if alias and alias.args.get("columns"):
+                expression = expression.transform(
+                    lambda node: exp.Identifier(**{**node.args, "quoted": False})
+                    if isinstance(node, exp.Identifier)
+                    and isinstance(node.parent, exp.TableAlias)
+                    and node.arg_key == "columns"
+                    else node,
+                )
+                return self.no_identify(lambda: super(self.__class__, self).values_sql(expression))
+            return super().values_sql(expression)
+
+        def select_sql(self, expression: exp.Select) -> str:
+            """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted and also
+            that all columns in a SELECT are unquoted. We also want to make sure that after we find matches where we need
+            to unquote a column that we prevent users from adding quotes to the column by using the `identify` argument when
+            generating the SQL.
+
+            Note: We make an assumption that any columns referenced in a VALUES expression should be unquoted throughout the
+            expression. This might not be true in a case where the same column name can be sourced from another table that can
+            properly quote but should be true in most cases.
+            """
+            values_expressions = expression.find_all(exp.Values)
+            values_identifiers = set(
+                flatten(
+                    v.args.get("alias", exp.Alias()).args.get("columns", [])
+                    for v in values_expressions
+                )
+            )
+            if values_identifiers:
+                expression = expression.transform(
+                    lambda node: exp.Identifier(**{**node.args, "quoted": False})
+                    if isinstance(node, exp.Identifier) and node in values_identifiers
+                    else node,
+                )
+                return self.no_identify(lambda: super(self.__class__, self).select_sql(expression))
+            return super().select_sql(expression)
+
+        def describe_sql(self, expression: exp.Describe) -> str:
+            # Default to table if kind is unknown
+            kind_value = expression.args.get("kind") or "TABLE"
+            kind = f" {kind_value}" if kind_value else ""
+            this = f" {self.sql(expression, 'this')}"
+            return f"DESCRIBE{kind}{this}"

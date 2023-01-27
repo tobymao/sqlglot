@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    datestrtodate_sql,
     format_time_lambda,
     no_pivot_sql,
     no_properties_sql,
@@ -13,6 +14,7 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     rename_func,
     str_position_sql,
+    timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -131,7 +133,7 @@ class DuckDB(Dialect):
             exp.DataType: _datatype_sql,
             exp.DateAdd: _date_add,
             exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.format_args(e.args.get("unit") or "'day'", e.expression, e.this)})""",
-            exp.DateStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+            exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.dateint_format}) AS DATE)",
             exp.Explode: rename_func("UNNEST"),
@@ -154,7 +156,7 @@ class DuckDB(Dialect):
             exp.Struct: _struct_pack_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
-            exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
             exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("EPOCH"),

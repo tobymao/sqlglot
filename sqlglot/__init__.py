@@ -1,5 +1,6 @@
 """
 .. include:: ../README.md
+----
 """
 
 from __future__ import annotations
@@ -32,11 +33,13 @@ from sqlglot.parser import Parser
 from sqlglot.schema import MappingSchema
 from sqlglot.tokens import Tokenizer, TokenType
 
-__version__ = "10.3.2"
+__version__ = "10.5.7"
 
 pretty = False
+"""Whether to format generated SQL by default."""
 
 schema = MappingSchema()
+"""The default schema used by SQLGlot (e.g. in the optimizer)."""
 
 
 def parse(
@@ -48,7 +51,7 @@ def parse(
     Args:
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
-        **opts: other options.
+        **opts: other `sqlglot.parser.Parser` options.
 
     Returns:
         The resulting syntax tree collection.
@@ -60,9 +63,9 @@ def parse(
 def parse_one(
     sql: str,
     read: t.Optional[str | Dialect] = None,
-    into: t.Optional[Expression | str] = None,
+    into: t.Optional[t.Type[Expression] | str] = None,
     **opts,
-) -> t.Optional[Expression]:
+) -> Expression:
     """
     Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.
 
@@ -70,7 +73,7 @@ def parse_one(
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
         into: the SQLGlot Expression to parse into.
-        **opts: other options.
+        **opts: other `sqlglot.parser.Parser` options.
 
     Returns:
         The syntax tree for the first parsed statement.
@@ -83,7 +86,12 @@ def parse_one(
     else:
         result = dialect.parse(sql, **opts)
 
-    return result[0] if result else None
+    for expression in result:
+        if not expression:
+            raise ParseError(f"No expression was parsed from '{sql}'")
+        return expression
+    else:
+        raise ParseError(f"No expression was parsed from '{sql}'")
 
 
 def transpile(
@@ -105,7 +113,7 @@ def transpile(
         identity: if set to `True` and if the target dialect is not specified the source dialect will be used as both:
             the source and the target dialect.
         error_level: the desired error level of the parser.
-        **opts: other options.
+        **opts: other `sqlglot.generator.Generator` options.
 
     Returns:
         The list of transpiled SQL statements.

@@ -43,7 +43,7 @@ class TypeAnnotator:
         },
         exp.Cast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"]),
         exp.TryCast: lambda self, expr: self._annotate_with_type(expr, expr.args["to"]),
-        exp.DataType: lambda self, expr: self._annotate_with_type(expr, expr),
+        exp.DataType: lambda self, expr: self._annotate_with_type(expr, expr.copy()),
         exp.Alias: lambda self, expr: self._annotate_unary(expr),
         exp.Between: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),
         exp.In: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BOOLEAN),

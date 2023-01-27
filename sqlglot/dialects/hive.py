@@ -13,8 +13,9 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     no_trycast_sql,
     rename_func,
-    strposition_to_local_sql,
+    strposition_to_locate_sql,
     struct_extract_sql,
+    timestrtotime_sql,
     var_map_sql,
 )
 from sqlglot.helper import seq_get
@@ -174,14 +175,6 @@ class Hive(Dialect):
         ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
-        NUMERIC_LITERALS = {
-            "L": "BIGINT",
-            "S": "SMALLINT",
-            "Y": "TINYINT",
-            "D": "DOUBLE",
-            "F": "FLOAT",
-            "BD": "DECIMAL",
-        }
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ADD ARCHIVE": TokenType.COMMAND,
@@ -190,8 +183,20 @@ class Hive(Dialect):
             "ADD FILES": TokenType.COMMAND,
             "ADD JAR": TokenType.COMMAND,
             "ADD JARS": TokenType.COMMAND,
+            "MSCK REPAIR": TokenType.COMMAND,
             "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
+
+        NUMERIC_LITERALS = {
+            "L": "BIGINT",
+            "S": "SMALLINT",
+            "Y": "TINYINT",
+            "D": "DOUBLE",
+            "F": "FLOAT",
+            "BD": "DECIMAL",
+        }
+
+        IDENTIFIER_CAN_START_WITH_DIGIT = True
 
     class Parser(parser.Parser):
         STRICT_CAST = False
@@ -292,14 +297,14 @@ class Hive(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
-            exp.StrPosition: strposition_to_local_sql,
+            exp.StrPosition: strposition_to_locate_sql,
             exp.StrToDate: _str_to_date,
             exp.StrToTime: _str_to_time,
             exp.StrToUnix: _str_to_unix,
             exp.StructExtract: struct_extract_sql,
             exp.TableFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
             exp.TimeStrToDate: rename_func("TO_DATE"),
-            exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: _time_to_str,
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
@@ -314,6 +319,7 @@ class Hive(Dialect):
             exp.RowFormatSerdeProperty: lambda self, e: f"ROW FORMAT SERDE {self.sql(e, 'this')}",
             exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
+            exp.LastDateOfMonth: rename_func("LAST_DAY"),
         }
 
         WITH_PROPERTIES = {exp.Property}
@@ -341,4 +347,6 @@ class Hive(Dialect):
                 and not expression.expressions
             ):
                 expression = exp.DataType.build("text")
+            elif expression.this in exp.DataType.TEMPORAL_TYPES:
+                expression = exp.DataType.build(expression.this)
             return super().datatype_sql(expression)

@@ -124,6 +124,7 @@ class Spark(Hive):
             exp.TimestampTrunc: lambda self, e: f"DATE_TRUNC({self.sql(e, 'unit')}, {self.sql(e, 'this')})",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
+            exp.LogicalOr: rename_func("BOOL_OR"),
         }
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)

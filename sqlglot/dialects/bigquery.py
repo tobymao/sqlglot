@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    datestrtodate_sql,
     inline_array_sql,
     no_ilike_sql,
     rename_func,
+    timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -44,8 +46,9 @@ def _date_add_sql(data_type, kind):
 
 def _derived_table_values_to_unnest(self, expression):
     if not isinstance(expression.unnest().parent, exp.From):
+        expression = transforms.remove_precision_parameterized_types(expression)
         return self.values_sql(expression)
-    rows = [list(tuple_exp.find_all(exp.Literal)) for tuple_exp in expression.find_all(exp.Tuple)]
+    rows = [tuple_exp.expressions for tuple_exp in expression.find_all(exp.Tuple)]
     structs = []
     for row in rows:
         aliases = [
@@ -116,6 +119,7 @@ class BigQuery(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "CURRENT_TIME": TokenType.CURRENT_TIME,
+            "DECLARE": TokenType.COMMAND,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,
@@ -161,15 +165,22 @@ class BigQuery(Dialect):
             TokenType.TABLE,
         }
 
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,  # type: ignore
+            TokenType.VALUES,
+        }
+
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
+            exp.DateStrToDate: datestrtodate_sql,
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
@@ -178,6 +189,7 @@ class BigQuery(Dialect):
             exp.TimeSub: _date_add_sql("TIME", "SUB"),
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Values: _derived_table_values_to_unnest,
             exp.ReturnsProperty: _returnsproperty_sql,

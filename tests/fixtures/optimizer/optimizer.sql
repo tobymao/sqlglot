@@ -105,7 +105,7 @@ LEFT JOIN "_u_0" AS "_u_0"
 JOIN "y" AS "y"
   ON "x"."b" = "y"."b"
 WHERE
-  "_u_0"."_col_0" >= 0 AND "x"."a" > 1 AND NOT "_u_0"."_u_1" IS NULL
+  "_u_0"."_col_0" >= 0 AND "x"."a" > 1
 GROUP BY
   "x"."a";
 
@@ -291,3 +291,81 @@ SELECT a1 FROM cte1;
 SELECT
   "x"."a" AS "a1"
 FROM "x" AS "x";
+
+# title: recursive cte
+WITH RECURSIVE cte1 AS (
+  SELECT *
+  FROM (
+      SELECT 1 AS a, 2 AS b
+  ) base
+  CROSS JOIN (SELECT 3 c) y
+  UNION ALL
+  SELECT *
+  FROM cte1
+  WHERE a < 1
+)
+SELECT *
+FROM cte1;
+WITH RECURSIVE "base" AS (
+  SELECT
+    1 AS "a",
+    2 AS "b"
+), "y" AS (
+  SELECT
+    3 AS "c"
+), "cte1" AS (
+  SELECT
+    "base"."a" AS "a",
+    "base"."b" AS "b",
+    "y"."c" AS "c"
+  FROM "base" AS "base"
+  CROSS JOIN "y" AS "y"
+  UNION ALL
+  SELECT
+    "cte1"."a" AS "a",
+    "cte1"."b" AS "b",
+    "cte1"."c" AS "c"
+  FROM "cte1"
+  WHERE
+    "cte1"."a" < 1
+)
+SELECT
+  "cte1"."a" AS "a",
+  "cte1"."b" AS "b",
+  "cte1"."c" AS "c"
+FROM "cte1";
+
+# title: right join should not push down to from
+SELECT x.a, y.b
+FROM x
+RIGHT JOIN y
+ON x.a = y.b
+WHERE x.b = 1;
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b"
+FROM "x" AS "x"
+RIGHT JOIN "y" AS "y"
+  ON "x"."a" = "y"."b"
+WHERE
+  "x"."b" = 1;
+
+# title: right join can push down to itself
+SELECT x.a, y.b
+FROM x
+RIGHT JOIN y
+ON x.a = y.b
+WHERE y.b = 1;
+WITH "y_2" AS (
+  SELECT
+    "y"."b" AS "b"
+  FROM "y" AS "y"
+  WHERE
+    "y"."b" = 1
+)
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b"
+FROM "x" AS "x"
+RIGHT JOIN "y_2" AS "y"
+  ON "x"."a" = "y"."b";

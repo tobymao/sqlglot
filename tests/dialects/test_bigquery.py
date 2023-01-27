@@ -6,6 +6,8 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
+        self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",
             read={"bigquery": "REGEXP_CONTAINS('foo', '.*')"},
@@ -39,6 +41,15 @@ class TestBigQuery(Validator):
                 "presto": r"'/\*.*\*/'",
                 "hive": r"'/\\*.*\\*/'",
                 "spark": r"'/\\*.*\\*/'",
+            },
+        )
+        self.validate_all(
+            r"'\\'",
+            write={
+                "bigquery": r"'\\'",
+                "duckdb": r"'\'",
+                "presto": r"'\'",
+                "hive": r"'\\'",
             },
         )
         self.validate_all(
@@ -125,7 +136,7 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
-            "CURRENT_DATE",
+            "CURRENT_TIMESTAMP()",
             read={
                 "tsql": "GETDATE()",
             },
@@ -300,6 +311,14 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SELECT cola, colb, colc FROM (VALUES (1, 'test', NULL)) AS tab(cola, colb, colc)",
+            write={
+                "spark": "SELECT cola, colb, colc FROM VALUES (1, 'test', NULL) AS tab(cola, colb, colc)",
+                "bigquery": "SELECT cola, colb, colc FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb, NULL AS colc)])",
+                "snowflake": "SELECT cola, colb, colc FROM (VALUES (1, 'test', NULL)) AS tab(cola, colb, colc)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
             write={
                 "bigquery": "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
@@ -323,4 +342,36 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
             write={"bigquery": "SELECT a, STRING_AGG(b) FROM table GROUP BY a"},
+        )
+
+    def test_remove_precision_parameterized_types(self):
+        self.validate_all(
+            "SELECT CAST(1 AS NUMERIC(10, 2))",
+            write={
+                "bigquery": "SELECT CAST(1 AS NUMERIC)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE test (a NUMERIC(10, 2))",
+            write={
+                "bigquery": "CREATE TABLE test (a NUMERIC(10, 2))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('1' AS STRING(10)) UNION ALL SELECT CAST('2' AS STRING(10))",
+            write={
+                "bigquery": "SELECT CAST('1' AS STRING) UNION ALL SELECT CAST('2' AS STRING)",
+            },
+        )
+        self.validate_all(
+            "SELECT cola FROM (SELECT CAST('1' AS STRING(10)) AS cola UNION ALL SELECT CAST('2' AS STRING(10)) AS cola)",
+            write={
+                "bigquery": "SELECT cola FROM (SELECT CAST('1' AS STRING) AS cola UNION ALL SELECT CAST('2' AS STRING) AS cola)",
+            },
+        )
+        self.validate_all(
+            "INSERT INTO test (cola, colb) VALUES (CAST(7 AS STRING(10)), CAST(14 AS STRING(10)))",
+            write={
+                "bigquery": "INSERT INTO test (cola, colb) VALUES (CAST(7 AS STRING), CAST(14 AS STRING))",
+            },
         )

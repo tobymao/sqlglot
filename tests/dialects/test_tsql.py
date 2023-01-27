@@ -1,3 +1,4 @@
+from sqlglot import exp, parse, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -5,7 +6,19 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("END")
+        self.validate_identity("@x")
+        self.validate_identity("#x")
+        self.validate_identity("DECLARE @TestVariable AS VARCHAR(100)='Save Our Planet'")
+        self.validate_identity("PRINT @TestVariable")
+        self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
+        self.validate_identity("INSERT INTO @TestTable VALUES (1, 'Value1', 12, 20)")
+        self.validate_identity(
+            "SELECT x FROM @MyTableVar AS m JOIN Employee ON m.EmployeeID = Employee.EmployeeID"
+        )
         self.validate_identity('SELECT "x"."y" FROM foo')
+        self.validate_identity("SELECT * FROM #foo")
+        self.validate_identity("SELECT * FROM ##foo")
         self.validate_identity(
             "SELECT DISTINCT DepartmentName, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY BaseRate) OVER (PARTITION BY DepartmentName) AS MedianCont FROM dbo.DimEmployee"
         )
@@ -71,6 +84,101 @@ class TestTSQL(Validator):
                 "tsql": "CAST(x AS DATETIME2)",
             },
         )
+        self.validate_all(
+            "CAST(x AS DATETIME2(6))",
+            write={
+                "hive": "CAST(x AS TIMESTAMP)",
+            },
+        )
+
+    def test_udf(self):
+        self.validate_identity(
+            "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
+        )
+        self.validate_identity(
+            "CREATE PROC foo @ID INTEGER, @AGE INTEGER AS SELECT DB_NAME(@ID) AS ThatDB"
+        )
+        self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz")
+        self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz")
+        self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
+        self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
+
+        # The following two cases don't necessarily correspond to valid TSQL, but they are used to verify
+        # that the syntax RETURNS @return_variable TABLE <table_type_definition> ... is parsed correctly.
+        #
+        # See also "Transact-SQL Multi-Statement Table-Valued Function Syntax"
+        # https://learn.microsoft.com/en-us/sql/t-sql/statements/create-function-transact-sql?view=sql-server-ver16
+        self.validate_identity(
+            "CREATE FUNCTION foo(@bar INTEGER) RETURNS @foo TABLE (x INTEGER, y NUMERIC) AS RETURN SELECT 1"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION foo() RETURNS @contacts TABLE (first_name VARCHAR(50), phone VARCHAR(25)) AS SELECT @fname, @phone"
+        )
+
+        self.validate_all(
+            """
+            CREATE FUNCTION udfProductInYear (
+                @model_year INT
+            )
+            RETURNS TABLE
+            AS
+            RETURN
+                SELECT
+                    product_name,
+                    model_year,
+                    list_price
+                FROM
+                    production.products
+                WHERE
+                    model_year = @model_year
+            """,
+            write={
+                "tsql": """CREATE FUNCTION udfProductInYear(
+    @model_year INTEGER
+)
+RETURNS TABLE AS
+RETURN SELECT
+  product_name,
+  model_year,
+  list_price
+FROM production.products
+WHERE
+  model_year = @model_year""",
+            },
+            pretty=True,
+        )
+
+        sql = """
+            CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
+                @Loadid INTEGER
+               ,@NumberOfRows INTEGER
+            AS
+            BEGIN
+                SET XACT_ABORT ON;
+
+                DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104);
+                DECLARE @DWH_DateModified DATETIME = CONVERT(DATETIME, getdate(), 104);
+                DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (SYSTEM_USER);
+                DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER);
+
+                DECLARE @SalesAmountBefore float;
+                SELECT @SalesAmountBefore=SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] S;
+            END
+        """
+
+        expected_sqls = [
+            'CREATE PROCEDURE "TRANSF"."SP_Merge_Sales_Real" @Loadid INTEGER, @NumberOfRows INTEGER AS BEGIN SET XACT_ABORT ON',
+            "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)",
+            "DECLARE @DWH_DateModified DATETIME = CONVERT(DATETIME, getdate(), 104)",
+            "DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (SYSTEM_USER)",
+            "DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER)",
+            "DECLARE @SalesAmountBefore float",
+            'SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF."Pre_Merge_Sales_Real" AS S',
+            "END",
+        ]
+
+        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
+            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
     def test_charindex(self):
         self.validate_all(
@@ -300,6 +408,12 @@ class TestTSQL(Validator):
                 "spark": "SELECT CAST(y.x AS VARCHAR(10)) AS z FROM testdb.dbo.test AS y",
             },
         )
+        self.validate_all(
+            "SELECT CAST((SELECT x FROM y) AS VARCHAR) AS test",
+            write={
+                "spark": "SELECT CAST((SELECT x FROM y) AS STRING) AS test",
+            },
+        )
 
     def test_add_date(self):
         self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
@@ -440,4 +554,62 @@ class TestTSQL(Validator):
         self.validate_all(
             "SELECT '''test'''",
             write={"spark": r"SELECT '\'test\''"},
+        )
+
+    def test_eomonth(self):
+        self.validate_all(
+            "EOMONTH(GETDATE())",
+            write={"spark": "LAST_DAY(CURRENT_TIMESTAMP())"},
+        )
+        self.validate_all(
+            "EOMONTH(GETDATE(), -1)",
+            write={"spark": "LAST_DAY(ADD_MONTHS(CURRENT_TIMESTAMP(), -1))"},
+        )
+
+    def test_variables(self):
+        # In TSQL @, # can be used as a prefix for variables/identifiers
+        expr = parse_one("@x", read="tsql")
+        self.assertIsInstance(expr, exp.Column)
+        self.assertIsInstance(expr.this, exp.Identifier)
+
+        expr = parse_one("#x", read="tsql")
+        self.assertIsInstance(expr, exp.Column)
+        self.assertIsInstance(expr.this, exp.Identifier)
+
+    def test_system_time(self):
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo'",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME AS OF 'foo'""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo' AS alias",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME AS OF 'foo' AS alias""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME FROM c TO d",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME FROM c TO d""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME BETWEEN c AND d",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME BETWEEN c AND d""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME CONTAINED IN (c, d)",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME CONTAINED IN (c, d)""",
+            },
+        )
+        self.validate_all(
+            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME ALL AS alias",
+            write={
+                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME ALL AS alias""",
+            },
         )

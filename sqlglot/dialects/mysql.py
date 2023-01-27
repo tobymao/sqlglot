@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
-    strposition_to_local_sql,
+    strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -122,6 +122,10 @@ class MySQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "MEDIUMTEXT": TokenType.MEDIUMTEXT,
+            "LONGTEXT": TokenType.LONGTEXT,
+            "MEDIUMBLOB": TokenType.MEDIUMBLOB,
+            "LONGBLOB": TokenType.LONGBLOB,
             "START": TokenType.BEGIN,
             "SEPARATOR": TokenType.SEPARATOR,
             "_ARMSCII8": TokenType.INTRODUCER,
@@ -442,7 +446,7 @@ class MySQL(Dialect):
             exp.Trim: _trim_sql,
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
-            exp.StrPosition: strposition_to_local_sql,
+            exp.StrPosition: strposition_to_locate_sql,
         }
 
         ROOT_PROPERTIES = {
@@ -453,6 +457,12 @@ class MySQL(Dialect):
             exp.SchemaCommentProperty,
             exp.LikeProperty,
         }
+
+        TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
+        TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
+        TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
+        TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
+        TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
 
         WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()
 

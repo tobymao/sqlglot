@@ -82,10 +82,15 @@ class TokenType(AutoName):
     VARCHAR = auto()
     NVARCHAR = auto()
     TEXT = auto()
+    MEDIUMTEXT = auto()
+    LONGTEXT = auto()
+    MEDIUMBLOB = auto()
+    LONGBLOB = auto()
     BINARY = auto()
     VARBINARY = auto()
     JSON = auto()
     JSONB = auto()
+    TIME = auto()
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
     TIMESTAMPLTZ = auto()
@@ -181,6 +186,7 @@ class TokenType(AutoName):
     FUNCTION = auto()
     FROM = auto()
     GENERATED = auto()
+    GLOBAL = auto()
     GROUP_BY = auto()
     GROUPING_SETS = auto()
     HAVING = auto()
@@ -432,6 +438,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
     ESCAPES = ["'"]
 
+    _ESCAPES: t.Set[str] = set()
+
     KEYWORDS = {
         **{
             f"{key}{postfix}": TokenType.BLOCK_START
@@ -459,6 +467,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
         "ALL": TokenType.ALL,
+        "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,
@@ -470,6 +479,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "BETWEEN": TokenType.BETWEEN,
         "BOTH": TokenType.BOTH,
         "BUCKET": TokenType.BUCKET,
+        "BY DEFAULT": TokenType.BY_DEFAULT,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
@@ -519,9 +529,11 @@ class Tokenizer(metaclass=_Tokenizer):
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
+        "GENERATED": TokenType.GENERATED,
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
+        "IDENTITY": TokenType.IDENTITY,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
         "IMMUTABLE": TokenType.IMMUTABLE,
@@ -656,6 +668,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FLOAT4": TokenType.FLOAT,
         "FLOAT8": TokenType.DOUBLE,
         "DOUBLE": TokenType.DOUBLE,
+        "DOUBLE PRECISION": TokenType.DOUBLE,
         "JSON": TokenType.JSON,
         "CHAR": TokenType.CHAR,
         "NCHAR": TokenType.NCHAR,
@@ -671,6 +684,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "BLOB": TokenType.VARBINARY,
         "BYTEA": TokenType.VARBINARY,
         "VARBINARY": TokenType.VARBINARY,
+        "TIME": TokenType.TIME,
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,
@@ -714,12 +728,16 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.SHOW,
     }
 
+    COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON, TokenType.BEGIN}
+
     # handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
     ENCODE: t.Optional[str] = None
 
     COMMENTS = ["--", ("/*", "*/")]
     KEYWORD_TRIE = None  # autofilled
+
+    IDENTIFIER_CAN_START_WITH_DIGIT = False
 
     __slots__ = (
         "sql",
@@ -740,7 +758,7 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(self) -> None:
-        self._replace_backslash = "\\" in self._ESCAPES  # type: ignore
+        self._replace_backslash = "\\" in self._ESCAPES
         self.reset()
 
     def reset(self) -> None:
@@ -765,7 +783,10 @@ class Tokenizer(metaclass=_Tokenizer):
         self.reset()
         self.sql = sql
         self.size = len(sql)
+        self._scan()
+        return self.tokens
 
+    def _scan(self, until: t.Optional[t.Callable] = None) -> None:
         while self.size and not self._end:
             self._start = self._current
             self._advance()
@@ -786,7 +807,9 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._scan_identifier(identifier_end)
             else:
                 self._scan_keywords()
-        return self.tokens
+
+            if until and until():
+                break
 
     def _chars(self, size: int) -> str:
         if size == 1:
@@ -823,14 +846,18 @@ class Tokenizer(metaclass=_Tokenizer):
         )
         self._comments = []
 
+        # If we have either a semicolon or a begin token before the command's token, we'll parse
+        # whatever follows the command's token as a string
         if token_type in self.COMMANDS and (
-            len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON
+            len(self.tokens) == 1 or self.tokens[-2].token_type in self.COMMAND_PREFIX_TOKENS
         ):
-            self._start = self._current
-            while not self._end and self._peek != ";":
-                self._advance()
-            if self._start < self._current:
-                self._add(TokenType.STRING)
+            start = self._current
+            tokens = len(self.tokens)
+            self._scan(lambda: self._peek == ";")
+            self.tokens = self.tokens[:tokens]
+            text = self.sql[start : self._current].strip()
+            if text:
+                self._add(TokenType.STRING, text)
 
     def _scan_keywords(self) -> None:
         size = 0
@@ -938,17 +965,25 @@ class Tokenizer(metaclass=_Tokenizer):
             elif self._peek.upper() == "E" and not scientific:  # type: ignore
                 scientific += 1
                 self._advance()
-            elif self._peek.isalpha():  # type: ignore
-                self._add(TokenType.NUMBER)
+            elif self._peek.isidentifier():  # type: ignore
+                number_text = self._text
                 literal = []
-                while self._peek.isalpha():  # type: ignore
+
+                while self._peek.strip() and self._peek not in self.SINGLE_TOKENS:  # type: ignore
                     literal.append(self._peek.upper())  # type: ignore
                     self._advance()
+
                 literal = "".join(literal)  # type: ignore
                 token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal))  # type: ignore
+
                 if token_type:
+                    self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)  # type: ignore
+                elif self.IDENTIFIER_CAN_START_WITH_DIGIT:
+                    return self._add(TokenType.VAR)
+
+                self._add(TokenType.NUMBER, number_text)
                 return self._advance(-len(literal))
             else:
                 return self._add(TokenType.NUMBER)
@@ -1050,8 +1085,12 @@ class Tokenizer(metaclass=_Tokenizer):
         delim_size = len(delimiter)
 
         while True:
-            if self._char in self._ESCAPES and self._peek == delimiter:  # type: ignore
-                text += delimiter
+            if (
+                self._char in self._ESCAPES
+                and self._peek
+                and (self._peek == delimiter or self._peek in self._ESCAPES)
+            ):
+                text += self._peek
                 self._advance(2)
             else:
                 if self._chars(delim_size) == delimiter:

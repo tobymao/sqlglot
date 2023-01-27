@@ -1,9 +1,15 @@
 import argparse
+import sys
 
 import sqlglot
 
 parser = argparse.ArgumentParser(description="Transpile SQL")
-parser.add_argument("sql", metavar="sql", type=str, help="SQL string to transpile")
+parser.add_argument(
+    "sql",
+    metavar="sql",
+    type=str,
+    help="SQL statement(s) to transpile, or - to parse stdin.",
+)
 parser.add_argument(
     "--read",
     dest="read",
@@ -48,14 +54,20 @@ parser.add_argument(
 args = parser.parse_args()
 error_level = sqlglot.ErrorLevel[args.error_level.upper()]
 
+sql = sys.stdin.read() if args.sql == "-" else args.sql
+
 if args.parse:
     sqls = [
         repr(expression)
-        for expression in sqlglot.parse(args.sql, read=args.read, error_level=error_level)
+        for expression in sqlglot.parse(
+            sql,
+            read=args.read,
+            error_level=error_level,
+        )
     ]
 else:
     sqls = sqlglot.transpile(
-        args.sql,
+        sql,
         read=args.read,
         write=args.write,
         identify=args.identify,

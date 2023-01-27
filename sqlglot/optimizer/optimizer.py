@@ -14,8 +14,8 @@ from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
 from sqlglot.optimizer.pushdown_projections import pushdown_projections
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.qualify_tables import qualify_tables
-from sqlglot.optimizer.quote_identities import quote_identities
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
+from sqlglot.schema import ensure_schema
 
 RULES = (
     lower_identities,
@@ -34,7 +34,6 @@ RULES = (
     eliminate_ctes,
     annotate_types,
     canonicalize,
-    quote_identities,
 )
 
 
@@ -53,12 +52,16 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
             If no schema is provided then the default schema defined at `sqlgot.schema` will be used
         db (str): specify the default database, as might be set by a `USE DATABASE db` statement
         catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
-        rules (list): sequence of optimizer rules to use
+        rules (sequence): sequence of optimizer rules to use.
+            Many of the rules require tables and columns to be qualified.
+            Do not remove qualify_tables or qualify_columns from the sequence of rules unless you know
+            what you're doing!
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
     Returns:
         sqlglot.Expression: optimized expression
     """
-    possible_kwargs = {"db": db, "catalog": catalog, "schema": schema or sqlglot.schema, **kwargs}
+    schema = ensure_schema(schema or sqlglot.schema)
+    possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
     expression = expression.copy()
     for rule in rules:
 

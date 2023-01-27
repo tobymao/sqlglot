@@ -179,6 +179,7 @@ class Parser(metaclass=_Parser):
         TokenType.DIV,
         TokenType.DISTKEY,
         TokenType.DISTSTYLE,
+        TokenType.END,
         TokenType.EXECUTE,
         TokenType.ENGINE,
         TokenType.ESCAPE,

@@ -378,10 +378,13 @@ SELECT * FROM ((SELECT 1) AS a(b))
 SELECT * FROM ((SELECT 1) UNION (SELECT 2) UNION (SELECT 3))
 SELECT * FROM x AS y(a, b)
 SELECT * EXCEPT (a, b)
+SELECT * EXCEPT (a, b) FROM y
 SELECT * REPLACE (a AS b, b AS C)
 SELECT * REPLACE (a + 1 AS b, b AS C)
 SELECT * EXCEPT (a, b) REPLACE (a AS b, b AS C)
+SELECT * EXCEPT (a, b) REPLACE (a AS b, b AS C) FROM y
 SELECT a.* EXCEPT (a, b), b.* REPLACE (a AS b, b AS C)
+SELECT a.* EXCEPT (a, b), b.* REPLACE (a AS b, b AS C) FROM x
 SELECT zoo, animals FROM (VALUES ('oakland', ARRAY('a', 'b')), ('sf', ARRAY('b', 'c'))) AS t(zoo, animals)
 SELECT zoo, animals FROM UNNEST(ARRAY(STRUCT('oakland' AS zoo, ARRAY('a', 'b') AS animals), STRUCT('sf' AS zoo, ARRAY('b', 'c') AS animals))) AS t(zoo, animals)
 WITH a AS (SELECT 1) SELECT 1 UNION ALL SELECT 2

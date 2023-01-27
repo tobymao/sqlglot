@@ -194,7 +194,9 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "EXCLUDE": TokenType.EXCEPT,
             "QUALIFY": TokenType.QUALIFY,
+            "RENAME": TokenType.REPLACE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
@@ -240,6 +242,16 @@ class Snowflake(Dialect):
             exp.ExecuteAsProperty,
             exp.VolatilityProperty,
         }
+
+        def star_sql(self, expression: exp.Star) -> str:
+            """
+            Override generator to support Snowflake's EXCLUDE and RENAME keywords
+            """
+            except_ = self.expressions(expression, key="except", flat=True)
+            except_ = f"{self.seg('EXCLUDE')} ({except_})" if except_ else ""
+            replace = self.expressions(expression, key="replace", flat=True)
+            replace = f"{self.seg('RENAME')} ({replace})" if replace else ""
+            return f"*{except_}{replace}"
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

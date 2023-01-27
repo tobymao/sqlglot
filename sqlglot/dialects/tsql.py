@@ -247,7 +247,6 @@ class TSQL(Dialect):
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
-            "END": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NTEXT": TokenType.TEXT,
@@ -304,6 +303,11 @@ class TSQL(Dialect):
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {  # type: ignore
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,  # type: ignore
+        }
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,  # type: ignore
+            TokenType.END: lambda self: self._parse_command(),
         }
 
         def _parse_system_time(self) -> t.Optional[exp.Expression]:

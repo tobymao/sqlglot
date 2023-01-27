@@ -861,6 +861,9 @@ class Parser(metaclass=_Parser):
     def _retreat(self, index: int) -> None:
         self._advance(index - self._index)
 
+    def _parse_command(self) -> exp.Expression:
+        return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
+
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:
             return None
@@ -869,9 +872,7 @@ class Parser(metaclass=_Parser):
             return self.STATEMENT_PARSERS[self._prev.token_type](self)
 
         if self._match_set(Tokenizer.COMMANDS):
-            return self.expression(
-                exp.Command, this=self._prev.text, expression=self._parse_string()
-            )
+            return self._parse_command()
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()

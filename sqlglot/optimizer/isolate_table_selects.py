@@ -4,7 +4,7 @@ from sqlglot.optimizer.scope import traverse_scope
 from sqlglot.schema import ensure_schema
 
 
-def isolate_table_selects(expression, schema):
+def isolate_table_selects(expression, schema=None):
     schema = ensure_schema(schema)
 
     for scope in traverse_scope(expression):

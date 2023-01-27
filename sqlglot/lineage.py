@@ -49,6 +49,7 @@ def lineage(
     expression = maybe_parse(sql, dialect=dialect)
     optimized = optimize(expression, schema=schema)
     scope = build_scope(optimized)
+    tables: t.Dict[str, Node] = {}
 
     def to_node(
         column_name: str,
@@ -79,7 +80,7 @@ def lineage(
         if upstream:
             upstream.downstream.append(node)
 
-        for c in select.find_all(exp.Column):
+        for c in set(select.find_all(exp.Column)):
             table = c.table
             source = scope.sources[table]
 
@@ -91,7 +92,9 @@ def lineage(
                     upstream=node,
                 )
             else:
-                node.downstream.append(Node(name=c.name, source=source, expression=source))
+                if table not in tables:
+                    tables[table] = Node(name=table, source=source, expression=source)
+                node.downstream.append(tables[table])
 
         return node
 
@@ -141,7 +144,7 @@ class LineageHTML:
             **opts,
         }
 
-        self.nodes = []
+        self.nodes = {}
         self.edges = []
 
         for node in node.walk():
@@ -154,24 +157,26 @@ class LineageHTML:
                 source = node.source.transform(
                     lambda n: exp.Tag(this=n, prefix="<b>", postfix="</b>")
                     if n is node.expression
-                    else n
+                    else n,
+                    copy=False,
                 ).sql(pretty=True, dialect=dialect)
                 title = f"<pre>{source}</pre>"
                 group = 0
 
-            self.nodes.append(
-                {
-                    "id": id(node),
-                    "label": label,
-                    "title": title,
-                    "group": group,
-                }
-            )
+            node_id = id(node)
+
+            self.nodes[node_id] = {
+                "id": node_id,
+                "label": label,
+                "title": title,
+                "group": group,
+            }
+
             for d in node.downstream:
-                self.edges.append({"from": id(node), "to": id(d)})
+                self.edges.append({"from": node_id, "to": id(d)})
 
     def __str__(self):
-        nodes = json.dumps(self.nodes)
+        nodes = json.dumps(list(self.nodes.values()))
         edges = json.dumps(self.edges)
         options = json.dumps(self.options)
         imports = (

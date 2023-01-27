@@ -32,7 +32,7 @@ class Plan:
         return self._dag
 
     @property
-    def leaves(self) -> t.Generator[Step, None, None]:
+    def leaves(self) -> t.Iterator[Step]:
         return (node for node, deps in self.dag.items() if not deps)
 
     def __repr__(self) -> str:

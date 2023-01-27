@@ -15,7 +15,7 @@ class Node:
     source: exp.Expression
     downstream: t.List[Node] = field(default_factory=list)
 
-    def walk(self) -> t.Generator[Node, None, None]:
+    def walk(self) -> t.Iterator[Node]:
         yield self
 
         for d in self.downstream:
@@ -50,7 +50,12 @@ def lineage(
     optimized = optimize(expression, schema=schema)
     scope = build_scope(optimized)
 
-    def to_node(column_name: str, scope: Scope, scope_name=None, upstream=None) -> Node:
+    def to_node(
+        column_name: str,
+        scope: Scope,
+        scope_name: t.Optional[str] = None,
+        upstream: t.Optional[Node] = None,
+    ) -> Node:
         if isinstance(scope.expression, exp.Union):
             for scope in scope.union_scopes:
                 node = to_node(
@@ -99,7 +104,13 @@ class LineageHTML:
     https://visjs.github.io/vis-network/docs/network/
     """
 
-    def __init__(self, node: Node, dialect: t.Optional[str] = None, imports=True, **opts):
+    def __init__(
+        self,
+        node: Node,
+        dialect: t.Optional[str] = None,
+        imports: bool = True,
+        **opts: t.Any,
+    ):
         self.node = node
         self.imports = imports
 
@@ -142,7 +153,7 @@ class LineageHTML:
                 label = node.expression.sql(pretty=True, dialect=dialect)
                 source = node.source.transform(
                     lambda n: exp.Tag(this=n, prefix="<b>", postfix="</b>")
-                    if n == node.expression
+                    if n is node.expression
                     else n
                 ).sql(pretty=True, dialect=dialect)
                 title = f"<pre>{source}</pre>"

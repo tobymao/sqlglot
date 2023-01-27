@@ -17,6 +17,11 @@ class TestSchema(unittest.TestCase):
                 with self.assertRaises(SchemaError):
                     schema.column_names(to_table(table))
 
+    def assert_column_names_empty(self, schema, *tables):
+        for table in tables:
+            with self.subTest(table):
+                self.assertEqual(schema.column_names(to_table(table)), [])
+
     def test_schema(self):
         schema = ensure_schema(
             {
@@ -38,7 +43,7 @@ class TestSchema(unittest.TestCase):
             ("z.x.y", ["b", "c"]),
         )
 
-        self.assert_column_names_raises(
+        self.assert_column_names_empty(
             schema,
             "z",
             "z.z",
@@ -76,6 +81,10 @@ class TestSchema(unittest.TestCase):
         self.assert_column_names_raises(
             schema,
             "x",
+        )
+
+        self.assert_column_names_empty(
+            schema,
             "z.x",
             "z.y",
         )
@@ -129,12 +138,16 @@ class TestSchema(unittest.TestCase):
 
         self.assert_column_names_raises(
             schema,
-            "q",
-            "d2.x",
             "y",
             "z",
             "d1.y",
             "d1.z",
+        )
+
+        self.assert_column_names_empty(
+            schema,
+            "q",
+            "d2.x",
             "a.b.c",
         )
 

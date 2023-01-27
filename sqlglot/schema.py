@@ -109,10 +109,7 @@ class AbstractMappingSchema(t.Generic[T]):
         value, trie = in_trie(self.mapping_trie if trie is None else trie, parts)
 
         if value == 0:
-            if raise_on_missing:
-                raise SchemaError(f"Cannot find mapping for {table}.")
-            else:
-                return None
+            return None
         elif value == 1:
             possibilities = flatten_schema(trie, depth=dict_depth(trie) - 1)
             if len(possibilities) == 1:
@@ -262,7 +259,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         schema = self.find(table_)
 
         if schema is None:
-            raise SchemaError(f"Could not find table schema {table}")
+            return []
 
         if not only_visible or not self.visible:
             return list(schema)

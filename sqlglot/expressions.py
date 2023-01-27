@@ -4289,9 +4289,8 @@ def func(name: str, *args, dialect: t.Optional[Dialect | str] = None, **kwargs) 
     if from_args_list:
         function = from_args_list(args) if args else from_args_list.__self__(**kwargs)  # type: ignore
     else:
-        function = (
-            Anonymous(this=name, expressions=args) if args else Anonymous(this=name, **kwargs)
-        )
+        kwargs = kwargs or {"expressions": args}
+        function = Anonymous(this=name, **kwargs)
 
     for error_message in function.error_messages(args):
         raise ValueError(error_message)

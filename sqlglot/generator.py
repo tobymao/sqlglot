@@ -88,6 +88,11 @@ class Generator:
         exp.DataType.Type.LONGBLOB: "BLOB",
     }
 
+    STAR_MAPPING = {
+        "except": "EXCEPT",
+        "replace": "REPLACE",
+    }
+
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}
 
     STRUCT_DELIMITER = ("<", ">")
@@ -1016,9 +1021,9 @@ class Generator:
 
     def star_sql(self, expression: exp.Star) -> str:
         except_ = self.expressions(expression, key="except", flat=True)
-        except_ = f"{self.seg('EXCEPT')} ({except_})" if except_ else ""
+        except_ = f"{self.seg(self.STAR_MAPPING['except'])} ({except_})" if except_ else ""
         replace = self.expressions(expression, key="replace", flat=True)
-        replace = f"{self.seg('REPLACE')} ({replace})" if replace else ""
+        replace = f"{self.seg(self.STAR_MAPPING['replace'])} ({replace})" if replace else ""
         return f"*{except_}{replace}"
 
     def structkwarg_sql(self, expression: exp.StructKwarg) -> str:

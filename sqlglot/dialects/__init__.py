@@ -52,7 +52,7 @@ class Custom(Dialect):
 ```
 
 This is a typical example of adding a new dialect implementation in SQLGlot: we specify its identifier and string
-delimiters, as well as the what tokens it uses for its types and how they're associated with SQLGlot types. Since
+delimiters, as well as what tokens it uses for its types and how they're associated with SQLGlot types. Since
 the `Expression` classes are commonfor each dialect supported in SQLGlot, we may also need to override the generation
 logic for some expressions; this is usually done by adding new entries to the `TRANSFORMS` mapping.
 

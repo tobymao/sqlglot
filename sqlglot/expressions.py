@@ -535,6 +535,40 @@ class Expression(metaclass=_Expression):
         assert isinstance(self, type_)
         return self
 
+    def error_messages(self, args: t.Optional[t.Sequence] = None) -> t.List[str]:
+        """
+        Checks if this expression is valid (e.g. all mandatory args are set).
+
+        Args:
+            args: a sequence of values that were used to instantiate a Func expression. This is used
+                to check that the provided arguments don't exceed the function argument limit.
+
+        Returns:
+            A list of error messages for all possible errors that were found.
+        """
+        errors: t.List[str] = []
+
+        for k in self.args:
+            if k not in self.arg_types:
+                errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
+        for k, mandatory in self.arg_types.items():
+            v = self.args.get(k)
+            if mandatory and (v is None or (isinstance(v, list) and not v)):
+                errors.append(f"Required keyword: '{k}' missing for {self.__class__}")
+
+        if (
+            args
+            and isinstance(self, Func)
+            and len(args) > len(self.arg_types)
+            and not self.is_var_len_args
+        ):
+            errors.append(
+                f"The number of provided arguments ({len(args)}) is greater than "
+                f"the maximum number of supported arguments ({len(self.arg_types)})"
+            )
+
+        return errors
+
     def dump(self):
         """
         Dump this Expression to a JSON-serializable dict.
@@ -2646,16 +2680,13 @@ class Func(Condition):
     """
     The base class for all function expressions.
 
-    Attributes
-        is_var_len_args (bool): if set to True the last argument defined in
-            arg_types will be treated as a variable length argument and the
-            argument's value will be stored as a list.
-        _sql_names (list): determines the SQL name (1st item in the list) and
-            aliases (subsequent items) for this function expression. These
-            values are used to map this node to a name during parsing as well
-            as to provide the function's name during SQL string generation. By
-            default the SQL name is set to the expression's class name transformed
-            to snake case.
+    Attributes:
+        is_var_len_args (bool): if set to True the last argument defined in arg_types will be
+            treated as a variable length argument and the argument's value will be stored as a list.
+        _sql_names (list): determines the SQL name (1st item in the list) and aliases (subsequent items)
+            for this function expression. These values are used to map this node to a name during parsing
+            as well as to provide the function's name during SQL string generation. By default the SQL
+            name is set to the expression's class name transformed to snake case.
     """
 
     is_var_len_args = False
@@ -2681,7 +2712,7 @@ class Func(Condition):
             raise NotImplementedError(
                 "SQL name is only supported by concrete function implementations"
             )
-        if not hasattr(cls, "_sql_names"):
+        if "_sql_names" not in cls.__dict__:
             cls._sql_names = [camel_to_snake_case(cls.__name__)]
         return cls._sql_names
 
@@ -4218,6 +4249,53 @@ def replace_placeholders(expression, *args, **kwargs):
         return node
 
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
+
+
+def func(name: str, *args, dialect: t.Optional[Dialect | str] = None, **kwargs) -> Func:
+    """
+    Returns a Func expression.
+
+    Examples:
+        >>> func("abs", 5).sql()
+        'ABS(5)'
+
+        >>> func("cast", this=5, to=DataType.build("DOUBLE")).sql()
+        'CAST(5 AS DOUBLE)'
+
+    Args:
+        name: the name of the function to build.
+        args: the args used to instantiate the function of interest.
+        dialect: the source dialect.
+        kwargs: the kwargs used to instantiate the function of interest.
+
+    Note:
+        The arguments `args` and `kwargs` are mutually exclusive.
+
+    Returns:
+        An instance of the function of interest, or an anonymous function, if `name` doesn't
+        correspond to an existing `sqlglot.expressions.Func` class.
+    """
+    if args and kwargs:
+        raise ValueError("Can't use both args and kwargs to instantiate a function.")
+
+    from sqlglot.dialects.dialect import Dialect
+
+    args = tuple(convert(arg) for arg in args)
+    kwargs = {key: convert(value) for key, value in kwargs.items()}
+
+    parser = Dialect.get_or_raise(dialect)().parser()
+    from_args_list = parser.FUNCTIONS.get(name.upper())
+
+    if from_args_list:
+        function = from_args_list(args) if args else from_args_list.__self__(**kwargs)  # type: ignore
+    else:
+        kwargs = kwargs or {"expressions": args}
+        function = Anonymous(this=name, **kwargs)
+
+    for error_message in function.error_messages(args):
+        raise ValueError(error_message)
+
+    return function
 
 
 def true():

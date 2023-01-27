@@ -65,6 +65,11 @@ class Generator:
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.VolatilityProperty: lambda self, e: e.name,
+        exp.FallbackOption: lambda self, e: f"{'NO ' if e.args.get('no') else ''}FALLBACK{' PROTECTION' if e.args.get('protection') else ''}",
+        exp.WithJournalTableOption: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
+        exp.LogOption: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
+        exp.JournalOption: lambda self, e: f"{'NO ' if e.args.get('no') else ''}{'DUAL ' if e.args.get('dual') else ''}{'BEFORE ' if e.args.get('before') else ''}JOURNAL",
+        exp.FreespaceOption: lambda self, e: f"FREESPACE={self.sql(e, 'this')}{' PERCENT' if e.args.get('percent') else ''}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
@@ -435,8 +440,14 @@ class Generator:
         return "UNIQUE"
 
     def create_sql(self, expression: exp.Create) -> str:
-        this = self.sql(expression, "this")
         kind = self.sql(expression, "kind").upper()
+        if kind == "TABLE" and expression.args.get("options"):
+            this_name = self.sql(expression.this, "this")
+            this_options = self.sql(expression, "options")
+            this_schema = f"({self.expressions(expression.this)})"
+            this = f"{this_name}{this_options}{this_schema}"
+        else:
+            this = self.sql(expression, "this")
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
@@ -449,6 +460,10 @@ class Generator:
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
+        set_ = " SET" if expression.args.get("set") else ""
+        multiset = " MULTISET" if expression.args.get("multiset") else ""
+        global_temporary = " GLOBAL TEMPORARY" if expression.args.get("global_temporary") else ""
+        volatile = " VOLATILE" if expression.args.get("volatile") else ""
         properties = self.sql(expression, "properties")
         data = expression.args.get("data")
         if data is None:
@@ -468,7 +483,7 @@ class Generator:
 
         indexes = expression.args.get("indexes")
         index_sql = ""
-        if indexes is not None:
+        if indexes is not None and len(indexes) > 0:
             indexes_sql = []
             for index in indexes:
                 ind_unique = " UNIQUE" if index.args.get("unique") else ""
@@ -493,6 +508,10 @@ class Generator:
                 external,
                 unique,
                 materialized,
+                set_,
+                multiset,
+                global_temporary,
+                volatile,
             )
         )
         no_schema_binding = (
@@ -679,6 +698,88 @@ class Generator:
         options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)
         options = f" {options}" if options else ""
         return f"LIKE {self.sql(expression, 'this')}{options}"
+
+    def options_sql(self, expression: exp.Options) -> str:
+        options = []
+        for option in expression.expressions:
+            options.append(self.sql(option))
+        return f", {', '.join(options)} "
+
+    def afterjournaloption_sql(self, expression: exp.AfterJournalOption) -> str:
+        no = "NO " if expression.args.get("no") else ""
+        dual = "DUAL " if expression.args.get("dual") else ""
+        local = ""
+        if expression.args.get("local") is not None:
+            local = "LOCAL " if expression.args.get("local") else "NOT LOCAL "
+        return f"{no}{dual}{local}AFTER JOURNAL"
+
+    def checksumoption_sql(self, expression: exp.ChecksumOption) -> str:
+        if expression.args.get("default"):
+            option = "DEFAULT"
+        elif expression.args.get("on"):
+            option = "ON"
+        else:
+            option = "OFF"
+        return f"CHECKSUM={option}"
+
+    def mergeblockratiooption_sql(self, expression: exp.MergeBlockRatioOption) -> str:
+        if expression.args.get("no"):
+            return "NO MERGEBLOCKRATIO"
+        elif expression.args.get("default"):
+            return "DEFAULT MERGEBLOCKRATIO"
+        else:
+            return f"MERGEBLOCKRATIO={self.sql(expression, 'this')}{' PERCENT' if expression.args.get('percent') else ''}"
+
+    def datablocksizeoption_sql(self, expression: exp.DataBlocksizeOption) -> str:
+        default = expression.args.get("default")
+        min = expression.args.get("min")
+        if default is not None or min is not None:
+            if default:
+                option = "DEFAULT"
+            elif min:
+                option = "MINIMUM"
+            else:
+                option = "MAXIMUM"
+            return f"{option} DATABLOCKSIZE"
+        else:
+            units = ""
+            if expression.args.get("units"):
+                units = f" {expression.args.get('units')}"
+            return f"DATABLOCKSIZE={self.sql(expression, 'size')}{units}"
+
+    def blockcompressionoption_sql(self, expression: exp.BlockCompressionOption) -> str:
+        autotemp = expression.args.get("autotemp")
+        always = expression.args.get("always")
+        default = expression.args.get("default")
+        manual = expression.args.get("manual")
+        never = expression.args.get("never")
+
+        if autotemp is not None:
+            option = f"AUTOTEMP({self.expressions(autotemp)})"
+        elif always:
+            option = "ALWAYS"
+        elif default:
+            option = "DEFAULT"
+        elif manual:
+            option = "MANUAL"
+        elif never:
+            option = "NEVER"
+        return f"BLOCKCOMPRESSION={option}"
+
+    def isolatedloadingoption_sql(self, expression: exp.IsolatedLoadingOption) -> str:
+        no = expression.args.get("no")
+        no = f"{' NO' if no else ''}"
+        concurrent = expression.args.get("concurrent")
+        concurrent = f"{' CONCURRENT' if concurrent else ''}"
+
+        for_ = ""
+        if expression.args.get("for_all"):
+            for_ = " FOR ALL"
+        elif expression.args.get("for_insert"):
+            for_ = " FOR INSERT"
+        elif expression.args.get("for_none"):
+            for_ = " FOR NONE"
+        return f"WITH{no}{concurrent} ISOLATED LOADING{for_}"
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")

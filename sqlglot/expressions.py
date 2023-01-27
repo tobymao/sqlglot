@@ -1299,11 +1299,11 @@ class Properties(Expression):
 
 
 class Option(Expression):
-    arg_types = {"this": True, "value": True}
+    arg_types = {"this": True}
 
 
 class FallbackOption(Option):
-    arg_types = {"this": False, "no": True, "protection": True}
+    arg_types = {"no": True, "protection": False}
 
 
 class WithJournalTableOption(Option):
@@ -1323,15 +1323,15 @@ class AfterJournalOption(Option):
 
 
 class ChecksumOption(Option):
-    arg_types = {"this": False, "default": False}
+    arg_types = {"on": False, "default": False}
 
 
 class FreespaceOption(Option):
-    arg_types = {"this": True, "percent": True}
+    arg_types = {"this": True, "percent": False}
 
 
 class MergeBlockRatioOption(Option):
-    arg_types = {"this": False, "no": False, "default": False, "ratio": False, "percent": False}
+    arg_types = {"this": False, "no": False, "default": False, "percent": False}
 
 
 class DataBlocksizeOption(Option):
@@ -1354,28 +1354,6 @@ class IsolatedLoadingOption(Option):
 
 class Options(Expression):
     arg_types = {"expressions": True}
-
-    NAME_TO_OPTION = {
-        "BLOCKCOMPRESSION": BlockCompressionOption,
-        "CHECKSUM": ChecksumOption,
-        "DATABLOCKSIZE": DataBlocksizeOption,
-        "FREESPACE": FreespaceOption,
-        "WITH_JOURNAL_TABLE": WithJournalTableOption,
-    }
-
-    OPTION_TO_NAME = {v: k for k, v in NAME_TO_OPTION.items()}
-
-    @classmethod
-    def from_dict(cls, options_dict) -> Options:
-        expressions = []
-        for key, value in options_dict.items():
-            option_cls = cls.NAME_TO_OPTION.get(key.upper())
-            if option_cls:
-                expressions.append(option_cls(this=convert(value)))
-            else:
-                expressions.append(Option(this=Literal.string(key), value=convert(value)))
-
-        return cls(expressions=expressions)
 
 
 class Qualify(Expression):

@@ -928,7 +928,7 @@ class Parser(metaclass=_Parser):
         replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
         set_ = self._match(TokenType.SET)  # Teradata
         multiset = self._match_text_seq("MULTISET")  # Teradata
-        global_temporary = self._match_pair(TokenType.GLOBAL, TokenType.TEMPORARY)  # Teradata
+        global_temporary = self._match_text_seq("GLOBAL", "TEMPORARY")  # Teradata
         volatile = self._match(TokenType.VOLATILE)  # Teradata
         temporary = self._match(TokenType.TEMPORARY)
         transient = self._match_text_seq("TRANSIENT")
@@ -1111,15 +1111,15 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("DUAL"):
             if self._match_text_seq("JOURNAL"):  # DUAL JOURNAL
-                return self.expression(exp.JournalOption, dual=True)
+                return self.expression(exp.JournalOption, no=False, dual=True)
             elif self._match_text_seq("BEFORE", "JOURNAL"):  # DUAL BEFORE JOURNAL
-                return self.expression(exp.JournalOption, before=True, dual=True)
+                return self.expression(exp.JournalOption, no=False, before=True, dual=True)
             if self._match_text_seq("AFTER", "JOURNAL"):  # DUAL AFTER JOURNAL
-                return self.expression(exp.AfterJournalOption, dual=True)
+                return self.expression(exp.AfterJournalOption, no=False, dual=True)
 
         if self._match_text_seq("FALLBACK"):  # FALLBACK [PROTECTION]
             return self.expression(
-                exp.FallbackOption, protection=self._match_text_seq("PROTECTION")
+                exp.FallbackOption, no=False, protection=self._match_text_seq("PROTECTION")
             )
 
         if self._match_text_seq("LOG"):
@@ -1128,12 +1128,12 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("JOURNAL"):
             return self.expression(exp.JournalOption, no=False)
         elif self._match_text_seq("BEFORE", "JOURNAL"):
-            return self.expression(exp.JournalOption, before=True)
+            return self.expression(exp.JournalOption, no=False, before=True)
 
         if self._match_text_seq("NOT", "LOCAL", "AFTER", "JOURNAL"):
-            return self.expression(exp.AfterJournalOption, local=False, no=True)
+            return self.expression(exp.AfterJournalOption, local=False, no=False)
         elif self._match_text_seq("LOCAL", "AFTER", "JOURNAL"):
-            return self.expression(exp.AfterJournalOption, local=True)
+            return self.expression(exp.AfterJournalOption, local=True, no=False)
         elif self._match_text_seq("AFTER", "JOURNAL"):
             return self.expression(exp.AfterJournalOption, no=False)
 
@@ -1146,7 +1146,8 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.WITH):
             no = self._match_text_seq("NO")
-            concurrent = self._match_text_seq("CONCURRENT", "ISOLATED", "LOADING")
+            concurrent = self._match_text_seq("CONCURRENT")
+            self._match_text_seq("ISOLATED", "LOADING")
             for_all = self._match_text_seq("FOR", "ALL")
             for_insert = self._match_text_seq("FOR", "INSERT")
             for_none = self._match_text_seq("FOR", "NONE")
@@ -1158,21 +1159,6 @@ class Parser(metaclass=_Parser):
                 for_insert=for_insert,
                 for_none=for_none,
             )
-
-        return None
-
-    def _parse_options(self) -> t.Optional[exp.Expression]:
-        options = []
-
-        while True:
-            identified_option = self._parse_option()
-            if not identified_option:
-                break
-            for p in ensure_collection(identified_option):
-                options.append(p)
-
-        if options:
-            return self.expression(exp.Options, expressions=options)
 
         return None
 
@@ -1198,16 +1184,16 @@ class Parser(metaclass=_Parser):
     def _parse_checksum(self) -> exp.Expression:
         self._match(TokenType.EQ)
 
-        this = None
+        on = None
         if self._match(TokenType.ON):
-            this = True
+            on = True
         elif self._match_text_seq("OFF"):
-            this = False
+            on = False
         default = self._match(TokenType.DEFAULT)
 
         return self.expression(
             exp.ChecksumOption,
-            this=this,
+            on=on,
             default=default,
         )
 

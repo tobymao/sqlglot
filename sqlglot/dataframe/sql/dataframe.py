@@ -180,7 +180,7 @@ class DataFrame:
         expression = df.expression
         hint_expression = expression.args.get("hint") or exp.Hint(expressions=[])
         for hint in df.pending_partition_hints:
-            hint_expression.args.get("expressions").append(hint)
+            hint_expression.append("expressions", hint)
             df.pending_hints.remove(hint)
 
         join_aliases = {
@@ -206,7 +206,7 @@ class DataFrame:
                             sequence_id_expression.set("this", matching_cte.args["alias"].this)
                             df.pending_hints.remove(hint)
                             break
-                hint_expression.args.get("expressions").append(hint)
+                hint_expression.append("expressions", hint)
         if hint_expression.expressions:
             expression.set("hint", hint_expression)
         return df

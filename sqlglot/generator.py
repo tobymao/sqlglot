@@ -250,15 +250,17 @@ class Generator:
             return sql
 
         sep = "\n" if self.pretty else " "
-        comments = sep.join(f"/*{self.pad_comment(comment)}*/" for comment in comments if comment)
+        comments_sql = sep.join(
+            f"/*{self.pad_comment(comment)}*/" for comment in comments if comment
+        )
 
-        if not comments:
+        if not comments_sql:
             return sql
 
         if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
-            return f"{comments}{self.sep()}{sql}"
+            return f"{comments_sql}{self.sep()}{sql}"
 
-        return f"{sql} {comments}"
+        return f"{sql} {comments_sql}"
 
     def wrap(self, expression: exp.Expression | str) -> str:
         this_sql = self.indent(
@@ -1584,6 +1586,9 @@ class Generator:
         return self.query_modifiers(
             expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}"
         )
+
+    def tag_sql(self, expression: exp.Tag) -> str:
+        return f"{expression.args.get('prefix')}{self.sql(expression.this)}{expression.args.get('postfix')}"
 
     def token_sql(self, token_type: TokenType) -> str:
         return self.TOKEN_MAPPING.get(token_type, token_type.name)

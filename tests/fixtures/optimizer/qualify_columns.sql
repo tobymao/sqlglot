@@ -4,6 +4,14 @@
 SELECT a FROM x;
 SELECT x.a AS a FROM x AS x;
 
+# execute: false
+SELECT a FROM zz GROUP BY a ORDER BY a;
+SELECT zz.a AS a FROM zz AS zz GROUP BY zz.a ORDER BY a;
+
+# execute: false
+SELECT x, p FROM (SELECT x from xx) xx CROSS JOIN yy;
+SELECT xx.x AS x, yy.p AS p FROM (SELECT xx.x AS x FROM xx AS xx) AS xx CROSS JOIN yy AS yy;
+
 SELECT a FROM x AS z;
 SELECT z.a AS a FROM x AS z;
 

@@ -16,7 +16,7 @@ class Generator:
     """
     Generator interprets the given syntax tree and produces a SQL string as an output.
 
-    Args
+    Args:
         time_mapping (dict): the dictionary of custom time mappings in which the key
             represents a python time format and the output the target time format
         time_trie (trie): a trie of the time_mapping keys
@@ -91,6 +91,11 @@ class Generator:
         exp.DataType.Type.LONGTEXT: "TEXT",
         exp.DataType.Type.MEDIUMBLOB: "BLOB",
         exp.DataType.Type.LONGBLOB: "BLOB",
+    }
+
+    STAR_MAPPING = {
+        "except": "EXCEPT",
+        "replace": "REPLACE",
     }
 
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}
@@ -250,15 +255,17 @@ class Generator:
             return sql
 
         sep = "\n" if self.pretty else " "
-        comments = sep.join(f"/*{self.pad_comment(comment)}*/" for comment in comments if comment)
+        comments_sql = sep.join(
+            f"/*{self.pad_comment(comment)}*/" for comment in comments if comment
+        )
 
-        if not comments:
+        if not comments_sql:
             return sql
 
         if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
-            return f"{comments}{self.sep()}{sql}"
+            return f"{comments_sql}{self.sep()}{sql}"
 
-        return f"{sql} {comments}"
+        return f"{sql} {comments_sql}"
 
     def wrap(self, expression: exp.Expression | str) -> str:
         this_sql = self.indent(
@@ -1117,9 +1124,9 @@ class Generator:
 
     def star_sql(self, expression: exp.Star) -> str:
         except_ = self.expressions(expression, key="except", flat=True)
-        except_ = f"{self.seg('EXCEPT')} ({except_})" if except_ else ""
+        except_ = f"{self.seg(self.STAR_MAPPING['except'])} ({except_})" if except_ else ""
         replace = self.expressions(expression, key="replace", flat=True)
-        replace = f"{self.seg('REPLACE')} ({replace})" if replace else ""
+        replace = f"{self.seg(self.STAR_MAPPING['replace'])} ({replace})" if replace else ""
         return f"*{except_}{replace}"
 
     def structkwarg_sql(self, expression: exp.StructKwarg) -> str:
@@ -1680,6 +1687,9 @@ class Generator:
         return self.query_modifiers(
             expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}"
         )
+
+    def tag_sql(self, expression: exp.Tag) -> str:
+        return f"{expression.args.get('prefix')}{self.sql(expression.this)}{expression.args.get('postfix')}"
 
     def token_sql(self, token_type: TokenType) -> str:
         return self.TOKEN_MAPPING.get(token_type, token_type.name)

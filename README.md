@@ -189,7 +189,6 @@ except sqlglot.errors.ParseError as e:
     print(e.errors)
 ```
 
-Output:
 ```python
 [{
   'description': 'Expecting )',

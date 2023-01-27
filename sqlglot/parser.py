@@ -40,22 +40,23 @@ class _Parser(type):
 
 class Parser(metaclass=_Parser):
     """
-    Parser consumes a list of tokens produced by the :class:`~sqlglot.tokens.Tokenizer`
-    and produces a parsed syntax tree.
+    Parser consumes a list of tokens produced by the `sqlglot.tokens.Tokenizer` and produces
+    a parsed syntax tree.
 
-    Args
-        error_level (ErrorLevel): the desired error level. Default: ErrorLevel.RAISE.
-        error_message_context (int): determines the amount of context to capture from
-            a query string when displaying the error message (in number of characters).
+    Args:
+        error_level: the desired error level.
+            Default: ErrorLevel.RAISE
+        error_message_context: determines the amount of context to capture from a
+            query string when displaying the error message (in number of characters).
             Default: 50.
-        index_offset (int): Index offset for arrays eg ARRAY[0] vs ARRAY[1] as the head of a list
+        index_offset: Index offset for arrays eg ARRAY[0] vs ARRAY[1] as the head of a list.
             Default: 0
-        alias_post_tablesample (bool): If the table alias comes after tablesample
+        alias_post_tablesample: If the table alias comes after tablesample.
             Default: False
-        max_errors (int): Maximum number of error messages to include in a raised ParseError.
+        max_errors: Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
             Default: 3
-        null_ordering (str): Indicates the default null ordering method to use if not explicitly set.
+        null_ordering: Indicates the default null ordering method to use if not explicitly set.
             Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
             Default: "nulls_are_small"
     """
@@ -178,6 +179,7 @@ class Parser(metaclass=_Parser):
         TokenType.DIV,
         TokenType.DISTKEY,
         TokenType.DISTSTYLE,
+        TokenType.END,
         TokenType.EXECUTE,
         TokenType.ENGINE,
         TokenType.ESCAPE,
@@ -470,15 +472,22 @@ class Parser(metaclass=_Parser):
         TokenType.NULL: lambda self, _: self.expression(exp.Null),
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
         TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
-        TokenType.PARAMETER: lambda self, _: self.expression(
-            exp.Parameter, this=self._parse_var() or self._parse_primary()
-        ),
         TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
         TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
         TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
         TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
         TokenType.NATIONAL: lambda self, token: self._parse_national(token),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
+    }
+
+    PLACEHOLDER_PARSERS = {
+        TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder),
+        TokenType.PARAMETER: lambda self: self.expression(
+            exp.Parameter, this=self._parse_var() or self._parse_primary()
+        ),
+        TokenType.COLON: lambda self: self.expression(exp.Placeholder, this=self._prev.text)
+        if self._match_set((TokenType.NUMBER, TokenType.VAR))
+        else None,
     }
 
     RANGE_PARSERS = {
@@ -687,7 +696,7 @@ class Parser(metaclass=_Parser):
 
     def parse_into(
         self,
-        expression_types: str | exp.Expression | t.Collection[exp.Expression | str],
+        expression_types: exp.IntoType,
         raw_tokens: t.List[Token],
         sql: t.Optional[str] = None,
     ) -> t.List[t.Optional[exp.Expression]]:
@@ -830,24 +839,8 @@ class Parser(metaclass=_Parser):
         if self.error_level == ErrorLevel.IGNORE:
             return
 
-        for k in expression.args:
-            if k not in expression.arg_types:
-                self.raise_error(f"Unexpected keyword: '{k}' for {expression.__class__}")
-        for k, mandatory in expression.arg_types.items():
-            v = expression.args.get(k)
-            if mandatory and (v is None or (isinstance(v, list) and not v)):
-                self.raise_error(f"Required keyword: '{k}' missing for {expression.__class__}")
-
-        if (
-            args
-            and isinstance(expression, exp.Func)
-            and len(args) > len(expression.arg_types)
-            and not expression.is_var_len_args
-        ):
-            self.raise_error(
-                f"The number of provided arguments ({len(args)}) is greater than "
-                f"the maximum number of supported arguments ({len(expression.arg_types)})"
-            )
+        for error_message in expression.error_messages(args):
+            self.raise_error(error_message)
 
     def _find_token(self, token: Token, sql: str) -> int:
         line = 1
@@ -878,6 +871,9 @@ class Parser(metaclass=_Parser):
     def _retreat(self, index: int) -> None:
         self._advance(index - self._index)
 
+    def _parse_command(self) -> exp.Expression:
+        return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
+
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:
             return None
@@ -886,9 +882,7 @@ class Parser(metaclass=_Parser):
             return self.STATEMENT_PARSERS[self._prev.token_type](self)
 
         if self._match_set(Tokenizer.COMMANDS):
-            return self.expression(
-                exp.Command, this=self._prev.text, expression=self._parse_string()
-            )
+            return self._parse_command()
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
@@ -3106,24 +3100,26 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_placeholder(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.PLACEHOLDER):
-            return self.expression(exp.Placeholder)
-        elif self._match(TokenType.COLON):
-            if self._match_set((TokenType.NUMBER, TokenType.VAR)):
-                return self.expression(exp.Placeholder, this=self._prev.text)
+        if self._match_set(self.PLACEHOLDER_PARSERS):
+            placeholder = self.PLACEHOLDER_PARSERS[self._prev.token_type](self)
+            if placeholder:
+                return placeholder
             self._advance(-1)
         return None
 
     def _parse_except(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
         if not self._match(TokenType.EXCEPT):
             return None
-
-        return self._parse_wrapped_id_vars()
+        if self._match(TokenType.L_PAREN, advance=False):
+            return self._parse_wrapped_id_vars()
+        return self._parse_csv(self._parse_id_var)
 
     def _parse_replace(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
         if not self._match(TokenType.REPLACE):
             return None
-        return self._parse_wrapped_csv(lambda: self._parse_alias(self._parse_expression()))
+        if self._match(TokenType.L_PAREN, advance=False):
+            return self._parse_wrapped_csv(self._parse_expression)
+        return self._parse_csv(self._parse_expression)
 
     def _parse_csv(
         self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA

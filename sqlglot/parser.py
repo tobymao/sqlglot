@@ -471,15 +471,22 @@ class Parser(metaclass=_Parser):
         TokenType.NULL: lambda self, _: self.expression(exp.Null),
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
         TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
-        TokenType.PARAMETER: lambda self, _: self.expression(
-            exp.Parameter, this=self._parse_var() or self._parse_primary()
-        ),
         TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
         TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
         TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
         TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
         TokenType.NATIONAL: lambda self, token: self._parse_national(token),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
+    }
+
+    PLACEHOLDER_PARSERS = {
+        TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder),
+        TokenType.PARAMETER: lambda self: self.expression(
+            exp.Parameter, this=self._parse_var() or self._parse_primary()
+        ),
+        TokenType.COLON: lambda self: self.expression(exp.Placeholder, this=self._prev.text)
+        if self._match_set((TokenType.NUMBER, TokenType.VAR))
+        else None,
     }
 
     RANGE_PARSERS = {
@@ -2922,11 +2929,10 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_placeholder(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.PLACEHOLDER):
-            return self.expression(exp.Placeholder)
-        elif self._match(TokenType.COLON):
-            if self._match_set((TokenType.NUMBER, TokenType.VAR)):
-                return self.expression(exp.Placeholder, this=self._prev.text)
+        if self._match_set(self.PLACEHOLDER_PARSERS):
+            placeholder = self.PLACEHOLDER_PARSERS[self._prev.token_type](self)
+            if placeholder:
+                return placeholder
             self._advance(-1)
         return None
 

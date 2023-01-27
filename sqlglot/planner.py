@@ -401,7 +401,7 @@ class SetOperation(Step):
             op=expression.__class__,
             left=left.name,
             right=right.name,
-            distinct=expression.args.get("distinct"),
+            distinct=bool(expression.args.get("distinct")),
         )
         step.add_dependency(left)
         step.add_dependency(right)

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -185,26 +183,6 @@ class Snowflake(Dialect):
             TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
         }
 
-        def _parse_except(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
-            """
-            Override except parser to support Snowflake syntax without parens
-            """
-            if not self._match(TokenType.EXCEPT):
-                return None
-            if self._match(TokenType.L_PAREN, advance=False):
-                return self._parse_wrapped_id_vars()
-            return self._parse_csv(self._parse_expression)
-
-        def _parse_replace(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
-            """
-            Override replace parser to support Snowflake syntax without parens
-            """
-            if not self._match(TokenType.REPLACE):
-                return None
-            if self._match(TokenType.L_PAREN, advance=False):
-                return self._parse_wrapped_csv(lambda: self._parse_alias(self._parse_expression()))
-            return self._parse_csv(lambda: self._parse_alias(self._parse_expression()))
-
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPES = ["\\", "'"]
@@ -264,6 +242,16 @@ class Snowflake(Dialect):
             exp.ExecuteAsProperty,
             exp.VolatilityProperty,
         }
+
+        def star_sql(self, expression: exp.Star) -> str:
+            """
+            Override generator to support Snowflake's EXCLUDE and RENAME keywords
+            """
+            except_ = self.expressions(expression, key="except", flat=True)
+            except_ = f"{self.seg('EXCLUDE')} ({except_})" if except_ else ""
+            replace = self.expressions(expression, key="replace", flat=True)
+            replace = f"{self.seg('RENAME')} ({replace})" if replace else ""
+            return f"*{except_}{replace}"
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

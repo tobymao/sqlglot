@@ -1339,11 +1339,17 @@ class DataBlocksizeOption(Option):
 
 
 class BlockCompressionOption(Option):
-    arg_types = {"autotemp": False, "default": True, "manual": True, "never": True}
+    arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
 
 
 class IsolatedLoadingOption(Option):
-    arg_types = {"no": True, "concurrent": True, "for_all": True, "insert": True, "none": True}
+    arg_types = {
+        "no": True,
+        "concurrent": True,
+        "for_all": True,
+        "for_insert": True,
+        "for_none": True,
+    }
 
 
 class Options(Expression):

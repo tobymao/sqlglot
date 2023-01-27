@@ -974,17 +974,14 @@ class Parser(metaclass=_Parser):
             TokenType.VIEW,
             TokenType.SCHEMA,
         ):
-            # table options may be present between table name and schema
-            index = self._index
-            table_parts = self._parse_table_parts()
+            table_parts = self._parse_table_parts(schema=True)
+
             if self._match(TokenType.COMMA):
                 options = self.expression(
                     exp.Options, expressions=self._parse_csv(self._parse_option)
                 )
-                this = self._parse_schema(this=table_parts)
-            else:
-                self._retreat(index)
-                this = self._parse_table(schema=True)
+
+            this = self._parse_schema(this=table_parts)
 
             properties = self._parse_properties()
             if self._match(TokenType.ALIAS):
@@ -1085,39 +1082,42 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_option(self) -> t.Optional[exp.Expression]:
+        if self._match_set(self.OPTION_PARSERS):
+            return self.OPTION_PARSERS[self._prev.token_type](self)
+
         if self._match_text_seq("NO"):
-            if self._match_text_seq("FALLBACK"):
+            if self._match_text_seq("FALLBACK"):  # NO FALLBACK [PROTECTION]
                 return self.expression(
                     exp.FallbackOption, no=True, protection=self._match_text_seq("PROTECTION")
                 )
-            elif self._match_text_seq("LOG"):
+            elif self._match_text_seq("LOG"):  # NO LOG
                 return self.expression(exp.LogOption, no=True)
-            elif self._match_text_seq("MERGEBLOCKRATIO"):
+            elif self._match_text_seq("MERGEBLOCKRATIO"):  # NO MERGEBLOCKRATIO
                 return self.expression(exp.MergeBlockRatioOption, no=True)
-            elif self._match_text_seq("BEFORE"):
+            elif self._match_text_seq("BEFORE"):  # NO BEFORE JOURNAL
                 self._match_text_seq("JOURNAL")
                 return self.expression(exp.JournalOption, no=True, before=True)
-            elif self._match_text_seq("AFTER"):
+            elif self._match_text_seq("AFTER"):  # NO AFTER JOURNAL
                 self._match_text_seq("JOURNAL")
                 return self.expression(exp.AfterJournalOption, no=True)
-            elif self._match_text_seq("JOURNAL"):
+            elif self._match_text_seq("JOURNAL"):  # NO JOURNAL
                 return self.expression(exp.JournalOption, no=True)
 
         if self._match(TokenType.DEFAULT):
-            if self._match_text_seq("MERGEBLOCKRATIO"):
+            if self._match_text_seq("MERGEBLOCKRATIO"):  # DEFAULT MERGEBLOCKRATIO
                 return self.expression(exp.MergeBlockRatioOption, default=True)
-            elif self._match(TokenType.DATABLOCKSIZE):
+            elif self._match(TokenType.DATABLOCKSIZE):  # DEFAULT DATABLOCKSIZE
                 return self.expression(exp.DataBlocksizeOption, default=True)
 
         if self._match_text_seq("DUAL"):
-            if self._match_text_seq("JOURNAL"):
+            if self._match_text_seq("JOURNAL"):  # DUAL JOURNAL
                 return self.expression(exp.JournalOption, dual=True)
-            elif self._match_text_seq("BEFORE", "JOURNAL"):
+            elif self._match_text_seq("BEFORE", "JOURNAL"):  # DUAL BEFORE JOURNAL
                 return self.expression(exp.JournalOption, before=True, dual=True)
-            if self._match_text_seq("AFTER", "JOURNAL"):
+            if self._match_text_seq("AFTER", "JOURNAL"):  # DUAL AFTER JOURNAL
                 return self.expression(exp.AfterJournalOption, dual=True)
 
-        if self._match_text_seq("FALLBACK"):
+        if self._match_text_seq("FALLBACK"):  # FALLBACK [PROTECTION]
             return self.expression(
                 exp.FallbackOption, protection=self._match_text_seq("PROTECTION")
             )
@@ -1131,7 +1131,7 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.JournalOption, before=True)
 
         if self._match_text_seq("NOT", "LOCAL", "AFTER", "JOURNAL"):
-            return self.expression(exp.AfterJournalOption, local=False)
+            return self.expression(exp.AfterJournalOption, local=False, no=True)
         elif self._match_text_seq("LOCAL", "AFTER", "JOURNAL"):
             return self.expression(exp.AfterJournalOption, local=True)
         elif self._match_text_seq("AFTER", "JOURNAL"):
@@ -1146,31 +1146,18 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.WITH):
             no = self._match_text_seq("NO")
-            concurrent = self._match_text_seq("CONCURRENT")
-            self._match_text_seq("ISOLATED", "LOADING")
+            concurrent = self._match_text_seq("CONCURRENT", "ISOLATED", "LOADING")
             for_all = self._match_text_seq("FOR", "ALL")
-            insert = self._match_text_seq("INSERT")
-            none_ = self._match_text_seq("NONE")
+            for_insert = self._match_text_seq("FOR", "INSERT")
+            for_none = self._match_text_seq("FOR", "NONE")
             return self.expression(
                 exp.IsolatedLoadingOption,
                 no=no,
                 concurrent=concurrent,
                 for_all=for_all,
-                insert=insert,
-                none=none_,
+                for_insert=for_insert,
+                for_none=for_none,
             )
-
-        if self._match_set(self.OPTION_PARSERS):
-            return self.OPTION_PARSERS[self._prev.token_type](self)
-
-        assignment = self._match_pair(
-            TokenType.VAR, TokenType.EQ, advance=False
-        ) or self._match_pair(TokenType.STRING, TokenType.EQ, advance=False)
-
-        if assignment:
-            key = self._parse_var_or_string()
-            self._match(TokenType.EQ)
-            return self.expression(exp.Option, this=key, value=self._parse_column())
 
         return None
 
@@ -1192,6 +1179,7 @@ class Parser(metaclass=_Parser):
     def _parse_blockcompression(self) -> exp.Expression:
         self._match(TokenType.EQ)
         always = self._match(TokenType.ALWAYS)
+        manual = self._match_text_seq("MANUAL")
         never = self._match_text_seq("NEVER")
         default = self._match_text_seq("DEFAULT")
         autotemp = None
@@ -1201,6 +1189,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.BlockCompressionOption,
             always=always,
+            manual=manual,
             never=never,
             default=default,
             autotemp=autotemp,

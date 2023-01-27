@@ -63,7 +63,7 @@ def parse(
 def parse_one(
     sql: str,
     read: t.Optional[str | Dialect] = None,
-    into: t.Optional[t.Type[Expression] | str] = None,
+    into: t.Optional[exp.IntoType] = None,
     **opts,
 ) -> Expression:
     """

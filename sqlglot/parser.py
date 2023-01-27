@@ -679,7 +679,7 @@ class Parser(metaclass=_Parser):
 
     def parse_into(
         self,
-        expression_types: str | exp.Expression | t.Collection[exp.Expression | str],
+        expression_types: exp.IntoType,
         raw_tokens: t.List[Token],
         sql: t.Optional[str] = None,
     ) -> t.List[t.Optional[exp.Expression]]:

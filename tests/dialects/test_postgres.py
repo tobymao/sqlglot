@@ -329,3 +329,9 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
         )
+
+    def test_bool_or(self):
+        self.validate_all(
+            "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
+            write={"postgres": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
+        )

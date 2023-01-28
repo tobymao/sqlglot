@@ -33,7 +33,7 @@ from sqlglot.parser import Parser
 from sqlglot.schema import MappingSchema, Schema
 from sqlglot.tokens import Tokenizer, TokenType
 
-__version__ = "10.5.9"
+__version__ = "10.5.10"
 
 pretty = False
 """Whether to format generated SQL by default."""

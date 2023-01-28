@@ -332,7 +332,7 @@ def is_iterable(value: t.Any) -> bool:
     return hasattr(value, "__iter__") and not isinstance(value, (str, bytes))
 
 
-def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Generator[t.Any, None, None]:
+def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:
     """
     Flattens an iterable that can contain both iterable and non-iterable elements. Objects of
     type `str` and `bytes` are not regarded as iterables.

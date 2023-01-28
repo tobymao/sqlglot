@@ -82,6 +82,10 @@ class TokenType(AutoName):
     VARCHAR = auto()
     NVARCHAR = auto()
     TEXT = auto()
+    MEDIUMTEXT = auto()
+    LONGTEXT = auto()
+    MEDIUMBLOB = auto()
+    LONGBLOB = auto()
     BINARY = auto()
     VARBINARY = auto()
     JSON = auto()
@@ -463,6 +467,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
         "ALL": TokenType.ALL,
+        "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,
         "ANY": TokenType.ANY,
@@ -474,6 +479,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "BETWEEN": TokenType.BETWEEN,
         "BOTH": TokenType.BOTH,
         "BUCKET": TokenType.BUCKET,
+        "BY DEFAULT": TokenType.BY_DEFAULT,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
@@ -523,9 +529,11 @@ class Tokenizer(metaclass=_Tokenizer):
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
+        "GENERATED": TokenType.GENERATED,
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
+        "IDENTITY": TokenType.IDENTITY,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
         "IMMUTABLE": TokenType.IMMUTABLE,
@@ -581,6 +589,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "PROCEDURE": TokenType.PROCEDURE,
+        "QUALIFY": TokenType.QUALIFY,
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
@@ -720,6 +729,8 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.SHOW,
     }
 
+    COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON, TokenType.BEGIN}
+
     # handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
     ENCODE: t.Optional[str] = None
@@ -836,8 +847,10 @@ class Tokenizer(metaclass=_Tokenizer):
         )
         self._comments = []
 
+        # If we have either a semicolon or a begin token before the command's token, we'll parse
+        # whatever follows the command's token as a string
         if token_type in self.COMMANDS and (
-            len(self.tokens) == 1 or self.tokens[-2].token_type == TokenType.SEMICOLON
+            len(self.tokens) == 1 or self.tokens[-2].token_type in self.COMMAND_PREFIX_TOKENS
         ):
             start = self._current
             tokens = len(self.tokens)

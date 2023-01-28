@@ -32,6 +32,7 @@ We use GitHub issues to track public bugs. Report a bug by opening a new issue.
 - What you expected would happen
 - What actually happens
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
+- References (e.g. documentation pages related to the issue)
 
 ## Start a discussion using Github's [discussions](https://github.com/tobymao/sqlglot/discussions)
 [We use GitHub discussions](https://github.com/tobymao/sqlglot/discussions/190) to discuss about the current state

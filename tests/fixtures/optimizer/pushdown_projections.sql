@@ -2,7 +2,7 @@ SELECT a FROM (SELECT * FROM x);
 SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0;
 
 SELECT 1 FROM (SELECT * FROM x) WHERE b = 2;
-SELECT 1 AS _col_0 FROM (SELECT x.b AS b FROM x AS x) AS _q_0 WHERE _q_0.b = 2;
+SELECT 1 AS "1" FROM (SELECT x.b AS b FROM x AS x) AS _q_0 WHERE _q_0.b = 2;
 
 SELECT (SELECT c FROM y WHERE q.b = y.b) FROM (SELECT * FROM x) AS q;
 SELECT (SELECT y.c AS c FROM y AS y WHERE q.b = y.b) AS _col_0 FROM (SELECT x.b AS b FROM x AS x) AS q;

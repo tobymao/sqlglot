@@ -14,7 +14,7 @@ class Validator(unittest.TestCase):
         self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect))
         return expression
 
-    def validate_all(self, sql, read=None, write=None, pretty=False):
+    def validate_all(self, sql, read=None, write=None, pretty=False, identify=False):
         """
         Validate that:
         1. Everything in `read` transpiles to `sql`
@@ -32,7 +32,10 @@ class Validator(unittest.TestCase):
             with self.subTest(f"{read_dialect} -> {sql}"):
                 self.assertEqual(
                     parse_one(read_sql, read_dialect).sql(
-                        self.dialect, unsupported_level=ErrorLevel.IGNORE, pretty=pretty
+                        self.dialect,
+                        unsupported_level=ErrorLevel.IGNORE,
+                        pretty=pretty,
+                        identify=identify,
                     ),
                     sql,
                 )
@@ -48,6 +51,7 @@ class Validator(unittest.TestCase):
                             write_dialect,
                             unsupported_level=ErrorLevel.IGNORE,
                             pretty=pretty,
+                            identify=identify,
                         ),
                         write_sql,
                     )
@@ -76,7 +80,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
-                "redshift": "CAST(a AS VARCHAR(max))",
+                "redshift": "CAST(a AS VARCHAR(MAX))",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
@@ -155,7 +159,7 @@ class TestDialect(Validator):
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
                 "presto": "CAST(a AS VARCHAR)",
-                "redshift": "CAST(a AS VARCHAR(max))",
+                "redshift": "CAST(a AS VARCHAR(MAX))",
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
@@ -374,7 +378,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST(x AS TEXT)",
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
-                "redshift": "CAST(x AS VARCHAR(max))",
+                "redshift": "CAST(x AS VARCHAR(MAX))",
             },
         )
         self.validate_all(
@@ -946,40 +950,40 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "POSITION(' ' in x)",
+            "POSITION(needle in haystack)",
             write={
-                "drill": "STRPOS(x, ' ')",
-                "duckdb": "STRPOS(x, ' ')",
-                "postgres": "STRPOS(x, ' ')",
-                "presto": "STRPOS(x, ' ')",
-                "spark": "LOCATE(' ', x)",
-                "clickhouse": "position(x, ' ')",
-                "snowflake": "POSITION(' ', x)",
-                "mysql": "LOCATE(' ', x)",
+                "drill": "STRPOS(haystack, needle)",
+                "duckdb": "STRPOS(haystack, needle)",
+                "postgres": "STRPOS(haystack, needle)",
+                "presto": "STRPOS(haystack, needle)",
+                "spark": "LOCATE(needle, haystack)",
+                "clickhouse": "position(haystack, needle)",
+                "snowflake": "POSITION(needle, haystack)",
+                "mysql": "LOCATE(needle, haystack)",
             },
         )
         self.validate_all(
-            "STR_POSITION(x, 'a')",
+            "STR_POSITION(haystack, needle)",
             write={
-                "drill": "STRPOS(x, 'a')",
-                "duckdb": "STRPOS(x, 'a')",
-                "postgres": "STRPOS(x, 'a')",
-                "presto": "STRPOS(x, 'a')",
-                "spark": "LOCATE('a', x)",
-                "clickhouse": "position(x, 'a')",
-                "snowflake": "POSITION('a', x)",
-                "mysql": "LOCATE('a', x)",
+                "drill": "STRPOS(haystack, needle)",
+                "duckdb": "STRPOS(haystack, needle)",
+                "postgres": "STRPOS(haystack, needle)",
+                "presto": "STRPOS(haystack, needle)",
+                "spark": "LOCATE(needle, haystack)",
+                "clickhouse": "position(haystack, needle)",
+                "snowflake": "POSITION(needle, haystack)",
+                "mysql": "LOCATE(needle, haystack)",
             },
         )
         self.validate_all(
-            "POSITION('a', x, 3)",
+            "POSITION(needle, haystack, pos)",
             write={
-                "drill": "STRPOS(SUBSTR(x, 3), 'a') + 3 - 1",
-                "presto": "STRPOS(x, 'a', 3)",
-                "spark": "LOCATE('a', x, 3)",
-                "clickhouse": "position(x, 'a', 3)",
-                "snowflake": "POSITION('a', x, 3)",
-                "mysql": "LOCATE('a', x, 3)",
+                "drill": "STRPOS(SUBSTR(haystack, pos), needle) + pos - 1",
+                "presto": "STRPOS(haystack, needle, pos)",
+                "spark": "LOCATE(needle, haystack, pos)",
+                "clickhouse": "position(haystack, needle, pos)",
+                "snowflake": "POSITION(needle, haystack, pos)",
+                "mysql": "LOCATE(needle, haystack, pos)",
             },
         )
         self.validate_all(
@@ -1204,7 +1208,7 @@ class TestDialect(Validator):
                 "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
                 "postgres": "CREATE TABLE t (b1 BYTEA, b2 BYTEA(1024), c1 TEXT, c2 TEXT(1024))",
                 "sqlite": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
-                "redshift": "CREATE TABLE t (b1 VARBYTE, b2 VARBYTE(1024), c1 VARCHAR(max), c2 VARCHAR(1024))",
+                "redshift": "CREATE TABLE t (b1 VARBYTE, b2 VARBYTE(1024), c1 VARCHAR(MAX), c2 VARCHAR(1024))",
             },
         )
 
@@ -1359,5 +1363,21 @@ SELECT
             """,
             write={
                 "spark": "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE * WHEN NOT MATCHED THEN INSERT *",
+            },
+        )
+        self.validate_all(
+            """
+            MERGE a b USING c d ON b.id = d.id
+            WHEN MATCHED AND EXISTS (
+                SELECT b.name
+                EXCEPT
+                SELECT d.name
+            )
+            THEN UPDATE SET b.name = d.name
+            """,
+            write={
+                "bigquery": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT DISTINCT SELECT d.name) THEN UPDATE SET b.name = d.name",
+                "snowflake": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT SELECT d.name) THEN UPDATE SET b.name = d.name",
+                "spark": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT SELECT d.name) THEN UPDATE SET b.name = d.name",
             },
         )

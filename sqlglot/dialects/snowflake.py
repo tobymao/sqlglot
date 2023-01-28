@@ -194,7 +194,8 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "QUALIFY": TokenType.QUALIFY,
+            "EXCLUDE": TokenType.EXCEPT,
+            "RENAME": TokenType.REPLACE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
@@ -230,6 +231,11 @@ class Snowflake(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
+        }
+
+        STAR_MAPPING = {
+            "except": "EXCLUDE",
+            "replace": "RENAME",
         }
 
         ROOT_PROPERTIES = {

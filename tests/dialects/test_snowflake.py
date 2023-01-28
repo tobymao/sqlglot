@@ -13,6 +13,24 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT * EXCLUDE a, b FROM xxx",
+            write={
+                "snowflake": "SELECT * EXCLUDE (a, b) FROM xxx",
+            },
+        )
+        self.validate_all(
+            "SELECT * RENAME a AS b, c AS d FROM xxx",
+            write={
+                "snowflake": "SELECT * RENAME (a AS b, c AS d) FROM xxx",
+            },
+        )
+        self.validate_all(
+            "SELECT * EXCLUDE a, b RENAME (c AS d, E as F) FROM xxx",
+            write={
+                "snowflake": "SELECT * EXCLUDE (a, b) RENAME (c AS d, E AS F) FROM xxx",
+            },
+        )
+        self.validate_all(
             'x:a:"b c"',
             write={
                 "duckdb": "x['a']['b c']",

@@ -165,3 +165,20 @@ class TestRedshift(Validator):
                 "redshift": "ALTER TABLE db.t1 RENAME TO t2",
             },
         )
+
+    def test_varchar_max(self):
+        self.validate_all(
+            "CREATE TABLE TEST (cola VARCHAR(MAX))",
+            write={
+                "redshift": 'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
+            },
+            identify=True,
+        )
+
+    def test_no_schema_binding(self):
+        self.validate_all(
+            "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
+            write={
+                "redshift": "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
+            },
+        )

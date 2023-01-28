@@ -4,6 +4,14 @@
 SELECT a FROM x;
 SELECT x.a AS a FROM x AS x;
 
+# execute: false
+SELECT a FROM zz GROUP BY a ORDER BY a;
+SELECT zz.a AS a FROM zz AS zz GROUP BY zz.a ORDER BY a;
+
+# execute: false
+SELECT x, p FROM (SELECT x from xx) xx CROSS JOIN yy;
+SELECT xx.x AS x, yy.p AS p FROM (SELECT xx.x AS x FROM xx AS xx) AS xx CROSS JOIN yy AS yy;
+
 SELECT a FROM x AS z;
 SELECT z.a AS a FROM x AS z;
 
@@ -20,8 +28,8 @@ SELECT a AS b FROM x;
 SELECT x.a AS b FROM x AS x;
 
 # execute: false
-SELECT 1, 2 FROM x;
-SELECT 1 AS _col_0, 2 AS _col_1 FROM x AS x;
+SELECT 1, 2 + 3 FROM x;
+SELECT 1 AS "1", 2 + 3 AS _col_1 FROM x AS x;
 
 # execute: false
 SELECT a + b FROM x;
@@ -56,6 +64,10 @@ SELECT x.a AS j, x.b AS a FROM x AS x ORDER BY x.a;
 
 SELECT SUM(a) AS c, SUM(b) AS d FROM x ORDER BY 1, 2;
 SELECT SUM(x.a) AS c, SUM(x.b) AS d FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
+
+# execute: false
+SELECT CAST(a AS INT) FROM x ORDER BY a;
+SELECT CAST(x.a AS INT) AS a FROM x AS x ORDER BY a;
 
 # execute: false
 SELECT SUM(a), SUM(b) AS c FROM x ORDER BY 1, 2;

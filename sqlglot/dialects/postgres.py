@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    rename_func,
     str_position_sql,
     trim_sql,
 )
@@ -290,6 +291,7 @@ class Postgres(Dialect):
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
             exp.DateDiff: _date_diff_sql,
+            exp.LogicalOr: rename_func("BOOL_OR"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,

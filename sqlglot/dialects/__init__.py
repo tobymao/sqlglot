@@ -2,11 +2,13 @@
 ## Dialects
 
 While there is a SQL standard, most SQL engines support a variation of that standard. This makes it difficult
-to write portable SQL code. One common example is date/time functions. SQLGlot aims to bridge all the different
-dialects, by providing an extendible SQL transpilation framework. It achieves this by using a `Dialect` class
-hierarchy, where each `Dialect` implements a specific dialect. The base class implements a "SQLGlot" dialect
-that aims to be as generic and ANSI-compliant as possible. For this reason, it relies on the base `Tokenizer`,
-`Parser` and `Generator` classes, so these need to be very lenient when it comes to consuming SQL code.
+to write portable SQL code. SQLGlot bridges all the different variations, called "dialects", with an extensible
+SQL transpilation framework. 
+
+The base `sqlglot.dialects.dialect.Dialect` class implements a generic dialect that aims to be as universal as possible.
+
+Each SQL variation has its own `Dialect` subclass, extending the corresponding `Tokenizer`, `Parser` and `Generator`
+classes as needed.
 
 ### Implementing a custom Dialect
 

@@ -174,6 +174,7 @@ class Presto(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
             "FROM_UNIXTIME": _from_unixtime,
+            "NOW": exp.CurrentTimestamp.from_arg_list,
             "STRPOS": lambda args: exp.StrPosition(
                 this=seq_get(args, 0),
                 substr=seq_get(args, 1),

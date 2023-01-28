@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.optimizer import Scope, build_scope, optimize
+from sqlglot.optimizer.qualify_columns import qualify_columns
+from sqlglot.optimizer.qualify_tables import qualify_tables
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,8 @@ def lineage(
     column: str | exp.Column,
     sql: str | exp.Expression,
     schema: t.Optional[t.Dict | Schema] = None,
+    sources: t.Optional[t.Dict[str, str | exp.Subqueryable]] = None,
+    rules: t.Sequence[t.Callable] = (qualify_tables, qualify_columns),
     dialect: t.Optional[str] = None,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
@@ -40,6 +44,8 @@ def lineage(
         column: The column to build the lineage for.
         sql: The SQL string or expression.
         schema: The schema of tables.
+        sources: A mapping of queries which will be used to continue building lineage.
+        rules: Optimizer rules to apply, by default only qualifying tables and columns.
         dialect: The dialect of input SQL.
 
     Returns:
@@ -47,7 +53,17 @@ def lineage(
     """
 
     expression = maybe_parse(sql, dialect=dialect)
-    optimized = optimize(expression, schema=schema)
+
+    if sources:
+        expression = exp.expand(
+            expression,
+            {
+                k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect))
+                for k, v in sources.items()
+            },
+        )
+
+    optimized = optimize(expression, schema=schema, rules=rules)
     scope = build_scope(optimized)
     tables: t.Dict[str, Node] = {}
 
@@ -68,7 +84,7 @@ def lineage(
             return node
 
         select = next(select for select in scope.selects if select.alias_or_name == column_name)
-        source = optimize(scope.expression.select(select, append=False), schema=schema)
+        source = optimize(scope.expression.select(select, append=False), schema=schema, rules=rules)
         select = source.selects[0]
 
         node = Node(
@@ -140,6 +156,9 @@ class LineageHTML:
             "nodes": {
                 "font": "20px monaco",
                 "shape": "box",
+                "widthConstraint": {
+                    "maximum": 300,
+                },
             },
             **opts,
         }

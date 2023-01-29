@@ -448,7 +448,12 @@ class Parser(metaclass=_Parser):
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.UPDATE: lambda self: self._parse_update(),
-        TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
+        TokenType.USE: lambda self: self.expression(
+            exp.Use,
+            kind=self._match_texts(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"))
+            and exp.Var(this=self._prev.text),
+            this=self._parse_table(schema=False),
+        ),
     }
 
     UNARY_PARSERS = {

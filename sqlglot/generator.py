@@ -1499,7 +1499,11 @@ class Generator:
         return f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
     def use_sql(self, expression: exp.Use) -> str:
-        return f"USE {self.sql(expression, 'this')}"
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        return f"USE{kind}{this}"
 
     def binary(self, expression: exp.Binary, op: str) -> str:
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"

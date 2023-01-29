@@ -143,6 +143,10 @@ SET -v
 SET x = ';'
 COMMIT
 USE db
+USE role x
+USE warehouse x
+USE database x
+USE schema x.y
 NOT 1
 NOT NOT 1
 SELECT * FROM test

@@ -3361,7 +3361,7 @@ class Year(Func):
 
 
 class Use(Expression):
-    pass
+    arg_types = {"this": True, "kind": False}
 
 
 class Merge(Expression):

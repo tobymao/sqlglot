@@ -585,6 +585,7 @@ class Parser(metaclass=_Parser):
     }
 
     QUERY_MODIFIER_PARSERS = {
+        "match": lambda self: self._parse_match_recognize(),
         "where": lambda self: self._parse_where(),
         "group": lambda self: self._parse_group(),
         "having": lambda self: self._parse_having(),
@@ -1038,6 +1039,11 @@ class Parser(metaclass=_Parser):
             this=self._parse_var_or_string() or self._parse_number() or self._parse_id_var(),
         )
 
+    def _parse_partition_by(self) -> t.List[t.Optional[exp.Expression]]:
+        if self._match(TokenType.PARTITION_BY):
+            return self._parse_csv(self._parse_conjunction)
+        return []
+
     def _parse_partitioned_by(self) -> exp.Expression:
         self._match(TokenType.EQ)
         return self.expression(
@@ -1455,6 +1461,87 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.From, comments=self._prev_comments, expressions=self._parse_csv(self._parse_table)
+        )
+
+    def _parse_match_recognize(self) -> t.Optional[exp.Expression]:
+        if not self._match(TokenType.MATCH_RECOGNIZE):
+            return None
+        self._match_l_paren()
+
+        partition = self._parse_partition_by()
+        order = self._parse_order()
+        measures = (
+            self._parse_alias(self._parse_conjunction())
+            if self._match_text_seq("MEASURES")
+            else None
+        )
+
+        if self._match_text_seq("ONE", "ROW", "PER", "MATCH"):
+            rows = exp.Var(this="ONE ROW PER MATCH")
+        elif self._match_text_seq("ALL", "ROWS", "PER", "MATCH"):
+            text = "ALL ROWS PER MATCH"
+            if self._match_text_seq("SHOW", "EMPTY", "MATCHES"):
+                text += f" SHOW EMPTY MATCHES"
+            elif self._match_text_seq("OMIT", "EMPTY", "MATCHES"):
+                text += f" OMIT EMPTY MATCHES"
+            elif self._match_text_seq("WITH", "UNMATCHED", "ROWS"):
+                text += f" WITH UNMATCHED ROWS"
+            rows = exp.Var(this=text)
+        else:
+            rows = None
+
+        if self._match_text_seq("AFTER", "MATCH", "SKIP"):
+            text = "AFTER MATCH SKIP"
+            if self._match_text_seq("PAST", "LAST", "ROW"):
+                text += f" PAST LAST ROW"
+            elif self._match_text_seq("TO", "NEXT", "ROW"):
+                text += f" TO NEXT ROW"
+            elif self._match_text_seq("TO", "FIRST"):
+                text += f" TO FIRST {self._advance_any().text}"  # type: ignore
+            elif self._match_text_seq("TO", "LAST"):
+                text += f" TO LAST {self._advance_any().text}"  # type: ignore
+            after = exp.Var(this=text)
+        else:
+            after = None
+
+        if self._match_text_seq("PATTERN"):
+            self._match_l_paren()
+
+            if not self._curr:
+                self.raise_error("Expecting )", self._curr)
+
+            paren = 1
+            start = self._find_token(self._curr, self.sql)
+
+            while self._curr and paren > 0:
+                if self._curr.token_type == TokenType.L_PAREN:
+                    paren += 1
+                if self._curr.token_type == TokenType.R_PAREN:
+                    paren -= 1
+                self._advance()
+            if paren > 0:
+                self.raise_error("Expecting )", self._curr)
+            if not self._curr:
+                self.raise_error("Expecting pattern", self._curr)
+            end = self._find_token(self._prev, self.sql)
+            pattern = exp.Var(this=self.sql[start:end])
+        else:
+            pattern = None
+
+        define = (
+            self._parse_alias(self._parse_conjunction()) if self._match_text_seq("DEFINE") else None
+        )
+        self._match_r_paren()
+
+        return self.expression(
+            exp.MatchRecognize,
+            partition_by=partition,
+            order=order,
+            measures=measures,
+            rows=rows,
+            after=after,
+            pattern=pattern,
+            define=define,
         )
 
     def _parse_lateral(self) -> t.Optional[exp.Expression]:
@@ -2797,14 +2884,8 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Window, this=this, alias=self._parse_id_var(False))
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
-
-        partition = None
-        if self._match(TokenType.PARTITION_BY):
-            partition = self._parse_csv(self._parse_conjunction)
-
+        partition = self._parse_partition_by()
         order = self._parse_order()
-
-        spec = None
         kind = self._match_set((TokenType.ROWS, TokenType.RANGE)) and self._prev.text
 
         if kind:
@@ -2821,6 +2902,8 @@ class Parser(metaclass=_Parser):
                 end=end["value"],
                 end_side=end["side"],
             )
+        else:
+            spec = None
 
         self._match_r_paren()
 

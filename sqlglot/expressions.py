@@ -1232,6 +1232,18 @@ class Lateral(UDTF):
     arg_types = {"this": True, "view": False, "outer": False, "alias": False}
 
 
+class MatchRecognize(Expression):
+    arg_types = {
+        "partition_by": False,
+        "order": False,
+        "measures": False,
+        "rows": False,
+        "after": False,
+        "pattern": False,
+        "define": False,
+    }
+
+
 # Clickhouse FROM FINAL modifier
 # https://clickhouse.com/docs/en/sql-reference/statements/select/from/#final-modifier
 class Final(Expression):
@@ -1510,6 +1522,7 @@ class Subqueryable(Unionable):
 
 
 QUERY_MODIFIERS = {
+    "match": False,
     "laterals": False,
     "joins": False,
     "pivots": False,

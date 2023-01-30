@@ -2633,9 +2633,10 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 
     def _parse_bracket(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-        if not self._match(TokenType.L_BRACKET):
+        if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
+        bracket_kind = self._prev.token_type
         expressions: t.List[t.Optional[exp.Expression]]
 
         if self._match(TokenType.COLON):
@@ -2643,14 +2644,19 @@ class Parser(metaclass=_Parser):
         else:
             expressions = self._parse_csv(lambda: self._parse_slice(self._parse_conjunction()))
 
-        if not this or this.name.upper() == "ARRAY":
+        # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
+        if bracket_kind == TokenType.L_BRACE:
+            this = self.expression(exp.Struct, expressions=expressions)
+        elif not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:
             expressions = apply_index_offset(expressions, -self.index_offset)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
-        if not self._match(TokenType.R_BRACKET):
+        if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:
             self.raise_error("Expected ]")
+        elif not self._match(TokenType.R_BRACE) and bracket_kind == TokenType.L_BRACE:
+            self.raise_error("Expected }")
 
         this.comments = self._prev_comments
         return self._parse_bracket(this)

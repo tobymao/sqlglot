@@ -75,6 +75,19 @@ class TestDuckDB(Validator):
         )
 
     def test_duckdb(self):
+        self.validate_identity("SELECT {'a': 1} AS x")
+        self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")
+        self.validate_identity("SELECT {'x': 1, 'y': 2, 'z': 3}")
+        self.validate_identity(
+            "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
+        )
+        self.validate_identity("SELECT {'key1': 'string', 'key2': 1, 'key3': 12.345}")
+        self.validate_identity("SELECT ROW(x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
+        self.validate_identity("SELECT (x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
+        self.validate_identity("SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a)")
+        self.validate_identity(
+            "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a)"
+        )
         self.validate_all(
             "CREATE TABLE IF NOT EXISTS table (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={
@@ -229,8 +242,15 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
             write={
-                "duckdb": "STRUCT_PACK(x := 1, y := '2')",
+                "duckdb": "{'x': 1, 'y': '2'}",
                 "spark": "STRUCT(x = 1, y = '2')",
+            },
+        )
+        self.validate_all(
+            "STRUCT_PACK(key1 := 'value1', key2 := 42)",
+            write={
+                "duckdb": "{'key1': 'value1', 'key2': 42}",
+                "spark": "STRUCT(key1 = 'value1', key2 = 42)",
             },
         )
         self.validate_all(

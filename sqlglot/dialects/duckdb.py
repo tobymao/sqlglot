@@ -68,7 +68,7 @@ def _sort_array_reverse(args):
 
 def _struct_sql(self, expression):
     args = [
-        f"""'{e.name or e.this.name}': {self.sql(e, "expression")}"""
+        f"'{e.name or e.this.name}': {self.sql(e, 'expression')}"
         for e in expression.expressions
     ]
     return f"{{{', '.join(args)}}}"

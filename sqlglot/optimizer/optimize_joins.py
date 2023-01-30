@@ -6,6 +6,11 @@ from sqlglot.optimizer.simplify import simplify
 def optimize_joins(expression):
     """
     Removes cross joins if possible and reorder joins based on predicate dependencies.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> optimize_joins(parse_one("SELECT * FROM x CROSS JOIN y JOIN z ON x.a = z.a AND y.a = z.a")).sql()
+        'SELECT * FROM x JOIN z ON x.a = z.a AND TRUE JOIN y ON y.a = z.a'
     """
     for select in expression.find_all(exp.Select):
         references = {}

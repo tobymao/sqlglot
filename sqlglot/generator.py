@@ -979,10 +979,37 @@ class Generator:
 
         return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
 
+    def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
+        partition = self.partition_by_sql(expression)
+        order = self.sql(expression, "order")
+        measures = self.sql(expression, "measures")
+        measures = self.seg(f"MEASURES {measures}") if measures else ""
+        rows = self.sql(expression, "rows")
+        rows = self.seg(rows) if rows else ""
+        after = self.sql(expression, "after")
+        after = self.seg(after) if after else ""
+        pattern = self.sql(expression, "pattern")
+        pattern = self.seg(f"PATTERN ({pattern})") if pattern else ""
+        define = self.sql(expression, "define")
+        define = self.seg(f"DEFINE {define}") if define else ""
+        body = "".join(
+            (
+                partition,
+                order,
+                measures,
+                rows,
+                after,
+                pattern,
+                define,
+            )
+        )
+        return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}"
+
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
         return csv(
             *sqls,
             *[self.sql(sql) for sql in expression.args.get("joins") or []],
+            self.sql(expression, "match"),
             *[self.sql(sql) for sql in expression.args.get("laterals") or []],
             self.sql(expression, "where"),
             self.sql(expression, "group"),
@@ -1091,8 +1118,7 @@ class Generator:
     def window_sql(self, expression: exp.Window) -> str:
         this = self.sql(expression, "this")
 
-        partition = self.expressions(expression, key="partition_by", flat=True)
-        partition = f"PARTITION BY {partition}" if partition else ""
+        partition = self.partition_by_sql(expression)
 
         order = expression.args.get("order")
         order_sql = self.order_sql(order, flat=True) if order else ""
@@ -1111,6 +1137,10 @@ class Generator:
         window_args = alias + partition_sql + order_sql + spec_sql
 
         return f"{this} ({window_args.strip()})"
+
+    def partition_by_sql(self, expression: exp.Window | exp.MatchRecognize) -> str:
+        partition = self.expressions(expression, key="partition_by", flat=True)
+        return f"PARTITION BY {partition}" if partition else ""
 
     def window_spec_sql(self, expression: exp.WindowSpec) -> str:
         kind = self.sql(expression, "kind")

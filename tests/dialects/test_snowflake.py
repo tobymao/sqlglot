@@ -571,3 +571,35 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
                 "spark": "DESCRIBE db.table",
             },
         )
+
+    def test_match_recognize(self):
+        for row in (
+            "ONE ROW PER MATCH",
+            "ALL ROWS PER MATCH",
+            "ALL ROWS PER MATCH SHOW EMPTY MATCHES",
+            "ALL ROWS PER MATCH OMIT EMPTY MATCHES",
+            "ALL ROWS PER MATCH WITH UNMATCHED ROWS",
+        ):
+            for after in (
+                "AFTER MATCH SKIP",
+                "AFTER MATCH SKIP PAST LAST ROW",
+                "AFTER MATCH SKIP TO NEXT ROW",
+                "AFTER MATCH SKIP TO FIRST x",
+                "AFTER MATCH SKIP TO LAST x",
+            ):
+                self.validate_identity(
+                    f"""SELECT
+  *
+FROM x
+MATCH_RECOGNIZE (
+  PARTITION BY a, b
+  ORDER BY
+    x DESC
+  MEASURES y AS b
+  {row}
+  {after}
+  PATTERN (^ S1 S2*? ( {{- S3 -}} S4 )+ | PERMUTE(S1, S2){{1,2}} $)
+  DEFINE x AS y
+)""",
+                    pretty=True,
+                )

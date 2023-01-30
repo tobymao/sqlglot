@@ -74,13 +74,16 @@ class Oracle(Dialect):
         def query_modifiers(self, expression, *sqls):
             return csv(
                 *sqls,
-                *[self.sql(sql) for sql in expression.args.get("laterals", [])],
-                *[self.sql(sql) for sql in expression.args.get("joins", [])],
+                *[self.sql(sql) for sql in expression.args.get("joins") or []],
+                self.sql(expression, "match"),
+                *[self.sql(sql) for sql in expression.args.get("laterals") or []],
                 self.sql(expression, "where"),
                 self.sql(expression, "group"),
                 self.sql(expression, "having"),
                 self.sql(expression, "qualify"),
-                self.sql(expression, "window"),
+                self.seg("WINDOW ") + self.expressions(expression, "windows", flat=True)
+                if expression.args.get("windows")
+                else "",
                 self.sql(expression, "distribute"),
                 self.sql(expression, "sort"),
                 self.sql(expression, "cluster"),
@@ -99,6 +102,7 @@ class Oracle(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "START": TokenType.BEGIN,
             "TOP": TokenType.TOP,

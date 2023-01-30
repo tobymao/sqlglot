@@ -122,7 +122,6 @@ class Generator:
         "time_mapping",
         "time_trie",
         "pretty",
-        "configured_pretty",
         "quote_start",
         "quote_end",
         "identifier_start",
@@ -177,7 +176,6 @@ class Generator:
         self.time_mapping = time_mapping or {}
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
-        self.configured_pretty = self.pretty
         self.quote_start = quote_start or "'"
         self.quote_end = quote_end or "'"
         self.identifier_start = identifier_start or '"'
@@ -569,13 +567,14 @@ class Generator:
 
     def delete_sql(self, expression: exp.Delete) -> str:
         this = self.sql(expression, "this")
+        this = f" FROM {this}" if this else ""
         using_sql = (
             f" USING {self.expressions(expression, 'using', sep=', USING ')}"
             if expression.args.get("using")
             else ""
         )
         where_sql = self.sql(expression, "where")
-        sql = f"DELETE FROM {this}{using_sql}{where_sql}"
+        sql = f"DELETE{this}{using_sql}{where_sql}"
         return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression: exp.Drop) -> str:
@@ -1388,6 +1387,8 @@ class Generator:
             actions = self.expressions(expression, "actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Drop):
             actions = self.expressions(expression, "actions")
+        elif isinstance(actions[0], exp.Delete):
+            actions = self.expressions(expression, "actions", flat=True)
         elif isinstance(actions[0], self.WITH_SINGLE_ALTER_TABLE_ACTION):
             actions = self.sql(actions[0])
         else:

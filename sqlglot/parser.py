@@ -3097,7 +3097,9 @@ class Parser(metaclass=_Parser):
         actions: t.Optional[exp.Expression | t.List[t.Optional[exp.Expression]]] = None
 
         index = self._index
-        if self._match_text_seq("ADD"):
+        if self._match(TokenType.DELETE):
+            actions = [self.expression(exp.Delete, where=self._parse_where())]
+        elif self._match_text_seq("ADD"):
             if self._match_set(self.ADD_CONSTRAINT_TOKENS):
                 actions = self._parse_csv(self._parse_add_constraint)
             else:

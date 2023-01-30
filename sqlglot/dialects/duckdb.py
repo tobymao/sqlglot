@@ -66,12 +66,12 @@ def _sort_array_reverse(args):
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
-def _struct_pack_sql(self, expression):
+def _struct_sql(self, expression):
     args = [
-        self.binary(e, ":=") if isinstance(e, exp.EQ) else self.sql(e)
+        f"""'{e.name or e.this.name}': {self.sql(e, "expression")}"""
         for e in expression.expressions
     ]
-    return f"STRUCT_PACK({', '.join(args)})"
+    return f"{{{', '.join(args)}}}"
 
 
 def _datatype_sql(self, expression):
@@ -153,7 +153,7 @@ class DuckDB(Dialect):
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
-            exp.Struct: _struct_pack_sql,
+            exp.Struct: _struct_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,

@@ -451,9 +451,11 @@ class Tokenizer(metaclass=_Tokenizer):
         },
         **{
             f"{prefix}{key}": TokenType.BLOCK_END
-            for key in ("}}", "%}", "#}")
+            for key in ("%}", "#}")
             for prefix in ("", "+", "-")
         },
+        "+}}": TokenType.BLOCK_END,
+        "-}}": TokenType.BLOCK_END,
         "/*+": TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,

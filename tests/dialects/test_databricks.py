@@ -102,3 +102,18 @@ class TestDatabricks(Validator):
                 "databricks": "SELECT DATEADD(DAY, 1, '2020-01-01')",
             },
         )
+
+    def test_without_as(self):
+        self.validate_all(
+            "CREATE TABLE x (SELECT 1)",
+            write={
+                "databricks": "CREATE TABLE x AS (SELECT 1)",
+            },
+        )
+
+        self.validate_all(
+            "WITH x (select 1) SELECT * FROM x",
+            write={
+                "databricks": "WITH x AS (SELECT 1) SELECT * FROM x",
+            },
+        )

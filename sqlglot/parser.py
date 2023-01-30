@@ -962,8 +962,8 @@ class Parser(metaclass=_Parser):
         ):
             this = self._parse_table(schema=True)
             properties = self._parse_properties()
-            if self._match(TokenType.ALIAS):
-                expression = self._parse_ddl_select()
+            self._match(TokenType.ALIAS)
+            expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
                 if self._match_text_seq("WITH", "DATA"):
@@ -1371,8 +1371,7 @@ class Parser(metaclass=_Parser):
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
 
-        if not self._match(TokenType.ALIAS):
-            self.raise_error("Expected AS in CTE")
+        self._match(TokenType.ALIAS)
 
         return self.expression(
             exp.CTE,
@@ -1387,10 +1386,11 @@ class Parser(metaclass=_Parser):
         alias = self._parse_id_var(
             any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
         )
+        index = self._index
 
         if self._match(TokenType.L_PAREN):
             columns = self._parse_csv(lambda: self._parse_column_def(self._parse_id_var()))
-            self._match_r_paren()
+            self._match_r_paren() if columns else self._retreat(index)
         else:
             columns = None
 

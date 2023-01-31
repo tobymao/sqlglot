@@ -798,7 +798,7 @@ class Generator:
         no = expression.args.get("no")
         no = " NO" if no else ""
         concurrent = expression.args.get("concurrent")
-        concurrent = f"{' CONCURRENT' if concurrent else ''}"
+        concurrent = " CONCURRENT" if concurrent else ""
 
         for_ = ""
         if expression.args.get("for_all"):

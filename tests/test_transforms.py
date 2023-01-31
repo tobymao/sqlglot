@@ -9,6 +9,8 @@ from sqlglot.transforms import (
 
 
 class TestTime(unittest.TestCase):
+    maxDiff = None
+
     def validate(self, transform, sql, target):
         with self.subTest(sql):
             self.assertEqual(parse_one(sql).transform(transform).sql(), target)
@@ -17,7 +19,7 @@ class TestTime(unittest.TestCase):
         self.validate(
             unalias_group,
             "SELECT a, b AS b, c AS c, 4 FROM x GROUP BY a, b, x.c, 4",
-            "SELECT a, b AS b, c AS c, 4 FROM x GROUP BY a, b, x.c, 4",
+            "SELECT a, b AS b, c AS c, 4 FROM x GROUP BY a, 2, x.c, 4",
         )
         self.validate(
             unalias_group,
@@ -37,7 +39,12 @@ class TestTime(unittest.TestCase):
         self.validate(
             unalias_group,
             "SELECT the_date AS the_date, COUNT(*) AS the_count FROM x GROUP BY the_date",
-            "SELECT the_date AS the_date, COUNT(*) AS the_count FROM x GROUP BY the_date",
+            "SELECT the_date AS the_date, COUNT(*) AS the_count FROM x GROUP BY 1",
+        )
+        self.validate(
+            unalias_group,
+            "SELECT a AS a FROM x GROUP BY DATE(a)",
+            "SELECT a AS a FROM x GROUP BY DATE(a)",
         )
 
     def test_eliminate_distinct_on(self):

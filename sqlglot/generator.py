@@ -631,7 +631,7 @@ class Generator:
     def partition_sql(self, expression: exp.Partition) -> str:
         keys = csv(
             *[
-                f"""{prop.name}='{prop.text("value")}'""" if prop.text("value") else prop.name
+                f"{prop.name}={self.sql(prop, 'value')}" if prop.args.get("value") else prop.name
                 for prop in expression.this
             ]
         )

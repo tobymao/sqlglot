@@ -1147,11 +1147,7 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("CHECKSUM")
         self._match(TokenType.EQ)
 
-        on = None
-        if self._match(TokenType.ON):
-            on = True
-        elif self._match_text_seq("OFF"):
-            on = False
+        on = not self._match_text_seq("OFF") or self._match(TokenType.ON)
         default = self._match(TokenType.DEFAULT)
 
         return self.expression(

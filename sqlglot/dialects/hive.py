@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -256,6 +258,18 @@ class Hive(Dialect):
             ),
         }
 
+        def _parse_group(self, skip_group_by_token: bool = False) -> t.Optional[exp.Expression]:
+            if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
+                return None
+
+            return self.expression(
+                exp.Group,
+                expressions=self._parse_csv(self._parse_conjunction),
+                grouping_sets=self._parse_grouping_sets(),
+                cube=self._match_pair(TokenType.WITH, TokenType.CUBE),
+                rollup=self._match_pair(TokenType.WITH, TokenType.ROLLUP),
+            )
+
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
@@ -350,3 +364,13 @@ class Hive(Dialect):
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
             return super().datatype_sql(expression)
+
+        def group_sql(self, expression: exp.Group) -> str:
+            group_by = self.op_expressions("GROUP BY", expression)
+            grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
+            grouping_sets = (
+                f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}" if grouping_sets else ""
+            )
+            cube = f" WITH CUBE" if expression.args.get("cube") else ""
+            rollup = f" WITH ROLLUP" if expression.args.get("rollup") else ""
+            return f"{group_by}{grouping_sets}{cube or rollup}"

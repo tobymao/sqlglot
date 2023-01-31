@@ -353,6 +353,12 @@ class TestHive(Validator):
         self.validate_identity(
             "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, FOO(b) GROUPING SETS ((a, FOO(b)), a)"
         )
+        self.validate_identity(
+            "SELECT key, value, GROUPING__ID, COUNT(*) FROM T1 GROUP BY key, value WITH CUBE"
+        )
+        self.validate_identity(
+            "SELECT key, value, GROUPING__ID, COUNT(*) FROM T1 GROUP BY key, value WITH ROLLUP"
+        )
         self.validate_all(
             "SELECT A.1a AS b FROM test_a AS A",
             write={

@@ -796,7 +796,7 @@ class Generator:
 
     def isolatedloadingproperty_sql(self, expression: exp.IsolatedLoadingProperty) -> str:
         no = expression.args.get("no")
-        no = f"{' NO' if no else ''}"
+        no = " NO" if no else ""
         concurrent = expression.args.get("concurrent")
         concurrent = f"{' CONCURRENT' if concurrent else ''}"
 

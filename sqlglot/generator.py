@@ -771,9 +771,8 @@ class Generator:
                 property = "MAXIMUM"
             return f"{property} DATABLOCKSIZE"
         else:
-            units = ""
-            if expression.args.get("units"):
-                units = f" {expression.args.get('units')}"
+            units = expression.args.get("units"):
+            units = f" units" if units else ""
             return f"DATABLOCKSIZE={self.sql(expression, 'size')}{units}"
 
     def blockcompressionproperty_sql(self, expression: exp.BlockCompressionProperty) -> str:

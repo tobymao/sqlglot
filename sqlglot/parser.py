@@ -3197,10 +3197,12 @@ class Parser(metaclass=_Parser):
                 self._retreat(index)
                 actions = self._parse_csv(self._parse_add_column)
         elif self._match_text_seq("DROP"):
-            drop_exists = self._parse_exists()
+            partition_exists = self._parse_exists()
 
             if self._match(TokenType.PARTITION, advance=False):
-                actions = self._parse_csv(lambda: self._parse_drop_partition(exists=drop_exists))
+                actions = self._parse_csv(
+                    lambda: self._parse_drop_partition(exists=partition_exists)
+                )
             else:
                 self._retreat(index)
                 actions = self._parse_csv(self._parse_drop_column)

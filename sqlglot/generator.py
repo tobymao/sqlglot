@@ -507,7 +507,7 @@ class Generator:
 
         indexes = expression.args.get("indexes")
         index_sql = ""
-        if indexes is not None and len(indexes) > 0:
+        if indexes:
             indexes_sql = []
             for index in indexes:
                 ind_unique = " UNIQUE" if index.args.get("unique") else ""

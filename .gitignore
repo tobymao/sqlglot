@@ -136,3 +136,4 @@ dmypy.json
 
 .DS_STORE
 metastore_db
+spark_warehouse

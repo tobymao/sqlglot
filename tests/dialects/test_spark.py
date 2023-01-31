@@ -208,6 +208,13 @@ TBLPROPERTIES (
 
     def test_spark(self):
         self.validate_identity("SELECT UNIX_TIMESTAMP()")
+        self.validate_identity("TRIM('    SparkSQL   ')")
+        self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")
+        self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
+        self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
+        self.validate_all(
+            "TRIM('SL', 'SSparkSQLS')", write={"spark": "TRIM('SL' FROM 'SSparkSQLS')"}
+        )
         self.validate_all(
             "ARRAY_SORT(x, (left, right) -> -1)",
             write={

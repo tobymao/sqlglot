@@ -2825,7 +2825,7 @@ class Parser(metaclass=_Parser):
             position = self._prev.text.upper()
 
         expression = self._parse_term()
-        if self._match(TokenType.FROM):
+        if self._match_set((TokenType.FROM, TokenType.COMMA)):
             this = self._parse_term()
         else:
             this = expression

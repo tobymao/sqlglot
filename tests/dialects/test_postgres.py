@@ -57,6 +57,7 @@ class TestPostgres(Validator):
 
     def test_postgres(self):
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
+        self.validate_identity("SELECT ARRAY(SELECT 1)")
         self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2, 3], 1)")
         self.validate_identity("STRING_AGG(x, y)")
         self.validate_identity("STRING_AGG(x, ',' ORDER BY y)")
@@ -88,6 +89,14 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
         self.validate_identity("""SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)""")
+        self.validate_identity(
+            "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
+        )
+        self.validate_identity(
+            "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"
+        )
+        self.validate_identity("x ~ 'y'")
+        self.validate_identity("x ~* 'y'")
 
         self.validate_all(
             "END WORK AND NO CHAIN",
@@ -117,10 +126,6 @@ class TestPostgres(Validator):
         self.validate_all(
             "SELECT to_timestamp(123)::time without time zone",
             write={"postgres": "SELECT CAST(TO_TIMESTAMP(123) AS TIME)"},
-        )
-
-        self.validate_identity(
-            "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"
         )
         self.validate_all(
             "SELECT SUM(x) OVER (PARTITION BY a ORDER BY d ROWS 1 PRECEDING)",
@@ -283,9 +288,6 @@ class TestPostgres(Validator):
             "UPDATE MYTABLE T1 SET T1.COL = 13",
             write={"postgres": "UPDATE MYTABLE AS T1 SET T1.COL = 13"},
         )
-
-        self.validate_identity("x ~ 'y'")
-        self.validate_identity("x ~* 'y'")
         self.validate_all(
             "x !~ 'y'",
             write={"postgres": "NOT x ~ 'y'"},
@@ -319,15 +321,16 @@ class TestPostgres(Validator):
             "'x' 'y' 'z'",
             write={"postgres": "CONCAT('x', 'y', 'z')"},
         )
-        self.validate_identity("SELECT ARRAY(SELECT 1)")
-
         self.validate_all(
             "x::cstring",
             write={"postgres": "CAST(x AS CSTRING)"},
         )
-
-        self.validate_identity(
-            "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
+        self.validate_all(
+            "TRIM(BOTH 'as' FROM 'as string as')",
+            write={
+                "postgres": "TRIM(BOTH 'as' FROM 'as string as')",
+                "spark": "TRIM(BOTH 'as' FROM 'as string as')",
+            },
         )
 
     def test_bool_or(self):

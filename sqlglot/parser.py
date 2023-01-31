@@ -1880,11 +1880,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_grouping_set(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):
-            grouping_set = self._parse_csv(self._parse_id_var)
+            grouping_set = self._parse_csv(self._parse_column)
             self._match_r_paren()
             return self.expression(exp.Tuple, expressions=grouping_set)
 
-        return self._parse_id_var()
+        return self._parse_column()
 
     def _parse_having(self, skip_having_token: bool = False) -> t.Optional[exp.Expression]:
         if not skip_having_token and not self._match(TokenType.HAVING):

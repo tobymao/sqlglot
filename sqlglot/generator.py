@@ -65,11 +65,11 @@ class Generator:
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.VolatilityProperty: lambda self, e: e.name,
-        exp.FallbackOption: lambda self, e: f"{'NO ' if e.args.get('no') else ''}FALLBACK{' PROTECTION' if e.args.get('protection') else ''}",
-        exp.WithJournalTableOption: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
-        exp.LogOption: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
-        exp.JournalOption: lambda self, e: f"{'NO ' if e.args.get('no') else ''}{'DUAL ' if e.args.get('dual') else ''}{'BEFORE ' if e.args.get('before') else ''}JOURNAL",
-        exp.FreespaceOption: lambda self, e: f"FREESPACE={self.sql(e, 'this')}{' PERCENT' if e.args.get('percent') else ''}",
+        exp.FallbackProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}FALLBACK{' PROTECTION' if e.args.get('protection') else ''}",
+        exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
+        exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
+        exp.JournalProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}{'DUAL ' if e.args.get('dual') else ''}{'BEFORE ' if e.args.get('before') else ''}JOURNAL",
+        exp.FreespaceProperty: lambda self, e: f"FREESPACE={self.sql(e, 'this')}{' PERCENT' if e.args.get('percent') else ''}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
@@ -101,6 +101,20 @@ class Generator:
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}
 
     STRUCT_DELIMITER = ("<", ">")
+
+    BEFORE_PROPERTIES = {
+        exp.FallbackProperty,
+        exp.WithJournalTableProperty,
+        exp.LogProperty,
+        exp.JournalProperty,
+        exp.AfterJournalProperty,
+        exp.ChecksumProperty,
+        exp.FreespaceProperty,
+        exp.MergeBlockRatioProperty,
+        exp.DataBlocksizeProperty,
+        exp.BlockCompressionProperty,
+        exp.IsolatedLoadingProperty,
+    }
 
     ROOT_PROPERTIES = {
         exp.ReturnsProperty,
@@ -448,13 +462,19 @@ class Generator:
 
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
-        if kind == "TABLE" and expression.args.get("options"):
+        has_before_properties = expression.args.get("properties")
+        has_before_properties = (
+            has_before_properties.args.get("before") if has_before_properties else None
+        )
+        if kind == "TABLE" and has_before_properties:
             this_name = self.sql(expression.this, "this")
-            this_options = self.sql(expression, "options")
+            this_properties = self.sql(expression, "properties")
             this_schema = f"({self.expressions(expression.this)})"
-            this = f"{this_name}{this_options}{this_schema}"
+            this = f"{this_name}, {this_properties} {this_schema}"
+            properties = ""
         else:
             this = self.sql(expression, "this")
+            properties = self.sql(expression, "properties")
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
@@ -471,7 +491,6 @@ class Generator:
         multiset = " MULTISET" if expression.args.get("multiset") else ""
         global_temporary = " GLOBAL TEMPORARY" if expression.args.get("global_temporary") else ""
         volatile = " VOLATILE" if expression.args.get("volatile") else ""
-        properties = self.sql(expression, "properties")
         data = expression.args.get("data")
         if data is None:
             data = ""
@@ -658,19 +677,24 @@ class Generator:
         return f"PARTITION({keys})"
 
     def properties_sql(self, expression: exp.Properties) -> str:
+        before_properties = []
         root_properties = []
         with_properties = []
 
         for p in expression.expressions:
             p_class = p.__class__
-            if p_class in self.WITH_PROPERTIES:
+            if p_class in self.BEFORE_PROPERTIES:
+                before_properties.append(p)
+            elif p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
             elif p_class in self.ROOT_PROPERTIES:
                 root_properties.append(p)
 
-        return self.root_properties(
-            exp.Properties(expressions=root_properties)
-        ) + self.with_properties(exp.Properties(expressions=with_properties))
+        return (
+            self.properties(exp.Properties(expressions=before_properties), before=True)
+            + self.root_properties(exp.Properties(expressions=root_properties))
+            + self.with_properties(exp.Properties(expressions=with_properties))
+        )
 
     def root_properties(self, properties: exp.Properties) -> str:
         if properties.expressions:
@@ -678,13 +702,17 @@ class Generator:
         return ""
 
     def properties(
-        self, properties: exp.Properties, prefix: str = "", sep: str = ", ", suffix: str = ""
+        self,
+        properties: exp.Properties,
+        prefix: str = "",
+        sep: str = ", ",
+        suffix: str = "",
+        before: bool = False,
     ) -> str:
         if properties.expressions:
             expressions = self.expressions(properties, sep=sep, indent=False)
-            return (
-                f"{prefix}{' ' if prefix and prefix != ' ' else ''}{self.wrap(expressions)}{suffix}"
-            )
+            expressions = expressions if before else self.wrap(expressions)
+            return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
@@ -706,13 +734,7 @@ class Generator:
         options = f" {options}" if options else ""
         return f"LIKE {self.sql(expression, 'this')}{options}"
 
-    def options_sql(self, expression: exp.Options) -> str:
-        options = []
-        for option in expression.expressions:
-            options.append(self.sql(option))
-        return f", {', '.join(options)} "
-
-    def afterjournaloption_sql(self, expression: exp.AfterJournalOption) -> str:
+    def afterjournalproperty_sql(self, expression: exp.AfterJournalProperty) -> str:
         no = "NO " if expression.args.get("no") else ""
         dual = "DUAL " if expression.args.get("dual") else ""
         local = ""
@@ -720,16 +742,16 @@ class Generator:
             local = "LOCAL " if expression.args.get("local") else "NOT LOCAL "
         return f"{no}{dual}{local}AFTER JOURNAL"
 
-    def checksumoption_sql(self, expression: exp.ChecksumOption) -> str:
+    def checksumproperty_sql(self, expression: exp.ChecksumProperty) -> str:
         if expression.args.get("default"):
-            option = "DEFAULT"
+            property = "DEFAULT"
         elif expression.args.get("on"):
-            option = "ON"
+            property = "ON"
         else:
-            option = "OFF"
-        return f"CHECKSUM={option}"
+            property = "OFF"
+        return f"CHECKSUM={property}"
 
-    def mergeblockratiooption_sql(self, expression: exp.MergeBlockRatioOption) -> str:
+    def mergeblockratioproperty_sql(self, expression: exp.MergeBlockRatioProperty) -> str:
         if expression.args.get("no"):
             return "NO MERGEBLOCKRATIO"
         elif expression.args.get("default"):
@@ -737,24 +759,24 @@ class Generator:
         else:
             return f"MERGEBLOCKRATIO={self.sql(expression, 'this')}{' PERCENT' if expression.args.get('percent') else ''}"
 
-    def datablocksizeoption_sql(self, expression: exp.DataBlocksizeOption) -> str:
+    def datablocksizeproperty_sql(self, expression: exp.DataBlocksizeProperty) -> str:
         default = expression.args.get("default")
         min = expression.args.get("min")
         if default is not None or min is not None:
             if default:
-                option = "DEFAULT"
+                property = "DEFAULT"
             elif min:
-                option = "MINIMUM"
+                property = "MINIMUM"
             else:
-                option = "MAXIMUM"
-            return f"{option} DATABLOCKSIZE"
+                property = "MAXIMUM"
+            return f"{property} DATABLOCKSIZE"
         else:
             units = ""
             if expression.args.get("units"):
                 units = f" {expression.args.get('units')}"
             return f"DATABLOCKSIZE={self.sql(expression, 'size')}{units}"
 
-    def blockcompressionoption_sql(self, expression: exp.BlockCompressionOption) -> str:
+    def blockcompressionproperty_sql(self, expression: exp.BlockCompressionProperty) -> str:
         autotemp = expression.args.get("autotemp")
         always = expression.args.get("always")
         default = expression.args.get("default")
@@ -762,18 +784,18 @@ class Generator:
         never = expression.args.get("never")
 
         if autotemp is not None:
-            option = f"AUTOTEMP({self.expressions(autotemp)})"
+            property = f"AUTOTEMP({self.expressions(autotemp)})"
         elif always:
-            option = "ALWAYS"
+            property = "ALWAYS"
         elif default:
-            option = "DEFAULT"
+            property = "DEFAULT"
         elif manual:
-            option = "MANUAL"
+            property = "MANUAL"
         elif never:
-            option = "NEVER"
-        return f"BLOCKCOMPRESSION={option}"
+            property = "NEVER"
+        return f"BLOCKCOMPRESSION={property}"
 
-    def isolatedloadingoption_sql(self, expression: exp.IsolatedLoadingOption) -> str:
+    def isolatedloadingproperty_sql(self, expression: exp.IsolatedLoadingProperty) -> str:
         no = expression.args.get("no")
         no = f"{' NO' if no else ''}"
         concurrent = expression.args.get("concurrent")

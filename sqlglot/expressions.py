@@ -764,7 +764,6 @@ class Create(Expression):
         "global_temporary": False,
         "volatile": False,
         "exists": False,
-        "options": False,
         "properties": False,
         "temporary": False,
         "transient": False,
@@ -1362,8 +1361,58 @@ class SerdeProperties(Property):
     arg_types = {"expressions": True}
 
 
+class FallbackProperty(Property):
+    arg_types = {"no": True, "protection": False}
+
+
+class WithJournalTableProperty(Property):
+    arg_types = {"this": True}
+
+
+class LogProperty(Property):
+    arg_types = {"no": True}
+
+
+class JournalProperty(Property):
+    arg_types = {"no": True, "dual": False, "before": False}
+
+
+class AfterJournalProperty(Property):
+    arg_types = {"no": True, "dual": False, "local": False}
+
+
+class ChecksumProperty(Property):
+    arg_types = {"on": False, "default": False}
+
+
+class FreespaceProperty(Property):
+    arg_types = {"this": True, "percent": False}
+
+
+class MergeBlockRatioProperty(Property):
+    arg_types = {"this": False, "no": False, "default": False, "percent": False}
+
+
+class DataBlocksizeProperty(Property):
+    arg_types = {"size": False, "units": False, "min": False, "default": False}
+
+
+class BlockCompressionProperty(Property):
+    arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
+
+
+class IsolatedLoadingProperty(Property):
+    arg_types = {
+        "no": True,
+        "concurrent": True,
+        "for_all": True,
+        "for_insert": True,
+        "for_none": True,
+    }
+
+
 class Properties(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "before": False}
 
     NAME_TO_PROPERTY = {
         "AUTO_INCREMENT": AutoIncrementProperty,
@@ -1396,64 +1445,6 @@ class Properties(Expression):
                 expressions.append(Property(this=Literal.string(key), value=convert(value)))
 
         return cls(expressions=expressions)
-
-
-class Option(Expression):
-    arg_types = {"this": True}
-
-
-class FallbackOption(Option):
-    arg_types = {"no": True, "protection": False}
-
-
-class WithJournalTableOption(Option):
-    arg_types = {"this": True}
-
-
-class LogOption(Option):
-    arg_types = {"no": True}
-
-
-class JournalOption(Option):
-    arg_types = {"no": True, "dual": False, "before": False}
-
-
-class AfterJournalOption(Option):
-    arg_types = {"no": True, "dual": False, "local": False}
-
-
-class ChecksumOption(Option):
-    arg_types = {"on": False, "default": False}
-
-
-class FreespaceOption(Option):
-    arg_types = {"this": True, "percent": False}
-
-
-class MergeBlockRatioOption(Option):
-    arg_types = {"this": False, "no": False, "default": False, "percent": False}
-
-
-class DataBlocksizeOption(Option):
-    arg_types = {"size": False, "units": False, "min": False, "default": False}
-
-
-class BlockCompressionOption(Option):
-    arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
-
-
-class IsolatedLoadingOption(Option):
-    arg_types = {
-        "no": True,
-        "concurrent": True,
-        "for_all": True,
-        "for_insert": True,
-        "for_none": True,
-    }
-
-
-class Options(Expression):
-    arg_types = {"expressions": True}
 
 
 class Qualify(Expression):

@@ -759,6 +759,10 @@ class Create(Expression):
         "this": True,
         "kind": True,
         "expression": False,
+        "set": False,
+        "multiset": False,
+        "global_temporary": False,
+        "volatile": False,
         "exists": False,
         "properties": False,
         "temporary": False,
@@ -1369,8 +1373,58 @@ class SerdeProperties(Property):
     arg_types = {"expressions": True}
 
 
+class FallbackProperty(Property):
+    arg_types = {"no": True, "protection": False}
+
+
+class WithJournalTableProperty(Property):
+    arg_types = {"this": True}
+
+
+class LogProperty(Property):
+    arg_types = {"no": True}
+
+
+class JournalProperty(Property):
+    arg_types = {"no": True, "dual": False, "before": False}
+
+
+class AfterJournalProperty(Property):
+    arg_types = {"no": True, "dual": False, "local": False}
+
+
+class ChecksumProperty(Property):
+    arg_types = {"on": False, "default": False}
+
+
+class FreespaceProperty(Property):
+    arg_types = {"this": True, "percent": False}
+
+
+class MergeBlockRatioProperty(Property):
+    arg_types = {"this": False, "no": False, "default": False, "percent": False}
+
+
+class DataBlocksizeProperty(Property):
+    arg_types = {"size": False, "units": False, "min": False, "default": False}
+
+
+class BlockCompressionProperty(Property):
+    arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
+
+
+class IsolatedLoadingProperty(Property):
+    arg_types = {
+        "no": True,
+        "concurrent": True,
+        "for_all": True,
+        "for_insert": True,
+        "for_none": True,
+    }
+
+
 class Properties(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "before": False}
 
     NAME_TO_PROPERTY = {
         "AUTO_INCREMENT": AutoIncrementProperty,

@@ -65,6 +65,11 @@ class Generator:
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.VolatilityProperty: lambda self, e: e.name,
+        exp.FallbackProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}FALLBACK{' PROTECTION' if e.args.get('protection') else ''}",
+        exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
+        exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
+        exp.JournalProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}{'DUAL ' if e.args.get('dual') else ''}{'BEFORE ' if e.args.get('before') else ''}JOURNAL",
+        exp.FreespaceProperty: lambda self, e: f"FREESPACE={self.sql(e, 'this')}{' PERCENT' if e.args.get('percent') else ''}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
@@ -96,6 +101,20 @@ class Generator:
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}
 
     STRUCT_DELIMITER = ("<", ">")
+
+    BEFORE_PROPERTIES = {
+        exp.FallbackProperty,
+        exp.WithJournalTableProperty,
+        exp.LogProperty,
+        exp.JournalProperty,
+        exp.AfterJournalProperty,
+        exp.ChecksumProperty,
+        exp.FreespaceProperty,
+        exp.MergeBlockRatioProperty,
+        exp.DataBlocksizeProperty,
+        exp.BlockCompressionProperty,
+        exp.IsolatedLoadingProperty,
+    }
 
     ROOT_PROPERTIES = {
         exp.ReturnsProperty,
@@ -438,8 +457,20 @@ class Generator:
         return "UNIQUE"
 
     def create_sql(self, expression: exp.Create) -> str:
-        this = self.sql(expression, "this")
         kind = self.sql(expression, "kind").upper()
+        has_before_properties = expression.args.get("properties")
+        has_before_properties = (
+            has_before_properties.args.get("before") if has_before_properties else None
+        )
+        if kind == "TABLE" and has_before_properties:
+            this_name = self.sql(expression.this, "this")
+            this_properties = self.sql(expression, "properties")
+            this_schema = f"({self.expressions(expression.this)})"
+            this = f"{this_name}, {this_properties} {this_schema}"
+            properties = ""
+        else:
+            this = self.sql(expression, "this")
+            properties = self.sql(expression, "properties")
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
@@ -452,7 +483,10 @@ class Generator:
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
-        properties = self.sql(expression, "properties")
+        set_ = " SET" if expression.args.get("set") else ""
+        multiset = " MULTISET" if expression.args.get("multiset") else ""
+        global_temporary = " GLOBAL TEMPORARY" if expression.args.get("global_temporary") else ""
+        volatile = " VOLATILE" if expression.args.get("volatile") else ""
         data = expression.args.get("data")
         if data is None:
             data = ""
@@ -471,7 +505,7 @@ class Generator:
 
         indexes = expression.args.get("indexes")
         index_sql = ""
-        if indexes is not None:
+        if indexes:
             indexes_sql = []
             for index in indexes:
                 ind_unique = " UNIQUE" if index.args.get("unique") else ""
@@ -496,6 +530,10 @@ class Generator:
                 external,
                 unique,
                 materialized,
+                set_,
+                multiset,
+                global_temporary,
+                volatile,
             )
         )
         no_schema_binding = (
@@ -630,19 +668,24 @@ class Generator:
         return f"PARTITION({self.expressions(expression)})"
 
     def properties_sql(self, expression: exp.Properties) -> str:
+        before_properties = []
         root_properties = []
         with_properties = []
 
         for p in expression.expressions:
             p_class = p.__class__
-            if p_class in self.WITH_PROPERTIES:
+            if p_class in self.BEFORE_PROPERTIES:
+                before_properties.append(p)
+            elif p_class in self.WITH_PROPERTIES:
                 with_properties.append(p)
             elif p_class in self.ROOT_PROPERTIES:
                 root_properties.append(p)
 
-        return self.root_properties(
-            exp.Properties(expressions=root_properties)
-        ) + self.with_properties(exp.Properties(expressions=with_properties))
+        return (
+            self.properties(exp.Properties(expressions=before_properties), before=True)
+            + self.root_properties(exp.Properties(expressions=root_properties))
+            + self.with_properties(exp.Properties(expressions=with_properties))
+        )
 
     def root_properties(self, properties: exp.Properties) -> str:
         if properties.expressions:
@@ -650,13 +693,17 @@ class Generator:
         return ""
 
     def properties(
-        self, properties: exp.Properties, prefix: str = "", sep: str = ", ", suffix: str = ""
+        self,
+        properties: exp.Properties,
+        prefix: str = "",
+        sep: str = ", ",
+        suffix: str = "",
+        before: bool = False,
     ) -> str:
         if properties.expressions:
             expressions = self.expressions(properties, sep=sep, indent=False)
-            return (
-                f"{prefix}{' ' if prefix and prefix != ' ' else ''}{self.wrap(expressions)}{suffix}"
-            )
+            expressions = expressions if before else self.wrap(expressions)
+            return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
@@ -677,6 +724,82 @@ class Generator:
         options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)
         options = f" {options}" if options else ""
         return f"LIKE {self.sql(expression, 'this')}{options}"
+
+    def afterjournalproperty_sql(self, expression: exp.AfterJournalProperty) -> str:
+        no = "NO " if expression.args.get("no") else ""
+        dual = "DUAL " if expression.args.get("dual") else ""
+        local = ""
+        if expression.args.get("local") is not None:
+            local = "LOCAL " if expression.args.get("local") else "NOT LOCAL "
+        return f"{no}{dual}{local}AFTER JOURNAL"
+
+    def checksumproperty_sql(self, expression: exp.ChecksumProperty) -> str:
+        if expression.args.get("default"):
+            property = "DEFAULT"
+        elif expression.args.get("on"):
+            property = "ON"
+        else:
+            property = "OFF"
+        return f"CHECKSUM={property}"
+
+    def mergeblockratioproperty_sql(self, expression: exp.MergeBlockRatioProperty) -> str:
+        if expression.args.get("no"):
+            return "NO MERGEBLOCKRATIO"
+        if expression.args.get("default"):
+            return "DEFAULT MERGEBLOCKRATIO"
+
+        percent = " PERCENT" if expression.args.get("percent") else ""
+        return f"MERGEBLOCKRATIO={self.sql(expression, 'this')}{percent}"
+
+    def datablocksizeproperty_sql(self, expression: exp.DataBlocksizeProperty) -> str:
+        default = expression.args.get("default")
+        min = expression.args.get("min")
+        if default is not None or min is not None:
+            if default:
+                property = "DEFAULT"
+            elif min:
+                property = "MINIMUM"
+            else:
+                property = "MAXIMUM"
+            return f"{property} DATABLOCKSIZE"
+        else:
+            units = expression.args.get("units")
+            units = f" units" if units else ""
+            return f"DATABLOCKSIZE={self.sql(expression, 'size')}{units}"
+
+    def blockcompressionproperty_sql(self, expression: exp.BlockCompressionProperty) -> str:
+        autotemp = expression.args.get("autotemp")
+        always = expression.args.get("always")
+        default = expression.args.get("default")
+        manual = expression.args.get("manual")
+        never = expression.args.get("never")
+
+        if autotemp is not None:
+            property = f"AUTOTEMP({self.expressions(autotemp)})"
+        elif always:
+            property = "ALWAYS"
+        elif default:
+            property = "DEFAULT"
+        elif manual:
+            property = "MANUAL"
+        elif never:
+            property = "NEVER"
+        return f"BLOCKCOMPRESSION={property}"
+
+    def isolatedloadingproperty_sql(self, expression: exp.IsolatedLoadingProperty) -> str:
+        no = expression.args.get("no")
+        no = " NO" if no else ""
+        concurrent = expression.args.get("concurrent")
+        concurrent = " CONCURRENT" if concurrent else ""
+
+        for_ = ""
+        if expression.args.get("for_all"):
+            for_ = " FOR ALL"
+        elif expression.args.get("for_insert"):
+            for_ = " FOR INSERT"
+        elif expression.args.get("for_none"):
+            for_ = " FOR NONE"
+        return f"WITH{no}{concurrent} ISOLATED LOADING{for_}"
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")

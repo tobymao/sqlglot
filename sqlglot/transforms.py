@@ -27,20 +27,18 @@ def unalias_group(expression: exp.Expression) -> exp.Expression:
     """
     if isinstance(expression, exp.Group) and isinstance(expression.parent, exp.Select):
         aliased_selects = {
-            e.alias: (i, e.this)
+            e.alias: i
             for i, e in enumerate(expression.parent.expressions, start=1)
             if isinstance(e, exp.Alias)
         }
 
-        expression = expression.copy()
-
-        top_level_expression = None
-        for item, parent, _ in expression.walk(bfs=False):
-            top_level_expression = item if isinstance(parent, exp.Group) else top_level_expression
-            if isinstance(item, exp.Column) and not item.table:
-                alias_index, col_expression = aliased_selects.get(item.name, (None, None))
-                if alias_index and top_level_expression != col_expression:
-                    item.replace(exp.Literal.number(alias_index))
+        for group_by in expression.expressions:
+            if (
+                isinstance(group_by, exp.Column)
+                and not group_by.table
+                and group_by.name in aliased_selects
+            ):
+                group_by.replace(exp.Literal.number(aliased_selects.get(group_by.name)))
 
     return expression
 

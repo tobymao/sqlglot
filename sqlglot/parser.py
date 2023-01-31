@@ -1259,11 +1259,9 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.PARTITION):
             return None
 
-        def parse_values() -> exp.Property:
-            props = self._parse_csv(self._parse_field, sep=TokenType.EQ)
-            return exp.Property(this=seq_get(props, 0), value=seq_get(props, 1))
-
-        return self.expression(exp.Partition, this=self._parse_wrapped_csv(parse_values))
+        return self.expression(
+            exp.Partition, expressions=self._parse_wrapped_csv(self._parse_conjunction)
+        )
 
     def _parse_value(self) -> exp.Expression:
         if self._match(TokenType.L_PAREN):
@@ -3161,6 +3159,12 @@ class Parser(metaclass=_Parser):
     def _parse_drop_column(self) -> t.Optional[exp.Expression]:
         return self._match(TokenType.DROP) and self._parse_drop(default_kind="COLUMN")
 
+    # https://docs.aws.amazon.com/athena/latest/ug/alter-table-drop-partition.html
+    def _parse_drop_partition(self, exists: t.Optional[bool] = None) -> exp.Expression:
+        return self.expression(
+            exp.DropPartition, expressions=self._parse_csv(self._parse_partition), exists=exists
+        )
+
     def _parse_add_constraint(self) -> t.Optional[exp.Expression]:
         this = None
         kind = self._prev.token_type
@@ -3201,8 +3205,16 @@ class Parser(metaclass=_Parser):
             else:
                 self._retreat(index)
                 actions = self._parse_csv(self._parse_add_column)
-        elif self._match_text_seq("DROP", advance=False):
-            actions = self._parse_csv(self._parse_drop_column)
+        elif self._match_text_seq("DROP"):
+            partition_exists = self._parse_exists()
+
+            if self._match(TokenType.PARTITION, advance=False):
+                actions = self._parse_csv(
+                    lambda: self._parse_drop_partition(exists=partition_exists)
+                )
+            else:
+                self._retreat(index)
+                actions = self._parse_csv(self._parse_drop_column)
         elif self._match_text_seq("RENAME", "TO"):
             actions = self.expression(exp.RenameTable, this=self._parse_table(schema=True))
         elif self._match_text_seq("ALTER"):

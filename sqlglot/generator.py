@@ -771,7 +771,7 @@ class Generator:
                 property = "MAXIMUM"
             return f"{property} DATABLOCKSIZE"
         else:
-            units = expression.args.get("units"):
+            units = expression.args.get("units")
             units = f" units" if units else ""
             return f"DATABLOCKSIZE={self.sql(expression, 'size')}{units}"
 

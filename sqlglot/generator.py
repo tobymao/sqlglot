@@ -753,10 +753,11 @@ class Generator:
     def mergeblockratioproperty_sql(self, expression: exp.MergeBlockRatioProperty) -> str:
         if expression.args.get("no"):
             return "NO MERGEBLOCKRATIO"
-        elif expression.args.get("default"):
+        if expression.args.get("default"):
             return "DEFAULT MERGEBLOCKRATIO"
-        else:
-            return f"MERGEBLOCKRATIO={self.sql(expression, 'this')}{' PERCENT' if expression.args.get('percent') else ''}"
+
+        percent = " PERCENT" if expression.args.get("percent") else ""
+        return f"MERGEBLOCKRATIO={self.sql(expression, 'this')}{percent}"
 
     def datablocksizeproperty_sql(self, expression: exp.DataBlocksizeProperty) -> str:
         default = expression.args.get("default")

@@ -113,13 +113,6 @@ class Generator:
         exp.TableFormatProperty,
     }
 
-    WITH_SINGLE_ALTER_TABLE_ACTION = {
-        exp.AlterColumn,
-        exp.AddConstraint,
-        exp.DropPartition,
-        exp.RenameTable,
-    }
-
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
@@ -1414,14 +1407,10 @@ class Generator:
             actions = self.expressions(expression, "actions", prefix="ADD COLUMN ")
         elif isinstance(actions[0], exp.Schema):
             actions = self.expressions(expression, "actions", prefix="ADD COLUMNS ")
-        elif isinstance(actions[0], exp.Drop):
-            actions = self.expressions(expression, "actions")
         elif isinstance(actions[0], exp.Delete):
             actions = self.expressions(expression, "actions", flat=True)
-        elif actions[0].__class__ in self.WITH_SINGLE_ALTER_TABLE_ACTION:
-            actions = self.sql(actions[0])
         else:
-            self.unsupported(f"Unsupported ALTER TABLE action {actions[0].__class__.__name__}")
+            actions = self.expressions(expression, "actions")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {actions}"

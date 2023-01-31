@@ -113,7 +113,12 @@ class Generator:
         exp.TableFormatProperty,
     }
 
-    WITH_SINGLE_ALTER_TABLE_ACTION = (exp.AlterColumn, exp.RenameTable, exp.AddConstraint)
+    WITH_SINGLE_ALTER_TABLE_ACTION = {
+        exp.AlterColumn,
+        exp.AddConstraint,
+        exp.DropPartition,
+        exp.RenameTable,
+    }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
@@ -629,13 +634,7 @@ class Generator:
         return f"N{self.sql(expression, 'this')}"
 
     def partition_sql(self, expression: exp.Partition) -> str:
-        keys = csv(
-            *[
-                f"{prop.name}={self.sql(prop, 'value')}" if prop.args.get("value") else prop.name
-                for prop in expression.this
-            ]
-        )
-        return f"PARTITION({keys})"
+        return f"PARTITION({self.expressions(expression, 'this')})"
 
     def properties_sql(self, expression: exp.Properties) -> str:
         root_properties = []
@@ -1419,13 +1418,18 @@ class Generator:
             actions = self.expressions(expression, "actions")
         elif isinstance(actions[0], exp.Delete):
             actions = self.expressions(expression, "actions", flat=True)
-        elif isinstance(actions[0], self.WITH_SINGLE_ALTER_TABLE_ACTION):
+        elif actions[0].__class__ in self.WITH_SINGLE_ALTER_TABLE_ACTION:
             actions = self.sql(actions[0])
         else:
             self.unsupported(f"Unsupported ALTER TABLE action {actions[0].__class__.__name__}")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {actions}"
+
+    def droppartition_sql(self, expression: exp.DropPartition) -> str:
+        expressions = self.expressions(expression)
+        exists = " IF EXISTS " if expression.args.get("exists") else " "
+        return f"DROP{exists}{expressions}"
 
     def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
         this = self.sql(expression, "this")

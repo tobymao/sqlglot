@@ -2472,6 +2472,10 @@ class AddConstraint(Expression):
     arg_types = {"this": False, "expression": False, "enforced": False}
 
 
+class DropPartition(Expression):
+    arg_types = {"expressions": True, "exists": False}
+
+
 # Binary expressions like (ADD a b)
 class Binary(Expression):
     arg_types = {"this": True, "expression": True}

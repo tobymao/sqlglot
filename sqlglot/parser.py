@@ -1132,7 +1132,7 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("LOG")
         return self.expression(exp.LogProperty, no=no)
 
-    def _parse_journal(self, no=False, dual=False, before=False) -> exp.Expression:
+    def _parse_journal(self, no=False, dual=False) -> exp.Expression:
         before = self._match_text_seq("BEFORE")
         self._match_text_seq("JOURNAL")
         return self.expression(exp.JournalProperty, no=no, dual=dual, before=before)

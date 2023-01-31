@@ -65,11 +65,8 @@ class Generator:
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.VolatilityProperty: lambda self, e: e.name,
-        exp.FallbackProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}FALLBACK{' PROTECTION' if e.args.get('protection') else ''}",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
-        exp.JournalProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}{'DUAL ' if e.args.get('dual') else ''}{'BEFORE ' if e.args.get('before') else ''}JOURNAL",
-        exp.FreespaceProperty: lambda self, e: f"FREESPACE={self.sql(e, 'this')}{' PERCENT' if e.args.get('percent') else ''}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
@@ -724,6 +721,22 @@ class Generator:
         options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)
         options = f" {options}" if options else ""
         return f"LIKE {self.sql(expression, 'this')}{options}"
+
+    def fallbackproperty_sql(self, expression: exp.FallbackProperty) -> str:
+        no = "NO " if expression.args.get("no") else ""
+        protection = " PROTECTION" if expression.args.get("protection") else ""
+        return f"{no}FALLBACK{protection}"
+
+    def journalproperty_sql(self, expression: exp.JournalProperty) -> str:
+        no = "NO " if expression.args.get("no") else ""
+        dual = "DUAL " if expression.args.get("dual") else ""
+        before = "BEFORE " if expression.args.get("before") else ""
+        return f"{no}{dual}{before}JOURNAL"
+
+    def freespaceproperty_sql(self, expression: exp.FreespaceProperty) -> str:
+        freespace = self.sql(expression, "this")
+        percent = " PERCENT" if expression.args.get("percent") else ""
+        return f"FREESPACE={freespace}{percent}"
 
     def afterjournalproperty_sql(self, expression: exp.AfterJournalProperty) -> str:
         no = "NO " if expression.args.get("no") else ""

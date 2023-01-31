@@ -343,6 +343,13 @@ class TestHive(Validator):
         )
         self.validate_identity(
             "INSERT OVERWRITE TABLE zipcodes PARTITION(state=0) VALUES (896, 'US', 'TAMPA', 33607)"
+            "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, b GROUPING SETS ((a, b), a)"
+        )
+        self.validate_identity(
+            "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, b GROUPING SETS ((t.a, b), a)"
+        )
+        self.validate_identity(
+            "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, FOO(b) GROUPING SETS ((a, FOO(b)), a)"
         )
         self.validate_all(
             "SELECT A.1a AS b FROM test_a AS A",
@@ -619,5 +626,22 @@ class TestHive(Validator):
                 "presto": "SELECT * FROM x AS foo TABLESAMPLE(1)",
                 "hive": "SELECT * FROM x TABLESAMPLE(1) AS foo",
                 "spark": "SELECT * FROM x TABLESAMPLE(1) AS foo",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x TABLESAMPLE(1) AS foo",
+            read={
+                "presto": "SELECT * FROM x AS foo TABLESAMPLE(1)",
+            },
+            write={
+                "presto": "SELECT * FROM x AS foo TABLESAMPLE(1)",
+                "hive": "SELECT * FROM x TABLESAMPLE(1) AS foo",
+                "spark": "SELECT * FROM x TABLESAMPLE(1) AS foo",
+            },
+        )
+        self.validate_all(
+            "SELECT a, SUM(c) FROM t GROUP BY a, DATE_FORMAT(b, 'yyyy') GROUPING SETS ((a, DATE_FORMAT(b, 'yyyy')), a)",
+            write={
+                "hive": "SELECT a, SUM(c) FROM t GROUP BY a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy') GROUPING SETS ((a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy')), a)",
             },
         )

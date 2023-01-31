@@ -1260,7 +1260,7 @@ class Parser(metaclass=_Parser):
             return None
 
         def parse_values() -> exp.Property:
-            props = self._parse_csv(self._parse_var_or_string, sep=TokenType.EQ)
+            props = self._parse_csv(self._parse_field, sep=TokenType.EQ)
             return exp.Property(this=seq_get(props, 0), value=seq_get(props, 1))
 
         return self.expression(exp.Partition, this=self._parse_wrapped_csv(parse_values))

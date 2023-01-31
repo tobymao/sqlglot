@@ -338,6 +338,12 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity(
+            "INSERT OVERWRITE TABLE zipcodes PARTITION(state='0') VALUES (896, 'US', 'TAMPA', 33607)"
+        )
+        self.validate_identity(
+            "INSERT OVERWRITE TABLE zipcodes PARTITION(state=0) VALUES (896, 'US', 'TAMPA', 33607)"
+        )
         self.validate_all(
             "SELECT A.1a AS b FROM test_a AS A",
             write={

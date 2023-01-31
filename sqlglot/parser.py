@@ -1102,9 +1102,10 @@ class Parser(metaclass=_Parser):
 
         while True:
             if before:
-                identified_property = self._parse_csv(self._parse_property_before)
+                self._match(TokenType.COMMA)
+                identified_property = self._parse_property_before()
             else:
-                identified_property = [self._parse_property()]
+                identified_property = self._parse_property()
 
             if not identified_property:
                 break

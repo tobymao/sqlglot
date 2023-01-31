@@ -832,10 +832,21 @@ class Generator:
         grouping_sets = (
             f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}" if grouping_sets else ""
         )
-        cube = self.expressions(expression, key="cube", indent=False)
-        cube = f"{self.seg('CUBE')} {self.wrap(cube)}" if cube else ""
-        rollup = self.expressions(expression, key="rollup", indent=False)
-        rollup = f"{self.seg('ROLLUP')} {self.wrap(rollup)}" if rollup else ""
+
+        cube = expression.args.get("cube")
+        if cube is True:
+            cube = self.seg("WITH CUBE")
+        else:
+            cube = self.expressions(expression, key="cube", indent=False)
+            cube = f"{self.seg('CUBE')} {self.wrap(cube)}" if cube else ""
+
+        rollup = expression.args.get("rollup")
+        if rollup is True:
+            rollup = self.seg("WITH ROLLUP")
+        else:
+            rollup = self.expressions(expression, key="rollup", indent=False)
+            rollup = f"{self.seg('ROLLUP')} {self.wrap(rollup)}" if rollup else ""
+
         return f"{group_by}{grouping_sets}{cube}{rollup}"
 
     def having_sql(self, expression: exp.Having) -> str:

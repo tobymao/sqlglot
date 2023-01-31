@@ -1864,12 +1864,19 @@ class Parser(metaclass=_Parser):
         if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
             return None
 
+        expressions = self._parse_csv(self._parse_conjunction)
+        grouping_sets = self._parse_grouping_sets()
+
+        with_ = self._match(TokenType.WITH)
+        cube = self._match(TokenType.CUBE) and (with_ or self._parse_wrapped_id_vars())
+        rollup = self._match(TokenType.ROLLUP) and (with_ or self._parse_wrapped_id_vars())
+
         return self.expression(
             exp.Group,
-            expressions=self._parse_csv(self._parse_conjunction),
-            grouping_sets=self._parse_grouping_sets(),
-            cube=self._match(TokenType.CUBE) and self._parse_wrapped_id_vars(),
-            rollup=self._match(TokenType.ROLLUP) and self._parse_wrapped_id_vars(),
+            expressions=expressions,
+            grouping_sets=grouping_sets,
+            cube=cube,
+            rollup=rollup,
         )
 
     def _parse_grouping_sets(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:

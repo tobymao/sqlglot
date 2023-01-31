@@ -339,6 +339,10 @@ class TestHive(Validator):
 
     def test_hive(self):
         self.validate_identity(
+            "INSERT OVERWRITE TABLE zipcodes PARTITION(state='0') VALUES (896, 'US', 'TAMPA', 33607)"
+        )
+        self.validate_identity(
+            "INSERT OVERWRITE TABLE zipcodes PARTITION(state=0) VALUES (896, 'US', 'TAMPA', 33607)"
             "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, b GROUPING SETS ((a, b), a)"
         )
         self.validate_identity(

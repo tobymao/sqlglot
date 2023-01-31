@@ -1444,7 +1444,7 @@ class Parser(metaclass=_Parser):
             return None
 
         def parse_values() -> exp.Property:
-            props = self._parse_csv(self._parse_var_or_string, sep=TokenType.EQ)
+            props = self._parse_csv(self._parse_field, sep=TokenType.EQ)
             return exp.Property(this=seq_get(props, 0), value=seq_get(props, 1))
 
         return self.expression(exp.Partition, this=self._parse_wrapped_csv(parse_values))
@@ -2064,11 +2064,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_grouping_set(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.L_PAREN):
-            grouping_set = self._parse_csv(self._parse_id_var)
+            grouping_set = self._parse_csv(self._parse_column)
             self._match_r_paren()
             return self.expression(exp.Tuple, expressions=grouping_set)
 
-        return self._parse_id_var()
+        return self._parse_column()
 
     def _parse_having(self, skip_having_token: bool = False) -> t.Optional[exp.Expression]:
         if not skip_having_token and not self._match(TokenType.HAVING):
@@ -3009,7 +3009,7 @@ class Parser(metaclass=_Parser):
             position = self._prev.text.upper()
 
         expression = self._parse_term()
-        if self._match(TokenType.FROM):
+        if self._match_set((TokenType.FROM, TokenType.COMMA)):
             this = self._parse_term()
         else:
             this = expression

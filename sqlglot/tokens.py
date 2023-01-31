@@ -22,6 +22,7 @@ class TokenType(AutoName):
     DCOLON = auto()
     SEMICOLON = auto()
     STAR = auto()
+    BACKSLASH = auto()
     SLASH = auto()
     LT = auto()
     LTE = auto()
@@ -219,6 +220,7 @@ class TokenType(AutoName):
     LOCAL = auto()
     LOCATION = auto()
     MAP = auto()
+    MATCH_RECOGNIZE = auto()
     MATERIALIZED = auto()
     MERGE = auto()
     MOD = auto()
@@ -414,6 +416,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "+": TokenType.PLUS,
         ";": TokenType.SEMICOLON,
         "/": TokenType.SLASH,
+        "\\": TokenType.BACKSLASH,
         "*": TokenType.STAR,
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
@@ -448,9 +451,11 @@ class Tokenizer(metaclass=_Tokenizer):
         },
         **{
             f"{prefix}{key}": TokenType.BLOCK_END
-            for key in ("}}", "%}", "#}")
+            for key in ("%}", "#}")
             for prefix in ("", "+", "-")
         },
+        "+}}": TokenType.BLOCK_END,
+        "-}}": TokenType.BLOCK_END,
         "/*+": TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,

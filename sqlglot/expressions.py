@@ -1236,6 +1236,18 @@ class Lateral(UDTF):
     arg_types = {"this": True, "view": False, "outer": False, "alias": False}
 
 
+class MatchRecognize(Expression):
+    arg_types = {
+        "partition_by": False,
+        "order": False,
+        "measures": False,
+        "rows": False,
+        "after": False,
+        "pattern": False,
+        "define": False,
+    }
+
+
 # Clickhouse FROM FINAL modifier
 # https://clickhouse.com/docs/en/sql-reference/statements/select/from/#final-modifier
 class Final(Expression):
@@ -1564,6 +1576,7 @@ class Subqueryable(Unionable):
 
 
 QUERY_MODIFIERS = {
+    "match": False,
     "laterals": False,
     "joins": False,
     "pivots": False,
@@ -3415,7 +3428,7 @@ class Year(Func):
 
 
 class Use(Expression):
-    pass
+    arg_types = {"this": True, "kind": False}
 
 
 class Merge(Expression):
@@ -4320,6 +4333,36 @@ def replace_placeholders(expression, *args, **kwargs):
         return node
 
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
+
+
+def expand(expression: Expression, sources: t.Dict[str, Subqueryable], copy=True) -> Expression:
+    """Transforms an expression by expanding all referenced sources into subqueries.
+
+    Examples:
+        >>> from sqlglot import parse_one
+        >>> expand(parse_one("select * from x AS z"), {"x": parse_one("select * from y")}).sql()
+        'SELECT * FROM (SELECT * FROM y) AS z /* source: x */'
+
+    Args:
+        expression: The expression to expand.
+        sources: A dictionary of name to Subqueryables.
+        copy: Whether or not to copy the expression during transformation. Defaults to True.
+
+    Returns:
+        The transformed expression.
+    """
+
+    def _expand(node: Expression):
+        if isinstance(node, Table):
+            name = table_name(node)
+            source = sources.get(name)
+            if source:
+                subquery = source.subquery(node.alias or name)
+                subquery.comments = [f"source: {name}"]
+                return subquery
+        return node
+
+    return expression.transform(_expand, copy=copy)
 
 
 def func(name: str, *args, dialect: t.Optional[Dialect | str] = None, **kwargs) -> Func:

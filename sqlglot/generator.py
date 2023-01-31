@@ -141,7 +141,6 @@ class Generator:
         "time_mapping",
         "time_trie",
         "pretty",
-        "configured_pretty",
         "quote_start",
         "quote_end",
         "identifier_start",
@@ -196,7 +195,6 @@ class Generator:
         self.time_mapping = time_mapping or {}
         self.time_trie = time_trie
         self.pretty = pretty if pretty is not None else sqlglot.pretty
-        self.configured_pretty = self.pretty
         self.quote_start = quote_start or "'"
         self.quote_end = quote_end or "'"
         self.identifier_start = identifier_start or '"'
@@ -607,13 +605,14 @@ class Generator:
 
     def delete_sql(self, expression: exp.Delete) -> str:
         this = self.sql(expression, "this")
+        this = f" FROM {this}" if this else ""
         using_sql = (
             f" USING {self.expressions(expression, 'using', sep=', USING ')}"
             if expression.args.get("using")
             else ""
         )
         where_sql = self.sql(expression, "where")
-        sql = f"DELETE FROM {this}{using_sql}{where_sql}"
+        sql = f"DELETE{this}{using_sql}{where_sql}"
         return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression: exp.Drop) -> str:
@@ -1103,10 +1102,37 @@ class Generator:
 
         return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
 
+    def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
+        partition = self.partition_by_sql(expression)
+        order = self.sql(expression, "order")
+        measures = self.sql(expression, "measures")
+        measures = self.seg(f"MEASURES {measures}") if measures else ""
+        rows = self.sql(expression, "rows")
+        rows = self.seg(rows) if rows else ""
+        after = self.sql(expression, "after")
+        after = self.seg(after) if after else ""
+        pattern = self.sql(expression, "pattern")
+        pattern = self.seg(f"PATTERN ({pattern})") if pattern else ""
+        define = self.sql(expression, "define")
+        define = self.seg(f"DEFINE {define}") if define else ""
+        body = "".join(
+            (
+                partition,
+                order,
+                measures,
+                rows,
+                after,
+                pattern,
+                define,
+            )
+        )
+        return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}"
+
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
         return csv(
             *sqls,
             *[self.sql(sql) for sql in expression.args.get("joins") or []],
+            self.sql(expression, "match"),
             *[self.sql(sql) for sql in expression.args.get("laterals") or []],
             self.sql(expression, "where"),
             self.sql(expression, "group"),
@@ -1215,8 +1241,7 @@ class Generator:
     def window_sql(self, expression: exp.Window) -> str:
         this = self.sql(expression, "this")
 
-        partition = self.expressions(expression, key="partition_by", flat=True)
-        partition = f"PARTITION BY {partition}" if partition else ""
+        partition = self.partition_by_sql(expression)
 
         order = expression.args.get("order")
         order_sql = self.order_sql(order, flat=True) if order else ""
@@ -1235,6 +1260,10 @@ class Generator:
         window_args = alias + partition_sql + order_sql + spec_sql
 
         return f"{this} ({window_args.strip()})"
+
+    def partition_by_sql(self, expression: exp.Window | exp.MatchRecognize) -> str:
+        partition = self.expressions(expression, key="partition_by", flat=True)
+        return f"PARTITION BY {partition}" if partition else ""
 
     def window_spec_sql(self, expression: exp.WindowSpec) -> str:
         kind = self.sql(expression, "kind")
@@ -1511,6 +1540,8 @@ class Generator:
             actions = self.expressions(expression, "actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Drop):
             actions = self.expressions(expression, "actions")
+        elif isinstance(actions[0], exp.Delete):
+            actions = self.expressions(expression, "actions", flat=True)
         elif isinstance(actions[0], self.WITH_SINGLE_ALTER_TABLE_ACTION):
             actions = self.sql(actions[0])
         else:
@@ -1622,7 +1653,11 @@ class Generator:
         return f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
 
     def use_sql(self, expression: exp.Use) -> str:
-        return f"USE {self.sql(expression, 'this')}"
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        return f"USE{kind}{this}"
 
     def binary(self, expression: exp.Binary, op: str) -> str:
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"

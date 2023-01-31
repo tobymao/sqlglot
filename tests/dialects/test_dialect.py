@@ -9,9 +9,9 @@ class Validator(unittest.TestCase):
     def parse_one(self, sql):
         return parse_one(sql, read=self.dialect)
 
-    def validate_identity(self, sql, write_sql=None):
+    def validate_identity(self, sql, write_sql=None, pretty=False):
         expression = self.parse_one(sql)
-        self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect))
+        self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect, pretty=pretty))
         return expression
 
     def validate_all(self, sql, read=None, write=None, pretty=False, identify=False):

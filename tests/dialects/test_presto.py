@@ -174,6 +174,13 @@ class TestPresto(Validator):
                 "spark": "DATE_ADD(x, 1)",
             },
         )
+        self.validate_all(
+            "NOW()",
+            write={
+                "presto": "CURRENT_TIMESTAMP()",
+                "hive": "CURRENT_TIMESTAMP()",
+            },
+        )
 
     def test_ddl(self):
         self.validate_all(

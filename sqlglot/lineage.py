@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.optimizer import Scope, build_scope, optimize
+from sqlglot.optimizer.qualify_columns import qualify_columns
+from sqlglot.optimizer.qualify_tables import qualify_tables
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,8 @@ def lineage(
     column: str | exp.Column,
     sql: str | exp.Expression,
     schema: t.Optional[t.Dict | Schema] = None,
+    sources: t.Optional[t.Dict[str, str | exp.Subqueryable]] = None,
+    rules: t.Sequence[t.Callable] = (qualify_tables, qualify_columns),
     dialect: t.Optional[str] = None,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
@@ -40,6 +44,8 @@ def lineage(
         column: The column to build the lineage for.
         sql: The SQL string or expression.
         schema: The schema of tables.
+        sources: A mapping of queries which will be used to continue building lineage.
+        rules: Optimizer rules to apply, by default only qualifying tables and columns.
         dialect: The dialect of input SQL.
 
     Returns:
@@ -47,8 +53,19 @@ def lineage(
     """
 
     expression = maybe_parse(sql, dialect=dialect)
-    optimized = optimize(expression, schema=schema)
+
+    if sources:
+        expression = exp.expand(
+            expression,
+            {
+                k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect))
+                for k, v in sources.items()
+            },
+        )
+
+    optimized = optimize(expression, schema=schema, rules=rules)
     scope = build_scope(optimized)
+    tables: t.Dict[str, Node] = {}
 
     def to_node(
         column_name: str,
@@ -67,7 +84,7 @@ def lineage(
             return node
 
         select = next(select for select in scope.selects if select.alias_or_name == column_name)
-        source = optimize(scope.expression.select(select, append=False), schema=schema)
+        source = optimize(scope.expression.select(select, append=False), schema=schema, rules=rules)
         select = source.selects[0]
 
         node = Node(
@@ -79,7 +96,7 @@ def lineage(
         if upstream:
             upstream.downstream.append(node)
 
-        for c in select.find_all(exp.Column):
+        for c in set(select.find_all(exp.Column)):
             table = c.table
             source = scope.sources[table]
 
@@ -91,7 +108,9 @@ def lineage(
                     upstream=node,
                 )
             else:
-                node.downstream.append(Node(name=c.name, source=source, expression=source))
+                if table not in tables:
+                    tables[table] = Node(name=table, source=source, expression=source)
+                node.downstream.append(tables[table])
 
         return node
 
@@ -137,11 +156,14 @@ class LineageHTML:
             "nodes": {
                 "font": "20px monaco",
                 "shape": "box",
+                "widthConstraint": {
+                    "maximum": 300,
+                },
             },
             **opts,
         }
 
-        self.nodes = []
+        self.nodes = {}
         self.edges = []
 
         for node in node.walk():
@@ -154,24 +176,26 @@ class LineageHTML:
                 source = node.source.transform(
                     lambda n: exp.Tag(this=n, prefix="<b>", postfix="</b>")
                     if n is node.expression
-                    else n
+                    else n,
+                    copy=False,
                 ).sql(pretty=True, dialect=dialect)
                 title = f"<pre>{source}</pre>"
                 group = 0
 
-            self.nodes.append(
-                {
-                    "id": id(node),
-                    "label": label,
-                    "title": title,
-                    "group": group,
-                }
-            )
+            node_id = id(node)
+
+            self.nodes[node_id] = {
+                "id": node_id,
+                "label": label,
+                "title": title,
+                "group": group,
+            }
+
             for d in node.downstream:
-                self.edges.append({"from": id(node), "to": id(d)})
+                self.edges.append({"from": node_id, "to": id(d)})
 
     def __str__(self):
-        nodes = json.dumps(self.nodes)
+        nodes = json.dumps(list(self.nodes.values()))
         edges = json.dumps(self.edges)
         options = json.dumps(self.options)
         imports = (

@@ -448,7 +448,12 @@ class Parser(metaclass=_Parser):
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.UPDATE: lambda self: self._parse_update(),
-        TokenType.USE: lambda self: self.expression(exp.Use, this=self._parse_id_var()),
+        TokenType.USE: lambda self: self.expression(
+            exp.Use,
+            kind=self._match_texts(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"))
+            and exp.Var(this=self._prev.text),
+            this=self._parse_table(schema=False),
+        ),
     }
 
     UNARY_PARSERS = {
@@ -612,6 +617,7 @@ class Parser(metaclass=_Parser):
     }
 
     QUERY_MODIFIER_PARSERS = {
+        "match": lambda self: self._parse_match_recognize(),
         "where": lambda self: self._parse_where(),
         "group": lambda self: self._parse_group(),
         "having": lambda self: self._parse_having(),
@@ -1000,8 +1006,8 @@ class Parser(metaclass=_Parser):
             if not properties:  # properties after schema definition
                 properties = self._parse_properties()
 
-            if self._match(TokenType.ALIAS):
-                expression = self._parse_ddl_select()
+            self._match(TokenType.ALIAS)
+            expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
                 if self._match_text_seq("WITH", "DATA"):
@@ -1230,6 +1236,11 @@ class Parser(metaclass=_Parser):
             for_insert=for_insert,
             for_none=for_none,
         )
+
+    def _parse_partition_by(self) -> t.List[t.Optional[exp.Expression]]:
+        if self._match(TokenType.PARTITION_BY):
+            return self._parse_csv(self._parse_conjunction)
+        return []
 
     def _parse_partitioned_by(self) -> exp.Expression:
         self._match(TokenType.EQ)
@@ -1543,8 +1554,7 @@ class Parser(metaclass=_Parser):
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
 
-        if not self._match(TokenType.ALIAS):
-            self.raise_error("Expected AS in CTE")
+        self._match(TokenType.ALIAS)
 
         return self.expression(
             exp.CTE,
@@ -1559,10 +1569,11 @@ class Parser(metaclass=_Parser):
         alias = self._parse_id_var(
             any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
         )
+        index = self._index
 
         if self._match(TokenType.L_PAREN):
             columns = self._parse_csv(lambda: self._parse_column_def(self._parse_id_var()))
-            self._match_r_paren()
+            self._match_r_paren() if columns else self._retreat(index)
         else:
             columns = None
 
@@ -1633,6 +1644,87 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.From, comments=self._prev_comments, expressions=self._parse_csv(self._parse_table)
+        )
+
+    def _parse_match_recognize(self) -> t.Optional[exp.Expression]:
+        if not self._match(TokenType.MATCH_RECOGNIZE):
+            return None
+        self._match_l_paren()
+
+        partition = self._parse_partition_by()
+        order = self._parse_order()
+        measures = (
+            self._parse_alias(self._parse_conjunction())
+            if self._match_text_seq("MEASURES")
+            else None
+        )
+
+        if self._match_text_seq("ONE", "ROW", "PER", "MATCH"):
+            rows = exp.Var(this="ONE ROW PER MATCH")
+        elif self._match_text_seq("ALL", "ROWS", "PER", "MATCH"):
+            text = "ALL ROWS PER MATCH"
+            if self._match_text_seq("SHOW", "EMPTY", "MATCHES"):
+                text += f" SHOW EMPTY MATCHES"
+            elif self._match_text_seq("OMIT", "EMPTY", "MATCHES"):
+                text += f" OMIT EMPTY MATCHES"
+            elif self._match_text_seq("WITH", "UNMATCHED", "ROWS"):
+                text += f" WITH UNMATCHED ROWS"
+            rows = exp.Var(this=text)
+        else:
+            rows = None
+
+        if self._match_text_seq("AFTER", "MATCH", "SKIP"):
+            text = "AFTER MATCH SKIP"
+            if self._match_text_seq("PAST", "LAST", "ROW"):
+                text += f" PAST LAST ROW"
+            elif self._match_text_seq("TO", "NEXT", "ROW"):
+                text += f" TO NEXT ROW"
+            elif self._match_text_seq("TO", "FIRST"):
+                text += f" TO FIRST {self._advance_any().text}"  # type: ignore
+            elif self._match_text_seq("TO", "LAST"):
+                text += f" TO LAST {self._advance_any().text}"  # type: ignore
+            after = exp.Var(this=text)
+        else:
+            after = None
+
+        if self._match_text_seq("PATTERN"):
+            self._match_l_paren()
+
+            if not self._curr:
+                self.raise_error("Expecting )", self._curr)
+
+            paren = 1
+            start = self._find_token(self._curr, self.sql)
+
+            while self._curr and paren > 0:
+                if self._curr.token_type == TokenType.L_PAREN:
+                    paren += 1
+                if self._curr.token_type == TokenType.R_PAREN:
+                    paren -= 1
+                self._advance()
+            if paren > 0:
+                self.raise_error("Expecting )", self._curr)
+            if not self._curr:
+                self.raise_error("Expecting pattern", self._curr)
+            end = self._find_token(self._prev, self.sql)
+            pattern = exp.Var(this=self.sql[start:end])
+        else:
+            pattern = None
+
+        define = (
+            self._parse_alias(self._parse_conjunction()) if self._match_text_seq("DEFINE") else None
+        )
+        self._match_r_paren()
+
+        return self.expression(
+            exp.MatchRecognize,
+            partition_by=partition,
+            order=order,
+            measures=measures,
+            rows=rows,
+            after=after,
+            pattern=pattern,
+            define=define,
         )
 
     def _parse_lateral(self) -> t.Optional[exp.Expression]:
@@ -2724,9 +2816,10 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 
     def _parse_bracket(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-        if not self._match(TokenType.L_BRACKET):
+        if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
+        bracket_kind = self._prev.token_type
         expressions: t.List[t.Optional[exp.Expression]]
 
         if self._match(TokenType.COLON):
@@ -2734,14 +2827,19 @@ class Parser(metaclass=_Parser):
         else:
             expressions = self._parse_csv(lambda: self._parse_slice(self._parse_conjunction()))
 
-        if not this or this.name.upper() == "ARRAY":
+        # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
+        if bracket_kind == TokenType.L_BRACE:
+            this = self.expression(exp.Struct, expressions=expressions)
+        elif not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:
             expressions = apply_index_offset(expressions, -self.index_offset)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
-        if not self._match(TokenType.R_BRACKET):
+        if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:
             self.raise_error("Expected ]")
+        elif not self._match(TokenType.R_BRACE) and bracket_kind == TokenType.L_BRACE:
+            self.raise_error("Expected }")
 
         this.comments = self._prev_comments
         return self._parse_bracket(this)
@@ -2975,14 +3073,8 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Window, this=this, alias=self._parse_id_var(False))
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
-
-        partition = None
-        if self._match(TokenType.PARTITION_BY):
-            partition = self._parse_csv(self._parse_conjunction)
-
+        partition = self._parse_partition_by()
         order = self._parse_order()
-
-        spec = None
         kind = self._match_set((TokenType.ROWS, TokenType.RANGE)) and self._prev.text
 
         if kind:
@@ -2999,6 +3091,8 @@ class Parser(metaclass=_Parser):
                 end=end["value"],
                 end_side=end["side"],
             )
+        else:
+            spec = None
 
         self._match_r_paren()
 
@@ -3275,7 +3369,9 @@ class Parser(metaclass=_Parser):
         actions: t.Optional[exp.Expression | t.List[t.Optional[exp.Expression]]] = None
 
         index = self._index
-        if self._match_text_seq("ADD"):
+        if self._match(TokenType.DELETE):
+            actions = [self.expression(exp.Delete, where=self._parse_where())]
+        elif self._match_text_seq("ADD"):
             if self._match_set(self.ADD_CONSTRAINT_TOKENS):
                 actions = self._parse_csv(self._parse_add_constraint)
             else:

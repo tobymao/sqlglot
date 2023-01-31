@@ -339,7 +339,7 @@ class TestHive(Validator):
 
     def test_hive(self):
         self.validate_identity(
-            "INSERT OVERWRITE TABLE zipcodes PARTITION(state='0') VALUES (896, 'US', 'TAMPA', 33607)"
+            "INSERT OVERWRITE TABLE zipcodes PARTITION(state = '0') VALUES (896, 'US', 'TAMPA', 33607)"
         )
         self.validate_identity(
             "INSERT OVERWRITE TABLE zipcodes PARTITION(state = 0) VALUES (896, 'US', 'TAMPA', 33607)"

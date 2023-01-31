@@ -1082,7 +1082,7 @@ class LoadData(Expression):
 
 
 class Partition(Expression):
-    pass
+    arg_types = {"expressions": True}
 
 
 class Fetch(Expression):

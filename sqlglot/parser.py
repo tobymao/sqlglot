@@ -1259,7 +1259,9 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.PARTITION):
             return None
 
-        return self.expression(exp.Partition, this=self._parse_wrapped_csv(self._parse_conjunction))
+        return self.expression(
+            exp.Partition, expressions=self._parse_wrapped_csv(self._parse_conjunction)
+        )
 
     def _parse_value(self) -> exp.Expression:
         if self._match(TokenType.L_PAREN):

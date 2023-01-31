@@ -634,7 +634,7 @@ class Generator:
         return f"N{self.sql(expression, 'this')}"
 
     def partition_sql(self, expression: exp.Partition) -> str:
-        return f"PARTITION({self.expressions(expression, 'this')})"
+        return f"PARTITION({self.expressions(expression)})"
 
     def properties_sql(self, expression: exp.Properties) -> str:
         root_properties = []

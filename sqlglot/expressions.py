@@ -1082,7 +1082,7 @@ class LoadData(Expression):
 
 
 class Partition(Expression):
-    pass
+    arg_types = {"expressions": True}
 
 
 class Fetch(Expression):
@@ -2470,6 +2470,10 @@ class AlterTable(Expression):
 
 class AddConstraint(Expression):
     arg_types = {"this": False, "expression": False, "enforced": False}
+
+
+class DropPartition(Expression):
+    arg_types = {"expressions": True, "exists": False}
 
 
 # Binary expressions like (ADD a b)

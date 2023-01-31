@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp, parser
-from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func
+from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func, trim_sql
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 
@@ -122,6 +122,7 @@ class Spark(Hive):
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             exp.TimestampTrunc: lambda self, e: f"DATE_TRUNC({self.sql(e, 'unit')}, {self.sql(e, 'this')})",
+            exp.Trim: trim_sql,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.LogicalOr: rename_func("BOOL_OR"),

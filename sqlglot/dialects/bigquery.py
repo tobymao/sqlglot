@@ -169,6 +169,13 @@ class BigQuery(Dialect):
             TokenType.VALUES,
         }
 
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,  # type: ignore
+            "NOT DETERMINISTIC": lambda self: self.expression(
+                exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
+            ),
+        }
+
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

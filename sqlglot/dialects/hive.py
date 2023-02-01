@@ -251,7 +251,7 @@ class Hive(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,  # type: ignore
-            TokenType.SERDE_PROPERTIES: lambda self: exp.SerdeProperties(
+            "WITH SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }

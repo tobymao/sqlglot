@@ -497,6 +497,9 @@ class Parser(metaclass=_Parser):
 
     RANGE_PARSERS = {
         TokenType.BETWEEN: lambda self, this: self._parse_between(this),
+        TokenType.GLOB: lambda self, this: self._parse_escape(
+            self.expression(exp.Glob, this=this, expression=self._parse_bitwise())
+        ),
         TokenType.IN: lambda self, this: self._parse_in(this),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: lambda self, this: self._parse_escape(
@@ -2549,7 +2552,6 @@ class Parser(metaclass=_Parser):
             args = self._parse_csv(self._parse_lambda)
 
             if function:
-
                 # Clickhouse supports function calls like foo(x, y)(z), so for these we need to also parse the
                 # second parameter list (i.e. "(z)") and the corresponding function will receive both arg lists.
                 if count_params(function) == 2:

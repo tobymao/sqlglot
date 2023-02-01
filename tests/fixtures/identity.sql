@@ -99,6 +99,8 @@ STR_POSITION(haystack, needle, pos)
 LEVENSHTEIN('gumbo', 'gambol', 2, 1, 1)
 SPLIT(SPLIT(referrer, 'utm_source=')[OFFSET(1)], "&")[OFFSET(0)]
 x[ORDINAL(1)][SAFE_OFFSET(2)]
+x GLOB '??-*'
+x GLOB y
 x LIKE SUBSTR('abc', 1, 1)
 x LIKE y
 x LIKE a.y

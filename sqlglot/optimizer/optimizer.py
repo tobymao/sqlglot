@@ -64,7 +64,6 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
     possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
     expression = expression.copy()
     for rule in rules:
-
         # Find any additional rule parameters, beyond `expression`
         rule_params = rule.__code__.co_varnames
         rule_kwargs = {

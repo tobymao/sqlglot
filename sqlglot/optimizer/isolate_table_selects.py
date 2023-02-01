@@ -11,7 +11,7 @@ def isolate_table_selects(expression, schema=None):
         if len(scope.selected_sources) == 1:
             continue
 
-        for (_, source) in scope.selected_sources.values():
+        for _, source in scope.selected_sources.values():
             if not isinstance(source, exp.Table) or not schema.column_names(source):
                 continue
 

@@ -51,6 +51,13 @@ class TestSQLite(Validator):
 
     def test_sqlite(self):
         self.validate_all(
+            "SELECT a GLOB 'b'",
+            write={
+                "sqlite": "SELECT a GLOB 'b'",
+            },
+        )
+
+        self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={
                 "sqlite": 'SELECT CAST("a"."b" AS INTEGER) FROM foo',

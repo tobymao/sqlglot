@@ -1618,6 +1618,9 @@ class Generator:
     def escape_sql(self, expression: exp.Escape) -> str:
         return self.binary(expression, "ESCAPE")
 
+    def glob_sql(self, expression: exp.Glob) -> str:
+        return self.binary(expression, "GLOB")
+
     def gt_sql(self, expression: exp.GT) -> str:
         return self.binary(expression, ">")
 

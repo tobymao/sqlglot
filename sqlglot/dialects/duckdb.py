@@ -85,6 +85,7 @@ class DuckDB(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             ":=": TokenType.EQ,
             "CHARACTER VARYING": TokenType.VARCHAR,
+            "GLOB": TokenType.GLOB,
         }
 
     class Parser(parser.Parser):

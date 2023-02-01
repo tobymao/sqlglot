@@ -50,6 +50,7 @@ class SQLite(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
+            "GLOB": TokenType.GLOB,
         }
 
     class Parser(parser.Parser):

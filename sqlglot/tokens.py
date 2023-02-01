@@ -187,6 +187,7 @@ class TokenType(AutoName):
     FULL = auto()
     FUNCTION = auto()
     GENERATED = auto()
+    GLOB = auto()
     GLOBAL = auto()
     GROUP_BY = auto()
     GROUPING_SETS = auto()
@@ -535,6 +536,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
         "GENERATED": TokenType.GENERATED,
+        "GLOB": TokenType.GLOB,
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,

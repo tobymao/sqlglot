@@ -2610,8 +2610,10 @@ class Distance(Binary):
 class Escape(Binary):
     pass
 
+
 class Glob(Binary, Predicate):
     pass
+
 
 class GT(Binary, Predicate):
     pass

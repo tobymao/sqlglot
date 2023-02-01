@@ -195,7 +195,6 @@ class Presto(Dialect):
         FUNCTION_PARSERS.pop("TRIM")
 
     class Generator(generator.Generator):
-
         STRUCT_DELIMITER = ("(", ")")
 
         ROOT_PROPERTIES = {exp.SchemaCommentProperty}

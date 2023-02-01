@@ -175,13 +175,9 @@ class Parser(metaclass=_Parser):
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESCRIBE,
-        TokenType.DETERMINISTIC,
         TokenType.DIV,
-        TokenType.DISTKEY,
-        TokenType.DISTSTYLE,
         TokenType.END,
         TokenType.EXECUTE,
-        TokenType.ENGINE,
         TokenType.ESCAPE,
         TokenType.FALSE,
         TokenType.FIRST,
@@ -194,13 +190,10 @@ class Parser(metaclass=_Parser):
         TokenType.IF,
         TokenType.INDEX,
         TokenType.ISNULL,
-        TokenType.IMMUTABLE,
         TokenType.INTERVAL,
         TokenType.LAZY,
-        TokenType.LANGUAGE,
         TokenType.LEADING,
         TokenType.LOCAL,
-        TokenType.LOCATION,
         TokenType.MATERIALIZED,
         TokenType.MERGE,
         TokenType.NATURAL,
@@ -209,13 +202,11 @@ class Parser(metaclass=_Parser):
         TokenType.ONLY,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
-        TokenType.PARTITIONED_BY,
         TokenType.PERCENT,
         TokenType.PIVOT,
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.REFERENCES,
-        TokenType.RETURNS,
         TokenType.ROW,
         TokenType.ROWS,
         TokenType.SCHEMA,
@@ -225,10 +216,7 @@ class Parser(metaclass=_Parser):
         TokenType.SET,
         TokenType.SHOW,
         TokenType.SORTKEY,
-        TokenType.STABLE,
-        TokenType.STORED,
         TokenType.TABLE,
-        TokenType.TABLE_FORMAT,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRAILING,
@@ -237,7 +225,6 @@ class Parser(metaclass=_Parser):
         TokenType.UNIQUE,
         TokenType.UNLOGGED,
         TokenType.UNPIVOT,
-        TokenType.PROPERTIES,
         TokenType.PROCEDURE,
         TokenType.VIEW,
         TokenType.VOLATILE,
@@ -520,49 +507,41 @@ class Parser(metaclass=_Parser):
     }
 
     PROPERTY_PARSERS = {
-        TokenType.AUTO_INCREMENT: lambda self: self._parse_property_assignment(
-            exp.AutoIncrementProperty
-        ),
-        TokenType.CHARACTER_SET: lambda self: self._parse_character_set(),
-        TokenType.LOCATION: lambda self: self._parse_property_assignment(exp.LocationProperty),
-        TokenType.PARTITIONED_BY: lambda self: self._parse_partitioned_by(),
-        TokenType.SCHEMA_COMMENT: lambda self: self._parse_property_assignment(
-            exp.SchemaCommentProperty
-        ),
-        TokenType.STORED: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
-        TokenType.DISTKEY: lambda self: self._parse_distkey(),
-        TokenType.DISTSTYLE: lambda self: self._parse_property_assignment(exp.DistStyleProperty),
-        TokenType.SORTKEY: lambda self: self._parse_sortkey(),
-        TokenType.LIKE: lambda self: self._parse_create_like(),
-        TokenType.RETURNS: lambda self: self._parse_returns(),
-        TokenType.ROW: lambda self: self._parse_row(),
-        TokenType.COLLATE: lambda self: self._parse_property_assignment(exp.CollateProperty),
-        TokenType.COMMENT: lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
-        TokenType.FORMAT: lambda self: self._parse_property_assignment(exp.FileFormatProperty),
-        TokenType.TABLE_FORMAT: lambda self: self._parse_property_assignment(
-            exp.TableFormatProperty
-        ),
-        TokenType.USING: lambda self: self._parse_property_assignment(exp.TableFormatProperty),
-        TokenType.LANGUAGE: lambda self: self._parse_property_assignment(exp.LanguageProperty),
-        TokenType.EXECUTE: lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
-        TokenType.DETERMINISTIC: lambda self: self.expression(
+        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+        "CHARACTER SET": lambda self: self._parse_character_set(),
+        "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
+        "PARTITION BY": lambda self: self._parse_partitioned_by(),
+        "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
+        "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
+        "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "STORED": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+        "DISTKEY": lambda self: self._parse_distkey(),
+        "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
+        "SORTKEY": lambda self: self._parse_sortkey(),
+        "LIKE": lambda self: self._parse_create_like(),
+        "RETURNS": lambda self: self._parse_returns(),
+        "ROW": lambda self: self._parse_row(),
+        "COLLATE": lambda self: self._parse_property_assignment(exp.CollateProperty),
+        "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+        "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
+        "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
+        "DETERMINISTIC": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
-        TokenType.IMMUTABLE: lambda self: self.expression(
+        "IMMUTABLE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
-        TokenType.STABLE: lambda self: self.expression(
+        "STABLE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("STABLE")
         ),
-        TokenType.VOLATILE: lambda self: self.expression(
+        "VOLATILE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
         ),
-        TokenType.WITH: lambda self: self._parse_wrapped_csv(self._parse_property),
-        TokenType.PROPERTIES: lambda self: self._parse_wrapped_csv(self._parse_property),
+        "WITH": lambda self: self._parse_with_property(),
+        "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
         "FALLBACK": lambda self: self._parse_fallback(no=self._prev.text.upper() == "NO"),
-        "WITH": lambda self: self._parse_withjournaltable()
-        if self._next.text.upper() == "JOURNAL"
-        else self._parse_withisolatedloading(),
         "LOG": lambda self: self._parse_log(no=self._prev.text.upper() == "NO"),
         "BEFORE": lambda self: self._parse_journal(
             no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
@@ -1069,8 +1048,8 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_property(self) -> t.Optional[exp.Expression]:
-        if self._match_set(self.PROPERTY_PARSERS):
-            return self.PROPERTY_PARSERS[self._prev.token_type](self)
+        if self._match_texts(self.PROPERTY_PARSERS):
+            return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
             return self._parse_character_set(True)
@@ -1122,6 +1101,20 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.FallbackProperty, no=no, protection=self._match_text_seq("PROTECTION")
         )
+
+    def _parse_with_property(
+        self,
+    ) -> t.Union[t.Optional[exp.Expression], t.List[t.Optional[exp.Expression]]]:
+        if self._match(TokenType.L_PAREN, advance=False):
+            return self._parse_wrapped_csv(self._parse_property)
+
+        if not self._next:
+            return None
+
+        if self._next.text.upper() == "JOURNAL":
+            return self._parse_withjournaltable()
+
+        return self._parse_withisolatedloading()
 
     def _parse_withjournaltable(self) -> exp.Expression:
         self._match_text_seq("WITH", "JOURNAL", "TABLE")

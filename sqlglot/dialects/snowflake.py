@@ -178,11 +178,6 @@ class Snowflake(Dialect):
             ),
         }
 
-        PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,
-            TokenType.PARTITION_BY: lambda self: self._parse_partitioned_by(),
-        }
-
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         ESCAPES = ["\\", "'"]

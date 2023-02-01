@@ -158,18 +158,14 @@ class TokenType(AutoName):
     DELETE = auto()
     DESC = auto()
     DESCRIBE = auto()
-    DETERMINISTIC = auto()
     DISTINCT = auto()
     DISTINCT_FROM = auto()
-    DISTKEY = auto()
     DISTRIBUTE_BY = auto()
-    DISTSTYLE = auto()
     DIV = auto()
     DROP = auto()
     ELSE = auto()
     ENCODE = auto()
     END = auto()
-    ENGINE = auto()
     ESCAPE = auto()
     EXCEPT = auto()
     EXECUTE = auto()
@@ -197,7 +193,6 @@ class TokenType(AutoName):
     IF = auto()
     IGNORE_NULLS = auto()
     ILIKE = auto()
-    IMMUTABLE = auto()
     IN = auto()
     INDEX = auto()
     INNER = auto()
@@ -219,7 +214,6 @@ class TokenType(AutoName):
     LIMIT = auto()
     LOAD_DATA = auto()
     LOCAL = auto()
-    LOCATION = auto()
     MAP = auto()
     MATCH_RECOGNIZE = auto()
     MATERIALIZED = auto()
@@ -245,7 +239,6 @@ class TokenType(AutoName):
     OVERWRITE = auto()
     PARTITION = auto()
     PARTITION_BY = auto()
-    PARTITIONED_BY = auto()
     PERCENT = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()
@@ -261,7 +254,6 @@ class TokenType(AutoName):
     REPLACE = auto()
     RESPECT_NULLS = auto()
     REFERENCES = auto()
-    RETURNS = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROLLBACK = auto()
@@ -280,10 +272,7 @@ class TokenType(AutoName):
     SOME = auto()
     SORTKEY = auto()
     SORT_BY = auto()
-    STABLE = auto()
-    STORED = auto()
     STRUCT = auto()
-    TABLE_FORMAT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TOP = auto()
@@ -509,17 +498,13 @@ class Tokenizer(metaclass=_Tokenizer):
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
         "DESCRIBE": TokenType.DESCRIBE,
-        "DETERMINISTIC": TokenType.DETERMINISTIC,
         "DISTINCT": TokenType.DISTINCT,
         "DISTINCT FROM": TokenType.DISTINCT_FROM,
-        "DISTKEY": TokenType.DISTKEY,
         "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
-        "DISTSTYLE": TokenType.DISTSTYLE,
         "DIV": TokenType.DIV,
         "DROP": TokenType.DROP,
         "ELSE": TokenType.ELSE,
         "END": TokenType.END,
-        "ENGINE": TokenType.ENGINE,
         "ESCAPE": TokenType.ESCAPE,
         "EXCEPT": TokenType.EXCEPT,
         "EXECUTE": TokenType.EXECUTE,
@@ -543,7 +528,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "IDENTITY": TokenType.IDENTITY,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
-        "IMMUTABLE": TokenType.IMMUTABLE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
@@ -555,7 +539,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "IS": TokenType.IS,
         "ISNULL": TokenType.ISNULL,
         "JOIN": TokenType.JOIN,
-        "LANGUAGE": TokenType.LANGUAGE,
         "LATERAL": TokenType.LATERAL,
         "LAZY": TokenType.LAZY,
         "LEADING": TokenType.LEADING,
@@ -564,7 +547,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIMIT": TokenType.LIMIT,
         "LOAD DATA": TokenType.LOAD_DATA,
         "LOCAL": TokenType.LOCAL,
-        "LOCATION": TokenType.LOCATION,
         "MATERIALIZED": TokenType.MATERIALIZED,
         "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,
@@ -589,8 +571,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "OVERWRITE": TokenType.OVERWRITE,
         "PARTITION": TokenType.PARTITION,
         "PARTITION BY": TokenType.PARTITION_BY,
-        "PARTITIONED BY": TokenType.PARTITIONED_BY,
-        "PARTITIONED_BY": TokenType.PARTITIONED_BY,
+        "PARTITIONED BY": TokenType.PARTITION_BY,
+        "PARTITIONED_BY": TokenType.PARTITION_BY,
         "PERCENT": TokenType.PERCENT,
         "PIVOT": TokenType.PIVOT,
         "PRECEDING": TokenType.PRECEDING,
@@ -603,7 +585,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "REPLACE": TokenType.REPLACE,
         "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "REFERENCES": TokenType.REFERENCES,
-        "RETURNS": TokenType.RETURNS,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROLLBACK": TokenType.ROLLBACK,
@@ -620,11 +601,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SOME": TokenType.SOME,
         "SORTKEY": TokenType.SORTKEY,
         "SORT BY": TokenType.SORT_BY,
-        "STABLE": TokenType.STABLE,
-        "STORED": TokenType.STORED,
         "TABLE": TokenType.TABLE,
-        "TABLE_FORMAT": TokenType.TABLE_FORMAT,
-        "TBLPROPERTIES": TokenType.PROPERTIES,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,

@@ -202,7 +202,7 @@ class MySQL(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,  # type: ignore
-            TokenType.ENGINE: lambda self: self._parse_property_assignment(exp.EngineProperty),
+            "ENGINE": lambda self: self._parse_property_assignment(exp.EngineProperty),
         }
 
         STATEMENT_PARSERS = {

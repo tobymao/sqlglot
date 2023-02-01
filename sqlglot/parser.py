@@ -644,7 +644,6 @@ class Parser(metaclass=_Parser):
         "max_errors",
         "null_ordering",
         "_tokens",
-        "_chunks",
         "_index",
         "_curr",
         "_next",
@@ -677,7 +676,6 @@ class Parser(metaclass=_Parser):
         self.sql = ""
         self.errors = []
         self._tokens = []
-        self._chunks = [[]]
         self._index = 0
         self._curr = None
         self._next = None
@@ -745,17 +743,18 @@ class Parser(metaclass=_Parser):
         self.reset()
         self.sql = sql or ""
         total = len(raw_tokens)
+        chunks = [[]]
 
         for i, token in enumerate(raw_tokens):
             if token.token_type == TokenType.SEMICOLON:
                 if i < total - 1:
-                    self._chunks.append([])
+                    chunks.append([])
             else:
-                self._chunks[-1].append(token)
+                chunks[-1].append(token)
 
         expressions = []
 
-        for tokens in self._chunks:
+        for tokens in chunks:
             self._index = -1
             self._tokens = tokens
             self._advance()

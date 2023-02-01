@@ -743,7 +743,7 @@ class Parser(metaclass=_Parser):
         self.reset()
         self.sql = sql or ""
         total = len(raw_tokens)
-        chunks = [[]]
+        chunks: t.List[t.List[Token]] = [[]]
 
         for i, token in enumerate(raw_tokens):
             if token.token_type == TokenType.SEMICOLON:

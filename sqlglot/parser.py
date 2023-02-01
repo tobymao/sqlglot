@@ -559,9 +559,6 @@ class Parser(metaclass=_Parser):
         ),
         TokenType.WITH: lambda self: self._parse_wrapped_csv(self._parse_property),
         TokenType.PROPERTIES: lambda self: self._parse_wrapped_csv(self._parse_property),
-    }
-
-    PROPERTY_PARSERS_TEXT = {
         "FALLBACK": lambda self: self._parse_fallback(no=self._prev.text.upper() == "NO"),
         "WITH": lambda self: self._parse_withjournaltable()
         if self._next.text.upper() == "JOURNAL"
@@ -1066,8 +1063,8 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("DUAL")
         self._match_text_seq("DEFAULT")
 
-        if self.PROPERTY_PARSERS_TEXT.get(self._curr.text.upper()):
-            return self.PROPERTY_PARSERS_TEXT[self._curr.text.upper()](self)
+        if self.PROPERTY_PARSERS.get(self._curr.text.upper()):
+            return self.PROPERTY_PARSERS[self._curr.text.upper()](self)
 
         return None
 

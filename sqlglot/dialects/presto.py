@@ -10,7 +10,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     struct_extract_sql,
     timestrtotime_sql,
-    unsupported_property_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.errors import UnsupportedError
@@ -201,6 +200,7 @@ class Presto(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.SchemaCommentProperty: "post_schema_root",
+            exp.LocationProperty: "unsupported",
         }
 
         TYPE_MAPPING = {
@@ -252,7 +252,6 @@ class Presto(Dialect):
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.StructExtract: struct_extract_sql,
-            exp.LocationProperty: unsupported_property_sql,
             exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT='{e.name.upper()}'",
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.TimeStrToDate: timestrtotime_sql,

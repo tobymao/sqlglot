@@ -99,36 +99,6 @@ class Generator:
 
     STRUCT_DELIMITER = ("<", ">")
 
-    # BEFORE_PROPERTIES = {
-    #     exp.FallbackProperty,
-    #     exp.WithJournalTableProperty,
-    #     exp.LogProperty,
-    #     exp.JournalProperty,
-    #     exp.AfterJournalProperty,
-    #     exp.ChecksumProperty,
-    #     exp.FreespaceProperty,
-    #     exp.MergeBlockRatioProperty,
-    #     exp.DataBlocksizeProperty,
-    #     exp.BlockCompressionProperty,
-    #     exp.IsolatedLoadingProperty,
-    # }
-
-    # ROOT_PROPERTIES = {
-    #     exp.ReturnsProperty,
-    #     exp.LanguageProperty,
-    #     exp.DistStyleProperty,
-    #     exp.DistKeyProperty,
-    #     exp.SortKeyProperty,
-    #     exp.LikeProperty,
-    # }
-
-    # WITH_PROPERTIES = {
-    #     exp.Property,
-    #     exp.FileFormatProperty,
-    #     exp.PartitionedByProperty,
-    #     exp.TableFormatProperty,
-    # }
-
     PROPERTIES_LOCATION = {
         exp.FallbackProperty: "pre_schema",
         exp.WithJournalTableProperty: "pre_schema",
@@ -486,26 +456,21 @@ class Generator:
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
         properties = expression.args.get("properties")
-        if properties:
-            preschema_prop_exps = [
-                p
-                for p in properties.expressions
-                if self.PROPERTIES_LOCATION[p.__class__] == "pre_schema"
-            ]
-        else:
-            preschema_prop_exps = None
-        if kind == "TABLE" and preschema_prop_exps:
+        properties_locs = self.separate_properties(properties) if properties else {}
+        if properties and properties_locs["root_with"]:
+            # subset expression properties to just root and with properties
+            expression.set("properties", exp.Properties(expressions=properties_locs["root_with"]))
+        if kind == "TABLE" and properties and properties_locs["pre_schema"]:
             this_name = self.sql(expression.this, "this")
             this_properties = self.properties(
-                exp.Properties(expressions=preschema_prop_exps), wrapped=False
+                exp.Properties(expressions=properties_locs["pre_schema"]), wrapped=False
             )
             this_schema = f"({self.expressions(expression.this)})"
             this = f"{this_name}, {this_properties} {this_schema}"
             properties_sql = ""
         else:
             this = self.sql(expression, "this")
-            properties_sql = self.sql(expression, "properties").strip()
-            properties_sql = f" {properties_sql}" if properties_sql else ""
+            properties_sql = self.sql(expression, "properties")
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
@@ -541,16 +506,6 @@ class Generator:
         indexes = expression.args.get("indexes")
         index_sql = ""
         if indexes:
-            # post index properties go after the primary index
-            if properties:
-                postindex_prop_exps = [
-                    p
-                    for p in properties.expressions
-                    if self.PROPERTIES_LOCATION[p.__class__] == "post_index"
-                ]
-            else:
-                postindex_prop_exps = None
-
             indexes_sql = []
             for index in indexes:
                 ind_unique = " UNIQUE" if index.args.get("unique") else ""
@@ -562,9 +517,9 @@ class Generator:
                     if index.args.get("columns")
                     else ""
                 )
-                if index.args.get("primary") and postindex_prop_exps:
+                if index.args.get("primary") and properties and properties_locs["post_index"]:
                     postindex_props_sql = self.properties(
-                        exp.Properties(expressions=postindex_prop_exps), wrapped=False
+                        properties_locs["post_index"], wrapped=False
                     )
                     ind_columns = f"{ind_columns} {postindex_props_sql}"
 
@@ -754,6 +709,36 @@ class Generator:
 
     def with_properties(self, properties: exp.Properties) -> str:
         return self.properties(properties, prefix=self.seg("WITH"))
+
+    def separate_properties(self, properties: exp.Properties) -> dict:
+        properties_dict = {}
+
+        properties_dict["pre_schema"] = [
+            p
+            for p in properties.expressions
+            if self.PROPERTIES_LOCATION[p.__class__] == "pre_schema"
+        ]
+
+        properties_dict["post_index"] = [
+            p
+            for p in properties.expressions
+            if self.PROPERTIES_LOCATION[p.__class__] == "post_index"
+        ]
+
+        properties_dict["root_with"] = [
+            p
+            for p in properties.expressions
+            if self.PROPERTIES_LOCATION[p.__class__] in ("post_schema_root", "post_schema_with")
+        ]
+
+        for prop in [
+            p
+            for p in properties.expressions
+            if self.PROPERTIES_LOCATION[p.__class__] == "unsupported"
+        ]:
+            self.unsupported(f"Unsupported property {prop.key}")
+
+        return properties_dict
 
     def property_sql(self, expression: exp.Property) -> str:
         property_cls = expression.__class__

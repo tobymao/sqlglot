@@ -256,6 +256,14 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         )
         self.validate("SELECT IF(a > 1, 1) FROM foo", "SELECT CASE WHEN a > 1 THEN 1 END FROM foo")
 
+    def test_if_null(self):
+        self.validate(
+            "SELECT IFNULL(1, NULL) FROM foo",
+            "SELECT COALESCE(1, NULL) FROM foo",
+            read="bigquery",
+            write="redshift",
+        )
+
     def test_ignore_nulls(self):
         self.validate("SELECT COUNT(x RESPECT NULLS)", "SELECT COUNT(x)")
 

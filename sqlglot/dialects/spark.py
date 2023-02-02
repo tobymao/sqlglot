@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from sqlglot import exp, parser
-from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func, trim_sql
+from sqlglot.dialects.dialect import (
+    create_with_partitions_sql,
+    rename_func,
+    trim_sql,
+    unsupported_property_sql,
+)
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 
@@ -109,6 +114,10 @@ class Spark(Hive):
             **Hive.Generator.TRANSFORMS,  # type: ignore
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
+            exp.EngineProperty: unsupported_property_sql,
+            exp.AutoIncrementProperty: unsupported_property_sql,
+            exp.CharacterSetProperty: unsupported_property_sql,
+            exp.CollateProperty: unsupported_property_sql,
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),

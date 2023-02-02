@@ -141,6 +141,12 @@ class Generator:
         exp.DataBlocksizeProperty: "pre_schema",
         exp.BlockCompressionProperty: "pre_schema",
         exp.IsolatedLoadingProperty: "pre_schema",
+        exp.EngineProperty: "post_schema_root",
+        exp.SchemaCommentProperty: "post_schema_root",
+        exp.LocationProperty: "post_schema_root",
+        exp.AutoIncrementProperty: "post_schema_root",
+        exp.CharacterSetProperty: "post_schema_root",
+        exp.CollateProperty: "post_schema_root",
         exp.ReturnsProperty: "post_schema_root",
         exp.LanguageProperty: "post_schema_root",
         exp.DistStyleProperty: "post_schema_root",
@@ -498,7 +504,8 @@ class Generator:
             properties_sql = ""
         else:
             this = self.sql(expression, "this")
-            properties_sql = self.sql(expression, "properties")
+            properties_sql = self.sql(expression, "properties").strip()
+            properties_sql = f" {properties_sql}" if properties_sql else ""
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
@@ -755,7 +762,7 @@ class Generator:
 
         property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
         if not property_name:
-            self.unsupported(f"Unsupported property {property_name}")
+            self.unsupported(f"Unsupported property {property_cls}")
 
         return f"{property_name}={self.sql(expression, 'this')}"
 

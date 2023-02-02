@@ -322,29 +322,18 @@ class Hive(Dialect):
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
         }
 
-        # WITH_PROPERTIES = {exp.Property}
-
-        # ROOT_PROPERTIES = {
-        #     exp.PartitionedByProperty,
-        #     exp.FileFormatProperty,
-        #     exp.SchemaCommentProperty,
-        #     exp.LocationProperty,
-        #     exp.TableFormatProperty,
-        #     exp.RowFormatDelimitedProperty,
-        #     exp.RowFormatSerdeProperty,
-        #     exp.SerdeProperties,
-        # }
-
-        PROPERTIES_LOCATION = generator.Generator.PROPERTIES_LOCATION.copy()
-        PROPERTIES_LOCATION[exp.Property] = "post_schema_with"
-        PROPERTIES_LOCATION[exp.PartitionedByProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.FileFormatProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.SchemaCommentProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.LocationProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.TableFormatProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.RowFormatDelimitedProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.RowFormatSerdeProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.SerdeProperties] = "post_schema_root"
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.Property: "post_schema_with",
+            exp.PartitionedByProperty: "post_schema_root",
+            exp.FileFormatProperty: "post_schema_root",
+            exp.SchemaCommentProperty: "post_schema_root",
+            exp.LocationProperty: "post_schema_root",
+            exp.TableFormatProperty: "post_schema_root",
+            exp.RowFormatDelimitedProperty: "post_schema_root",
+            exp.RowFormatSerdeProperty: "post_schema_root",
+            exp.SerdeProperties: "post_schema_root",
+        }
 
         def with_properties(self, properties):
             return self.properties(

@@ -61,21 +61,13 @@ class Redshift(Postgres):
             exp.DataType.Type.INT: "INTEGER",
         }
 
-        # ROOT_PROPERTIES = {
-        #     exp.DistKeyProperty,
-        #     exp.SortKeyProperty,
-        #     exp.DistStyleProperty,
-        # }
-
-        # WITH_PROPERTIES = {
-        #     exp.LikeProperty,
-        # }
-
-        PROPERTIES_LOCATION = Postgres.Generator.PROPERTIES_LOCATION.copy()
-        PROPERTIES_LOCATION[exp.DistKeyProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.SortKeyProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.DistStyleProperty] = "post_schema_root"
-        PROPERTIES_LOCATION[exp.LikeProperty] = "post_schema_with"
+        PROPERTIES_LOCATION = {
+            **Postgres.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.DistKeyProperty: "post_schema_root",
+            exp.SortKeyProperty: "post_schema_root",
+            exp.DistStyleProperty: "post_schema_root",
+            exp.LikeProperty: "post_schema_with",
+        }
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,  # type: ignore

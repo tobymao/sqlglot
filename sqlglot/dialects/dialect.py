@@ -275,6 +275,11 @@ def no_properties_sql(self, expression):
     return ""
 
 
+def unsupported_property_sql(self, expression):
+    self.unsupported(f"Property unsupported: {expression.key}")
+    return ""
+
+
 def str_position_sql(self, expression):
     this = self.sql(expression, "this")
     substr = self.sql(expression, "substr")

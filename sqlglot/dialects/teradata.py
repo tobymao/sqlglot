@@ -76,8 +76,10 @@ class Teradata(Dialect):
             )
 
     class Generator(generator.Generator):
-        PROPERTIES_LOCATION = generator.Generator.PROPERTIES_LOCATION.copy()
-        PROPERTIES_LOCATION[exp.PartitionedByProperty] = "post_index"
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.PartitionedByProperty: "post_index",
+        }
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
             return f"PARTITION BY {self.sql(expression, 'this')}"

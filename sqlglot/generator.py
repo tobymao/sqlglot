@@ -123,10 +123,12 @@ class Generator:
         exp.DistKeyProperty: "post_schema_root",
         exp.SortKeyProperty: "post_schema_root",
         exp.LikeProperty: "post_schema_root",
-        exp.Property: "post_schema_with",
         exp.FileFormatProperty: "post_schema_with",
         exp.PartitionedByProperty: "post_schema_with",
         exp.TableFormatProperty: "post_schema_with",
+        exp.RowFormatDelimitedProperty: "post_schema_root",
+        exp.RowFormatSerdeProperty: "post_schema_root",
+        exp.SerdeProperties: "post_schema_root",
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
@@ -519,7 +521,7 @@ class Generator:
                 )
                 if index.args.get("primary") and properties and properties_locs["post_index"]:
                     postindex_props_sql = self.properties(
-                        properties_locs["post_index"], wrapped=False
+                        exp.Properties(expressions=properties_locs["post_index"]), wrapped=False
                     )
                     ind_columns = f"{ind_columns} {postindex_props_sql}"
 

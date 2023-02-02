@@ -3201,8 +3201,7 @@ class Posexplode(Func):
     pass
 
 
-class Pow(Func):
-    arg_types = {"this": True, "power": True}
+class Pow(Binary, Func):
     _sql_names = ["POWER", "POW"]
 
 

@@ -311,7 +311,7 @@ def hypot(col1: t.Union[ColumnOrName, float], col2: t.Union[ColumnOrName, float]
 
 
 def pow(col1: t.Union[ColumnOrName, float], col2: t.Union[ColumnOrName, float]) -> Column:
-    return Column.invoke_expression_over_column(col1, glotexp.Pow, power=col2)
+    return Column.invoke_expression_over_column(col1, glotexp.Pow, expression=col2)
 
 
 def row_number() -> Column:

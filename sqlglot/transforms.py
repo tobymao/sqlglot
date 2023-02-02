@@ -61,22 +61,21 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         and expression.args["distinct"].args.get("on")
         and isinstance(expression.args["distinct"].args["on"], exp.Tuple)
     ):
-        distinct_cols = [e.copy() for e in expression.args["distinct"].args["on"].expressions]
-        outer_selects = [e.copy() for e in expression.expressions]
-        nested = expression.copy()
-        nested.args["distinct"].pop()
+        distinct_cols = expression.args["distinct"].args["on"].expressions
+        expression.args["distinct"].pop()
+        outer_selects = expression.selects
         row_number = find_new_name(expression.named_selects, "_row_number")
         window = exp.Window(
             this=exp.RowNumber(),
             partition_by=distinct_cols,
         )
-        order = nested.args.get("order")
+        order = expression.args.get("order")
         if order:
             window.set("order", order.copy())
             order.pop()
         window = exp.alias_(window, row_number)
-        nested.select(window, copy=False)
-        return exp.select(*outer_selects).from_(nested.subquery()).where(f'"{row_number}" = 1')
+        expression.select(window, copy=False)
+        return exp.select(*outer_selects).from_(expression.subquery()).where(f'"{row_number}" = 1')
     return expression
 
 
@@ -118,7 +117,7 @@ def preprocess(
     """
 
     def _to_sql(self, expression):
-        expression = transforms[0](expression)
+        expression = transforms[0](expression.copy())
         for t in transforms[1:]:
             expression = t(expression)
         return to_sql(self, expression)

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -449,22 +447,30 @@ class MySQL(Dialect):
             exp.StrPosition: strposition_to_locate_sql,
         }
 
-        ROOT_PROPERTIES = {
-            exp.EngineProperty,
-            exp.AutoIncrementProperty,
-            exp.CharacterSetProperty,
-            exp.CollateProperty,
-            exp.SchemaCommentProperty,
-            exp.LikeProperty,
-        }
+        # WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()
+
+        # ROOT_PROPERTIES = {
+        #     exp.EngineProperty,
+        #     exp.AutoIncrementProperty,
+        #     exp.CharacterSetProperty,
+        #     exp.CollateProperty,
+        #     exp.SchemaCommentProperty,
+        #     exp.LikeProperty,
+        # }
+
+        PROPERTIES_LOCATION = generator.Generator.PROPERTIES_LOCATION.copy()
+        PROPERTIES_LOCATION[exp.EngineProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.AutoIncrementProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.CharacterSetProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.CollateProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.SchemaCommentProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.LikeProperty] = "post_schema_root"
 
         TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
-
-        WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()
 
         def show_sql(self, expression):
             this = f" {expression.name}"

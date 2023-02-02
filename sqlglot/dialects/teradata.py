@@ -76,6 +76,12 @@ class Teradata(Dialect):
             )
 
     class Generator(generator.Generator):
+        PROPERTIES_LOCATION = generator.Generator.PROPERTIES_LOCATION.copy()
+        PROPERTIES_LOCATION[exp.PartitionedByProperty] = "post_index"
+
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            return f"PARTITION BY {self.sql(expression, 'this')}"
+
         # FROM before SET in Teradata UPDATE syntax
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
         def update_sql(self, expression: exp.Update) -> str:

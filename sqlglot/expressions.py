@@ -1424,7 +1424,7 @@ class IsolatedLoadingProperty(Property):
 
 
 class Properties(Expression):
-    arg_types = {"expressions": True, "before": False}
+    arg_types = {"expressions": True}
 
     NAME_TO_PROPERTY = {
         "AUTO_INCREMENT": AutoIncrementProperty,

@@ -197,7 +197,10 @@ class Presto(Dialect):
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 
-        ROOT_PROPERTIES = {exp.SchemaCommentProperty}
+        # ROOT_PROPERTIES = {exp.SchemaCommentProperty}
+
+        PROPERTIES_LOCATION = generator.Generator.PROPERTIES_LOCATION.copy()
+        PROPERTIES_LOCATION[exp.SchemaCommentProperty] = "post_schema_root"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

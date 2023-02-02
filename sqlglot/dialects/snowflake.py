@@ -234,14 +234,22 @@ class Snowflake(Dialect):
             "replace": "RENAME",
         }
 
-        ROOT_PROPERTIES = {
-            exp.PartitionedByProperty,
-            exp.ReturnsProperty,
-            exp.LanguageProperty,
-            exp.SchemaCommentProperty,
-            exp.ExecuteAsProperty,
-            exp.VolatilityProperty,
-        }
+        # ROOT_PROPERTIES = {
+        #     exp.PartitionedByProperty,
+        #     exp.ReturnsProperty,
+        #     exp.LanguageProperty,
+        #     exp.SchemaCommentProperty,
+        #     exp.ExecuteAsProperty,
+        #     exp.VolatilityProperty,
+        # }
+
+        PROPERTIES_LOCATION = generator.Generator.PROPERTIES_LOCATION.copy()
+        PROPERTIES_LOCATION[exp.PartitionedByProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.ReturnsProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.LanguageProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.SchemaCommentProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.ExecuteAsProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.VolatilityProperty] = "post_schema_root"
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

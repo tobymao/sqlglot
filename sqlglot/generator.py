@@ -99,34 +99,58 @@ class Generator:
 
     STRUCT_DELIMITER = ("<", ">")
 
-    BEFORE_PROPERTIES = {
-        exp.FallbackProperty,
-        exp.WithJournalTableProperty,
-        exp.LogProperty,
-        exp.JournalProperty,
-        exp.AfterJournalProperty,
-        exp.ChecksumProperty,
-        exp.FreespaceProperty,
-        exp.MergeBlockRatioProperty,
-        exp.DataBlocksizeProperty,
-        exp.BlockCompressionProperty,
-        exp.IsolatedLoadingProperty,
-    }
+    # BEFORE_PROPERTIES = {
+    #     exp.FallbackProperty,
+    #     exp.WithJournalTableProperty,
+    #     exp.LogProperty,
+    #     exp.JournalProperty,
+    #     exp.AfterJournalProperty,
+    #     exp.ChecksumProperty,
+    #     exp.FreespaceProperty,
+    #     exp.MergeBlockRatioProperty,
+    #     exp.DataBlocksizeProperty,
+    #     exp.BlockCompressionProperty,
+    #     exp.IsolatedLoadingProperty,
+    # }
 
-    ROOT_PROPERTIES = {
-        exp.ReturnsProperty,
-        exp.LanguageProperty,
-        exp.DistStyleProperty,
-        exp.DistKeyProperty,
-        exp.SortKeyProperty,
-        exp.LikeProperty,
-    }
+    # ROOT_PROPERTIES = {
+    #     exp.ReturnsProperty,
+    #     exp.LanguageProperty,
+    #     exp.DistStyleProperty,
+    #     exp.DistKeyProperty,
+    #     exp.SortKeyProperty,
+    #     exp.LikeProperty,
+    # }
 
-    WITH_PROPERTIES = {
-        exp.Property,
-        exp.FileFormatProperty,
-        exp.PartitionedByProperty,
-        exp.TableFormatProperty,
+    # WITH_PROPERTIES = {
+    #     exp.Property,
+    #     exp.FileFormatProperty,
+    #     exp.PartitionedByProperty,
+    #     exp.TableFormatProperty,
+    # }
+
+    PROPERTIES_LOCATION = {
+        exp.FallbackProperty: "pre_schema",
+        exp.WithJournalTableProperty: "pre_schema",
+        exp.LogProperty: "pre_schema",
+        exp.JournalProperty: "pre_schema",
+        exp.AfterJournalProperty: "pre_schema",
+        exp.ChecksumProperty: "pre_schema",
+        exp.FreespaceProperty: "pre_schema",
+        exp.MergeBlockRatioProperty: "pre_schema",
+        exp.DataBlocksizeProperty: "pre_schema",
+        exp.BlockCompressionProperty: "pre_schema",
+        exp.IsolatedLoadingProperty: "pre_schema",
+        exp.ReturnsProperty: "post_schema_root",
+        exp.LanguageProperty: "post_schema_root",
+        exp.DistStyleProperty: "post_schema_root",
+        exp.DistKeyProperty: "post_schema_root",
+        exp.SortKeyProperty: "post_schema_root",
+        exp.LikeProperty: "post_schema_root",
+        exp.Property: "post_schema_with",
+        exp.FileFormatProperty: "post_schema_with",
+        exp.PartitionedByProperty: "post_schema_with",
+        exp.TableFormatProperty: "post_schema_with",
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
@@ -455,19 +479,26 @@ class Generator:
 
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
-        has_before_properties = expression.args.get("properties")
-        has_before_properties = (
-            has_before_properties.args.get("before") if has_before_properties else None
-        )
-        if kind == "TABLE" and has_before_properties:
+        properties = expression.args.get("properties")
+        if properties:
+            preschema_prop_exps = [
+                p
+                for p in properties.expressions
+                if self.PROPERTIES_LOCATION[p.__class__] == "pre_schema"
+            ]
+        else:
+            preschema_prop_exps = None
+        if kind == "TABLE" and preschema_prop_exps:
             this_name = self.sql(expression.this, "this")
-            this_properties = self.sql(expression, "properties")
+            this_properties = self.properties(
+                exp.Properties(expressions=preschema_prop_exps), wrapped=False
+            )
             this_schema = f"({self.expressions(expression.this)})"
             this = f"{this_name}, {this_properties} {this_schema}"
-            properties = ""
+            properties_sql = ""
         else:
             this = self.sql(expression, "this")
-            properties = self.sql(expression, "properties")
+            properties_sql = self.sql(expression, "properties")
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
@@ -503,6 +534,16 @@ class Generator:
         indexes = expression.args.get("indexes")
         index_sql = ""
         if indexes:
+            # post index properties go after the primary index
+            if properties:
+                postindex_prop_exps = [
+                    p
+                    for p in properties.expressions
+                    if self.PROPERTIES_LOCATION[p.__class__] == "post_index"
+                ]
+            else:
+                postindex_prop_exps = None
+
             indexes_sql = []
             for index in indexes:
                 ind_unique = " UNIQUE" if index.args.get("unique") else ""
@@ -514,6 +555,12 @@ class Generator:
                     if index.args.get("columns")
                     else ""
                 )
+                if index.args.get("primary") and postindex_prop_exps:
+                    postindex_props_sql = self.properties(
+                        exp.Properties(expressions=postindex_prop_exps), wrapped=False
+                    )
+                    ind_columns = f"{ind_columns} {postindex_props_sql}"
+
                 indexes_sql.append(
                     f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
                 )
@@ -539,7 +586,7 @@ class Generator:
 
         post_expression_modifiers = "".join((data, statistics, no_primary_index))
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties}{expression_sql}{post_expression_modifiers}{index_sql}{no_schema_binding}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{post_expression_modifiers}{index_sql}{no_schema_binding}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:
@@ -665,24 +712,19 @@ class Generator:
         return f"PARTITION({self.expressions(expression)})"
 
     def properties_sql(self, expression: exp.Properties) -> str:
-        before_properties = []
         root_properties = []
         with_properties = []
 
         for p in expression.expressions:
-            p_class = p.__class__
-            if p_class in self.BEFORE_PROPERTIES:
-                before_properties.append(p)
-            elif p_class in self.WITH_PROPERTIES:
+            p_location = self.PROPERTIES_LOCATION[p.__class__]
+            if p_location == "post_schema_with":
                 with_properties.append(p)
-            elif p_class in self.ROOT_PROPERTIES:
+            elif p_location == "post_schema_root":
                 root_properties.append(p)
 
-        return (
-            self.properties(exp.Properties(expressions=before_properties), before=True)
-            + self.root_properties(exp.Properties(expressions=root_properties))
-            + self.with_properties(exp.Properties(expressions=with_properties))
-        )
+        return self.root_properties(
+            exp.Properties(expressions=root_properties)
+        ) + self.with_properties(exp.Properties(expressions=with_properties))
 
     def root_properties(self, properties: exp.Properties) -> str:
         if properties.expressions:
@@ -695,11 +737,11 @@ class Generator:
         prefix: str = "",
         sep: str = ", ",
         suffix: str = "",
-        before: bool = False,
+        wrapped: bool = True,
     ) -> str:
         if properties.expressions:
             expressions = self.expressions(properties, sep=sep, indent=False)
-            expressions = expressions if before else self.wrap(expressions)
+            expressions = self.wrap(expressions) if wrapped else expressions
             return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
         return ""
 

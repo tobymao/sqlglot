@@ -222,13 +222,19 @@ class BigQuery(Dialect):
             exp.DataType.Type.NVARCHAR: "STRING",
         }
 
-        ROOT_PROPERTIES = {
-            exp.LanguageProperty,
-            exp.ReturnsProperty,
-            exp.VolatilityProperty,
-        }
+        # ROOT_PROPERTIES = {
+        #     exp.LanguageProperty,
+        #     exp.ReturnsProperty,
+        #     exp.VolatilityProperty,
+        # }
 
-        WITH_PROPERTIES = {exp.Property}
+        # WITH_PROPERTIES = {exp.Property}
+
+        PROPERTIES_LOCATION = generator.Generator.PROPERTIES_LOCATION.copy()
+        PROPERTIES_LOCATION[exp.LanguageProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.ReturnsProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.VolatilityProperty] = "post_schema_root"
+        PROPERTIES_LOCATION[exp.Property] = "post_schema_with"
 
         EXPLICIT_UNION = True
 

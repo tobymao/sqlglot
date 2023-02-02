@@ -123,6 +123,7 @@ class Generator:
         exp.DistKeyProperty: "post_schema_root",
         exp.SortKeyProperty: "post_schema_root",
         exp.LikeProperty: "post_schema_root",
+        exp.Property: "post_schema_with",
         exp.FileFormatProperty: "post_schema_with",
         exp.PartitionedByProperty: "post_schema_with",
         exp.TableFormatProperty: "post_schema_with",

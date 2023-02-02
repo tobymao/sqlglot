@@ -261,6 +261,16 @@ class Postgres(Dialect):
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
         }
 
+        BITWISE = {
+            **parser.Parser.BITWISE,  # type: ignore
+            TokenType.HASH: exp.BitwiseXor,
+        }
+
+        FACTOR = {
+            **parser.Parser.FACTOR,  # type: ignore
+            TokenType.CARET: exp.Pow,
+        }
+
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
@@ -274,6 +284,7 @@ class Postgres(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: preprocess(
                 [
                     _auto_increment_to_serial,
@@ -286,6 +297,7 @@ class Postgres(Dialect):
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
+            exp.Pow: lambda self, e: self.binary(e, "^"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),

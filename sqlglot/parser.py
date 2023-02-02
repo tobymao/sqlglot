@@ -644,7 +644,6 @@ class Parser(metaclass=_Parser):
         "max_errors",
         "null_ordering",
         "_tokens",
-        "_chunks",
         "_index",
         "_curr",
         "_next",
@@ -677,7 +676,6 @@ class Parser(metaclass=_Parser):
         self.sql = ""
         self.errors = []
         self._tokens = []
-        self._chunks = [[]]
         self._index = 0
         self._curr = None
         self._next = None
@@ -745,17 +743,18 @@ class Parser(metaclass=_Parser):
         self.reset()
         self.sql = sql or ""
         total = len(raw_tokens)
+        chunks: t.List[t.List[Token]] = [[]]
 
         for i, token in enumerate(raw_tokens):
             if token.token_type == TokenType.SEMICOLON:
                 if i < total - 1:
-                    self._chunks.append([])
+                    chunks.append([])
             else:
-                self._chunks[-1].append(token)
+                chunks[-1].append(token)
 
         expressions = []
 
-        for tokens in self._chunks:
+        for tokens in chunks:
             self._index = -1
             self._tokens = tokens
             self._advance()
@@ -788,7 +787,7 @@ class Parser(metaclass=_Parser):
         error level setting.
         """
         token = token or self._curr or self._prev or Token.string("")
-        start = self._find_token(token, self.sql)
+        start = self._find_token(token)
         end = start + len(token.text)
         start_context = self.sql[max(start - self.error_message_context, 0) : start]
         highlight = self.sql[start:end]
@@ -850,13 +849,16 @@ class Parser(metaclass=_Parser):
         for error_message in expression.error_messages(args):
             self.raise_error(error_message)
 
-    def _find_token(self, token: Token, sql: str) -> int:
+    def _find_sql(self, start: Token, end: Token) -> str:
+        return self.sql[self._find_token(start) : self._find_token(end)]
+
+    def _find_token(self, token: Token) -> int:
         line = 1
         col = 1
         index = 0
 
         while line < token.line or col < token.col:
-            if Tokenizer.WHITE_SPACE.get(sql[index]) == TokenType.BREAK:
+            if Tokenizer.WHITE_SPACE.get(self.sql[index]) == TokenType.BREAK:
                 line += 1
                 col = 1
             else:
@@ -1696,7 +1698,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Expecting )", self._curr)
 
             paren = 1
-            start = self._find_token(self._curr, self.sql)
+            start = self._curr
 
             while self._curr and paren > 0:
                 if self._curr.token_type == TokenType.L_PAREN:
@@ -1708,8 +1710,8 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Expecting )", self._curr)
             if not self._curr:
                 self.raise_error("Expecting pattern", self._curr)
-            end = self._find_token(self._prev, self.sql)
-            pattern = exp.Var(this=self.sql[start:end])
+            end = self._prev
+            pattern = exp.Var(this=self._find_sql(start, end))
         else:
             pattern = None
 

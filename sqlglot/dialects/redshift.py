@@ -91,7 +91,7 @@ class Redshift(Postgres):
             rows = [tuple_exp.expressions for tuple_exp in expression.expressions]
             selects = []
             for i, row in enumerate(rows):
-                if i == 0:
+                if i == 0 and expression.alias:
                     row = [
                         exp.alias_(value, column_name)
                         for value, column_name in zip(row, expression.args["alias"].args["columns"])

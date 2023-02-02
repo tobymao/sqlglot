@@ -56,6 +56,20 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
+        self.validate_all(
+            "x ^ y",
+            write={
+                "": "POWER(x, y)",
+                "postgres": "x ^ y",
+            },
+        )
+        self.validate_all(
+            "x # y",
+            write={
+                "": "x ^ y",
+                "postgres": "x # y",
+            },
+        )
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")
         self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2, 3], 1)")

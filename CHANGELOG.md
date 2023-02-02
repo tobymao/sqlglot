@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v10.6.0
+------
+
+Changes:
+
+- Breaking: Change Power to binary expression.
+
+- New: x GLOB y support.
+
 v10.5.0
 ------
 

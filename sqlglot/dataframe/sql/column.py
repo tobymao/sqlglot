@@ -94,10 +94,10 @@ class Column:
         return self.inverse_binary_op(exp.Mod, other)
 
     def __pow__(self, power: ColumnOrLiteral, modulo=None):
-        return Column(exp.Pow(this=self.expression, power=Column(power).expression))
+        return Column(exp.Pow(this=self.expression, expression=Column(power).expression))
 
     def __rpow__(self, power: ColumnOrLiteral):
-        return Column(exp.Pow(this=Column(power).expression, power=self.expression))
+        return Column(exp.Pow(this=Column(power).expression, expression=self.expression))
 
     def __invert__(self):
         return self.unary_op(exp.Not)

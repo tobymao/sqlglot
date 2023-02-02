@@ -230,6 +230,7 @@ class Expression(metaclass=_Expression):
         Returns a deep copy of the expression.
         """
         new = deepcopy(self)
+        new.parent = self.parent
         for item, parent, _ in new.bfs():
             if isinstance(item, Expression) and parent:
                 item.parent = parent

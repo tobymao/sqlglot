@@ -10,8 +10,8 @@ from sqlglot.helper import dict_depth
 from sqlglot.trie import in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from sqlglot import DialectType
     from sqlglot.dataframe.sql.types import StructType
+    from sqlglot.dialects.dialect import DialectType
 
     ColumnMapping = t.Union[t.Dict, str, StructType, t.List]
 
@@ -154,7 +154,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         self,
         schema: t.Optional[t.Dict] = None,
         visible: t.Optional[t.Dict] = None,
-        dialect: t.Optional[DialectType] = None,
+        dialect: DialectType = None,
     ) -> None:
         self.dialect = dialect
         self.visible = visible or {}

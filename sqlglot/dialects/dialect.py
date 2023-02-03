@@ -11,6 +11,9 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer
 from sqlglot.trie import new_trie
 
+if t.TYPE_CHECKING:
+    DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
+
 
 class Dialects(str, Enum):
     DIALECT = ""

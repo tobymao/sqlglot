@@ -34,9 +34,10 @@ from sqlglot.schema import MappingSchema, Schema
 from sqlglot.tokens import Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
     T = t.TypeVar("T", bound=Expression)
 
-    DialectType = t.Union[str, Dialect, t.Type[Dialect]]
 
 __version__ = "10.6.0"
 
@@ -47,7 +48,7 @@ schema = MappingSchema()
 """The default schema used by SQLGlot (e.g. in the optimizer)."""
 
 
-def parse(sql: str, read: t.Optional[DialectType] = None, **opts) -> t.List[t.Optional[Expression]]:
+def parse(sql: str, read: DialectType = None, **opts) -> t.List[t.Optional[Expression]]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
@@ -76,7 +77,7 @@ def parse_one(
 @t.overload
 def parse_one(
     sql: str,
-    read: t.Optional[DialectType],
+    read: DialectType,
     into: t.Type[T],
     **opts,
 ) -> T:
@@ -96,7 +97,7 @@ def parse_one(
 @t.overload
 def parse_one(
     sql: str,
-    read: t.Optional[DialectType],
+    read: DialectType,
     into: t.Union[str, t.Collection[t.Union[str, t.Type[Expression]]]],
     **opts,
 ) -> Expression:
@@ -113,7 +114,7 @@ def parse_one(
 
 def parse_one(
     sql: str,
-    read: t.Optional[DialectType] = None,
+    read: DialectType = None,
     into: t.Optional[exp.IntoType] = None,
     **opts,
 ) -> Expression:
@@ -147,8 +148,8 @@ def parse_one(
 
 def transpile(
     sql: str,
-    read: t.Optional[DialectType] = None,
-    write: t.Optional[DialectType] = None,
+    read: DialectType = None,
+    write: DialectType = None,
     identity: bool = True,
     error_level: t.Optional[ErrorLevel] = None,
     **opts,

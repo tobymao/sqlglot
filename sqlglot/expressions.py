@@ -32,7 +32,7 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
-    from sqlglot import DialectType
+    from sqlglot.dialects.dialect import DialectType
 
     IntoType = t.Union[
         str,
@@ -427,7 +427,7 @@ class Expression(metaclass=_Expression):
     def __repr__(self):
         return self._to_s()
 
-    def sql(self, dialect: t.Optional[DialectType] = None, **opts) -> str:
+    def sql(self, dialect: DialectType = None, **opts) -> str:
         """
         Returns SQL string representation of this tree.
 
@@ -2455,9 +2455,7 @@ class DataType(Expression):
     }
 
     @classmethod
-    def build(
-        cls, dtype: str | DataType.Type, dialect: t.Optional[DialectType] = None, **kwargs
-    ) -> DataType:
+    def build(cls, dtype: str | DataType.Type, dialect: DialectType = None, **kwargs) -> DataType:
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
@@ -3476,7 +3474,7 @@ def maybe_parse(
     sql_or_expression: str | Expression,
     *,
     into: t.Optional[IntoType] = None,
-    dialect: t.Optional[DialectType] = None,
+    dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     **opts,
 ) -> Expression:
@@ -4373,7 +4371,7 @@ def expand(expression: Expression, sources: t.Dict[str, Subqueryable], copy=True
     return expression.transform(_expand, copy=copy)
 
 
-def func(name: str, *args, dialect: t.Optional[DialectType] = None, **kwargs) -> Func:
+def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
     """
     Returns a Func expression.
 

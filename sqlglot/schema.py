@@ -153,7 +153,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         self,
         schema: t.Optional[t.Dict] = None,
         visible: t.Optional[t.Dict] = None,
-        dialect: t.Optional[str] = None,
+        dialect: t.Optional[DialectType] = None,
     ) -> None:
         self.dialect = dialect
         self.visible = visible or {}

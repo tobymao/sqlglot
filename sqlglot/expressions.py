@@ -428,7 +428,7 @@ class Expression(metaclass=_Expression):
     def __repr__(self):
         return self._to_s()
 
-    def sql(self, dialect: Dialect | str | None = None, **opts) -> str:
+    def sql(self, dialect: t.Optional[DialectType] = None, **opts) -> str:
         """
         Returns SQL string representation of this tree.
 
@@ -3477,7 +3477,7 @@ def maybe_parse(
     sql_or_expression: str | Expression,
     *,
     into: t.Optional[IntoType] = None,
-    dialect: t.Optional[str] = None,
+    dialect: t.Optional[DialectType] = None,
     prefix: t.Optional[str] = None,
     **opts,
 ) -> Expression:
@@ -4374,7 +4374,7 @@ def expand(expression: Expression, sources: t.Dict[str, Subqueryable], copy=True
     return expression.transform(_expand, copy=copy)
 
 
-def func(name: str, *args, dialect: t.Optional[Dialect | str] = None, **kwargs) -> Func:
+def func(name: str, *args, dialect: t.Optional[DialectType] = None, **kwargs) -> Func:
     """
     Returns a Func expression.
 

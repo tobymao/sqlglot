@@ -36,7 +36,7 @@ def lineage(
     schema: t.Optional[t.Dict | Schema] = None,
     sources: t.Optional[t.Dict[str, str | exp.Subqueryable]] = None,
     rules: t.Sequence[t.Callable] = (qualify_tables, qualify_columns),
-    dialect: t.Optional[str] = None,
+    dialect: t.Optional[DialectType] = None,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
 
@@ -126,7 +126,7 @@ class LineageHTML:
     def __init__(
         self,
         node: Node,
-        dialect: t.Optional[str] = None,
+        dialect: t.Optional[DialectType] = None,
         imports: bool = True,
         **opts: t.Any,
     ):

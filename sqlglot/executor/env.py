@@ -171,5 +171,6 @@ ENV = {
     "STRPOSITION": str_position,
     "SUB": null_if_any(lambda e, this: e - this),
     "SUBSTRING": substring,
+    "TIMESTRTOTIME": null_if_any(lambda arg: datetime.datetime.fromisoformat(arg)),
     "UPPER": null_if_any(lambda arg: arg.upper()),
 }

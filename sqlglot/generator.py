@@ -738,7 +738,6 @@ class Generator:
         self, properties: exp.Properties
     ) -> t.Dict[exp.Properties.Location, list[exp.Property]]:
         properties_locs: t.Dict[exp.Properties.Location, list[exp.Property]]  = {key: [] for key in exp.Properties.Location}
-        properties_locs = {key: [] for key in exp.Properties.Location}
 
         for p in properties.expressions:
             p_loc = self.PROPERTIES_LOCATION[p.__class__]

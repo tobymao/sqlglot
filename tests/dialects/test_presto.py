@@ -177,7 +177,7 @@ class TestPresto(Validator):
         self.validate_all(
             "NOW()",
             write={
-                "presto": "CURRENT_TIMESTAMP()",
+                "presto": "CURRENT_TIMESTAMP",
                 "hive": "CURRENT_TIMESTAMP()",
             },
         )

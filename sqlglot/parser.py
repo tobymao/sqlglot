@@ -2052,9 +2052,16 @@ class Parser(metaclass=_Parser):
         expressions = self._parse_csv(self._parse_conjunction)
         grouping_sets = self._parse_grouping_sets()
 
+        self._match(TokenType.COMMA)
         with_ = self._match(TokenType.WITH)
-        cube = self._match(TokenType.CUBE) and (with_ or self._parse_wrapped_id_vars())
-        rollup = self._match(TokenType.ROLLUP) and (with_ or self._parse_wrapped_id_vars())
+        cube = self._match(TokenType.CUBE) and (
+            with_ or self._parse_wrapped_csv(self._parse_column)
+        )
+
+        self._match(TokenType.COMMA)
+        rollup = self._match(TokenType.ROLLUP) and (
+            with_ or self._parse_wrapped_csv(self._parse_column)
+        )
 
         return self.expression(
             exp.Group,
@@ -3166,7 +3173,9 @@ class Parser(metaclass=_Parser):
                 prefix += self._prev.text
 
         if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
-            return exp.Identifier(this=prefix + self._prev.text, quoted=False)
+            quoted = self._prev.token_type == TokenType.STRING
+            return exp.Identifier(this=prefix + self._prev.text, quoted=quoted)
+
         return None
 
     def _parse_string(self) -> t.Optional[exp.Expression]:

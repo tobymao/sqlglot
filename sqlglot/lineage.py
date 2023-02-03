@@ -9,6 +9,9 @@ from sqlglot.optimizer import Scope, build_scope, optimize
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.qualify_tables import qualify_tables
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
 
 @dataclass(frozen=True)
 class Node:
@@ -36,7 +39,7 @@ def lineage(
     schema: t.Optional[t.Dict | Schema] = None,
     sources: t.Optional[t.Dict[str, str | exp.Subqueryable]] = None,
     rules: t.Sequence[t.Callable] = (qualify_tables, qualify_columns),
-    dialect: t.Optional[str] = None,
+    dialect: DialectType = None,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
 
@@ -126,7 +129,7 @@ class LineageHTML:
     def __init__(
         self,
         node: Node,
-        dialect: t.Optional[str] = None,
+        dialect: DialectType = None,
         imports: bool = True,
         **opts: t.Any,
     ):

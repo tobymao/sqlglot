@@ -113,6 +113,14 @@ class TestPostgres(Validator):
         self.validate_identity("x ~* 'y'")
 
         self.validate_all(
+            "GENERATE_SERIES(a, b, c)",
+            write={
+                "postgres": "GENERATE_SERIES(a, b, c)",
+                "presto": "SEQUENCE(a, b, c)",
+                "trino": "SEQUENCE(a, b, c)",
+            },
+        )
+        self.validate_all(
             "END WORK AND NO CHAIN",
             write={"postgres": "COMMIT AND NO CHAIN"},
         )

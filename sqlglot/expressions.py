@@ -32,6 +32,7 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
+    from sqlglot import DialectType
     from sqlglot.dialects.dialect import Dialect
 
     IntoType = t.Union[
@@ -2456,7 +2457,7 @@ class DataType(Expression):
 
     @classmethod
     def build(
-        cls, dtype: str | DataType.Type, dialect: t.Optional[str | Dialect] = None, **kwargs
+        cls, dtype: str | DataType.Type, dialect: t.Optional[DialectType] = None, **kwargs
     ) -> DataType:
         from sqlglot import parse_one
 

@@ -76,7 +76,7 @@ def parse_one(
 @t.overload
 def parse_one(
     sql: str,
-    read: str | Dialect | t.Type[Dialect],
+    read: t.Optional[DialectType],
     into: t.Type[T],
     **opts,
 ) -> T:
@@ -96,7 +96,7 @@ def parse_one(
 @t.overload
 def parse_one(
     sql: str,
-    read: str | Dialect | t.Type[Dialect],
+    read: t.Optional[DialectType],
     into: t.Union[str, t.Collection[t.Union[str, t.Type[Expression]]]],
     **opts,
 ) -> Expression:

@@ -234,11 +234,6 @@ class Snowflake(Dialect):
             "replace": "RENAME",
         }
 
-        PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.PartitionedByProperty: "post_schema_root",
-        }
-
         def except_op(self, expression):
             if not expression.args.get("distinct", False):
                 self.unsupported("EXCEPT with All is not supported in Snowflake")

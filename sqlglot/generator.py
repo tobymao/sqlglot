@@ -110,6 +110,7 @@ class Generator:
         exp.DistKeyProperty: "post_schema_root",
         exp.DistStyleProperty: "post_schema_root",
         exp.EngineProperty: "post_schema_root",
+        exp.ExecuteAsProperty: "post_schema_root",
         exp.FallbackProperty: "pre_schema",
         exp.FileFormatProperty: "post_schema_with",
         exp.FreespaceProperty: "pre_schema",
@@ -129,6 +130,7 @@ class Generator:
         exp.SerdeProperties: "post_schema_root",
         exp.SortKeyProperty: "post_schema_root",
         exp.TableFormatProperty: "post_schema_with",
+        exp.VolatilityProperty: "post_schema_root",
         exp.WithJournalTableProperty: "pre_schema",
     }
 

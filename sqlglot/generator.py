@@ -461,10 +461,12 @@ class Generator:
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
         properties = expression.args.get("properties")
+        properties_exp = expression.copy()
         properties_locs = self.locate_properties(properties) if properties else {}
         if properties and properties_locs["root_with"]:
-            # subset expression properties to just root and with properties
-            expression.set("properties", exp.Properties(expressions=properties_locs["root_with"]))
+            properties_exp.set(
+                "properties", exp.Properties(expressions=properties_locs["root_with"])
+            )
         if kind == "TABLE" and properties and properties_locs["pre_schema"]:
             this_name = self.sql(expression.this, "this")
             this_properties = self.properties(
@@ -475,7 +477,7 @@ class Generator:
             properties_sql = ""
         else:
             this = self.sql(expression, "this")
-            properties_sql = self.sql(expression, "properties")
+            properties_sql = self.sql(properties_exp, "properties")
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""

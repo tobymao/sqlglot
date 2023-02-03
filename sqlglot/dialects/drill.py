@@ -137,7 +137,10 @@ class Drill(Dialect):
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 
-        ROOT_PROPERTIES = {exp.PartitionedByProperty}
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        }
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

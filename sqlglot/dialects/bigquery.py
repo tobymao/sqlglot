@@ -222,14 +222,6 @@ class BigQuery(Dialect):
             exp.DataType.Type.NVARCHAR: "STRING",
         }
 
-        ROOT_PROPERTIES = {
-            exp.LanguageProperty,
-            exp.ReturnsProperty,
-            exp.VolatilityProperty,
-        }
-
-        WITH_PROPERTIES = {exp.Property}
-
         EXPLICIT_UNION = True
 
         def array_sql(self, expression: exp.Array) -> str:

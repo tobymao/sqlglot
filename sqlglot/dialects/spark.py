@@ -105,6 +105,14 @@ class Spark(Hive):
             exp.DataType.Type.BIGINT: "LONG",
         }
 
+        PROPERTIES_LOCATION = {
+            **Hive.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.AutoIncrementProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.CharacterSetProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,  # type: ignore
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),

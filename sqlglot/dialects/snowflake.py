@@ -234,15 +234,6 @@ class Snowflake(Dialect):
             "replace": "RENAME",
         }
 
-        ROOT_PROPERTIES = {
-            exp.PartitionedByProperty,
-            exp.ReturnsProperty,
-            exp.LanguageProperty,
-            exp.SchemaCommentProperty,
-            exp.ExecuteAsProperty,
-            exp.VolatilityProperty,
-        }
-
         def except_op(self, expression):
             if not expression.args.get("distinct", False):
                 self.unsupported("EXCEPT with All is not supported in Snowflake")

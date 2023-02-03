@@ -850,7 +850,7 @@ class Parser(metaclass=_Parser):
             self.raise_error(error_message)
 
     def _find_sql(self, start: Token, end: Token) -> str:
-        return self.sql[self._find_token(start) : self._find_token(end)]
+        return self.sql[self._find_token(start) : self._find_token(end) + len(end.text)]
 
     def _find_token(self, token: Token) -> int:
         line = 1
@@ -1695,12 +1695,10 @@ class Parser(metaclass=_Parser):
                     paren += 1
                 if self._curr.token_type == TokenType.R_PAREN:
                     paren -= 1
+                end = self._prev
                 self._advance()
             if paren > 0:
                 self.raise_error("Expecting )", self._curr)
-            if not self._curr:
-                self.raise_error("Expecting pattern", self._curr)
-            end = self._prev
             pattern = exp.Var(this=self._find_sql(start, end))
         else:
             pattern = None

@@ -121,6 +121,14 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "GENERATE_SERIES('2019-01-01'::TIMESTAMP, NOW(), '1day')",
+            write={
+                "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1' day)",
+                "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+                "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+            },
+        )
+        self.validate_all(
             "END WORK AND NO CHAIN",
             write={"postgres": "COMMIT AND NO CHAIN"},
         )

@@ -105,6 +105,29 @@ def _ts_or_ds_add_sql(self, expression):
     return f"DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), {Presto.date_format}))"
 
 
+def _sequence_sql(self, expression):
+    start = expression.args["start"]
+    end = expression.args["end"]
+    step = expression.args.get("step", 1)  # Postgres defaults to 1 for generate_series
+
+    target_type = None
+
+    if isinstance(start, exp.Cast):
+        target_type = start.to
+    elif isinstance(end, exp.Cast):
+        target_type = end.to
+
+    if target_type and target_type.this == exp.DataType.Type.TIMESTAMP:
+        to = target_type.copy()
+
+        if target_type is start.to:
+            end = exp.Cast(this=end, to=to)
+        else:
+            start = exp.Cast(this=start, to=to)
+
+    return f"SEQUENCE({self.format_args(start, end, step)})"
+
+
 def _ensure_utf8(charset):
     if charset.name.lower() != "utf-8":
         raise UnsupportedError(f"Unsupported charset {charset}")
@@ -232,7 +255,7 @@ class Presto(Dialect):
             exp.Decode: _decode_sql,
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.dateint_format}) AS DATE)",
             exp.Encode: _encode_sql,
-            exp.GenerateSeries: rename_func("SEQUENCE"),
+            exp.GenerateSeries: _sequence_sql,
             exp.Hex: rename_func("TO_HEX"),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,

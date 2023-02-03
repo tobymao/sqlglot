@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -25,6 +27,9 @@ DATE_DIFF_FACTOR = {
     "HOUR": " / 3600",
     "DAY": " / 86400",
 }
+
+# This pattern is used to capture valid postgres string intervals like '  15  days '
+INTERVAL_STRING_RE = re.compile("([0-9]+)([a-zA-Z]+)")
 
 
 def _date_add_sql(kind):
@@ -148,6 +153,30 @@ def _serial_to_generated(expression):
     return expression
 
 
+def _generate_series(args):
+    # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
+    step = seq_get(args, 2)
+
+    if step is None:
+        # Postgres allows calls with just two arguments -- the "step" argument defaults to 1
+        return exp.GenerateSeries.from_arg_list(args)
+
+    interval_parts = None
+    if step.is_string:
+        interval_parts = INTERVAL_STRING_RE.match(step.this)
+    elif isinstance(step, exp.Interval) and not step.args.get("unit"):
+        interval_parts = INTERVAL_STRING_RE.match(step.this.this)
+
+    if interval_parts:
+        # We only update the "step" argument
+        args[2] = exp.Interval(
+            this=exp.Literal.string(interval_parts.group(1)),
+            unit=exp.Var(this=interval_parts.group(2)),
+        )
+
+    return exp.GenerateSeries.from_arg_list(args)
+
+
 def _to_timestamp(args):
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
     if len(args) == 1:
@@ -260,6 +289,7 @@ class Postgres(Dialect):
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
+            "GENERATE_SERIES": _generate_series,
         }
 
         BITWISE = {

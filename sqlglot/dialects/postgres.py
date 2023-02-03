@@ -29,7 +29,7 @@ DATE_DIFF_FACTOR = {
 }
 
 # This pattern is used to capture valid postgres string intervals like '  15  days '
-INTERVAL_STRING_RE = re.compile("([0-9]+)([a-zA-Z]+)")
+INTERVAL_STRING_RE = re.compile(r"\s*([0-9]+)\s*([a-zA-Z]+)\s*")
 
 
 def _date_add_sql(kind):

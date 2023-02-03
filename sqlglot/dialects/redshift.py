@@ -63,7 +63,7 @@ class Redshift(Postgres):
 
         PROPERTIES_LOCATION = {
             **Postgres.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.LikeProperty: "post_schema_with",
+            exp.LikeProperty: exp.Properties.Location.POST_SCHEMA_WITH,
         }
 
         TRANSFORMS = {

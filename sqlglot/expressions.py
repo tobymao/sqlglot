@@ -1447,6 +1447,13 @@ class Properties(Expression):
 
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}
 
+    class Location(AutoName):
+        PRE_SCHEMA = auto()
+        POST_INDEX = auto()
+        POST_SCHEMA_ROOT = auto()
+        POST_SCHEMA_WITH = auto()
+        UNSUPPORTED = auto()
+
     @classmethod
     def from_dict(cls, properties_dict) -> Properties:
         expressions = []

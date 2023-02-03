@@ -107,10 +107,10 @@ class Spark(Hive):
 
         PROPERTIES_LOCATION = {
             **Hive.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.EngineProperty: "unsupported",
-            exp.AutoIncrementProperty: "unsupported",
-            exp.CharacterSetProperty: "unsupported",
-            exp.CollateProperty: "unsupported",
+            exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.AutoIncrementProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.CharacterSetProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         TRANSFORMS = {

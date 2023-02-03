@@ -100,38 +100,38 @@ class Generator:
     STRUCT_DELIMITER = ("<", ">")
 
     PROPERTIES_LOCATION = {
-        exp.AfterJournalProperty: "pre_schema",
-        exp.AutoIncrementProperty: "post_schema_root",
-        exp.BlockCompressionProperty: "pre_schema",
-        exp.CharacterSetProperty: "post_schema_root",
-        exp.ChecksumProperty: "pre_schema",
-        exp.CollateProperty: "post_schema_root",
-        exp.DataBlocksizeProperty: "pre_schema",
-        exp.DistKeyProperty: "post_schema_root",
-        exp.DistStyleProperty: "post_schema_root",
-        exp.EngineProperty: "post_schema_root",
-        exp.ExecuteAsProperty: "post_schema_root",
-        exp.FallbackProperty: "pre_schema",
-        exp.FileFormatProperty: "post_schema_with",
-        exp.FreespaceProperty: "pre_schema",
-        exp.IsolatedLoadingProperty: "pre_schema",
-        exp.JournalProperty: "pre_schema",
-        exp.LanguageProperty: "post_schema_root",
-        exp.LikeProperty: "post_schema_root",
-        exp.LocationProperty: "post_schema_root",
-        exp.LogProperty: "pre_schema",
-        exp.MergeBlockRatioProperty: "pre_schema",
-        exp.PartitionedByProperty: "post_schema_with",
-        exp.Property: "post_schema_with",
-        exp.ReturnsProperty: "post_schema_root",
-        exp.RowFormatDelimitedProperty: "post_schema_root",
-        exp.RowFormatSerdeProperty: "post_schema_root",
-        exp.SchemaCommentProperty: "post_schema_root",
-        exp.SerdeProperties: "post_schema_root",
-        exp.SortKeyProperty: "post_schema_root",
-        exp.TableFormatProperty: "post_schema_with",
-        exp.VolatilityProperty: "post_schema_root",
-        exp.WithJournalTableProperty: "pre_schema",
+        exp.AfterJournalProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.BlockCompressionProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.ChecksumProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.CollateProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.DataBlocksizeProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.EngineProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.ExecuteAsProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.FallbackProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA_WITH,
+        exp.FreespaceProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.IsolatedLoadingProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.JournalProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.LanguageProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.LikeProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.LocationProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.LogProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.MergeBlockRatioProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA_WITH,
+        exp.Property: exp.Properties.Location.POST_SCHEMA_WITH,
+        exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.RowFormatDelimitedProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.RowFormatSerdeProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.SchemaCommentProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.SerdeProperties: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA_WITH,
+        exp.VolatilityProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.WithJournalTableProperty: exp.Properties.Location.PRE_SCHEMA,
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
@@ -463,14 +463,24 @@ class Generator:
         properties = expression.args.get("properties")
         properties_exp = expression.copy()
         properties_locs = self.locate_properties(properties) if properties else {}
-        if properties and properties_locs["root_with"]:
+        if properties and (
+            properties_locs[exp.Properties.Location.POST_SCHEMA_ROOT]
+            or properties_locs[exp.Properties.Location.POST_SCHEMA_WITH]
+        ):
             properties_exp.set(
-                "properties", exp.Properties(expressions=properties_locs["root_with"])
+                "properties",
+                exp.Properties(
+                    expressions=[
+                        *properties_locs[exp.Properties.Location.POST_SCHEMA_ROOT],
+                        *properties_locs[exp.Properties.Location.POST_SCHEMA_WITH],
+                    ]
+                ),
             )
-        if kind == "TABLE" and properties and properties_locs["pre_schema"]:
+        if kind == "TABLE" and properties and properties_locs[exp.Properties.Location.PRE_SCHEMA]:
             this_name = self.sql(expression.this, "this")
             this_properties = self.properties(
-                exp.Properties(expressions=properties_locs["pre_schema"]), wrapped=False
+                exp.Properties(expressions=properties_locs[exp.Properties.Location.PRE_SCHEMA]),
+                wrapped=False,
             )
             this_schema = f"({self.expressions(expression.this)})"
             this = f"{this_name}, {this_properties} {this_schema}"
@@ -524,9 +534,16 @@ class Generator:
                     if index.args.get("columns")
                     else ""
                 )
-                if index.args.get("primary") and properties and properties_locs["post_index"]:
+                if (
+                    index.args.get("primary")
+                    and properties
+                    and properties_locs[exp.Properties.Location.POST_INDEX]
+                ):
                     postindex_props_sql = self.properties(
-                        exp.Properties(expressions=properties_locs["post_index"]), wrapped=False
+                        exp.Properties(
+                            expressions=properties_locs[exp.Properties.Location.POST_INDEX]
+                        ),
+                        wrapped=False,
                     )
                     ind_columns = f"{ind_columns} {postindex_props_sql}"
 
@@ -685,10 +702,10 @@ class Generator:
         with_properties = []
 
         for p in expression.expressions:
-            p_location = self.PROPERTIES_LOCATION[p.__class__]
-            if p_location == "post_schema_with":
+            p_loc = self.PROPERTIES_LOCATION[p.__class__]
+            if p_loc == exp.Properties.Location.POST_SCHEMA_WITH:
                 with_properties.append(p)
-            elif p_location == "post_schema_root":
+            elif p_loc == exp.Properties.Location.POST_SCHEMA_ROOT:
                 root_properties.append(p)
 
         return self.root_properties(
@@ -717,33 +734,24 @@ class Generator:
     def with_properties(self, properties: exp.Properties) -> str:
         return self.properties(properties, prefix=self.seg("WITH"))
 
-    def locate_properties(self, properties: exp.Properties) -> dict:
-        properties_locs = {}
+    def locate_properties(
+        self, properties: exp.Properties
+    ) -> t.Dict[exp.Properties.Location, list[exp.Property]]:
+        properties_locs: t.Dict[exp.Properties.Location, list[exp.Property]]
+        properties_locs = {key: [] for key in exp.Properties.Location}
 
-        properties_locs["pre_schema"] = [
-            p
-            for p in properties.expressions
-            if self.PROPERTIES_LOCATION[p.__class__] == "pre_schema"
-        ]
-
-        properties_locs["post_index"] = [
-            p
-            for p in properties.expressions
-            if self.PROPERTIES_LOCATION[p.__class__] == "post_index"
-        ]
-
-        properties_locs["root_with"] = [
-            p
-            for p in properties.expressions
-            if self.PROPERTIES_LOCATION[p.__class__] in ("post_schema_root", "post_schema_with")
-        ]
-
-        for prop in [
-            p
-            for p in properties.expressions
-            if self.PROPERTIES_LOCATION[p.__class__] == "unsupported"
-        ]:
-            self.unsupported(f"Unsupported property {prop.key}")
+        for p in properties.expressions:
+            p_loc = self.PROPERTIES_LOCATION[p.__class__]
+            if p_loc == exp.Properties.Location.PRE_SCHEMA:
+                properties_locs[exp.Properties.Location.PRE_SCHEMA].append(p)
+            elif p_loc == exp.Properties.Location.POST_INDEX:
+                properties_locs[exp.Properties.Location.POST_INDEX].append(p)
+            elif p_loc == exp.Properties.Location.POST_SCHEMA_ROOT:
+                properties_locs[exp.Properties.Location.POST_SCHEMA_ROOT].append(p)
+            elif p_loc == exp.Properties.Location.POST_SCHEMA_WITH:
+                properties_locs[exp.Properties.Location.POST_SCHEMA_WITH].append(p)
+            elif p_loc == exp.Properties.Location.UNSUPPORTED:
+                self.unsupported(f"Unsupported property {p.key}")
 
         return properties_locs
 

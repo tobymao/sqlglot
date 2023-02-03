@@ -324,9 +324,9 @@ class Hive(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.FileFormatProperty: "post_schema_root",
-            exp.PartitionedByProperty: "post_schema_root",
-            exp.TableFormatProperty: "post_schema_root",
+            exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+            exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         }
 
         def with_properties(self, properties):

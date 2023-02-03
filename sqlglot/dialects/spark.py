@@ -73,6 +73,7 @@ class Spark(Hive):
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,
+            "AGGREGATE": exp.Reduce.from_arg_list,
         }
 
         FUNCTION_PARSERS = {

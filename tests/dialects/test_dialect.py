@@ -715,6 +715,7 @@ class TestDialect(Validator):
                 "hive": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "presto": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "spark": "AGGREGATE(x, 0, (acc, x) -> acc + x, acc -> acc)",
+                "presto": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
             },
         )
 

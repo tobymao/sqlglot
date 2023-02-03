@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -449,22 +447,11 @@ class MySQL(Dialect):
             exp.StrPosition: strposition_to_locate_sql,
         }
 
-        ROOT_PROPERTIES = {
-            exp.EngineProperty,
-            exp.AutoIncrementProperty,
-            exp.CharacterSetProperty,
-            exp.CollateProperty,
-            exp.SchemaCommentProperty,
-            exp.LikeProperty,
-        }
-
         TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
-
-        WITH_PROPERTIES: t.Set[t.Type[exp.Property]] = set()
 
         def show_sql(self, expression):
             this = f" {expression.name}"

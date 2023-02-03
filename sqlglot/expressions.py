@@ -1425,7 +1425,7 @@ class IsolatedLoadingProperty(Property):
 
 
 class Properties(Expression):
-    arg_types = {"expressions": True, "before": False}
+    arg_types = {"expressions": True}
 
     NAME_TO_PROPERTY = {
         "AUTO_INCREMENT": AutoIncrementProperty,
@@ -1446,6 +1446,13 @@ class Properties(Expression):
     }
 
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}
+
+    class Location(AutoName):
+        PRE_SCHEMA = auto()
+        POST_INDEX = auto()
+        POST_SCHEMA_ROOT = auto()
+        POST_SCHEMA_WITH = auto()
+        UNSUPPORTED = auto()
 
     @classmethod
     def from_dict(cls, properties_dict) -> Properties:

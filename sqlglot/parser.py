@@ -1006,6 +1006,14 @@ class Parser(metaclass=_Parser):
                 indexes = []
                 while True:
                     index = self._parse_create_table_index()
+
+                    # post index PARTITION BY property
+                    if self._match(TokenType.PARTITION_BY, advance=False):
+                        if properties:
+                            properties.expressions.append(self._parse_property())
+                        else:
+                            properties = self._parse_properties()
+
                     if not index:
                         break
                     else:
@@ -1040,6 +1048,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:
+        self._match(TokenType.COMMA)
+
+        # parsers look to _prev for no/dual/default, so need to consume first
         self._match_text_seq("NO")
         self._match_text_seq("DUAL")
         self._match_text_seq("DEFAULT")
@@ -1083,7 +1094,6 @@ class Parser(metaclass=_Parser):
 
         while True:
             if before:
-                self._match(TokenType.COMMA)
                 identified_property = self._parse_property_before()
             else:
                 identified_property = self._parse_property()
@@ -1094,7 +1104,7 @@ class Parser(metaclass=_Parser):
                 properties.append(p)
 
         if properties:
-            return self.expression(exp.Properties, expressions=properties, before=before)
+            return self.expression(exp.Properties, expressions=properties)
 
         return None
 

@@ -322,17 +322,11 @@ class Hive(Dialect):
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
         }
 
-        WITH_PROPERTIES = {exp.Property}
-
-        ROOT_PROPERTIES = {
-            exp.PartitionedByProperty,
-            exp.FileFormatProperty,
-            exp.SchemaCommentProperty,
-            exp.LocationProperty,
-            exp.TableFormatProperty,
-            exp.RowFormatDelimitedProperty,
-            exp.RowFormatSerdeProperty,
-            exp.SerdeProperties,
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+            exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         }
 
         def with_properties(self, properties):

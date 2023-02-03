@@ -975,7 +975,7 @@ class Generator:
             rollup = self.expressions(expression, key="rollup", indent=False)
             rollup = f"{self.seg('ROLLUP')} {self.wrap(rollup)}" if rollup else ""
 
-        return f"{group_by}{grouping_sets}{cube}{rollup}"
+        return f"{group_by}{csv(grouping_sets, cube, rollup, sep=',')}"
 
     def having_sql(self, expression: exp.Having) -> str:
         this = self.indent(self.sql(expression, "this"))

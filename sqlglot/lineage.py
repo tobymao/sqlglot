@@ -9,6 +9,9 @@ from sqlglot.optimizer import Scope, build_scope, optimize
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.qualify_tables import qualify_tables
 
+if t.TYPE_CHECKING:
+    from sqlglot import DialectType
+
 
 @dataclass(frozen=True)
 class Node:

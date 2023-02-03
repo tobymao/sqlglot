@@ -10,6 +10,7 @@ from sqlglot.helper import dict_depth
 from sqlglot.trie import in_trie, new_trie
 
 if t.TYPE_CHECKING:
+    from sqlglot import DialectType
     from sqlglot.dataframe.sql.types import StructType
 
     ColumnMapping = t.Union[t.Dict, str, StructType, t.List]

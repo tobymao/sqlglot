@@ -33,7 +33,6 @@ from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
     from sqlglot import DialectType
-    from sqlglot.dialects.dialect import Dialect
 
     IntoType = t.Union[
         str,

@@ -3163,7 +3163,9 @@ class Parser(metaclass=_Parser):
                 prefix += self._prev.text
 
         if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
-            return exp.Identifier(this=prefix + self._prev.text, quoted=False)
+            quoted = self._prev.token_type == TokenType.STRING
+            return exp.Identifier(this=prefix + self._prev.text, quoted=quoted)
+
         return None
 
     def _parse_string(self) -> t.Optional[exp.Expression]:

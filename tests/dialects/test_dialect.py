@@ -1,6 +1,7 @@
 import unittest
 
 from sqlglot import Dialect, Dialects, ErrorLevel, UnsupportedError, parse_one
+from sqlglot.dialects import Hive
 
 
 class Validator(unittest.TestCase):
@@ -66,6 +67,11 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect.get(dialect))
             self.assertIsNotNone(Dialect.get_or_raise(dialect))
             self.assertIsNotNone(Dialect[dialect.value])
+
+    def test_get_or_raise(self):
+        self.assertEqual(Dialect.get_or_raise(Hive), Hive)
+        self.assertEqual(Dialect.get_or_raise(Hive()), Hive)
+        self.assertEqual(Dialect.get_or_raise("hive"), Hive)
 
     def test_cast(self):
         self.validate_all(

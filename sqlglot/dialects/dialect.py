@@ -122,9 +122,15 @@ class Dialect(metaclass=_Dialect):
     def get_or_raise(cls, dialect):
         if not dialect:
             return cls
+        if isinstance(dialect, _Dialect):
+            return dialect
+        if isinstance(dialect, Dialect):
+            return dialect.__class__
+
         result = cls.get(dialect)
         if not result:
             raise ValueError(f"Unknown dialect '{dialect}'")
+
         return result
 
     @classmethod

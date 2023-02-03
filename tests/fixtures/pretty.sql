@@ -99,7 +99,7 @@ WITH cte1 AS (
     GROUPING SETS (
       a,
       (b, c)
-    )
+    ),
     CUBE (
       y,
       z

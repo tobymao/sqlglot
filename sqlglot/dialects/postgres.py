@@ -257,6 +257,7 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
+            "NOW": exp.CurrentTimestamp.from_arg_list,
             "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
         }

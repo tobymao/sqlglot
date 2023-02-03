@@ -2838,6 +2838,10 @@ class Array(Func):
     is_var_len_args = True
 
 
+class GenerateSeries(Func):
+    arg_types = {"start": True, "end": True, "step": False}
+
+
 class ArrayAgg(AggFunc):
     pass
 

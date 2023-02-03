@@ -459,7 +459,7 @@ class Generator:
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
         properties = expression.args.get("properties")
-        properties_locs = self.separate_properties(properties) if properties else {}
+        properties_locs = self.locate_properties(properties) if properties else {}
         if properties and properties_locs["root_with"]:
             # subset expression properties to just root and with properties
             expression.set("properties", exp.Properties(expressions=properties_locs["root_with"]))
@@ -713,22 +713,22 @@ class Generator:
     def with_properties(self, properties: exp.Properties) -> str:
         return self.properties(properties, prefix=self.seg("WITH"))
 
-    def separate_properties(self, properties: exp.Properties) -> dict:
-        properties_dict = {}
+    def locate_properties(self, properties: exp.Properties) -> dict:
+        properties_locs = {}
 
-        properties_dict["pre_schema"] = [
+        properties_locs["pre_schema"] = [
             p
             for p in properties.expressions
             if self.PROPERTIES_LOCATION[p.__class__] == "pre_schema"
         ]
 
-        properties_dict["post_index"] = [
+        properties_locs["post_index"] = [
             p
             for p in properties.expressions
             if self.PROPERTIES_LOCATION[p.__class__] == "post_index"
         ]
 
-        properties_dict["root_with"] = [
+        properties_locs["root_with"] = [
             p
             for p in properties.expressions
             if self.PROPERTIES_LOCATION[p.__class__] in ("post_schema_root", "post_schema_with")
@@ -741,7 +741,7 @@ class Generator:
         ]:
             self.unsupported(f"Unsupported property {prop.key}")
 
-        return properties_dict
+        return properties_locs
 
     def property_sql(self, expression: exp.Property) -> str:
         property_cls = expression.__class__

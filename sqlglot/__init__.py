@@ -33,6 +33,9 @@ from sqlglot.parser import Parser
 from sqlglot.schema import MappingSchema, Schema
 from sqlglot.tokens import Tokenizer, TokenType
 
+if t.TYPE_CHECKING:
+    T = t.TypeVar("T", bound=Expression)
+
 __version__ = "10.6.0"
 
 pretty = False
@@ -58,6 +61,54 @@ def parse(
     """
     dialect = Dialect.get_or_raise(read)()
     return dialect.parse(sql, **opts)
+
+
+@t.overload
+def parse_one(
+    sql: str,
+    read: None = None,
+    into: t.Type[T] = ...,
+    **opts,
+) -> T:
+    ...
+
+
+@t.overload
+def parse_one(
+    sql: str,
+    read: str | Dialect,
+    into: t.Type[T],
+    **opts,
+) -> T:
+    ...
+
+
+@t.overload
+def parse_one(
+    sql: str,
+    read: None = None,
+    into: t.Union[str, t.Collection[t.Union[str, t.Type[Expression]]]] = ...,
+    **opts,
+) -> Expression:
+    ...
+
+
+@t.overload
+def parse_one(
+    sql: str,
+    read: str | Dialect,
+    into: t.Union[str, t.Collection[t.Union[str, t.Type[Expression]]]],
+    **opts,
+) -> Expression:
+    ...
+
+
+@t.overload
+def parse_one(
+    sql: str,
+    **opts,
+) -> Expression:
+    ...
 
 
 def parse_one(

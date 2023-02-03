@@ -199,7 +199,6 @@ class Presto(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.SchemaCommentProperty: "post_schema_root",
             exp.LocationProperty: "unsupported",
         }
 

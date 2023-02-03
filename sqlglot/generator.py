@@ -100,36 +100,36 @@ class Generator:
     STRUCT_DELIMITER = ("<", ">")
 
     PROPERTIES_LOCATION = {
-        exp.FallbackProperty: "pre_schema",
-        exp.WithJournalTableProperty: "pre_schema",
-        exp.LogProperty: "pre_schema",
-        exp.JournalProperty: "pre_schema",
         exp.AfterJournalProperty: "pre_schema",
-        exp.ChecksumProperty: "pre_schema",
-        exp.FreespaceProperty: "pre_schema",
-        exp.MergeBlockRatioProperty: "pre_schema",
-        exp.DataBlocksizeProperty: "pre_schema",
-        exp.BlockCompressionProperty: "pre_schema",
-        exp.IsolatedLoadingProperty: "pre_schema",
-        exp.EngineProperty: "post_schema_root",
-        exp.SchemaCommentProperty: "post_schema_root",
-        exp.LocationProperty: "post_schema_root",
         exp.AutoIncrementProperty: "post_schema_root",
+        exp.BlockCompressionProperty: "pre_schema",
         exp.CharacterSetProperty: "post_schema_root",
+        exp.ChecksumProperty: "pre_schema",
         exp.CollateProperty: "post_schema_root",
-        exp.ReturnsProperty: "post_schema_root",
-        exp.LanguageProperty: "post_schema_root",
-        exp.DistStyleProperty: "post_schema_root",
+        exp.DataBlocksizeProperty: "pre_schema",
         exp.DistKeyProperty: "post_schema_root",
-        exp.SortKeyProperty: "post_schema_root",
-        exp.LikeProperty: "post_schema_root",
-        exp.Property: "post_schema_with",
+        exp.DistStyleProperty: "post_schema_root",
+        exp.EngineProperty: "post_schema_root",
+        exp.FallbackProperty: "pre_schema",
         exp.FileFormatProperty: "post_schema_with",
+        exp.FreespaceProperty: "pre_schema",
+        exp.IsolatedLoadingProperty: "pre_schema",
+        exp.JournalProperty: "pre_schema",
+        exp.LanguageProperty: "post_schema_root",
+        exp.LikeProperty: "post_schema_root",
+        exp.LocationProperty: "post_schema_root",
+        exp.LogProperty: "pre_schema",
+        exp.MergeBlockRatioProperty: "pre_schema",
         exp.PartitionedByProperty: "post_schema_with",
-        exp.TableFormatProperty: "post_schema_with",
+        exp.Property: "post_schema_with",
+        exp.ReturnsProperty: "post_schema_root",
         exp.RowFormatDelimitedProperty: "post_schema_root",
         exp.RowFormatSerdeProperty: "post_schema_root",
+        exp.SchemaCommentProperty: "post_schema_root",
         exp.SerdeProperties: "post_schema_root",
+        exp.SortKeyProperty: "post_schema_root",
+        exp.TableFormatProperty: "post_schema_with",
+        exp.WithJournalTableProperty: "pre_schema",
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
@@ -750,7 +750,7 @@ class Generator:
 
         property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
         if not property_name:
-            self.unsupported(f"Unsupported property {property_cls}")
+            self.unsupported(f"Unsupported property {expression.key}")
 
         return f"{property_name}={self.sql(expression, 'this')}"
 

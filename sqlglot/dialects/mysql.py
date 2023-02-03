@@ -447,12 +447,6 @@ class MySQL(Dialect):
             exp.StrPosition: strposition_to_locate_sql,
         }
 
-        PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.SchemaCommentProperty: "post_schema_root",
-            exp.LikeProperty: "post_schema_root",
-        }
-
         TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)

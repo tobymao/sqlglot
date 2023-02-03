@@ -236,12 +236,7 @@ class Snowflake(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
-            # exp.PartitionedByProperty: "post_schema_root",
-            exp.ReturnsProperty: "post_schema_root",
-            exp.LanguageProperty: "post_schema_root",
-            exp.SchemaCommentProperty: "post_schema_root",
-            exp.ExecuteAsProperty: "post_schema_root",
-            exp.VolatilityProperty: "post_schema_root",
+            exp.PartitionedByProperty: "post_schema_root",
         }
 
         def except_op(self, expression):

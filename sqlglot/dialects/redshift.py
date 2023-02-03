@@ -63,9 +63,6 @@ class Redshift(Postgres):
 
         PROPERTIES_LOCATION = {
             **Postgres.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.DistKeyProperty: "post_schema_root",
-            exp.SortKeyProperty: "post_schema_root",
-            exp.DistStyleProperty: "post_schema_root",
             exp.LikeProperty: "post_schema_with",
         }
 

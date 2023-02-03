@@ -222,14 +222,6 @@ class BigQuery(Dialect):
             exp.DataType.Type.NVARCHAR: "STRING",
         }
 
-        PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.LanguageProperty: "post_schema_root",
-            exp.ReturnsProperty: "post_schema_root",
-            exp.VolatilityProperty: "post_schema_root",
-            exp.Property: "post_schema_with",
-        }
-
         EXPLICIT_UNION = True
 
         def array_sql(self, expression: exp.Array) -> str:

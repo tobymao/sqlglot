@@ -3248,7 +3248,7 @@ class ReadCSV(Func):
 
 
 class Reduce(Func):
-    arg_types = {"this": True, "initial": True, "merge": True, "finish": True}
+    arg_types = {"this": True, "initial": True, "merge": True, "finish": False}
 
 
 class RegexpLike(Func):

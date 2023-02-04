@@ -113,11 +113,19 @@ class TestPostgres(Validator):
         self.validate_identity("x ~* 'y'")
 
         self.validate_all(
-            "GENERATE_SERIES(a, b, c)",
+            "GENERATE_SERIES(a, b, '  2   days  ')",
             write={
-                "postgres": "GENERATE_SERIES(a, b, c)",
-                "presto": "SEQUENCE(a, b, c)",
-                "trino": "SEQUENCE(a, b, c)",
+                "postgres": "GENERATE_SERIES(a, b, INTERVAL '2' days)",
+                "presto": "SEQUENCE(a, b, INTERVAL '2' days)",
+                "trino": "SEQUENCE(a, b, INTERVAL '2' days)",
+            },
+        )
+        self.validate_all(
+            "GENERATE_SERIES('2019-01-01'::TIMESTAMP, NOW(), '1day')",
+            write={
+                "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1' day)",
+                "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+                "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
             },
         )
         self.validate_all(

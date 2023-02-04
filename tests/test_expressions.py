@@ -631,6 +631,19 @@ FROM foo""",
 FROM foo""",
         )
 
+    def test_to_interval(self):
+        self.assertEqual(exp.to_interval("1day").sql(), "INTERVAL '1' day")
+        self.assertEqual(exp.to_interval("  5     months").sql(), "INTERVAL '5' months")
+        with self.assertRaises(ValueError):
+            exp.to_interval("bla")
+
+        self.assertEqual(exp.to_interval(exp.Literal.string("1day")).sql(), "INTERVAL '1' day")
+        self.assertEqual(
+            exp.to_interval(exp.Literal.string("  5   months")).sql(), "INTERVAL '5' months"
+        )
+        with self.assertRaises(ValueError):
+            exp.to_interval(exp.Literal.string("bla"))
+
     def test_to_table(self):
         table_only = exp.to_table("table_name")
         self.assertEqual(table_only.name, "table_name")

@@ -148,6 +148,22 @@ def _serial_to_generated(expression):
     return expression
 
 
+def _generate_series(args):
+    # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
+    step = seq_get(args, 2)
+
+    if step is None:
+        # Postgres allows calls with just two arguments -- the "step" argument defaults to 1
+        return exp.GenerateSeries.from_arg_list(args)
+
+    if step.is_string:
+        args[2] = exp.to_interval(step.this)
+    elif isinstance(step, exp.Interval) and not step.args.get("unit"):
+        args[2] = exp.to_interval(step.this.this)
+
+    return exp.GenerateSeries.from_arg_list(args)
+
+
 def _to_timestamp(args):
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
     if len(args) == 1:
@@ -260,6 +276,7 @@ class Postgres(Dialect):
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
+            "GENERATE_SERIES": _generate_series,
         }
 
         BITWISE = {

@@ -212,6 +212,17 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
+
+        self.validate_all(
+            "AGGREGATE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
+            write={
+                "trino": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
+                "duckdb": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
+                "hive": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
+                "presto": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
+                "spark": "AGGREGATE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
+            },
+        )
         self.validate_all(
             "TRIM('SL', 'SSparkSQLS')", write={"spark": "TRIM('SL' FROM 'SSparkSQLS')"}
         )

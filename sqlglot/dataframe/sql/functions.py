@@ -1144,10 +1144,16 @@ def aggregate(
     merge_exp = _get_lambda_from_func(merge)
     if finish is not None:
         finish_exp = _get_lambda_from_func(finish)
-        return Column.invoke_anonymous_function(
-            col, "AGGREGATE", initialValue, Column(merge_exp), Column(finish_exp)
+        return Column.invoke_expression_over_column(
+            col,
+            glotexp.Reduce,
+            initial=initialValue,
+            merge=Column(merge_exp),
+            finish=Column(finish_exp),
         )
-    return Column.invoke_anonymous_function(col, "AGGREGATE", initialValue, Column(merge_exp))
+    return Column.invoke_expression_over_column(
+        col, glotexp.Reduce, initial=initialValue, merge=Column(merge_exp)
+    )
 
 
 def transform(

@@ -3964,9 +3964,15 @@ def to_identifier(alias, quoted=None) -> t.Optional[Identifier]:
 INTERVAL_STRING_RE = re.compile(r"\s*([0-9]+)\s*([a-zA-Z]+)\s*")
 
 
-def to_interval(interval: str) -> Interval:
+def to_interval(interval: str | Literal) -> Interval:
     """Builds an interval expression from a string like '1 day' or '5 months'."""
-    interval_parts = INTERVAL_STRING_RE.match(interval)
+    if isinstance(interval, Literal):
+        if not interval.is_string:
+            raise ValueError("Invalid interval string.")
+
+        interval = interval.this
+
+    interval_parts = INTERVAL_STRING_RE.match(interval)  # type: ignore
 
     if not interval_parts:
         raise ValueError("Invalid interval string.")

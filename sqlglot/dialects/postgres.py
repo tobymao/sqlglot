@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import re
-
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -27,9 +25,6 @@ DATE_DIFF_FACTOR = {
     "HOUR": " / 3600",
     "DAY": " / 86400",
 }
-
-# This pattern is used to capture valid postgres string intervals like '  15  days '
-INTERVAL_STRING_RE = re.compile(r"\s*([0-9]+)\s*([a-zA-Z]+)\s*")
 
 
 def _date_add_sql(kind):
@@ -161,18 +156,10 @@ def _generate_series(args):
         # Postgres allows calls with just two arguments -- the "step" argument defaults to 1
         return exp.GenerateSeries.from_arg_list(args)
 
-    interval_parts = None
     if step.is_string:
-        interval_parts = INTERVAL_STRING_RE.match(step.this)
+        args[2] = exp.to_interval(step.this)
     elif isinstance(step, exp.Interval) and not step.args.get("unit"):
-        interval_parts = INTERVAL_STRING_RE.match(step.this.this)
-
-    if interval_parts:
-        # We only update the "step" argument
-        args[2] = exp.Interval(
-            this=exp.Literal.string(interval_parts.group(1)),
-            unit=exp.Var(this=interval_parts.group(2)),
-        )
+        args[2] = exp.to_interval(step.this.this)
 
     return exp.GenerateSeries.from_arg_list(args)
 

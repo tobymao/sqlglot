@@ -145,7 +145,6 @@ class BigQuery(Dialect):
             "PARSE_TIMESTAMP": lambda args: exp.StrToTime(
                 this=seq_get(args, 1), format=seq_get(args, 0)
             ),
-            "IFNULL": exp.Coalesce.from_arg_list,
         }
 
         FUNCTION_PARSERS = {

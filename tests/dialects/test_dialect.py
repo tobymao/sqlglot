@@ -286,6 +286,21 @@ class TestDialect(Validator):
             write={"oracle": "CAST(a AS NUMBER)"},
         )
 
+    def test_if_null(self):
+        self.validate_all(
+            "SELECT IFNULL(1, NULL) FROM foo",
+            write={
+                "": "SELECT COALESCE(1, NULL) FROM foo",
+                "redshift": "SELECT COALESCE(1, NULL) FROM foo",
+                "postgres": "SELECT COALESCE(1, NULL) FROM foo",
+                "mysql": "SELECT COALESCE(1, NULL) FROM foo",
+                "duckdb": "SELECT COALESCE(1, NULL) FROM foo",
+                "spark": "SELECT COALESCE(1, NULL) FROM foo",
+                "bigquery": "SELECT COALESCE(1, NULL) FROM foo",
+                "presto": "SELECT COALESCE(1, NULL) FROM foo",
+            },
+        )
+
     def test_time(self):
         self.validate_all(
             "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",

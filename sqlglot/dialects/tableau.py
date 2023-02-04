@@ -31,6 +31,5 @@ class Tableau(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "IFNULL": exp.Coalesce.from_arg_list,
             "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
         }

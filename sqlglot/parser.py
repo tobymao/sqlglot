@@ -80,6 +80,7 @@ class Parser(metaclass=_Parser):
             length=exp.Literal.number(10),
         ),
         "VAR_MAP": parse_var_map,
+        "IFNULL": exp.Coalesce.from_arg_list,
     }
 
     NO_PAREN_FUNCTIONS = {

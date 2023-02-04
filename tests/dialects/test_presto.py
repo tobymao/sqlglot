@@ -314,6 +314,11 @@ class TestPresto(Validator):
 
     def test_presto(self):
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
+        self.validate_identity("SELECT * FROM (VALUES (1))")
+        self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
+        self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
+
         self.validate_all(
             'SELECT a."b" FROM "foo"',
             write={
@@ -455,10 +460,6 @@ class TestPresto(Validator):
                 "spark": UnsupportedError,
             },
         )
-        self.validate_identity("SELECT * FROM (VALUES (1))")
-        self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
-        self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-        self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
     def test_encode_decode(self):
         self.validate_all(

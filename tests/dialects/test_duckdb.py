@@ -334,6 +334,14 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_all(
+            "cast([[1]] as int[][])",
+            write={
+                "duckdb": "CAST(LIST_VALUE(LIST_VALUE(1)) AS INT[][])",
+                "spark": "CAST(ARRAY(ARRAY(1)) AS ARRAY<ARRAY<INT>>)",
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

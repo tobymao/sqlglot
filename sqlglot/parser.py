@@ -2346,11 +2346,20 @@ class Parser(metaclass=_Parser):
             maybe_func = True
 
         if not nested and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-            return exp.DataType(
+            this = exp.DataType(
                 this=exp.DataType.Type.ARRAY,
                 expressions=[exp.DataType.build(type_token.value, expressions=expressions)],
                 nested=True,
             )
+
+            while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
+                this = exp.DataType(
+                    this=exp.DataType.Type.ARRAY,
+                    expressions=[this],
+                    nested=True,
+                )
+
+            return this
 
         if self._match(TokenType.L_BRACKET):
             self._retreat(index)

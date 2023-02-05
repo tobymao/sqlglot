@@ -211,29 +211,6 @@ class Postgres(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
 
-        CREATABLES = (
-            "AGGREGATE",
-            "CAST",
-            "CONVERSION",
-            "COLLATION",
-            "DEFAULT CONVERSION",
-            "CONSTRAINT",
-            "DOMAIN",
-            "EXTENSION",
-            "FOREIGN",
-            "FUNCTION",
-            "OPERATOR",
-            "POLICY",
-            "ROLE",
-            "RULE",
-            "SEQUENCE",
-            "TEXT",
-            "TRIGGER",
-            "TYPE",
-            "UNLOGGED",
-            "USER",
-        )
-
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "~~": TokenType.LIKE,
@@ -259,8 +236,6 @@ class Postgres(Dialect):
             "TEMP": TokenType.TEMPORARY,
             "UUID": TokenType.UUID,
             "CSTRING": TokenType.PSEUDO_TYPE,
-            **{f"CREATE {kind}": TokenType.COMMAND for kind in CREATABLES},
-            **{f"DROP {kind}": TokenType.COMMAND for kind in CREATABLES},
         }
         QUOTES = ["'", "$$"]
         SINGLE_TOKENS = {

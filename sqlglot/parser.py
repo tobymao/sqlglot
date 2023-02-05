@@ -902,6 +902,7 @@ class Parser(metaclass=_Parser):
         return expression
 
     def _parse_drop(self, default_kind: t.Optional[str] = None) -> t.Optional[exp.Expression]:
+        start = self._prev
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match(TokenType.MATERIALIZED)
         kind = self._match_set(self.CREATABLES) and self._prev.text
@@ -909,8 +910,7 @@ class Parser(metaclass=_Parser):
             if default_kind:
                 kind = default_kind
             else:
-                self.raise_error(f"Expected {self.CREATABLES}")
-                return None
+                return self._parse_as_command(start)
 
         return self.expression(
             exp.Drop,
@@ -930,6 +930,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_create(self) -> t.Optional[exp.Expression]:
+        start = self._prev
         replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
         set_ = self._match(TokenType.SET)  # Teradata
         multiset = self._match_text_seq("MULTISET")  # Teradata
@@ -947,8 +948,7 @@ class Parser(metaclass=_Parser):
         create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
-            self.raise_error(f"Expected {self.CREATABLES}")
-            return None
+            return self._parse_as_command(start)
 
         exists = self._parse_exists(not_=True)
         this = None
@@ -3503,6 +3503,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_set(self) -> exp.Expression:
         return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
+
+    def _parse_as_command(self, start: Token) -> exp.Command:
+        while self._curr:
+            self._advance()
+        return exp.Command(this=self._find_sql(start, self._prev))
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

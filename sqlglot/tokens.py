@@ -665,6 +665,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,
         "CLOB": TokenType.TEXT,
+        "LONGVARCHAR": TokenType.TEXT,
         "BINARY": TokenType.BINARY,
         "BLOB": TokenType.VARBINARY,
         "BYTEA": TokenType.VARBINARY,

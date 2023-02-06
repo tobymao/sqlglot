@@ -300,7 +300,7 @@ class Scope:
             list[exp.Expression]: expressions
         """
         if isinstance(self.expression, exp.Union):
-            return []
+            return self.expression.unnest().selects
         return self.expression.selects
 
     @property

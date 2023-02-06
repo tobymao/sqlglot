@@ -1285,15 +1285,15 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
-class AlgorithmProperty(Expression):
+class AlgorithmProperty(Property):
     arg_types = {"this": True}
 
 
-class DefinerProperty(Expression):
+class DefinerProperty(Property):
     arg_types = {"this": True}
 
 
-class SqlSecurityProperty(Expression):
+class SqlSecurityProperty(Property):
     arg_types = {"definer": True}
 
 

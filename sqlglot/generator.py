@@ -562,6 +562,8 @@ class Generator:
         if properties and properties_locs[exp.Properties.Location.POST_CREATE]:
             postcreate_props_sql = self.properties(
                 exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_CREATE]),
+                sep=" ",
+                prefix=" ",
                 wrapped=False,
             )
 
@@ -765,6 +767,8 @@ class Generator:
                 properties_locs[exp.Properties.Location.POST_SCHEMA_ROOT].append(p)
             elif p_loc == exp.Properties.Location.POST_SCHEMA_WITH:
                 properties_locs[exp.Properties.Location.POST_SCHEMA_WITH].append(p)
+            elif p_loc == exp.Properties.Location.POST_CREATE:
+                properties_locs[exp.Properties.Location.POST_CREATE].append(p)
             elif p_loc == exp.Properties.Location.UNSUPPORTED:
                 self.unsupported(f"Unsupported property {p.key}")
 

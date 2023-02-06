@@ -265,7 +265,7 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             "'[1,2,3]'::json->2",
-            write={"postgres": "CAST('[1,2,3]' AS JSON) -> '2'"},
+            write={"postgres": "CAST('[1,2,3]' AS JSON) -> 2"},
         )
         self.validate_all(
             """'{"a":1,"b":2}'::json->'b'""",
@@ -281,7 +281,7 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             """'[1,2,3]'::json->>2""",
-            write={"postgres": "CAST('[1,2,3]' AS JSON) ->> '2'"},
+            write={"postgres": "CAST('[1,2,3]' AS JSON) ->> 2"},
         )
         self.validate_all(
             """'{"a":1,"b":2}'::json->>'b'""",

@@ -1078,7 +1078,7 @@ class Parser(metaclass=_Parser):
             return self._parse_sortkey(compound=True)
 
         if self._match_text_seq("SQL", "SECURITY"):
-            return self._parse_sqlsecurity()
+            return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
         assignment = self._match_pair(
             TokenType.VAR, TokenType.EQ, advance=False
@@ -1150,13 +1150,6 @@ class Parser(metaclass=_Parser):
             return None
 
         return exp.DefinerProperty(this=f"{user}@{host}")
-
-    def _parse_sqlsecurity(self) -> exp.Expression:
-        if self._match_text_seq("DEFINER"):
-            definer = True
-        elif self._match_text_seq("INVOKER"):
-            definer = False
-        return self.expression(exp.SqlSecurityProperty, definer=definer)
 
     def _parse_withjournaltable(self) -> exp.Expression:
         self._match_text_seq("WITH", "JOURNAL", "TABLE")

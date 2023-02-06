@@ -1442,10 +1442,12 @@ class Properties(Expression):
     arg_types = {"expressions": True}
 
     NAME_TO_PROPERTY = {
+        "ALGORITHM": AlgorithmProperty,
         "AUTO_INCREMENT": AutoIncrementProperty,
         "CHARACTER SET": CharacterSetProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
+        "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
         "DISTSTYLE": DistStyleProperty,
         "ENGINE": EngineProperty,

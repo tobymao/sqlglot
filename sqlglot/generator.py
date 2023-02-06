@@ -67,8 +67,6 @@ class Generator:
         exp.VolatilityProperty: lambda self, e: e.name,
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
-        exp.AlgorithmProperty: lambda self, e: f"ALGORITHM={self.sql(e, 'this')}",
-        exp.DefinerProperty: lambda self, e: f"DEFINER={self.sql(e, 'this')}",
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
     }
 

@@ -2804,7 +2804,23 @@ class Parser(metaclass=_Parser):
             if not self._curr:
                 break
 
-            if self._match_text_seq("NOT", "ENFORCED"):
+            if self._match(TokenType.ON):
+                action = None
+                on = self._advance_any() and self._prev.text
+
+                if self._match(TokenType.NO_ACTION):
+                    action = "NO ACTION"
+                elif self._match(TokenType.CASCADE):
+                    action = "CASCADE"
+                elif self._match_pair(TokenType.SET, TokenType.NULL):
+                    action = "SET NULL"
+                elif self._match_pair(TokenType.SET, TokenType.DEFAULT):
+                    action = "SET DEFAULT"
+                else:
+                    self.raise_error("Invalid key constraint")
+
+                options.append(f"ON {on} {action}")
+            elif self._match_text_seq("NOT", "ENFORCED"):
                 options.append("NOT ENFORCED")
             elif self._match_text_seq("DEFERRABLE"):
                 options.append("DEFERRABLE")
@@ -2814,10 +2830,6 @@ class Parser(metaclass=_Parser):
                 options.append("NORELY")
             elif self._match_text_seq("MATCH", "FULL"):
                 options.append("MATCH FULL")
-            elif self._match_text_seq("ON", "UPDATE", "NO ACTION"):
-                options.append("ON UPDATE NO ACTION")
-            elif self._match_text_seq("ON", "DELETE", "NO ACTION"):
-                options.append("ON DELETE NO ACTION")
             else:
                 break
 

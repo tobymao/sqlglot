@@ -536,15 +536,15 @@ def month(col: ColumnOrName) -> Column:
 
 
 def dayofweek(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "DAYOFWEEK")
+    return Column.invoke_expression_over_column(col, glotexp.DayOfWeek)
 
 
 def dayofmonth(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "DAYOFMONTH")
+    return Column.invoke_expression_over_column(col, glotexp.DayOfMonth)
 
 
 def dayofyear(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "DAYOFYEAR")
+    return Column.invoke_expression_over_column(col, glotexp.DayOfYear)
 
 
 def hour(col: ColumnOrName) -> Column:
@@ -560,7 +560,7 @@ def second(col: ColumnOrName) -> Column:
 
 
 def weekofyear(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "WEEKOFYEAR")
+    return Column.invoke_expression_over_column(col, glotexp.WeekOfYear)
 
 
 def make_date(year: ColumnOrName, month: ColumnOrName, day: ColumnOrName) -> Column:

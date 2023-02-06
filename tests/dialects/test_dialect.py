@@ -1403,3 +1403,21 @@ SELECT
                 "spark": "MERGE INTO a AS b USING c AS d ON b.id = d.id WHEN MATCHED AND EXISTS(SELECT b.name EXCEPT SELECT d.name) THEN UPDATE SET b.name = d.name",
             },
         )
+
+    def test_substring(self):
+        self.validate_all(
+            "SUBSTR('123456', 2, 3)",
+            write={
+                "bigquery": "SUBSTR('123456', 2, 3)",
+                "oracle": "SUBSTR('123456', 2, 3)",
+                "postgres": "SUBSTR('123456', 2, 3)",
+            },
+        )
+        self.validate_all(
+            "SUBSTRING('123456', 2, 3)",
+            write={
+                "bigquery": "SUBSTRING('123456', 2, 3)",
+                "oracle": "SUBSTR('123456', 2, 3)",
+                "postgres": "SUBSTRING('123456' FROM 2 FOR 3)",
+            },
+        )

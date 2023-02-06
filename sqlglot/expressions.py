@@ -2998,6 +2998,30 @@ class DatetimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
+class DateOfWeek(Func, TimeUnit):
+    arg_types = {
+        "this": True,
+    }
+
+
+class DateOfMonth(Func, TimeUnit):
+    arg_types = {
+        "this": True,
+    }
+
+
+class DateOfYear(Func, TimeUnit):
+    arg_types = {
+        "this": True,
+    }
+
+
+class WeekOfYear(Func, TimeUnit):
+    arg_types = {
+        "this": True,
+    }
+
+
 class LastDateOfMonth(Func):
     pass
 

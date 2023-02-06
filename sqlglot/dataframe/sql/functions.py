@@ -536,15 +536,15 @@ def month(col: ColumnOrName) -> Column:
 
 
 def dayofweek(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.DateOfWeek)
+    return Column.invoke_expression_over_column(col, glotexp.DayOfWeek)
 
 
 def dayofmonth(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.DateOfMonth)
+    return Column.invoke_expression_over_column(col, glotexp.DayOfMonth)
 
 
 def dayofyear(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(col, glotexp.DateOfYear)
+    return Column.invoke_expression_over_column(col, glotexp.DayOfYear)
 
 
 def hour(col: ColumnOrName) -> Column:

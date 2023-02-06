@@ -2998,25 +2998,25 @@ class DatetimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
-class DateOfWeek(Func, TimeUnit):
+class DayOfWeek(Func):
     arg_types = {
         "this": True,
     }
 
 
-class DateOfMonth(Func, TimeUnit):
+class DayOfMonth(Func):
     arg_types = {
         "this": True,
     }
 
 
-class DateOfYear(Func, TimeUnit):
+class DayOfYear(Func):
     arg_types = {
         "this": True,
     }
 
 
-class WeekOfYear(Func, TimeUnit):
+class WeekOfYear(Func):
     arg_types = {
         "this": True,
     }

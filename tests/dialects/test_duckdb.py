@@ -41,7 +41,7 @@ class TestDuckDB(Validator):
             "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
             write={
                 "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
-                "presto": "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
+                "presto": "DATE_FORMAT(x, '%Y-%m-%d %T')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
             },
         )

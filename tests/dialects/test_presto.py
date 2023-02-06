@@ -111,7 +111,7 @@ class TestPresto(Validator):
             "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
             write={
                 "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
-                "presto": "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
+                "presto": "DATE_FORMAT(x, '%Y-%m-%d %T')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
                 "spark": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
             },
@@ -120,7 +120,7 @@ class TestPresto(Validator):
             "DATE_PARSE(x, '%Y-%m-%d %H:%i:%S')",
             write={
                 "duckdb": "STRPTIME(x, '%Y-%m-%d %H:%M:%S')",
-                "presto": "DATE_PARSE(x, '%Y-%m-%d %H:%i:%S')",
+                "presto": "DATE_PARSE(x, '%Y-%m-%d %T')",
                 "hive": "CAST(x AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss')",
             },
@@ -132,6 +132,12 @@ class TestPresto(Validator):
                 "presto": "DATE_PARSE(x, '%Y-%m-%d')",
                 "hive": "CAST(x AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd')",
+            },
+        )
+        self.validate_all(
+            "DATE_FORMAT(x, '%T')",
+            write={
+                "hive": "DATE_FORMAT(x, 'HH:mm:ss')",
             },
         )
         self.validate_all(

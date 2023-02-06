@@ -467,9 +467,8 @@ class Generator:
         properties = expression.args.get("properties")
         properties_exp = expression.copy()
         properties_locs = self.locate_properties(properties) if properties else {}
-        if properties and (
-            properties_locs[exp.Properties.Location.POST_SCHEMA_ROOT]
-            or properties_locs[exp.Properties.Location.POST_SCHEMA_WITH]
+        if properties_locs.get(exp.Properties.Location.POST_SCHEMA_ROOT) or properties_locs.get(
+            exp.Properties.Location.POST_SCHEMA_WITH
         ):
             properties_exp.set(
                 "properties",
@@ -480,7 +479,7 @@ class Generator:
                     ]
                 ),
             )
-        if kind == "TABLE" and properties and properties_locs[exp.Properties.Location.PRE_SCHEMA]:
+        if kind == "TABLE" and properties_locs.get(exp.Properties.Location.PRE_SCHEMA):
             this_name = self.sql(expression.this, "this")
             this_properties = self.properties(
                 exp.Properties(expressions=properties_locs[exp.Properties.Location.PRE_SCHEMA]),
@@ -538,10 +537,8 @@ class Generator:
                     if index.args.get("columns")
                     else ""
                 )
-                if (
-                    index.args.get("primary")
-                    and properties
-                    and properties_locs[exp.Properties.Location.POST_INDEX]
+                if index.args.get("primary") and properties_locs.get(
+                    exp.Properties.Location.POST_INDEX
                 ):
                     postindex_props_sql = self.properties(
                         exp.Properties(
@@ -557,7 +554,7 @@ class Generator:
             index_sql = "".join(indexes_sql)
 
         postcreate_props_sql = ""
-        if properties and properties_locs[exp.Properties.Location.POST_CREATE]:
+        if properties_locs.get(exp.Properties.Location.POST_CREATE):
             postcreate_props_sql = self.properties(
                 exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_CREATE]),
                 sep=" ",

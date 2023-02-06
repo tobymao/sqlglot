@@ -74,6 +74,18 @@ class Spark(Hive):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,
             "AGGREGATE": exp.Reduce.from_arg_list,
+            "DAYOFWEEK": lambda args: exp.DayOfWeek(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
+            "DAYOFMONTH": lambda args: exp.DayOfMonth(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
+            "DAYOFYEAR": lambda args: exp.DayOfYear(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
+            "WEEKOFYEAR": lambda args: exp.WeekOfYear(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
         }
 
         FUNCTION_PARSERS = {
@@ -135,11 +147,27 @@ class Spark(Hive):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
         }
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
 
         WRAP_DERIVED_VALUES = False
+
+        def cast_sql(self, expression: exp.Cast) -> str:
+            if isinstance(expression.this, exp.Cast) and expression.this.is_type(
+                exp.DataType.Type.JSON
+            ):
+                schema = f"'{self.sql(expression, 'to')}'"
+                return f"FROM_JSON({self.format_args(self.sql(expression.this, 'this'), schema)})"
+            if expression.to.is_type(exp.DataType.Type.JSON):
+                return f"TO_JSON({self.sql(expression, 'this')})"
+
+            return super(Spark.Generator, self).cast_sql(expression)
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

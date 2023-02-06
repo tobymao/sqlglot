@@ -74,13 +74,13 @@ class Spark(Hive):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,
             "AGGREGATE": exp.Reduce.from_arg_list,
-            "DAYOFWEEK": lambda args: exp.DateOfWeek(
+            "DAYOFWEEK": lambda args: exp.DayOfWeek(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
             ),
-            "DAYOFMONTH": lambda args: exp.DateOfMonth(
+            "DAYOFMONTH": lambda args: exp.DayOfMonth(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
             ),
-            "DAYOFYEAR": lambda args: exp.DateOfYear(
+            "DAYOFYEAR": lambda args: exp.DayOfYear(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
             ),
             "WEEKOFYEAR": lambda args: exp.WeekOfYear(
@@ -147,10 +147,10 @@ class Spark(Hive):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.LogicalOr: rename_func("BOOL_OR"),
-            exp.DateOfWeek: lambda self, e: f"DAYOFWEEK({self.sql(e, 'this')})",
-            exp.DateOfMonth: lambda self, e: f"DAYOFMONTH({self.sql(e, 'this')})",
-            exp.DateOfYear: lambda self, e: f"DAYOFYEAR({self.sql(e, 'this')})",
-            exp.WeekOfYear: lambda self, e: f"WEEKOFYEAR({self.sql(e, 'this')})",
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.AtTimeZone: lambda self, e: (
                 (
                     f"FROM_UTC_TIMESTAMP({self.sql(e, 'this').replace('UTC', '')}, "  # noqa: E501

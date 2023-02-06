@@ -2455,7 +2455,12 @@ class Parser(metaclass=_Parser):
                     self.raise_error("Expected type")
             elif op:
                 self._advance()
-                field = exp.Literal.string(self._prev.text)
+                value = self._prev.text
+                field = (
+                    exp.Literal.number(value)
+                    if self._prev.token_type == TokenType.NUMBER
+                    else exp.Literal.string(value)
+                )
             else:
                 field = self._parse_star() or self._parse_function() or self._parse_id_var()
 

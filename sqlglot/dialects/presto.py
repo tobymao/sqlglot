@@ -213,18 +213,6 @@ class Presto(Dialect):
             "FROM_UTF8": lambda args: exp.Decode(
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
-            "DAY_OF_WEEK": lambda args: exp.DayOfWeek(
-                this=seq_get(args, 0),
-            ),
-            "DAY_OF_MONTH": lambda args: exp.DayOfMonth(
-                this=seq_get(args, 0),
-            ),
-            "DAY_OF_YEAR": lambda args: exp.DayOfYear(
-                this=seq_get(args, 0),
-            ),
-            "WEEK_OF_YEAR": lambda args: exp.WeekOfYear(
-                this=seq_get(args, 0),
-            ),
         }
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("TRIM")
@@ -303,10 +291,6 @@ class Presto(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
             exp.VariancePop: rename_func("VAR_POP"),
-            exp.DayOfWeek: rename_func("DAY_OF_WEEK"),
-            exp.DayOfMonth: rename_func("DAY_OF_MONTH"),
-            exp.DayOfYear: rename_func("DAY_OF_YEAR"),
-            exp.WeekOfYear: rename_func("WEEK_OF_YEAR"),
         }
 
         def transaction_sql(self, expression):

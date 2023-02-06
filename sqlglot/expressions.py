@@ -2466,9 +2466,8 @@ class DataType(Expression):
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
-            data_type_exp: t.Optional[Expression]
             if dtype.upper() in cls.Type.__members__:
-                data_type_exp = DataType(this=DataType.Type[dtype.upper()])
+                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type[dtype.upper()])
             else:
                 data_type_exp = parse_one(dtype, read=dialect, into=DataType)
             if data_type_exp is None:
@@ -2478,6 +2477,9 @@ class DataType(Expression):
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
         return DataType(**{**data_type_exp.args, **kwargs})
+
+    def is_type(self, dtype: DataType.Type) -> bool:
+        return self.this == dtype
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -2918,6 +2920,9 @@ class Cast(Func):
     def output_name(self):
         return self.name
 
+    def is_type(self, dtype: DataType.Type) -> bool:
+        return self.to.is_type(dtype)
+
 
 class Collate(Binary):
     pass
@@ -2999,27 +3004,19 @@ class DatetimeTrunc(Func, TimeUnit):
 
 
 class DayOfWeek(Func):
-    arg_types = {
-        "this": True,
-    }
+    _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
 
 
 class DayOfMonth(Func):
-    arg_types = {
-        "this": True,
-    }
+    _sql_names = ["DAY_OF_MONTH", "DAYOFMONTH"]
 
 
 class DayOfYear(Func):
-    arg_types = {
-        "this": True,
-    }
+    _sql_names = ["DAY_OF_YEAR", "DAYOFYEAR"]
 
 
 class WeekOfYear(Func):
-    arg_types = {
-        "this": True,
-    }
+    _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 
 
 class LastDateOfMonth(Func):

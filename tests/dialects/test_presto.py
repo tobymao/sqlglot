@@ -182,6 +182,46 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_all(
+            "DAY_OF_WEEK(timestamp '2012-08-08 01:00')",
+            write={
+                "spark": "DAYOFWEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_WEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+            },
+        )
+
+        self.validate_all(
+            "DAY_OF_MONTH(timestamp '2012-08-08 01:00')",
+            write={
+                "spark": "DAYOFMONTH(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_MONTH(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+            },
+        )
+
+        self.validate_all(
+            "DAY_OF_YEAR(timestamp '2012-08-08 01:00')",
+            write={
+                "spark": "DAYOFYEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_YEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+            },
+        )
+
+        self.validate_all(
+            "WEEK_OF_YEAR(timestamp '2012-08-08 01:00')",
+            write={
+                "spark": "WEEKOFYEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "presto": "WEEK_OF_YEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+            },
+        )
+
+        self.validate_all(
+            "SELECT timestamp '2012-10-31 00:00' AT TIME ZONE 'America/Sao_Paulo'",
+            write={
+                "spark": "SELECT FROM_UTC_TIMESTAMP(CAST('2012-10-31 00:00' AS TIMESTAMP), 'America/Sao_Paulo')",
+                "presto": "SELECT CAST('2012-10-31 00:00' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
+            },
+        )
+
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",
@@ -531,43 +571,7 @@ class TestPresto(Validator):
             },
         )
 
-    def test_DAY_OF_WEEK(self):
-        self.validate_all(
-            "DAY_OF_WEEK(timestamp '2012-08-08 01:00')",
-            write={
-                "spark": "DAYOFWEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_WEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-            },
-        )
-
-    def test_DAY_OF_MONTH(self):
-        self.validate_all(
-            "DAY_OF_MONTH(timestamp '2012-08-08 01:00')",
-            write={
-                "spark": "DAYOFMONTH(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_MONTH(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-            },
-        )
-
-    def test_DAY_OF_YEAR(self):
-        self.validate_all(
-            "DAY_OF_YEAR(timestamp '2012-08-08 01:00')",
-            write={
-                "spark": "DAYOFYEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_YEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-            },
-        )
-
-    def test_WEEK_OF_YEAR(self):
-        self.validate_all(
-            "WEEK_OF_YEAR(timestamp '2012-08-08 01:00')",
-            write={
-                "spark": "WEEKOFYEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "WEEK_OF_YEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-            },
-        )
-
-    def test_FROM_JSON(self):
+    def test_json(self):
         self.validate_all(
             "SELECT CAST(JSON '[1,23,456]' AS ARRAY(INTEGER))",
             write={
@@ -583,20 +587,10 @@ class TestPresto(Validator):
             },
         )
 
-    def test_TO_JSON(self):
         self.validate_all(
             "SELECT CAST(ARRAY [1, 23, 456] AS JSON)",
             write={
                 "spark": "SELECT TO_JSON(ARRAY(1, 23, 456))",
                 "presto": "SELECT CAST(ARRAY[1, 23, 456] AS JSON)",
-            },
-        )
-
-    def test_FROM_UTC_TIMESTAMP(self):
-        self.validate_all(
-            "SELECT timestamp '2012-10-31 00:00 UTC' AT TIME ZONE 'America/Sao_Paulo'",
-            write={
-                "spark": "SELECT FROM_UTC_TIMESTAMP(CAST('2012-10-31 00:00 ' AS TIMESTAMP), 'America/Sao_Paulo')",
-                "presto": "SELECT CAST('2012-10-31 00:00 UTC' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
             },
         )

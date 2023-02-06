@@ -151,12 +151,7 @@ class Spark(Hive):
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
-            exp.AtTimeZone: lambda self, e: (
-                (
-                    f"FROM_UTC_TIMESTAMP({self.sql(e, 'this').replace('UTC', '')}, "  # noqa: E501
-                    f"{self.sql(e, 'zone')})"
-                )
-            ),
+            exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
         }
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
@@ -164,13 +159,12 @@ class Spark(Hive):
         WRAP_DERIVED_VALUES = False
 
         def cast_sql(self, expression: exp.Cast) -> str:
-            if hasattr(expression.this, "to") and expression.this.to.this == exp.DataType.Type.JSON:
-                return (
-                    f"FROM_JSON({self.sql(expression.this, 'this')}, "
-                    f"'{self.sql(expression, 'to')}')"
-                )
-
-            elif hasattr(expression, "to") and expression.to.this == exp.DataType.Type.JSON:
+            if isinstance(expression.this, exp.Cast) and expression.this.is_type(
+                exp.DataType.Type.JSON
+            ):
+                schema = f"'{self.sql(expression, 'to')}'"
+                return f"FROM_JSON({self.format_args(self.sql(expression.this, 'this'), schema)})"
+            if expression.to.is_type(exp.DataType.Type.JSON):
                 return f"TO_JSON({self.sql(expression, 'this')})"
 
             return super(Spark.Generator, self).cast_sql(expression)

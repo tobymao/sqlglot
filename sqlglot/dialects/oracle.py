@@ -69,6 +69,7 @@ class Oracle(Dialect):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
+            exp.Substring: rename_func("SUBSTR"),
         }
 
         def query_modifiers(self, expression, *sqls):

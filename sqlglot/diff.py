@@ -14,10 +14,6 @@ from sqlglot import Dialect
 from sqlglot import expressions as exp
 from sqlglot.helper import ensure_collection
 
-if t.TYPE_CHECKING:
-    T = t.TypeVar("T")
-    Edit = t.Union[Insert, Remove, Move, Update, Keep]
-
 
 @dataclass(frozen=True)
 class Insert:
@@ -54,6 +50,11 @@ class Keep:
 
     source: exp.Expression
     target: exp.Expression
+
+
+if t.TYPE_CHECKING:
+    T = t.TypeVar("T")
+    Edit = t.Union[Insert, Remove, Move, Update, Keep]
 
 
 def diff(source: exp.Expression, target: exp.Expression) -> t.List[Edit]:

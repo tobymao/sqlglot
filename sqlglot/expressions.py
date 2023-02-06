@@ -34,12 +34,6 @@ from sqlglot.tokens import Token
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
-    IntoType = t.Union[
-        str,
-        t.Type[Expression],
-        t.Collection[t.Union[str, t.Type[Expression]]],
-    ]
-
 
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
@@ -593,6 +587,14 @@ class Expression(metaclass=_Expression):
         from sqlglot.serde import load
 
         return load(obj)
+
+
+if t.TYPE_CHECKING:
+    IntoType = t.Union[
+        str,
+        t.Type[Expression],
+        t.Collection[t.Union[str, t.Type[Expression]]],
+    ]
 
 
 class Condition(Expression):

@@ -456,8 +456,10 @@ def extract_interval(interval):
 
 
 def date_literal(date):
-    expr_type = exp.DataType.build("DATETIME" if isinstance(date, datetime.datetime) else "DATE")
-    return exp.Cast(this=exp.Literal.string(date), to=expr_type)
+    return exp.cast(
+        exp.Literal.string(date),
+        "DATETIME" if isinstance(date, datetime.datetime) else "DATE",
+    )
 
 
 def boolean_literal(condition):

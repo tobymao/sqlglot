@@ -2479,7 +2479,9 @@ class DataType(Expression):
     }
 
     @classmethod
-    def build(cls, dtype: str | DataType.Type, dialect: DialectType = None, **kwargs) -> DataType:
+    def build(
+        cls, dtype: str | DataType | DataType.Type, dialect: DialectType = None, **kwargs
+    ) -> DataType:
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
@@ -2491,6 +2493,8 @@ class DataType(Expression):
                 raise ValueError(f"Unparsable data type value: {dtype}")
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
+        elif isinstance(dtype, DataType):
+            return dtype
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
         return DataType(**{**data_type_exp.args, **kwargs})
@@ -4119,7 +4123,8 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
 def subquery(expression, alias=None, dialect=None, **opts):
     """
     Build a subquery expression.
-    Expample:
+
+    Example:
         >>> subquery('select x from tbl', 'bar').select('x').sql()
         'SELECT x FROM (SELECT x FROM tbl) AS bar'
 
@@ -4141,6 +4146,7 @@ def subquery(expression, alias=None, dialect=None, **opts):
 def column(col, table=None, quoted=None) -> Column:
     """
     Build a Column.
+
     Args:
         col (str | Expression): column name
         table (str | Expression): table name
@@ -4151,6 +4157,24 @@ def column(col, table=None, quoted=None) -> Column:
         this=to_identifier(col, quoted=quoted),
         table=to_identifier(table, quoted=quoted),
     )
+
+
+def cast(expression: str | Expression, to: str | DataType | DataType.Type, **opts) -> Cast:
+    """Cast an expression to a data type.
+
+    Example:
+        >>> cast('x + 1', 'int').sql()
+        'CAST(x + 1 AS INT)'
+
+    Args:
+        expression: The expression to cast.
+        to: The datatype to cast to.
+
+    Returns:
+        A cast node.
+    """
+    expression = maybe_parse(expression, **opts)
+    return Cast(this=expression, to=DataType.build(to, **opts))
 
 
 def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
@@ -4206,7 +4230,7 @@ def values(
         types = list(columns.values())
         expressions[0].set(
             "expressions",
-            [Cast(this=x, to=types[i]) for i, x in enumerate(expressions[0].expressions)],
+            [cast(x, types[i]) for i, x in enumerate(expressions[0].expressions)],
         )
     return Values(
         expressions=expressions,

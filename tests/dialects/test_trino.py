@@ -1,4 +1,3 @@
-from sqlglot import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -47,7 +46,7 @@ class TestTrino(Validator):
         self.validate_all(
             """SELECT CAST(JSON '{"k1":1,"k2":23,"k3":456}' AS MAP(VARCHAR, INTEGER))""",
             write={
-                "spark": "SELECT FROM_JSON('{\"k1\":1,\"k2\":23,\"k3\":456}', 'MAP<STRING, INT>')",
+                "spark": 'SELECT FROM_JSON(\'{"k1":1,"k2":23,"k3":456}\', \'MAP<STRING, INT>\')',
             },
         )
 

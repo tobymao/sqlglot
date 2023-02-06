@@ -74,6 +74,18 @@ class Spark(Hive):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,
             "AGGREGATE": exp.Reduce.from_arg_list,
+            "DAYOFWEEK": lambda args: exp.DateOfWeek(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
+            "DAYOFMONTH": lambda args: exp.DateOfMonth(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
+            "DAYOFYEAR": lambda args: exp.DateOfYear(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
+            "WEEKOFYEAR": lambda args: exp.WeekOfYear(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+            ),
         }
 
         FUNCTION_PARSERS = {
@@ -135,11 +147,33 @@ class Spark(Hive):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.DateOfWeek: lambda self, e: f"DAYOFWEEK({self.sql(e, 'this')})",
+            exp.DateOfMonth: lambda self, e: f"DAYOFMONTH({self.sql(e, 'this')})",
+            exp.DateOfYear: lambda self, e: f"DAYOFYEAR({self.sql(e, 'this')})",
+            exp.WeekOfYear: lambda self, e: f"WEEKOFYEAR({self.sql(e, 'this')})",
+            exp.AtTimeZone: lambda self, e: (
+                (
+                    f"FROM_UTC_TIMESTAMP({self.sql(e, 'this').replace('UTC', '')}, "  # noqa: E501
+                    f"{self.sql(e, 'zone')})"
+                )
+            ),
         }
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
 
         WRAP_DERIVED_VALUES = False
+
+        def cast_sql(self, expression: exp.Cast) -> str:
+            if hasattr(expression.this, "to") and expression.this.to.this == exp.DataType.Type.JSON:
+                return (
+                    f"FROM_JSON({self.sql(expression.this, 'this')}, "
+                    f"'{self.sql(expression, 'to')}')"
+                )
+
+            elif hasattr(expression, "to") and expression.to.this == exp.DataType.Type.JSON:
+                return f"TO_JSON({self.sql(expression, 'this')})"
+
+            return super(Spark.Generator, self).cast_sql(expression)
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

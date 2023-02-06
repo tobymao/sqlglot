@@ -67,6 +67,9 @@ class Generator:
         exp.VolatilityProperty: lambda self, e: e.name,
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
+        exp.AlgorithmProperty: lambda self, e: f"ALGORITHM={self.sql(e, 'this')}",
+        exp.DefinerProperty: lambda self, e: f"DEFINER={self.sql(e, 'this')}",
+        exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
@@ -101,12 +104,14 @@ class Generator:
 
     PROPERTIES_LOCATION = {
         exp.AfterJournalProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
         exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.BlockCompressionProperty: exp.Properties.Location.PRE_SCHEMA,
         exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.ChecksumProperty: exp.Properties.Location.PRE_SCHEMA,
         exp.CollateProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.DataBlocksizeProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
         exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
@@ -129,6 +134,7 @@ class Generator:
         exp.SchemaCommentProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.SerdeProperties: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
         exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA_WITH,
         exp.VolatilityProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.WithJournalTableProperty: exp.Properties.Location.PRE_SCHEMA,
@@ -552,6 +558,13 @@ class Generator:
                 )
             index_sql = "".join(indexes_sql)
 
+        postcreate_props_sql = ""
+        if properties and properties_locs[exp.Properties.Location.POST_CREATE]:
+            postcreate_props_sql = self.properties(
+                exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_CREATE]),
+                wrapped=False,
+            )
+
         modifiers = "".join(
             (
                 replace,
@@ -564,6 +577,7 @@ class Generator:
                 multiset,
                 global_temporary,
                 volatile,
+                postcreate_props_sql,
             )
         )
         no_schema_binding = (

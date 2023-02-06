@@ -568,6 +568,9 @@ class Parser(metaclass=_Parser):
             default=self._prev.text.upper() == "DEFAULT"
         ),
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
+        "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
+        "DEFINER": lambda self: self._parse_property_assignment(exp.DefinerProperty),
+        "SQL SECURITY": lambda self: self._parse_sqlsecurity(),
     }
 
     CONSTRAINT_PARSERS = {
@@ -1128,6 +1131,13 @@ class Parser(metaclass=_Parser):
             return self._parse_withjournaltable()
 
         return self._parse_withisolatedloading()
+
+    def _parse_sqlsecurity(self) -> exp.Expression:
+        if self._match_text_seq("DEFINER"):
+            definer = True
+        elif self._match_text_seq("INVOKER"):
+            definer = False
+        return self.expression(exp.SqlSecurityProperty, definer=definer)
 
     def _parse_withjournaltable(self) -> exp.Expression:
         self._match_text_seq("WITH", "JOURNAL", "TABLE")

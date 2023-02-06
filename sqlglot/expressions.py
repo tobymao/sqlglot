@@ -1285,6 +1285,18 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
+class AlgorithmProperty(Expression):
+    arg_types = {"this": True}
+
+
+class DefinerProperty(Expression):
+    arg_types = {"this": True}
+
+
+class SqlSecurityProperty(Expression):
+    arg_types = {"definer": True}
+
+
 class TableFormatProperty(Property):
     arg_types = {"this": True}
 
@@ -1448,6 +1460,7 @@ class Properties(Expression):
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}
 
     class Location(AutoName):
+        POST_CREATE = auto()
         PRE_SCHEMA = auto()
         POST_INDEX = auto()
         POST_SCHEMA_ROOT = auto()

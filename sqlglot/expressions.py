@@ -34,12 +34,6 @@ from sqlglot.tokens import Token
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
-    IntoType = t.Union[
-        str,
-        t.Type[Expression],
-        t.Collection[t.Union[str, t.Type[Expression]]],
-    ]
-
 
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
@@ -593,6 +587,14 @@ class Expression(metaclass=_Expression):
         from sqlglot.serde import load
 
         return load(obj)
+
+
+if t.TYPE_CHECKING:
+    IntoType = t.Union[
+        str,
+        t.Type[Expression],
+        t.Collection[t.Union[str, t.Type[Expression]]],
+    ]
 
 
 class Condition(Expression):
@@ -1285,6 +1287,18 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
+class AlgorithmProperty(Property):
+    arg_types = {"this": True}
+
+
+class DefinerProperty(Property):
+    arg_types = {"this": True}
+
+
+class SqlSecurityProperty(Property):
+    arg_types = {"definer": True}
+
+
 class TableFormatProperty(Property):
     arg_types = {"this": True}
 
@@ -1428,10 +1442,12 @@ class Properties(Expression):
     arg_types = {"expressions": True}
 
     NAME_TO_PROPERTY = {
+        "ALGORITHM": AlgorithmProperty,
         "AUTO_INCREMENT": AutoIncrementProperty,
         "CHARACTER SET": CharacterSetProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
+        "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
         "DISTSTYLE": DistStyleProperty,
         "ENGINE": EngineProperty,
@@ -1448,6 +1464,7 @@ class Properties(Expression):
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}
 
     class Location(AutoName):
+        POST_CREATE = auto()
         PRE_SCHEMA = auto()
         POST_INDEX = auto()
         POST_SCHEMA_ROOT = auto()

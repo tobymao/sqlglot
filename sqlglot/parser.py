@@ -568,6 +568,8 @@ class Parser(metaclass=_Parser):
             default=self._prev.text.upper() == "DEFAULT"
         ),
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
+        "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
+        "DEFINER": lambda self: self._parse_definer(),
     }
 
     CONSTRAINT_PARSERS = {
@@ -945,15 +947,19 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
 
+        properties = None
         create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
-            return self._parse_as_command(start)
+            properties = self._parse_properties()
+            create_token = self._match_set(self.CREATABLES) and self._prev
+
+            if not properties or not create_token:
+                return self._parse_as_command(start)
 
         exists = self._parse_exists(not_=True)
         this = None
         expression = None
-        properties = None
         data = None
         statistics = None
         no_primary_index = None
@@ -1071,6 +1077,9 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.COMPOUND, TokenType.SORTKEY):
             return self._parse_sortkey(compound=True)
 
+        if self._match_text_seq("SQL", "SECURITY"):
+            return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
+
         assignment = self._match_pair(
             TokenType.VAR, TokenType.EQ, advance=False
         ) or self._match_pair(TokenType.STRING, TokenType.EQ, advance=False)
@@ -1128,6 +1137,19 @@ class Parser(metaclass=_Parser):
             return self._parse_withjournaltable()
 
         return self._parse_withisolatedloading()
+
+    # https://dev.mysql.com/doc/refman/8.0/en/create-view.html
+    def _parse_definer(self) -> t.Optional[exp.Expression]:
+        self._match(TokenType.EQ)
+
+        user = self._parse_id_var()
+        self._match(TokenType.PARAMETER)
+        host = self._parse_id_var() or (self._match(TokenType.MOD) and self._prev.text)
+
+        if not user or not host:
+            return None
+
+        return exp.DefinerProperty(this=f"{user}@{host}")
 
     def _parse_withjournaltable(self) -> exp.Expression:
         self._match_text_seq("WITH", "JOURNAL", "TABLE")

@@ -96,6 +96,8 @@ def _date_add_sql(kind):
 
 
 class MySQL(Dialect):
+    time_format = "'%Y-%m-%d %T'"
+
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     time_mapping = {
         "%M": "%B",
@@ -108,6 +110,7 @@ class MySQL(Dialect):
         "%u": "%W",
         "%k": "%-H",
         "%l": "%-I",
+        "%T": "%H:%M:%S",
     }
 
     class Tokenizer(tokens.Tokenizer):

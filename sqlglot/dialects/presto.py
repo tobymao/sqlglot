@@ -168,7 +168,7 @@ def _from_unixtime(args):
 class Presto(Dialect):
     index_offset = 1
     null_ordering = "nulls_are_last"
-    time_format = "'%Y-%m-%d %H:%i:%S'"
+    time_format = MySQL.time_format  # type: ignore
     time_mapping = MySQL.time_mapping  # type: ignore
 
     class Tokenizer(tokens.Tokenizer):

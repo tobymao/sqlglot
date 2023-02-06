@@ -308,10 +308,10 @@ class TestDialect(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
             },
             write={
-                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS TIMESTAMP)",
-                "presto": "DATE_PARSE(x, '%Y-%m-%dT%H:%i:%S')",
+                "presto": "DATE_PARSE(x, '%Y-%m-%dT%T')",
                 "drill": "TO_TIMESTAMP(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH:MI:SS')",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')",
@@ -377,7 +377,7 @@ class TestDialect(Validator):
             write={
                 "duckdb": "EPOCH(CAST('2020-01-01' AS TIMESTAMP))",
                 "hive": "UNIX_TIMESTAMP('2020-01-01')",
-                "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d %H:%i:%S'))",
+                "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d %T'))",
             },
         )
         self.validate_all(
@@ -596,10 +596,10 @@ class TestDialect(Validator):
             },
             write={
                 "drill": "TO_DATE(x, 'yyyy-MM-dd''T''HH:mm:ss')",
-                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
-                "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
+                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
+                "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
-                "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%H:%i:%S') AS DATE)",
+                "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%T') AS DATE)",
                 "spark": "TO_DATE(x, 'yyyy-MM-ddTHH:mm:ss')",
             },
         )

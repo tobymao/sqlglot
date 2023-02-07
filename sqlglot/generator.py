@@ -1111,10 +1111,10 @@ class Generator:
 
     def lock_sql(self, expression: exp.Lock) -> str:
         if self.LOCKING_READS_SUPPORTED:
-            lock_type = "UPDATE" if expression.args["update"] else "SHARED"
+            lock_type = "UPDATE" if expression.args["update"] else "SHARE"
             return self.seg(f"FOR {lock_type}")
 
-        self.unsupported("Locking reads using 'FOR UPDATE/SHARED' are not supported")
+        self.unsupported("Locking reads using 'FOR UPDATE/SHARE' are not supported")
         return ""
 
     def literal_sql(self, expression: exp.Literal) -> str:

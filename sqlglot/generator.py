@@ -76,6 +76,9 @@ class Generator:
     # Whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
 
+    # Whether or not locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
+    LOCKING_READS_SUPPORTED = False
+
     # Always do union distinct or union all
     EXPLICIT_UNION = False
 
@@ -1106,6 +1109,14 @@ class Generator:
         this = self.sql(expression, "this")
         return f"{this}{self.seg('OFFSET')} {self.sql(expression, 'expression')}"
 
+    def lock_sql(self, expression: exp.Lock) -> str:
+        if self.LOCKING_READS_SUPPORTED:
+            lock_type = "UPDATE" if expression.args["update"] else "SHARED"
+            return self.seg(f"FOR {lock_type}")
+
+        self.unsupported("Locking reads using 'FOR UPDATE/SHARED' are not supported")
+        return ""
+
     def literal_sql(self, expression: exp.Literal) -> str:
         text = expression.this or ""
         if expression.is_string:
@@ -1226,6 +1237,7 @@ class Generator:
             self.sql(expression, "order"),
             self.sql(expression, "limit"),
             self.sql(expression, "offset"),
+            self.sql(expression, "lock"),
             sep="",
         )
 

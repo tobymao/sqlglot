@@ -196,6 +196,26 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT a FROM tbl FOR UPDATE",
+            write={
+                "": "SELECT a FROM tbl",
+                "mysql": "SELECT a FROM tbl FOR UPDATE",
+                "oracle": "SELECT a FROM tbl FOR UPDATE",
+                "postgres": "SELECT a FROM tbl FOR UPDATE",
+                "tsql": "SELECT a FROM tbl FOR UPDATE",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM tbl FOR SHARE",
+            write={
+                "": "SELECT a FROM tbl",
+                "mysql": "SELECT a FROM tbl FOR SHARE",
+                "oracle": "SELECT a FROM tbl FOR SHARE",
+                "postgres": "SELECT a FROM tbl FOR SHARE",
+                "tsql": "SELECT a FROM tbl FOR SHARE",
+            },
+        )
+        self.validate_all(
             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",

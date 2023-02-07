@@ -310,6 +310,11 @@ class TSQL(Dialect):
             TokenType.END: lambda self: self._parse_command(),
         }
 
+        QUERY_MODIFIER_PARSERS = {
+            **parser.Parser.QUERY_MODIFIER_PARSERS,  # type: ignore
+            "lock": lambda self: self._parse_lock(),
+        }
+
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
                 return None
@@ -412,6 +417,8 @@ class TSQL(Dialect):
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
     class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BOOLEAN: "BIT",

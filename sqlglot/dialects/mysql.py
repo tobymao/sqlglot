@@ -278,6 +278,11 @@ class MySQL(Dialect):
             "TRANSACTION": lambda self: self._parse_set_transaction(),
         }
 
+        QUERY_MODIFIER_PARSERS = {
+            **parser.Parser.QUERY_MODIFIER_PARSERS,  # type: ignore
+            "lock": lambda self: self._parse_lock(),
+        }
+
         PROFILE_TYPES = {
             "ALL",
             "BLOCK IO",
@@ -429,6 +434,7 @@ class MySQL(Dialect):
             )
 
     class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
 
         TRANSFORMS = {

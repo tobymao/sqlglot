@@ -264,7 +264,14 @@ class Postgres(Dialect):
             TokenType.CARET: exp.Pow,
         }
 
+        QUERY_MODIFIER_PARSERS = {
+            **parser.Parser.QUERY_MODIFIER_PARSERS,  # type: ignore
+            "lock": lambda self: self._parse_lock(),
+        }
+
     class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "SMALLINT",

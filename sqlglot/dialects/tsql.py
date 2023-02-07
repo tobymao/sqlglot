@@ -412,6 +412,8 @@ class TSQL(Dialect):
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
     class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BOOLEAN: "BIT",

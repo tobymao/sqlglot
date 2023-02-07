@@ -1616,6 +1616,7 @@ QUERY_MODIFIERS = {
     "order": False,
     "limit": False,
     "offset": False,
+    "lock": False,
 }
 
 
@@ -1735,6 +1736,12 @@ class Var(Expression):
 
 class Schema(Expression):
     arg_types = {"this": False, "expressions": False}
+
+
+# Used to represent the FOR UPDATE and FOR SHARE locking read types.
+# https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html
+class Lock(Expression):
+    arg_types = {"update": True}
 
 
 class Select(Subqueryable):

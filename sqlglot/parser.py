@@ -611,6 +611,7 @@ class Parser(metaclass=_Parser):
         "order": lambda self: self._parse_order(),
         "limit": lambda self: self._parse_limit(),
         "offset": lambda self: self._parse_offset(),
+        "lock": lambda self: self._parse_lock(),
     }
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}

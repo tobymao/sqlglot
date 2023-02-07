@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.2.1"/>
+    <meta name="generator" content="pdoc 12.3.1"/>
     <title>sqlglot.optimizer.simplify API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -122,7 +122,7 @@
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="k">def</span> <span class="nf">simplify</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="sd">    Rewrite sqlglot AST to simplify expressions.</span>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
 </span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="sd">    Example:</span>
@@ -160,7 +160,7 @@
 </span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>
 </span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>
 </span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a><span class="k">def</span> <span class="nf">rewrite_between</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>    <span class="sd">&quot;&quot;&quot;Rewrite x between y and z to x &gt;= y AND x &lt;= z.</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Rewrite x between y and z to x &gt;= y AND x &lt;= z.</span>
 </span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>
 </span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a><span class="sd">    This is done because comparison simplification is only done on lt/lte/gt/gte.</span>
 </span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -173,7 +173,7 @@
 </span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>
 </span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>
 </span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="k">def</span> <span class="nf">simplify_not</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">    Demorgan&#39;s Law</span>
 </span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">    NOT (x OR y) -&gt; NOT x AND NOT y</span>
 </span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">    NOT (x AND y) -&gt; NOT x OR NOT y</span>
@@ -201,7 +201,7 @@
 </span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>
 </span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>
 </span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a><span class="sd">    A AND (B AND C) -&gt; A AND B AND C</span>
 </span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd">    A OR (B OR C) -&gt; A OR B OR C</span>
 </span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -330,7 +330,7 @@
 </span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>
 </span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>
 </span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a><span class="k">def</span> <span class="nf">remove_compliments</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a><span class="sd">    Removing compliments.</span>
 </span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a>
 </span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">    A AND NOT A -&gt; FALSE</span>
@@ -346,7 +346,7 @@
 </span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>
 </span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>
 </span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a><span class="k">def</span> <span class="nf">uniq_sort</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-241"><a href="#L-241"><span class="linenos">241</span></a><span class="sd">    Uniq and sort a connector.</span>
 </span><span id="L-242"><a href="#L-242"><span class="linenos">242</span></a>
 </span><span id="L-243"><a href="#L-243"><span class="linenos">243</span></a><span class="sd">    C AND A AND B AND B -&gt; A AND B AND C</span>
@@ -372,7 +372,7 @@
 </span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a>
 </span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a>
 </span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a><span class="k">def</span> <span class="nf">absorb_and_eliminate</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a><span class="sd">    absorption:</span>
 </span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a><span class="sd">        A AND (A OR B) -&gt; A</span>
 </span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="sd">        A OR (A AND B) -&gt; A</span>
@@ -612,7 +612,7 @@
     </div>
     <a class="headerlink" href="#simplify"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="simplify-16"><a href="#simplify-16"><span class="linenos">16</span></a><span class="k">def</span> <span class="nf">simplify</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="simplify-17"><a href="#simplify-17"><span class="linenos">17</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="simplify-17"><a href="#simplify-17"><span class="linenos">17</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="simplify-18"><a href="#simplify-18"><span class="linenos">18</span></a><span class="sd">    Rewrite sqlglot AST to simplify expressions.</span>
 </span><span id="simplify-19"><a href="#simplify-19"><span class="linenos">19</span></a>
 </span><span id="simplify-20"><a href="#simplify-20"><span class="linenos">20</span></a><span class="sd">    Example:</span>
@@ -652,7 +652,7 @@
 
             <div class="docstring"><p>Rewrite sqlglot AST to simplify expressions.</p>
 
-<h6 id="example">Example</h6>
+<h6 id="example">Example:</h6>
 
 <blockquote>
   <div class="pdoc-code codehilite">
@@ -664,13 +664,13 @@
   </div>
 </blockquote>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression (sqlglot.Expression):</strong>  expression to simplify</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>sqlglot.Expression: simplified expression</p>
@@ -691,7 +691,7 @@
     </div>
     <a class="headerlink" href="#rewrite_between"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="rewrite_between-54"><a href="#rewrite_between-54"><span class="linenos">54</span></a><span class="k">def</span> <span class="nf">rewrite_between</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="rewrite_between-55"><a href="#rewrite_between-55"><span class="linenos">55</span></a>    <span class="sd">&quot;&quot;&quot;Rewrite x between y and z to x &gt;= y AND x &lt;= z.</span>
+</span><span id="rewrite_between-55"><a href="#rewrite_between-55"><span class="linenos">55</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Rewrite x between y and z to x &gt;= y AND x &lt;= z.</span>
 </span><span id="rewrite_between-56"><a href="#rewrite_between-56"><span class="linenos">56</span></a>
 </span><span id="rewrite_between-57"><a href="#rewrite_between-57"><span class="linenos">57</span></a><span class="sd">    This is done because comparison simplification is only done on lt/lte/gt/gte.</span>
 </span><span id="rewrite_between-58"><a href="#rewrite_between-58"><span class="linenos">58</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -723,7 +723,7 @@
     </div>
     <a class="headerlink" href="#simplify_not"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="simplify_not-67"><a href="#simplify_not-67"><span class="linenos">67</span></a><span class="k">def</span> <span class="nf">simplify_not</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="simplify_not-68"><a href="#simplify_not-68"><span class="linenos">68</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="simplify_not-68"><a href="#simplify_not-68"><span class="linenos">68</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="simplify_not-69"><a href="#simplify_not-69"><span class="linenos">69</span></a><span class="sd">    Demorgan&#39;s Law</span>
 </span><span id="simplify_not-70"><a href="#simplify_not-70"><span class="linenos">70</span></a><span class="sd">    NOT (x OR y) -&gt; NOT x AND NOT y</span>
 </span><span id="simplify_not-71"><a href="#simplify_not-71"><span class="linenos">71</span></a><span class="sd">    NOT (x AND y) -&gt; NOT x OR NOT y</span>
@@ -770,7 +770,7 @@ NOT (x AND y) -> NOT x OR NOT y</p>
     </div>
     <a class="headerlink" href="#flatten"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="flatten-95"><a href="#flatten-95"><span class="linenos"> 95</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="flatten-96"><a href="#flatten-96"><span class="linenos"> 96</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="flatten-96"><a href="#flatten-96"><span class="linenos"> 96</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="flatten-97"><a href="#flatten-97"><span class="linenos"> 97</span></a><span class="sd">    A AND (B AND C) -&gt; A AND B AND C</span>
 </span><span id="flatten-98"><a href="#flatten-98"><span class="linenos"> 98</span></a><span class="sd">    A OR (B OR C) -&gt; A OR B OR C</span>
 </span><span id="flatten-99"><a href="#flatten-99"><span class="linenos"> 99</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -854,7 +854,7 @@ A OR (B OR C) -> A OR B OR C</p>
     </div>
     <a class="headerlink" href="#remove_compliments"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="remove_compliments-224"><a href="#remove_compliments-224"><span class="linenos">224</span></a><span class="k">def</span> <span class="nf">remove_compliments</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="remove_compliments-225"><a href="#remove_compliments-225"><span class="linenos">225</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="remove_compliments-225"><a href="#remove_compliments-225"><span class="linenos">225</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="remove_compliments-226"><a href="#remove_compliments-226"><span class="linenos">226</span></a><span class="sd">    Removing compliments.</span>
 </span><span id="remove_compliments-227"><a href="#remove_compliments-227"><span class="linenos">227</span></a>
 </span><span id="remove_compliments-228"><a href="#remove_compliments-228"><span class="linenos">228</span></a><span class="sd">    A AND NOT A -&gt; FALSE</span>
@@ -890,7 +890,7 @@ A OR NOT A -> TRUE</p>
     </div>
     <a class="headerlink" href="#uniq_sort"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="uniq_sort-240"><a href="#uniq_sort-240"><span class="linenos">240</span></a><span class="k">def</span> <span class="nf">uniq_sort</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="uniq_sort-241"><a href="#uniq_sort-241"><span class="linenos">241</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="uniq_sort-241"><a href="#uniq_sort-241"><span class="linenos">241</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="uniq_sort-242"><a href="#uniq_sort-242"><span class="linenos">242</span></a><span class="sd">    Uniq and sort a connector.</span>
 </span><span id="uniq_sort-243"><a href="#uniq_sort-243"><span class="linenos">243</span></a>
 </span><span id="uniq_sort-244"><a href="#uniq_sort-244"><span class="linenos">244</span></a><span class="sd">    C AND A AND B AND B -&gt; A AND B AND C</span>
@@ -935,7 +935,7 @@ A OR NOT A -> TRUE</p>
     </div>
     <a class="headerlink" href="#absorb_and_eliminate"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="absorb_and_eliminate-266"><a href="#absorb_and_eliminate-266"><span class="linenos">266</span></a><span class="k">def</span> <span class="nf">absorb_and_eliminate</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="absorb_and_eliminate-267"><a href="#absorb_and_eliminate-267"><span class="linenos">267</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="absorb_and_eliminate-267"><a href="#absorb_and_eliminate-267"><span class="linenos">267</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="absorb_and_eliminate-268"><a href="#absorb_and_eliminate-268"><span class="linenos">268</span></a><span class="sd">    absorption:</span>
 </span><span id="absorb_and_eliminate-269"><a href="#absorb_and_eliminate-269"><span class="linenos">269</span></a><span class="sd">        A AND (A OR B) -&gt; A</span>
 </span><span id="absorb_and_eliminate-270"><a href="#absorb_and_eliminate-270"><span class="linenos">270</span></a><span class="sd">        A OR (A AND B) -&gt; A</span>

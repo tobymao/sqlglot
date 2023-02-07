@@ -265,6 +265,8 @@ class Postgres(Dialect):
         }
 
     class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "SMALLINT",

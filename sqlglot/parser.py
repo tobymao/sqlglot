@@ -611,6 +611,7 @@ class Parser(metaclass=_Parser):
         "order": lambda self: self._parse_order(),
         "limit": lambda self: self._parse_limit(),
         "offset": lambda self: self._parse_offset(),
+        "lock": lambda self: self._parse_lock(),
     }
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
@@ -2186,6 +2187,14 @@ class Parser(metaclass=_Parser):
         count = self._parse_number()
         self._match_set((TokenType.ROW, TokenType.ROWS))
         return self.expression(exp.Offset, this=this, expression=count)
+
+    def _parse_lock(self) -> t.Optional[exp.Expression]:
+        if self._match_text_seq("FOR", "UPDATE"):
+            return self.expression(exp.Lock, update=True)
+        if self._match_text_seq("FOR", "SHARE"):
+            return self.expression(exp.Lock, update=False)
+
+        return None
 
     def _parse_set_operations(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match_set(self.SET_OPERATIONS):

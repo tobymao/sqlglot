@@ -44,6 +44,8 @@ class Oracle(Dialect):
         }
 
     class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TINYINT: "NUMBER",
@@ -91,6 +93,7 @@ class Oracle(Dialect):
                 self.sql(expression, "order"),
                 self.sql(expression, "offset"),  # offset before limit in oracle
                 self.sql(expression, "limit"),
+                self.sql(expression, "lock"),
                 sep="",
             )
 

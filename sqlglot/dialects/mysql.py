@@ -429,6 +429,7 @@ class MySQL(Dialect):
             )
 
     class Generator(generator.Generator):
+        LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
 
         TRANSFORMS = {

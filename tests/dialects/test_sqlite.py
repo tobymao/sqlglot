@@ -92,3 +92,9 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks"
             },
         )
+
+    def test_longvarchar_dtype(self):
+        self.validate_all(
+            "CREATE TABLE foo (bar LONGVARCHAR)",
+            write={"sqlite": "CREATE TABLE foo (bar TEXT)"},
+        )

@@ -20,10 +20,6 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _unix_to_time(self, expression):
-    return f"TO_TIMESTAMP(CAST({self.sql(expression, 'this')} AS BIGINT))"
-
-
 def _str_to_time_sql(self, expression):
     return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
 
@@ -113,7 +109,7 @@ class DuckDB(Dialect):
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "STRING_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "STRUCT_PACK": exp.Struct.from_arg_list,
-            "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
+            "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
         }
 
@@ -162,9 +158,9 @@ class DuckDB(Dialect):
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add,
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
-            exp.UnixToStr: lambda self, e: f"STRFTIME({_unix_to_time(self, e)}, {self.format_time(e)})",
-            exp.UnixToTime: _unix_to_time,
-            exp.UnixToTimeStr: lambda self, e: f"CAST({_unix_to_time(self, e)} AS TEXT)",
+            exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
+            exp.UnixToTime: rename_func("TO_TIMESTAMP"),
+            exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
         }
 
         TYPE_MAPPING = {

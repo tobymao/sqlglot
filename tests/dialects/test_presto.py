@@ -152,7 +152,7 @@ class TestPresto(Validator):
         self.validate_all(
             "FROM_UNIXTIME(x)",
             write={
-                "duckdb": "TO_TIMESTAMP(CAST(x AS BIGINT))",
+                "duckdb": "TO_TIMESTAMP(x)",
                 "presto": "FROM_UNIXTIME(x)",
                 "hive": "FROM_UNIXTIME(x)",
                 "spark": "FROM_UNIXTIME(x)",

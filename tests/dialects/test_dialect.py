@@ -439,7 +439,7 @@ class TestDialect(Validator):
         self.validate_all(
             "UNIX_TO_STR(x, y)",
             write={
-                "duckdb": "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), y)",
+                "duckdb": "STRFTIME(TO_TIMESTAMP(x), y)",
                 "hive": "FROM_UNIXTIME(x, y)",
                 "presto": "DATE_FORMAT(FROM_UNIXTIME(x), y)",
                 "starrocks": "FROM_UNIXTIME(x, y)",
@@ -448,7 +448,7 @@ class TestDialect(Validator):
         self.validate_all(
             "UNIX_TO_TIME(x)",
             write={
-                "duckdb": "TO_TIMESTAMP(CAST(x AS BIGINT))",
+                "duckdb": "TO_TIMESTAMP(x)",
                 "hive": "FROM_UNIXTIME(x)",
                 "oracle": "TO_DATE('1970-01-01','YYYY-MM-DD') + (x / 86400)",
                 "postgres": "TO_TIMESTAMP(x)",
@@ -459,7 +459,7 @@ class TestDialect(Validator):
         self.validate_all(
             "UNIX_TO_TIME_STR(x)",
             write={
-                "duckdb": "CAST(TO_TIMESTAMP(CAST(x AS BIGINT)) AS TEXT)",
+                "duckdb": "CAST(TO_TIMESTAMP(x) AS TEXT)",
                 "hive": "FROM_UNIXTIME(x)",
                 "presto": "CAST(FROM_UNIXTIME(x) AS VARCHAR)",
             },

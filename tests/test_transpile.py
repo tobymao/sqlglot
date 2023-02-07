@@ -326,12 +326,12 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         self.validate("TIME_TO_UNIX(x)", "EPOCH(x)", write="duckdb")
         self.validate(
             "UNIX_TO_STR(123, 'y')",
-            "STRFTIME(TO_TIMESTAMP(CAST(123 AS BIGINT)), 'y')",
+            "STRFTIME(TO_TIMESTAMP(123), 'y')",
             write="duckdb",
         )
         self.validate(
             "UNIX_TO_TIME(123)",
-            "TO_TIMESTAMP(CAST(123 AS BIGINT))",
+            "TO_TIMESTAMP(123)",
             write="duckdb",
         )
 

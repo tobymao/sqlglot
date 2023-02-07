@@ -2274,6 +2274,30 @@ class Select(Subqueryable):
             properties=properties_expression,
         )
 
+    def lock(self, update: bool = True, copy: bool = True) -> Select:
+        """
+        Set the locking read mode for this expression.
+
+        Examples:
+            >>> Select().select("x").from_("tbl").where("x = 'a'").lock().sql("mysql")
+            "SELECT x FROM tbl WHERE x = 'a' FOR UPDATE"
+
+            >>> Select().select("x").from_("tbl").where("x = 'a'").lock(update=False).sql("mysql")
+            "SELECT x FROM tbl WHERE x = 'a' FOR SHARE"
+
+        Args:
+            update: if `True`, the locking type will be `FOR UPDATE`, else it will be `FOR SHARE`.
+            copy: if `False`, modify this expression instance in-place.
+
+        Returns:
+            The modified expression.
+        """
+
+        inst = _maybe_copy(self, copy)
+        inst.set("lock", Lock(update=update))
+
+        return inst
+
     @property
     def named_selects(self) -> t.List[str]:
         return [e.output_name for e in self.expressions if e.alias_or_name]

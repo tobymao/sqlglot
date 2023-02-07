@@ -22,5 +22,17 @@ jobs:
         python -m pip install --upgrade pip
         make install-dev
     - name: Run checks (linter, code style, tests)
+      run: make check
+    - name: Update documentation
       run: |
-        make check
+        make docs
+        git add docs
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git commit -m "CI: Auto-generated documentation" -a | exit 0
+      if: ${{ matrix.python-version == '3.10' && github.event_name == 'push' }}
+    - name: Push changes
+      if: ${{ matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}

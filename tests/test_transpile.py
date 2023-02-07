@@ -426,6 +426,9 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         mock_logger.warning.assert_any_call("Applying array index offset (%s)", 1)
         mock_logger.warning.assert_any_call("Applying array index offset (%s)", -1)
 
+    def test_identify_lambda(self):
+        self.validate("x(y -> y)", 'X("y" -> "y")', identify=True)
+
     def test_identity(self):
         self.assertEqual(transpile("")[0], "")
         for sql in load_sql_fixtures("identity.sql"):

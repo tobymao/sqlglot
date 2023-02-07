@@ -30,9 +30,9 @@ jobs:
         git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git commit -m "CI: Auto-generated documentation" -a | exit 0
-      if: ${{ github.event_name == 'push' }}
+      if: ${{ matrix.python-version == "3.10" && github.event_name == 'push' }}
     - name: Push changes
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      if: ${{ matrix.python-version == "3.10" && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: ad-m/github-push-action@main
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}

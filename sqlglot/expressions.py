@@ -590,12 +590,11 @@ class Expression(metaclass=_Expression):
         return load(obj)
 
 
-if t.TYPE_CHECKING:
-    IntoType = t.Union[
-        str,
-        t.Type[Expression],
-        t.Collection[t.Union[str, t.Type[Expression]]],
-    ]
+IntoType = t.Union[
+    str,
+    t.Type[Expression],
+    t.Collection[t.Union[str, t.Type[Expression]]],
+]
 
 
 class Condition(Expression):

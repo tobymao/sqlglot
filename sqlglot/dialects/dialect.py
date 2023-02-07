@@ -202,8 +202,7 @@ class Dialect(metaclass=_Dialect):
         )
 
 
-if t.TYPE_CHECKING:
-    DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
+DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
 
 
 def rename_func(name):

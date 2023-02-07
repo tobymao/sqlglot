@@ -7,7 +7,7 @@ from sqlglot.optimizer.scope import Scope, traverse_scope
 SELECT_ALL = object()
 
 # Selection to use if selection list is empty
-DEFAULT_SELECTION = alias("1", "_")
+DEFAULT_SELECTION = lambda: alias("1", "_")
 
 
 def pushdown_projections(expression):
@@ -93,7 +93,7 @@ def _remove_unused_selections(scope, parent_selections):
 
     # If there are no remaining selections, just select a single constant
     if not new_selections:
-        new_selections.append(DEFAULT_SELECTION.copy())
+        new_selections.append(DEFAULT_SELECTION())
 
     scope.expression.set("expressions", new_selections)
     if removed:
@@ -106,5 +106,5 @@ def _remove_indexed_selections(scope, indexes_to_remove):
         selection for i, selection in enumerate(scope.selects) if i not in indexes_to_remove
     ]
     if not new_selections:
-        new_selections.append(DEFAULT_SELECTION.copy())
+        new_selections.append(DEFAULT_SELECTION())
     scope.expression.set("expressions", new_selections)

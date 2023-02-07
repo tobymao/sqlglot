@@ -21,4 +21,4 @@ docs:
 	python pdoc/cli.py -o docs
 
 docs-serve:
-	python pdoc/cli.py
+	python pdoc/cli.py --port 8002

@@ -6,6 +6,7 @@ Every AST node in SQLGlot is represented by a subclass of `Expression`.
 This module contains the implementation of all supported `Expression` types. Additionally,
 it exposes a number of helper functions, which are mainly used to programmatically build
 SQL expressions, such as `sqlglot.expressions.select`.
+
 ----
 """
 

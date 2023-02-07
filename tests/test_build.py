@@ -63,6 +63,16 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl WHERE x < 9",
             ),
             (
+                lambda: select("x").from_("tbl").where("x > 0").lock(),
+                "SELECT x FROM tbl WHERE x > 0 FOR UPDATE",
+                "mysql",
+            ),
+            (
+                lambda: select("x").from_("tbl").where("x > 0").lock(update=False),
+                "SELECT x FROM tbl WHERE x > 0 FOR SHARE",
+                "postgres",
+            ),
+            (
                 lambda: select("x", "y").from_("tbl").group_by("x"),
                 "SELECT x, y FROM tbl GROUP BY x",
             ),

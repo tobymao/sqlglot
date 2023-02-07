@@ -259,7 +259,7 @@ class TestHive(Validator):
         self.validate_all(
             """from_unixtime(x, "yyyy-MM-dd'T'HH")""",
             write={
-                "duckdb": "STRFTIME(TO_TIMESTAMP(CAST(x AS BIGINT)), '%Y-%m-%d''T''%H')",
+                "duckdb": "STRFTIME(TO_TIMESTAMP(x), '%Y-%m-%d''T''%H')",
                 "presto": "DATE_FORMAT(FROM_UNIXTIME(x), '%Y-%m-%d''T''%H')",
                 "hive": "FROM_UNIXTIME(x, 'yyyy-MM-dd\\'T\\'HH')",
                 "spark": "FROM_UNIXTIME(x, 'yyyy-MM-dd\\'T\\'HH')",

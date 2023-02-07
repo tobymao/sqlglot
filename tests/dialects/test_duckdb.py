@@ -22,7 +22,7 @@ class TestDuckDB(Validator):
             "EPOCH_MS(x)",
             write={
                 "bigquery": "UNIX_TO_TIME(x / 1000)",
-                "duckdb": "TO_TIMESTAMP(CAST(x / 1000 AS BIGINT))",
+                "duckdb": "TO_TIMESTAMP(x / 1000)",
                 "presto": "FROM_UNIXTIME(x / 1000)",
                 "spark": "FROM_UNIXTIME(x / 1000)",
             },
@@ -58,9 +58,10 @@ class TestDuckDB(Validator):
         self.validate_all(
             "TO_TIMESTAMP(x)",
             write={
-                "duckdb": "CAST(x AS TIMESTAMP)",
-                "presto": "CAST(x AS TIMESTAMP)",
-                "hive": "CAST(x AS TIMESTAMP)",
+                "bigquery": "UNIX_TO_TIME(x)",
+                "duckdb": "TO_TIMESTAMP(x)",
+                "presto": "FROM_UNIXTIME(x)",
+                "hive": "FROM_UNIXTIME(x)",
             },
         )
         self.validate_all(

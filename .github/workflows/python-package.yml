@@ -22,5 +22,7 @@ jobs:
         python -m pip install --upgrade pip
         make install-dev
     - name: Run checks (linter, code style, tests)
-      run: |
-        make check
+      run: make check
+    - name: Update docs
+      run: make docs
+      if: ${{ github.event_name == 'push' }}

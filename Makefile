@@ -18,7 +18,7 @@ style:
 check: style test
 
 docs:
-	python pdoc/cli.py -o pdoc/docs
+	python pdoc/cli.py -o docs
 
 docs-serve:
 	python pdoc/cli.py

@@ -1,5 +1,6 @@
 """
 .. include:: ../posts/sql_diff.md
+
 ----
 """
 

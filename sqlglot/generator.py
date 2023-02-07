@@ -293,10 +293,10 @@ class Generator:
         )
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
-    def no_identify(self, func: t.Callable[[], str]) -> str:
+    def no_identify(self, func: t.Callable[..., str], *args, **kwargs) -> str:
         original = self.identify
         self.identify = False
-        result = func()
+        result = func(*args, **kwargs)
         self.identify = original
         return result
 
@@ -1076,7 +1076,7 @@ class Generator:
         return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
 
     def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->") -> str:
-        args = self.expressions(expression, flat=True)
+        args = self.no_identify(self.expressions, expression, flat=True)
         args = f"({args})" if len(args.split(",")) > 1 else args
         return self.no_identify(lambda: f"{args} {arrow_sep} {self.sql(expression, 'this')}")
 
@@ -1836,7 +1836,7 @@ class Generator:
 
     def userdefinedfunction_sql(self, expression: exp.UserDefinedFunction) -> str:
         this = self.sql(expression, "this")
-        expressions = self.no_identify(lambda: self.expressions(expression))
+        expressions = self.no_identify(self.expressions, expression)
         expressions = (
             self.wrap(expressions) if expression.args.get("wrapped") else f" {expressions}"
         )

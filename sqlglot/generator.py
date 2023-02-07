@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 
+import sqlglot
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.helper import apply_index_offset, csv
@@ -1487,7 +1488,15 @@ class Generator:
 
     def interval_sql(self, expression: exp.Interval) -> str:
         this = self.sql(expression, "this")
-        this = f" {this}" if this else ""
+        if this:
+            if isinstance(this, str):
+                this = sqlglot.parse_one(this)
+            if isinstance(this, exp.Literal) or isinstance(this, exp.Paren):
+                this = f" {this}"
+            else:
+                this = f" ({this})"
+        else:
+            this = ""
         unit = self.sql(expression, "unit")
         unit = f" {unit}" if unit else ""
         return f"INTERVAL{this}{unit}"

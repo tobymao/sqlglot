@@ -40,8 +40,7 @@ def _date_add_sql(kind):
 
         expression = expression.copy()
         expression.args["is_string"] = True
-        expression = self.sql(expression)
-        return f"{this} {kind} INTERVAL {expression} {unit}"
+        return f"{this} {kind} {self.sql(exp.Interval(this=expression, unit=unit))}"
 
     return func
 

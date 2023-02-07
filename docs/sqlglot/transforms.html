@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.2.1"/>
+    <meta name="generator" content="pdoc 12.3.1"/>
     <title>sqlglot.transforms API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -81,7 +81,7 @@
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="k">def</span> <span class="nf">unalias_group</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">    Replace references to select aliases in GROUP BY clauses.</span>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="sd">    Example:</span>
@@ -114,7 +114,7 @@
 </span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>
 </span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>
 </span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a><span class="k">def</span> <span class="nf">eliminate_distinct_on</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="sd">    Convert SELECT DISTINCT ON statements to a subquery with a window function.</span>
 </span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>
 </span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="sd">    This is useful for dialects that don&#39;t support SELECT DISTINCT ON but support window functions.</span>
@@ -150,7 +150,7 @@
 </span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>
 </span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>
 </span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a><span class="k">def</span> <span class="nf">remove_precision_parameterized_types</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a><span class="sd">    Some dialects only allow the precision for parameterized types to be defined in the DDL and not in other expressions.</span>
 </span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a><span class="sd">    This transforms removes the precision from parameterized types in expressions.</span>
 </span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -174,7 +174,7 @@
 </span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>    <span class="n">to_sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
 </span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="sd">    expression to SQL, using an appropriate `Generator.TRANSFORMS` function.</span>
 </span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>
@@ -196,7 +196,7 @@
 </span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>
 </span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>
 </span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="k">def</span> <span class="nf">delegate</span><span class="p">(</span><span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
-</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">    Create a new method that delegates to `attr`. This is useful for creating `Generator.TRANSFORMS`</span>
 </span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="sd">    functions that delegate to existing generator methods.</span>
 </span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -228,7 +228,7 @@
     </div>
     <a class="headerlink" href="#unalias_group"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="unalias_group-14"><a href="#unalias_group-14"><span class="linenos">14</span></a><span class="k">def</span> <span class="nf">unalias_group</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="unalias_group-15"><a href="#unalias_group-15"><span class="linenos">15</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="unalias_group-15"><a href="#unalias_group-15"><span class="linenos">15</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="unalias_group-16"><a href="#unalias_group-16"><span class="linenos">16</span></a><span class="sd">    Replace references to select aliases in GROUP BY clauses.</span>
 </span><span id="unalias_group-17"><a href="#unalias_group-17"><span class="linenos">17</span></a>
 </span><span id="unalias_group-18"><a href="#unalias_group-18"><span class="linenos">18</span></a><span class="sd">    Example:</span>
@@ -263,7 +263,7 @@
 
             <div class="docstring"><p>Replace references to select aliases in GROUP BY clauses.</p>
 
-<h6 id="example">Example</h6>
+<h6 id="example">Example:</h6>
 
 <blockquote>
   <div class="pdoc-code codehilite">
@@ -274,13 +274,13 @@
   </div>
 </blockquote>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression:</strong>  the expression that will be transformed.</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>The transformed expression.</p>
@@ -301,7 +301,7 @@
     </div>
     <a class="headerlink" href="#eliminate_distinct_on"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="eliminate_distinct_on-47"><a href="#eliminate_distinct_on-47"><span class="linenos">47</span></a><span class="k">def</span> <span class="nf">eliminate_distinct_on</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="eliminate_distinct_on-48"><a href="#eliminate_distinct_on-48"><span class="linenos">48</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="eliminate_distinct_on-48"><a href="#eliminate_distinct_on-48"><span class="linenos">48</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="eliminate_distinct_on-49"><a href="#eliminate_distinct_on-49"><span class="linenos">49</span></a><span class="sd">    Convert SELECT DISTINCT ON statements to a subquery with a window function.</span>
 </span><span id="eliminate_distinct_on-50"><a href="#eliminate_distinct_on-50"><span class="linenos">50</span></a>
 </span><span id="eliminate_distinct_on-51"><a href="#eliminate_distinct_on-51"><span class="linenos">51</span></a><span class="sd">    This is useful for dialects that don&#39;t support SELECT DISTINCT ON but support window functions.</span>
@@ -341,13 +341,13 @@
 
 <p>This is useful for dialects that don't support SELECT DISTINCT ON but support window functions.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression:</strong>  the expression that will be transformed.</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>The transformed expression.</p>
@@ -368,7 +368,7 @@
     </div>
     <a class="headerlink" href="#remove_precision_parameterized_types"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="remove_precision_parameterized_types-83"><a href="#remove_precision_parameterized_types-83"><span class="linenos"> 83</span></a><span class="k">def</span> <span class="nf">remove_precision_parameterized_types</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="remove_precision_parameterized_types-84"><a href="#remove_precision_parameterized_types-84"><span class="linenos"> 84</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="remove_precision_parameterized_types-84"><a href="#remove_precision_parameterized_types-84"><span class="linenos"> 84</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="remove_precision_parameterized_types-85"><a href="#remove_precision_parameterized_types-85"><span class="linenos"> 85</span></a><span class="sd">    Some dialects only allow the precision for parameterized types to be defined in the DDL and not in other expressions.</span>
 </span><span id="remove_precision_parameterized_types-86"><a href="#remove_precision_parameterized_types-86"><span class="linenos"> 86</span></a><span class="sd">    This transforms removes the precision from parameterized types in expressions.</span>
 </span><span id="remove_precision_parameterized_types-87"><a href="#remove_precision_parameterized_types-87"><span class="linenos"> 87</span></a><span class="sd">    &quot;&quot;&quot;</span>
@@ -410,7 +410,7 @@ This transforms removes the precision from parameterized types in expressions.</
 </span><span id="preprocess-105"><a href="#preprocess-105"><span class="linenos">105</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
 </span><span id="preprocess-106"><a href="#preprocess-106"><span class="linenos">106</span></a>    <span class="n">to_sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
 </span><span id="preprocess-107"><a href="#preprocess-107"><span class="linenos">107</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="preprocess-108"><a href="#preprocess-108"><span class="linenos">108</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="preprocess-108"><a href="#preprocess-108"><span class="linenos">108</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="preprocess-109"><a href="#preprocess-109"><span class="linenos">109</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
 </span><span id="preprocess-110"><a href="#preprocess-110"><span class="linenos">110</span></a><span class="sd">    expression to SQL, using an appropriate `Generator.TRANSFORMS` function.</span>
 </span><span id="preprocess-111"><a href="#preprocess-111"><span class="linenos">111</span></a>
@@ -435,14 +435,14 @@ This transforms removes the precision from parameterized types in expressions.</
             <div class="docstring"><p>Creates a new transform by chaining a sequence of transformations and converts the resulting
 expression to SQL, using an appropriate <code>Generator.TRANSFORMS</code> function.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>transforms:</strong>  sequence of transform functions. These will be called in order.</li>
 <li><strong>to_sql:</strong>  final transform that converts the resulting expression to a SQL string.</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>Function that can be used as a generator transform.</p>
@@ -463,7 +463,7 @@ expression to SQL, using an appropriate <code>Generator.TRANSFORMS</code> functi
     </div>
     <a class="headerlink" href="#delegate"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="delegate-129"><a href="#delegate-129"><span class="linenos">129</span></a><span class="k">def</span> <span class="nf">delegate</span><span class="p">(</span><span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
-</span><span id="delegate-130"><a href="#delegate-130"><span class="linenos">130</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="delegate-130"><a href="#delegate-130"><span class="linenos">130</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="delegate-131"><a href="#delegate-131"><span class="linenos">131</span></a><span class="sd">    Create a new method that delegates to `attr`. This is useful for creating `Generator.TRANSFORMS`</span>
 </span><span id="delegate-132"><a href="#delegate-132"><span class="linenos">132</span></a><span class="sd">    functions that delegate to existing generator methods.</span>
 </span><span id="delegate-133"><a href="#delegate-133"><span class="linenos">133</span></a><span class="sd">    &quot;&quot;&quot;</span>

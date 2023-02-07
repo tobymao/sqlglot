@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.2.1"/>
+    <meta name="generator" content="pdoc 12.3.1"/>
     <title>sqlglot.optimizer.scope API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -33,6 +33,24 @@
             <li>
                     <a class="class" href="#ScopeType">ScopeType</a>
                             <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#ScopeType.ROOT">ROOT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ScopeType.SUBQUERY">SUBQUERY</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ScopeType.DERIVED_TABLE">DERIVED_TABLE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ScopeType.CTE">CTE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ScopeType.UNION">UNION</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ScopeType.UDTF">UDTF</a>
+                        </li>
                 </ul>
 
             </li>
@@ -185,7 +203,7 @@
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="k">class</span> <span class="nc">Scope</span><span class="p">:</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="sd">    Selection scope.</span>
 </span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>
 </span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">    Attributes:</span>
@@ -241,7 +259,7 @@
 </span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_join_hints</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>
 </span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="k">def</span> <span class="nf">branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">,</span> <span class="n">scope_type</span><span class="p">,</span> <span class="n">chain_sources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="sd">&quot;&quot;&quot;Branch from the current scope to a new, inner scope&quot;&quot;&quot;</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Branch from the current scope to a new, inner scope&quot;&quot;&quot;</span>
 </span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="k">return</span> <span class="n">Scope</span><span class="p">(</span>
 </span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>            <span class="n">expression</span><span class="o">=</span><span class="n">expression</span><span class="o">.</span><span class="n">unnest</span><span class="p">(),</span>
 </span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>            <span class="n">sources</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">cte_sources</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">chain_sources</span> <span class="ow">or</span> <span class="p">{})},</span>
@@ -286,7 +304,7 @@
 </span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
 </span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>
 </span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="sd">        Returns the first node in this scope which matches at least one of the specified types.</span>
 </span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>
 </span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="sd">        This does NOT traverse into subscopes.</span>
@@ -302,7 +320,7 @@
 </span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
 </span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>
 </span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>    <span class="k">def</span> <span class="nf">find_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="sd">        Returns a generator object which visits all nodes in this scope and only yields those that</span>
 </span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">        match at least one of the specified expression types.</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>
@@ -320,7 +338,7 @@
 </span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>                <span class="k">yield</span> <span class="n">expression</span>
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>
 </span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>    <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
-</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">        Replace `old` with `new`.</span>
 </span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>
 </span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">        This can be used instead of `exp.Expression.replace` to ensure the `Scope` is kept up-to-date.</span>
@@ -334,7 +352,7 @@
 </span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>
 </span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>    <span class="nd">@property</span>
 </span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>    <span class="k">def</span> <span class="nf">tables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a><span class="sd">        List of tables in this scope.</span>
 </span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>
 </span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a><span class="sd">        Returns:</span>
@@ -345,7 +363,7 @@
 </span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>
 </span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>    <span class="nd">@property</span>
 </span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>    <span class="k">def</span> <span class="nf">ctes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="sd">        List of CTEs in this scope.</span>
 </span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>
 </span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="sd">        Returns:</span>
@@ -356,7 +374,7 @@
 </span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>
 </span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>    <span class="nd">@property</span>
 </span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>    <span class="k">def</span> <span class="nf">derived_tables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a><span class="sd">        List of derived tables in this scope.</span>
 </span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>
 </span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="sd">        For example:</span>
@@ -370,7 +388,7 @@
 </span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>
 </span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>    <span class="nd">@property</span>
 </span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>    <span class="k">def</span> <span class="nf">subqueries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a><span class="sd">        List of subqueries in this scope.</span>
 </span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>
 </span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a><span class="sd">        For example:</span>
@@ -384,7 +402,7 @@
 </span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>
 </span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>    <span class="nd">@property</span>
 </span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>    <span class="k">def</span> <span class="nf">columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a><span class="sd">        List of columns in this scope.</span>
 </span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>
 </span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a><span class="sd">        Returns:</span>
@@ -415,7 +433,7 @@
 </span><span id="L-246"><a href="#L-246"><span class="linenos">246</span></a>
 </span><span id="L-247"><a href="#L-247"><span class="linenos">247</span></a>    <span class="nd">@property</span>
 </span><span id="L-248"><a href="#L-248"><span class="linenos">248</span></a>    <span class="k">def</span> <span class="nf">selected_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-249"><a href="#L-249"><span class="linenos">249</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-250"><a href="#L-250"><span class="linenos">250</span></a><span class="sd">        Mapping of nodes and sources that are actually selected from in this scope.</span>
 </span><span id="L-251"><a href="#L-251"><span class="linenos">251</span></a>
 </span><span id="L-252"><a href="#L-252"><span class="linenos">252</span></a><span class="sd">        That is, all tables in a schema are selectable at any point. But a</span>
@@ -443,7 +461,7 @@
 </span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a>
 </span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a>    <span class="nd">@property</span>
 </span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a>    <span class="k">def</span> <span class="nf">cte_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a><span class="sd">        Sources that are CTEs.</span>
 </span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>
 </span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a><span class="sd">        Returns:</span>
@@ -457,7 +475,7 @@
 </span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a>
 </span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a>    <span class="nd">@property</span>
 </span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a>    <span class="k">def</span> <span class="nf">selects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a><span class="sd">        Select expressions of this scope.</span>
 </span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a>
 </span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a><span class="sd">        For example, for the following expression:</span>
@@ -474,7 +492,7 @@
 </span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>
 </span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>    <span class="nd">@property</span>
 </span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>    <span class="k">def</span> <span class="nf">external_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a><span class="sd">        Columns that appear to reference sources in outer scopes.</span>
 </span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>
 </span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a><span class="sd">        Returns:</span>
@@ -489,7 +507,7 @@
 </span><span id="L-320"><a href="#L-320"><span class="linenos">320</span></a>
 </span><span id="L-321"><a href="#L-321"><span class="linenos">321</span></a>    <span class="nd">@property</span>
 </span><span id="L-322"><a href="#L-322"><span class="linenos">322</span></a>    <span class="k">def</span> <span class="nf">unqualified_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-323"><a href="#L-323"><span class="linenos">323</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-323"><a href="#L-323"><span class="linenos">323</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-324"><a href="#L-324"><span class="linenos">324</span></a><span class="sd">        Unqualified columns in the current scope.</span>
 </span><span id="L-325"><a href="#L-325"><span class="linenos">325</span></a>
 </span><span id="L-326"><a href="#L-326"><span class="linenos">326</span></a><span class="sd">        Returns:</span>
@@ -499,7 +517,7 @@
 </span><span id="L-330"><a href="#L-330"><span class="linenos">330</span></a>
 </span><span id="L-331"><a href="#L-331"><span class="linenos">331</span></a>    <span class="nd">@property</span>
 </span><span id="L-332"><a href="#L-332"><span class="linenos">332</span></a>    <span class="k">def</span> <span class="nf">join_hints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-333"><a href="#L-333"><span class="linenos">333</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-333"><a href="#L-333"><span class="linenos">333</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-334"><a href="#L-334"><span class="linenos">334</span></a><span class="sd">        Hints that exist in the scope that reference tables</span>
 </span><span id="L-335"><a href="#L-335"><span class="linenos">335</span></a>
 </span><span id="L-336"><a href="#L-336"><span class="linenos">336</span></a><span class="sd">        Returns:</span>
@@ -510,7 +528,7 @@
 </span><span id="L-341"><a href="#L-341"><span class="linenos">341</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_join_hints</span>
 </span><span id="L-342"><a href="#L-342"><span class="linenos">342</span></a>
 </span><span id="L-343"><a href="#L-343"><span class="linenos">343</span></a>    <span class="k">def</span> <span class="nf">source_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_name</span><span class="p">):</span>
-</span><span id="L-344"><a href="#L-344"><span class="linenos">344</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-344"><a href="#L-344"><span class="linenos">344</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-345"><a href="#L-345"><span class="linenos">345</span></a><span class="sd">        Get all columns in the current scope for a particular source.</span>
 </span><span id="L-346"><a href="#L-346"><span class="linenos">346</span></a>
 </span><span id="L-347"><a href="#L-347"><span class="linenos">347</span></a><span class="sd">        Args:</span>
@@ -522,51 +540,51 @@
 </span><span id="L-353"><a href="#L-353"><span class="linenos">353</span></a>
 </span><span id="L-354"><a href="#L-354"><span class="linenos">354</span></a>    <span class="nd">@property</span>
 </span><span id="L-355"><a href="#L-355"><span class="linenos">355</span></a>    <span class="k">def</span> <span class="nf">is_subquery</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-356"><a href="#L-356"><span class="linenos">356</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a subquery&quot;&quot;&quot;</span>
+</span><span id="L-356"><a href="#L-356"><span class="linenos">356</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a subquery&quot;&quot;&quot;</span>
 </span><span id="L-357"><a href="#L-357"><span class="linenos">357</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">SUBQUERY</span>
 </span><span id="L-358"><a href="#L-358"><span class="linenos">358</span></a>
 </span><span id="L-359"><a href="#L-359"><span class="linenos">359</span></a>    <span class="nd">@property</span>
 </span><span id="L-360"><a href="#L-360"><span class="linenos">360</span></a>    <span class="k">def</span> <span class="nf">is_derived_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-361"><a href="#L-361"><span class="linenos">361</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a derived table&quot;&quot;&quot;</span>
+</span><span id="L-361"><a href="#L-361"><span class="linenos">361</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a derived table&quot;&quot;&quot;</span>
 </span><span id="L-362"><a href="#L-362"><span class="linenos">362</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">DERIVED_TABLE</span>
 </span><span id="L-363"><a href="#L-363"><span class="linenos">363</span></a>
 </span><span id="L-364"><a href="#L-364"><span class="linenos">364</span></a>    <span class="nd">@property</span>
 </span><span id="L-365"><a href="#L-365"><span class="linenos">365</span></a>    <span class="k">def</span> <span class="nf">is_union</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-366"><a href="#L-366"><span class="linenos">366</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a union&quot;&quot;&quot;</span>
+</span><span id="L-366"><a href="#L-366"><span class="linenos">366</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a union&quot;&quot;&quot;</span>
 </span><span id="L-367"><a href="#L-367"><span class="linenos">367</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">UNION</span>
 </span><span id="L-368"><a href="#L-368"><span class="linenos">368</span></a>
 </span><span id="L-369"><a href="#L-369"><span class="linenos">369</span></a>    <span class="nd">@property</span>
 </span><span id="L-370"><a href="#L-370"><span class="linenos">370</span></a>    <span class="k">def</span> <span class="nf">is_cte</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-371"><a href="#L-371"><span class="linenos">371</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a common table expression&quot;&quot;&quot;</span>
+</span><span id="L-371"><a href="#L-371"><span class="linenos">371</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a common table expression&quot;&quot;&quot;</span>
 </span><span id="L-372"><a href="#L-372"><span class="linenos">372</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">CTE</span>
 </span><span id="L-373"><a href="#L-373"><span class="linenos">373</span></a>
 </span><span id="L-374"><a href="#L-374"><span class="linenos">374</span></a>    <span class="nd">@property</span>
 </span><span id="L-375"><a href="#L-375"><span class="linenos">375</span></a>    <span class="k">def</span> <span class="nf">is_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-376"><a href="#L-376"><span class="linenos">376</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this is the root scope&quot;&quot;&quot;</span>
+</span><span id="L-376"><a href="#L-376"><span class="linenos">376</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this is the root scope&quot;&quot;&quot;</span>
 </span><span id="L-377"><a href="#L-377"><span class="linenos">377</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">ROOT</span>
 </span><span id="L-378"><a href="#L-378"><span class="linenos">378</span></a>
 </span><span id="L-379"><a href="#L-379"><span class="linenos">379</span></a>    <span class="nd">@property</span>
 </span><span id="L-380"><a href="#L-380"><span class="linenos">380</span></a>    <span class="k">def</span> <span class="nf">is_udtf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-381"><a href="#L-381"><span class="linenos">381</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a UDTF (User Defined Table Function)&quot;&quot;&quot;</span>
+</span><span id="L-381"><a href="#L-381"><span class="linenos">381</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a UDTF (User Defined Table Function)&quot;&quot;&quot;</span>
 </span><span id="L-382"><a href="#L-382"><span class="linenos">382</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">UDTF</span>
 </span><span id="L-383"><a href="#L-383"><span class="linenos">383</span></a>
 </span><span id="L-384"><a href="#L-384"><span class="linenos">384</span></a>    <span class="nd">@property</span>
 </span><span id="L-385"><a href="#L-385"><span class="linenos">385</span></a>    <span class="k">def</span> <span class="nf">is_correlated_subquery</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a correlated subquery&quot;&quot;&quot;</span>
+</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a correlated subquery&quot;&quot;&quot;</span>
 </span><span id="L-387"><a href="#L-387"><span class="linenos">387</span></a>        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_subquery</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_columns</span><span class="p">)</span>
 </span><span id="L-388"><a href="#L-388"><span class="linenos">388</span></a>
 </span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a>    <span class="k">def</span> <span class="nf">rename_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_name</span><span class="p">,</span> <span class="n">new_name</span><span class="p">):</span>
-</span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a>        <span class="sd">&quot;&quot;&quot;Rename a source in this scope&quot;&quot;&quot;</span>
+</span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename a source in this scope&quot;&quot;&quot;</span>
 </span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a>        <span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_name</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[])</span>
 </span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="n">new_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
 </span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a>
 </span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a>    <span class="k">def</span> <span class="nf">add_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
-</span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a>        <span class="sd">&quot;&quot;&quot;Add a source to this scope&quot;&quot;&quot;</span>
+</span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a source to this scope&quot;&quot;&quot;</span>
 </span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">source</span>
 </span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
 </span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a>
 </span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a>    <span class="k">def</span> <span class="nf">remove_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-</span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a>        <span class="sd">&quot;&quot;&quot;Remove a source from this scope&quot;&quot;&quot;</span>
+</span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a source from this scope&quot;&quot;&quot;</span>
 </span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </span><span id="L-402"><a href="#L-402"><span class="linenos">402</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
 </span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a>
@@ -574,7 +592,7 @@
 </span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Scope&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 </span><span id="L-406"><a href="#L-406"><span class="linenos">406</span></a>
 </span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a>    <span class="k">def</span> <span class="nf">traverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a><span class="sd">        Traverse the scope tree from this node.</span>
 </span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a>
 </span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a><span class="sd">        Yields:</span>
@@ -587,7 +605,7 @@
 </span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a>        <span class="k">yield</span> <span class="bp">self</span>
 </span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a>
 </span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a>    <span class="k">def</span> <span class="nf">ref_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a><span class="sd">        Count the number of times each scope in this tree is referenced.</span>
 </span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a>
 </span><span id="L-424"><a href="#L-424"><span class="linenos">424</span></a><span class="sd">        Returns:</span>
@@ -603,7 +621,7 @@
 </span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a>
 </span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a>
 </span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a><span class="k">def</span> <span class="nf">traverse_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a><span class="sd">    Traverse an expression by it&#39;s &quot;scopes&quot;.</span>
 </span><span id="L-439"><a href="#L-439"><span class="linenos">439</span></a>
 </span><span id="L-440"><a href="#L-440"><span class="linenos">440</span></a><span class="sd">    &quot;Scope&quot; represents the current context of a Select statement.</span>
@@ -631,7 +649,7 @@
 </span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a>
 </span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a>
 </span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a><span class="k">def</span> <span class="nf">build_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a><span class="sd">    Build a scope tree.</span>
 </span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>
 </span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a><span class="sd">    Args:</span>
@@ -752,7 +770,7 @@
 </span><span id="L-583"><a href="#L-583"><span class="linenos">583</span></a>
 </span><span id="L-584"><a href="#L-584"><span class="linenos">584</span></a>
 </span><span id="L-585"><a href="#L-585"><span class="linenos">585</span></a><span class="k">def</span> <span class="nf">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="L-586"><a href="#L-586"><span class="linenos">586</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-586"><a href="#L-586"><span class="linenos">586</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-587"><a href="#L-587"><span class="linenos">587</span></a><span class="sd">    Returns a generator object which visits all nodes in the syntrax tree, stopping at</span>
 </span><span id="L-588"><a href="#L-588"><span class="linenos">588</span></a><span class="sd">    nodes that start child scopes.</span>
 </span><span id="L-589"><a href="#L-589"><span class="linenos">589</span></a>
@@ -810,6 +828,72 @@
 </div>
 
 
+                            <div id="ScopeType.ROOT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ROOT</span><span class="default_value"> = &lt;<a href="#ScopeType.ROOT">ScopeType.ROOT</a>: 1&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ScopeType.ROOT"></a>
+    
+    
+
+                            </div>
+                            <div id="ScopeType.SUBQUERY" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUBQUERY</span><span class="default_value"> = &lt;<a href="#ScopeType.SUBQUERY">ScopeType.SUBQUERY</a>: 2&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ScopeType.SUBQUERY"></a>
+    
+    
+
+                            </div>
+                            <div id="ScopeType.DERIVED_TABLE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">DERIVED_TABLE</span><span class="default_value"> = &lt;<a href="#ScopeType.DERIVED_TABLE">ScopeType.DERIVED_TABLE</a>: 3&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ScopeType.DERIVED_TABLE"></a>
+    
+    
+
+                            </div>
+                            <div id="ScopeType.CTE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">CTE</span><span class="default_value"> = &lt;<a href="#ScopeType.CTE">ScopeType.CTE</a>: 4&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ScopeType.CTE"></a>
+    
+    
+
+                            </div>
+                            <div id="ScopeType.UNION" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNION</span><span class="default_value"> = &lt;<a href="#ScopeType.UNION">ScopeType.UNION</a>: 5&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ScopeType.UNION"></a>
+    
+    
+
+                            </div>
+                            <div id="ScopeType.UDTF" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UDTF</span><span class="default_value"> = &lt;<a href="#ScopeType.UDTF">ScopeType.UDTF</a>: 6&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ScopeType.UDTF"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
@@ -833,7 +917,7 @@
     </div>
     <a class="headerlink" href="#Scope"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope-19"><a href="#Scope-19"><span class="linenos"> 19</span></a><span class="k">class</span> <span class="nc">Scope</span><span class="p">:</span>
-</span><span id="Scope-20"><a href="#Scope-20"><span class="linenos"> 20</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-20"><a href="#Scope-20"><span class="linenos"> 20</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-21"><a href="#Scope-21"><span class="linenos"> 21</span></a><span class="sd">    Selection scope.</span>
 </span><span id="Scope-22"><a href="#Scope-22"><span class="linenos"> 22</span></a>
 </span><span id="Scope-23"><a href="#Scope-23"><span class="linenos"> 23</span></a><span class="sd">    Attributes:</span>
@@ -889,7 +973,7 @@
 </span><span id="Scope-73"><a href="#Scope-73"><span class="linenos"> 73</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_join_hints</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="Scope-74"><a href="#Scope-74"><span class="linenos"> 74</span></a>
 </span><span id="Scope-75"><a href="#Scope-75"><span class="linenos"> 75</span></a>    <span class="k">def</span> <span class="nf">branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">,</span> <span class="n">scope_type</span><span class="p">,</span> <span class="n">chain_sources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="Scope-76"><a href="#Scope-76"><span class="linenos"> 76</span></a>        <span class="sd">&quot;&quot;&quot;Branch from the current scope to a new, inner scope&quot;&quot;&quot;</span>
+</span><span id="Scope-76"><a href="#Scope-76"><span class="linenos"> 76</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Branch from the current scope to a new, inner scope&quot;&quot;&quot;</span>
 </span><span id="Scope-77"><a href="#Scope-77"><span class="linenos"> 77</span></a>        <span class="k">return</span> <span class="n">Scope</span><span class="p">(</span>
 </span><span id="Scope-78"><a href="#Scope-78"><span class="linenos"> 78</span></a>            <span class="n">expression</span><span class="o">=</span><span class="n">expression</span><span class="o">.</span><span class="n">unnest</span><span class="p">(),</span>
 </span><span id="Scope-79"><a href="#Scope-79"><span class="linenos"> 79</span></a>            <span class="n">sources</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">cte_sources</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">chain_sources</span> <span class="ow">or</span> <span class="p">{})},</span>
@@ -934,7 +1018,7 @@
 </span><span id="Scope-118"><a href="#Scope-118"><span class="linenos">118</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
 </span><span id="Scope-119"><a href="#Scope-119"><span class="linenos">119</span></a>
 </span><span id="Scope-120"><a href="#Scope-120"><span class="linenos">120</span></a>    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="Scope-121"><a href="#Scope-121"><span class="linenos">121</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-121"><a href="#Scope-121"><span class="linenos">121</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-122"><a href="#Scope-122"><span class="linenos">122</span></a><span class="sd">        Returns the first node in this scope which matches at least one of the specified types.</span>
 </span><span id="Scope-123"><a href="#Scope-123"><span class="linenos">123</span></a>
 </span><span id="Scope-124"><a href="#Scope-124"><span class="linenos">124</span></a><span class="sd">        This does NOT traverse into subscopes.</span>
@@ -950,7 +1034,7 @@
 </span><span id="Scope-134"><a href="#Scope-134"><span class="linenos">134</span></a>        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
 </span><span id="Scope-135"><a href="#Scope-135"><span class="linenos">135</span></a>
 </span><span id="Scope-136"><a href="#Scope-136"><span class="linenos">136</span></a>    <span class="k">def</span> <span class="nf">find_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="Scope-137"><a href="#Scope-137"><span class="linenos">137</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-137"><a href="#Scope-137"><span class="linenos">137</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-138"><a href="#Scope-138"><span class="linenos">138</span></a><span class="sd">        Returns a generator object which visits all nodes in this scope and only yields those that</span>
 </span><span id="Scope-139"><a href="#Scope-139"><span class="linenos">139</span></a><span class="sd">        match at least one of the specified expression types.</span>
 </span><span id="Scope-140"><a href="#Scope-140"><span class="linenos">140</span></a>
@@ -968,7 +1052,7 @@
 </span><span id="Scope-152"><a href="#Scope-152"><span class="linenos">152</span></a>                <span class="k">yield</span> <span class="n">expression</span>
 </span><span id="Scope-153"><a href="#Scope-153"><span class="linenos">153</span></a>
 </span><span id="Scope-154"><a href="#Scope-154"><span class="linenos">154</span></a>    <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
-</span><span id="Scope-155"><a href="#Scope-155"><span class="linenos">155</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-155"><a href="#Scope-155"><span class="linenos">155</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-156"><a href="#Scope-156"><span class="linenos">156</span></a><span class="sd">        Replace `old` with `new`.</span>
 </span><span id="Scope-157"><a href="#Scope-157"><span class="linenos">157</span></a>
 </span><span id="Scope-158"><a href="#Scope-158"><span class="linenos">158</span></a><span class="sd">        This can be used instead of `exp.Expression.replace` to ensure the `Scope` is kept up-to-date.</span>
@@ -982,7 +1066,7 @@
 </span><span id="Scope-166"><a href="#Scope-166"><span class="linenos">166</span></a>
 </span><span id="Scope-167"><a href="#Scope-167"><span class="linenos">167</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-168"><a href="#Scope-168"><span class="linenos">168</span></a>    <span class="k">def</span> <span class="nf">tables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-169"><a href="#Scope-169"><span class="linenos">169</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-169"><a href="#Scope-169"><span class="linenos">169</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-170"><a href="#Scope-170"><span class="linenos">170</span></a><span class="sd">        List of tables in this scope.</span>
 </span><span id="Scope-171"><a href="#Scope-171"><span class="linenos">171</span></a>
 </span><span id="Scope-172"><a href="#Scope-172"><span class="linenos">172</span></a><span class="sd">        Returns:</span>
@@ -993,7 +1077,7 @@
 </span><span id="Scope-177"><a href="#Scope-177"><span class="linenos">177</span></a>
 </span><span id="Scope-178"><a href="#Scope-178"><span class="linenos">178</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-179"><a href="#Scope-179"><span class="linenos">179</span></a>    <span class="k">def</span> <span class="nf">ctes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-180"><a href="#Scope-180"><span class="linenos">180</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-180"><a href="#Scope-180"><span class="linenos">180</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-181"><a href="#Scope-181"><span class="linenos">181</span></a><span class="sd">        List of CTEs in this scope.</span>
 </span><span id="Scope-182"><a href="#Scope-182"><span class="linenos">182</span></a>
 </span><span id="Scope-183"><a href="#Scope-183"><span class="linenos">183</span></a><span class="sd">        Returns:</span>
@@ -1004,7 +1088,7 @@
 </span><span id="Scope-188"><a href="#Scope-188"><span class="linenos">188</span></a>
 </span><span id="Scope-189"><a href="#Scope-189"><span class="linenos">189</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-190"><a href="#Scope-190"><span class="linenos">190</span></a>    <span class="k">def</span> <span class="nf">derived_tables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-191"><a href="#Scope-191"><span class="linenos">191</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-191"><a href="#Scope-191"><span class="linenos">191</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-192"><a href="#Scope-192"><span class="linenos">192</span></a><span class="sd">        List of derived tables in this scope.</span>
 </span><span id="Scope-193"><a href="#Scope-193"><span class="linenos">193</span></a>
 </span><span id="Scope-194"><a href="#Scope-194"><span class="linenos">194</span></a><span class="sd">        For example:</span>
@@ -1018,7 +1102,7 @@
 </span><span id="Scope-202"><a href="#Scope-202"><span class="linenos">202</span></a>
 </span><span id="Scope-203"><a href="#Scope-203"><span class="linenos">203</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-204"><a href="#Scope-204"><span class="linenos">204</span></a>    <span class="k">def</span> <span class="nf">subqueries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-205"><a href="#Scope-205"><span class="linenos">205</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-205"><a href="#Scope-205"><span class="linenos">205</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-206"><a href="#Scope-206"><span class="linenos">206</span></a><span class="sd">        List of subqueries in this scope.</span>
 </span><span id="Scope-207"><a href="#Scope-207"><span class="linenos">207</span></a>
 </span><span id="Scope-208"><a href="#Scope-208"><span class="linenos">208</span></a><span class="sd">        For example:</span>
@@ -1032,7 +1116,7 @@
 </span><span id="Scope-216"><a href="#Scope-216"><span class="linenos">216</span></a>
 </span><span id="Scope-217"><a href="#Scope-217"><span class="linenos">217</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-218"><a href="#Scope-218"><span class="linenos">218</span></a>    <span class="k">def</span> <span class="nf">columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-219"><a href="#Scope-219"><span class="linenos">219</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-219"><a href="#Scope-219"><span class="linenos">219</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-220"><a href="#Scope-220"><span class="linenos">220</span></a><span class="sd">        List of columns in this scope.</span>
 </span><span id="Scope-221"><a href="#Scope-221"><span class="linenos">221</span></a>
 </span><span id="Scope-222"><a href="#Scope-222"><span class="linenos">222</span></a><span class="sd">        Returns:</span>
@@ -1063,7 +1147,7 @@
 </span><span id="Scope-247"><a href="#Scope-247"><span class="linenos">247</span></a>
 </span><span id="Scope-248"><a href="#Scope-248"><span class="linenos">248</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-249"><a href="#Scope-249"><span class="linenos">249</span></a>    <span class="k">def</span> <span class="nf">selected_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-250"><a href="#Scope-250"><span class="linenos">250</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-250"><a href="#Scope-250"><span class="linenos">250</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-251"><a href="#Scope-251"><span class="linenos">251</span></a><span class="sd">        Mapping of nodes and sources that are actually selected from in this scope.</span>
 </span><span id="Scope-252"><a href="#Scope-252"><span class="linenos">252</span></a>
 </span><span id="Scope-253"><a href="#Scope-253"><span class="linenos">253</span></a><span class="sd">        That is, all tables in a schema are selectable at any point. But a</span>
@@ -1091,7 +1175,7 @@
 </span><span id="Scope-275"><a href="#Scope-275"><span class="linenos">275</span></a>
 </span><span id="Scope-276"><a href="#Scope-276"><span class="linenos">276</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-277"><a href="#Scope-277"><span class="linenos">277</span></a>    <span class="k">def</span> <span class="nf">cte_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-278"><a href="#Scope-278"><span class="linenos">278</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-278"><a href="#Scope-278"><span class="linenos">278</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-279"><a href="#Scope-279"><span class="linenos">279</span></a><span class="sd">        Sources that are CTEs.</span>
 </span><span id="Scope-280"><a href="#Scope-280"><span class="linenos">280</span></a>
 </span><span id="Scope-281"><a href="#Scope-281"><span class="linenos">281</span></a><span class="sd">        Returns:</span>
@@ -1105,7 +1189,7 @@
 </span><span id="Scope-289"><a href="#Scope-289"><span class="linenos">289</span></a>
 </span><span id="Scope-290"><a href="#Scope-290"><span class="linenos">290</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-291"><a href="#Scope-291"><span class="linenos">291</span></a>    <span class="k">def</span> <span class="nf">selects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-292"><a href="#Scope-292"><span class="linenos">292</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-292"><a href="#Scope-292"><span class="linenos">292</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-293"><a href="#Scope-293"><span class="linenos">293</span></a><span class="sd">        Select expressions of this scope.</span>
 </span><span id="Scope-294"><a href="#Scope-294"><span class="linenos">294</span></a>
 </span><span id="Scope-295"><a href="#Scope-295"><span class="linenos">295</span></a><span class="sd">        For example, for the following expression:</span>
@@ -1122,7 +1206,7 @@
 </span><span id="Scope-306"><a href="#Scope-306"><span class="linenos">306</span></a>
 </span><span id="Scope-307"><a href="#Scope-307"><span class="linenos">307</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-308"><a href="#Scope-308"><span class="linenos">308</span></a>    <span class="k">def</span> <span class="nf">external_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-309"><a href="#Scope-309"><span class="linenos">309</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-309"><a href="#Scope-309"><span class="linenos">309</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-310"><a href="#Scope-310"><span class="linenos">310</span></a><span class="sd">        Columns that appear to reference sources in outer scopes.</span>
 </span><span id="Scope-311"><a href="#Scope-311"><span class="linenos">311</span></a>
 </span><span id="Scope-312"><a href="#Scope-312"><span class="linenos">312</span></a><span class="sd">        Returns:</span>
@@ -1137,7 +1221,7 @@
 </span><span id="Scope-321"><a href="#Scope-321"><span class="linenos">321</span></a>
 </span><span id="Scope-322"><a href="#Scope-322"><span class="linenos">322</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-323"><a href="#Scope-323"><span class="linenos">323</span></a>    <span class="k">def</span> <span class="nf">unqualified_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-324"><a href="#Scope-324"><span class="linenos">324</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-324"><a href="#Scope-324"><span class="linenos">324</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-325"><a href="#Scope-325"><span class="linenos">325</span></a><span class="sd">        Unqualified columns in the current scope.</span>
 </span><span id="Scope-326"><a href="#Scope-326"><span class="linenos">326</span></a>
 </span><span id="Scope-327"><a href="#Scope-327"><span class="linenos">327</span></a><span class="sd">        Returns:</span>
@@ -1147,7 +1231,7 @@
 </span><span id="Scope-331"><a href="#Scope-331"><span class="linenos">331</span></a>
 </span><span id="Scope-332"><a href="#Scope-332"><span class="linenos">332</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-333"><a href="#Scope-333"><span class="linenos">333</span></a>    <span class="k">def</span> <span class="nf">join_hints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-334"><a href="#Scope-334"><span class="linenos">334</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-334"><a href="#Scope-334"><span class="linenos">334</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-335"><a href="#Scope-335"><span class="linenos">335</span></a><span class="sd">        Hints that exist in the scope that reference tables</span>
 </span><span id="Scope-336"><a href="#Scope-336"><span class="linenos">336</span></a>
 </span><span id="Scope-337"><a href="#Scope-337"><span class="linenos">337</span></a><span class="sd">        Returns:</span>
@@ -1158,7 +1242,7 @@
 </span><span id="Scope-342"><a href="#Scope-342"><span class="linenos">342</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_join_hints</span>
 </span><span id="Scope-343"><a href="#Scope-343"><span class="linenos">343</span></a>
 </span><span id="Scope-344"><a href="#Scope-344"><span class="linenos">344</span></a>    <span class="k">def</span> <span class="nf">source_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_name</span><span class="p">):</span>
-</span><span id="Scope-345"><a href="#Scope-345"><span class="linenos">345</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-345"><a href="#Scope-345"><span class="linenos">345</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-346"><a href="#Scope-346"><span class="linenos">346</span></a><span class="sd">        Get all columns in the current scope for a particular source.</span>
 </span><span id="Scope-347"><a href="#Scope-347"><span class="linenos">347</span></a>
 </span><span id="Scope-348"><a href="#Scope-348"><span class="linenos">348</span></a><span class="sd">        Args:</span>
@@ -1170,51 +1254,51 @@
 </span><span id="Scope-354"><a href="#Scope-354"><span class="linenos">354</span></a>
 </span><span id="Scope-355"><a href="#Scope-355"><span class="linenos">355</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-356"><a href="#Scope-356"><span class="linenos">356</span></a>    <span class="k">def</span> <span class="nf">is_subquery</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-357"><a href="#Scope-357"><span class="linenos">357</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a subquery&quot;&quot;&quot;</span>
+</span><span id="Scope-357"><a href="#Scope-357"><span class="linenos">357</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a subquery&quot;&quot;&quot;</span>
 </span><span id="Scope-358"><a href="#Scope-358"><span class="linenos">358</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">SUBQUERY</span>
 </span><span id="Scope-359"><a href="#Scope-359"><span class="linenos">359</span></a>
 </span><span id="Scope-360"><a href="#Scope-360"><span class="linenos">360</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-361"><a href="#Scope-361"><span class="linenos">361</span></a>    <span class="k">def</span> <span class="nf">is_derived_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-362"><a href="#Scope-362"><span class="linenos">362</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a derived table&quot;&quot;&quot;</span>
+</span><span id="Scope-362"><a href="#Scope-362"><span class="linenos">362</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a derived table&quot;&quot;&quot;</span>
 </span><span id="Scope-363"><a href="#Scope-363"><span class="linenos">363</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">DERIVED_TABLE</span>
 </span><span id="Scope-364"><a href="#Scope-364"><span class="linenos">364</span></a>
 </span><span id="Scope-365"><a href="#Scope-365"><span class="linenos">365</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-366"><a href="#Scope-366"><span class="linenos">366</span></a>    <span class="k">def</span> <span class="nf">is_union</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-367"><a href="#Scope-367"><span class="linenos">367</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a union&quot;&quot;&quot;</span>
+</span><span id="Scope-367"><a href="#Scope-367"><span class="linenos">367</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a union&quot;&quot;&quot;</span>
 </span><span id="Scope-368"><a href="#Scope-368"><span class="linenos">368</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">UNION</span>
 </span><span id="Scope-369"><a href="#Scope-369"><span class="linenos">369</span></a>
 </span><span id="Scope-370"><a href="#Scope-370"><span class="linenos">370</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-371"><a href="#Scope-371"><span class="linenos">371</span></a>    <span class="k">def</span> <span class="nf">is_cte</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-372"><a href="#Scope-372"><span class="linenos">372</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a common table expression&quot;&quot;&quot;</span>
+</span><span id="Scope-372"><a href="#Scope-372"><span class="linenos">372</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a common table expression&quot;&quot;&quot;</span>
 </span><span id="Scope-373"><a href="#Scope-373"><span class="linenos">373</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">CTE</span>
 </span><span id="Scope-374"><a href="#Scope-374"><span class="linenos">374</span></a>
 </span><span id="Scope-375"><a href="#Scope-375"><span class="linenos">375</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-376"><a href="#Scope-376"><span class="linenos">376</span></a>    <span class="k">def</span> <span class="nf">is_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-377"><a href="#Scope-377"><span class="linenos">377</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this is the root scope&quot;&quot;&quot;</span>
+</span><span id="Scope-377"><a href="#Scope-377"><span class="linenos">377</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this is the root scope&quot;&quot;&quot;</span>
 </span><span id="Scope-378"><a href="#Scope-378"><span class="linenos">378</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">ROOT</span>
 </span><span id="Scope-379"><a href="#Scope-379"><span class="linenos">379</span></a>
 </span><span id="Scope-380"><a href="#Scope-380"><span class="linenos">380</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-381"><a href="#Scope-381"><span class="linenos">381</span></a>    <span class="k">def</span> <span class="nf">is_udtf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-382"><a href="#Scope-382"><span class="linenos">382</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a UDTF (User Defined Table Function)&quot;&quot;&quot;</span>
+</span><span id="Scope-382"><a href="#Scope-382"><span class="linenos">382</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a UDTF (User Defined Table Function)&quot;&quot;&quot;</span>
 </span><span id="Scope-383"><a href="#Scope-383"><span class="linenos">383</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope_type</span> <span class="o">==</span> <span class="n">ScopeType</span><span class="o">.</span><span class="n">UDTF</span>
 </span><span id="Scope-384"><a href="#Scope-384"><span class="linenos">384</span></a>
 </span><span id="Scope-385"><a href="#Scope-385"><span class="linenos">385</span></a>    <span class="nd">@property</span>
 </span><span id="Scope-386"><a href="#Scope-386"><span class="linenos">386</span></a>    <span class="k">def</span> <span class="nf">is_correlated_subquery</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-387"><a href="#Scope-387"><span class="linenos">387</span></a>        <span class="sd">&quot;&quot;&quot;Determine if this scope is a correlated subquery&quot;&quot;&quot;</span>
+</span><span id="Scope-387"><a href="#Scope-387"><span class="linenos">387</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if this scope is a correlated subquery&quot;&quot;&quot;</span>
 </span><span id="Scope-388"><a href="#Scope-388"><span class="linenos">388</span></a>        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_subquery</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_columns</span><span class="p">)</span>
 </span><span id="Scope-389"><a href="#Scope-389"><span class="linenos">389</span></a>
 </span><span id="Scope-390"><a href="#Scope-390"><span class="linenos">390</span></a>    <span class="k">def</span> <span class="nf">rename_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_name</span><span class="p">,</span> <span class="n">new_name</span><span class="p">):</span>
-</span><span id="Scope-391"><a href="#Scope-391"><span class="linenos">391</span></a>        <span class="sd">&quot;&quot;&quot;Rename a source in this scope&quot;&quot;&quot;</span>
+</span><span id="Scope-391"><a href="#Scope-391"><span class="linenos">391</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename a source in this scope&quot;&quot;&quot;</span>
 </span><span id="Scope-392"><a href="#Scope-392"><span class="linenos">392</span></a>        <span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_name</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[])</span>
 </span><span id="Scope-393"><a href="#Scope-393"><span class="linenos">393</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="n">new_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
 </span><span id="Scope-394"><a href="#Scope-394"><span class="linenos">394</span></a>
 </span><span id="Scope-395"><a href="#Scope-395"><span class="linenos">395</span></a>    <span class="k">def</span> <span class="nf">add_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
-</span><span id="Scope-396"><a href="#Scope-396"><span class="linenos">396</span></a>        <span class="sd">&quot;&quot;&quot;Add a source to this scope&quot;&quot;&quot;</span>
+</span><span id="Scope-396"><a href="#Scope-396"><span class="linenos">396</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a source to this scope&quot;&quot;&quot;</span>
 </span><span id="Scope-397"><a href="#Scope-397"><span class="linenos">397</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">source</span>
 </span><span id="Scope-398"><a href="#Scope-398"><span class="linenos">398</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
 </span><span id="Scope-399"><a href="#Scope-399"><span class="linenos">399</span></a>
 </span><span id="Scope-400"><a href="#Scope-400"><span class="linenos">400</span></a>    <span class="k">def</span> <span class="nf">remove_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-</span><span id="Scope-401"><a href="#Scope-401"><span class="linenos">401</span></a>        <span class="sd">&quot;&quot;&quot;Remove a source from this scope&quot;&quot;&quot;</span>
+</span><span id="Scope-401"><a href="#Scope-401"><span class="linenos">401</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a source from this scope&quot;&quot;&quot;</span>
 </span><span id="Scope-402"><a href="#Scope-402"><span class="linenos">402</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </span><span id="Scope-403"><a href="#Scope-403"><span class="linenos">403</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
 </span><span id="Scope-404"><a href="#Scope-404"><span class="linenos">404</span></a>
@@ -1222,7 +1306,7 @@
 </span><span id="Scope-406"><a href="#Scope-406"><span class="linenos">406</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Scope&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 </span><span id="Scope-407"><a href="#Scope-407"><span class="linenos">407</span></a>
 </span><span id="Scope-408"><a href="#Scope-408"><span class="linenos">408</span></a>    <span class="k">def</span> <span class="nf">traverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-409"><a href="#Scope-409"><span class="linenos">409</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-409"><a href="#Scope-409"><span class="linenos">409</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-410"><a href="#Scope-410"><span class="linenos">410</span></a><span class="sd">        Traverse the scope tree from this node.</span>
 </span><span id="Scope-411"><a href="#Scope-411"><span class="linenos">411</span></a>
 </span><span id="Scope-412"><a href="#Scope-412"><span class="linenos">412</span></a><span class="sd">        Yields:</span>
@@ -1235,7 +1319,7 @@
 </span><span id="Scope-419"><a href="#Scope-419"><span class="linenos">419</span></a>        <span class="k">yield</span> <span class="bp">self</span>
 </span><span id="Scope-420"><a href="#Scope-420"><span class="linenos">420</span></a>
 </span><span id="Scope-421"><a href="#Scope-421"><span class="linenos">421</span></a>    <span class="k">def</span> <span class="nf">ref_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope-422"><a href="#Scope-422"><span class="linenos">422</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope-422"><a href="#Scope-422"><span class="linenos">422</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope-423"><a href="#Scope-423"><span class="linenos">423</span></a><span class="sd">        Count the number of times each scope in this tree is referenced.</span>
 </span><span id="Scope-424"><a href="#Scope-424"><span class="linenos">424</span></a>
 </span><span id="Scope-425"><a href="#Scope-425"><span class="linenos">425</span></a><span class="sd">        Returns:</span>
@@ -1253,7 +1337,7 @@
 
             <div class="docstring"><p>Selection scope.</p>
 
-<h6 id="attributes">Attributes</h6>
+<h6 id="attributes">Attributes:</h6>
 
 <ul>
 <li><strong>expression (exp.Select|exp.Union):</strong>  Root expression of this scope</li>
@@ -1282,7 +1366,7 @@ a list of the left and right child scopes.</li>
                                         <input id="Scope.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">Scope</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span>,</span><span class="param">	<span class="n">sources</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">outer_column_list</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">parent</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">scope_type</span><span class="o">=&lt;</span><span class="n">ScopeType</span><span class="o">.</span><span class="n">ROOT</span><span class="p">:</span> <span class="mi">1</span><span class="o">&gt;</span></span>)</span>
+        <span class="name">Scope</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span>,</span><span class="param">	<span class="n">sources</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">outer_column_list</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">parent</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">scope_type</span><span class="o">=&lt;</span><span class="n"><a href="#ScopeType.ROOT">ScopeType.ROOT</a></span><span class="p">:</span> <span class="mi">1</span><span class="o">&gt;</span></span>)</span>
 
                 <label class="view-source-button" for="Scope.__init__-view-source"><span>View Source</span></label>
 
@@ -1352,7 +1436,7 @@ a list of the left and right child scopes.</li>
     </div>
     <a class="headerlink" href="#Scope.branch"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.branch-75"><a href="#Scope.branch-75"><span class="linenos">75</span></a>    <span class="k">def</span> <span class="nf">branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">,</span> <span class="n">scope_type</span><span class="p">,</span> <span class="n">chain_sources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="Scope.branch-76"><a href="#Scope.branch-76"><span class="linenos">76</span></a>        <span class="sd">&quot;&quot;&quot;Branch from the current scope to a new, inner scope&quot;&quot;&quot;</span>
+</span><span id="Scope.branch-76"><a href="#Scope.branch-76"><span class="linenos">76</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Branch from the current scope to a new, inner scope&quot;&quot;&quot;</span>
 </span><span id="Scope.branch-77"><a href="#Scope.branch-77"><span class="linenos">77</span></a>        <span class="k">return</span> <span class="n">Scope</span><span class="p">(</span>
 </span><span id="Scope.branch-78"><a href="#Scope.branch-78"><span class="linenos">78</span></a>            <span class="n">expression</span><span class="o">=</span><span class="n">expression</span><span class="o">.</span><span class="n">unnest</span><span class="p">(),</span>
 </span><span id="Scope.branch-79"><a href="#Scope.branch-79"><span class="linenos">79</span></a>            <span class="n">sources</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">cte_sources</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">chain_sources</span> <span class="ow">or</span> <span class="p">{})},</span>
@@ -1399,7 +1483,7 @@ a list of the left and right child scopes.</li>
     </div>
     <a class="headerlink" href="#Scope.find"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.find-120"><a href="#Scope.find-120"><span class="linenos">120</span></a>    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="Scope.find-121"><a href="#Scope.find-121"><span class="linenos">121</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope.find-121"><a href="#Scope.find-121"><span class="linenos">121</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope.find-122"><a href="#Scope.find-122"><span class="linenos">122</span></a><span class="sd">        Returns the first node in this scope which matches at least one of the specified types.</span>
 </span><span id="Scope.find-123"><a href="#Scope.find-123"><span class="linenos">123</span></a>
 </span><span id="Scope.find-124"><a href="#Scope.find-124"><span class="linenos">124</span></a><span class="sd">        This does NOT traverse into subscopes.</span>
@@ -1420,14 +1504,14 @@ a list of the left and right child scopes.</li>
 
 <p>This does NOT traverse into subscopes.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression_types (type):</strong>  the expression type(s) to match.</li>
 <li><strong>bfs (bool):</strong>  True to use breadth-first search, False to use depth-first.</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>exp.Expression: the node which matches the criteria or None if no node matching
@@ -1449,7 +1533,7 @@ a list of the left and right child scopes.</li>
     </div>
     <a class="headerlink" href="#Scope.find_all"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.find_all-136"><a href="#Scope.find_all-136"><span class="linenos">136</span></a>    <span class="k">def</span> <span class="nf">find_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="Scope.find_all-137"><a href="#Scope.find_all-137"><span class="linenos">137</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope.find_all-137"><a href="#Scope.find_all-137"><span class="linenos">137</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope.find_all-138"><a href="#Scope.find_all-138"><span class="linenos">138</span></a><span class="sd">        Returns a generator object which visits all nodes in this scope and only yields those that</span>
 </span><span id="Scope.find_all-139"><a href="#Scope.find_all-139"><span class="linenos">139</span></a><span class="sd">        match at least one of the specified expression types.</span>
 </span><span id="Scope.find_all-140"><a href="#Scope.find_all-140"><span class="linenos">140</span></a>
@@ -1473,14 +1557,14 @@ match at least one of the specified expression types.</p>
 
 <p>This does NOT traverse into subscopes.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression_types (type):</strong>  the expression type(s) to match.</li>
 <li><strong>bfs (bool):</strong>  True to use breadth-first search, False to use depth-first.</li>
 </ul>
 
-<h6 id="yields">Yields</h6>
+<h6 id="yields">Yields:</h6>
 
 <blockquote>
   <p>exp.Expression: nodes</p>
@@ -1501,7 +1585,7 @@ match at least one of the specified expression types.</p>
     </div>
     <a class="headerlink" href="#Scope.replace"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.replace-154"><a href="#Scope.replace-154"><span class="linenos">154</span></a>    <span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
-</span><span id="Scope.replace-155"><a href="#Scope.replace-155"><span class="linenos">155</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope.replace-155"><a href="#Scope.replace-155"><span class="linenos">155</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope.replace-156"><a href="#Scope.replace-156"><span class="linenos">156</span></a><span class="sd">        Replace `old` with `new`.</span>
 </span><span id="Scope.replace-157"><a href="#Scope.replace-157"><span class="linenos">157</span></a>
 </span><span id="Scope.replace-158"><a href="#Scope.replace-158"><span class="linenos">158</span></a><span class="sd">        This can be used instead of `exp.Expression.replace` to ensure the `Scope` is kept up-to-date.</span>
@@ -1519,7 +1603,7 @@ match at least one of the specified expression types.</p>
 
 <p>This can be used instead of <code>exp.Expression.replace</code> to ensure the <code><a href="#Scope">Scope</a></code> is kept up-to-date.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>old (exp.Expression):</strong>  old node</li>
@@ -1539,7 +1623,7 @@ match at least one of the specified expression types.</p>
     
             <div class="docstring"><p>List of tables in this scope.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Table]: tables</p>
@@ -1558,7 +1642,7 @@ match at least one of the specified expression types.</p>
     
             <div class="docstring"><p>List of CTEs in this scope.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.CTE]: ctes</p>
@@ -1577,13 +1661,13 @@ match at least one of the specified expression types.</p>
     
             <div class="docstring"><p>List of derived tables in this scope.</p>
 
-<h6 id="for-example">For example</h6>
+<h6 id="for-example">For example:</h6>
 
 <blockquote>
   <p>SELECT * FROM (SELECT ...) &lt;- that's a derived table</p>
 </blockquote>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Subquery]: derived tables</p>
@@ -1602,13 +1686,13 @@ match at least one of the specified expression types.</p>
     
             <div class="docstring"><p>List of subqueries in this scope.</p>
 
-<h6 id="for-example">For example</h6>
+<h6 id="for-example">For example:</h6>
 
 <blockquote>
   <p>SELECT * FROM x WHERE a IN (SELECT ...) &lt;- that's a subquery</p>
 </blockquote>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Subqueryable]: subqueries</p>
@@ -1627,7 +1711,7 @@ match at least one of the specified expression types.</p>
     
             <div class="docstring"><p>List of columns in this scope.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Column]: Column instances in this scope, plus any
@@ -1650,7 +1734,7 @@ match at least one of the specified expression types.</p>
 <p>That is, all tables in a schema are selectable at any point. But a
 table only becomes a selected source if it's included in a FROM or JOIN clause.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>dict[str, (exp.Table|exp.Select, exp.Table|Scope)]: selected sources and nodes</p>
@@ -1669,7 +1753,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     
             <div class="docstring"><p>Sources that are CTEs.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>dict[str, Scope]: Mapping of source alias to Scope</p>
@@ -1693,7 +1777,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
 
 <p>The outputs are the "1 as a" and "2 as b" expressions.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Expression]: expressions</p>
@@ -1712,7 +1796,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     
             <div class="docstring"><p>Columns that appear to reference sources in outer scopes.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Column]: Column instances that don't reference
@@ -1732,7 +1816,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     
             <div class="docstring"><p>Unqualified columns in the current scope.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Column]: Unqualified columns</p>
@@ -1751,7 +1835,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     
             <div class="docstring"><p>Hints that exist in the scope that reference tables</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.JoinHint]: Join hints that are referenced within the scope</p>
@@ -1772,7 +1856,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     </div>
     <a class="headerlink" href="#Scope.source_columns"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.source_columns-344"><a href="#Scope.source_columns-344"><span class="linenos">344</span></a>    <span class="k">def</span> <span class="nf">source_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_name</span><span class="p">):</span>
-</span><span id="Scope.source_columns-345"><a href="#Scope.source_columns-345"><span class="linenos">345</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope.source_columns-345"><a href="#Scope.source_columns-345"><span class="linenos">345</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope.source_columns-346"><a href="#Scope.source_columns-346"><span class="linenos">346</span></a><span class="sd">        Get all columns in the current scope for a particular source.</span>
 </span><span id="Scope.source_columns-347"><a href="#Scope.source_columns-347"><span class="linenos">347</span></a>
 </span><span id="Scope.source_columns-348"><a href="#Scope.source_columns-348"><span class="linenos">348</span></a><span class="sd">        Args:</span>
@@ -1786,13 +1870,13 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
 
             <div class="docstring"><p>Get all columns in the current scope for a particular source.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>source_name (str):</strong>  Name of the source</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[exp.Column]: Column instances that reference <code>source_name</code></p>
@@ -1904,7 +1988,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     </div>
     <a class="headerlink" href="#Scope.rename_source"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.rename_source-390"><a href="#Scope.rename_source-390"><span class="linenos">390</span></a>    <span class="k">def</span> <span class="nf">rename_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_name</span><span class="p">,</span> <span class="n">new_name</span><span class="p">):</span>
-</span><span id="Scope.rename_source-391"><a href="#Scope.rename_source-391"><span class="linenos">391</span></a>        <span class="sd">&quot;&quot;&quot;Rename a source in this scope&quot;&quot;&quot;</span>
+</span><span id="Scope.rename_source-391"><a href="#Scope.rename_source-391"><span class="linenos">391</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename a source in this scope&quot;&quot;&quot;</span>
 </span><span id="Scope.rename_source-392"><a href="#Scope.rename_source-392"><span class="linenos">392</span></a>        <span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_name</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[])</span>
 </span><span id="Scope.rename_source-393"><a href="#Scope.rename_source-393"><span class="linenos">393</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="n">new_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">columns</span>
 </span></pre></div>
@@ -1927,7 +2011,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     </div>
     <a class="headerlink" href="#Scope.add_source"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.add_source-395"><a href="#Scope.add_source-395"><span class="linenos">395</span></a>    <span class="k">def</span> <span class="nf">add_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
-</span><span id="Scope.add_source-396"><a href="#Scope.add_source-396"><span class="linenos">396</span></a>        <span class="sd">&quot;&quot;&quot;Add a source to this scope&quot;&quot;&quot;</span>
+</span><span id="Scope.add_source-396"><a href="#Scope.add_source-396"><span class="linenos">396</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a source to this scope&quot;&quot;&quot;</span>
 </span><span id="Scope.add_source-397"><a href="#Scope.add_source-397"><span class="linenos">397</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">source</span>
 </span><span id="Scope.add_source-398"><a href="#Scope.add_source-398"><span class="linenos">398</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
 </span></pre></div>
@@ -1950,7 +2034,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     </div>
     <a class="headerlink" href="#Scope.remove_source"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.remove_source-400"><a href="#Scope.remove_source-400"><span class="linenos">400</span></a>    <span class="k">def</span> <span class="nf">remove_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-</span><span id="Scope.remove_source-401"><a href="#Scope.remove_source-401"><span class="linenos">401</span></a>        <span class="sd">&quot;&quot;&quot;Remove a source from this scope&quot;&quot;&quot;</span>
+</span><span id="Scope.remove_source-401"><a href="#Scope.remove_source-401"><span class="linenos">401</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a source from this scope&quot;&quot;&quot;</span>
 </span><span id="Scope.remove_source-402"><a href="#Scope.remove_source-402"><span class="linenos">402</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </span><span id="Scope.remove_source-403"><a href="#Scope.remove_source-403"><span class="linenos">403</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
 </span></pre></div>
@@ -1973,7 +2057,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     </div>
     <a class="headerlink" href="#Scope.traverse"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.traverse-408"><a href="#Scope.traverse-408"><span class="linenos">408</span></a>    <span class="k">def</span> <span class="nf">traverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope.traverse-409"><a href="#Scope.traverse-409"><span class="linenos">409</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope.traverse-409"><a href="#Scope.traverse-409"><span class="linenos">409</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope.traverse-410"><a href="#Scope.traverse-410"><span class="linenos">410</span></a><span class="sd">        Traverse the scope tree from this node.</span>
 </span><span id="Scope.traverse-411"><a href="#Scope.traverse-411"><span class="linenos">411</span></a>
 </span><span id="Scope.traverse-412"><a href="#Scope.traverse-412"><span class="linenos">412</span></a><span class="sd">        Yields:</span>
@@ -1989,7 +2073,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
 
             <div class="docstring"><p>Traverse the scope tree from this node.</p>
 
-<h6 id="yields">Yields</h6>
+<h6 id="yields">Yields:</h6>
 
 <blockquote>
   <p>Scope: scope instances in depth-first-search post-order</p>
@@ -2010,7 +2094,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     </div>
     <a class="headerlink" href="#Scope.ref_count"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.ref_count-421"><a href="#Scope.ref_count-421"><span class="linenos">421</span></a>    <span class="k">def</span> <span class="nf">ref_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="Scope.ref_count-422"><a href="#Scope.ref_count-422"><span class="linenos">422</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Scope.ref_count-422"><a href="#Scope.ref_count-422"><span class="linenos">422</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Scope.ref_count-423"><a href="#Scope.ref_count-423"><span class="linenos">423</span></a><span class="sd">        Count the number of times each scope in this tree is referenced.</span>
 </span><span id="Scope.ref_count-424"><a href="#Scope.ref_count-424"><span class="linenos">424</span></a>
 </span><span id="Scope.ref_count-425"><a href="#Scope.ref_count-425"><span class="linenos">425</span></a><span class="sd">        Returns:</span>
@@ -2028,7 +2112,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
 
             <div class="docstring"><p>Count the number of times each scope in this tree is referenced.</p>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>dict[int, int]: Mapping of Scope instance ID to reference count</p>
@@ -2050,7 +2134,7 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
     </div>
     <a class="headerlink" href="#traverse_scope"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="traverse_scope-437"><a href="#traverse_scope-437"><span class="linenos">437</span></a><span class="k">def</span> <span class="nf">traverse_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="traverse_scope-438"><a href="#traverse_scope-438"><span class="linenos">438</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="traverse_scope-438"><a href="#traverse_scope-438"><span class="linenos">438</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="traverse_scope-439"><a href="#traverse_scope-439"><span class="linenos">439</span></a><span class="sd">    Traverse an expression by it&#39;s &quot;scopes&quot;.</span>
 </span><span id="traverse_scope-440"><a href="#traverse_scope-440"><span class="linenos">440</span></a>
 </span><span id="traverse_scope-441"><a href="#traverse_scope-441"><span class="linenos">441</span></a><span class="sd">    &quot;Scope&quot; represents the current context of a Select statement.</span>
@@ -2087,7 +2171,7 @@ the expression tree itself. For example, we might care about the source
 names within a subquery. Returns a list because a generator could result in
 incomplete properties which is confusing.</p>
 
-<h6 id="examples">Examples</h6>
+<h6 id="examples">Examples:</h6>
 
 <blockquote>
   <div class="pdoc-code codehilite">
@@ -2102,13 +2186,13 @@ incomplete properties which is confusing.</p>
   </div>
 </blockquote>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression (exp.Expression):</strong>  expression to traverse</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>list[Scope]: scope instances</p>
@@ -2129,7 +2213,7 @@ incomplete properties which is confusing.</p>
     </div>
     <a class="headerlink" href="#build_scope"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="build_scope-465"><a href="#build_scope-465"><span class="linenos">465</span></a><span class="k">def</span> <span class="nf">build_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="build_scope-466"><a href="#build_scope-466"><span class="linenos">466</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="build_scope-466"><a href="#build_scope-466"><span class="linenos">466</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="build_scope-467"><a href="#build_scope-467"><span class="linenos">467</span></a><span class="sd">    Build a scope tree.</span>
 </span><span id="build_scope-468"><a href="#build_scope-468"><span class="linenos">468</span></a>
 </span><span id="build_scope-469"><a href="#build_scope-469"><span class="linenos">469</span></a><span class="sd">    Args:</span>
@@ -2143,13 +2227,13 @@ incomplete properties which is confusing.</p>
 
             <div class="docstring"><p>Build a scope tree.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression (exp.Expression):</strong>  expression to build the scope tree for</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>Scope: root scope</p>
@@ -2170,7 +2254,7 @@ incomplete properties which is confusing.</p>
     </div>
     <a class="headerlink" href="#walk_in_scope"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="walk_in_scope-586"><a href="#walk_in_scope-586"><span class="linenos">586</span></a><span class="k">def</span> <span class="nf">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="walk_in_scope-587"><a href="#walk_in_scope-587"><span class="linenos">587</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="walk_in_scope-587"><a href="#walk_in_scope-587"><span class="linenos">587</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="walk_in_scope-588"><a href="#walk_in_scope-588"><span class="linenos">588</span></a><span class="sd">    Returns a generator object which visits all nodes in the syntrax tree, stopping at</span>
 </span><span id="walk_in_scope-589"><a href="#walk_in_scope-589"><span class="linenos">589</span></a><span class="sd">    nodes that start child scopes.</span>
 </span><span id="walk_in_scope-590"><a href="#walk_in_scope-590"><span class="linenos">590</span></a>
@@ -2205,7 +2289,7 @@ incomplete properties which is confusing.</p>
             <div class="docstring"><p>Returns a generator object which visits all nodes in the syntrax tree, stopping at
 nodes that start child scopes.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression (exp.Expression):</strong> </li>
@@ -2213,7 +2297,7 @@ nodes that start child scopes.</p>
 otherwise the DFS traversal will be used instead.</li>
 </ul>
 
-<h6 id="yields">Yields</h6>
+<h6 id="yields">Yields:</h6>
 
 <blockquote>
   <p>tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key</p>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.2.1"/>
+    <meta name="generator" content="pdoc 12.3.1"/>
     <title>sqlglot.parser API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -127,7 +127,7 @@
 </span><span id="L-39"><a href="#L-39"><span class="linenos">  39</span></a>
 </span><span id="L-40"><a href="#L-40"><span class="linenos">  40</span></a>
 </span><span id="L-41"><a href="#L-41"><span class="linenos">  41</span></a><span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">_Parser</span><span class="p">):</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">  42</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">  42</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-43"><a href="#L-43"><span class="linenos">  43</span></a><span class="sd">    Parser consumes a list of tokens produced by the `sqlglot.tokens.Tokenizer` and produces</span>
 </span><span id="L-44"><a href="#L-44"><span class="linenos">  44</span></a><span class="sd">    a parsed syntax tree.</span>
 </span><span id="L-45"><a href="#L-45"><span class="linenos">  45</span></a>
@@ -777,7 +777,7 @@
 </span><span id="L-689"><a href="#L-689"><span class="linenos"> 689</span></a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span>
 </span><span id="L-690"><a href="#L-690"><span class="linenos"> 690</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">raw_tokens</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span> <span class="n">sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="L-691"><a href="#L-691"><span class="linenos"> 691</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]:</span>
-</span><span id="L-692"><a href="#L-692"><span class="linenos"> 692</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-692"><a href="#L-692"><span class="linenos"> 692</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-693"><a href="#L-693"><span class="linenos"> 693</span></a><span class="sd">        Parses a list of tokens and returns a list of syntax trees, one tree</span>
 </span><span id="L-694"><a href="#L-694"><span class="linenos"> 694</span></a><span class="sd">        per parsed SQL statement.</span>
 </span><span id="L-695"><a href="#L-695"><span class="linenos"> 695</span></a>
@@ -798,7 +798,7 @@
 </span><span id="L-710"><a href="#L-710"><span class="linenos"> 710</span></a>        <span class="n">raw_tokens</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span>
 </span><span id="L-711"><a href="#L-711"><span class="linenos"> 711</span></a>        <span class="n">sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="L-712"><a href="#L-712"><span class="linenos"> 712</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]:</span>
-</span><span id="L-713"><a href="#L-713"><span class="linenos"> 713</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-713"><a href="#L-713"><span class="linenos"> 713</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-714"><a href="#L-714"><span class="linenos"> 714</span></a><span class="sd">        Parses a list of tokens into a given Expression type. If a collection of Expression</span>
 </span><span id="L-715"><a href="#L-715"><span class="linenos"> 715</span></a><span class="sd">        types is given instead, this method will try to parse the token list into each one</span>
 </span><span id="L-716"><a href="#L-716"><span class="linenos"> 716</span></a><span class="sd">        of them, stopping at the first for which the parsing succeeds.</span>
@@ -861,7 +861,7 @@
 </span><span id="L-773"><a href="#L-773"><span class="linenos"> 773</span></a>        <span class="k">return</span> <span class="n">expressions</span>
 </span><span id="L-774"><a href="#L-774"><span class="linenos"> 774</span></a>
 </span><span id="L-775"><a href="#L-775"><span class="linenos"> 775</span></a>    <span class="k">def</span> <span class="nf">check_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-776"><a href="#L-776"><span class="linenos"> 776</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-776"><a href="#L-776"><span class="linenos"> 776</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-777"><a href="#L-777"><span class="linenos"> 777</span></a><span class="sd">        Logs or raises any found errors, depending on the chosen error level setting.</span>
 </span><span id="L-778"><a href="#L-778"><span class="linenos"> 778</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="L-779"><a href="#L-779"><span class="linenos"> 779</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_level</span> <span class="o">==</span> <span class="n">ErrorLevel</span><span class="o">.</span><span class="n">WARN</span><span class="p">:</span>
@@ -874,7 +874,7 @@
 </span><span id="L-786"><a href="#L-786"><span class="linenos"> 786</span></a>            <span class="p">)</span>
 </span><span id="L-787"><a href="#L-787"><span class="linenos"> 787</span></a>
 </span><span id="L-788"><a href="#L-788"><span class="linenos"> 788</span></a>    <span class="k">def</span> <span class="nf">raise_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">Token</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-789"><a href="#L-789"><span class="linenos"> 789</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-789"><a href="#L-789"><span class="linenos"> 789</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-790"><a href="#L-790"><span class="linenos"> 790</span></a><span class="sd">        Appends an error in the list of recorded errors or raises it, depending on the chosen</span>
 </span><span id="L-791"><a href="#L-791"><span class="linenos"> 791</span></a><span class="sd">        error level setting.</span>
 </span><span id="L-792"><a href="#L-792"><span class="linenos"> 792</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -904,7 +904,7 @@
 </span><span id="L-816"><a href="#L-816"><span class="linenos"> 816</span></a>    <span class="k">def</span> <span class="nf">expression</span><span class="p">(</span>
 </span><span id="L-817"><a href="#L-817"><span class="linenos"> 817</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">exp_class</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">comments</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
 </span><span id="L-818"><a href="#L-818"><span class="linenos"> 818</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="L-819"><a href="#L-819"><span class="linenos"> 819</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-819"><a href="#L-819"><span class="linenos"> 819</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-820"><a href="#L-820"><span class="linenos"> 820</span></a><span class="sd">        Creates a new, validated Expression.</span>
 </span><span id="L-821"><a href="#L-821"><span class="linenos"> 821</span></a>
 </span><span id="L-822"><a href="#L-822"><span class="linenos"> 822</span></a><span class="sd">        Args:</span>
@@ -927,7 +927,7 @@
 </span><span id="L-839"><a href="#L-839"><span class="linenos"> 839</span></a>    <span class="k">def</span> <span class="nf">validate_expression</span><span class="p">(</span>
 </span><span id="L-840"><a href="#L-840"><span class="linenos"> 840</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="L-841"><a href="#L-841"><span class="linenos"> 841</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-842"><a href="#L-842"><span class="linenos"> 842</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-842"><a href="#L-842"><span class="linenos"> 842</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-843"><a href="#L-843"><span class="linenos"> 843</span></a><span class="sd">        Validates an already instantiated expression, making sure that all its mandatory arguments</span>
 </span><span id="L-844"><a href="#L-844"><span class="linenos"> 844</span></a><span class="sd">        are set.</span>
 </span><span id="L-845"><a href="#L-845"><span class="linenos"> 845</span></a>
@@ -3801,7 +3801,7 @@
     </div>
     <a class="headerlink" href="#Parser"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Parser-42"><a href="#Parser-42"><span class="linenos">  42</span></a><span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">_Parser</span><span class="p">):</span>
-</span><span id="Parser-43"><a href="#Parser-43"><span class="linenos">  43</span></a>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser-43"><a href="#Parser-43"><span class="linenos">  43</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser-44"><a href="#Parser-44"><span class="linenos">  44</span></a><span class="sd">    Parser consumes a list of tokens produced by the `sqlglot.tokens.Tokenizer` and produces</span>
 </span><span id="Parser-45"><a href="#Parser-45"><span class="linenos">  45</span></a><span class="sd">    a parsed syntax tree.</span>
 </span><span id="Parser-46"><a href="#Parser-46"><span class="linenos">  46</span></a>
@@ -4451,7 +4451,7 @@
 </span><span id="Parser-690"><a href="#Parser-690"><span class="linenos"> 690</span></a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span>
 </span><span id="Parser-691"><a href="#Parser-691"><span class="linenos"> 691</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">raw_tokens</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span> <span class="n">sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="Parser-692"><a href="#Parser-692"><span class="linenos"> 692</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]:</span>
-</span><span id="Parser-693"><a href="#Parser-693"><span class="linenos"> 693</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser-693"><a href="#Parser-693"><span class="linenos"> 693</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser-694"><a href="#Parser-694"><span class="linenos"> 694</span></a><span class="sd">        Parses a list of tokens and returns a list of syntax trees, one tree</span>
 </span><span id="Parser-695"><a href="#Parser-695"><span class="linenos"> 695</span></a><span class="sd">        per parsed SQL statement.</span>
 </span><span id="Parser-696"><a href="#Parser-696"><span class="linenos"> 696</span></a>
@@ -4472,7 +4472,7 @@
 </span><span id="Parser-711"><a href="#Parser-711"><span class="linenos"> 711</span></a>        <span class="n">raw_tokens</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span>
 </span><span id="Parser-712"><a href="#Parser-712"><span class="linenos"> 712</span></a>        <span class="n">sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="Parser-713"><a href="#Parser-713"><span class="linenos"> 713</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]:</span>
-</span><span id="Parser-714"><a href="#Parser-714"><span class="linenos"> 714</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser-714"><a href="#Parser-714"><span class="linenos"> 714</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser-715"><a href="#Parser-715"><span class="linenos"> 715</span></a><span class="sd">        Parses a list of tokens into a given Expression type. If a collection of Expression</span>
 </span><span id="Parser-716"><a href="#Parser-716"><span class="linenos"> 716</span></a><span class="sd">        types is given instead, this method will try to parse the token list into each one</span>
 </span><span id="Parser-717"><a href="#Parser-717"><span class="linenos"> 717</span></a><span class="sd">        of them, stopping at the first for which the parsing succeeds.</span>
@@ -4535,7 +4535,7 @@
 </span><span id="Parser-774"><a href="#Parser-774"><span class="linenos"> 774</span></a>        <span class="k">return</span> <span class="n">expressions</span>
 </span><span id="Parser-775"><a href="#Parser-775"><span class="linenos"> 775</span></a>
 </span><span id="Parser-776"><a href="#Parser-776"><span class="linenos"> 776</span></a>    <span class="k">def</span> <span class="nf">check_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Parser-777"><a href="#Parser-777"><span class="linenos"> 777</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser-777"><a href="#Parser-777"><span class="linenos"> 777</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser-778"><a href="#Parser-778"><span class="linenos"> 778</span></a><span class="sd">        Logs or raises any found errors, depending on the chosen error level setting.</span>
 </span><span id="Parser-779"><a href="#Parser-779"><span class="linenos"> 779</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="Parser-780"><a href="#Parser-780"><span class="linenos"> 780</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_level</span> <span class="o">==</span> <span class="n">ErrorLevel</span><span class="o">.</span><span class="n">WARN</span><span class="p">:</span>
@@ -4548,7 +4548,7 @@
 </span><span id="Parser-787"><a href="#Parser-787"><span class="linenos"> 787</span></a>            <span class="p">)</span>
 </span><span id="Parser-788"><a href="#Parser-788"><span class="linenos"> 788</span></a>
 </span><span id="Parser-789"><a href="#Parser-789"><span class="linenos"> 789</span></a>    <span class="k">def</span> <span class="nf">raise_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">Token</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Parser-790"><a href="#Parser-790"><span class="linenos"> 790</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser-790"><a href="#Parser-790"><span class="linenos"> 790</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser-791"><a href="#Parser-791"><span class="linenos"> 791</span></a><span class="sd">        Appends an error in the list of recorded errors or raises it, depending on the chosen</span>
 </span><span id="Parser-792"><a href="#Parser-792"><span class="linenos"> 792</span></a><span class="sd">        error level setting.</span>
 </span><span id="Parser-793"><a href="#Parser-793"><span class="linenos"> 793</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -4578,7 +4578,7 @@
 </span><span id="Parser-817"><a href="#Parser-817"><span class="linenos"> 817</span></a>    <span class="k">def</span> <span class="nf">expression</span><span class="p">(</span>
 </span><span id="Parser-818"><a href="#Parser-818"><span class="linenos"> 818</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">exp_class</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">comments</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
 </span><span id="Parser-819"><a href="#Parser-819"><span class="linenos"> 819</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="Parser-820"><a href="#Parser-820"><span class="linenos"> 820</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser-820"><a href="#Parser-820"><span class="linenos"> 820</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser-821"><a href="#Parser-821"><span class="linenos"> 821</span></a><span class="sd">        Creates a new, validated Expression.</span>
 </span><span id="Parser-822"><a href="#Parser-822"><span class="linenos"> 822</span></a>
 </span><span id="Parser-823"><a href="#Parser-823"><span class="linenos"> 823</span></a><span class="sd">        Args:</span>
@@ -4601,7 +4601,7 @@
 </span><span id="Parser-840"><a href="#Parser-840"><span class="linenos"> 840</span></a>    <span class="k">def</span> <span class="nf">validate_expression</span><span class="p">(</span>
 </span><span id="Parser-841"><a href="#Parser-841"><span class="linenos"> 841</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="Parser-842"><a href="#Parser-842"><span class="linenos"> 842</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Parser-843"><a href="#Parser-843"><span class="linenos"> 843</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser-843"><a href="#Parser-843"><span class="linenos"> 843</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser-844"><a href="#Parser-844"><span class="linenos"> 844</span></a><span class="sd">        Validates an already instantiated expression, making sure that all its mandatory arguments</span>
 </span><span id="Parser-845"><a href="#Parser-845"><span class="linenos"> 845</span></a><span class="sd">        are set.</span>
 </span><span id="Parser-846"><a href="#Parser-846"><span class="linenos"> 846</span></a>
@@ -7438,7 +7438,7 @@
             <div class="docstring"><p>Parser consumes a list of tokens produced by the <code><a href="tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a></code> and produces
 a parsed syntax tree.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>error_level:</strong>  the desired error level.
@@ -7534,7 +7534,7 @@ Default: "nulls_are_small"</li>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Parser.parse-690"><a href="#Parser.parse-690"><span class="linenos">690</span></a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span>
 </span><span id="Parser.parse-691"><a href="#Parser.parse-691"><span class="linenos">691</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">raw_tokens</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span> <span class="n">sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="Parser.parse-692"><a href="#Parser.parse-692"><span class="linenos">692</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]:</span>
-</span><span id="Parser.parse-693"><a href="#Parser.parse-693"><span class="linenos">693</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser.parse-693"><a href="#Parser.parse-693"><span class="linenos">693</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser.parse-694"><a href="#Parser.parse-694"><span class="linenos">694</span></a><span class="sd">        Parses a list of tokens and returns a list of syntax trees, one tree</span>
 </span><span id="Parser.parse-695"><a href="#Parser.parse-695"><span class="linenos">695</span></a><span class="sd">        per parsed SQL statement.</span>
 </span><span id="Parser.parse-696"><a href="#Parser.parse-696"><span class="linenos">696</span></a>
@@ -7554,14 +7554,14 @@ Default: "nulls_are_small"</li>
             <div class="docstring"><p>Parses a list of tokens and returns a list of syntax trees, one tree
 per parsed SQL statement.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>raw_tokens:</strong>  the list of tokens.</li>
 <li><strong>sql:</strong>  the original SQL string, used to produce helpful debug messages.</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>The list of syntax trees.</p>
@@ -7587,7 +7587,7 @@ per parsed SQL statement.</p>
 </span><span id="Parser.parse_into-711"><a href="#Parser.parse_into-711"><span class="linenos">711</span></a>        <span class="n">raw_tokens</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span>
 </span><span id="Parser.parse_into-712"><a href="#Parser.parse_into-712"><span class="linenos">712</span></a>        <span class="n">sql</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="Parser.parse_into-713"><a href="#Parser.parse_into-713"><span class="linenos">713</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]]:</span>
-</span><span id="Parser.parse_into-714"><a href="#Parser.parse_into-714"><span class="linenos">714</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser.parse_into-714"><a href="#Parser.parse_into-714"><span class="linenos">714</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser.parse_into-715"><a href="#Parser.parse_into-715"><span class="linenos">715</span></a><span class="sd">        Parses a list of tokens into a given Expression type. If a collection of Expression</span>
 </span><span id="Parser.parse_into-716"><a href="#Parser.parse_into-716"><span class="linenos">716</span></a><span class="sd">        types is given instead, this method will try to parse the token list into each one</span>
 </span><span id="Parser.parse_into-717"><a href="#Parser.parse_into-717"><span class="linenos">717</span></a><span class="sd">        of them, stopping at the first for which the parsing succeeds.</span>
@@ -7621,7 +7621,7 @@ per parsed SQL statement.</p>
 types is given instead, this method will try to parse the token list into each one
 of them, stopping at the first for which the parsing succeeds.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression_types:</strong>  the expression type(s) to try and parse the token list into.</li>
@@ -7629,7 +7629,7 @@ of them, stopping at the first for which the parsing succeeds.</p>
 <li><strong>sql:</strong>  the original SQL string, used to produce helpful debug messages.</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>The target Expression.</p>
@@ -7650,7 +7650,7 @@ of them, stopping at the first for which the parsing succeeds.</p>
     </div>
     <a class="headerlink" href="#Parser.check_errors"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Parser.check_errors-776"><a href="#Parser.check_errors-776"><span class="linenos">776</span></a>    <span class="k">def</span> <span class="nf">check_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Parser.check_errors-777"><a href="#Parser.check_errors-777"><span class="linenos">777</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser.check_errors-777"><a href="#Parser.check_errors-777"><span class="linenos">777</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser.check_errors-778"><a href="#Parser.check_errors-778"><span class="linenos">778</span></a><span class="sd">        Logs or raises any found errors, depending on the chosen error level setting.</span>
 </span><span id="Parser.check_errors-779"><a href="#Parser.check_errors-779"><span class="linenos">779</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="Parser.check_errors-780"><a href="#Parser.check_errors-780"><span class="linenos">780</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_level</span> <span class="o">==</span> <span class="n">ErrorLevel</span><span class="o">.</span><span class="n">WARN</span><span class="p">:</span>
@@ -7681,7 +7681,7 @@ of them, stopping at the first for which the parsing succeeds.</p>
     </div>
     <a class="headerlink" href="#Parser.raise_error"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Parser.raise_error-789"><a href="#Parser.raise_error-789"><span class="linenos">789</span></a>    <span class="k">def</span> <span class="nf">raise_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">Token</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Parser.raise_error-790"><a href="#Parser.raise_error-790"><span class="linenos">790</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser.raise_error-790"><a href="#Parser.raise_error-790"><span class="linenos">790</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser.raise_error-791"><a href="#Parser.raise_error-791"><span class="linenos">791</span></a><span class="sd">        Appends an error in the list of recorded errors or raises it, depending on the chosen</span>
 </span><span id="Parser.raise_error-792"><a href="#Parser.raise_error-792"><span class="linenos">792</span></a><span class="sd">        error level setting.</span>
 </span><span id="Parser.raise_error-793"><a href="#Parser.raise_error-793"><span class="linenos">793</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -7730,7 +7730,7 @@ error level setting.</p>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Parser.expression-817"><a href="#Parser.expression-817"><span class="linenos">817</span></a>    <span class="k">def</span> <span class="nf">expression</span><span class="p">(</span>
 </span><span id="Parser.expression-818"><a href="#Parser.expression-818"><span class="linenos">818</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">exp_class</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">comments</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
 </span><span id="Parser.expression-819"><a href="#Parser.expression-819"><span class="linenos">819</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
-</span><span id="Parser.expression-820"><a href="#Parser.expression-820"><span class="linenos">820</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser.expression-820"><a href="#Parser.expression-820"><span class="linenos">820</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser.expression-821"><a href="#Parser.expression-821"><span class="linenos">821</span></a><span class="sd">        Creates a new, validated Expression.</span>
 </span><span id="Parser.expression-822"><a href="#Parser.expression-822"><span class="linenos">822</span></a>
 </span><span id="Parser.expression-823"><a href="#Parser.expression-823"><span class="linenos">823</span></a><span class="sd">        Args:</span>
@@ -7754,7 +7754,7 @@ error level setting.</p>
 
             <div class="docstring"><p>Creates a new, validated Expression.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>exp_class:</strong>  the expression class to instantiate.</li>
@@ -7762,7 +7762,7 @@ error level setting.</p>
 <li><strong>kwargs:</strong>  the arguments to set for the expression along with their respective values.</li>
 </ul>
 
-<h6 id="returns">Returns</h6>
+<h6 id="returns">Returns:</h6>
 
 <blockquote>
   <p>The target expression.</p>
@@ -7785,7 +7785,7 @@ error level setting.</p>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Parser.validate_expression-840"><a href="#Parser.validate_expression-840"><span class="linenos">840</span></a>    <span class="k">def</span> <span class="nf">validate_expression</span><span class="p">(</span>
 </span><span id="Parser.validate_expression-841"><a href="#Parser.validate_expression-841"><span class="linenos">841</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="Parser.validate_expression-842"><a href="#Parser.validate_expression-842"><span class="linenos">842</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Parser.validate_expression-843"><a href="#Parser.validate_expression-843"><span class="linenos">843</span></a>        <span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Parser.validate_expression-843"><a href="#Parser.validate_expression-843"><span class="linenos">843</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Parser.validate_expression-844"><a href="#Parser.validate_expression-844"><span class="linenos">844</span></a><span class="sd">        Validates an already instantiated expression, making sure that all its mandatory arguments</span>
 </span><span id="Parser.validate_expression-845"><a href="#Parser.validate_expression-845"><span class="linenos">845</span></a><span class="sd">        are set.</span>
 </span><span id="Parser.validate_expression-846"><a href="#Parser.validate_expression-846"><span class="linenos">846</span></a>
@@ -7804,7 +7804,7 @@ error level setting.</p>
             <div class="docstring"><p>Validates an already instantiated expression, making sure that all its mandatory arguments
 are set.</p>
 
-<h6 id="args">Args</h6>
+<h6 id="arguments">Arguments:</h6>
 
 <ul>
 <li><strong>expression:</strong>  the expression to validate.</li>

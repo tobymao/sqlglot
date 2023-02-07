@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot.helper import dict_depth
 from sqlglot.schema import AbstractMappingSchema
 
@@ -106,11 +108,11 @@ class Tables(AbstractMappingSchema[Table]):
     pass
 
 
-def ensure_tables(d: dict | None) -> Tables:
+def ensure_tables(d: t.Optional[t.Dict]) -> Tables:
     return Tables(_ensure_tables(d))
 
 
-def _ensure_tables(d: dict | None) -> dict:
+def _ensure_tables(d: t.Optional[t.Dict]) -> t.Dict:
     if not d:
         return {}
 
@@ -127,4 +129,5 @@ def _ensure_tables(d: dict | None) -> dict:
             columns = tuple(table[0]) if table else ()
             rows = [tuple(row[c] for c in columns) for row in table]
             result[name] = Table(columns=columns, rows=rows)
+
     return result

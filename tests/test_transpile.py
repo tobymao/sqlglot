@@ -432,7 +432,6 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
     def test_identity(self):
         self.assertEqual(transpile("")[0], "")
         for sql in load_sql_fixtures("identity.sql"):
-                print("hh")
             with self.subTest(sql):
                 self.assertEqual(transpile(sql)[0], sql.strip())
 

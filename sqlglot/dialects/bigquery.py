@@ -43,8 +43,7 @@ def _date_add_sql(
 ) -> t.Callable[[generator.Generator, exp.Expression], str]:
     def func(self, expression):
         this = self.sql(expression, "this")
-        unit = self.sql(expression, "unit") or "'day'"
-        return f"{data_type}_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
+        return f"{data_type}_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=expression.args.get('unit') or exp.Literal.string('day')))})"
 
     return func
 

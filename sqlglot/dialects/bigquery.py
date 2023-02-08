@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -14,8 +16,11 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    E = t.TypeVar("E", bound=exp.Expression)
 
-def _date_add(expression_class):
+
+def _date_add(expression_class: t.Type[E]) -> t.Callable[[t.Sequence], E]:
     def func(args):
         interval = seq_get(args, 1)
         return expression_class(
@@ -27,14 +32,16 @@ def _date_add(expression_class):
     return func
 
 
-def _date_trunc(args):
+def _date_trunc(args: t.Sequence) -> exp.Expression:
     unit = seq_get(args, 1)
     if isinstance(unit, exp.Column):
         unit = exp.Var(this=unit.name)
     return exp.DateTrunc(this=seq_get(args, 0), expression=unit)
 
 
-def _date_add_sql(data_type, kind):
+def _date_add_sql(
+    data_type: str, kind: str
+) -> t.Callable[[generator.Generator, exp.Expression], str]:
     def func(self, expression):
         this = self.sql(expression, "this")
         unit = self.sql(expression, "unit") or "'day'"
@@ -44,9 +51,9 @@ def _date_add_sql(data_type, kind):
     return func
 
 
-def _derived_table_values_to_unnest(self, expression):
+def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.Values) -> str:
     if not isinstance(expression.unnest().parent, exp.From):
-        expression = transforms.remove_precision_parameterized_types(expression)
+        expression = t.cast(exp.Values, transforms.remove_precision_parameterized_types(expression))
         return self.values_sql(expression)
     rows = [tuple_exp.expressions for tuple_exp in expression.find_all(exp.Tuple)]
     structs = []
@@ -60,7 +67,7 @@ def _derived_table_values_to_unnest(self, expression):
     return self.unnest_sql(unnest_exp)
 
 
-def _returnsproperty_sql(self, expression):
+def _returnsproperty_sql(self: generator.Generator, expression: exp.ReturnsProperty) -> str:
     this = expression.this
     if isinstance(this, exp.Schema):
         this = f"{this.this} <{self.expressions(this)}>"
@@ -69,8 +76,8 @@ def _returnsproperty_sql(self, expression):
     return f"RETURNS {this}"
 
 
-def _create_sql(self, expression):
-    kind = expression.args.get("kind")
+def _create_sql(self: generator.Generator, expression: exp.Create) -> str:
+    kind = expression.args["kind"]
     returns = expression.find(exp.ReturnsProperty)
     if kind.upper() == "FUNCTION" and returns and returns.args.get("is_table"):
         expression = expression.copy()

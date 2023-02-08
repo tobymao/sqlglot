@@ -31,7 +31,7 @@ def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDat
 def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
-        unit = expression.text("unit").upper() or "DAY"
+        unit = exp.Var(this=expression.text("unit").upper() or "DAY")
         return (
             f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
         )

@@ -16,8 +16,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
-if t.TYPE_CHECKING:
-    E = t.TypeVar("E", bound=exp.Expression)
+E = t.TypeVar("E", bound=exp.Expression)
 
 
 def _date_add(expression_class: t.Type[E]) -> t.Callable[[t.Sequence], E]:

@@ -975,13 +975,14 @@ class Parser(metaclass=_Parser):
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
             properties = self._parse_properties()
-            if self._match(TokenType.ALIAS):
-                begin = self._match(TokenType.BEGIN)
-                return_ = self._match_text_seq("RETURN")
-                expression = self._parse_statement()
 
-                if return_:
-                    expression = self.expression(exp.Return, this=expression)
+            self._match(TokenType.ALIAS)
+            begin = self._match(TokenType.BEGIN)
+            return_ = self._match_text_seq("RETURN")
+            expression = self._parse_statement()
+
+            if return_:
+                expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (

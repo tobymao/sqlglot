@@ -508,7 +508,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
-                "drill": "DATE_ADD(x, INTERVAL '1' DAY)",
+                "drill": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "duckdb": "x + INTERVAL 1 day",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -525,7 +525,7 @@ class TestDialect(Validator):
             "DATE_ADD(x, 1)",
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
-                "drill": "DATE_ADD(x, INTERVAL '1' DAY)",
+                "drill": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "duckdb": "x + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -628,7 +628,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TS_OR_DS_ADD('2021-02-01', 1, 'DAY')",
             write={
-                "drill": "DATE_ADD(CAST('2021-02-01' AS DATE), INTERVAL '1' DAY)",
+                "drill": "DATE_ADD(CAST('2021-02-01' AS DATE), INTERVAL 1 DAY)",
                 "duckdb": "CAST('2021-02-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD('2021-02-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d'))",
@@ -638,7 +638,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             write={
-                "drill": "DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL '1' DAY)",
+                "drill": "DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL 1 DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
                 "presto": "DATE_ADD('day', 1, CAST('2020-01-01' AS DATE))",

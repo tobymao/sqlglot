@@ -343,6 +343,10 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_all(
+            "CAST(x AS DATE) + INTERVAL (7 * -1) DAY", read={"spark": "DATE_SUB(x, 7)"}
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

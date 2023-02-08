@@ -89,8 +89,9 @@ def _date_add_sql(kind):
     def func(self, expression):
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
-        expression = self.sql(expression, "expression")
-        return f"DATE_{kind}({this}, INTERVAL {expression} {unit})"
+        return (
+            f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
+        )
 
     return func
 

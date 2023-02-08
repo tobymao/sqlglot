@@ -287,7 +287,7 @@ class TestHive(Validator):
         self.validate_all(
             "DATE_SUB('2020-01-01', 1)",
             write={
-                "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 * -1 DAY",
+                "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL (1 * -1) DAY",
                 "presto": "DATE_ADD('DAY', 1 * -1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d'))",
                 "hive": "DATE_ADD('2020-01-01', 1 * -1)",
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",

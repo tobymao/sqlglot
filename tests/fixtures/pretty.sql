@@ -342,3 +342,8 @@ SELECT
   basket_index
 FROM table_data
 CROSS JOIN UNNEST(fruit_basket) AS fruit WITH OFFSET AS basket_index;
+SELECT A.* EXCEPT A.COL_1, A.COL_2 FROM TABLE_1 A;
+SELECT
+  A.*
+  EXCEPT (A.COL_1, A.COL_2)
+FROM TABLE_1 AS A;

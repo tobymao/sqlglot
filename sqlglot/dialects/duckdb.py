@@ -25,7 +25,7 @@ def _str_to_time_sql(self, expression):
 
 
 def _ts_or_ds_add(self, expression):
-    this = self.sql(expression, "this")
+    this = expression.args.get("this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 

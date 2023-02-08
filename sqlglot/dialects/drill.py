@@ -31,7 +31,7 @@ def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDat
 def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
-        unit = exp.Literal.string(expression.text("unit").upper() or "DAY")
+        unit = exp.Var(this=expression.text("unit").upper() or "DAY")
         return (
             f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
         )
@@ -163,7 +163,7 @@ class Drill(Dialect):
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TryCast: no_trycast_sql,
-            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD(CAST({self.sql(e, 'this')} AS DATE), {self.sql(exp.Interval(this=e.expression, unit=exp.Literal.string('DAY')))})",
+            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD(CAST({self.sql(e, 'this')} AS DATE), {self.sql(exp.Interval(this=e.expression, unit=exp.Var(this='DAY')))})",
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         }

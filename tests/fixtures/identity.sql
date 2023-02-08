@@ -17,6 +17,7 @@ SUM(CASE WHEN x > 1 THEN 1 ELSE 0 END) / y
 '\x'
 "x"
 ""
+"""x"""
 N'abc'
 x
 x % 1

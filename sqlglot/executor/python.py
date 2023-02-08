@@ -408,7 +408,7 @@ def _lambda_sql(self, e: exp.Lambda) -> str:
 
 class Python(Dialect):
     class Tokenizer(tokens.Tokenizer):
-        ESCAPES = ["\\"]
+        STRING_ESCAPES = ["\\"]
 
     class Generator(generator.Generator):
         TRANSFORMS = {

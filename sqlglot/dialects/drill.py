@@ -106,7 +106,7 @@ class Drill(Dialect):
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'"]
         IDENTIFIERS = ["`"]
-        ESCAPES = ["\\"]
+        STRING_ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
     class Parser(parser.Parser):

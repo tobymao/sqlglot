@@ -114,7 +114,7 @@ class BigQuery(Dialect):
         ]
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
-        ESCAPES = ["\\"]
+        STRING_ESCAPES = ["\\"]
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {

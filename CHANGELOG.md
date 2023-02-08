@@ -1,6 +1,39 @@
 Changelog
 =========
 
+v11.0.0
+------
+
+Changes:
+
+- Breaking: Renamed ESCAPES to STRING_ESCAPES in the Tokenizer class.
+
+- New: Deployed pdoc documentation page.
+
+- New: Add support for read locking using the FOR UPDATE/SHARE syntax (e.g. MySQL).
+
+- New: Added support for CASCADE, SET NULL and SET DEFAULT constraints.
+
+- New: Added "cast" expression helper.
+
+- New: Add support for transpiling Postgres GENERATE_SERIES into Presto SEQUENCE.
+
+- Improvement: Fix tokenizing of identifier escapes.
+
+- Improvement: Fix eliminate_subqueries [bug](https://github.com/tobymao/sqlglot/commit/b5df65e3fb5ee1ebc3cbab64b6d89598cf47a10b) related to unions.
+
+- Improvement: IFNULL is now transpiled to COALESCE by default for every dialect.
+
+- Improvement: Refactored the way properties are handled. Now it's easier to add them and specify their position in a SQL expression.
+
+- Improvement: Fixed alias quoting bug.
+
+- Improvement: Fixed CUBE / ROLLUP / GROUPING SETS parsing and generation.
+
+- Improvement: Fixed get_or_raise Dialect/t.Type[Dialect] argument bug.
+
+- Improvement: Improved python type hints.
+
 v10.6.0
 ------
 

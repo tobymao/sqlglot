@@ -9,7 +9,7 @@ from sqlglot.parser import parse_var_map
 from sqlglot.tokens import TokenType
 
 
-def _lower_func(sql):
+def _lower_func(sql: str) -> str:
     index = sql.index("(")
     return sql[:index].lower() + sql[index:]
 

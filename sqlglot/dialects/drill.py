@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import typing as t
 
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
@@ -16,35 +17,28 @@ from sqlglot.dialects.dialect import (
 )
 
 
-def _to_timestamp(args):
-    # TO_TIMESTAMP accepts either a single double argument or (text, text)
-    if len(args) == 1 and args[0].is_number:
-        return exp.UnixToTime.from_arg_list(args)
-    return format_time_lambda(exp.StrToTime, "drill")(args)
-
-
-def _str_to_time_sql(self, expression):
+def _str_to_time_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
     return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
 
 
-def _ts_or_ds_to_date_sql(self, expression):
+def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
     if time_format and time_format not in (Drill.time_format, Drill.date_format):
         return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
     return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
 
-def _date_add_sql(kind):
-    def func(self, expression):
+def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
+    def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
-        expression = self.sql(expression, "expression")
-        return f"DATE_{kind}({this}, INTERVAL '{expression}' {unit})"
+        interval = self.sql(expression, "expression")
+        return f"DATE_{kind}({this}, INTERVAL '{interval}' {unit})"
 
     return func
 
 
-def if_sql(self, expression):
+def if_sql(self: generator.Generator, expression: exp.If) -> str:
     """
     Drill requires backticks around certain SQL reserved words, IF being one of them,  This function
     adds the backticks around the keyword IF.
@@ -61,7 +55,7 @@ def if_sql(self, expression):
     return f"`IF`({expressions})"
 
 
-def _str_to_date(self, expression):
+def _str_to_date(self: generator.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.date_format:
@@ -173,5 +167,5 @@ class Drill(Dialect):
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         }
 
-        def normalize_func(self, name):
+        def normalize_func(self, name: str) -> str:
             return name if re.match(exp.SAFE_IDENTIFIER_RE, name) else f"`{name}`"

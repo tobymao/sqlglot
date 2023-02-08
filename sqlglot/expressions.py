@@ -138,6 +138,8 @@ class Expression(metaclass=_Expression):
             return field
         if isinstance(field, (Identifier, Literal, Var)):
             return field.this
+        if isinstance(field, (Star, Null)):
+            return field.name
         return ""
 
     @property
@@ -182,8 +184,6 @@ class Expression(metaclass=_Expression):
 
     @property
     def alias_or_name(self):
-        if isinstance(self, Null):
-            return "NULL"
         return self.alias or self.name
 
     @property
@@ -2412,6 +2412,10 @@ class Placeholder(Expression):
 
 class Null(Condition):
     arg_types: t.Dict[str, t.Any] = {}
+
+    @property
+    def name(self):
+        return "NULL"
 
 
 class Boolean(Condition):

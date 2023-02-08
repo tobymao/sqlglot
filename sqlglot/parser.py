@@ -194,6 +194,7 @@ class Parser(metaclass=_Parser):
         TokenType.INTERVAL,
         TokenType.LAZY,
         TokenType.LEADING,
+        TokenType.LEFT,
         TokenType.LOCAL,
         TokenType.MATERIALIZED,
         TokenType.MERGE,
@@ -208,6 +209,7 @@ class Parser(metaclass=_Parser):
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.REFERENCES,
+        TokenType.RIGHT,
         TokenType.ROW,
         TokenType.ROWS,
         TokenType.SCHEMA,
@@ -237,8 +239,10 @@ class Parser(metaclass=_Parser):
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.APPLY,
+        TokenType.LEFT,
         TokenType.NATURAL,
         TokenType.OFFSET,
+        TokenType.RIGHT,
         TokenType.WINDOW,
     }
 

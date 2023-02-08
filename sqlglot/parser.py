@@ -3296,8 +3296,8 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.EXCEPT):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
-            return self._parse_wrapped_id_vars()
-        return self._parse_csv(self._parse_id_var)
+            return self._parse_wrapped_csv(self._parse_column)
+        return self._parse_csv(self._parse_column)
 
     def _parse_replace(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
         if not self._match(TokenType.REPLACE):

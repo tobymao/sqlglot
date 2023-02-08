@@ -28,7 +28,8 @@ class Generator:
         identify (bool): if set to True all identifiers will be delimited by the corresponding
             character.
         normalize (bool): if set to True all identifiers will lower cased
-        escape (str): specifies an escape character. Default: '.
+        string_escape (str): specifies a string escape character. Default: '.
+        identifier_escape (str): specifies an identifier escape character. Default: ".
         pad (int): determines padding in a formatted string. Default: 2.
         indent (int): determines the size of indentation in a formatted string. Default: 4.
         unnest_column_only (bool): if true unnest table aliases are considered only as column aliases
@@ -154,7 +155,8 @@ class Generator:
         "identifier_end",
         "identify",
         "normalize",
-        "escape",
+        "string_escape",
+        "identifier_escape",
         "pad",
         "index_offset",
         "unnest_column_only",
@@ -167,6 +169,7 @@ class Generator:
         "_indent",
         "_replace_backslash",
         "_escaped_quote_end",
+        "_escaped_identifier_end",
         "_leading_comma",
         "_max_text_width",
         "_comments",
@@ -183,7 +186,8 @@ class Generator:
         identifier_end=None,
         identify=False,
         normalize=False,
-        escape=None,
+        string_escape=None,
+        identifier_escape=None,
         pad=2,
         indent=2,
         index_offset=0,
@@ -208,7 +212,8 @@ class Generator:
         self.identifier_end = identifier_end or '"'
         self.identify = identify
         self.normalize = normalize
-        self.escape = escape or "'"
+        self.string_escape = string_escape or "'"
+        self.identifier_escape = identifier_escape or '"'
         self.pad = pad
         self.index_offset = index_offset
         self.unnest_column_only = unnest_column_only
@@ -219,8 +224,9 @@ class Generator:
         self.max_unsupported = max_unsupported
         self.null_ordering = null_ordering
         self._indent = indent
-        self._replace_backslash = self.escape == "\\"
-        self._escaped_quote_end = self.escape + self.quote_end
+        self._replace_backslash = self.string_escape == "\\"
+        self._escaped_quote_end = self.string_escape + self.quote_end
+        self._escaped_identifier_end = self.identifier_escape + self.identifier_end
         self._leading_comma = leading_comma
         self._max_text_width = max_text_width
         self._comments = comments
@@ -701,6 +707,7 @@ class Generator:
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name
         text = text.lower() if self.normalize else text
+        text = text.replace(self.identifier_end, self._escaped_identifier_end)
         if expression.args.get("quoted") or self.identify:
             text = f"{self.identifier_start}{text}{self.identifier_end}"
         return text

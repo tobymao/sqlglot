@@ -181,7 +181,6 @@ class Snowflake(Dialect):
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
-        IDENTIFIER_ESCAPES = ['"']
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

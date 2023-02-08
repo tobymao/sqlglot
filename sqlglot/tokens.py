@@ -434,7 +434,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     _STRING_ESCAPES: t.Set[str] = set()
 
-    IDENTIFIER_ESCAPES: t.List[str] = []
+    IDENTIFIER_ESCAPES = ['"']
 
     _IDENTIFIER_ESCAPES: t.Set[str] = set()
 
@@ -1061,7 +1061,7 @@ class Tokenizer(metaclass=_Tokenizer):
             self._advance()
             if self._char == identifier_end:
                 if identifier_end_is_escape and self._peek == identifier_end:
-                    text += 2 * identifier_end  # type: ignore
+                    text += identifier_end  # type: ignore
                     self._advance()
                     continue
 

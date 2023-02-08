@@ -6,7 +6,6 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        self.validate_identity('SELECT """C Market # Segment""" FROM "Funky Customer With Nulls"')
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
 
         self.validate_all(

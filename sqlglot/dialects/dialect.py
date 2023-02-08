@@ -197,7 +197,7 @@ class Dialect(metaclass=_Dialect):
                 "quote_end": self.quote_end,
                 "identifier_start": self.identifier_start,
                 "identifier_end": self.identifier_end,
-                "escape": self.tokenizer_class.ESCAPES[0],
+                "escape": self.tokenizer_class.STRING_ESCAPES[0],
                 "index_offset": self.index_offset,
                 "time_mapping": self.inverse_time_mapping,
                 "time_trie": self.inverse_time_trie,

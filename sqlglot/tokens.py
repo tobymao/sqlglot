@@ -357,7 +357,8 @@ class _Tokenizer(type):
         klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
         klass._BYTE_STRINGS = cls._delimeter_list_to_dict(klass.BYTE_STRINGS)
         klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
-        klass._ESCAPES = set(klass.ESCAPES)
+        klass._STRING_ESCAPES = set(klass.STRING_ESCAPES)
+        klass._IDENTIFIER_ESCAPES = set(klass.IDENTIFIER_ESCAPES)
         klass._COMMENTS = dict(
             (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
             for comment in klass.COMMENTS
@@ -429,9 +430,13 @@ class Tokenizer(metaclass=_Tokenizer):
 
     IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
 
-    ESCAPES = ["'"]
+    STRING_ESCAPES = ["'"]
 
-    _ESCAPES: t.Set[str] = set()
+    _STRING_ESCAPES: t.Set[str] = set()
+
+    IDENTIFIER_ESCAPES: t.List[str] = []
+
+    _IDENTIFIER_ESCAPES: t.Set[str] = set()
 
     KEYWORDS = {
         **{
@@ -744,7 +749,7 @@ class Tokenizer(metaclass=_Tokenizer):
     )
 
     def __init__(self) -> None:
-        self._replace_backslash = "\\" in self._ESCAPES
+        self._replace_backslash = "\\" in self._STRING_ESCAPES
         self.reset()
 
     def reset(self) -> None:
@@ -1046,12 +1051,25 @@ class Tokenizer(metaclass=_Tokenizer):
         return True
 
     def _scan_identifier(self, identifier_end: str) -> None:
-        while self._peek != identifier_end:
+        text = ""
+        identifier_end_is_escape = identifier_end in self._IDENTIFIER_ESCAPES
+
+        while True:
             if self._end:
                 raise RuntimeError(f"Missing {identifier_end} from {self._line}:{self._start}")
+
             self._advance()
-        self._advance()
-        self._add(TokenType.IDENTIFIER, self._text[1:-1])
+            if self._char == identifier_end:
+                if identifier_end_is_escape and self._peek == identifier_end:
+                    text += 2 * identifier_end  # type: ignore
+                    self._advance()
+                    continue
+
+                break
+
+            text += self._char  # type: ignore
+
+        self._add(TokenType.IDENTIFIER, text)
 
     def _scan_var(self) -> None:
         while True:
@@ -1072,9 +1090,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
         while True:
             if (
-                self._char in self._ESCAPES
+                self._char in self._STRING_ESCAPES
                 and self._peek
-                and (self._peek == delimiter or self._peek in self._ESCAPES)
+                and (self._peek == delimiter or self._peek in self._STRING_ESCAPES)
             ):
                 text += self._peek
                 self._advance(2)

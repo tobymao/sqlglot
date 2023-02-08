@@ -7,6 +7,10 @@ class TestSnowflake(Validator):
 
     def test_snowflake(self):
         self.validate_all(
+            'SELECT """C Market # Segment""" FROM "Funky Customer With Nulls"',
+            write={"snowflake": 'SELECT """C Market # Segment""" FROM "Funky Customer With Nulls"'},
+        )
+        self.validate_all(
             "SELECT * FROM xxx WHERE col ilike '%Don''t%'",
             write={
                 "snowflake": "SELECT * FROM xxx WHERE col ILIKE '%Don\\'t%'",

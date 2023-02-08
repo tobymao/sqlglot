@@ -260,7 +260,7 @@
 </span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
 </span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
 </span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>
 </span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
@@ -488,7 +488,7 @@
 </span><span id="Hive-173"><a href="#Hive-173"><span class="linenos">173</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="Hive-174"><a href="#Hive-174"><span class="linenos">174</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
 </span><span id="Hive-175"><a href="#Hive-175"><span class="linenos">175</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Hive-176"><a href="#Hive-176"><span class="linenos">176</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Hive-176"><a href="#Hive-176"><span class="linenos">176</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="Hive-177"><a href="#Hive-177"><span class="linenos">177</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
 </span><span id="Hive-178"><a href="#Hive-178"><span class="linenos">178</span></a>
 </span><span id="Hive-179"><a href="#Hive-179"><span class="linenos">179</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
@@ -708,7 +708,7 @@
             <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Tokenizer-173"><a href="#Hive.Tokenizer-173"><span class="linenos">173</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="Hive.Tokenizer-174"><a href="#Hive.Tokenizer-174"><span class="linenos">174</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
 </span><span id="Hive.Tokenizer-175"><a href="#Hive.Tokenizer-175"><span class="linenos">175</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Hive.Tokenizer-176"><a href="#Hive.Tokenizer-176"><span class="linenos">176</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Hive.Tokenizer-176"><a href="#Hive.Tokenizer-176"><span class="linenos">176</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="Hive.Tokenizer-177"><a href="#Hive.Tokenizer-177"><span class="linenos">177</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
 </span><span id="Hive.Tokenizer-178"><a href="#Hive.Tokenizer-178"><span class="linenos">178</span></a>
 </span><span id="Hive.Tokenizer-179"><a href="#Hive.Tokenizer-179"><span class="linenos">179</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
@@ -981,7 +981,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>identify (bool):</strong>  if set to True all identifiers will be delimited by the corresponding
 character.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
-<li><strong>escape (str):</strong>  specifies an escape character. Default: '.</li>
+<li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
+<li><strong>identifier_escape (str):</strong>  specifies an identifier escape character. Default: ".</li>
 <li><strong>pad (int):</strong>  determines padding in a formatted string. Default: 2.</li>
 <li><strong>indent (int):</strong>  determines the size of indentation in a formatted string. Default: 4.</li>
 <li><strong>unnest_column_only (bool):</strong>  if true unnest table aliases are considered only as column aliases</li>

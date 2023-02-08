@@ -194,7 +194,7 @@
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
 </span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
 </span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
 </span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
@@ -359,7 +359,7 @@ adds the backticks around the keyword IF.</p>
 </span><span id="Drill-107"><a href="#Drill-107"><span class="linenos">107</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="Drill-108"><a href="#Drill-108"><span class="linenos">108</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
 </span><span id="Drill-109"><a href="#Drill-109"><span class="linenos">109</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Drill-110"><a href="#Drill-110"><span class="linenos">110</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Drill-110"><a href="#Drill-110"><span class="linenos">110</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="Drill-111"><a href="#Drill-111"><span class="linenos">111</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
 </span><span id="Drill-112"><a href="#Drill-112"><span class="linenos">112</span></a>
 </span><span id="Drill-113"><a href="#Drill-113"><span class="linenos">113</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
@@ -471,7 +471,7 @@ adds the backticks around the keyword IF.</p>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Drill.Tokenizer-107"><a href="#Drill.Tokenizer-107"><span class="linenos">107</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="Drill.Tokenizer-108"><a href="#Drill.Tokenizer-108"><span class="linenos">108</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
 </span><span id="Drill.Tokenizer-109"><a href="#Drill.Tokenizer-109"><span class="linenos">109</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Drill.Tokenizer-110"><a href="#Drill.Tokenizer-110"><span class="linenos">110</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Drill.Tokenizer-110"><a href="#Drill.Tokenizer-110"><span class="linenos">110</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="Drill.Tokenizer-111"><a href="#Drill.Tokenizer-111"><span class="linenos">111</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
 </span></pre></div>
 
@@ -636,7 +636,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>identify (bool):</strong>  if set to True all identifiers will be delimited by the corresponding
 character.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
-<li><strong>escape (str):</strong>  specifies an escape character. Default: '.</li>
+<li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
+<li><strong>identifier_escape (str):</strong>  specifies an identifier escape character. Default: ".</li>
 <li><strong>pad (int):</strong>  determines padding in a formatted string. Default: 2.</li>
 <li><strong>indent (int):</strong>  determines the size of indentation in a formatted string. Default: 4.</li>
 <li><strong>unnest_column_only (bool):</strong>  if true unnest table aliases are considered only as column aliases</li>

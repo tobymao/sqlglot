@@ -277,7 +277,7 @@
 </span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>
 </span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;$$&quot;</span><span class="p">]</span>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
 </span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>
 </span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
@@ -475,7 +475,7 @@
 </span><span id="Snowflake-181"><a href="#Snowflake-181"><span class="linenos">181</span></a>
 </span><span id="Snowflake-182"><a href="#Snowflake-182"><span class="linenos">182</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="Snowflake-183"><a href="#Snowflake-183"><span class="linenos">183</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;$$&quot;</span><span class="p">]</span>
-</span><span id="Snowflake-184"><a href="#Snowflake-184"><span class="linenos">184</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
+</span><span id="Snowflake-184"><a href="#Snowflake-184"><span class="linenos">184</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
 </span><span id="Snowflake-185"><a href="#Snowflake-185"><span class="linenos">185</span></a>
 </span><span id="Snowflake-186"><a href="#Snowflake-186"><span class="linenos">186</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Snowflake-187"><a href="#Snowflake-187"><span class="linenos">187</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
@@ -724,7 +724,7 @@ Default: "nulls_are_small"</li>
     <a class="headerlink" href="#Snowflake.Tokenizer"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Snowflake.Tokenizer-182"><a href="#Snowflake.Tokenizer-182"><span class="linenos">182</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="Snowflake.Tokenizer-183"><a href="#Snowflake.Tokenizer-183"><span class="linenos">183</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;$$&quot;</span><span class="p">]</span>
-</span><span id="Snowflake.Tokenizer-184"><a href="#Snowflake.Tokenizer-184"><span class="linenos">184</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
+</span><span id="Snowflake.Tokenizer-184"><a href="#Snowflake.Tokenizer-184"><span class="linenos">184</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
 </span><span id="Snowflake.Tokenizer-185"><a href="#Snowflake.Tokenizer-185"><span class="linenos">185</span></a>
 </span><span id="Snowflake.Tokenizer-186"><a href="#Snowflake.Tokenizer-186"><span class="linenos">186</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Snowflake.Tokenizer-187"><a href="#Snowflake.Tokenizer-187"><span class="linenos">187</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
@@ -884,7 +884,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>identify (bool):</strong>  if set to True all identifiers will be delimited by the corresponding
 character.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
-<li><strong>escape (str):</strong>  specifies an escape character. Default: '.</li>
+<li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
+<li><strong>identifier_escape (str):</strong>  specifies an identifier escape character. Default: ".</li>
 <li><strong>pad (int):</strong>  determines padding in a formatted string. Default: 2.</li>
 <li><strong>indent (int):</strong>  determines the size of indentation in a formatted string. Default: 4.</li>
 <li><strong>unnest_column_only (bool):</strong>  if true unnest table aliases are considered only as column aliases</li>

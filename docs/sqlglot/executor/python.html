@@ -538,7 +538,7 @@
 </span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a>
 </span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a><span class="k">class</span> <span class="nc">Python</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
 </span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a>
 </span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
 </span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
@@ -1554,7 +1554,7 @@
     <a class="headerlink" href="#Python"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Python-410"><a href="#Python-410"><span class="linenos">410</span></a><span class="k">class</span> <span class="nc">Python</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
 </span><span id="Python-411"><a href="#Python-411"><span class="linenos">411</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Python-412"><a href="#Python-412"><span class="linenos">412</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Python-412"><a href="#Python-412"><span class="linenos">412</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span><span id="Python-413"><a href="#Python-413"><span class="linenos">413</span></a>
 </span><span id="Python-414"><a href="#Python-414"><span class="linenos">414</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
 </span><span id="Python-415"><a href="#Python-415"><span class="linenos">415</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
@@ -1625,7 +1625,7 @@
     </div>
     <a class="headerlink" href="#Python.Tokenizer"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Python.Tokenizer-411"><a href="#Python.Tokenizer-411"><span class="linenos">411</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Python.Tokenizer-412"><a href="#Python.Tokenizer-412"><span class="linenos">412</span></a>        <span class="n">ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Python.Tokenizer-412"><a href="#Python.Tokenizer-412"><span class="linenos">412</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
 </span></pre></div>
 
 
@@ -1696,7 +1696,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>identify (bool):</strong>  if set to True all identifiers will be delimited by the corresponding
 character.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
-<li><strong>escape (str):</strong>  specifies an escape character. Default: '.</li>
+<li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
+<li><strong>identifier_escape (str):</strong>  specifies an identifier escape character. Default: ".</li>
 <li><strong>pad (int):</strong>  determines padding in a formatted string. Default: 2.</li>
 <li><strong>indent (int):</strong>  determines the size of indentation in a formatted string. Default: 4.</li>
 <li><strong>unnest_column_only (bool):</strong>  if true unnest table aliases are considered only as column aliases</li>

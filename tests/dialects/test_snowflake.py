@@ -6,6 +6,8 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
+
         self.validate_all(
             "SELECT * FROM xxx WHERE col ilike '%Don''t%'",
             write={
@@ -168,7 +170,6 @@ class TestSnowflake(Validator):
                 "snowflake": r"SELECT 'a \' \\ \\t \\x21 z $ '",
             },
         )
-        self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_all(
             "SELECT RLIKE(a, b)",
             write={
@@ -253,6 +254,8 @@ class TestSnowflake(Validator):
         )
 
     def test_timestamps(self):
+        self.validate_identity("SELECT EXTRACT(month FROM a)")
+
         self.validate_all(
             "SELECT CAST(a AS TIMESTAMP)",
             write={
@@ -277,7 +280,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT CAST(a AS TIMESTAMPLTZ)",
             },
         )
-        self.validate_identity("SELECT EXTRACT(month FROM a)")
         self.validate_all(
             "SELECT EXTRACT('month', a)",
             write={
@@ -313,6 +315,8 @@ class TestSnowflake(Validator):
 
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")
+        self.validate_identity("SELECT CAST(a AS ARRAY)")
+
         self.validate_all(
             "SELECT a::VARIANT",
             write={
@@ -320,7 +324,6 @@ class TestSnowflake(Validator):
                 "tsql": "SELECT CAST(a AS SQL_VARIANT)",
             },
         )
-        self.validate_identity("SELECT CAST(a AS ARRAY)")
         self.validate_all(
             "ARRAY_CONSTRUCT(0, 1, 2)",
             write={
@@ -343,6 +346,7 @@ class TestSnowflake(Validator):
             "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
         )
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
+
         self.validate_all(
             "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
             read={

@@ -37,7 +37,7 @@ class Redshift(Postgres):
             return this
 
     class Tokenizer(Postgres.Tokenizer):
-        ESCAPES = ["\\"]
+        STRING_ESCAPES = ["\\"]
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,  # type: ignore

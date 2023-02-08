@@ -134,83 +134,90 @@
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
 </span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="k">class</span> <span class="nc">ErrorLevel</span><span class="p">(</span><span class="n">AutoName</span><span class="p">):</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">IGNORE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Ignore any parser errors</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="n">WARN</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Log any parser errors with ERROR level</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="n">RAISE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Collect all parser errors and raise a single exception</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="n">IMMEDIATE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Immediately raise an exception on the first parser error</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">IGNORE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ignore all errors.&quot;&quot;&quot;</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="n">WARN</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Log all errors.&quot;&quot;&quot;</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="k">class</span> <span class="nc">SqlglotError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="k">pass</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="n">RAISE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect all errors and raise a single exception.&quot;&quot;&quot;</span>
 </span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="k">class</span> <span class="nc">UnsupportedError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="k">pass</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="n">IMMEDIATE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Immediately raise an exception on the first error found.&quot;&quot;&quot;</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>
 </span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="k">class</span> <span class="nc">ParseError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="p">):</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span> <span class="ow">or</span> <span class="p">[]</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>    <span class="nd">@classmethod</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>        <span class="bp">cls</span><span class="p">,</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="n">description</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="n">line</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>        <span class="n">col</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>        <span class="n">start_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>        <span class="n">highlight</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>        <span class="n">end_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>        <span class="n">into_expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParseError</span><span class="p">:</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>            <span class="n">message</span><span class="p">,</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>            <span class="p">[</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>                <span class="p">{</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>                    <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">line</span><span class="p">,</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>                    <span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>                    <span class="s2">&quot;start_context&quot;</span><span class="p">:</span> <span class="n">start_context</span><span class="p">,</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>                    <span class="s2">&quot;highlight&quot;</span><span class="p">:</span> <span class="n">highlight</span><span class="p">,</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>                    <span class="s2">&quot;end_context&quot;</span><span class="p">:</span> <span class="n">end_context</span><span class="p">,</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>                    <span class="s2">&quot;into_expression&quot;</span><span class="p">:</span> <span class="n">into_expression</span><span class="p">,</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>                <span class="p">}</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>            <span class="p">],</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>        <span class="p">)</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>
-</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>
-</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="k">class</span> <span class="nc">TokenError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>    <span class="k">pass</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>
-</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>
-</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a><span class="k">class</span> <span class="nc">OptimizeError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>    <span class="k">pass</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="k">class</span> <span class="nc">SqlglotError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="k">pass</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="k">class</span> <span class="nc">UnsupportedError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>    <span class="k">pass</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="k">class</span> <span class="nc">ParseError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>        <span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>    <span class="p">):</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span> <span class="ow">or</span> <span class="p">[]</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>    <span class="nd">@classmethod</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>        <span class="bp">cls</span><span class="p">,</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="n">description</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="n">line</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="n">col</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>        <span class="n">start_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="n">highlight</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="n">end_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>        <span class="n">into_expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParseError</span><span class="p">:</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>            <span class="n">message</span><span class="p">,</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>            <span class="p">[</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>                <span class="p">{</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>                    <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">line</span><span class="p">,</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>                    <span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>                    <span class="s2">&quot;start_context&quot;</span><span class="p">:</span> <span class="n">start_context</span><span class="p">,</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>                    <span class="s2">&quot;highlight&quot;</span><span class="p">:</span> <span class="n">highlight</span><span class="p">,</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>                    <span class="s2">&quot;end_context&quot;</span><span class="p">:</span> <span class="n">end_context</span><span class="p">,</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>                    <span class="s2">&quot;into_expression&quot;</span><span class="p">:</span> <span class="n">into_expression</span><span class="p">,</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>                <span class="p">}</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>            <span class="p">],</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>        <span class="p">)</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>
 </span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>
-</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>
-</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a><span class="k">class</span> <span class="nc">SchemaError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>    <span class="k">pass</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a><span class="k">class</span> <span class="nc">TokenError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>    <span class="k">pass</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>
 </span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>
-</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>
-</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a><span class="k">class</span> <span class="nc">ExecuteError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>    <span class="k">pass</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a><span class="k">class</span> <span class="nc">OptimizeError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>    <span class="k">pass</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>
 </span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a>
-</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a>
-</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a><span class="k">def</span> <span class="nf">concat_messages</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">maximum</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a>    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">[:</span><span class="n">maximum</span><span class="p">]]</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos">79</span></a>    <span class="n">remaining</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span> <span class="o">-</span> <span class="n">maximum</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos">80</span></a>    <span class="k">if</span> <span class="n">remaining</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos">81</span></a>        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;... and </span><span class="si">{</span><span class="n">remaining</span><span class="si">}</span><span class="s2"> more&quot;</span><span class="p">)</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos">82</span></a>    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos">76</span></a><span class="k">class</span> <span class="nc">SchemaError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos">77</span></a>    <span class="k">pass</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos">78</span></a>
+</span><span id="L-79"><a href="#L-79"><span class="linenos">79</span></a>
+</span><span id="L-80"><a href="#L-80"><span class="linenos">80</span></a><span class="k">class</span> <span class="nc">ExecuteError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos">81</span></a>    <span class="k">pass</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos">82</span></a>
 </span><span id="L-83"><a href="#L-83"><span class="linenos">83</span></a>
-</span><span id="L-84"><a href="#L-84"><span class="linenos">84</span></a>
-</span><span id="L-85"><a href="#L-85"><span class="linenos">85</span></a><span class="k">def</span> <span class="nf">merge_errors</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ParseError</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
-</span><span id="L-86"><a href="#L-86"><span class="linenos">86</span></a>    <span class="k">return</span> <span class="p">[</span><span class="n">e_dict</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">errors</span> <span class="k">for</span> <span class="n">e_dict</span> <span class="ow">in</span> <span class="n">error</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos">84</span></a><span class="k">def</span> <span class="nf">concat_messages</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">maximum</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos">85</span></a>    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">[:</span><span class="n">maximum</span><span class="p">]]</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos">86</span></a>    <span class="n">remaining</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span> <span class="o">-</span> <span class="n">maximum</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos">87</span></a>    <span class="k">if</span> <span class="n">remaining</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos">88</span></a>        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;... and </span><span class="si">{</span><span class="n">remaining</span><span class="si">}</span><span class="s2"> more&quot;</span><span class="p">)</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos">89</span></a>    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos">90</span></a>
+</span><span id="L-91"><a href="#L-91"><span class="linenos">91</span></a>
+</span><span id="L-92"><a href="#L-92"><span class="linenos">92</span></a><span class="k">def</span> <span class="nf">merge_errors</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ParseError</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos">93</span></a>    <span class="k">return</span> <span class="p">[</span><span class="n">e_dict</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">errors</span> <span class="k">for</span> <span class="n">e_dict</span> <span class="ow">in</span> <span class="n">error</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span>
 </span></pre></div>
 
 
@@ -227,10 +234,17 @@
     </div>
     <a class="headerlink" href="#ErrorLevel"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="ErrorLevel-10"><a href="#ErrorLevel-10"><span class="linenos">10</span></a><span class="k">class</span> <span class="nc">ErrorLevel</span><span class="p">(</span><span class="n">AutoName</span><span class="p">):</span>
-</span><span id="ErrorLevel-11"><a href="#ErrorLevel-11"><span class="linenos">11</span></a>    <span class="n">IGNORE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Ignore any parser errors</span>
-</span><span id="ErrorLevel-12"><a href="#ErrorLevel-12"><span class="linenos">12</span></a>    <span class="n">WARN</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Log any parser errors with ERROR level</span>
-</span><span id="ErrorLevel-13"><a href="#ErrorLevel-13"><span class="linenos">13</span></a>    <span class="n">RAISE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Collect all parser errors and raise a single exception</span>
-</span><span id="ErrorLevel-14"><a href="#ErrorLevel-14"><span class="linenos">14</span></a>    <span class="n">IMMEDIATE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>  <span class="c1"># Immediately raise an exception on the first parser error</span>
+</span><span id="ErrorLevel-11"><a href="#ErrorLevel-11"><span class="linenos">11</span></a>    <span class="n">IGNORE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="ErrorLevel-12"><a href="#ErrorLevel-12"><span class="linenos">12</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Ignore all errors.&quot;&quot;&quot;</span>
+</span><span id="ErrorLevel-13"><a href="#ErrorLevel-13"><span class="linenos">13</span></a>
+</span><span id="ErrorLevel-14"><a href="#ErrorLevel-14"><span class="linenos">14</span></a>    <span class="n">WARN</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="ErrorLevel-15"><a href="#ErrorLevel-15"><span class="linenos">15</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Log all errors.&quot;&quot;&quot;</span>
+</span><span id="ErrorLevel-16"><a href="#ErrorLevel-16"><span class="linenos">16</span></a>
+</span><span id="ErrorLevel-17"><a href="#ErrorLevel-17"><span class="linenos">17</span></a>    <span class="n">RAISE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="ErrorLevel-18"><a href="#ErrorLevel-18"><span class="linenos">18</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect all errors and raise a single exception.&quot;&quot;&quot;</span>
+</span><span id="ErrorLevel-19"><a href="#ErrorLevel-19"><span class="linenos">19</span></a>
+</span><span id="ErrorLevel-20"><a href="#ErrorLevel-20"><span class="linenos">20</span></a>    <span class="n">IMMEDIATE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+</span><span id="ErrorLevel-21"><a href="#ErrorLevel-21"><span class="linenos">21</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Immediately raise an exception on the first error found.&quot;&quot;&quot;</span>
 </span></pre></div>
 
 
@@ -246,7 +260,9 @@
     </div>
     <a class="headerlink" href="#ErrorLevel.IGNORE"></a>
     
-    
+            <div class="docstring"><p>Ignore all errors.</p>
+</div>
+
 
                             </div>
                             <div id="ErrorLevel.WARN" class="classattr">
@@ -257,7 +273,9 @@
     </div>
     <a class="headerlink" href="#ErrorLevel.WARN"></a>
     
-    
+            <div class="docstring"><p>Log all errors.</p>
+</div>
+
 
                             </div>
                             <div id="ErrorLevel.RAISE" class="classattr">
@@ -268,7 +286,9 @@
     </div>
     <a class="headerlink" href="#ErrorLevel.RAISE"></a>
     
-    
+            <div class="docstring"><p>Collect all errors and raise a single exception.</p>
+</div>
+
 
                             </div>
                             <div id="ErrorLevel.IMMEDIATE" class="classattr">
@@ -279,7 +299,9 @@
     </div>
     <a class="headerlink" href="#ErrorLevel.IMMEDIATE"></a>
     
-    
+            <div class="docstring"><p>Immediately raise an exception on the first error found.</p>
+</div>
+
 
                             </div>
                             <div class="inherited">
@@ -304,8 +326,8 @@
 
     </div>
     <a class="headerlink" href="#SqlglotError"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SqlglotError-17"><a href="#SqlglotError-17"><span class="linenos">17</span></a><span class="k">class</span> <span class="nc">SqlglotError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-</span><span id="SqlglotError-18"><a href="#SqlglotError-18"><span class="linenos">18</span></a>    <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SqlglotError-24"><a href="#SqlglotError-24"><span class="linenos">24</span></a><span class="k">class</span> <span class="nc">SqlglotError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+</span><span id="SqlglotError-25"><a href="#SqlglotError-25"><span class="linenos">25</span></a>    <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -338,8 +360,8 @@
 
     </div>
     <a class="headerlink" href="#UnsupportedError"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="UnsupportedError-21"><a href="#UnsupportedError-21"><span class="linenos">21</span></a><span class="k">class</span> <span class="nc">UnsupportedError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="UnsupportedError-22"><a href="#UnsupportedError-22"><span class="linenos">22</span></a>    <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="UnsupportedError-28"><a href="#UnsupportedError-28"><span class="linenos">28</span></a><span class="k">class</span> <span class="nc">UnsupportedError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="UnsupportedError-29"><a href="#UnsupportedError-29"><span class="linenos">29</span></a>    <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -372,41 +394,41 @@
 
     </div>
     <a class="headerlink" href="#ParseError"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ParseError-25"><a href="#ParseError-25"><span class="linenos">25</span></a><span class="k">class</span> <span class="nc">ParseError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="ParseError-26"><a href="#ParseError-26"><span class="linenos">26</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-</span><span id="ParseError-27"><a href="#ParseError-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="ParseError-28"><a href="#ParseError-28"><span class="linenos">28</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="ParseError-29"><a href="#ParseError-29"><span class="linenos">29</span></a>        <span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-30"><a href="#ParseError-30"><span class="linenos">30</span></a>    <span class="p">):</span>
-</span><span id="ParseError-31"><a href="#ParseError-31"><span class="linenos">31</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-</span><span id="ParseError-32"><a href="#ParseError-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span> <span class="ow">or</span> <span class="p">[]</span>
-</span><span id="ParseError-33"><a href="#ParseError-33"><span class="linenos">33</span></a>
-</span><span id="ParseError-34"><a href="#ParseError-34"><span class="linenos">34</span></a>    <span class="nd">@classmethod</span>
-</span><span id="ParseError-35"><a href="#ParseError-35"><span class="linenos">35</span></a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span>
-</span><span id="ParseError-36"><a href="#ParseError-36"><span class="linenos">36</span></a>        <span class="bp">cls</span><span class="p">,</span>
-</span><span id="ParseError-37"><a href="#ParseError-37"><span class="linenos">37</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="ParseError-38"><a href="#ParseError-38"><span class="linenos">38</span></a>        <span class="n">description</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-39"><a href="#ParseError-39"><span class="linenos">39</span></a>        <span class="n">line</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-40"><a href="#ParseError-40"><span class="linenos">40</span></a>        <span class="n">col</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-41"><a href="#ParseError-41"><span class="linenos">41</span></a>        <span class="n">start_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-42"><a href="#ParseError-42"><span class="linenos">42</span></a>        <span class="n">highlight</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-43"><a href="#ParseError-43"><span class="linenos">43</span></a>        <span class="n">end_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-44"><a href="#ParseError-44"><span class="linenos">44</span></a>        <span class="n">into_expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError-45"><a href="#ParseError-45"><span class="linenos">45</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParseError</span><span class="p">:</span>
-</span><span id="ParseError-46"><a href="#ParseError-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-</span><span id="ParseError-47"><a href="#ParseError-47"><span class="linenos">47</span></a>            <span class="n">message</span><span class="p">,</span>
-</span><span id="ParseError-48"><a href="#ParseError-48"><span class="linenos">48</span></a>            <span class="p">[</span>
-</span><span id="ParseError-49"><a href="#ParseError-49"><span class="linenos">49</span></a>                <span class="p">{</span>
-</span><span id="ParseError-50"><a href="#ParseError-50"><span class="linenos">50</span></a>                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
-</span><span id="ParseError-51"><a href="#ParseError-51"><span class="linenos">51</span></a>                    <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">line</span><span class="p">,</span>
-</span><span id="ParseError-52"><a href="#ParseError-52"><span class="linenos">52</span></a>                    <span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span>
-</span><span id="ParseError-53"><a href="#ParseError-53"><span class="linenos">53</span></a>                    <span class="s2">&quot;start_context&quot;</span><span class="p">:</span> <span class="n">start_context</span><span class="p">,</span>
-</span><span id="ParseError-54"><a href="#ParseError-54"><span class="linenos">54</span></a>                    <span class="s2">&quot;highlight&quot;</span><span class="p">:</span> <span class="n">highlight</span><span class="p">,</span>
-</span><span id="ParseError-55"><a href="#ParseError-55"><span class="linenos">55</span></a>                    <span class="s2">&quot;end_context&quot;</span><span class="p">:</span> <span class="n">end_context</span><span class="p">,</span>
-</span><span id="ParseError-56"><a href="#ParseError-56"><span class="linenos">56</span></a>                    <span class="s2">&quot;into_expression&quot;</span><span class="p">:</span> <span class="n">into_expression</span><span class="p">,</span>
-</span><span id="ParseError-57"><a href="#ParseError-57"><span class="linenos">57</span></a>                <span class="p">}</span>
-</span><span id="ParseError-58"><a href="#ParseError-58"><span class="linenos">58</span></a>            <span class="p">],</span>
-</span><span id="ParseError-59"><a href="#ParseError-59"><span class="linenos">59</span></a>        <span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ParseError-32"><a href="#ParseError-32"><span class="linenos">32</span></a><span class="k">class</span> <span class="nc">ParseError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="ParseError-33"><a href="#ParseError-33"><span class="linenos">33</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="ParseError-34"><a href="#ParseError-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="ParseError-35"><a href="#ParseError-35"><span class="linenos">35</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="ParseError-36"><a href="#ParseError-36"><span class="linenos">36</span></a>        <span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-37"><a href="#ParseError-37"><span class="linenos">37</span></a>    <span class="p">):</span>
+</span><span id="ParseError-38"><a href="#ParseError-38"><span class="linenos">38</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</span><span id="ParseError-39"><a href="#ParseError-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span> <span class="ow">or</span> <span class="p">[]</span>
+</span><span id="ParseError-40"><a href="#ParseError-40"><span class="linenos">40</span></a>
+</span><span id="ParseError-41"><a href="#ParseError-41"><span class="linenos">41</span></a>    <span class="nd">@classmethod</span>
+</span><span id="ParseError-42"><a href="#ParseError-42"><span class="linenos">42</span></a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span>
+</span><span id="ParseError-43"><a href="#ParseError-43"><span class="linenos">43</span></a>        <span class="bp">cls</span><span class="p">,</span>
+</span><span id="ParseError-44"><a href="#ParseError-44"><span class="linenos">44</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="ParseError-45"><a href="#ParseError-45"><span class="linenos">45</span></a>        <span class="n">description</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-46"><a href="#ParseError-46"><span class="linenos">46</span></a>        <span class="n">line</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-47"><a href="#ParseError-47"><span class="linenos">47</span></a>        <span class="n">col</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-48"><a href="#ParseError-48"><span class="linenos">48</span></a>        <span class="n">start_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-49"><a href="#ParseError-49"><span class="linenos">49</span></a>        <span class="n">highlight</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-50"><a href="#ParseError-50"><span class="linenos">50</span></a>        <span class="n">end_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-51"><a href="#ParseError-51"><span class="linenos">51</span></a>        <span class="n">into_expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError-52"><a href="#ParseError-52"><span class="linenos">52</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParseError</span><span class="p">:</span>
+</span><span id="ParseError-53"><a href="#ParseError-53"><span class="linenos">53</span></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+</span><span id="ParseError-54"><a href="#ParseError-54"><span class="linenos">54</span></a>            <span class="n">message</span><span class="p">,</span>
+</span><span id="ParseError-55"><a href="#ParseError-55"><span class="linenos">55</span></a>            <span class="p">[</span>
+</span><span id="ParseError-56"><a href="#ParseError-56"><span class="linenos">56</span></a>                <span class="p">{</span>
+</span><span id="ParseError-57"><a href="#ParseError-57"><span class="linenos">57</span></a>                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
+</span><span id="ParseError-58"><a href="#ParseError-58"><span class="linenos">58</span></a>                    <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">line</span><span class="p">,</span>
+</span><span id="ParseError-59"><a href="#ParseError-59"><span class="linenos">59</span></a>                    <span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span>
+</span><span id="ParseError-60"><a href="#ParseError-60"><span class="linenos">60</span></a>                    <span class="s2">&quot;start_context&quot;</span><span class="p">:</span> <span class="n">start_context</span><span class="p">,</span>
+</span><span id="ParseError-61"><a href="#ParseError-61"><span class="linenos">61</span></a>                    <span class="s2">&quot;highlight&quot;</span><span class="p">:</span> <span class="n">highlight</span><span class="p">,</span>
+</span><span id="ParseError-62"><a href="#ParseError-62"><span class="linenos">62</span></a>                    <span class="s2">&quot;end_context&quot;</span><span class="p">:</span> <span class="n">end_context</span><span class="p">,</span>
+</span><span id="ParseError-63"><a href="#ParseError-63"><span class="linenos">63</span></a>                    <span class="s2">&quot;into_expression&quot;</span><span class="p">:</span> <span class="n">into_expression</span><span class="p">,</span>
+</span><span id="ParseError-64"><a href="#ParseError-64"><span class="linenos">64</span></a>                <span class="p">}</span>
+</span><span id="ParseError-65"><a href="#ParseError-65"><span class="linenos">65</span></a>            <span class="p">],</span>
+</span><span id="ParseError-66"><a href="#ParseError-66"><span class="linenos">66</span></a>        <span class="p">)</span>
 </span></pre></div>
 
 
@@ -424,13 +446,13 @@
 
     </div>
     <a class="headerlink" href="#ParseError.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ParseError.__init__-26"><a href="#ParseError.__init__-26"><span class="linenos">26</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-</span><span id="ParseError.__init__-27"><a href="#ParseError.__init__-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="ParseError.__init__-28"><a href="#ParseError.__init__-28"><span class="linenos">28</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="ParseError.__init__-29"><a href="#ParseError.__init__-29"><span class="linenos">29</span></a>        <span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.__init__-30"><a href="#ParseError.__init__-30"><span class="linenos">30</span></a>    <span class="p">):</span>
-</span><span id="ParseError.__init__-31"><a href="#ParseError.__init__-31"><span class="linenos">31</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-</span><span id="ParseError.__init__-32"><a href="#ParseError.__init__-32"><span class="linenos">32</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span> <span class="ow">or</span> <span class="p">[]</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ParseError.__init__-33"><a href="#ParseError.__init__-33"><span class="linenos">33</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="ParseError.__init__-34"><a href="#ParseError.__init__-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="ParseError.__init__-35"><a href="#ParseError.__init__-35"><span class="linenos">35</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="ParseError.__init__-36"><a href="#ParseError.__init__-36"><span class="linenos">36</span></a>        <span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.__init__-37"><a href="#ParseError.__init__-37"><span class="linenos">37</span></a>    <span class="p">):</span>
+</span><span id="ParseError.__init__-38"><a href="#ParseError.__init__-38"><span class="linenos">38</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</span><span id="ParseError.__init__-39"><a href="#ParseError.__init__-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span> <span class="ow">or</span> <span class="p">[]</span>
 </span></pre></div>
 
 
@@ -449,32 +471,32 @@
 
     </div>
     <a class="headerlink" href="#ParseError.new"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ParseError.new-34"><a href="#ParseError.new-34"><span class="linenos">34</span></a>    <span class="nd">@classmethod</span>
-</span><span id="ParseError.new-35"><a href="#ParseError.new-35"><span class="linenos">35</span></a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span>
-</span><span id="ParseError.new-36"><a href="#ParseError.new-36"><span class="linenos">36</span></a>        <span class="bp">cls</span><span class="p">,</span>
-</span><span id="ParseError.new-37"><a href="#ParseError.new-37"><span class="linenos">37</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="ParseError.new-38"><a href="#ParseError.new-38"><span class="linenos">38</span></a>        <span class="n">description</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.new-39"><a href="#ParseError.new-39"><span class="linenos">39</span></a>        <span class="n">line</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.new-40"><a href="#ParseError.new-40"><span class="linenos">40</span></a>        <span class="n">col</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.new-41"><a href="#ParseError.new-41"><span class="linenos">41</span></a>        <span class="n">start_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.new-42"><a href="#ParseError.new-42"><span class="linenos">42</span></a>        <span class="n">highlight</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.new-43"><a href="#ParseError.new-43"><span class="linenos">43</span></a>        <span class="n">end_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.new-44"><a href="#ParseError.new-44"><span class="linenos">44</span></a>        <span class="n">into_expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="ParseError.new-45"><a href="#ParseError.new-45"><span class="linenos">45</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParseError</span><span class="p">:</span>
-</span><span id="ParseError.new-46"><a href="#ParseError.new-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-</span><span id="ParseError.new-47"><a href="#ParseError.new-47"><span class="linenos">47</span></a>            <span class="n">message</span><span class="p">,</span>
-</span><span id="ParseError.new-48"><a href="#ParseError.new-48"><span class="linenos">48</span></a>            <span class="p">[</span>
-</span><span id="ParseError.new-49"><a href="#ParseError.new-49"><span class="linenos">49</span></a>                <span class="p">{</span>
-</span><span id="ParseError.new-50"><a href="#ParseError.new-50"><span class="linenos">50</span></a>                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
-</span><span id="ParseError.new-51"><a href="#ParseError.new-51"><span class="linenos">51</span></a>                    <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">line</span><span class="p">,</span>
-</span><span id="ParseError.new-52"><a href="#ParseError.new-52"><span class="linenos">52</span></a>                    <span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span>
-</span><span id="ParseError.new-53"><a href="#ParseError.new-53"><span class="linenos">53</span></a>                    <span class="s2">&quot;start_context&quot;</span><span class="p">:</span> <span class="n">start_context</span><span class="p">,</span>
-</span><span id="ParseError.new-54"><a href="#ParseError.new-54"><span class="linenos">54</span></a>                    <span class="s2">&quot;highlight&quot;</span><span class="p">:</span> <span class="n">highlight</span><span class="p">,</span>
-</span><span id="ParseError.new-55"><a href="#ParseError.new-55"><span class="linenos">55</span></a>                    <span class="s2">&quot;end_context&quot;</span><span class="p">:</span> <span class="n">end_context</span><span class="p">,</span>
-</span><span id="ParseError.new-56"><a href="#ParseError.new-56"><span class="linenos">56</span></a>                    <span class="s2">&quot;into_expression&quot;</span><span class="p">:</span> <span class="n">into_expression</span><span class="p">,</span>
-</span><span id="ParseError.new-57"><a href="#ParseError.new-57"><span class="linenos">57</span></a>                <span class="p">}</span>
-</span><span id="ParseError.new-58"><a href="#ParseError.new-58"><span class="linenos">58</span></a>            <span class="p">],</span>
-</span><span id="ParseError.new-59"><a href="#ParseError.new-59"><span class="linenos">59</span></a>        <span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ParseError.new-41"><a href="#ParseError.new-41"><span class="linenos">41</span></a>    <span class="nd">@classmethod</span>
+</span><span id="ParseError.new-42"><a href="#ParseError.new-42"><span class="linenos">42</span></a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span>
+</span><span id="ParseError.new-43"><a href="#ParseError.new-43"><span class="linenos">43</span></a>        <span class="bp">cls</span><span class="p">,</span>
+</span><span id="ParseError.new-44"><a href="#ParseError.new-44"><span class="linenos">44</span></a>        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="ParseError.new-45"><a href="#ParseError.new-45"><span class="linenos">45</span></a>        <span class="n">description</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.new-46"><a href="#ParseError.new-46"><span class="linenos">46</span></a>        <span class="n">line</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.new-47"><a href="#ParseError.new-47"><span class="linenos">47</span></a>        <span class="n">col</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.new-48"><a href="#ParseError.new-48"><span class="linenos">48</span></a>        <span class="n">start_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.new-49"><a href="#ParseError.new-49"><span class="linenos">49</span></a>        <span class="n">highlight</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.new-50"><a href="#ParseError.new-50"><span class="linenos">50</span></a>        <span class="n">end_context</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.new-51"><a href="#ParseError.new-51"><span class="linenos">51</span></a>        <span class="n">into_expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="ParseError.new-52"><a href="#ParseError.new-52"><span class="linenos">52</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParseError</span><span class="p">:</span>
+</span><span id="ParseError.new-53"><a href="#ParseError.new-53"><span class="linenos">53</span></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+</span><span id="ParseError.new-54"><a href="#ParseError.new-54"><span class="linenos">54</span></a>            <span class="n">message</span><span class="p">,</span>
+</span><span id="ParseError.new-55"><a href="#ParseError.new-55"><span class="linenos">55</span></a>            <span class="p">[</span>
+</span><span id="ParseError.new-56"><a href="#ParseError.new-56"><span class="linenos">56</span></a>                <span class="p">{</span>
+</span><span id="ParseError.new-57"><a href="#ParseError.new-57"><span class="linenos">57</span></a>                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
+</span><span id="ParseError.new-58"><a href="#ParseError.new-58"><span class="linenos">58</span></a>                    <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">line</span><span class="p">,</span>
+</span><span id="ParseError.new-59"><a href="#ParseError.new-59"><span class="linenos">59</span></a>                    <span class="s2">&quot;col&quot;</span><span class="p">:</span> <span class="n">col</span><span class="p">,</span>
+</span><span id="ParseError.new-60"><a href="#ParseError.new-60"><span class="linenos">60</span></a>                    <span class="s2">&quot;start_context&quot;</span><span class="p">:</span> <span class="n">start_context</span><span class="p">,</span>
+</span><span id="ParseError.new-61"><a href="#ParseError.new-61"><span class="linenos">61</span></a>                    <span class="s2">&quot;highlight&quot;</span><span class="p">:</span> <span class="n">highlight</span><span class="p">,</span>
+</span><span id="ParseError.new-62"><a href="#ParseError.new-62"><span class="linenos">62</span></a>                    <span class="s2">&quot;end_context&quot;</span><span class="p">:</span> <span class="n">end_context</span><span class="p">,</span>
+</span><span id="ParseError.new-63"><a href="#ParseError.new-63"><span class="linenos">63</span></a>                    <span class="s2">&quot;into_expression&quot;</span><span class="p">:</span> <span class="n">into_expression</span><span class="p">,</span>
+</span><span id="ParseError.new-64"><a href="#ParseError.new-64"><span class="linenos">64</span></a>                <span class="p">}</span>
+</span><span id="ParseError.new-65"><a href="#ParseError.new-65"><span class="linenos">65</span></a>            <span class="p">],</span>
+</span><span id="ParseError.new-66"><a href="#ParseError.new-66"><span class="linenos">66</span></a>        <span class="p">)</span>
 </span></pre></div>
 
 
@@ -502,8 +524,8 @@
 
     </div>
     <a class="headerlink" href="#TokenError"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="TokenError-62"><a href="#TokenError-62"><span class="linenos">62</span></a><span class="k">class</span> <span class="nc">TokenError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="TokenError-63"><a href="#TokenError-63"><span class="linenos">63</span></a>    <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TokenError-69"><a href="#TokenError-69"><span class="linenos">69</span></a><span class="k">class</span> <span class="nc">TokenError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="TokenError-70"><a href="#TokenError-70"><span class="linenos">70</span></a>    <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -536,8 +558,8 @@
 
     </div>
     <a class="headerlink" href="#OptimizeError"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="OptimizeError-66"><a href="#OptimizeError-66"><span class="linenos">66</span></a><span class="k">class</span> <span class="nc">OptimizeError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="OptimizeError-67"><a href="#OptimizeError-67"><span class="linenos">67</span></a>    <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="OptimizeError-73"><a href="#OptimizeError-73"><span class="linenos">73</span></a><span class="k">class</span> <span class="nc">OptimizeError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="OptimizeError-74"><a href="#OptimizeError-74"><span class="linenos">74</span></a>    <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -570,8 +592,8 @@
 
     </div>
     <a class="headerlink" href="#SchemaError"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SchemaError-70"><a href="#SchemaError-70"><span class="linenos">70</span></a><span class="k">class</span> <span class="nc">SchemaError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="SchemaError-71"><a href="#SchemaError-71"><span class="linenos">71</span></a>    <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SchemaError-77"><a href="#SchemaError-77"><span class="linenos">77</span></a><span class="k">class</span> <span class="nc">SchemaError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="SchemaError-78"><a href="#SchemaError-78"><span class="linenos">78</span></a>    <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -604,8 +626,8 @@
 
     </div>
     <a class="headerlink" href="#ExecuteError"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ExecuteError-74"><a href="#ExecuteError-74"><span class="linenos">74</span></a><span class="k">class</span> <span class="nc">ExecuteError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
-</span><span id="ExecuteError-75"><a href="#ExecuteError-75"><span class="linenos">75</span></a>    <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ExecuteError-81"><a href="#ExecuteError-81"><span class="linenos">81</span></a><span class="k">class</span> <span class="nc">ExecuteError</span><span class="p">(</span><span class="n">SqlglotError</span><span class="p">):</span>
+</span><span id="ExecuteError-82"><a href="#ExecuteError-82"><span class="linenos">82</span></a>    <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -638,12 +660,12 @@
 
     </div>
     <a class="headerlink" href="#concat_messages"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="concat_messages-78"><a href="#concat_messages-78"><span class="linenos">78</span></a><span class="k">def</span> <span class="nf">concat_messages</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">maximum</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="concat_messages-79"><a href="#concat_messages-79"><span class="linenos">79</span></a>    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">[:</span><span class="n">maximum</span><span class="p">]]</span>
-</span><span id="concat_messages-80"><a href="#concat_messages-80"><span class="linenos">80</span></a>    <span class="n">remaining</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span> <span class="o">-</span> <span class="n">maximum</span>
-</span><span id="concat_messages-81"><a href="#concat_messages-81"><span class="linenos">81</span></a>    <span class="k">if</span> <span class="n">remaining</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="concat_messages-82"><a href="#concat_messages-82"><span class="linenos">82</span></a>        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;... and </span><span class="si">{</span><span class="n">remaining</span><span class="si">}</span><span class="s2"> more&quot;</span><span class="p">)</span>
-</span><span id="concat_messages-83"><a href="#concat_messages-83"><span class="linenos">83</span></a>    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="concat_messages-85"><a href="#concat_messages-85"><span class="linenos">85</span></a><span class="k">def</span> <span class="nf">concat_messages</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">maximum</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="concat_messages-86"><a href="#concat_messages-86"><span class="linenos">86</span></a>    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">[:</span><span class="n">maximum</span><span class="p">]]</span>
+</span><span id="concat_messages-87"><a href="#concat_messages-87"><span class="linenos">87</span></a>    <span class="n">remaining</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span> <span class="o">-</span> <span class="n">maximum</span>
+</span><span id="concat_messages-88"><a href="#concat_messages-88"><span class="linenos">88</span></a>    <span class="k">if</span> <span class="n">remaining</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="concat_messages-89"><a href="#concat_messages-89"><span class="linenos">89</span></a>        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;... and </span><span class="si">{</span><span class="n">remaining</span><span class="si">}</span><span class="s2"> more&quot;</span><span class="p">)</span>
+</span><span id="concat_messages-90"><a href="#concat_messages-90"><span class="linenos">90</span></a>    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -661,8 +683,8 @@
 
     </div>
     <a class="headerlink" href="#merge_errors"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="merge_errors-86"><a href="#merge_errors-86"><span class="linenos">86</span></a><span class="k">def</span> <span class="nf">merge_errors</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ParseError</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
-</span><span id="merge_errors-87"><a href="#merge_errors-87"><span class="linenos">87</span></a>    <span class="k">return</span> <span class="p">[</span><span class="n">e_dict</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">errors</span> <span class="k">for</span> <span class="n">e_dict</span> <span class="ow">in</span> <span class="n">error</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="merge_errors-93"><a href="#merge_errors-93"><span class="linenos">93</span></a><span class="k">def</span> <span class="nf">merge_errors</span><span class="p">(</span><span class="n">errors</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ParseError</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]]:</span>
+</span><span id="merge_errors-94"><a href="#merge_errors-94"><span class="linenos">94</span></a>    <span class="k">return</span> <span class="p">[</span><span class="n">e_dict</span> <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">errors</span> <span class="k">for</span> <span class="n">e_dict</span> <span class="ow">in</span> <span class="n">error</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span>
 </span></pre></div>
 
 

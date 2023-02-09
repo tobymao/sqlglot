@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
+    parameter_sql,
     rename_func,
     timestrtotime_sql,
     var_map_sql,
@@ -195,6 +196,11 @@ class Snowflake(Dialect):
             "SAMPLE": TokenType.TABLE_SAMPLE,
         }
 
+        SINGLE_TOKENS = {
+            **tokens.Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.PARAMETER,
+        }
+
     class Generator(generator.Generator):
         CREATE_TRANSIENT = True
 
@@ -208,7 +214,7 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
-            exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
+            exp.Parameter: parameter_sql,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),
             exp.StrPosition: lambda self, e: f"{self.normalize_func('POSITION')}({self.format_args(e.args.get('substr'), e.this, e.args.get('position'))})",

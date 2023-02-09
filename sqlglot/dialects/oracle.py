@@ -113,6 +113,3 @@ class Oracle(Dialect):
             "VARCHAR2": TokenType.VARCHAR,
             "NVARCHAR2": TokenType.NVARCHAR,
         }
-
-        SINGLE_TOKENS = tokens.Tokenizer.SINGLE_TOKENS.copy()
-        SINGLE_TOKENS.pop("$")

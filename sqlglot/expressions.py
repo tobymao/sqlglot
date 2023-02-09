@@ -2399,7 +2399,7 @@ class Star(Expression):
 
 
 class Parameter(Expression):
-    arg_types = {"this": True, "start": True, "end": False}
+    arg_types = {"this": True, "wrapped": False}
 
 
 class SessionParameter(Expression):

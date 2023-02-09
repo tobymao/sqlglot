@@ -3305,14 +3305,10 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_parameter(self) -> exp.Expression:
-        start = self._prev.text
-        if self._match(TokenType.L_BRACE):
-            start += "{"
-
+        wrapped = self._match(TokenType.L_BRACE)
         this = self._parse_var() or self._parse_primary()
-        end = "}" if self._match(TokenType.R_BRACE) else None
-
-        return self.expression(exp.Parameter, this=this, start=start, end=end)
+        self._match(TokenType.R_BRACE)
+        return self.expression(exp.Parameter, this=this, wrapped=wrapped)
 
     def _parse_placeholder(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.PLACEHOLDER_PARSERS):

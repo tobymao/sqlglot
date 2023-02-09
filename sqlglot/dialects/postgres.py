@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    parameter_sql,
     rename_func,
     str_position_sql,
     trim_sql,
@@ -239,6 +240,11 @@ class Postgres(Dialect):
             "CSTRING": TokenType.PSEUDO_TYPE,
         }
 
+        SINGLE_TOKENS = {
+            **tokens.Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.PARAMETER,
+        }
+
     class Parser(parser.Parser):
         STRICT_CAST = False
 
@@ -288,6 +294,7 @@ class Postgres(Dialect):
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
+            exp.Parameter: parameter_sql,
             exp.Pow: lambda self, e: self.binary(e, "^"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",

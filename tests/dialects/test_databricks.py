@@ -6,6 +6,7 @@ class TestDatabricks(Validator):
 
     def test_databricks(self):
         self.validate_identity("CREATE FUNCTION a.b(x INT) RETURNS INT RETURN x + 1")
+        self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
 
     def test_datediff(self):
         self.validate_all(

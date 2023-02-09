@@ -6,6 +6,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("$x")
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
 

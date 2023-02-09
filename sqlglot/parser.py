@@ -2738,6 +2738,9 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.ColumnDef, this=this, kind=kind, constraints=constraints)
 
+    def _parse_autoincrement(self) -> exp.Expression:
+        return exp.AutoIncrementColumnConstraint()
+
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
         this = self._parse_references()
 
@@ -2749,8 +2752,8 @@ class Parser(metaclass=_Parser):
 
         kind: exp.Expression
 
-        if self._match(TokenType.AUTO_INCREMENT):
-            kind = exp.AutoIncrementColumnConstraint()
+        if self._match_set((TokenType.AUTO_INCREMENT, TokenType.IDENTITY)):
+            kind = self._parse_autoincrement()
         elif self._match(TokenType.CHECK):
             constraint = self._parse_wrapped(self._parse_conjunction)
             kind = self.expression(exp.CheckColumnConstraint, this=constraint)

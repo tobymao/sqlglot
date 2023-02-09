@@ -178,6 +178,24 @@ class Snowflake(Dialect):
             ),
         }
 
+        # https://docs.snowflake.com/en/sql-reference/sql/create-table.html
+        def _parse_autoincrement(self) -> exp.Expression:
+            start = None
+            increment = None
+
+            if self._match(TokenType.L_PAREN, advance=False):
+                args = self._parse_wrapped_csv(self._parse_bitwise)
+                start = seq_get(args, 0)
+                increment = seq_get(args, 1)
+            elif self._match_text_seq("START"):
+                start = self._parse_bitwise()
+                self._match_text_seq("INCREMENT")
+                increment = self._parse_bitwise()
+
+            if start and increment:
+                return exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
+            return exp.AutoIncrementColumnConstraint()
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
@@ -189,6 +207,7 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
             "EXCLUDE": TokenType.EXCEPT,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "RENAME": TokenType.REPLACE,
@@ -295,3 +314,12 @@ class Snowflake(Dialect):
             kind = f" {kind_value}" if kind_value else ""
             this = f" {self.sql(expression, 'this')}"
             return f"DESCRIBE{kind}{this}"
+
+        def generatedasidentitycolumnconstraint_sql(
+            self, expression: exp.GeneratedAsIdentityColumnConstraint
+        ) -> str:
+            start = expression.args.get("start")
+            start = f" START {start}" if start else ""
+            increment = expression.args.get("increment")
+            increment = f" INCREMENT {increment}" if increment else ""
+            return f"AUTOINCREMENT{start}{increment}"

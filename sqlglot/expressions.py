@@ -939,7 +939,7 @@ class EncodeColumnConstraint(ColumnConstraintKind):
 
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
-    arg_types = {"this": True, "start": False, "increment": False}
+    arg_types = {"this": False, "start": False, "increment": False}
 
 
 class NotNullColumnConstraint(ColumnConstraintKind):

@@ -295,3 +295,12 @@ class Snowflake(Dialect):
             kind = f" {kind_value}" if kind_value else ""
             this = f" {self.sql(expression, 'this')}"
             return f"DESCRIBE{kind}{this}"
+
+        def generatedasidentitycolumnconstraint_sql(
+            self, expression: exp.GeneratedAsIdentityColumnConstraint
+        ) -> str:
+            start = expression.args.get("start")
+            start = f" START {start}" if start else ""
+            increment = expression.args.get("increment")
+            increment = f" INCREMENT {increment}" if increment else ""
+            return f"AUTOINCREMENT{start}{increment}"

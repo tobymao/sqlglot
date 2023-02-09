@@ -474,6 +474,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
         "AT TIME ZONE": TokenType.AT_TIME_ZONE,
+        "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,

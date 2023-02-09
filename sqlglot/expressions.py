@@ -179,7 +179,7 @@ class Expression(metaclass=_Expression):
         return self.text("alias")
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.text("this")
 
     @property
@@ -2390,7 +2390,7 @@ class Star(Expression):
     arg_types = {"except": False, "replace": False}
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "*"
 
     @property
@@ -2414,7 +2414,7 @@ class Null(Condition):
     arg_types: t.Dict[str, t.Any] = {}
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "NULL"
 
 
@@ -2648,7 +2648,9 @@ class Div(Binary):
 
 
 class Dot(Binary):
-    pass
+    @property
+    def name(self) -> str:
+        return self.expression.name
 
 
 class DPipe(Binary):
@@ -2965,7 +2967,7 @@ class Cast(Func):
     arg_types = {"this": True, "to": True}
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.this.name
 
     @property
@@ -4031,17 +4033,39 @@ def paren(expression) -> Paren:
 SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
-def to_identifier(alias, quoted=None) -> t.Optional[Identifier]:
-    if alias is None:
+@t.overload
+def to_identifier(name: None, quoted: t.Optional[bool] = None) -> None:
+    ...
+
+
+@t.overload
+def to_identifier(name: str | Identifier, quoted: t.Optional[bool] = None) -> Identifier:
+    ...
+
+
+def to_identifier(name, quoted=None):
+    """Builds an identifier.
+
+    Args:
+        name: The name to turn into an identifier.
+        quoted: Whether or not force quote the identifier.
+
+    Returns:
+        The identifier ast node.
+    """
+
+    if name is None:
         return None
-    if isinstance(alias, Identifier):
-        identifier = alias
-    elif isinstance(alias, str):
-        if quoted is None:
-            quoted = not re.match(SAFE_IDENTIFIER_RE, alias)
-        identifier = Identifier(this=alias, quoted=quoted)
+
+    if isinstance(name, Identifier):
+        identifier = name
+    elif isinstance(name, str):
+        identifier = Identifier(
+            this=name,
+            quoted=not re.match(SAFE_IDENTIFIER_RE, name) if quoted is None else quoted,
+        )
     else:
-        raise ValueError(f"Alias needs to be a string or an Identifier, got: {alias.__class__}")
+        raise ValueError(f"Name needs to be a string or an Identifier, got: {name.__class__}")
     return identifier
 
 
@@ -4116,20 +4140,31 @@ def to_column(sql_path: str | Column, **kwargs) -> Column:
     return Column(this=column_name, table=table_name, **kwargs)
 
 
-def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
-    """
-    Create an Alias expression.
+def alias_(
+    expression: str | Expression,
+    alias: str | Identifier,
+    table: bool | t.Sequence[str | Identifier] = False,
+    quoted: t.Optional[bool] = None,
+    dialect: DialectType = None,
+    **opts,
+):
+    """Create an Alias expression.
+
     Example:
         >>> alias_('foo', 'bar').sql()
         'foo AS bar'
 
+        >>> alias_('(select 1, 2)', 'bar', table=['a', 'b']).sql()
+        '(SELECT 1, 2) AS bar(a, b)'
+
     Args:
-        expression (str | Expression): the SQL code strings to parse.
+        expression: the SQL code strings to parse.
             If an Expression instance is passed, this is used as-is.
-        alias (str | Identifier): the alias name to use. If the name has
+        alias: the alias name to use. If the name has
             special characters it is quoted.
-        table (bool): create a table alias, default false
-        dialect (str): the dialect used to parse the input expression.
+        table: Whether or not to create a table alias, can also be a list of columns.
+        quoted: whether or not to quote the alias
+        dialect: the dialect used to parse the input expression.
         **opts: other options to use to parse the input expressions.
 
     Returns:
@@ -4139,8 +4174,14 @@ def alias_(expression, alias, table=False, dialect=None, quoted=None, **opts):
     alias = to_identifier(alias, quoted=quoted)
 
     if table:
-        expression.set("alias", TableAlias(this=alias))
-        return expression
+        table_alias = TableAlias(this=alias)
+        exp.set("alias", table_alias)
+
+        if not isinstance(table, bool):
+            for column in table:
+                table_alias.append("columns", to_identifier(column, quoted=quoted))
+
+        return exp
 
     # We don't set the "alias" arg for Window expressions, because that would add an IDENTIFIER node in
     # the AST, representing a "named_window" [1] construct (eg. bigquery). What we want is an ALIAS node

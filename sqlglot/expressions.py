@@ -937,6 +937,10 @@ class CommentColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class DateFormatColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True}
+
+
 class DefaultColumnConstraint(ColumnConstraintKind):
     pass
 
@@ -959,6 +963,10 @@ class PrimaryKeyColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
+    pass
+
+
+class UppercaseColumnConstraint(ColumnConstraintKind):
     pass
 
 

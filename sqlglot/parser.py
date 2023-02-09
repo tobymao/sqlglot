@@ -3449,7 +3449,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_alter(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.TABLE):
-            return None
+            return self._parse_as_command(self._prev)
 
         exists = self._parse_exists()
         this = self._parse_table(schema=True)

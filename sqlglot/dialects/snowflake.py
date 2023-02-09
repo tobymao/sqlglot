@@ -191,6 +191,7 @@ class Snowflake(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "EXCLUDE": TokenType.EXCEPT,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
+            "PUT": TokenType.COMMAND,
             "RENAME": TokenType.REPLACE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,

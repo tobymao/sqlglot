@@ -179,7 +179,7 @@ class Expression(metaclass=_Expression):
         return self.text("alias")
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.text("this")
 
     @property
@@ -2390,7 +2390,7 @@ class Star(Expression):
     arg_types = {"except": False, "replace": False}
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "*"
 
     @property
@@ -2414,7 +2414,7 @@ class Null(Condition):
     arg_types: t.Dict[str, t.Any] = {}
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "NULL"
 
 
@@ -2648,7 +2648,9 @@ class Div(Binary):
 
 
 class Dot(Binary):
-    pass
+    @property
+    def name(self) -> str:
+        return self.expression.name
 
 
 class DPipe(Binary):
@@ -2965,7 +2967,7 @@ class Cast(Func):
     arg_types = {"this": True, "to": True}
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.this.name
 
     @property

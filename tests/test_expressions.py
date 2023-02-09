@@ -124,6 +124,7 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(parse_one("x.*").name, "*")
         self.assertEqual(parse_one("NULL").name, "NULL")
+        self.assertEqual(parse_one("a.b.c").name, "c")
 
     def test_table_name(self):
         self.assertEqual(exp.table_name(parse_one("a", into=exp.Table)), "a")

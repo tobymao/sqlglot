@@ -18,7 +18,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "CREATE TEMPORARY TABLE x (y NUMBER AUTOINCREMENT(0, 1))",
             write={
-                "snowflake": "CREATE OR REPLACE TEMPORARY TABLE x (y DECIMAL AUTOINCREMENT START 0 INCREMENT 1)",
+                "snowflake": "CREATE TEMPORARY TABLE x (y DECIMAL AUTOINCREMENT START 0 INCREMENT 1)",
             },
         )
         self.validate_all(

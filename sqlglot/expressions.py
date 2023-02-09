@@ -4034,12 +4034,12 @@ SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 @t.overload
-def to_identifier(name: None, quoted: bool | None = None) -> None:
+def to_identifier(name: None, quoted: t.Optional[bool] = None) -> None:
     ...
 
 
 @t.overload
-def to_identifier(name: str | Identifier, quoted: bool | None = None) -> Identifier:
+def to_identifier(name: str | Identifier, quoted: t.Optional[bool] = None) -> Identifier:
     ...
 
 
@@ -4144,8 +4144,8 @@ def alias_(
     expression: str | Expression,
     alias: str | Identifier,
     table: bool | t.Sequence[str | Identifier] = False,
-    quoted: bool | None = None,
-    dialect: t.Optional[DialectType] = None,
+    quoted: t.Optional[bool] = None,
+    dialect: DialectType = None,
     **opts,
 ):
     """Create an Alias expression.

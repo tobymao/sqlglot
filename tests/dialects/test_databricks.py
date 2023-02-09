@@ -5,12 +5,7 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
-        self.validate_all(
-            "CREATE FUNCTION a.b(x INT) RETURNS INT RETURN x + 1",
-            write={
-                "databricks": "CREATE FUNCTION a.b(x INT) RETURNS INT AS RETURN x + 1",
-            },
-        )
+        self.validate_identity("CREATE FUNCTION a.b(x INT) RETURNS INT RETURN x + 1")
 
     def test_datediff(self):
         self.validate_all(

@@ -101,7 +101,7 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
         unnests = {
             unnest.alias
-            for unnest in (expression.args.get("from") or exp.From(expressions=[])).expressions
+            for unnest in expression.args.get("from", exp.From(expressions=[])).expressions
             if isinstance(unnest, exp.Unnest) and unnest.alias
         }
 

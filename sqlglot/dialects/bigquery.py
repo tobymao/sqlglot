@@ -93,6 +93,29 @@ def _create_sql(self: generator.Generator, expression: exp.Create) -> str:
     return self.create_sql(expression)
 
 
+def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
+    """Remove references to unnest table aliases since bigquery doesn't allow them.
+
+    These are added by the optimizer's qualify_column step.
+    """
+    if isinstance(expression, exp.Select):
+        unnests = {
+            unnest.alias
+            for unnest in expression.args.get("from", exp.From(expressions=[])).expressions
+            if isinstance(unnest, exp.Unnest) and unnest.alias
+        }
+
+        if unnests:
+            expression = expression.copy()
+
+            for select in expression.expressions:
+                for column in select.find_all(exp.Column):
+                    if column.table in unnests:
+                        column.set("table", None)
+
+    return expression
+
+
 class BigQuery(Dialect):
     unnest_column_only = True
     time_mapping = {
@@ -194,6 +217,9 @@ class BigQuery(Dialect):
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
+            exp.Select: transforms.preprocess(
+                [_unqualify_unnest], transforms.delegate("select_sql")
+            ),
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),

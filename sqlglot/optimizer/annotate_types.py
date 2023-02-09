@@ -255,12 +255,23 @@ class TypeAnnotator:
                 for name, source in scope.sources.items():
                     if not isinstance(source, Scope):
                         continue
-                    if isinstance(source.expression, exp.Values):
+                    if isinstance(source.expression, exp.UDTF):
+                        values = []
+
+                        if isinstance(source.expression, exp.Lateral):
+                            if isinstance(source.expression.this, exp.Explode):
+                                values = [source.expression.this.this]
+                        else:
+                            values = source.expression.expressions[0].expressions
+
+                        if not values:
+                            continue
+
                         selects[name] = {
                             alias: column
                             for alias, column in zip(
                                 source.expression.alias_column_names,
-                                source.expression.expressions[0].expressions,
+                                values,
                             )
                         }
                     else:
@@ -272,7 +283,7 @@ class TypeAnnotator:
                     source = scope.sources.get(col.table)
                     if isinstance(source, exp.Table):
                         col.type = self.schema.get_column_type(source, col)
-                    elif source:
+                    elif source and col.table in selects:
                         col.type = selects[col.table][col.name].type
                 # Then (possibly) annotate the remaining expressions in the scope
                 self._maybe_annotate(scope.expression)

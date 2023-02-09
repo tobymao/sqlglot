@@ -1,14 +1,20 @@
 # title: lateral
 # execute: false
 SELECT a, m FROM z LATERAL VIEW EXPLODE([1, 2]) q AS m;
+WITH "z_2" AS (
+  SELECT
+    "z"."a" AS "a"
+  FROM "z" AS "z"
+)
 SELECT
   "z"."a" AS "a",
   "q"."m" AS "m"
-FROM "z" AS "z"
+FROM "z_2" AS "z"
 LATERAL VIEW
 EXPLODE(ARRAY(1, 2)) q AS "m";
 
 # title: unnest
+# execute: false
 SELECT x FROM UNNEST([1, 2]) AS q(x, y);
 SELECT
   "q"."x" AS "x"

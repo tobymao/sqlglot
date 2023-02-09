@@ -199,15 +199,6 @@ SELECT x.a AS a FROM x AS x WHERE x.b IN (SELECT x.b AS b FROM y AS x);
 SELECT a FROM x AS i WHERE b IN (SELECT b FROM y AS j WHERE j.b IN (SELECT c FROM y AS k WHERE k.b = j.b));
 SELECT i.a AS a FROM x AS i WHERE i.b IN (SELECT j.b AS b FROM y AS j WHERE j.b IN (SELECT k.c AS c FROM y AS k WHERE k.b = j.b));
 
-# execute: false
-# dialect: bigquery
-SELECT aa FROM x, UNNEST(a) AS aa;
-SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
-
-# execute: false
-SELECT aa FROM x, UNNEST(a) AS t(aa);
-SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
-
 --------------------------------------
 -- Expand *
 --------------------------------------
@@ -302,3 +293,27 @@ SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z 
 # dialect: spark
 SELECT /*+ BROADCAST(y) */ x.b FROM x JOIN y ON x.b = y.b;
 SELECT /*+ BROADCAST(y) */ x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+--------------------------------------
+-- UDTF
+--------------------------------------
+# execute: false
+SELECT c FROM x LATERAL VIEW EXPLODE (a) AS c;
+SELECT _q_0.c AS c FROM x AS x LATERAL VIEW EXPLODE(x.a) _q_0 AS c;
+
+# execute: false
+SELECT c FROM xx LATERAL VIEW EXPLODE (a) AS c;
+SELECT _q_0.c AS c FROM xx AS xx LATERAL VIEW EXPLODE(xx.a) _q_0 AS c;
+
+# execute: false
+SELECT c FROM x LATERAL VIEW EXPLODE (a) t AS c;
+SELECT t.c AS c FROM x AS x LATERAL VIEW EXPLODE(x.a) t AS c;
+
+# execute: false
+SELECT aa FROM x, UNNEST(a) AS t(aa);
+SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
+
+# execute: false
+# dialect: bigquery
+SELECT aa FROM x, UNNEST(a) AS aa;
+SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;

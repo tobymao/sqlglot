@@ -9,6 +9,12 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
 
         self.validate_all(
+            "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
+            write={
+                "snowflake": "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMPNTZ))",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM xxx WHERE col ilike '%Don''t%'",
             write={
                 "snowflake": "SELECT * FROM xxx WHERE col ILIKE '%Don\\'t%'",

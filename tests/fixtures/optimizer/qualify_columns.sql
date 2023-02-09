@@ -104,14 +104,6 @@ SELECT x.a AS a FROM x AS x ORDER BY x.b;
 SELECT SUM(a) AS a FROM x ORDER BY SUM(a);
 SELECT SUM(x.a) AS a FROM x AS x ORDER BY SUM(x.a);
 
-# dialect: bigquery
-SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY row_num = 1;
-SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x QUALIFY row_num = 1;
-
-# dialect: bigquery
-SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY x.b ORDER BY x.a DESC) = 1;
-SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a DESC) = 1;
-
 # execute: false
 SELECT AGGREGATE(ARRAY(a, x.b), 0, (x, acc) -> x + acc + a) AS sum_agg FROM x;
 SELECT AGGREGATE(ARRAY(x.a, x.b), 0, (x, acc) -> x + acc + x.a) AS sum_agg FROM x AS x;
@@ -317,3 +309,19 @@ SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
 # dialect: bigquery
 SELECT aa FROM x, UNNEST(a) AS aa;
 SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
+
+--------------------------------------
+-- Window functions
+--------------------------------------
+
+-- ORDER BY in window function
+SELECT a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY a) AS row_num FROM x;
+SELECT x.a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a) AS row_num FROM x AS x;
+
+# dialect: bigquery
+SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY row_num = 1;
+SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x QUALIFY row_num = 1;
+
+# dialect: bigquery
+SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY x.b ORDER BY x.a DESC) = 1;
+SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a DESC) = 1;

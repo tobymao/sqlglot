@@ -222,6 +222,7 @@ class Snowflake(Dialect):
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
             exp.UnixToTime: _unix_to_time_sql,
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
         }
 
         TYPE_MAPPING = {

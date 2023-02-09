@@ -7,7 +7,32 @@ class TestSnowflake(Validator):
 
     def test_snowflake(self):
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
+        self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
 
+        self.validate_all(
+            "CREATE OR REPLACE TEMPORARY TABLE x (y NUMBER IDENTITY(0, 1))",
+            write={
+                "snowflake": "CREATE OR REPLACE TEMPORARY TABLE x (y DECIMAL AUTOINCREMENT START 0 INCREMENT 1)",
+            },
+        )
+        self.validate_all(
+            "CREATE TEMPORARY TABLE x (y NUMBER AUTOINCREMENT(0, 1))",
+            write={
+                "snowflake": "CREATE TEMPORARY TABLE x (y DECIMAL AUTOINCREMENT START 0 INCREMENT 1)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE x (y NUMBER IDENTITY START 0 INCREMENT 1)",
+            write={
+                "snowflake": "CREATE TABLE x (y DECIMAL AUTOINCREMENT START 0 INCREMENT 1)",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE foo ADD COLUMN id INT identity(1, 1)",
+            write={
+                "snowflake": "ALTER TABLE foo ADD COLUMN id INT AUTOINCREMENT START 1 INCREMENT 1",
+            },
+        )
         self.validate_all(
             "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
             write={

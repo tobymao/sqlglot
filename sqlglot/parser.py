@@ -2749,8 +2749,23 @@ class Parser(metaclass=_Parser):
 
         kind: exp.Expression
 
-        if self._match(TokenType.AUTO_INCREMENT):
-            kind = exp.AutoIncrementColumnConstraint()
+        if self._match_set((TokenType.AUTO_INCREMENT, TokenType.IDENTITY)):
+            start = None
+            increment = None
+
+            if self._match(TokenType.L_PAREN, advance=False):
+                args = self._parse_wrapped_csv(self._parse_bitwise)
+                start = seq_get(args, 0)
+                increment = seq_get(args, 1)
+            elif self._match_text_seq("START"):
+                start = self._parse_bitwise()
+                self._match_text_seq("INCREMENT")
+                increment = self._parse_bitwise()
+
+            if start and increment:
+                kind = exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
+            else:
+                kind = exp.AutoIncrementColumnConstraint()
         elif self._match(TokenType.CHECK):
             constraint = self._parse_wrapped(self._parse_conjunction)
             kind = self.expression(exp.CheckColumnConstraint, this=constraint)

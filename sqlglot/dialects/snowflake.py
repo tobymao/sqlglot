@@ -189,7 +189,6 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
             "EXCLUDE": TokenType.EXCEPT,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "RENAME": TokenType.REPLACE,

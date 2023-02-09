@@ -182,11 +182,6 @@ class Snowflake(Dialect):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
 
-        SINGLE_TOKENS = {
-            **tokens.Tokenizer.SINGLE_TOKENS,
-            "$": TokenType.PARAMETER,
-        }
-
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "EXCLUDE": TokenType.EXCEPT,

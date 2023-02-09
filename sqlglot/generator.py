@@ -1291,7 +1291,7 @@ class Generator:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
-        return f"@{self.sql(expression, 'this')}"
+        return f"{expression.args['start']}{self.sql(expression, 'this')}{expression.args.get('end') or ''}"
 
     def sessionparameter_sql(self, expression: exp.SessionParameter) -> str:
         this = self.sql(expression, "this")

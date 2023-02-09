@@ -412,6 +412,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
         "@": TokenType.PARAMETER,
+        "$": TokenType.PARAMETER,
         # used for breaking a var like x'y' but nothing else
         # the token type doesn't matter
         "'": TokenType.QUOTE,

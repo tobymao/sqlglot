@@ -206,6 +206,8 @@ class Postgres(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
+        QUOTES = ["'", "$$"]
+
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
@@ -235,11 +237,6 @@ class Postgres(Dialect):
             "TEMP": TokenType.TEMPORARY,
             "UUID": TokenType.UUID,
             "CSTRING": TokenType.PSEUDO_TYPE,
-        }
-        QUOTES = ["'", "$$"]
-        SINGLE_TOKENS = {
-            **tokens.Tokenizer.SINGLE_TOKENS,
-            "$": TokenType.PARAMETER,
         }
 
     class Parser(parser.Parser):

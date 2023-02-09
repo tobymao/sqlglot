@@ -180,20 +180,12 @@ class Snowflake(Dialect):
 
         # https://docs.snowflake.com/en/sql-reference/sql/create-table.html
         def _parse_autoincrement(self) -> exp.Expression:
-            start = None
-            increment = None
-
-            if self._match(TokenType.L_PAREN, advance=False):
-                args = self._parse_wrapped_csv(self._parse_bitwise)
-                start = seq_get(args, 0)
-                increment = seq_get(args, 1)
-            elif self._match_text_seq("START"):
+            if self._match_texts(("(", "START")):
                 start = self._parse_bitwise()
-                self._match_text_seq("INCREMENT")
+                self._match_texts((",", "INCREMENT"))
                 increment = self._parse_bitwise()
-
-            if start and increment:
                 return exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
+
             return exp.AutoIncrementColumnConstraint()
 
     class Tokenizer(tokens.Tokenizer):

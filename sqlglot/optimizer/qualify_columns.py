@@ -37,8 +37,21 @@ def qualify_columns(expression, schema):
         if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver)
             _qualify_outputs(scope)
-        _check_unknown_tables(scope)
 
+    return expression
+
+
+def validate_qualify_columns(expression):
+    """Raise an `OptimizeError` if any columns aren't qualified"""
+    unqualified_columns = []
+    for scope in traverse_scope(expression):
+        if isinstance(scope.expression, exp.Select):
+            unqualified_columns.extend(scope.unqualified_columns)
+            if scope.external_columns and not scope.is_udtf and not scope.is_correlated_subquery:
+                raise OptimizeError(f"Unknown table: {scope.external_columns[0].table}")
+
+    if unqualified_columns:
+        raise OptimizeError(f"Ambiguous columns: {unqualified_columns}")
     return expression
 
 
@@ -199,10 +212,6 @@ def _qualify_columns(scope, resolver):
         if not column_table:
             column_table = resolver.get_table(column_name)
 
-            if not scope.is_subquery and not scope.is_udtf:
-                if column_table is None:
-                    raise OptimizeError(f"Ambiguous column: {column_name}")
-
             # column_table can be a '' because bigquery unnest has no table alias
             if column_table:
                 column.set("table", exp.to_identifier(column_table))
@@ -231,10 +240,8 @@ def _qualify_columns(scope, resolver):
     for column in columns_missing_from_scope:
         column_table = resolver.get_table(column.name)
 
-        if column_table is None:
-            raise OptimizeError(f"Ambiguous column: {column.name}")
-
-        column.set("table", exp.to_identifier(column_table))
+        if column_table:
+            column.set("table", exp.to_identifier(column_table))
 
 
 def _expand_stars(scope, resolver):
@@ -320,11 +327,6 @@ def _qualify_outputs(scope):
         new_selections.append(selection)
 
     scope.expression.set("expressions", new_selections)
-
-
-def _check_unknown_tables(scope):
-    if scope.external_columns and not scope.is_udtf and not scope.is_correlated_subquery:
-        raise OptimizeError(f"Unknown table: {scope.external_columns[0].text('table')}")
 
 
 class _Resolver:

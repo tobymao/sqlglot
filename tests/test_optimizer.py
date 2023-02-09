@@ -369,6 +369,12 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.left.type.this, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type.this, exp.DataType.Type.INT)
 
+    def test_lateral_annotation(self):
+        expression = optimizer.optimize(
+            parse_one("SELECT c FROM (select 1 a) as x LATERAL VIEW EXPLODE (a) AS c")
+        ).expressions[0]
+        self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+
     def test_derived_tables_column_annotation(self):
         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
         sql = """

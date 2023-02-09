@@ -479,7 +479,15 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, exp.Union):
         yield from _traverse_union(scope)
     elif isinstance(scope.expression, exp.UDTF):
-        pass
+        parent = scope.expression.parent
+        if isinstance(parent, exp.Select):
+            for table in parent.args["from"].expressions:
+                if isinstance(table, exp.Table):
+                    scope.tables.append(table)
+                elif isinstance(table, exp.Subquery):
+                    scope.subqueries.append(table)
+            _add_table_sources(scope)
+            _traverse_subqueries(scope)
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
     else:

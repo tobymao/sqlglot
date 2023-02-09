@@ -41,7 +41,6 @@ class Redshift(Postgres):
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,  # type: ignore
-            "COPY": TokenType.COMMAND,
             "ENCODE": TokenType.ENCODE,
             "GEOMETRY": TokenType.GEOMETRY,
             "GEOGRAPHY": TokenType.GEOGRAPHY,

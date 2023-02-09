@@ -237,6 +237,8 @@ class Scope:
                 ancestor = column.find_ancestor(exp.Qualify, exp.Order, exp.Having, exp.Hint)
                 if (
                     not ancestor
+                    # Window functions can have an ORDER BY clause
+                    or not isinstance(ancestor.parent, exp.Select)
                     or column.table
                     or (column.name not in named_selects and not isinstance(ancestor, exp.Hint))
                 ):

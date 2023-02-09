@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import typing as t
 
 from sqlglot import exp
@@ -10,6 +11,8 @@ from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 logger = logging.getLogger("sqlglot")
+
+BACKSLASH_RE = re.compile(r"\\(?!b|f|n|r|t|0)")
 
 
 class Generator:
@@ -1128,7 +1131,7 @@ class Generator:
         text = expression.this or ""
         if expression.is_string:
             if self._replace_backslash:
-                text = text.replace("\\", "\\\\")
+                text = BACKSLASH_RE.sub(r"\\\\", text)
             text = text.replace(self.quote_end, self._escaped_quote_end)
             if self.pretty:
                 text = text.replace("\n", self.SENTINEL_LINE_BREAK)

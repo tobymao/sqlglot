@@ -2809,7 +2809,7 @@ class Parser(metaclass=_Parser):
                 exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
             )
         elif self._match_text_seq("UPPERCASE"):
-            kind = self.expression(exp.UppercaseColumnConstraint)
+            kind = exp.UppercaseColumnConstraint()
         elif self._match_text_seq("NOT", "CASESPECIFIC"):
             kind = self.expression(exp.CaseSpecificColumnConstraint, not_=True)
         elif self._match_text_seq("CASESPECIFIC"):

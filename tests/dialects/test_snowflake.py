@@ -8,6 +8,9 @@ class TestSnowflake(Validator):
     def test_snowflake(self):
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
+        self.validate_identity(
+            'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)'
+        )
 
         self.validate_all(
             "CREATE OR REPLACE TEMPORARY TABLE x (y NUMBER IDENTITY(0, 1))",

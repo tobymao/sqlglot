@@ -89,6 +89,9 @@ class Generator:
     # Wrap derived values in parens, usually standard but spark doesn't support it
     WRAP_DERIVED_VALUES = True
 
+    # Whether or not create function uses an AS before the def.
+    CREATE_FUNCTION_AS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -505,7 +508,12 @@ class Generator:
             properties_sql = self.sql(properties_exp, "properties")
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
-        expression_sql = f" AS{begin}{self.sep()}{expression_sql}" if expression_sql else ""
+        if expression_sql:
+            expression_sql = f"{begin}{self.sep()}{expression_sql}"
+
+            if self.CREATE_FUNCTION_AS or kind != "FUNCTION":
+                expression_sql = f" AS{expression_sql}"
+
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         transient = (
             " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""

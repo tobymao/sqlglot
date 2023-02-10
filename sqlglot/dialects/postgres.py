@@ -206,6 +206,8 @@ class Postgres(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
+        QUOTES = ["'", "$$"]
+
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
@@ -236,7 +238,7 @@ class Postgres(Dialect):
             "UUID": TokenType.UUID,
             "CSTRING": TokenType.PSEUDO_TYPE,
         }
-        QUOTES = ["'", "$$"]
+
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
             "$": TokenType.PARAMETER,
@@ -265,6 +267,7 @@ class Postgres(Dialect):
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
+        PARAMETER_TOKEN = "$"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

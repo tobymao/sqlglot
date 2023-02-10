@@ -481,9 +481,7 @@ class Parser(metaclass=_Parser):
 
     PLACEHOLDER_PARSERS = {
         TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder),
-        TokenType.PARAMETER: lambda self: self.expression(
-            exp.Parameter, this=self._parse_var() or self._parse_primary()
-        ),
+        TokenType.PARAMETER: lambda self: self._parse_parameter(),
         TokenType.COLON: lambda self: self.expression(exp.Placeholder, this=self._prev.text)
         if self._match_set((TokenType.NUMBER, TokenType.VAR))
         else None,
@@ -3305,6 +3303,12 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.STAR):
             return self.PRIMARY_PARSERS[TokenType.STAR](self, self._prev)
         return None
+
+    def _parse_parameter(self) -> exp.Expression:
+        wrapped = self._match(TokenType.L_BRACE)
+        this = self._parse_var() or self._parse_primary()
+        self._match(TokenType.R_BRACE)
+        return self.expression(exp.Parameter, this=this, wrapped=wrapped)
 
     def _parse_placeholder(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.PLACEHOLDER_PARSERS):

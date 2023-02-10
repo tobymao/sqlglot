@@ -1081,7 +1081,7 @@ class Parser(metaclass=_Parser):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
         if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
-            return self._parse_character_set(True)
+            return self._parse_character_set(default=True)
 
         if self._match_pair(TokenType.COMPOUND, TokenType.SORTKEY):
             return self._parse_sortkey(compound=True)
@@ -2804,6 +2804,18 @@ class Parser(metaclass=_Parser):
                     kind.set("increment", self._parse_bitwise())
 
                 self._match_r_paren()
+        elif self._match(TokenType.CHARACTER_SET):
+            kind = self.expression(
+                exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
+            )
+        elif self._match_text_seq("UPPERCASE"):
+            kind = exp.UppercaseColumnConstraint()
+        elif self._match_text_seq("NOT", "CASESPECIFIC"):
+            kind = self.expression(exp.CaseSpecificColumnConstraint, not_=True)
+        elif self._match_text_seq("CASESPECIFIC"):
+            kind = self.expression(exp.CaseSpecificColumnConstraint, not_=False)
+        elif self._match(TokenType.FORMAT):
+            kind = self.expression(exp.DateFormatColumnConstraint, this=self._parse_var_or_string())
         else:
             return this
 

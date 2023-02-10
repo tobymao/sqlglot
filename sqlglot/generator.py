@@ -76,6 +76,10 @@ class Generator:
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
+        exp.CaseSpecificColumnConstraint: lambda self, e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
+        exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
+        exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
+        exp.UppercaseColumnConstraint: lambda self, e: f"UPPERCASE",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed

@@ -917,6 +917,14 @@ class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class CaseSpecificColumnConstraint(ColumnConstraintKind):
+    arg_types = {"not_": True}
+
+
+class CharacterSetColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True}
+
+
 class CheckColumnConstraint(ColumnConstraintKind):
     pass
 
@@ -927,6 +935,10 @@ class CollateColumnConstraint(ColumnConstraintKind):
 
 class CommentColumnConstraint(ColumnConstraintKind):
     pass
+
+
+class DateFormatColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True}
 
 
 class DefaultColumnConstraint(ColumnConstraintKind):
@@ -951,6 +963,10 @@ class PrimaryKeyColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
+    pass
+
+
+class UppercaseColumnConstraint(ColumnConstraintKind):
     pass
 
 

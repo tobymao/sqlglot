@@ -217,11 +217,13 @@ class Snowflake(Dialect):
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),
-            exp.StrPosition: lambda self, e: f"{self.normalize_func('POSITION')}({self.format_args(e.args.get('substr'), e.this, e.args.get('position'))})",
+            exp.StrPosition: lambda self, e: self.func(
+                "POSITION", e.args.get("substr"), e.this, e.args.get("position")
+            ),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
-            exp.Trim: lambda self, e: f"TRIM({self.format_args(e.this, e.expression)})",
+            exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
             exp.UnixToTime: _unix_to_time_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
         }

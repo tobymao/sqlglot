@@ -43,7 +43,7 @@ def _add_date_sql(self, expression):
         else expression.expression
     )
     modified_increment = exp.Literal.number(modified_increment)
-    return f"{func}({self.format_args(expression.this, modified_increment.this)})"
+    return self.func(func, expression.this, modified_increment.this)
 
 
 def _date_diff_sql(self, expression):
@@ -66,7 +66,7 @@ def _property_sql(self, expression):
 
 
 def _str_to_unix(self, expression):
-    return f"UNIX_TIMESTAMP({self.format_args(expression.this, _time_format(self, expression))})"
+    return self.func("UNIX_TIMESTAMP", expression.this, _time_format(self, expression))
 
 
 def _str_to_date(self, expression):
@@ -312,7 +312,9 @@ class Hive(Dialect):
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,
-            exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.format_args(e.this, _time_format(self, e))})",
+            exp.UnixToStr: lambda self, e: self.func(
+                "FROM_UNIXTIME", e.this, _time_format(self, e)
+            ),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",

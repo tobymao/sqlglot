@@ -39,23 +39,6 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
     return func
 
 
-def if_sql(self: generator.Generator, expression: exp.If) -> str:
-    """
-    Drill requires backticks around certain SQL reserved words, IF being one of them,  This function
-    adds the backticks around the keyword IF.
-    Args:
-        self: The Drill dialect
-        expression: The input IF expression
-
-    Returns:  The expression with IF in backticks.
-
-    """
-    expressions = self.format_args(
-        expression.this, expression.args.get("true"), expression.args.get("false")
-    )
-    return f"`IF`({expressions})"
-
-
 def _str_to_date(self: generator.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
@@ -148,7 +131,7 @@ class Drill(Dialect):
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateToDi: lambda self, e: f"CAST(TO_DATE({self.sql(e, 'this')}, {Drill.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS VARCHAR), {Drill.dateint_format})",
-            exp.If: if_sql,
+            exp.If: lambda self, e: f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})",
             exp.ILike: lambda self, e: f" {self.sql(e, 'this')} `ILIKE` {self.sql(e, 'expression')}",
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",

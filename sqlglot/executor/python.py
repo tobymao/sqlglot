@@ -376,7 +376,7 @@ def _rename(self, e):
             this = self.sql(e, "this")
             this = f"{this}, " if this else ""
             return f"{e.key.upper()}({this}{self.expressions(e)})"
-        return f"{e.key.upper()}({self.format_args(*e.args.values())})"
+        return self.func(e.key, *e.args.values())
     except Exception as ex:
         raise Exception(f"Could not rename {repr(e)}") from ex
 

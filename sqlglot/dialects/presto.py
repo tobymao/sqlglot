@@ -52,7 +52,7 @@ def _initcap_sql(self, expression):
 
 def _decode_sql(self, expression):
     _ensure_utf8(expression.args.get("charset"))
-    return f"FROM_UTF8({self.format_args(expression.this, expression.args.get('replace'))})"
+    return self.func("FROM_UTF8", expression.this, expression.args.get("replace"))
 
 
 def _encode_sql(self, expression):
@@ -65,8 +65,7 @@ def _no_sort_array(self, expression):
         comparator = "(a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END"
     else:
         comparator = None
-    args = self.format_args(expression.this, comparator)
-    return f"ARRAY_SORT({args})"
+    return self.func("ARRAY_SORT", expression.this, comparator)
 
 
 def _schema_sql(self, expression):
@@ -125,7 +124,7 @@ def _sequence_sql(self, expression):
         else:
             start = exp.Cast(this=start, to=to)
 
-    return f"SEQUENCE({self.format_args(start, end, step)})"
+    return self.func("SEQUENCE", start, end, step)
 
 
 def _ensure_utf8(charset):

@@ -92,7 +92,7 @@ def _parse_eomonth(args):
 
 def generate_date_delta_with_unit_sql(self, e):
     func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
-    return f"{func}({self.format_args(e.text('unit'), e.expression, e.this)})"
+    return self.func(func, e.text("unit"), e.expression, e.this)
 
 
 def _format_sql(self, e):
@@ -101,7 +101,7 @@ def _format_sql(self, e):
         if isinstance(e, exp.NumberToStr)
         else exp.Literal.string(format_time(e.text("format"), TSQL.inverse_time_mapping))
     )
-    return f"FORMAT({self.format_args(e.this, fmt)})"
+    return self.func("FORMAT", e.this, fmt)
 
 
 def _string_agg_sql(self, e):

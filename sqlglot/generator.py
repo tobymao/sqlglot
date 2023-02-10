@@ -1796,7 +1796,10 @@ class Generator:
             else:
                 args.append(arg_value)
 
-        return f"{self.normalize_func(expression.sql_name())}({self.format_args(*args)})"
+        return self.func(expression.sql_name(), *args)
+
+    def func(self, name: str, *args: t.Optional[exp.Expression | str]) -> str:
+        return f"{self.normalize_func(name)}({self.format_args(*args)})"
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
         arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)

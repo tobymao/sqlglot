@@ -58,17 +58,17 @@ def _date_diff_sql(self, expression):
     age = f"AGE({end}, {start})"
 
     if unit == "WEEK":
-        extract = f"EXTRACT(year FROM {age}) * 48 + EXTRACT(month FROM {age}) * 4 + EXTRACT(day FROM {age}) / 7"
+        unit = f"EXTRACT(year FROM {age}) * 48 + EXTRACT(month FROM {age}) * 4 + EXTRACT(day FROM {age}) / 7"
     elif unit == "MONTH":
-        extract = f"EXTRACT(year FROM {age}) * 12 + EXTRACT(month FROM {age})"
+        unit = f"EXTRACT(year FROM {age}) * 12 + EXTRACT(month FROM {age})"
     elif unit == "QUARTER":
-        extract = f"EXTRACT(year FROM {age}) * 4 + EXTRACT(month FROM {age}) / 3"
+        unit = f"EXTRACT(year FROM {age}) * 4 + EXTRACT(month FROM {age}) / 3"
     elif unit == "YEAR":
-        extract = f"EXTRACT(year FROM {age})"
+        unit = f"EXTRACT(year FROM {age})"
     else:
-        self.unsupported(f"Unsupported DATEDIFF unit {unit}")
+        unit = age
 
-    return f"CAST({extract} AS BIGINT)"
+    return f"CAST({unit} AS BIGINT)"
 
 
 def _substring_sql(self, expression):

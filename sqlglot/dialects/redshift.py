@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.postgres import Postgres
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -19,6 +20,11 @@ class Redshift(Postgres):
     class Parser(Postgres.Parser):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,  # type: ignore
+            "DATEDIFF": lambda args: exp.DateDiff(
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
+            ),
             "DECODE": exp.Matches.from_arg_list,
             "NVL": exp.Coalesce.from_arg_list,
         }
@@ -68,6 +74,9 @@ class Redshift(Postgres):
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,  # type: ignore
             **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
+            exp.DateDiff: lambda self, e: self.func(
+                "DATEDIFF", e.args.get("unit") or "day", e.expression, e.this
+            ),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),

@@ -72,6 +72,13 @@ class TestRedshift(Validator):
                 "postgres": "COALESCE(a, b, c, d)",
             },
         )
+        self.validate_all(
+            "DATEDIFF(d, a, b)",
+            write={
+                "redshift": "DATEDIFF(d, a, b)",
+                "presto": "DATE_DIFF(d, a, b)",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity(

@@ -514,6 +514,9 @@ class Parser(metaclass=_Parser):
     PROPERTY_PARSERS = {
         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
         "CHARACTER SET": lambda self: self._parse_character_set(),
+        "CLUSTER BY": lambda self: self.expression(
+            exp.Cluster, expressions=self._parse_csv(self._parse_ordered)
+        ),
         "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED BY": lambda self: self._parse_partitioned_by(),

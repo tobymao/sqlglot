@@ -128,6 +128,7 @@ class Generator:
         exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.ChecksumProperty: exp.Properties.Location.POST_NAME,
         exp.CollateProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
+        exp.Cluster: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
         exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
@@ -1883,6 +1884,7 @@ class Generator:
         return self.indent(result_sql, skip_first=False) if indent else result_sql
 
     def op_expressions(self, op: str, expression: exp.Expression, flat: bool = False) -> str:
+        flat = flat or isinstance(expression.parent, exp.Properties)
         expressions_sql = self.expressions(expression, flat=flat)
         if flat:
             return f"{op} {expressions_sql}"

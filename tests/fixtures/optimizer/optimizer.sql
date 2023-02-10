@@ -375,3 +375,18 @@ SELECT
 FROM "x" AS "x"
 RIGHT JOIN "y_2" AS "y"
   ON "x"."a" = "y"."b";
+
+
+# title: lateral column alias reference
+SELECT x.a + 1 AS c, c + 1 AS d FROM x;
+SELECT
+  "x"."a" + 1 AS "c",
+  "x"."a" + 2 AS "d"
+FROM "x" AS "x";
+
+# title: column reference takes priority over lateral column alias reference
+SELECT x.a + 1 AS b, b + 1 AS c FROM x;
+SELECT
+  "x"."a" + 1 AS "b",
+  "x"."b" + 1 AS "c"
+FROM "x" AS "x";

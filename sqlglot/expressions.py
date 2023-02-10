@@ -1454,6 +1454,16 @@ class IsolatedLoadingProperty(Property):
     }
 
 
+class LockingProperty(Property):
+    arg_types = {
+        "this": False,
+        "what": True,
+        "for_or_in": True,
+        "lock_type": True,
+        "override": False,
+    }
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 
@@ -1479,12 +1489,25 @@ class Properties(Expression):
 
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}
 
+    # CREATE property locations
+    # Form: schema specified
+    #   create [POST_CREATE]
+    #     table a [POST_NAME]
+    #     (b int) [POST_SCHEMA_ROOT] with ([POST_SCHEMA_WITH])
+    #     index (b) [POST_INDEX]
+    #
+    # Form: alias selection
+    #   create [POST_CREATE]
+    #     table a [POST_NAME]
+    #     as [POST_ALIAS] (select * from b)
+    #     index (c) [POST_INDEX]
     class Location(AutoName):
         POST_CREATE = auto()
-        PRE_SCHEMA = auto()
-        POST_INDEX = auto()
+        POST_NAME = auto()
         POST_SCHEMA_ROOT = auto()
         POST_SCHEMA_WITH = auto()
+        POST_ALIAS = auto()
+        POST_INDEX = auto()
         UNSUPPORTED = auto()
 
     @classmethod

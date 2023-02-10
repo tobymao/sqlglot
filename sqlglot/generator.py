@@ -121,29 +121,30 @@ class Generator:
     PARAMETER_TOKEN = "@"
 
     PROPERTIES_LOCATION = {
-        exp.AfterJournalProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.AfterJournalProperty: exp.Properties.Location.POST_NAME,
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
         exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
-        exp.BlockCompressionProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.BlockCompressionProperty: exp.Properties.Location.POST_NAME,
         exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
-        exp.ChecksumProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.ChecksumProperty: exp.Properties.Location.POST_NAME,
         exp.CollateProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
-        exp.DataBlocksizeProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
         exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.ExecuteAsProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
-        exp.FallbackProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA_WITH,
-        exp.FreespaceProperty: exp.Properties.Location.PRE_SCHEMA,
-        exp.IsolatedLoadingProperty: exp.Properties.Location.PRE_SCHEMA,
-        exp.JournalProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
+        exp.IsolatedLoadingProperty: exp.Properties.Location.POST_NAME,
+        exp.JournalProperty: exp.Properties.Location.POST_NAME,
         exp.LanguageProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.LikeProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         exp.LocationProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
-        exp.LogProperty: exp.Properties.Location.PRE_SCHEMA,
-        exp.MergeBlockRatioProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.LockingProperty: exp.Properties.Location.POST_ALIAS,
+        exp.LogProperty: exp.Properties.Location.POST_NAME,
+        exp.MergeBlockRatioProperty: exp.Properties.Location.POST_NAME,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA_WITH,
         exp.Property: exp.Properties.Location.POST_SCHEMA_WITH,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
@@ -155,7 +156,7 @@ class Generator:
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
         exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA_WITH,
         exp.VolatilityProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
-        exp.WithJournalTableProperty: exp.Properties.Location.PRE_SCHEMA,
+        exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
@@ -505,10 +506,10 @@ class Generator:
                     ]
                 ),
             )
-        if kind == "TABLE" and properties_locs.get(exp.Properties.Location.PRE_SCHEMA):
+        if kind == "TABLE" and properties_locs.get(exp.Properties.Location.POST_NAME):
             this_name = self.sql(expression.this, "this")
             this_properties = self.properties(
-                exp.Properties(expressions=properties_locs[exp.Properties.Location.PRE_SCHEMA]),
+                exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_NAME]),
                 wrapped=False,
             )
             this_schema = f"({self.expressions(expression.this)})"
@@ -523,7 +524,16 @@ class Generator:
             expression_sql = f"{begin}{self.sep()}{expression_sql}"
 
             if self.CREATE_FUNCTION_AS or kind != "FUNCTION":
-                expression_sql = f" AS{expression_sql}"
+                if properties_locs.get(exp.Properties.Location.POST_ALIAS):
+                    postalias_props_sql = self.properties(
+                        exp.Properties(
+                            expressions=properties_locs[exp.Properties.Location.POST_ALIAS]
+                        ),
+                        wrapped=False,
+                    )
+                    expression_sql = f" AS {postalias_props_sql}{expression_sql}"
+                else:
+                    expression_sql = f" AS{expression_sql}"
 
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         transient = (
@@ -786,8 +796,8 @@ class Generator:
 
         for p in properties.expressions:
             p_loc = self.PROPERTIES_LOCATION[p.__class__]
-            if p_loc == exp.Properties.Location.PRE_SCHEMA:
-                properties_locs[exp.Properties.Location.PRE_SCHEMA].append(p)
+            if p_loc == exp.Properties.Location.POST_NAME:
+                properties_locs[exp.Properties.Location.POST_NAME].append(p)
             elif p_loc == exp.Properties.Location.POST_INDEX:
                 properties_locs[exp.Properties.Location.POST_INDEX].append(p)
             elif p_loc == exp.Properties.Location.POST_SCHEMA_ROOT:
@@ -796,6 +806,8 @@ class Generator:
                 properties_locs[exp.Properties.Location.POST_SCHEMA_WITH].append(p)
             elif p_loc == exp.Properties.Location.POST_CREATE:
                 properties_locs[exp.Properties.Location.POST_CREATE].append(p)
+            elif p_loc == exp.Properties.Location.POST_ALIAS:
+                properties_locs[exp.Properties.Location.POST_ALIAS].append(p)
             elif p_loc == exp.Properties.Location.UNSUPPORTED:
                 self.unsupported(f"Unsupported property {p.key}")
 
@@ -908,6 +920,15 @@ class Generator:
         elif expression.args.get("for_none"):
             for_ = " FOR NONE"
         return f"WITH{no}{concurrent} ISOLATED LOADING{for_}"
+
+    def lockingproperty_sql(self, expression: exp.LockingProperty) -> str:
+        what = expression.args.get("what")
+        this = expression.args.get("this")
+        this = f" {this}" if this else ""
+        for_or_in = expression.args.get("for_or_in")
+        lock_type = expression.args.get("lock_type")
+        override = " OVERRIDE" if expression.args.get("override") else ""
+        return f"LOCKING {what}{this} {for_or_in} {lock_type}{override}"
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")

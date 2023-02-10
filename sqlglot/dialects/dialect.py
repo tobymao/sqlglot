@@ -215,24 +215,19 @@ DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
 
 
 def rename_func(name: str) -> t.Callable[[Generator, exp.Expression], str]:
-    def _rename(self, expression):
-        args = flatten(expression.args.values())
-        return f"{self.normalize_func(name)}({self.format_args(*args)})"
-
-    return _rename
+    return lambda self, expression: self.func(name, *flatten(expression.args.values()))
 
 
 def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -> str:
     if expression.args.get("accuracy"):
         self.unsupported("APPROX_COUNT_DISTINCT does not support accuracy")
-    return f"APPROX_COUNT_DISTINCT({self.format_args(expression.this)})"
+    return self.func("APPROX_COUNT_DISTINCT", expression.this)
 
 
 def if_sql(self: Generator, expression: exp.If) -> str:
-    expressions = self.format_args(
-        expression.this, expression.args.get("true"), expression.args.get("false")
+    return self.func(
+        "IF", expression.this, expression.args.get("true"), expression.args.get("false")
     )
-    return f"IF({expressions})"
 
 
 def arrow_json_extract_sql(self: Generator, expression: exp.JSONExtract | exp.JSONBExtract) -> str:
@@ -318,13 +313,13 @@ def var_map_sql(
 
     if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
         self.unsupported("Cannot convert array columns into map.")
-        return f"{map_func_name}({self.format_args(keys, values)})"
+        return self.func(map_func_name, keys, values)
 
     args = []
     for key, value in zip(keys.expressions, values.expressions):
         args.append(self.sql(key))
         args.append(self.sql(value))
-    return f"{map_func_name}({self.format_args(*args)})"
+    return self.func(map_func_name, *args)
 
 
 def format_time_lambda(
@@ -400,10 +395,9 @@ def locate_to_strposition(args: t.Sequence) -> exp.Expression:
 
 
 def strposition_to_locate_sql(self: Generator, expression: exp.StrPosition) -> str:
-    args = self.format_args(
-        expression.args.get("substr"), expression.this, expression.args.get("position")
+    return self.func(
+        "LOCATE", expression.args.get("substr"), expression.this, expression.args.get("position")
     )
-    return f"LOCATE({args})"
 
 
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:

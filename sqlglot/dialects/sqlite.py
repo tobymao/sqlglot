@@ -39,7 +39,7 @@ def _date_add_sql(self, expression):
     modifier = expression.name if modifier.is_string else self.sql(modifier)
     unit = expression.args.get("unit")
     modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
-    return f"{self.normalize_func('DATE')}({self.format_args(expression.this, modifier)})"
+    return self.func("DATE", expression.this, modifier)
 
 
 class SQLite(Dialect):

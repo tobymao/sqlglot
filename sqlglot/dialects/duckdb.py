@@ -117,7 +117,7 @@ class DuckDB(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Array: lambda self, e: f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
+            exp.Array: lambda self, e: self.func("ARRAY", e.expressions[0])
             if isinstance(seq_get(e.expressions, 0), exp.Select)
             else rename_func("LIST_VALUE")(self, e),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
@@ -125,7 +125,9 @@ class DuckDB(Dialect):
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.DataType: _datatype_sql,
             exp.DateAdd: _date_add,
-            exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.format_args(e.args.get("unit") or "'day'", e.expression, e.this)})""",
+            exp.DateDiff: lambda self, e: self.func(
+                "DATE_DIFF", e.args.get("unit") or exp.Literal.string("day"), e.expression, e.this
+            ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.dateint_format}) AS DATE)",

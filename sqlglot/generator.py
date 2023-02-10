@@ -59,10 +59,14 @@ class Generator:
     """
 
     TRANSFORMS = {
-        exp.DateAdd: lambda self, e: f"DATE_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
-        exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
-        exp.TsOrDsAdd: lambda self, e: f"TS_OR_DS_ADD({self.format_args(e.this, e.expression, e.args.get('unit'))})",
-        exp.VarMap: lambda self, e: f"MAP({self.format_args(e.args['keys'], e.args['values'])})",
+        exp.DateAdd: lambda self, e: self.func(
+            "DATE_ADD", e.this, e.expression, e.args.get("unit")
+        ),
+        exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
+        exp.TsOrDsAdd: lambda self, e: self.func(
+            "TS_OR_DS_ADD", e.this, e.expression, e.args.get("unit")
+        ),
+        exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'this')}",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
@@ -1448,11 +1452,11 @@ class Generator:
         trim_type = self.sql(expression, "position")
 
         if trim_type == "LEADING":
-            return f"{self.normalize_func('LTRIM')}({self.format_args(expression.this)})"
+            return self.func("LTRIM", expression.this)
         elif trim_type == "TRAILING":
-            return f"{self.normalize_func('RTRIM')}({self.format_args(expression.this)})"
+            return self.func("RTRIM", expression.this)
         else:
-            return f"{self.normalize_func('TRIM')}({self.format_args(expression.this, expression.expression)})"
+            return self.func("TRIM", expression.this, expression.expression)
 
     def concat_sql(self, expression: exp.Concat) -> str:
         if len(expression.expressions) == 1:
@@ -1534,8 +1538,7 @@ class Generator:
         return f"REFERENCES {this}{expressions}{options}"
 
     def anonymous_sql(self, expression: exp.Anonymous) -> str:
-        args = self.format_args(*expression.expressions)
-        return f"{self.normalize_func(self.sql(expression, 'this'))}({args})"
+        return self.func(expression.name, *expression.expressions)
 
     def paren_sql(self, expression: exp.Paren) -> str:
         if isinstance(expression.unnest(), exp.Select):

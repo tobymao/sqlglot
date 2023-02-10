@@ -32,7 +32,7 @@ jobs:
         git commit -m "CI: Auto-generated documentation" -a | exit 0
       if: ${{ matrix.python-version == '3.10' && github.event_name == 'push' }}
     - name: Push changes
-      if: ${{ matrix.python-version == '3.10' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+      if: ${{ matrix.python-version == '3.10' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}

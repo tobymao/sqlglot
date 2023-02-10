@@ -97,8 +97,8 @@ class Generator:
     # Wrap derived values in parens, usually standard but spark doesn't support it
     WRAP_DERIVED_VALUES = True
 
-    # Whether or not create function uses an AS before the def.
-    CREATE_FUNCTION_AS = True
+    # Whether or not create function uses an AS before the RETURN
+    CREATE_FUNCTION_RETURN_AS = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -524,7 +524,7 @@ class Generator:
         if expression_sql:
             expression_sql = f"{begin}{self.sep()}{expression_sql}"
 
-            if self.CREATE_FUNCTION_AS or kind != "FUNCTION":
+            if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
                 if properties_locs.get(exp.Properties.Location.POST_ALIAS):
                     postalias_props_sql = self.properties(
                         exp.Properties(

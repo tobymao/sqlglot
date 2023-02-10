@@ -182,11 +182,6 @@ class Snowflake(Dialect):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
 
-        SINGLE_TOKENS = {
-            **tokens.Tokenizer.SINGLE_TOKENS,
-            "$": TokenType.PARAMETER,
-        }
-
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "EXCLUDE": TokenType.EXCEPT,
@@ -201,8 +196,14 @@ class Snowflake(Dialect):
             "SAMPLE": TokenType.TABLE_SAMPLE,
         }
 
+        SINGLE_TOKENS = {
+            **tokens.Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.PARAMETER,
+        }
+
     class Generator(generator.Generator):
         CREATE_TRANSIENT = True
+        PARAMETER_TOKEN = "$"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
@@ -214,7 +215,6 @@ class Snowflake(Dialect):
             exp.If: rename_func("IFF"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
-            exp.Parameter: lambda self, e: f"${self.sql(e, 'this')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),
             exp.StrPosition: lambda self, e: f"{self.normalize_func('POSITION')}({self.format_args(e.args.get('substr'), e.this, e.args.get('position'))})",

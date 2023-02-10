@@ -4,6 +4,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import parse_date_delta
 from sqlglot.dialects.spark import Spark
 from sqlglot.dialects.tsql import generate_date_delta_with_unit_sql
+from sqlglot.tokens import TokenType
 
 
 class Databricks(Spark):
@@ -20,4 +21,12 @@ class Databricks(Spark):
             **Spark.Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
+        }
+
+        PARAMETER_TOKEN = "$"
+
+    class Tokenizer(Spark.Tokenizer):
+        SINGLE_TOKENS = {
+            **Spark.Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.PARAMETER,
         }

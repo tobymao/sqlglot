@@ -163,7 +163,10 @@ class TestOptimizer(unittest.TestCase):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
             with self.subTest(sql):
                 with self.assertRaises((OptimizeError, SchemaError)):
-                    optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=self.schema)
+                    expression = optimizer.qualify_columns.qualify_columns(
+                        parse_one(sql), schema=self.schema
+                    )
+                    optimizer.qualify_columns.validate_qualify_columns(expression)
 
     def test_lower_identities(self):
         self.check_file("lower_identities", optimizer.lower_identities.lower_identities)
@@ -189,6 +192,14 @@ class TestOptimizer(unittest.TestCase):
 
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
+
+    def test_expand_laterals(self):
+        self.check_file(
+            "expand_laterals",
+            optimizer.expand_laterals.expand_laterals,
+            pretty=True,
+            execute=True,
+        )
 
     def test_expand_multi_table_selects(self):
         self.check_file(

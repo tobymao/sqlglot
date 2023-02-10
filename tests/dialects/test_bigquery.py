@@ -228,6 +228,12 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "CREATE TABLE db.example_table (x int) PARTITION BY x cluster by x",
+            write={
+                "bigquery": "CREATE TABLE db.example_table (x INT64) PARTITION BY x CLUSTER BY x",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
             write={
                 "bigquery": "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",

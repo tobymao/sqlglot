@@ -226,6 +226,7 @@ class BigQuery(Dialect):
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Values: _derived_table_values_to_unnest,
             exp.ReturnsProperty: _returnsproperty_sql,
@@ -250,6 +251,10 @@ class BigQuery(Dialect):
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.NVARCHAR: "STRING",
+        }
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA_ROOT,
         }
 
         EXPLICIT_UNION = True

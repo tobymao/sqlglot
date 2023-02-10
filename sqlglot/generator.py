@@ -110,6 +110,8 @@ class Generator:
 
     STRUCT_DELIMITER = ("<", ">")
 
+    PARAMETER_TOKEN = "@"
+
     PROPERTIES_LOCATION = {
         exp.AfterJournalProperty: exp.Properties.Location.PRE_SCHEMA,
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
@@ -1291,7 +1293,9 @@ class Generator:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
-        return f"@{self.sql(expression, 'this')}"
+        this = self.sql(expression, "this")
+        this = f"{{{this}}}" if expression.args.get("wrapped") else f"{this}"
+        return f"{self.PARAMETER_TOKEN}{this}"
 
     def sessionparameter_sql(self, expression: exp.SessionParameter) -> str:
         this = self.sql(expression, "this")

@@ -429,8 +429,3 @@ def trim_sql(self: Generator, expression: exp.Trim) -> str:
     from_part = "FROM " if trim_type or remove_chars else ""
     collation = f" COLLATE {collation}" if collation else ""
     return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
-
-
-def parameter_sql(self, expression: exp.Parameter) -> str:
-    this = self.sql(expression, "this")
-    return f"${{{this}}}" if expression.args.get("wrapped") else f"${this}"

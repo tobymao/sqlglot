@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
-    parameter_sql,
     rename_func,
     str_position_sql,
     trim_sql,
@@ -268,6 +267,7 @@ class Postgres(Dialect):
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
+        PARAMETER_TOKEN = "$"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
@@ -294,7 +294,6 @@ class Postgres(Dialect):
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
-            exp.Parameter: parameter_sql,
             exp.Pow: lambda self, e: self.binary(e, "^"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",

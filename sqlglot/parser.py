@@ -1019,10 +1019,10 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.ALIAS)
 
             # exp.Properties.Location.POST_ALIAS
-            if (
-                not self._match(TokenType.SELECT, advance=False)
-                and not self._match(TokenType.WITH, advance=False)
-                and not self._match(TokenType.L_PAREN, advance=False)
+            if not (
+                self._match(TokenType.SELECT, advance=False)
+                or self._match(TokenType.WITH, advance=False)
+                or self._match(TokenType.L_PAREN, advance=False)
             ):
                 temp_properties = self._parse_properties()
                 if properties and temp_properties:

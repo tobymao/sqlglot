@@ -157,7 +157,7 @@ class Spark(Hive):
         TRANSFORMS.pop(exp.ILike)
 
         WRAP_DERIVED_VALUES = False
-        CREATE_FUNCTION_AS = False
+        CREATE_FUNCTION_RETURN_AS = False
 
         def cast_sql(self, expression: exp.Cast) -> str:
             if isinstance(expression.this, exp.Cast) and expression.this.is_type(

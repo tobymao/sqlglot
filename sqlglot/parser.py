@@ -1009,7 +1009,7 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_schema(this=table_parts)
 
-            # exp.Properties.Location.POST_SCHEMA and POST_SCHEMA_WITH
+            # exp.Properties.Location.POST_SCHEMA and POST_WITH
             temp_properties = self._parse_properties()
             if properties and temp_properties:
                 properties.expressions.append(temp_properties.expressions)
@@ -1304,22 +1304,27 @@ class Parser(metaclass=_Parser):
 
     def _parse_locking(self) -> exp.Expression:
         if self._match(TokenType.TABLE):
-            what = "TABLE"
+            kind = "TABLE"
         elif self._match(TokenType.VIEW):
-            what = "VIEW"
+            kind = "VIEW"
         elif self._match(TokenType.ROW):
-            what = "ROW"
+            kind = "ROW"
         elif self._match_text_seq("DATABASE"):
-            what = "DATABASE"
+            kind = "DATABASE"
+        else:
+            kind = None
 
-        this = None
-        if what in ("DATABASE", "TABLE", "VIEW"):
+        if kind in ("DATABASE", "TABLE", "VIEW"):
             this = self._parse_table_parts()
+        else:
+            this = None
 
         if self._match(TokenType.FOR):
             for_or_in = "FOR"
         elif self._match(TokenType.IN):
             for_or_in = "IN"
+        else:
+            for_or_in = None
 
         if self._match_text_seq("ACCESS"):
             lock_type = "ACCESS"
@@ -1333,15 +1338,15 @@ class Parser(metaclass=_Parser):
             lock_type = "WRITE"
         elif self._match_text_seq("CHECKSUM"):
             lock_type = "CHECKSUM"
+        else:
+            lock_type = None
 
-        override = None
-        if self._match_text_seq("OVERRIDE"):
-            override = True
+        override = self._match_text_seq("OVERRIDE")
 
         return self.expression(
             exp.LockingProperty,
             this=this,
-            what=what,
+            kind=kind,
             for_or_in=for_or_in,
             lock_type=lock_type,
             override=override,

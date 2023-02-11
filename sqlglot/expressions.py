@@ -1457,7 +1457,7 @@ class IsolatedLoadingProperty(Property):
 class LockingProperty(Property):
     arg_types = {
         "this": False,
-        "what": True,
+        "kind": True,
         "for_or_in": True,
         "lock_type": True,
         "override": False,

@@ -923,13 +923,12 @@ class Generator:
         return f"WITH{no}{concurrent} ISOLATED LOADING{for_}"
 
     def lockingproperty_sql(self, expression: exp.LockingProperty) -> str:
-        what = expression.args.get("what")
-        this = expression.args.get("this")
-        this = f" {this}" if this else ""
+        kind = expression.args.get("kind")
+        this: str = f" {this}" if expression.this else ""
         for_or_in = expression.args.get("for_or_in")
         lock_type = expression.args.get("lock_type")
         override = " OVERRIDE" if expression.args.get("override") else ""
-        return f"LOCKING {what}{this} {for_or_in} {lock_type}{override}"
+        return f"LOCKING {kind}{this} {for_or_in} {lock_type}{override}"
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")

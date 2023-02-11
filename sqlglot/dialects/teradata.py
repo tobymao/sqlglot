@@ -1,11 +1,18 @@
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import TokenType
 
 
 class Teradata(Dialect):
+    class Tokenizer(tokens.Tokenizer):
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "BYTEINT": TokenType.SMALLINT,
+            "SEL": TokenType.SELECT,
+        }
+
     class Parser(parser.Parser):
         CHARSET_TRANSLATORS = {
             "GRAPHIC_TO_KANJISJIS",
@@ -40,6 +47,14 @@ class Teradata(Dialect):
             "UNICODE_TO_UNICODE_NFD",
             "UNICODE_TO_UNICODE_NFKC",
             "UNICODE_TO_UNICODE_NFKD",
+        }
+
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS}
+        FUNC_TOKENS.remove(TokenType.REPLACE)
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,  # type: ignore
+            TokenType.REPLACE: lambda self: self._parse_create(),
         }
 
         FUNCTION_PARSERS = {

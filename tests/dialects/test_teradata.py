@@ -24,3 +24,13 @@ class TestTeradata(Validator):
 
     def test_create(self):
         self.validate_identity("CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)")
+
+        self.validate_all(
+            "REPLACE VIEW a AS (SELECT b FROM c)",
+            write={"teradata": "CREATE OR REPLACE VIEW a AS (SELECT b FROM c)"},
+        )
+
+        self.validate_all(
+            "SEL a FROM b",
+            write={"teradata": "SELECT a FROM b"},
+        )

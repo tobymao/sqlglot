@@ -577,6 +577,8 @@ class Parser(metaclass=_Parser):
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
         "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
         "DEFINER": lambda self: self._parse_definer(),
+        "LOCK": lambda self: self._parse_locking(),
+        "LOCKING": lambda self: self._parse_locking(),
     }
 
     CONSTRAINT_PARSERS = {
@@ -941,7 +943,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_create(self) -> t.Optional[exp.Expression]:
         start = self._prev
-        replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
+        replace = self._prev.text.upper() == "REPLACE" or self._match_pair(
+            TokenType.OR, TokenType.REPLACE
+        )
         set_ = self._match(TokenType.SET)  # Teradata
         multiset = self._match_text_seq("MULTISET")  # Teradata
         global_temporary = self._match_text_seq("GLOBAL", "TEMPORARY")  # Teradata
@@ -959,7 +963,7 @@ class Parser(metaclass=_Parser):
         create_token = self._match_set(self.CREATABLES) and self._prev
 
         if not create_token:
-            properties = self._parse_properties()
+            properties = self._parse_properties()  # exp.Properties.Location.POST_CREATE
             create_token = self._match_set(self.CREATABLES) and self._prev
 
             if not properties or not create_token:
@@ -995,15 +999,37 @@ class Parser(metaclass=_Parser):
         ):
             table_parts = self._parse_table_parts(schema=True)
 
-            if self._match(TokenType.COMMA):  # comma-separated properties before schema definition
-                properties = self._parse_properties(before=True)
+            # exp.Properties.Location.POST_NAME
+            if self._match(TokenType.COMMA):
+                temp_properties = self._parse_properties(before=True)
+                if properties and temp_properties:
+                    properties.expressions.append(temp_properties.expressions)
+                elif temp_properties:
+                    properties = temp_properties
 
             this = self._parse_schema(this=table_parts)
 
-            if not properties:  # properties after schema definition
-                properties = self._parse_properties()
+            # exp.Properties.Location.POST_SCHEMA and POST_WITH
+            temp_properties = self._parse_properties()
+            if properties and temp_properties:
+                properties.expressions.append(temp_properties.expressions)
+            elif temp_properties:
+                properties = temp_properties
 
             self._match(TokenType.ALIAS)
+
+            # exp.Properties.Location.POST_ALIAS
+            if not (
+                self._match(TokenType.SELECT, advance=False)
+                or self._match(TokenType.WITH, advance=False)
+                or self._match(TokenType.L_PAREN, advance=False)
+            ):
+                temp_properties = self._parse_properties()
+                if properties and temp_properties:
+                    properties.expressions.append(temp_properties.expressions)
+                elif temp_properties:
+                    properties = temp_properties
+
             expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
@@ -1023,12 +1049,13 @@ class Parser(metaclass=_Parser):
                 while True:
                     index = self._parse_create_table_index()
 
-                    # post index PARTITION BY property
+                    # exp.Properties.Location.POST_INDEX
                     if self._match(TokenType.PARTITION_BY, advance=False):
-                        if properties:
-                            properties.expressions.append(self._parse_property())
-                        else:
-                            properties = self._parse_properties()
+                        temp_properties = self._parse_properties()
+                        if properties and temp_properties:
+                            properties.expressions.append(temp_properties.expressions)
+                        elif temp_properties:
+                            properties = temp_properties
 
                     if not index:
                         break
@@ -1273,6 +1300,56 @@ class Parser(metaclass=_Parser):
             for_all=for_all,
             for_insert=for_insert,
             for_none=for_none,
+        )
+
+    def _parse_locking(self) -> exp.Expression:
+        if self._match(TokenType.TABLE):
+            kind = "TABLE"
+        elif self._match(TokenType.VIEW):
+            kind = "VIEW"
+        elif self._match(TokenType.ROW):
+            kind = "ROW"
+        elif self._match_text_seq("DATABASE"):
+            kind = "DATABASE"
+        else:
+            kind = None
+
+        if kind in ("DATABASE", "TABLE", "VIEW"):
+            this = self._parse_table_parts()
+        else:
+            this = None
+
+        if self._match(TokenType.FOR):
+            for_or_in = "FOR"
+        elif self._match(TokenType.IN):
+            for_or_in = "IN"
+        else:
+            for_or_in = None
+
+        if self._match_text_seq("ACCESS"):
+            lock_type = "ACCESS"
+        elif self._match_texts(("EXCL", "EXCLUSIVE")):
+            lock_type = "EXCLUSIVE"
+        elif self._match_text_seq("SHARE"):
+            lock_type = "SHARE"
+        elif self._match_text_seq("READ"):
+            lock_type = "READ"
+        elif self._match_text_seq("WRITE"):
+            lock_type = "WRITE"
+        elif self._match_text_seq("CHECKSUM"):
+            lock_type = "CHECKSUM"
+        else:
+            lock_type = None
+
+        override = self._match_text_seq("OVERRIDE")
+
+        return self.expression(
+            exp.LockingProperty,
+            this=this,
+            kind=kind,
+            for_or_in=for_or_in,
+            lock_type=lock_type,
+            override=override,
         )
 
     def _parse_partition_by(self) -> t.List[t.Optional[exp.Expression]]:

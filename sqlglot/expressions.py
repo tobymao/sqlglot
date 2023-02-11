@@ -1493,7 +1493,8 @@ class Properties(Expression):
     # Form: schema specified
     #   create [POST_CREATE]
     #     table a [POST_NAME]
-    #     (b int) [POST_SCHEMA_ROOT] with ([POST_SCHEMA_WITH])
+    #     (b int) [POST_SCHEMA]
+    #     with ([POST_WITH])
     #     index (b) [POST_INDEX]
     #
     # Form: alias selection
@@ -1504,8 +1505,8 @@ class Properties(Expression):
     class Location(AutoName):
         POST_CREATE = auto()
         POST_NAME = auto()
-        POST_SCHEMA_ROOT = auto()
-        POST_SCHEMA_WITH = auto()
+        POST_SCHEMA = auto()
+        POST_WITH = auto()
         POST_ALIAS = auto()
         POST_INDEX = auto()
         UNSUPPORTED = auto()

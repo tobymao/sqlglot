@@ -1009,7 +1009,7 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_schema(this=table_parts)
 
-            # exp.Properties.Location.POST_SCHEMA_ROOT and POST_SCHEMA_WITH
+            # exp.Properties.Location.POST_SCHEMA and POST_SCHEMA_WITH
             temp_properties = self._parse_properties()
             if properties and temp_properties:
                 properties.expressions.append(temp_properties.expressions)

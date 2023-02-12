@@ -932,11 +932,13 @@ class Generator:
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")
+        or_cond = "" if expression.or_cond is None else f"OR {expression.or_cond} "
 
         if isinstance(expression.this, exp.Directory):
             this = "OVERWRITE " if overwrite else "INTO "
         else:
             this = "OVERWRITE TABLE " if overwrite else "INTO "
+
 
         this = f"{this}{self.sql(expression, 'this')}"
         exists = " IF EXISTS " if expression.args.get("exists") else " "
@@ -945,7 +947,7 @@ class Generator:
         )
         expression_sql = self.sql(expression, "expression")
         sep = self.sep() if partition_sql else ""
-        sql = f"INSERT {this}{exists}{partition_sql}{sep}{expression_sql}"
+        sql = f"INSERT {or_cond}{this}{exists}{partition_sql}{sep}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:

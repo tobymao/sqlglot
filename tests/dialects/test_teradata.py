@@ -34,3 +34,6 @@ class TestTeradata(Validator):
             "SEL a FROM b",
             write={"teradata": "SELECT a FROM b"},
         )
+
+    def test_mod(self):
+        self.validate_all("a MOD b", write={"teradata": "a MOD b", "mysql": "a % b"})

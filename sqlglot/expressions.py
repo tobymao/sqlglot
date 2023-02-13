@@ -967,11 +967,11 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    pass
+    arg_types: t.Dict[str, t.Any] = {}
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
-    pass
+    arg_types: t.Dict[str, t.Any] = {}
 
 
 class Constraint(Expression):

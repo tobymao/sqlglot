@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
 from sqlglot.helper import csv
@@ -12,7 +14,11 @@ def _limit_sql(self, expression):
 
 def _parse_xml_table(self) -> exp.XMLTable:
     this = self._parse_string()
-    passing = self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.COLUMN}) if self._match_texts("PASSING") else None
+    passing = (
+        self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.COLUMN})
+        if self._match_texts("PASSING")
+        else None
+    )
 
     if self._match_texts("COLUMNS"):
         columns = self._parse_column_def(self._parse_field(any_token=True))

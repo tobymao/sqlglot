@@ -35,5 +35,19 @@ class TestTeradata(Validator):
             write={"teradata": "SELECT a FROM b"},
         )
 
+    def test_insert(self):
+        self.validate_all(
+            "INS INTO x SELECT * FROM y", write={"teradata": "INSERT INTO x SELECT * FROM y"}
+        )
+
     def test_mod(self):
         self.validate_all("a MOD b", write={"teradata": "a MOD b", "mysql": "a % b"})
+
+    def test_abbrev(self):
+        self.validate_all("a LT b", write={"teradata": "a < b"})
+        self.validate_all("a LE b", write={"teradata": "a <= b"})
+        self.validate_all("a GT b", write={"teradata": "a > b"})
+        self.validate_all("a GE b", write={"teradata": "a >= b"})
+        self.validate_all("a ^= b", write={"teradata": "a <> b"})
+        self.validate_all("a NE b", write={"teradata": "a <> b"})
+        self.validate_all("a NOT= b", write={"teradata": "a <> b"})

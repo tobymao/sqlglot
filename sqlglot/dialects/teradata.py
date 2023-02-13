@@ -7,11 +7,20 @@ from sqlglot.tokens import TokenType
 
 class Teradata(Dialect):
     class Tokenizer(tokens.Tokenizer):
+        # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Expressions-and-Predicates/March-2017/Comparison-Operators-and-Functions/Comparison-Operators/ANSI-Compliance
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "BYTEINT": TokenType.SMALLINT,
             "SEL": TokenType.SELECT,
+            "INS": TokenType.INSERT,
             "MOD": TokenType.MOD,
+            "LT": TokenType.LT,
+            "LE": TokenType.LTE,
+            "GT": TokenType.GT,
+            "GE": TokenType.GTE,
+            "^=": TokenType.NEQ,
+            "NE": TokenType.NEQ,
+            "NOT=": TokenType.NEQ,
         }
 
         # teradata does not support % for modulus

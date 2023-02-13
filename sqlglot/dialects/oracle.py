@@ -10,6 +10,23 @@ def _limit_sql(self, expression):
     return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
 
 
+def _parse_xml_table(self) -> exp.XMLTable:
+    this = self._parse_string()
+    passing = self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.COLUMN}) if self._match_texts("PASSING") else None
+
+    if self._match_texts("COLUMNS"):
+        columns = self._parse_column_def(self._parse_field(any_token=True))
+    else:
+        columns = None
+
+    return self.expression(
+        exp.XMLTable,
+        this=this,
+        passing=passing,
+        columns=columns,
+    )
+
+
 class Oracle(Dialect):
     # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
@@ -41,6 +58,11 @@ class Oracle(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DECODE": exp.Matches.from_arg_list,
+        }
+
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "XMLTABLE": _parse_xml_table,
         }
 
     class Generator(generator.Generator):
@@ -106,6 +128,7 @@ class Oracle(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "COLUMNS": TokenType.COLUMN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "START": TokenType.BEGIN,

@@ -3563,6 +3563,10 @@ class Week(Func):
     arg_types = {"this": True, "mode": False}
 
 
+class XMLTable(Func):
+    arg_types = {"this": True, "passing": False, "columns": False, "alias": False}
+
+
 class Year(Func):
     pass
 

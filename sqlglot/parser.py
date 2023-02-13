@@ -2814,6 +2814,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Schema, this=this, expressions=args)
 
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        print(self._curr)
         kind = self._parse_types()
 
         constraints = []
@@ -2838,6 +2839,7 @@ class Parser(metaclass=_Parser):
             this = self._parse_id_var()
 
         kind: exp.Expression
+        print("kind")
 
         if self._match_set((TokenType.AUTO_INCREMENT, TokenType.IDENTITY)):
             start = None

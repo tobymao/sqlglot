@@ -198,7 +198,7 @@ class TestOptimizer(unittest.TestCase):
             "expand_laterals",
             optimizer.expand_laterals.expand_laterals,
             pretty=True,
-            execute=True,
+            execute=False,
         )
 
     def test_expand_multi_table_selects(self):

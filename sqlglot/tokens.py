@@ -138,7 +138,6 @@ class TokenType(AutoName):
     CASCADE = auto()
     CASE = auto()
     CHARACTER_SET = auto()
-    CHECK = auto()
     CLUSTER_BY = auto()
     COLLATE = auto()
     COMMAND = auto()
@@ -164,7 +163,6 @@ class TokenType(AutoName):
     DIV = auto()
     DROP = auto()
     ELSE = auto()
-    ENCODE = auto()
     END = auto()
     ESCAPE = auto()
     EXCEPT = auto()
@@ -182,14 +180,12 @@ class TokenType(AutoName):
     FROM = auto()
     FULL = auto()
     FUNCTION = auto()
-    GENERATED = auto()
     GLOB = auto()
     GLOBAL = auto()
     GROUP_BY = auto()
     GROUPING_SETS = auto()
     HAVING = auto()
     HINT = auto()
-    IDENTITY = auto()
     IF = auto()
     IGNORE_NULLS = auto()
     ILIKE = auto()
@@ -260,7 +256,6 @@ class TokenType(AutoName):
     ROLLUP = auto()
     ROW = auto()
     ROWS = auto()
-    SCHEMA_COMMENT = auto()
     SEED = auto()
     SELECT = auto()
     SEMI = auto()
@@ -486,11 +481,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "CASE": TokenType.CASE,
         "CASCADE": TokenType.CASCADE,
         "CHARACTER SET": TokenType.CHARACTER_SET,
-        "CHECK": TokenType.CHECK,
         "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,
-        "COMMENT": TokenType.SCHEMA_COMMENT,
         "COMMIT": TokenType.COMMIT,
         "COMPOUND": TokenType.COMPOUND,
         "CONSTRAINT": TokenType.CONSTRAINT,
@@ -526,12 +519,10 @@ class Tokenizer(metaclass=_Tokenizer):
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
-        "GENERATED": TokenType.GENERATED,
         "GLOB": TokenType.GLOB,
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
-        "IDENTITY": TokenType.IDENTITY,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,

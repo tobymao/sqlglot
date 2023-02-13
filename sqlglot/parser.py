@@ -157,7 +157,6 @@ class Parser(metaclass=_Parser):
 
     ID_VAR_TOKENS = {
         TokenType.VAR,
-        TokenType.ALWAYS,
         TokenType.ANTI,
         TokenType.APPLY,
         TokenType.AUTO_INCREMENT,
@@ -186,8 +185,6 @@ class Parser(metaclass=_Parser):
         TokenType.FOLLOWING,
         TokenType.FORMAT,
         TokenType.FUNCTION,
-        TokenType.GENERATED,
-        TokenType.IDENTITY,
         TokenType.IF,
         TokenType.INDEX,
         TokenType.ISNULL,
@@ -213,7 +210,6 @@ class Parser(metaclass=_Parser):
         TokenType.ROW,
         TokenType.ROWS,
         TokenType.SCHEMA,
-        TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
         TokenType.SEMI,
         TokenType.SET,
@@ -1294,7 +1290,7 @@ class Parser(metaclass=_Parser):
     def _parse_blockcompression(self) -> exp.Expression:
         self._match_text_seq("BLOCKCOMPRESSION")
         self._match(TokenType.EQ)
-        always = self._match(TokenType.ALWAYS)
+        always = self._match_text_seq("ALWAYS")
         manual = self._match_text_seq("MANUAL")
         never = self._match_text_seq("NEVER")
         default = self._match_text_seq("DEFAULT")
@@ -2876,10 +2872,10 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.BY_DEFAULT):
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=False)
         else:
-            self._match(TokenType.ALWAYS)
+            self._match_text_seq("ALWAYS")
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
 
-        self._match_pair(TokenType.ALIAS, TokenType.IDENTITY)
+        self._match_text_seq("AS", "IDENTITY")
         if self._match(TokenType.L_PAREN):
             if self._match_text_seq("START", "WITH"):
                 this.set("start", self._parse_bitwise())
@@ -3571,7 +3567,7 @@ class Parser(metaclass=_Parser):
         if kind == TokenType.CONSTRAINT:
             this = self._parse_id_var()
 
-            if self._match(TokenType.CHECK):
+            if self._match_text_seq("CHECK"):
                 expression = self._parse_wrapped(self._parse_conjunction)
                 enforced = self._match_text_seq("ENFORCED")
 

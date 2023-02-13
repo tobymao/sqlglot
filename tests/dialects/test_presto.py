@@ -507,6 +507,14 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT a, b, c, d, sum(y) FROM z GROUP BY CUBE(a) ROLLUP(a), GROUPING SETS((b, c)), d",
+            write={
+                "presto": "SELECT a, b, c, d, SUM(y) FROM z GROUP BY d GROUPING SETS ((b, c)), CUBE (a), ROLLUP (a)",
+                "hive": "SELECT a, b, c, d, SUM(y) FROM z GROUP BY d GROUPING SETS ((b, c)), CUBE (a), ROLLUP (a)",
+            },
+        )
+
     def test_encode_decode(self):
         self.validate_all(
             "TO_UTF8(x)",

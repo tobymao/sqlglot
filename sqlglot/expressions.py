@@ -962,6 +962,10 @@ class PrimaryKeyColumnConstraint(ColumnConstraintKind):
     arg_types = {"desc": False}
 
 
+class TitleColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class UniqueColumnConstraint(ColumnConstraintKind):
     pass
 

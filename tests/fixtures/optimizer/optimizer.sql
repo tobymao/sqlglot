@@ -378,7 +378,6 @@ RIGHT JOIN "y_2" AS "y"
 
 
 # title: lateral column alias reference
-# execute: false
 SELECT x.a + 1 AS c, c + 1 AS d FROM x;
 SELECT
   "x"."a" + 1 AS "c",

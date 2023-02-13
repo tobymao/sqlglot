@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func, trim_sql
 from sqlglot.dialects.hive import Hive
@@ -44,6 +46,14 @@ def _unix_to_time(self, expression):
     raise ValueError("Improper scale for timestamp")
 
 
+def _timestamp_trunc(args: t.Sequence) -> exp.Expression:
+    unit = seq_get(args, 0)
+    if isinstance(unit, exp.Column):
+        unit = exp.Var(this=unit.name)
+    ret = exp.TimestampTrunc(this=seq_get(args, 1), unit=unit)
+    return ret
+
+
 class Spark(Hive):
     class Parser(Hive.Parser):
         FUNCTIONS = {
@@ -71,6 +81,7 @@ class Spark(Hive):
                 ),
                 length=seq_get(args, 1),
             ),
+            "DATE_TRUNC": _timestamp_trunc,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,
             "AGGREGATE": exp.Reduce.from_arg_list,

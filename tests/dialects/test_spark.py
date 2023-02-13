@@ -334,3 +334,19 @@ TBLPROPERTIES (
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
             write={"spark": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
+
+    def test_date_trunc(self):
+        self.validate_all(
+            "DATE_TRUNC('day', date_col)",
+            read={
+                "spark": "DATE_TRUNC('day', date_col)",
+            },
+        )
+
+    def test__trunc(self):
+        self.validate_all(
+            "TRUNC(date_col, 'day')",
+            read={
+                "spark": "TRUNC(date_col, 'day')",
+            },
+        )

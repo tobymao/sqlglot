@@ -11,7 +11,12 @@ class Teradata(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "BYTEINT": TokenType.SMALLINT,
             "SEL": TokenType.SELECT,
+            "MOD": TokenType.MOD,
         }
+
+        # teradata does not support % for modulus
+        SINGLE_TOKENS = {**tokens.Tokenizer.SINGLE_TOKENS}
+        SINGLE_TOKENS.pop("%")
 
     class Parser(parser.Parser):
         CHARSET_TRANSLATORS = {
@@ -108,3 +113,6 @@ class Teradata(Dialect):
             where_sql = self.sql(expression, "where")
             sql = f"UPDATE {this}{from_sql} SET {set_sql}{where_sql}"
             return self.prepend_ctes(expression, sql)
+
+        def mod_sql(self, expression: exp.Mod) -> str:
+            return self.binary(expression, "MOD")

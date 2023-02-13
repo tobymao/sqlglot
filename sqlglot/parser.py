@@ -607,7 +607,9 @@ class Parser(metaclass=_Parser):
         "NOT": lambda self: self._parse_not_constraint(),
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
-        "TITLE": lambda self: self.expression(exp.TitleColumnConstraint, this=self._parse_var_or_string()),
+        "TITLE": lambda self: self.expression(
+            exp.TitleColumnConstraint, this=self._parse_var_or_string()
+        ),
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }

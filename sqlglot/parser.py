@@ -2905,6 +2905,8 @@ class Parser(metaclass=_Parser):
             kind = self.expression(exp.CaseSpecificColumnConstraint, not_=False)
         elif self._match(TokenType.FORMAT):
             kind = self.expression(exp.DateFormatColumnConstraint, this=self._parse_var_or_string())
+        elif self._match_text_seq("TITLE"):
+            kind = self.expression(exp.TitleColumnConstraint, this=self._parse_var_or_string())
         else:
             return this
 

@@ -80,6 +80,7 @@ class Generator:
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.UppercaseColumnConstraint: lambda self, e: f"UPPERCASE",
+        exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed

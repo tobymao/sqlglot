@@ -3016,9 +3016,10 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_primary_key(self) -> exp.Expression:
-        desc = None
-        if self._match(TokenType.ASC) or self._match(TokenType.DESC):
-            desc = self._prev.token_type == TokenType.DESC
+        desc = (
+            self._match_set((TokenType.ASC, TokenType.DESC))
+            and self._prev.token_type == TokenType.DESC
+        )
 
         if not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(exp.PrimaryKeyColumnConstraint, desc=desc)

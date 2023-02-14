@@ -214,11 +214,11 @@ class TestHive(Validator):
         self.validate_all(
             "'\\\\a'",
             read={
-                "presto": "'\\a'",
+                "presto": "'\\\\a'",
             },
             write={
-                "duckdb": "'\\a'",
-                "presto": "'\\a'",
+                "duckdb": "'\\\\a'",
+                "presto": "'\\\\a'",
                 "hive": "'\\\\a'",
                 "spark": "'\\\\a'",
             },
@@ -653,3 +653,15 @@ class TestHive(Validator):
                 "hive": "SELECT a, SUM(c) FROM t GROUP BY a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy') GROUPING SETS ((a, DATE_FORMAT(CAST(b AS TIMESTAMP), 'yyyy')), a)",
             },
         )
+
+    def test_escapes(self) -> None:
+        self.validate_identity("'\n'")
+        self.validate_identity("'\\n'")
+        self.validate_identity("'\\\n'")
+        self.validate_identity("'\\\\n'")
+        self.validate_identity("''")
+        self.validate_identity("'\\\\'")
+        self.validate_identity("'\z'")
+        self.validate_identity("'\\z'")
+        self.validate_identity("'\\\z'")
+        self.validate_identity("'\\\\z'")

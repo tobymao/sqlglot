@@ -157,7 +157,6 @@ class Parser(metaclass=_Parser):
 
     ID_VAR_TOKENS = {
         TokenType.VAR,
-        TokenType.ALWAYS,
         TokenType.ANTI,
         TokenType.APPLY,
         TokenType.AUTO_INCREMENT,
@@ -186,8 +185,6 @@ class Parser(metaclass=_Parser):
         TokenType.FOLLOWING,
         TokenType.FORMAT,
         TokenType.FUNCTION,
-        TokenType.GENERATED,
-        TokenType.IDENTITY,
         TokenType.IF,
         TokenType.INDEX,
         TokenType.ISNULL,
@@ -213,7 +210,6 @@ class Parser(metaclass=_Parser):
         TokenType.ROW,
         TokenType.ROWS,
         TokenType.SCHEMA,
-        TokenType.SCHEMA_COMMENT,
         TokenType.SEED,
         TokenType.SEMI,
         TokenType.SET,
@@ -582,12 +578,41 @@ class Parser(metaclass=_Parser):
     }
 
     CONSTRAINT_PARSERS = {
-        TokenType.CHECK: lambda self: self.expression(
-            exp.Check, this=self._parse_wrapped(self._parse_conjunction)
+        "AUTOINCREMENT": lambda self: self._parse_auto_increment(),
+        "AUTO_INCREMENT": lambda self: self._parse_auto_increment(),
+        "CASESPECIFIC": lambda self: self.expression(exp.CaseSpecificColumnConstraint, not_=False),
+        "CHARACTER SET": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
         ),
-        TokenType.FOREIGN_KEY: lambda self: self._parse_foreign_key(),
-        TokenType.UNIQUE: lambda self: self._parse_unique(),
-        TokenType.LIKE: lambda self: self._parse_create_like(),
+        "CHECK": lambda self: self.expression(
+            exp.CheckColumnConstraint, this=self._parse_wrapped(self._parse_conjunction)
+        ),
+        "COLLATE": lambda self: self.expression(
+            exp.CollateColumnConstraint, this=self._parse_var()
+        ),
+        "COMMENT": lambda self: self.expression(
+            exp.CommentColumnConstraint, this=self._parse_string()
+        ),
+        "DEFAULT": lambda self: self.expression(
+            exp.DefaultColumnConstraint, this=self._parse_bitwise()
+        ),
+        "ENCODE": lambda self: self.expression(exp.EncodeColumnConstraint, this=self._parse_var()),
+        "FOREIGN KEY": lambda self: self._parse_foreign_key(),
+        "FORMAT": lambda self: self.expression(
+            exp.DateFormatColumnConstraint, this=self._parse_var_or_string()
+        ),
+        "GENERATED": lambda self: self._parse_generated_as_identity(),
+        "IDENTITY": lambda self: self._parse_auto_increment(),
+        "LIKE": lambda self: self._parse_create_like(),
+        "NOT": lambda self: self._parse_not_constraint(),
+        "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
+        "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
+        "PRIMARY KEY": lambda self: self._parse_primary_key(),
+        "TITLE": lambda self: self.expression(
+            exp.TitleColumnConstraint, this=self._parse_var_or_string()
+        ),
+        "UNIQUE": lambda self: self._parse_unique(),
+        "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {
@@ -1268,7 +1293,7 @@ class Parser(metaclass=_Parser):
     def _parse_blockcompression(self) -> exp.Expression:
         self._match_text_seq("BLOCKCOMPRESSION")
         self._match(TokenType.EQ)
-        always = self._match(TokenType.ALWAYS)
+        always = self._match_text_seq("ALWAYS")
         manual = self._match_text_seq("MANUAL")
         never = self._match_text_seq("NEVER")
         default = self._match_text_seq("DEFAULT")
@@ -2816,6 +2841,9 @@ class Parser(metaclass=_Parser):
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         kind = self._parse_types()
 
+        if self._match_text_seq("FOR", "ORDINALITY"):
+            return self.expression(exp.ColumnDef, this=this, ordinality=True)
+
         constraints = []
         while True:
             constraint = self._parse_column_constraint()
@@ -2828,89 +2856,65 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.ColumnDef, this=this, kind=kind, constraints=constraints)
 
+    def _parse_auto_increment(self) -> exp.Expression:
+        start = None
+        increment = None
+
+        if self._match(TokenType.L_PAREN, advance=False):
+            args = self._parse_wrapped_csv(self._parse_bitwise)
+            start = seq_get(args, 0)
+            increment = seq_get(args, 1)
+        elif self._match_text_seq("START"):
+            start = self._parse_bitwise()
+            self._match_text_seq("INCREMENT")
+            increment = self._parse_bitwise()
+
+        if start and increment:
+            return exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
+
+        return exp.AutoIncrementColumnConstraint()
+
+    def _parse_generated_as_identity(self) -> exp.Expression:
+        if self._match(TokenType.BY_DEFAULT):
+            this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=False)
+        else:
+            self._match_text_seq("ALWAYS")
+            this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
+
+        self._match_text_seq("AS", "IDENTITY")
+        if self._match(TokenType.L_PAREN):
+            if self._match_text_seq("START", "WITH"):
+                this.set("start", self._parse_bitwise())
+            if self._match_text_seq("INCREMENT", "BY"):
+                this.set("increment", self._parse_bitwise())
+
+            self._match_r_paren()
+
+        return this
+
+    def _parse_not_constraint(self) -> t.Optional[exp.Expression]:
+        if self._match_text_seq("NULL"):
+            return self.expression(exp.NotNullColumnConstraint)
+        if self._match_text_seq("CASESPECIFIC"):
+            return self.expression(exp.CaseSpecificColumnConstraint, not_=True)
+        return None
+
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
         this = self._parse_references()
-
         if this:
             return this
 
         if self._match(TokenType.CONSTRAINT):
             this = self._parse_id_var()
 
-        kind: exp.Expression
-
-        if self._match_set((TokenType.AUTO_INCREMENT, TokenType.IDENTITY)):
-            start = None
-            increment = None
-
-            if self._match(TokenType.L_PAREN, advance=False):
-                args = self._parse_wrapped_csv(self._parse_bitwise)
-                start = seq_get(args, 0)
-                increment = seq_get(args, 1)
-            elif self._match_text_seq("START"):
-                start = self._parse_bitwise()
-                self._match_text_seq("INCREMENT")
-                increment = self._parse_bitwise()
-
-            if start and increment:
-                kind = exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
-            else:
-                kind = exp.AutoIncrementColumnConstraint()
-        elif self._match(TokenType.CHECK):
-            constraint = self._parse_wrapped(self._parse_conjunction)
-            kind = self.expression(exp.CheckColumnConstraint, this=constraint)
-        elif self._match(TokenType.COLLATE):
-            kind = self.expression(exp.CollateColumnConstraint, this=self._parse_var())
-        elif self._match(TokenType.ENCODE):
-            kind = self.expression(exp.EncodeColumnConstraint, this=self._parse_var())
-        elif self._match(TokenType.DEFAULT):
-            kind = self.expression(exp.DefaultColumnConstraint, this=self._parse_bitwise())
-        elif self._match_pair(TokenType.NOT, TokenType.NULL):
-            kind = exp.NotNullColumnConstraint()
-        elif self._match(TokenType.NULL):
-            kind = exp.NotNullColumnConstraint(allow_null=True)
-        elif self._match(TokenType.SCHEMA_COMMENT):
-            kind = self.expression(exp.CommentColumnConstraint, this=self._parse_string())
-        elif self._match(TokenType.PRIMARY_KEY):
-            desc = None
-            if self._match(TokenType.ASC) or self._match(TokenType.DESC):
-                desc = self._prev.token_type == TokenType.DESC
-            kind = exp.PrimaryKeyColumnConstraint(desc=desc)
-        elif self._match(TokenType.UNIQUE):
-            kind = exp.UniqueColumnConstraint()
-        elif self._match(TokenType.GENERATED):
-            if self._match(TokenType.BY_DEFAULT):
-                kind = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=False)
-            else:
-                self._match(TokenType.ALWAYS)
-                kind = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
-            self._match_pair(TokenType.ALIAS, TokenType.IDENTITY)
-
-            if self._match(TokenType.L_PAREN):
-                if self._match_text_seq("START", "WITH"):
-                    kind.set("start", self._parse_bitwise())
-                if self._match_text_seq("INCREMENT", "BY"):
-                    kind.set("increment", self._parse_bitwise())
-
-                self._match_r_paren()
-        elif self._match(TokenType.CHARACTER_SET):
-            kind = self.expression(
-                exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
+        if self._match_texts(self.CONSTRAINT_PARSERS):
+            return self.expression(
+                exp.ColumnConstraint,
+                this=this,
+                kind=self.CONSTRAINT_PARSERS[self._prev.text.upper()](self),
             )
-        elif self._match_text_seq("UPPERCASE"):
-            kind = exp.UppercaseColumnConstraint()
-        elif self._match_text_seq("NOT", "CASESPECIFIC"):
-            kind = self.expression(exp.CaseSpecificColumnConstraint, not_=True)
-        elif self._match_text_seq("CASESPECIFIC"):
-            kind = self.expression(exp.CaseSpecificColumnConstraint, not_=False)
-        elif self._match(TokenType.FORMAT):
-            kind = self.expression(exp.DateFormatColumnConstraint, this=self._parse_var_or_string())
-        elif self._match_text_seq("TITLE"):
-            kind = self.expression(exp.TitleColumnConstraint, this=self._parse_var_or_string())
-        else:
-            return this
 
-        return self.expression(exp.ColumnConstraint, this=this, kind=kind)
+        return this
 
     def _parse_constraint(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.CONSTRAINT):
@@ -2928,11 +2932,13 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Constraint, this=this, expressions=expressions)
 
     def _parse_unnamed_constraint(self) -> t.Optional[exp.Expression]:
-        if not self._match_set(self.CONSTRAINT_PARSERS):
+        if not self._match_texts(self.CONSTRAINT_PARSERS):
             return None
-        return self.CONSTRAINT_PARSERS[self._prev.token_type](self)
+        return self.CONSTRAINT_PARSERS[self._prev.text.upper()](self)
 
     def _parse_unique(self) -> exp.Expression:
+        if not self._match(TokenType.L_PAREN, advance=False):
+            return self.expression(exp.UniqueColumnConstraint)
         return self.expression(exp.Unique, expressions=self._parse_wrapped_id_vars())
 
     def _parse_key_constraint_options(self) -> t.List[str]:
@@ -3012,6 +3018,14 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_primary_key(self) -> exp.Expression:
+        desc = (
+            self._match_set((TokenType.ASC, TokenType.DESC))
+            and self._prev.token_type == TokenType.DESC
+        )
+
+        if not self._match(TokenType.L_PAREN, advance=False):
+            return self.expression(exp.PrimaryKeyColumnConstraint, desc=desc)
+
         expressions = self._parse_wrapped_id_vars()
         options = self._parse_key_constraint_options()
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
@@ -3559,7 +3573,7 @@ class Parser(metaclass=_Parser):
         if kind == TokenType.CONSTRAINT:
             this = self._parse_id_var()
 
-            if self._match(TokenType.CHECK):
+            if self._match_text_seq("CHECK"):
                 expression = self._parse_wrapped(self._parse_conjunction)
                 enforced = self._match_text_seq("ENFORCED")
 

@@ -81,6 +81,12 @@ class Generator:
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.UppercaseColumnConstraint: lambda self, e: f"UPPERCASE",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
+        exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
+        exp.CheckColumnConstraint: lambda self, e: f"CHECK ({self.sql(e, 'this')})",
+        exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
+        exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
+        exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
+        exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
     }
 
     # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
@@ -442,26 +448,6 @@ class Generator:
 
     def autoincrementcolumnconstraint_sql(self, _) -> str:
         return self.token_sql(TokenType.AUTO_INCREMENT)
-
-    def checkcolumnconstraint_sql(self, expression: exp.CheckColumnConstraint) -> str:
-        this = self.sql(expression, "this")
-        return f"CHECK ({this})"
-
-    def commentcolumnconstraint_sql(self, expression: exp.CommentColumnConstraint) -> str:
-        comment = self.sql(expression, "this")
-        return f"COMMENT {comment}"
-
-    def collatecolumnconstraint_sql(self, expression: exp.CollateColumnConstraint) -> str:
-        collate = self.sql(expression, "this")
-        return f"COLLATE {collate}"
-
-    def encodecolumnconstraint_sql(self, expression: exp.EncodeColumnConstraint) -> str:
-        encode = self.sql(expression, "this")
-        return f"ENCODE {encode}"
-
-    def defaultcolumnconstraint_sql(self, expression: exp.DefaultColumnConstraint) -> str:
-        default = self.sql(expression, "this")
-        return f"DEFAULT {default}"
 
     def generatedasidentitycolumnconstraint_sql(
         self, expression: exp.GeneratedAsIdentityColumnConstraint

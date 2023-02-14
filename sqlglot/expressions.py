@@ -967,10 +967,14 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    pass
+    arg_types: t.Dict[str, t.Any] = {}
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
+    arg_types: t.Dict[str, t.Any] = {}
+
+
+class PathColumnConstraint(ColumnConstraintKind):
     pass
 
 
@@ -3561,6 +3565,10 @@ class VariancePop(AggFunc):
 
 class Week(Func):
     arg_types = {"this": True, "mode": False}
+
+
+class XMLTable(Func):
+    arg_types = {"this": True, "passing": False, "columns": False, "by_ref": False}
 
 
 class Year(Func):

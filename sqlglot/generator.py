@@ -453,10 +453,19 @@ class Generator:
         start = expression.args.get("start")
         start = f"START WITH {start}" if start else ""
         increment = expression.args.get("increment")
-        increment = f"INCREMENT BY {increment}" if increment else ""
+        increment = f" INCREMENT BY {increment}" if increment else ""
+        minvalue = expression.args.get("minvalue")
+        minvalue = f" MINVALUE {minvalue}" if minvalue else ""
+        maxvalue = expression.args.get("maxvalue")
+        maxvalue = f" MAXVALUE {maxvalue}" if maxvalue else ""
+        cycle = expression.args.get("cycle")
+        cycle_sql = ""
+        if cycle is not None:
+            cycle_sql = f"{' NO' if not cycle else ''} CYCLE"
+            cycle_sql = cycle_sql.strip() if not start and not increment else cycle_sql
         sequence_opts = ""
-        if start or increment:
-            sequence_opts = f"{start} {increment}"
+        if start or increment or cycle_sql:
+            sequence_opts = f"{start}{increment}{minvalue}{maxvalue}{cycle_sql}"
             sequence_opts = f" ({sequence_opts.strip()})"
         return f"GENERATED{this}AS IDENTITY{sequence_opts}"
 

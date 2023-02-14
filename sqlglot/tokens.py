@@ -739,11 +739,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "_prev_token_line",
         "_prev_token_comments",
         "_prev_token_type",
-        "_replace_backslash",
     )
 
     def __init__(self) -> None:
-        self._replace_backslash = "\\" in self._STRING_ESCAPES
         self.reset()
 
     def reset(self) -> None:
@@ -847,7 +845,7 @@ class Tokenizer(metaclass=_Tokenizer):
     def _scan_keywords(self) -> None:
         size = 0
         word = None
-        chars = self._text
+        chars: t.Optional[str] = self._text
         char = chars
         prev_space = False
         skip = False
@@ -879,7 +877,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     skip = True
             else:
-                chars = None  # type: ignore
+                chars = None
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
@@ -1007,7 +1005,6 @@ class Tokenizer(metaclass=_Tokenizer):
         self._advance(len(quote))
         text = self._extract_string(quote_end)
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text  # type: ignore
-        text = text.replace("\\\\", "\\") if self._replace_backslash else text
         self._add(TokenType.NATIONAL if quote[0].upper() == "N" else TokenType.STRING, text)
         return True
 
@@ -1083,13 +1080,18 @@ class Tokenizer(metaclass=_Tokenizer):
         delim_size = len(delimiter)
 
         while True:
-            if (
-                self._char in self._STRING_ESCAPES
-                and self._peek
-                and (self._peek == delimiter or self._peek in self._STRING_ESCAPES)
+            if self._char in self._STRING_ESCAPES and (
+                self._peek == delimiter or self._peek in self._STRING_ESCAPES
             ):
-                text += self._peek
-                self._advance(2)
+                if self._peek == delimiter:
+                    text += self._peek  # type: ignore
+                else:
+                    text += self._char + self._peek  # type: ignore
+
+                if self._current + 1 < self.size:
+                    self._advance(2)
+                else:
+                    raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._current}")
             else:
                 if self._chars(delim_size) == delimiter:
                     if delim_size > 1:

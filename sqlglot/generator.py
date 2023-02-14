@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
 import typing as t
 
 from sqlglot import exp
@@ -11,8 +10,6 @@ from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 logger = logging.getLogger("sqlglot")
-
-BACKSLASH_RE = re.compile(r"\\(?!b|f|n|r|t|0)")
 
 
 class Generator:
@@ -192,7 +189,6 @@ class Generator:
         "null_ordering",
         "max_unsupported",
         "_indent",
-        "_replace_backslash",
         "_escaped_quote_end",
         "_escaped_identifier_end",
         "_leading_comma",
@@ -249,7 +245,6 @@ class Generator:
         self.max_unsupported = max_unsupported
         self.null_ordering = null_ordering
         self._indent = indent
-        self._replace_backslash = self.string_escape == "\\"
         self._escaped_quote_end = self.string_escape + self.quote_end
         self._escaped_identifier_end = self.identifier_escape + self.identifier_end
         self._leading_comma = leading_comma
@@ -1157,8 +1152,6 @@ class Generator:
     def literal_sql(self, expression: exp.Literal) -> str:
         text = expression.this or ""
         if expression.is_string:
-            if self._replace_backslash:
-                text = BACKSLASH_RE.sub(r"\\\\", text)
             text = text.replace(self.quote_end, self._escaped_quote_end)
             if self.pretty:
                 text = text.replace("\n", self.SENTINEL_LINE_BREAK)

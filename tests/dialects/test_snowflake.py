@@ -203,10 +203,10 @@ class TestSnowflake(Validator):
         self.validate_all(
             r"SELECT $$a ' \ \t \x21 z $ $$",
             write={
-                "snowflake": r"SELECT 'a \' \\ \t \\x21 z $ '",
+                "snowflake": r"SELECT 'a \' \ \t \x21 z $ '",
             },
         )
-        self.validate_identity(r"REGEXP_REPLACE('target', 'pattern', '\n')")
+        self.validate_identity("REGEXP_REPLACE('target', 'pattern', '\n')")
         self.validate_all(
             "SELECT RLIKE(a, b)",
             write={

@@ -34,11 +34,11 @@ class TestDrill(Validator):
         self.validate_all(
             "'\\\\a'",
             read={
-                "presto": "'\\a'",
+                "presto": "'\\\\a'",
             },
             write={
-                "duckdb": "'\\a'",
-                "presto": "'\\a'",
+                "duckdb": "'\\\\a'",
+                "presto": "'\\\\a'",
                 "hive": "'\\\\a'",
                 "spark": "'\\\\a'",
             },

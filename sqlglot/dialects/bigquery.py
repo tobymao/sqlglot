@@ -31,13 +31,6 @@ def _date_add(expression_class: t.Type[E]) -> t.Callable[[t.Sequence], E]:
     return func
 
 
-def _date_trunc(args: t.Sequence) -> exp.Expression:
-    unit = seq_get(args, 1)
-    if isinstance(unit, exp.Column):
-        unit = exp.Var(this=unit.name)
-    return exp.DateTrunc(this=seq_get(args, 0), expression=unit)
-
-
 def _date_add_sql(
     data_type: str, kind: str
 ) -> t.Callable[[generator.Generator, exp.Expression], str]:
@@ -158,7 +151,10 @@ class BigQuery(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "DATE_TRUNC": _date_trunc,
+            "DATE_TRUNC": lambda args: exp.DateTrunc(
+                unit=exp.Literal.string(seq_get(args, 1).name),  # type: ignore
+                this=seq_get(args, 0),
+            ),
             "DATE_ADD": _date_add(exp.DateAdd),
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
@@ -214,6 +210,7 @@ class BigQuery(Dialect):
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.DateStrToDate: datestrtodate_sql,
+            exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),

@@ -22,9 +22,8 @@ def _show_parser(*args, **kwargs):
 
 
 def _date_trunc_sql(self, expression):
-    unit = expression.name.lower()
-
-    expr = self.sql(expression.expression)
+    expr = self.sql(expression, "this")
+    unit = expression.text("unit")
 
     if unit == "day":
         return f"DATE({expr})"
@@ -42,7 +41,7 @@ def _date_trunc_sql(self, expression):
         concat = f"CONCAT(YEAR({expr}), ' 1 1')"
         date_format = "%Y %c %e"
     else:
-        self.unsupported("Unexpected interval unit: {unit}")
+        self.unsupported(f"Unexpected interval unit: {unit}")
         return f"DATE({expr})"
 
     return f"STR_TO_DATE({concat}, '{date_format}')"

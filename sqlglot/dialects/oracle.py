@@ -135,16 +135,18 @@ class Oracle(Dialect):
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
-        def table_sql(self, expression: exp.Table) -> str:
-            return super().table_sql(expression, sep=" ")
+        def table_sql(self, expression: exp.Table, sep: str = " ") -> str:
+            return super().table_sql(expression, sep=sep)
 
         def xmltable_sql(self, expression: exp.XMLTable) -> str:
             this = self.sql(expression, "this")
             passing = self.expressions(expression, "passing")
-            passing = f"{self.sep('')}PASSING {passing}" if passing else ""
+            passing = f"{self.sep('')}PASSING{self.seg(passing)}" if passing else ""
             columns = self.expressions(expression, "columns")
-            columns = f"{self.sep('')}COLUMNS {columns}" if columns else ""
-            by_ref = f"{self.sep('')}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
+            columns = f"{self.sep('')}COLUMNS{self.seg(columns)}" if columns else ""
+            by_ref = (
+                f"{self.sep('')}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
+            )
             return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')')}"
 
     class Tokenizer(tokens.Tokenizer):

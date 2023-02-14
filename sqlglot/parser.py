@@ -2887,6 +2887,15 @@ class Parser(metaclass=_Parser):
                 this.set("start", self._parse_bitwise())
             if self._match_text_seq("INCREMENT", "BY"):
                 this.set("increment", self._parse_bitwise())
+            if self._match_text_seq("MINVALUE"):
+                this.set("minvalue", self._parse_bitwise())
+            if self._match_text_seq("MAXVALUE"):
+                this.set("maxvalue", self._parse_bitwise())
+
+            if self._match_text_seq("CYCLE"):
+                this.set("cycle", True)
+            elif self._match_text_seq("NO", "CYCLE"):
+                this.set("cycle", False)
 
             self._match_r_paren()
 

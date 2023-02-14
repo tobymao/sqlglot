@@ -2472,6 +2472,13 @@ class Parser(metaclass=_Parser):
     def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
         index = self._index
 
+        syslib = None
+        if self._next and self._next.token_type == TokenType.DOT:
+            syslib = self._parse_var_or_string()
+            self._match(TokenType.DOT)
+            if not self._curr.token_type in self.TYPE_TOKENS:
+                self._retreat(index)
+
         if not self._match_set(self.TYPE_TOKENS):
             return None
 
@@ -2573,6 +2580,7 @@ class Parser(metaclass=_Parser):
             expressions=expressions,
             nested=nested,
             values=values,
+            syslib=syslib,
         )
 
     def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:

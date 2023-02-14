@@ -31,13 +31,12 @@ def qualify_columns(expression, schema):
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         _expand_using(scope, resolver)
-        _expand_group_by(scope, resolver)
         _qualify_columns(scope, resolver)
-        _expand_order_by(scope)
         if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver)
             _qualify_outputs(scope)
-
+        _expand_group_by(scope, resolver)
+        _expand_order_by(scope)
     return expression
 
 

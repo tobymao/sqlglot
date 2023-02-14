@@ -606,6 +606,7 @@ class Parser(metaclass=_Parser):
         "LIKE": lambda self: self._parse_create_like(),
         "NOT": lambda self: self._parse_not_constraint(),
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
+        "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "TITLE": lambda self: self.expression(
             exp.TitleColumnConstraint, this=self._parse_var_or_string()
@@ -2839,6 +2840,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         kind = self._parse_types()
+
+        if self._match_text_seq("FOR", "ORDINALITY"):
+            return self.expression(exp.ColumnDef, this=this, ordinality=True)
 
         constraints = []
         while True:

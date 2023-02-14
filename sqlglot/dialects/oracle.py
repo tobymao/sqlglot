@@ -14,22 +14,29 @@ def _limit_sql(self, expression):
 
 def _parse_xml_table(self) -> exp.XMLTable:
     this = self._parse_string()
-    passing = (
-        self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.COLUMN})
-        if self._match_texts("PASSING")
-        else None
-    )
 
-    if self._match_texts("COLUMNS"):
-        columns = self._parse_column_def(self._parse_field(any_token=True))
-    else:
-        columns = None
+    passing = None
+    columns = None
+
+    if self._match_text_seq("PASSING"):
+        # The BY VALUE keywords are optional and are provided for semantic clarity
+        self._match_text_seq("BY", "VALUE")
+
+        passing = self._parse_csv(
+            lambda: self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.COLUMN})
+        )
+
+    by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
+
+    if self._match_text_seq("COLUMNS"):
+        columns = self._parse_csv(lambda: self._parse_column_def(self._parse_field(any_token=True)))
 
     return self.expression(
         exp.XMLTable,
         this=this,
         passing=passing,
         columns=columns,
+        by_ref=by_ref,
     )
 
 
@@ -102,7 +109,7 @@ class Oracle(Dialect):
             exp.Substring: rename_func("SUBSTR"),
         }
 
-        def query_modifiers(self, expression, *sqls):
+        def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
             return csv(
                 *sqls,
                 *[self.sql(sql) for sql in expression.args.get("joins") or []],
@@ -125,11 +132,20 @@ class Oracle(Dialect):
                 sep="",
             )
 
-        def offset_sql(self, expression):
+        def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
-        def table_sql(self, expression):
+        def table_sql(self, expression: exp.Table) -> str:
             return super().table_sql(expression, sep=" ")
+
+        def xmltable_sql(self, expression: exp.XMLTable) -> str:
+            this = self.sql(expression, "this")
+            passing = self.expressions(expression, "passing")
+            passing = f"{self.sep('')}PASSING {passing}" if passing else ""
+            columns = self.expressions(expression, "columns")
+            columns = f"{self.sep('')}COLUMNS {columns}" if columns else ""
+            by_ref = f"{self.sep('')}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
+            return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')')}"
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {

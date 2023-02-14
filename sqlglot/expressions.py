@@ -974,6 +974,10 @@ class UppercaseColumnConstraint(ColumnConstraintKind):
     arg_types: t.Dict[str, t.Any] = {}
 
 
+class PathColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class Constraint(Expression):
     arg_types = {"this": True, "expressions": True}
 
@@ -3564,7 +3568,7 @@ class Week(Func):
 
 
 class XMLTable(Func):
-    arg_types = {"this": True, "passing": False, "columns": False, "alias": False}
+    arg_types = {"this": True, "passing": False, "columns": False, "by_ref": False}
 
 
 class Year(Func):

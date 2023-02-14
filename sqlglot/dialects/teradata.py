@@ -21,6 +21,7 @@ class Teradata(Dialect):
             "^=": TokenType.NEQ,
             "NE": TokenType.NEQ,
             "NOT=": TokenType.NEQ,
+            "ST_GEOMETRY": TokenType.GEOMETRY,
         }
 
         # teradata does not support % for modulus
@@ -105,6 +106,11 @@ class Teradata(Dialect):
             )
 
     class Generator(generator.Generator):
+        TYPE_MAPPING = {
+            **generator.Generator.TYPE_MAPPING,
+            exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",
+        }
+
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.PartitionedByProperty: exp.Properties.Location.POST_INDEX,

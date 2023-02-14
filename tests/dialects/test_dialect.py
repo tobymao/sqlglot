@@ -573,19 +573,33 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_TRUNC('year', x)",
             read={
+                "bigquery": "DATE_TRUNC(x, year)",
                 "starrocks": "DATE_TRUNC('year', x)",
+                "spark": "TRUNC(x, 'year')",
             },
             write={
+                "bigquery": "DATE_TRUNC(x, year)",
+                "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
+                "postgres": "DATE_TRUNC('year', x)",
                 "starrocks": "DATE_TRUNC('year', x)",
+                "spark": "TRUNC(x, 'year')",
             },
         )
         self.validate_all(
-            "DATE_TRUNC(x, year)",
+            "TIMESTAMP_TRUNC(x, year)",
             read={
-                "bigquery": "DATE_TRUNC(x, year)",
+                "bigquery": "TIMESTAMP_TRUNC(x, year)",
+                "spark": "DATE_TRUNC('year', x)",
             },
             write={
-                "bigquery": "DATE_TRUNC(x, year)",
+                "bigquery": "TIMESTAMP_TRUNC(x, year)",
+                "spark": "DATE_TRUNC('year', x)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC('millenium', x)",
+            write={
+                "mysql": UnsupportedError,
             },
         )
         self.validate_all(

@@ -3097,7 +3097,7 @@ class DateDiff(Func, TimeUnit):
 
 
 class DateTrunc(Func):
-    arg_types = {"this": True, "expression": True, "zone": False}
+    arg_types = {"unit": True, "this": True, "zone": False}
 
 
 class DatetimeAdd(Func, TimeUnit):
@@ -4371,6 +4371,30 @@ def values(
         expressions=expressions,
         alias=table_alias,
     )
+
+
+def var(name: t.Optional[str | Expression]) -> Var:
+    """Build a SQL variable.
+
+    Example:
+        >>> repr(var('x'))
+        '(VAR this: x)'
+
+        >>> repr(var(column('x', table='y')))
+        '(VAR this: x)'
+
+    Args:
+        name: The name of the var or an expression who's name will become the var.
+
+    Returns:
+        The new variable node.
+    """
+    if not name:
+        raise ValueError(f"Cannot convert empty name into var.")
+
+    if isinstance(name, Expression):
+        name = name.name
+    return Var(this=name)
 
 
 def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:

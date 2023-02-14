@@ -249,26 +249,26 @@ class TestMySQL(Validator):
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'"
         )
         self.validate_identity(
-            "CREATE TABLE z (a INT DEFAULT NULL, PRIMARY KEY(a)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'"
+            "CREATE TABLE z (a INT DEFAULT NULL, PRIMARY KEY (a)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'"
         )
 
         self.validate_all(
             """
             CREATE TABLE `t_customer_account` (
-              "id" int(11) NOT NULL AUTO_INCREMENT,
-              "customer_id" int(11) DEFAULT NULL COMMENT '客户id',
-              "bank" varchar(100) COLLATE utf8_bin DEFAULT NULL COMMENT '行别',
-              "account_no" varchar(100) COLLATE utf8_bin DEFAULT NULL COMMENT '账号',
-              PRIMARY KEY ("id")
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `customer_id` int(11) DEFAULT NULL COMMENT '客户id',
+              `bank` varchar(100) COLLATE utf8_bin DEFAULT NULL COMMENT '行别',
+              `account_no` varchar(100) COLLATE utf8_bin DEFAULT NULL COMMENT '账号',
+              PRIMARY KEY (`id`)
             ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='客户账户表'
             """,
             write={
                 "mysql": """CREATE TABLE `t_customer_account` (
-  'id' INT(11) NOT NULL AUTO_INCREMENT,
-  'customer_id' INT(11) DEFAULT NULL COMMENT '客户id',
-  'bank' VARCHAR(100) COLLATE utf8_bin DEFAULT NULL COMMENT '行别',
-  'account_no' VARCHAR(100) COLLATE utf8_bin DEFAULT NULL COMMENT '账号',
-  PRIMARY KEY('id')
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `customer_id` INT(11) DEFAULT NULL COMMENT '客户id',
+  `bank` VARCHAR(100) COLLATE utf8_bin DEFAULT NULL COMMENT '行别',
+  `account_no` VARCHAR(100) COLLATE utf8_bin DEFAULT NULL COMMENT '账号',
+  PRIMARY KEY (`id`)
 )
 ENGINE=InnoDB
 AUTO_INCREMENT=1

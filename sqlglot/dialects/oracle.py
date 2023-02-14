@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
 from sqlglot.helper import csv
@@ -8,6 +10,34 @@ from sqlglot.tokens import TokenType
 
 def _limit_sql(self, expression):
     return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
+
+
+def _parse_xml_table(self) -> exp.XMLTable:
+    this = self._parse_string()
+
+    passing = None
+    columns = None
+
+    if self._match_text_seq("PASSING"):
+        # The BY VALUE keywords are optional and are provided for semantic clarity
+        self._match_text_seq("BY", "VALUE")
+
+        passing = self._parse_csv(
+            lambda: self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.COLUMN})
+        )
+
+    by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
+
+    if self._match_text_seq("COLUMNS"):
+        columns = self._parse_csv(lambda: self._parse_column_def(self._parse_field(any_token=True)))
+
+    return self.expression(
+        exp.XMLTable,
+        this=this,
+        passing=passing,
+        columns=columns,
+        by_ref=by_ref,
+    )
 
 
 class Oracle(Dialect):
@@ -43,6 +73,11 @@ class Oracle(Dialect):
             "DECODE": exp.Matches.from_arg_list,
         }
 
+        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "XMLTABLE": _parse_xml_table,
+        }
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
 
@@ -74,7 +109,7 @@ class Oracle(Dialect):
             exp.Substring: rename_func("SUBSTR"),
         }
 
-        def query_modifiers(self, expression, *sqls):
+        def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
             return csv(
                 *sqls,
                 *[self.sql(sql) for sql in expression.args.get("joins") or []],
@@ -97,15 +132,27 @@ class Oracle(Dialect):
                 sep="",
             )
 
-        def offset_sql(self, expression):
+        def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
-        def table_sql(self, expression):
-            return super().table_sql(expression, sep=" ")
+        def table_sql(self, expression: exp.Table, sep: str = " ") -> str:
+            return super().table_sql(expression, sep=sep)
+
+        def xmltable_sql(self, expression: exp.XMLTable) -> str:
+            this = self.sql(expression, "this")
+            passing = self.expressions(expression, "passing")
+            passing = f"{self.sep('')}PASSING{self.seg(passing)}" if passing else ""
+            columns = self.expressions(expression, "columns")
+            columns = f"{self.sep('')}COLUMNS{self.seg(columns)}" if columns else ""
+            by_ref = (
+                f"{self.sep('')}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
+            )
+            return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')')}"
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "COLUMNS": TokenType.COLUMN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "START": TokenType.BEGIN,

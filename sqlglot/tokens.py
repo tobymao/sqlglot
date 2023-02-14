@@ -249,6 +249,7 @@ class TokenType(AutoName):
     RECURSIVE = auto()
     REPLACE = auto()
     RESPECT_NULLS = auto()
+    RETURNING = auto()
     REFERENCES = auto()
     RIGHT = auto()
     RLIKE = auto()

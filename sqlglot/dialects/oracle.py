@@ -7,6 +7,11 @@ from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sq
 from sqlglot.helper import csv
 from sqlglot.tokens import TokenType
 
+PASSING_TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+    TokenType.COLUMN,
+    TokenType.RETURNING,
+}
+
 
 def _limit_sql(self, expression):
     return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
@@ -21,9 +26,8 @@ def _parse_xml_table(self) -> exp.XMLTable:
     if self._match_text_seq("PASSING"):
         # The BY VALUE keywords are optional and are provided for semantic clarity
         self._match_text_seq("BY", "VALUE")
-
         passing = self._parse_csv(
-            lambda: self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.COLUMN})
+            lambda: self._parse_table(alias_tokens=PASSING_TABLE_ALIAS_TOKENS)
         )
 
     by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
@@ -141,13 +145,13 @@ class Oracle(Dialect):
         def xmltable_sql(self, expression: exp.XMLTable) -> str:
             this = self.sql(expression, "this")
             passing = self.expressions(expression, "passing")
-            passing = f"{self.sep('')}PASSING{self.seg(passing)}" if passing else ""
+            passing = f"{self.sep()}PASSING{self.seg(passing)}" if passing else ""
             columns = self.expressions(expression, "columns")
-            columns = f"{self.sep('')}COLUMNS{self.seg(columns)}" if columns else ""
+            columns = f"{self.sep()}COLUMNS{self.seg(columns)}" if columns else ""
             by_ref = (
-                f"{self.sep('')}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
+                f"{self.sep()}RETURNING SEQUENCE BY REF" if expression.args.get("by_ref") else ""
             )
-            return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')')}"
+            return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')', sep='')}"
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
@@ -155,8 +159,9 @@ class Oracle(Dialect):
             "COLUMNS": TokenType.COLUMN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
+            "NVARCHAR2": TokenType.NVARCHAR,
+            "RETURNING": TokenType.RETURNING,
             "START": TokenType.BEGIN,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
-            "NVARCHAR2": TokenType.NVARCHAR,
         }

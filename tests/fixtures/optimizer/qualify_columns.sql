@@ -215,6 +215,9 @@ SELECT _q_0.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS _q_0;
 SELECT * FROM (SELECT a FROM x);
 SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0;
 
+SELECT * FROM x GROUP BY 1, 2;
+SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
+
 --------------------------------------
 -- CTEs
 --------------------------------------

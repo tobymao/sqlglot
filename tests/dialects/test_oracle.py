@@ -8,6 +8,14 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM V$SESSION")
 
     def test_xml_table(self):
+        self.validate_identity("XMLTABLE('x')")
+        self.validate_identity("XMLTABLE('x' RETURNING SEQUENCE BY REF)")
+        self.validate_identity("XMLTABLE('x' PASSING y)")
+        self.validate_identity("XMLTABLE('x' PASSING y RETURNING SEQUENCE BY REF)")
+        self.validate_identity(
+            "XMLTABLE('x' RETURNING SEQUENCE BY REF COLUMNS a VARCHAR2, b FLOAT)"
+        )
+
         self.validate_all(
             """SELECT warehouse_name warehouse,
    warehouse2."Water", warehouse2."Rail"

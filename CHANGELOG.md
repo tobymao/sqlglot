@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v11.1.0
+------
+Changes:
+
+- Breaking: Although this is a breaking change, it fixes and makes the behavior of escaped characters more consistent. Now SQLGlot preserves all line break inputs as they come.
+
 v11.0.0
 ------
 

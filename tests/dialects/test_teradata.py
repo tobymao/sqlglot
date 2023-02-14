@@ -51,3 +51,12 @@ class TestTeradata(Validator):
         self.validate_all("a ^= b", write={"teradata": "a <> b"})
         self.validate_all("a NE b", write={"teradata": "a <> b"})
         self.validate_all("a NOT= b", write={"teradata": "a <> b"})
+
+    def test_datatype(self):
+        self.validate_all(
+            "CREATE TABLE z (a ST_GEOMETRY(1))",
+            write={
+                "teradata": "CREATE TABLE z (a ST_GEOMETRY(1))",
+                "redshift": "CREATE TABLE z (a GEOMETRY(1))",
+            },
+        )

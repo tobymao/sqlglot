@@ -366,6 +366,12 @@ class TestPresto(Validator):
         self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
         self.validate_all(
+            "SELECT a FROM t GROUP BY a, ROLLUP(b), ROLLUP(c), ROLLUP(d)",
+            write={
+                "presto": "SELECT a FROM t GROUP BY a, ROLLUP (b, c, d)",
+            },
+        )
+        self.validate_all(
             'SELECT a."b" FROM "foo"',
             write={
                 "duckdb": 'SELECT a."b" FROM "foo"',
@@ -510,8 +516,8 @@ class TestPresto(Validator):
         self.validate_all(
             "SELECT a, b, c, d, sum(y) FROM z GROUP BY CUBE(a) ROLLUP(a), GROUPING SETS((b, c)), d",
             write={
-                "presto": "SELECT a, b, c, d, SUM(y) FROM z GROUP BY d GROUPING SETS ((b, c)), CUBE (a), ROLLUP (a)",
-                "hive": "SELECT a, b, c, d, SUM(y) FROM z GROUP BY d GROUPING SETS ((b, c)), CUBE (a), ROLLUP (a)",
+                "presto": "SELECT a, b, c, d, SUM(y) FROM z GROUP BY d, GROUPING SETS ((b, c)), CUBE (a), ROLLUP (a)",
+                "hive": "SELECT a, b, c, d, SUM(y) FROM z GROUP BY d, GROUPING SETS ((b, c)), CUBE (a), ROLLUP (a)",
             },
         )
 

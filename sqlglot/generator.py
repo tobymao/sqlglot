@@ -1070,19 +1070,24 @@ class Generator:
 
         cube = ensure_list(expression.args.get("cube"))
         if seq_get(cube, 0) is True:
-            cube_sql = self.seg("WITH CUBE")
+            return f"{group_by}{self.seg('WITH CUBE')}"
         else:
             cube_sql = self.expressions(expression, key="cube", indent=False)
             cube_sql = f"{self.seg('CUBE')} {self.wrap(cube_sql)}" if cube_sql else ""
 
         rollup = ensure_list(expression.args.get("rollup"))
         if seq_get(rollup, 0) is True:
-            rollup_sql = self.seg("WITH ROLLUP")
+            return f"{group_by}{self.seg('WITH ROLLUP')}"
         else:
             rollup_sql = self.expressions(expression, key="rollup", indent=False)
             rollup_sql = f"{self.seg('ROLLUP')} {self.wrap(rollup_sql)}" if rollup_sql else ""
 
-        return f"{group_by}{csv(grouping_sets, cube_sql, rollup_sql, sep=',')}"
+        groupings = csv(grouping_sets, cube_sql, rollup_sql, sep=",")
+
+        if expression.args.get("expressions") and groupings:
+            group_by = f"{group_by},"
+
+        return f"{group_by}{groupings}"
 
     def having_sql(self, expression: exp.Having) -> str:
         this = self.indent(self.sql(expression, "this"))

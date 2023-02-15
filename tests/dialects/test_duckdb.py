@@ -317,6 +317,8 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_identity("ATTACH DATABASE ':memory:' AS new_database")
+
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT a FROM b PIVOT(SUM(x) FOR y IN ('z', 'q'))",

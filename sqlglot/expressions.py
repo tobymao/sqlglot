@@ -2483,6 +2483,7 @@ class DataType(Expression):
         "expressions": False,
         "nested": False,
         "values": False,
+        "prefix": False,
     }
 
     class Type(AutoName):

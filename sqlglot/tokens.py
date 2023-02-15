@@ -189,6 +189,7 @@ class TokenType(AutoName):
     IF = auto()
     IGNORE_NULLS = auto()
     ILIKE = auto()
+    ILIKE_ANY = auto()
     IN = auto()
     INDEX = auto()
     INNER = auto()
@@ -207,6 +208,7 @@ class TokenType(AutoName):
     LEADING = auto()
     LEFT = auto()
     LIKE = auto()
+    LIKE_ANY = auto()
     LIMIT = auto()
     LOAD_DATA = auto()
     LOCAL = auto()
@@ -526,6 +528,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
+        "ILIKE ANY": TokenType.ILIKE_ANY,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
@@ -542,6 +545,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LEADING": TokenType.LEADING,
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
+        "LIKE ANY": TokenType.LIKE_ANY,
         "LIMIT": TokenType.LIMIT,
         "LOAD DATA": TokenType.LOAD_DATA,
         "LOCAL": TokenType.LOCAL,

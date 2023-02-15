@@ -493,8 +493,14 @@ class Parser(metaclass=_Parser):
         TokenType.LIKE: lambda self, this: self._parse_escape(
             self.expression(exp.Like, this=this, expression=self._parse_bitwise())
         ),
+        TokenType.LIKE_ANY: lambda self, this: self._parse_escape(
+            self.expression(exp.LikeAny, this=this, expression=self._parse_bitwise())
+        ),
         TokenType.ILIKE: lambda self, this: self._parse_escape(
             self.expression(exp.ILike, this=this, expression=self._parse_bitwise())
+        ),
+        TokenType.ILIKE_ANY: lambda self, this: self._parse_escape(
+            self.expression(exp.ILikeAny, this=this, expression=self._parse_bitwise())
         ),
         TokenType.IRLIKE: lambda self, this: self.expression(
             exp.RegexpILike, this=this, expression=self._parse_bitwise()
@@ -618,7 +624,6 @@ class Parser(metaclass=_Parser):
     NO_PAREN_FUNCTION_PARSERS = {
         TokenType.CASE: lambda self: self._parse_case(),
         TokenType.IF: lambda self: self._parse_if(),
-        TokenType.ANY: lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
     }
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {

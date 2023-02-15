@@ -416,15 +416,7 @@ class Generator:
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
     def column_sql(self, expression: exp.Column) -> str:
-        return ".".join(
-            part
-            for part in [
-                self.sql(expression, "db"),
-                self.sql(expression, "table"),
-                self.sql(expression, "this"),
-            ]
-            if part
-        )
+        return ".".join(self.sql(part) for part in reversed(expression.args.values()) if part)
 
     def columndef_sql(self, expression: exp.ColumnDef) -> str:
         column = self.sql(expression, "this")

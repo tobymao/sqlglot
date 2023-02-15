@@ -78,6 +78,7 @@ class DuckDB(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             ":=": TokenType.EQ,
+            "ATTACH": TokenType.COMMAND,
             "CHARACTER VARYING": TokenType.VARCHAR,
         }
 

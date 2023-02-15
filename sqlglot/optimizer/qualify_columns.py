@@ -61,8 +61,6 @@ def _pop_table_column_aliases(derived_tables):
     (e.g. SELECT ... FROM (SELECT ...) AS foo(col1, col2)
     """
     for derived_table in derived_tables:
-        if isinstance(derived_table.unnest(), exp.UDTF):
-            continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
             table_alias.args.pop("columns", None)
@@ -396,7 +394,8 @@ class _Resolver:
     def _get_all_source_columns(self):
         if self._source_columns is None:
             self._source_columns = {
-                k: self.get_source_columns(k) for k in self.scope.selected_sources
+                k: self.get_source_columns(k)
+                for k in itertools.chain(self.scope.selected_sources, self.scope.lateral_sources)
             }
         return self._source_columns
 

@@ -60,3 +60,5 @@ class TestTeradata(Validator):
                 "redshift": "CREATE TABLE z (a GEOMETRY(1))",
             },
         )
+
+        self.validate_identity("CREATE TABLE z (a SYSUDTLIB.INT)")

@@ -1427,7 +1427,10 @@ class Generator:
         return f"ALL {self.wrap(expression)}"
 
     def any_sql(self, expression: exp.Any) -> str:
-        return f"ANY {self.wrap(expression)}"
+        this = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Subqueryable):
+            this = self.wrap(this)
+        return f"ANY {this}"
 
     def exists_sql(self, expression: exp.Exists) -> str:
         return f"EXISTS{self.wrap(expression)}"
@@ -1752,17 +1755,11 @@ class Generator:
     def ilike_sql(self, expression: exp.ILike) -> str:
         return self.binary(expression, "ILIKE")
 
-    def ilikeany_sql(self, expression: exp.ILikeAny) -> str:
-        return self.binary(expression, "ILIKE ANY")
-
     def is_sql(self, expression: exp.Is) -> str:
         return self.binary(expression, "IS")
 
     def like_sql(self, expression: exp.Like) -> str:
         return self.binary(expression, "LIKE")
-
-    def likeany_sql(self, expression: exp.LikeAny) -> str:
-        return self.binary(expression, "LIKE ANY")
 
     def similarto_sql(self, expression: exp.SimilarTo) -> str:
         return self.binary(expression, "SIMILAR TO")

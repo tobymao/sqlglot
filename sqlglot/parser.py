@@ -624,6 +624,7 @@ class Parser(metaclass=_Parser):
     NO_PAREN_FUNCTION_PARSERS = {
         TokenType.CASE: lambda self: self._parse_case(),
         TokenType.IF: lambda self: self._parse_if(),
+        TokenType.ANY: lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
     }
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {

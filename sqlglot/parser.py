@@ -604,6 +604,7 @@ class Parser(metaclass=_Parser):
         ),
         "GENERATED": lambda self: self._parse_generated_as_identity(),
         "IDENTITY": lambda self: self._parse_auto_increment(),
+        "INLINE": lambda self: self._parse_inline(),
         "LIKE": lambda self: self._parse_create_like(),
         "NOT": lambda self: self._parse_not_constraint(),
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
@@ -2894,6 +2895,10 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
 
         return this
+
+    def _parse_inline(self) -> t.Optional[exp.Expression]:
+        self._match_text_seq("LENGTH")
+        return self.expression(exp.InlineLengthColumnConstraint, this=self._parse_bitwise())
 
     def _parse_not_constraint(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("NULL"):

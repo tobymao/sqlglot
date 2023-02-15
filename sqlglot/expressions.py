@@ -961,6 +961,10 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     }
 
 
+class InlineLengthColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class NotNullColumnConstraint(ColumnConstraintKind):
     arg_types = {"allow_null": False}
 

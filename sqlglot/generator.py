@@ -653,8 +653,8 @@ class Generator:
     def datatype_sql(self, expression: exp.DataType) -> str:
         type_value = expression.this
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
-        syslib = expression.args.get("syslib")
-        syslib_sql = f"{self.sql(syslib)}." if syslib else ""
+        syslib_sql = expression.args.get("syslib")
+        syslib_sql = f"{syslib_sql}." if syslib_sql else ""
         type_sql = f"{syslib_sql}{type_sql}"
         nested = ""
         interior = self.expressions(expression, flat=True)

@@ -473,11 +473,10 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("GENERATE_SERIES(a, b, c)"), exp.GenerateSeries)
 
     def test_column(self):
-        dot = parse_one("a.b.c")
-        column = dot.this
-        self.assertEqual(column.table, "a")
-        self.assertEqual(column.name, "b")
-        self.assertEqual(dot.text("expression"), "c")
+        column = parse_one("a.b.c")
+        self.assertEqual(column.schema, "a")
+        self.assertEqual(column.table, "b")
+        self.assertEqual(column.name, "c")
 
         column = parse_one("a")
         self.assertEqual(column.name, "a")
@@ -486,10 +485,10 @@ class TestExpressions(unittest.TestCase):
         fields = parse_one("a.b.c.d")
         self.assertIsInstance(fields, exp.Dot)
         self.assertEqual(fields.text("expression"), "d")
-        self.assertEqual(fields.this.text("expression"), "c")
         column = fields.find(exp.Column)
-        self.assertEqual(column.name, "b")
-        self.assertEqual(column.table, "a")
+        self.assertEqual(column.name, "c")
+        self.assertEqual(column.table, "b")
+        self.assertEqual(column.schema, "a")
 
         column = parse_one("a[0].b")
         self.assertIsInstance(column, exp.Dot)
@@ -505,8 +504,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("*"), exp.Star)
 
     def test_text(self):
-        column = parse_one("a.b.c")
-        self.assertEqual(column.text("expression"), "c")
+        column = parse_one("a.b.c.d")
+        self.assertEqual(column.text("expression"), "d")
         self.assertEqual(column.text("y"), "")
         self.assertEqual(parse_one("select * from x.y").find(exp.Table).text("db"), "x")
         self.assertEqual(parse_one("select *").name, "")

@@ -870,14 +870,18 @@ class ByteString(Condition):
 
 
 class Column(Condition):
-    arg_types = {"this": True, "table": False}
+    arg_types = {"this": True, "table": False, "schema": False}
 
     @property
-    def table(self):
+    def table(self) -> t.Optional[str]:
         return self.text("table")
 
     @property
-    def output_name(self):
+    def schema(self) -> t.Optional[str]:
+        return self.text("schema")
+
+    @property
+    def output_name(self) -> str:
         return self.name
 
 
@@ -4279,19 +4283,27 @@ def subquery(expression, alias=None, dialect=None, **opts):
     return Select().from_(expression, dialect=dialect, **opts)
 
 
-def column(col, table=None, quoted=None) -> Column:
+def column(
+    col: str | Identifier,
+    table: t.Optional[str | Identifier] = None,
+    schema: t.Optional[str | Identifier] = None,
+    quoted: t.Optional[bool] = None,
+) -> Column:
     """
     Build a Column.
 
     Args:
-        col (str | Expression): column name
-        table (str | Expression): table name
+        col: column name
+        table: table name
+        schema: schema name
+        quoted: whether or not to force quote each part
     Returns:
         Column: column instance
     """
     return Column(
         this=to_identifier(col, quoted=quoted),
         table=to_identifier(table, quoted=quoted),
+        schema=to_identifier(schema, quoted=quoted),
     )
 
 

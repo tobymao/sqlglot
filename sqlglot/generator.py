@@ -417,12 +417,12 @@ class Generator:
 
     def column_sql(self, expression: exp.Column) -> str:
         return ".".join(
-            part
-            for part in [
-                self.sql(expression, "db"),
-                self.sql(expression, "table"),
-                self.sql(expression, "this"),
-            ]
+            self.sql(part)
+            for part in (
+                expression.args.get("schema"),
+                expression.args.get("table"),
+                expression.args.get("this"),
+            )
             if part
         )
 

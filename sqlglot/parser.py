@@ -2630,8 +2630,10 @@ class Parser(metaclass=_Parser):
 
             if op:
                 this = op(self, this, field)
-            elif isinstance(this, exp.Column) and not this.table:
-                this = self.expression(exp.Column, this=field, table=this.this)
+            elif isinstance(this, exp.Column) and not this.args.get("schema"):
+                this = self.expression(
+                    exp.Column, this=field, table=this.this, schema=this.args.get("table")
+                )
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)
             this = self._parse_bracket(this)

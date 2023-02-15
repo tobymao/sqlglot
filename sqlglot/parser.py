@@ -594,6 +594,7 @@ class Parser(metaclass=_Parser):
         "COMMENT": lambda self: self.expression(
             exp.CommentColumnConstraint, this=self._parse_string()
         ),
+        "COMPRESS": lambda self: self._parse_compress(),
         "DEFAULT": lambda self: self.expression(
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),
@@ -2868,6 +2869,14 @@ class Parser(metaclass=_Parser):
             return exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
 
         return exp.AutoIncrementColumnConstraint()
+
+    def _parse_compress(self) -> exp.Expression:
+        if self._match(TokenType.L_PAREN, advance=False):
+            return self.expression(
+                exp.CompressColumnConstraint, this=self._parse_wrapped_csv(self._parse_bitwise)
+            )
+        else:
+            return self.expression(exp.CompressColumnConstraint, this=self._parse_bitwise())
 
     def _parse_generated_as_identity(self) -> exp.Expression:
         if self._match(TokenType.BY_DEFAULT):

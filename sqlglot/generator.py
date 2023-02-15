@@ -445,6 +445,14 @@ class Generator:
     def autoincrementcolumnconstraint_sql(self, _) -> str:
         return self.token_sql(TokenType.AUTO_INCREMENT)
 
+    def compresscolumnconstraint_sql(self, expression: exp.CompressColumnConstraint) -> str:
+        if isinstance(expression.this, list):
+            this = self.wrap(self.expressions(expression, key="this", flat=True))
+        else:
+            this = self.sql(expression, "this")
+
+        return f"COMPRESS {this}"
+
     def generatedasidentitycolumnconstraint_sql(
         self, expression: exp.GeneratedAsIdentityColumnConstraint
     ) -> str:

@@ -2760,7 +2760,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.L_PAREN):
             return this
 
-        expressions = self._parse_csv(self._parse_udf_kwarg)
+        expressions = self._parse_csv(lambda: self._parse_column_def(self._parse_id_var()))
         self._match_r_paren()
         return self.expression(
             exp.UserDefinedFunction, this=this, expressions=expressions, wrapped=True
@@ -2785,15 +2785,6 @@ class Parser(metaclass=_Parser):
             this = self._parse_var() or self._parse_primary()
 
         return self.expression(exp.SessionParameter, this=this, kind=kind)
-
-    def _parse_udf_kwarg(self) -> t.Optional[exp.Expression]:
-        this = self._parse_id_var()
-        kind = self._parse_types()
-
-        if not kind:
-            return this
-
-        return self.expression(exp.UserDefinedFunctionKwarg, this=this, kind=kind)
 
     def _parse_lambda(self) -> t.Optional[exp.Expression]:
         index = self._index

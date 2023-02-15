@@ -1432,7 +1432,10 @@ class Generator:
         return f"ALL {self.wrap(expression)}"
 
     def any_sql(self, expression: exp.Any) -> str:
-        return f"ANY {self.wrap(expression)}"
+        this = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Subqueryable):
+            this = self.wrap(this)
+        return f"ANY {this}"
 
     def exists_sql(self, expression: exp.Exists) -> str:
         return f"EXISTS{self.wrap(expression)}"

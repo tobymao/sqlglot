@@ -406,6 +406,8 @@ class TestExpressions(unittest.TestCase):
         )
 
     def test_functions(self):
+        self.assertIsInstance(parse_one("x LIKE ANY (y)"), exp.Like)
+        self.assertIsInstance(parse_one("x ILIKE ANY (y)"), exp.ILike)
         self.assertIsInstance(parse_one("ABS(a)"), exp.Abs)
         self.assertIsInstance(parse_one("APPROX_DISTINCT(a)"), exp.ApproxDistinct)
         self.assertIsInstance(parse_one("ARRAY(a)"), exp.Array)

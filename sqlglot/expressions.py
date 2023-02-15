@@ -2487,7 +2487,7 @@ class DataType(Expression):
         "expressions": False,
         "nested": False,
         "values": False,
-        "syslib": False,
+        "prefix": False,
     }
 
     class Type(AutoName):

@@ -2472,7 +2472,7 @@ class Parser(metaclass=_Parser):
     def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
         index = self._index
 
-        syslib = "SYSUDTLIB" if self._match_text_seq("SYSUDTLIB", ".") else None
+        prefix = "SYSUDTLIB" if self._match_text_seq("SYSUDTLIB", ".") else None
 
         if not self._match_set(self.TYPE_TOKENS):
             return None
@@ -2575,7 +2575,7 @@ class Parser(metaclass=_Parser):
             expressions=expressions,
             nested=nested,
             values=values,
-            syslib=syslib,
+            prefix=prefix,
         )
 
     def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:

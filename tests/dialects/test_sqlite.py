@@ -5,6 +5,12 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_ddl(self):
+        self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR FAIL INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
+
         self.validate_all(
             "CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)",
             write={"sqlite": "CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)"},

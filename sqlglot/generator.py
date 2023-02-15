@@ -929,14 +929,17 @@ class Generator:
         else:
             this = "OVERWRITE TABLE " if overwrite else "INTO "
 
+        alternative = expression.args.get("alternative")
+        alternative = f" OR {alternative} " if alternative else " "
         this = f"{this}{self.sql(expression, 'this')}"
+
         exists = " IF EXISTS " if expression.args.get("exists") else " "
         partition_sql = (
             self.sql(expression, "partition") if expression.args.get("partition") else ""
         )
         expression_sql = self.sql(expression, "expression")
         sep = self.sep() if partition_sql else ""
-        sql = f"INSERT {this}{exists}{partition_sql}{sep}{expression_sql}"
+        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:

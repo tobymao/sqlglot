@@ -584,8 +584,7 @@ def _traverse_tables(scope):
     for join in scope.expression.args.get("joins") or []:
         expressions.append(join.this)
 
-    for lateral in scope.expression.args.get("laterals") or []:
-        expressions.append(lateral)
+    expressions.extend(scope.expression.args.get("laterals") or [])
 
     for expression in expressions:
         if isinstance(expression, exp.Table):

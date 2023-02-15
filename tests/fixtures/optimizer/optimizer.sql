@@ -1,15 +1,10 @@
 # title: lateral
 # execute: false
 SELECT a, m FROM z LATERAL VIEW EXPLODE([1, 2]) q AS m;
-WITH "z_2" AS (
-  SELECT
-    "z"."a" AS "a"
-  FROM "z" AS "z"
-)
 SELECT
   "z"."a" AS "a",
   "q"."m" AS "m"
-FROM "z_2" AS "z"
+FROM "z" AS "z"
 LATERAL VIEW
 EXPLODE(ARRAY(1, 2)) q AS "m";
 

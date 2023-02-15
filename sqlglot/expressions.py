@@ -825,10 +825,6 @@ class UserDefinedFunction(Expression):
     arg_types = {"this": True, "expressions": False, "wrapped": False}
 
 
-class UserDefinedFunctionKwarg(Expression):
-    arg_types = {"this": True, "kind": True, "default": False}
-
-
 class CharacterSet(Expression):
     arg_types = {"this": True, "default": False}
 

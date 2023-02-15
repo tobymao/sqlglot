@@ -10,6 +10,13 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE test (foo HSTORE)")
         self.validate_identity("CREATE TABLE test (foo JSONB)")
         self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
+
+        self.validate_all(
+            "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
+            write={
+                "postgres": "CREATE OR REPLACE FUNCTION function_name(input_a VARCHAR DEFAULT CAST(NULL AS VARCHAR))",
+            },
+        )
         self.validate_all(
             "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
             write={

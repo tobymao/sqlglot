@@ -1905,11 +1905,6 @@ class Generator:
         )
         return f"{this}{expressions}"
 
-    def userdefinedfunctionkwarg_sql(self, expression: exp.UserDefinedFunctionKwarg) -> str:
-        this = self.sql(expression, "this")
-        kind = self.sql(expression, "kind")
-        return f"{this} {kind}"
-
     def joinhint_sql(self, expression: exp.JoinHint) -> str:
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)

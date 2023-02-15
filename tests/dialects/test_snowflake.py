@@ -1,4 +1,4 @@
-from sqlglot import UnsupportedError
+from sqlglot import UnsupportedError, exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -612,6 +612,13 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
                 "spark": "DESCRIBE db.table",
             },
         )
+
+    def test_parse_like_any(self):
+        like = parse_one("a LIKE ANY fun('foo')", read="snowflake")
+        ilike = parse_one("a ILIKE ANY fun('foo')", read="snowflake")
+
+        self.assertIsInstance(like, exp.LikeAny)
+        self.assertIsInstance(ilike, exp.ILikeAny)
 
     def test_match_recognize(self):
         for row in (

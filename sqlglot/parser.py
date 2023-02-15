@@ -1473,17 +1473,15 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             this = self._parse_table(schema=True)
 
-        insert = self.expression(
+        return self.expression(
             exp.Insert,
             this=this,
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_ddl_select(),
             overwrite=overwrite,
+            alternative=alternative,
         )
-
-        insert.set("or", alternative)
-        return insert
 
     def _parse_row(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.FORMAT):

@@ -929,7 +929,7 @@ class Generator:
         else:
             this = "OVERWRITE TABLE " if overwrite else "INTO "
 
-        alternative = expression.args.get("or")
+        alternative = expression.args.get("alternative")
         alternative = f" OR {alternative} " if alternative else " "
         this = f"{this}{self.sql(expression, 'this')}"
 

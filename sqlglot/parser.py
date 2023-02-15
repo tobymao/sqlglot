@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
+from collections import defaultdict
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
@@ -2183,39 +2184,33 @@ class Parser(metaclass=_Parser):
         if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
             return None
 
-        elements = {}
-
-        def parse_element(parser: t.Callable, key: str) -> None:
-            if key in elements:
-                return
-
-            extension = parser()
-
-            if extension:
-                elements[key] = extension
-                self._match(TokenType.COMMA)
+        elements = defaultdict(list)
 
         while True:
-            size = len(elements)
+            expressions = self._parse_csv(self._parse_conjunction)
+            if expressions:
+                elements["expressions"].extend(expressions)
 
-            parse_element(lambda: self._parse_csv(self._parse_conjunction), "expressions")
-            parse_element(self._parse_grouping_sets, "grouping_sets")
+            grouping_sets = self._parse_grouping_sets()
+            if grouping_sets:
+                elements["grouping_sets"].extend(grouping_sets)
+
+            rollup = None
+            cube = None
+
             with_ = self._match(TokenType.WITH)
-            parse_element(
-                lambda: self._match(TokenType.CUBE)
-                and (with_ or self._parse_wrapped_csv(self._parse_column)),
-                "cube",
-            )
-            parse_element(
-                lambda: self._match(TokenType.ROLLUP)
-                and (with_ or self._parse_wrapped_csv(self._parse_column)),
-                "rollup",
-            )
+            if self._match(TokenType.ROLLUP):
+                rollup = with_ or self._parse_wrapped_csv(self._parse_column)
+                elements["rollup"].extend(ensure_list(rollup))
 
-            if len(elements) == size or len(elements) >= 4:
+            if self._match(TokenType.CUBE):
+                cube = with_ or self._parse_wrapped_csv(self._parse_column)
+                elements["cube"].extend(ensure_list(cube))
+
+            if not (expressions or grouping_sets or rollup or cube):
                 break
 
-        return self.expression(exp.Group, **elements)
+        return self.expression(exp.Group, **elements)  # type: ignore
 
     def _parse_grouping_sets(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
         if not self._match(TokenType.GROUPING_SETS):

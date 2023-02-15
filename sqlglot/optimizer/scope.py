@@ -252,7 +252,7 @@ class Scope:
 
             external_columns = [
                 column
-                for scope in self.subquery_scopes + self.udtf_scopes
+                for scope in itertools.chain(self.subquery_scopes, self.udtf_scopes)
                 for column in scope.external_columns
             ]
 
@@ -288,7 +288,7 @@ class Scope:
 
             for table in self.tables:
                 referenced_names.append((table.alias_or_name, table))
-            for expression in self.derived_tables + self.udtfs:
+            for expression in itertools.chain(self.derived_tables, self.udtfs):
                 referenced_names.append((expression.alias, expression.unnest()))
             result = {}
 

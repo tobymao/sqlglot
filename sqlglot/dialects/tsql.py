@@ -408,7 +408,7 @@ class TSQL(Dialect):
             ):
                 return this
 
-            expressions = self._parse_csv(lambda: self._parse_column_def(self._parse_id_var()))
+            expressions = self._parse_csv(self._parse_function_parameter)
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
     class Generator(generator.Generator):

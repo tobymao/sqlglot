@@ -666,6 +666,8 @@ class Parser(metaclass=_Parser):
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
+    INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
+
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
@@ -1455,6 +1457,7 @@ class Parser(metaclass=_Parser):
 
         this: t.Optional[exp.Expression]
 
+        or_ = None
         if self._match_text_seq("DIRECTORY"):
             this = self.expression(
                 exp.Directory,
@@ -1463,6 +1466,9 @@ class Parser(metaclass=_Parser):
                 row_format=self._parse_row_format(match_row=True),
             )
         else:
+            if self._match(TokenType.OR):
+                or_ = self._match_texts(self.INSERT_ALTERNATIVES) and self._prev.text
+
             self._match(TokenType.INTO)
             self._match(TokenType.TABLE)
             this = self._parse_table(schema=True)
@@ -1474,6 +1480,7 @@ class Parser(metaclass=_Parser):
             partition=self._parse_partition(),
             expression=self._parse_ddl_select(),
             overwrite=overwrite,
+            or_=or_,
         )
 
     def _parse_row(self) -> t.Optional[exp.Expression]:

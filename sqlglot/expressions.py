@@ -1094,6 +1094,7 @@ class Insert(Expression):
         "overwrite": False,
         "exists": False,
         "partition": False,
+        "or_": False,
     }
 
 

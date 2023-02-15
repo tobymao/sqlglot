@@ -57,7 +57,7 @@ class Scope:
     ):
         self.expression = expression
         self.sources = sources or {}
-        self.lateral_sources = {**lateral_sources} if lateral_sources else {}
+        self.lateral_sources = lateral_sources.copy() if lateral_sources else {}
         self.sources.update(self.lateral_sources)
         self.outer_column_list = outer_column_list or []
         self.parent = parent

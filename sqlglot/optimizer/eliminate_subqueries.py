@@ -97,7 +97,7 @@ def _eliminate(scope, existing_ctes, taken):
     if scope.is_union:
         return _eliminate_union(scope, existing_ctes, taken)
 
-    if scope.is_derived_table and not isinstance(scope.expression, exp.UDTF):
+    if scope.is_derived_table:
         return _eliminate_derived_table(scope, existing_ctes, taken)
 
     if scope.is_cte:

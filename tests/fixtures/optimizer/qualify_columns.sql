@@ -313,6 +313,15 @@ SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
 SELECT aa FROM x, UNNEST(a) AS aa;
 SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
 
+# execute: false
+# dialect: presto
+SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(b, ',')) AS i(b);
+SELECT x.a AS a, i.b AS b FROM x AS x CROSS JOIN UNNEST(SPLIT(x.b, ',')) AS i(b);
+
+# execute: false
+SELECT c FROM (SELECT 1 a) AS x LATERAL VIEW EXPLODE(a) AS c;
+SELECT _q_0.c AS c FROM (SELECT 1 AS a) AS x LATERAL VIEW EXPLODE(x.a) _q_0 AS c;
+
 --------------------------------------
 -- Window functions
 --------------------------------------

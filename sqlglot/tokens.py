@@ -117,7 +117,6 @@ class TokenType(AutoName):
     OBJECT = auto()
 
     # keywords
-    ABORT = auto()
     ALIAS = auto()
     ALTER = auto()
     ALWAYS = auto()
@@ -171,7 +170,6 @@ class TokenType(AutoName):
     EXCEPT = auto()
     EXECUTE = auto()
     EXISTS = auto()
-    FAIL = auto()
     FALSE = auto()
     FETCH = auto()
     FILTER = auto()
@@ -193,7 +191,6 @@ class TokenType(AutoName):
     HINT = auto()
     IDENTITY = auto()
     IF = auto()
-    IGNORE = auto()
     IGNORE_NULLS = auto()
     ILIKE = auto()
     IN = auto()
@@ -469,7 +466,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
-        "ABORT" : TokenType.ABORT,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,
@@ -520,7 +516,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "EXECUTE": TokenType.EXECUTE,
         "EXISTS": TokenType.EXISTS,
         "FALSE": TokenType.FALSE,
-        "FAIL": TokenType.FAIL,
         "FETCH": TokenType.FETCH,
         "FILTER": TokenType.FILTER,
         "FIRST": TokenType.FIRST,
@@ -539,7 +534,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "IDENTITY": TokenType.IDENTITY,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
-        "IGNORE": TokenType.IGNORE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,

@@ -331,3 +331,15 @@ class TestParser(unittest.TestCase):
             parse_one("ALTER TABLE foo RENAME TO bar").sql(),
             "ALTER TABLE foo RENAME TO bar",
         )
+
+    def test_insert_or(self):
+        s1 = "INSERT OR IGNORE INTO foo (x, y) values (?, ?)"
+        p1 = parse_one(s1)
+        self.assertIsInstance(p1, exp.Insert)
+        self.assertIsNotNone(p1.args["or_"])
+        s2 = p1.sql()
+        self.assertEqual(s1, s2)
+
+        p2 = parse_one("INSERT INTO foo (a, b) VALUES (1, 2)")
+        self.assertIsInstance(p2, exp.Insert)
+        self.assertIsNone(p2.args["or_"])

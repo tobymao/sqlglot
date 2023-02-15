@@ -349,15 +349,6 @@ class Parser(metaclass=_Parser):
         TokenType.ANTI,
     }
 
-    # INSERT OR IGNORE https://www.sqlite.org/syntax/insert-stmt.html
-    INSERT_OR_KINDS = {
-        TokenType.ABORT,
-        TokenType.FAIL,
-        TokenType.IGNORE,
-        TokenType.REPLACE,
-        TokenType.ROLLBACK,
-    }
-
     LAMBDAS = {
         TokenType.ARROW: lambda self, expressions: self.expression(
             exp.Lambda,
@@ -1432,10 +1423,17 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Describe, this=this, kind=kind)
 
-    def _parse_or_cond(self):
+    def _parse_insert_or(self) -> t.Optional[str]:
+        """Parses the or clause from SQLite
+
+        https://www.sqlite.org/lang_insert.html
+        """
         if self._match_text_seq("OR"):
-          if self._match_set(self.INSERT_OR_KINDS):
-            return self._prev
+            if self._match_texts(["ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"]):
+                token = self._prev
+                if token is not None:
+                    return token.text
+        return None
 
     def _parse_insert(self) -> exp.Expression:
         overwrite = self._match(TokenType.OVERWRITE)
@@ -1452,7 +1450,7 @@ class Parser(metaclass=_Parser):
             )
             or_cond = None
         else:
-            or_cond = self._parse_or_cond()
+            or_cond = self._parse_insert_or()
             self._match(TokenType.INTO)
             self._match(TokenType.TABLE)
             this = self._parse_table(schema=True)
@@ -1460,7 +1458,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Insert,
             this=this,
-            or_cond = or_cond,
+            or_=or_cond,  # type: ignore
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_ddl_select(),
@@ -3768,7 +3766,7 @@ class Parser(metaclass=_Parser):
             expression.comments = self._prev_comments
 
     def _match_texts(self, texts):
-        """ Match one of the texts in texts. """
+        """Match one of the texts in texts."""
         if self._curr and self._curr.text.upper() in texts:
             self._advance()
             return True

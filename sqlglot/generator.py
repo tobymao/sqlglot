@@ -932,13 +932,12 @@ class Generator:
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")
-        or_cond = "" if expression.or_cond is None else f"OR {expression.or_cond} "
-
+        or_cond = self.sql(expression, "or_")
+        or_cond = f"OR {or_cond} " if or_cond is not None else ""
         if isinstance(expression.this, exp.Directory):
             this = "OVERWRITE " if overwrite else "INTO "
         else:
             this = "OVERWRITE TABLE " if overwrite else "INTO "
-
 
         this = f"{this}{self.sql(expression, 'this')}"
         exists = " IF EXISTS " if expression.args.get("exists") else " "

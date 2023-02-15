@@ -1070,25 +1070,17 @@ class Index(Expression):
         "amp": False,  # teradata
     }
 
+
 class Insert(Expression):
     arg_types = {
         "with": False,
         "this": True,
-        "or_cond": False,
+        "or_": False,
         "expression": False,
         "overwrite": False,
         "exists": False,
         "partition": False,
     }
-
-    @property
-    def or_cond(self):
-        oc = self.args.get("or_cond")
-        if oc is not None:
-            return oc.text
-        else:
-            return None
-
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html

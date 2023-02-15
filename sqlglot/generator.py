@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
-from sqlglot.helper import apply_index_offset, csv, ensure_list, seq_get
+from sqlglot.helper import apply_index_offset, csv, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -1068,14 +1068,14 @@ class Generator:
             f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}" if grouping_sets else ""
         )
 
-        cube = ensure_list(expression.args.get("cube"))
+        cube = expression.args.get("cube", [])
         if seq_get(cube, 0) is True:
             return f"{group_by}{self.seg('WITH CUBE')}"
         else:
             cube_sql = self.expressions(expression, key="cube", indent=False)
             cube_sql = f"{self.seg('CUBE')} {self.wrap(cube_sql)}" if cube_sql else ""
 
-        rollup = ensure_list(expression.args.get("rollup"))
+        rollup = expression.args.get("rollup", [])
         if seq_get(rollup, 0) is True:
             return f"{group_by}{self.seg('WITH ROLLUP')}"
         else:

@@ -57,3 +57,27 @@ SELECT q.x AS x FROM (VALUES (1, 2)) AS q(x, y);
 
 SELECT i.a FROM x AS i LEFT JOIN (SELECT a, b FROM (SELECT a, b FROM x)) AS j ON i.a = j.a;
 SELECT i.a AS a FROM x AS i LEFT JOIN (SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0) AS j ON i.a = j.a;
+
+--------------------------------------
+-- Unknown Star Expansion
+--------------------------------------
+SELECT a FROM (SELECT * FROM zz) WHERE b = 1;
+SELECT _q_0.a AS a FROM (SELECT zz.a AS a, zz.b AS b FROM zz AS zz) AS _q_0 WHERE _q_0.b = 1;
+
+SELECT a FROM (SELECT * FROM aa UNION ALL SELECT * FROM bb UNION ALL SELECT * from cc);
+SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION ALL SELECT bb.a AS a FROM bb AS bb UNION ALL SELECT cc.a AS a FROM cc AS cc) AS _q_0;
+
+SELECT a FROM (SELECT a FROM aa UNION ALL SELECT * FROM bb UNION ALL SELECT * from cc);
+SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION ALL SELECT bb.a AS a FROM bb AS bb UNION ALL SELECT cc.a AS a FROM cc AS cc) AS _q_0;
+
+SELECT a FROM (SELECT * FROM aa UNION ALL SELECT * FROM bb UNION ALL SELECT * from cc);
+SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION ALL SELECT bb.a AS a FROM bb AS bb UNION ALL SELECT cc.a AS a FROM cc AS cc) AS _q_0;
+
+SELECT a FROM (SELECT * FROM aa CROSS JOIN bb);
+SELECT _q_0.a AS a FROM (SELECT a AS a FROM aa AS aa CROSS JOIN bb AS bb) AS _q_0;
+
+SELECT a FROM (SELECT aa.* FROM aa);
+SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _q_0;
+
+SELECT a FROM (SELECT * FROM (SELECT * FROM aa));
+SELECT _q_1.a AS a FROM (SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _q_0) AS _q_1;

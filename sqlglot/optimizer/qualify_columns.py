@@ -25,30 +25,18 @@ def qualify_columns(expression, schema):
         sqlglot.Expression: qualified expression
     """
     schema = ensure_schema(schema)
-    unexpanded_scopes = {}
 
     for scope in traverse_scope(expression):
-        resolver = _Resolver(scope, schema)
+        resolver = Resolver(scope, schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         _expand_using(scope, resolver)
         _qualify_columns(scope, resolver)
         if not isinstance(scope.expression, exp.UDTF):
-            _expand_stars(scope, resolver, unexpanded_scopes)
+            _expand_stars(scope, resolver)
             _qualify_outputs(scope)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
-
-    if unexpanded_scopes:
-        for scope, stars in unexpanded_scopes.items():
-            selects = [select for select in scope.selects if select not in stars]
-            if not selects:
-                raise OptimizeError(
-                    f"Cannot expand stars for {scope} because it has no schema and projection pushdown cannot be inferred."
-                )
-            scope.expression.select(*selects, append=False, copy=False)
-
-        expression = qualify_columns(expression, schema)
     return expression
 
 
@@ -224,14 +212,6 @@ def _qualify_columns(scope, resolver):
             # column_table can be a '' because bigquery unnest has no table alias
             if column_table:
                 column.set("table", exp.to_identifier(column_table))
-                source_columns = resolver.get_source_columns(column_table)
-
-                if column_name not in source_columns and "*" in source_columns:
-                    scope.sources[column_table].expression.select(
-                        alias(column_name, column_name),
-                        append=True,
-                        copy=False,
-                    )
 
     columns_missing_from_scope = []
     # Determine whether each reference in the order by clause is to a column or an alias.
@@ -261,13 +241,12 @@ def _qualify_columns(scope, resolver):
             column.set("table", exp.to_identifier(column_table))
 
 
-def _expand_stars(scope, resolver, unexpanded_scopes):
+def _expand_stars(scope, resolver):
     """Expand stars to lists of column selections"""
 
     new_selections = []
     except_columns = {}
     replace_columns = {}
-    unexpanded_stars = []
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
@@ -287,7 +266,7 @@ def _expand_stars(scope, resolver, unexpanded_scopes):
                 raise OptimizeError(f"Unknown table: {table}")
             columns = resolver.get_source_columns(table, only_visible=True)
 
-            if columns:
+            if columns and "*" not in columns:
                 table_id = id(table)
                 for name in columns:
                     if name not in except_columns.get(table_id, set()):
@@ -295,12 +274,8 @@ def _expand_stars(scope, resolver, unexpanded_scopes):
                         column = exp.column(name, table)
                         new_selections.append(alias(column, alias_) if alias_ != name else column)
             else:
-                unexpanded_stars.append(expression)
-
-    if unexpanded_stars:
-        unexpanded_scopes[scope] = unexpanded_stars
-    else:
-        scope.expression.set("expressions", new_selections)
+                return
+    scope.expression.set("expressions", new_selections)
 
 
 def _add_except_columns(expression, tables, except_columns):
@@ -350,7 +325,7 @@ def _qualify_outputs(scope):
     scope.expression.set("expressions", new_selections)
 
 
-class _Resolver:
+class Resolver:
     """
     Helper for resolving columns.
 
@@ -460,7 +435,7 @@ class _Resolver:
         Find the unique columns in a list of columns.
 
         Example:
-            >>> sorted(_Resolver._find_unique_columns(["a", "b", "b", "c"]))
+            >>> sorted(Resolver._find_unique_columns(["a", "b", "b", "c"]))
             ['a', 'c']
 
         This is necessary because duplicate column names are ambiguous.

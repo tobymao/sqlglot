@@ -175,7 +175,7 @@ class TestOptimizer(unittest.TestCase):
         def pushdown_projections(expression, **kwargs):
             expression = optimizer.qualify_tables.qualify_tables(expression)
             expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
-            expression = optimizer.pushdown_projections.pushdown_projections(expression)
+            expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
             return expression
 
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)

@@ -337,3 +337,22 @@ SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x 
 # dialect: bigquery
 SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY x.b ORDER BY x.a DESC) = 1;
 SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a DESC) = 1;
+
+--------------------------------------
+-- Unknown Star Expansion
+--------------------------------------
+# execute: false
+SELECT a FROM (SELECT * FROM zz) WHERE b = 1;
+SELECT _q_0.a AS a FROM (SELECT zz.a AS a, zz.b AS b FROM zz AS zz) AS _q_0 WHERE _q_0.b = 1;
+
+# execute: false
+SELECT a FROM (SELECT * FROM aa UNION SELECT * FROM bb UNION SELECT * from cc);
+SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION SELECT aa.a AS a FROM bb AS bb UNION SELECT aa.a AS a FROM cc AS cc) AS _q_0;
+
+# execute: false
+SELECT a FROM (SELECT * FROM aa CROSS JOIN bb);
+SELECT _q_0.a AS a FROM (SELECT a AS a FROM aa AS aa CROSS JOIN bb AS bb) AS _q_0;
+
+# execute: false
+SELECT a FROM (SELECT aa.* FROM aa);
+SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _q_0;

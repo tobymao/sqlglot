@@ -25,6 +25,7 @@ def qualify_columns(expression, schema):
         sqlglot.Expression: qualified expression
     """
     schema = ensure_schema(schema)
+    unexpanded_scopes = {}
 
     for scope in traverse_scope(expression):
         resolver = _Resolver(scope, schema)
@@ -33,10 +34,21 @@ def qualify_columns(expression, schema):
         _expand_using(scope, resolver)
         _qualify_columns(scope, resolver)
         if not isinstance(scope.expression, exp.UDTF):
-            _expand_stars(scope, resolver)
+            _expand_stars(scope, resolver, unexpanded_scopes)
             _qualify_outputs(scope)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
+
+    if unexpanded_scopes:
+        for scope, stars in unexpanded_scopes.items():
+            selects = [select for select in scope.selects if select not in stars]
+            if not selects:
+                raise OptimizeError(
+                    f"Cannot expand stars for {scope} because it has no schema and projection pushdown cannot be inferred."
+                )
+            scope.expression.select(*selects, append=False, copy=False)
+
+        expression = qualify_columns(expression, schema)
     return expression
 
 
@@ -203,7 +215,7 @@ def _qualify_columns(scope, resolver):
 
         if column_table and column_table in scope.sources:
             source_columns = resolver.get_source_columns(column_table)
-            if source_columns and column_name not in source_columns:
+            if source_columns and column_name not in source_columns and "*" not in source_columns:
                 raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:
@@ -212,6 +224,14 @@ def _qualify_columns(scope, resolver):
             # column_table can be a '' because bigquery unnest has no table alias
             if column_table:
                 column.set("table", exp.to_identifier(column_table))
+                source_columns = resolver.get_source_columns(column_table)
+
+                if column_name not in source_columns and "*" in source_columns:
+                    scope.sources[column_table].expression.select(
+                        alias(column_name, column_name),
+                        append=True,
+                        copy=False,
+                    )
 
     columns_missing_from_scope = []
     # Determine whether each reference in the order by clause is to a column or an alias.
@@ -241,19 +261,20 @@ def _qualify_columns(scope, resolver):
             column.set("table", exp.to_identifier(column_table))
 
 
-def _expand_stars(scope, resolver):
+def _expand_stars(scope, resolver, unexpanded_scopes):
     """Expand stars to lists of column selections"""
 
     new_selections = []
     except_columns = {}
     replace_columns = {}
+    unexpanded_stars = []
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
-        elif isinstance(expression, exp.Column) and isinstance(expression.this, exp.Star):
+        elif expression.is_star:
             tables = [expression.table]
             _add_except_columns(expression.this, tables, except_columns)
             _add_replace_columns(expression.this, tables, replace_columns)
@@ -265,18 +286,21 @@ def _expand_stars(scope, resolver):
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
             columns = resolver.get_source_columns(table, only_visible=True)
-            if not columns:
-                raise OptimizeError(
-                    f"Table has no schema/columns. Cannot expand star for table: {table}."
-                )
-            table_id = id(table)
-            for name in columns:
-                if name not in except_columns.get(table_id, set()):
-                    alias_ = replace_columns.get(table_id, {}).get(name, name)
-                    column = exp.column(name, table)
-                    new_selections.append(alias(column, alias_) if alias_ != name else column)
 
-    scope.expression.set("expressions", new_selections)
+            if columns:
+                table_id = id(table)
+                for name in columns:
+                    if name not in except_columns.get(table_id, set()):
+                        alias_ = replace_columns.get(table_id, {}).get(name, name)
+                        column = exp.column(name, table)
+                        new_selections.append(alias(column, alias_) if alias_ != name else column)
+            else:
+                unexpanded_stars.append(expression)
+
+    if unexpanded_stars:
+        unexpanded_scopes[scope] = unexpanded_stars
+    else:
+        scope.expression.set("expressions", new_selections)
 
 
 def _add_except_columns(expression, tables, except_columns):
@@ -313,7 +337,7 @@ def _qualify_outputs(scope):
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
-        elif not isinstance(selection, exp.Alias):
+        elif not isinstance(selection, exp.Alias) and not selection.is_star:
             alias_ = alias(exp.column(""), alias=selection.output_name or f"_col_{i}")
             alias_.set("this", selection)
             selection = alias_
@@ -358,7 +382,9 @@ class _Resolver:
 
         if not table:
             sources_without_schema = tuple(
-                source for source, columns in self._get_all_source_columns().items() if not columns
+                source
+                for source, columns in self._get_all_source_columns().items()
+                if not columns or "*" in columns
             )
             if len(sources_without_schema) == 1:
                 return sources_without_schema[0]

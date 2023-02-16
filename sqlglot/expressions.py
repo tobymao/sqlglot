@@ -3395,6 +3395,10 @@ class Reduce(Func):
     arg_types = {"this": True, "initial": True, "merge": True, "finish": False}
 
 
+class RegexpExtract(Func):
+    arg_types = {"this": True, "expression": True, "position": False, "occurrence": False, "groups": False}
+
+
 class RegexpLike(Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 

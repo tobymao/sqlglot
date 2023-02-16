@@ -16,7 +16,7 @@ from sqlglot.dialects.dialect import (
     str_position_sql,
     timestrtotime_sql,
 )
-from sqlglot.helper import seq_get, flatten
+from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
 
 

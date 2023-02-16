@@ -1,4 +1,8 @@
+import typing as t
+
 import sqlglot
+from sqlglot import Schema, exp
+from sqlglot.dialects.dialect import DialectType
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.canonicalize import canonicalize
 from sqlglot.optimizer.eliminate_ctes import eliminate_ctes
@@ -40,22 +44,31 @@ RULES = (
 )
 
 
-def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwargs):
+def optimize(
+    expression: str | exp.Expression,
+    schema: t.Optional[dict | Schema] = None,
+    db: t.Optional[str] = None,
+    catalog: t.Optional[str] = None,
+    dialect: DialectType = None,
+    rules: t.Sequence[t.Callable] = RULES,
+    **kwargs,
+):
     """
     Rewrite a sqlglot AST into an optimized form.
 
     Args:
-        expression (sqlglot.Expression): expression to optimize
-        schema (dict|sqlglot.optimizer.Schema): database schema.
+        expression: expression to optimize
+        schema: database schema.
             This can either be an instance of `sqlglot.optimizer.Schema` or a mapping in one of
             the following forms:
                 1. {table: {col: type}}
                 2. {db: {table: {col: type}}}
                 3. {catalog: {db: {table: {col: type}}}}
             If no schema is provided then the default schema defined at `sqlgot.schema` will be used
-        db (str): specify the default database, as might be set by a `USE DATABASE db` statement
-        catalog (str): specify the default catalog, as might be set by a `USE CATALOG c` statement
-        rules (sequence): sequence of optimizer rules to use.
+        db: specify the default database, as might be set by a `USE DATABASE db` statement
+        catalog: specify the default catalog, as might be set by a `USE CATALOG c` statement
+        dialect: The dialect to parse the sql string.
+        rules: sequence of optimizer rules to use.
             Many of the rules require tables and columns to be qualified.
             Do not remove qualify_tables or qualify_columns from the sequence of rules unless you know
             what you're doing!
@@ -65,7 +78,7 @@ def optimize(expression, schema=None, db=None, catalog=None, rules=RULES, **kwar
     """
     schema = ensure_schema(schema or sqlglot.schema)
     possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
-    expression = expression.copy()
+    expression = exp.maybe_parse(expression, dialect=dialect, copy=True)
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
         rule_params = rule.__code__.co_varnames

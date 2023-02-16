@@ -62,10 +62,8 @@ def execute(
     if tables_.supported_table_args and tables_.supported_table_args != schema.supported_table_args:
         raise ExecuteError("Tables must support the same table args as schema")
 
-    expression = maybe_parse(sql, dialect=read)
-
     now = time.time()
-    expression = optimize(expression, schema, leave_tables_isolated=True)
+    expression = optimize(sql, schema, leave_tables_isolated=True, dialect=read)
 
     logger.debug("Optimization finished: %f", time.time() - now)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))

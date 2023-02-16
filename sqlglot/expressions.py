@@ -3635,6 +3635,7 @@ def maybe_parse(
     into: t.Optional[IntoType] = None,
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
+    copy: bool = False,
     **opts,
 ) -> Expression:
     """Gracefully handle a possible string or expression.
@@ -3652,6 +3653,7 @@ def maybe_parse(
             input expression is a SQL string).
         prefix: a string to prefix the sql with before it gets parsed
             (automatically includes a space)
+        copy: whether or not to copy the expression.
         **opts: other options to use to parse the input expressions (again, in the case
             that an input expression is a SQL string).
 
@@ -3659,6 +3661,8 @@ def maybe_parse(
         Expression: the parsed or given expression.
     """
     if isinstance(sql_or_expression, Expression):
+        if copy:
+            return sql_or_expression.copy()
         return sql_or_expression
 
     import sqlglot

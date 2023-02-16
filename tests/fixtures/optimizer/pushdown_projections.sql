@@ -81,3 +81,6 @@ SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _q_0;
 
 SELECT a FROM (SELECT * FROM (SELECT * FROM aa));
 SELECT _q_1.a AS a FROM (SELECT _q_0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _q_0) AS _q_1;
+
+with cte1 as (SELECT cola, colb FROM tb UNION ALL SELECT colc, cold FROM tb2) SELECT cola FROM cte1;
+WITH cte1 AS (SELECT tb.cola AS cola FROM tb AS tb UNION ALL SELECT tb2.colc AS colc FROM tb2 AS tb2) SELECT cte1.cola AS cola FROM cte1;

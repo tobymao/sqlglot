@@ -178,6 +178,16 @@ class Snowflake(Dialect):
             ),
         }
 
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,  # type: ignore
+            TokenType.LIKE_ANY: lambda self, this: self._parse_escape(
+                self.expression(exp.LikeAny, this=this, expression=self._parse_bitwise())
+            ),
+            TokenType.ILIKE_ANY: lambda self, this: self._parse_escape(
+                self.expression(exp.ILikeAny, this=this, expression=self._parse_bitwise())
+            ),
+        }
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
@@ -185,6 +195,8 @@ class Snowflake(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "EXCLUDE": TokenType.EXCEPT,
+            "ILIKE ANY": TokenType.ILIKE_ANY,
+            "LIKE ANY": TokenType.LIKE_ANY,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "PUT": TokenType.COMMAND,
             "RENAME": TokenType.REPLACE,
@@ -237,6 +249,12 @@ class Snowflake(Dialect):
             "except": "EXCLUDE",
             "replace": "RENAME",
         }
+
+        def ilikeany_sql(self, expression: exp.ILikeAny) -> str:
+            return self.binary(expression, "ILIKE ANY")
+
+        def likeany_sql(self, expression: exp.LikeAny) -> str:
+            return self.binary(expression, "LIKE ANY")
 
         def except_op(self, expression):
             if not expression.args.get("distinct", False):

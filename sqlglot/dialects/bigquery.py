@@ -32,17 +32,6 @@ def _date_add(expression_class: t.Type[E]) -> t.Callable[[t.Sequence], E]:
     return func
 
 
-def _parse_regexp_extract(args):
-    groups = int(re.compile(str(seq_get(args, 1))).groups == 1)
-    return exp.RegexpExtract(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        position=seq_get(args, 2),
-        occurrence=seq_get(args, 3),
-        groups=exp.Literal.number(groups) if groups else None,
-    )
-
-
 def _date_add_sql(
     data_type: str, kind: str
 ) -> t.Callable[[generator.Generator, exp.Expression], str]:
@@ -171,7 +160,15 @@ class BigQuery(Dialect):
             "DATETIME_ADD": _date_add(exp.DatetimeAdd),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
-            "REGEXP_EXTRACT": _parse_regexp_extract,
+            "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                position=seq_get(args, 2),
+                occurrence=seq_get(args, 3),
+                group=exp.Literal.number(1)
+                if re.compile(str(seq_get(args, 1))).groups == 1
+                else None,
+            ),
             "TIME_ADD": _date_add(exp.TimeAdd),
             "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
             "DATE_SUB": _date_add(exp.DateSub),

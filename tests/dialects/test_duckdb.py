@@ -329,7 +329,7 @@ class TestDuckDB(Validator):
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT REGEXP_EXTRACT(a, 'pattern', 1) from table",
-                read='bigquery',
+                read="bigquery",
                 write="duckdb",
                 unsupported_level=ErrorLevel.IMMEDIATE,
             )

@@ -3396,7 +3396,13 @@ class Reduce(Func):
 
 
 class RegexpExtract(Func):
-    arg_types = {"this": True, "expression": True, "position": False, "occurrence": False, "groups": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "group": False,
+    }
 
 
 class RegexpLike(Func):

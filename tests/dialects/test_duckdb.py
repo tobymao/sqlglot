@@ -326,6 +326,14 @@ class TestDuckDB(Validator):
                 unsupported_level=ErrorLevel.IMMEDIATE,
             )
 
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT REGEXP_EXTRACT(a, 'pattern', 1) from table",
+                read='bigquery',
+                write="duckdb",
+                unsupported_level=ErrorLevel.IMMEDIATE,
+            )
+
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")
 

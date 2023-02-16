@@ -16,7 +16,7 @@ from sqlglot.dialects.dialect import (
     str_position_sql,
     timestrtotime_sql,
 )
-from sqlglot.helper import seq_get
+from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -71,6 +71,13 @@ def _datatype_sql(self, expression):
     if expression.this == exp.DataType.Type.ARRAY:
         return f"{self.expressions(expression, flat=True)}[]"
     return self.datatype_sql(expression)
+
+
+def _generate_regexp_extract(self, expression):
+    bad_args = list(filter(expression.args.get, ("position", "occurrence")))
+    if bad_args:
+        self.unsupported(f"REGEXP_EXTRACT does not support arg(s) {bad_args}")
+    return self.func("REGEXP_EXTRACT", *flatten(expression.args.values()))
 
 
 class DuckDB(Dialect):
@@ -140,6 +147,7 @@ class DuckDB(Dialect):
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Pivot: no_pivot_sql,
             exp.Properties: no_properties_sql,
+            exp.RegexpExtract: _generate_regexp_extract,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,

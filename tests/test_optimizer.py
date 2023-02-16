@@ -519,6 +519,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             concat_expr.right.expressions[0].type.this, exp.DataType.Type.VARCHAR
         )  # x.cola (arg)
 
+        annotate_types(parse_one("select x from y lateral view explode(y) as x")).expressions[0]
+
     def test_null_annotation(self):
         expression = annotate_types(parse_one("SELECT NULL + 2 AS col")).expressions[0].this
         self.assertEqual(expression.left.type.this, exp.DataType.Type.NULL)

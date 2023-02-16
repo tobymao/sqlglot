@@ -280,6 +280,9 @@ class TypeAnnotator:
                         }
                 # First annotate the current scope's column references
                 for col in scope.columns:
+                    if not col.table:
+                        continue
+
                     source = scope.sources.get(col.table)
                     if isinstance(source, exp.Table):
                         col.type = self.schema.get_column_type(source, col)

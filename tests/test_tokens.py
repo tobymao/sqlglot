@@ -38,7 +38,8 @@ class TestTokens(unittest.TestCase):
             tokens,
             [
                 (TokenType.SELECT, "SELECT"),
-                (TokenType.BLOCK_START, "{{"),
+                (TokenType.L_BRACE, "{"),
+                (TokenType.L_BRACE, "{"),
                 (TokenType.VAR, "x"),
                 (TokenType.R_BRACE, "}"),
                 (TokenType.R_BRACE, "}"),

@@ -30,7 +30,6 @@ from sqlglot.expressions import (
 from sqlglot.expressions import table_ as table
 from sqlglot.expressions import to_column, to_table, union
 from sqlglot.generator import Generator
-from sqlglot.optimizer import optimize
 from sqlglot.parser import Parser
 from sqlglot.schema import MappingSchema, Schema
 from sqlglot.tokens import Tokenizer, TokenType
@@ -41,7 +40,7 @@ if t.TYPE_CHECKING:
     T = t.TypeVar("T", bound=Expression)
 
 
-__version__ = "11.1.2"
+__version__ = "11.1.3"
 
 pretty = False
 """Whether to format generated SQL by default."""

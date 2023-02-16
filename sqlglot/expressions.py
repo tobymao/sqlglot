@@ -871,15 +871,19 @@ class ByteString(Condition):
 
 
 class Column(Condition):
-    arg_types = {"this": True, "table": False, "schema": False}
+    arg_types = {"this": True, "table": False, "db": False, "catalog": False}
 
     @property
-    def table(self) -> t.Optional[str]:
+    def table(self) -> str:
         return self.text("table")
 
     @property
-    def schema(self) -> t.Optional[str]:
-        return self.text("schema")
+    def db(self) -> str:
+        return self.text("db")
+
+    @property
+    def catalog(self) -> str:
+        return self.text("catalog")
 
     @property
     def output_name(self) -> str:
@@ -1693,6 +1697,14 @@ class Table(Expression):
         "hints": False,
         "system_time": False,
     }
+
+    @property
+    def db(self) -> str:
+        return self.text("db")
+
+    @property
+    def catalog(self) -> str:
+        return self.text("catalog")
 
 
 # See the TSQL "Querying data in a system-versioned temporal table" page

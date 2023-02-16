@@ -2633,9 +2633,13 @@ class Parser(metaclass=_Parser):
 
             if op:
                 this = op(self, this, field)
-            elif isinstance(this, exp.Column) and not this.args.get("schema"):
+            elif isinstance(this, exp.Column) and not this.args.get("catalog"):
                 this = self.expression(
-                    exp.Column, this=field, table=this.this, schema=this.args.get("table")
+                    exp.Column,
+                    this=field,
+                    table=this.this,
+                    db=this.args.get("table"),
+                    catalog=this.args.get("db"),
                 )
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)

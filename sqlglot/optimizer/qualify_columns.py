@@ -47,7 +47,8 @@ def validate_qualify_columns(expression):
         if isinstance(scope.expression, exp.Select):
             unqualified_columns.extend(scope.unqualified_columns)
             if scope.external_columns and not scope.is_correlated_subquery:
-                raise OptimizeError(f"Unknown table: {scope.external_columns[0].table}")
+                column = scope.external_columns[0]
+                raise OptimizeError(f"Unknown table: '{column.table}' for column '{column}'")
 
     if unqualified_columns:
         raise OptimizeError(f"Ambiguous columns: {unqualified_columns}")

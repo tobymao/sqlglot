@@ -439,7 +439,7 @@ class Tokenizer(metaclass=_Tokenizer):
     KEYWORDS = {
         **{
             f"{key}{postfix}": TokenType.BLOCK_START
-            for key in ("{{", "{%", "{#")
+            for key in ("{%", "{#")
             for postfix in ("", "+", "-")
         },
         **{
@@ -447,6 +447,8 @@ class Tokenizer(metaclass=_Tokenizer):
             for key in ("%}", "#}")
             for prefix in ("", "+", "-")
         },
+        "{{+": TokenType.BLOCK_START,
+        "{{-": TokenType.BLOCK_START,
         "+}}": TokenType.BLOCK_END,
         "-}}": TokenType.BLOCK_END,
         "/*+": TokenType.HINT,

@@ -73,6 +73,18 @@ def _datatype_sql(self, expression):
     return self.datatype_sql(expression)
 
 
+def _regexp_extract_sql(self, expression):
+    bad_args = list(filter(expression.args.get, ("position", "occurrence")))
+    if bad_args:
+        self.unsupported(f"REGEXP_EXTRACT does not support arg(s) {bad_args}")
+    return self.func(
+        "REGEXP_EXTRACT",
+        expression.args.get("this"),
+        expression.args.get("expression"),
+        expression.args.get("group"),
+    )
+
+
 class DuckDB(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
@@ -140,6 +152,7 @@ class DuckDB(Dialect):
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Pivot: no_pivot_sql,
             exp.Properties: no_properties_sql,
+            exp.RegexpExtract: _regexp_extract_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,

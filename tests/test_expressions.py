@@ -475,22 +475,24 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("GENERATE_SERIES(a, b, c)"), exp.GenerateSeries)
 
     def test_column(self):
-        column = parse_one("a.b.c")
-        self.assertEqual(column.schema, "a")
-        self.assertEqual(column.table, "b")
-        self.assertEqual(column.name, "c")
+        column = parse_one("a.b.c.d")
+        self.assertEqual(column.catalog, "a")
+        self.assertEqual(column.db, "b")
+        self.assertEqual(column.table, "c")
+        self.assertEqual(column.name, "d")
 
         column = parse_one("a")
         self.assertEqual(column.name, "a")
         self.assertEqual(column.table, "")
 
-        fields = parse_one("a.b.c.d")
+        fields = parse_one("a.b.c.d.e")
         self.assertIsInstance(fields, exp.Dot)
-        self.assertEqual(fields.text("expression"), "d")
+        self.assertEqual(fields.text("expression"), "e")
         column = fields.find(exp.Column)
-        self.assertEqual(column.name, "c")
-        self.assertEqual(column.table, "b")
-        self.assertEqual(column.schema, "a")
+        self.assertEqual(column.name, "d")
+        self.assertEqual(column.table, "c")
+        self.assertEqual(column.db, "b")
+        self.assertEqual(column.catalog, "a")
 
         column = parse_one("a[0].b")
         self.assertIsInstance(column, exp.Dot)
@@ -506,8 +508,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("*"), exp.Star)
 
     def test_text(self):
-        column = parse_one("a.b.c.d")
-        self.assertEqual(column.text("expression"), "d")
+        column = parse_one("a.b.c.d.e")
+        self.assertEqual(column.text("expression"), "e")
         self.assertEqual(column.text("y"), "")
         self.assertEqual(parse_one("select * from x.y").find(exp.Table).text("db"), "x")
         self.assertEqual(parse_one("select *").name, "")

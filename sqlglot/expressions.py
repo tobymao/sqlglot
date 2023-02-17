@@ -128,7 +128,7 @@ class Expression(metaclass=_Expression):
         """
         return self.args.get("expressions") or []
 
-    def text(self, key):
+    def text(self, key) -> str:
         """
         Returns a textual representation of the argument corresponding to "key". This can only be used
         for args that are strings or leaf Expression instances, such as identifiers and literals.
@@ -143,21 +143,21 @@ class Expression(metaclass=_Expression):
         return ""
 
     @property
-    def is_string(self):
+    def is_string(self) -> bool:
         """
         Checks whether a Literal expression is a string.
         """
         return isinstance(self, Literal) and self.args["is_string"]
 
     @property
-    def is_number(self):
+    def is_number(self) -> bool:
         """
         Checks whether a Literal expression is a number.
         """
         return isinstance(self, Literal) and not self.args["is_string"]
 
     @property
-    def is_int(self):
+    def is_int(self) -> bool:
         """
         Checks whether a Literal expression is an integer.
         """
@@ -170,7 +170,12 @@ class Expression(metaclass=_Expression):
         return False
 
     @property
-    def alias(self):
+    def is_star(self) -> bool:
+        """Checks whether an expression is a star."""
+        return isinstance(self, Star) or (isinstance(self, Column) and isinstance(self.this, Star))
+
+    @property
+    def alias(self) -> str:
         """
         Returns the alias of the expression, or an empty string if it's not aliased.
         """
@@ -866,15 +871,19 @@ class ByteString(Condition):
 
 
 class Column(Condition):
-    arg_types = {"this": True, "table": False, "schema": False}
+    arg_types = {"this": True, "table": False, "db": False, "catalog": False}
 
     @property
-    def table(self) -> t.Optional[str]:
+    def table(self) -> str:
         return self.text("table")
 
     @property
-    def schema(self) -> t.Optional[str]:
-        return self.text("schema")
+    def db(self) -> str:
+        return self.text("db")
+
+    @property
+    def catalog(self) -> str:
+        return self.text("catalog")
 
     @property
     def output_name(self) -> str:
@@ -1697,6 +1706,14 @@ class Table(Expression):
         "system_time": False,
     }
 
+    @property
+    def db(self) -> str:
+        return self.text("db")
+
+    @property
+    def catalog(self) -> str:
+        return self.text("catalog")
+
 
 # See the TSQL "Querying data in a system-versioned temporal table" page
 class SystemTime(Expression):
@@ -1741,6 +1758,40 @@ class Union(Subqueryable):
             .from_(self.subquery(alias="_l_0", copy=copy))
             .limit(expression, dialect=dialect, copy=False, **opts)
         )
+
+    def select(
+        self,
+        *expressions: str | Expression,
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Union:
+        """Append to or set the SELECT of the union recursively.
+
+        Example:
+            >>> from sqlglot import parse_one
+            >>> parse_one("select a from x union select a from y union select a from z").select("b").sql()
+            'SELECT a, b FROM x UNION SELECT a, b FROM y UNION SELECT a, b FROM z'
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            append: if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            Union: the modified expression.
+        """
+        this = self.copy() if copy else self
+        this.this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
+        this.expression.unnest().select(
+            *expressions, append=append, dialect=dialect, copy=False, **opts
+        )
+        return this
 
     @property
     def named_selects(self):
@@ -2049,7 +2100,14 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def select(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
+    def select(
+        self,
+        *expressions: str | Expression,
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Select:
         """
         Append to or set the SELECT expressions.
 
@@ -2058,13 +2116,13 @@ class Select(Subqueryable):
             'SELECT x, y'
 
         Args:
-            *expressions (str | Expression): the SQL code strings to parse.
+            *expressions: the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
-            append (bool): if `True`, add to any existing expressions.
+            append: if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
-            dialect (str): the dialect used to parse the input expressions.
-            copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -3403,6 +3461,16 @@ class Reduce(Func):
     arg_types = {"this": True, "initial": True, "merge": True, "finish": False}
 
 
+class RegexpExtract(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "position": False,
+        "occurrence": False,
+        "group": False,
+    }
+
+
 class RegexpLike(Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
@@ -3899,7 +3967,7 @@ def except_(left, right, distinct=True, dialect=None, **opts):
     return Except(this=left, expression=right, distinct=distinct)
 
 
-def select(*expressions, dialect=None, **opts) -> Select:
+def select(*expressions: str | Expression, dialect: DialectType = None, **opts) -> Select:
     """
     Initializes a syntax tree from one or multiple SELECT expressions.
 
@@ -3908,9 +3976,9 @@ def select(*expressions, dialect=None, **opts) -> Select:
         'SELECT col1, col2 FROM tbl'
 
     Args:
-        *expressions (str | Expression): the SQL code string to parse as the expressions of a
+        *expressions: the SQL code string to parse as the expressions of a
             SELECT statement. If an Expression instance is passed, this is used as-is.
-        dialect (str): the dialect used to parse the input expressions (in the case that an
+        dialect: the dialect used to parse the input expressions (in the case that an
             input expression is a SQL string).
         **opts: other options to use to parse the input expressions (again, in the case
             that an input expression is a SQL string).

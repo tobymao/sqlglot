@@ -1,4 +1,3 @@
-SELECT * FROM zz;
 SELECT z.a FROM x;
 SELECT z.* FROM x;
 SELECT x FROM x;
@@ -11,3 +10,4 @@ SELECT b FROM x AS a CROSS JOIN y AS b CROSS JOIN y AS c;
 SELECT x.a FROM x JOIN y USING (a);
 SELECT a, SUM(b) FROM x GROUP BY 3;
 SELECT p FROM (SELECT x from xx) y CROSS JOIN yy CROSS JOIN zz
+select a from (select * from x cross join y);

@@ -27,7 +27,7 @@ def qualify_columns(expression, schema):
     schema = ensure_schema(schema)
 
     for scope in traverse_scope(expression):
-        resolver = _Resolver(scope, schema)
+        resolver = Resolver(scope, schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         _expand_using(scope, resolver)
@@ -47,7 +47,8 @@ def validate_qualify_columns(expression):
         if isinstance(scope.expression, exp.Select):
             unqualified_columns.extend(scope.unqualified_columns)
             if scope.external_columns and not scope.is_correlated_subquery:
-                raise OptimizeError(f"Unknown table: {scope.external_columns[0].table}")
+                column = scope.external_columns[0]
+                raise OptimizeError(f"Unknown table: '{column.table}' for column '{column}'")
 
     if unqualified_columns:
         raise OptimizeError(f"Ambiguous columns: {unqualified_columns}")
@@ -203,7 +204,7 @@ def _qualify_columns(scope, resolver):
 
         if column_table and column_table in scope.sources:
             source_columns = resolver.get_source_columns(column_table)
-            if source_columns and column_name not in source_columns:
+            if source_columns and column_name not in source_columns and "*" not in source_columns:
                 raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:
@@ -253,7 +254,7 @@ def _expand_stars(scope, resolver):
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
-        elif isinstance(expression, exp.Column) and isinstance(expression.this, exp.Star):
+        elif expression.is_star:
             tables = [expression.table]
             _add_except_columns(expression.this, tables, except_columns)
             _add_replace_columns(expression.this, tables, replace_columns)
@@ -265,17 +266,16 @@ def _expand_stars(scope, resolver):
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
             columns = resolver.get_source_columns(table, only_visible=True)
-            if not columns:
-                raise OptimizeError(
-                    f"Table has no schema/columns. Cannot expand star for table: {table}."
-                )
-            table_id = id(table)
-            for name in columns:
-                if name not in except_columns.get(table_id, set()):
-                    alias_ = replace_columns.get(table_id, {}).get(name, name)
-                    column = exp.column(name, table)
-                    new_selections.append(alias(column, alias_) if alias_ != name else column)
 
+            if columns and "*" not in columns:
+                table_id = id(table)
+                for name in columns:
+                    if name not in except_columns.get(table_id, set()):
+                        alias_ = replace_columns.get(table_id, {}).get(name, name)
+                        column = exp.column(name, table)
+                        new_selections.append(alias(column, alias_) if alias_ != name else column)
+            else:
+                return
     scope.expression.set("expressions", new_selections)
 
 
@@ -313,7 +313,7 @@ def _qualify_outputs(scope):
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
-        elif not isinstance(selection, exp.Alias):
+        elif not isinstance(selection, exp.Alias) and not selection.is_star:
             alias_ = alias(exp.column(""), alias=selection.output_name or f"_col_{i}")
             alias_.set("this", selection)
             selection = alias_
@@ -326,7 +326,7 @@ def _qualify_outputs(scope):
     scope.expression.set("expressions", new_selections)
 
 
-class _Resolver:
+class Resolver:
     """
     Helper for resolving columns.
 
@@ -358,7 +358,9 @@ class _Resolver:
 
         if not table:
             sources_without_schema = tuple(
-                source for source, columns in self._get_all_source_columns().items() if not columns
+                source
+                for source, columns in self._get_all_source_columns().items()
+                if not columns or "*" in columns
             )
             if len(sources_without_schema) == 1:
                 return sources_without_schema[0]
@@ -434,7 +436,7 @@ class _Resolver:
         Find the unique columns in a list of columns.
 
         Example:
-            >>> sorted(_Resolver._find_unique_columns(["a", "b", "b", "c"]))
+            >>> sorted(Resolver._find_unique_columns(["a", "b", "b", "c"]))
             ['a', 'c']
 
         This is necessary because duplicate column names are ambiguous.

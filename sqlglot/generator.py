@@ -420,7 +420,8 @@ class Generator:
         return ".".join(
             self.sql(part)
             for part in (
-                expression.args.get("schema"),
+                expression.args.get("catalog"),
+                expression.args.get("db"),
                 expression.args.get("table"),
                 expression.args.get("this"),
             )

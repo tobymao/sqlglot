@@ -618,6 +618,8 @@ class Parser(metaclass=_Parser):
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }
 
+    SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE"}
+
     NO_PAREN_FUNCTION_PARSERS = {
         TokenType.CASE: lambda self: self._parse_case(),
         TokenType.IF: lambda self: self._parse_if(),
@@ -2635,9 +2637,13 @@ class Parser(metaclass=_Parser):
 
             if op:
                 this = op(self, this, field)
-            elif isinstance(this, exp.Column) and not this.args.get("schema"):
+            elif isinstance(this, exp.Column) and not this.args.get("catalog"):
                 this = self.expression(
-                    exp.Column, this=field, table=this.this, schema=this.args.get("table")
+                    exp.Column,
+                    this=field,
+                    table=this.this,
+                    db=this.args.get("table"),
+                    catalog=this.args.get("db"),
                 )
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)
@@ -2943,7 +2949,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_constraint(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.CONSTRAINT):
-            return self._parse_unnamed_constraint()
+            return self._parse_unnamed_constraint(constraints=self.SCHEMA_UNNAMED_CONSTRAINTS)
 
         this = self._parse_id_var()
         expressions = []
@@ -2956,10 +2962,17 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Constraint, this=this, expressions=expressions)
 
-    def _parse_unnamed_constraint(self) -> t.Optional[exp.Expression]:
-        if not self._match_texts(self.CONSTRAINT_PARSERS):
+    def _parse_unnamed_constraint(
+        self, constraints: t.Optional[t.Collection[str]] = None
+    ) -> t.Optional[exp.Expression]:
+        if not self._match_texts(constraints or self.CONSTRAINT_PARSERS):
             return None
-        return self.CONSTRAINT_PARSERS[self._prev.text.upper()](self)
+
+        constraint = self._prev.text.upper()
+        if constraint not in self.CONSTRAINT_PARSERS:
+            self.raise_error(f"No parser found for schema constraint {constraint}.")
+
+        return self.CONSTRAINT_PARSERS[constraint](self)
 
     def _parse_unique(self) -> exp.Expression:
         if not self._match(TokenType.L_PAREN, advance=False):

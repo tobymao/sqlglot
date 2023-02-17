@@ -143,6 +143,7 @@ class Column:
             if is_iterable(v)
             else Column.ensure_col(v).expression
             for k, v in kwargs.items()
+            if v is not None
         }
         new_expression = (
             callable_expression(**ensure_expression_values)

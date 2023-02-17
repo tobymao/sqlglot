@@ -423,3 +423,18 @@ def trim_sql(self: Generator, expression: exp.Trim) -> str:
     from_part = "FROM " if trim_type or remove_chars else ""
     collation = f" COLLATE {collation}" if collation else ""
     return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
+
+
+def str_to_time_sql(self, expression: exp.Expression) -> str:
+    return self.func("STRPTIME", expression.this, self.format_time(expression))
+
+
+def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
+    def _ts_or_ds_to_date_sql(self: Generator, expression: exp.TsOrDsToDate) -> str:
+        _dialect = Dialect.get_or_raise(dialect)
+        time_format = self.format_time(expression)
+        if time_format and time_format not in (_dialect.time_format, _dialect.date_format):
+            return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
+        return f"CAST({self.sql(expression, 'this')} AS DATE)"
+
+    return _ts_or_ds_to_date_sql

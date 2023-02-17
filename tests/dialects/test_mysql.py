@@ -90,6 +90,14 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT INSTR('str', 'substr')", "SELECT LOCATE('substr', 'str')")
         self.validate_identity("SELECT UCASE('foo')", "SELECT UPPER('foo')")
         self.validate_identity("SELECT LCASE('foo')", "SELECT LOWER('foo')")
+        self.validate_identity(
+            "SELECT DAY_OF_MONTH('2023-01-01')", "SELECT DAYOFMONTH('2023-01-01')"
+        )
+        self.validate_identity("SELECT DAY_OF_WEEK('2023-01-01')", "SELECT DAYOFWEEK('2023-01-01')")
+        self.validate_identity("SELECT DAY_OF_YEAR('2023-01-01')", "SELECT DAYOFYEAR('2023-01-01')")
+        self.validate_identity(
+            "SELECT WEEK_OF_YEAR('2023-01-01')", "SELECT WEEKOFYEAR('2023-01-01')"
+        )
 
     def test_escape(self):
         self.validate_all(

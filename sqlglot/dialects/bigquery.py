@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
     rename_func,
     timestrtotime_sql,
+    ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -233,6 +234,7 @@ class BigQuery(Dialect):
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
+            exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Values: _derived_table_values_to_unnest,

@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     inline_array_sql,
     rename_func,
     timestrtotime_sql,
+    ts_or_ds_to_date_sql,
     var_map_sql,
 )
 from sqlglot.expressions import Literal
@@ -236,6 +237,7 @@ class Snowflake(Dialect):
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
+            exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
         }

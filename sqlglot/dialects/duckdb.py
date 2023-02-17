@@ -14,27 +14,18 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     rename_func,
     str_position_sql,
+    str_to_time_sql,
     timestrtotime_sql,
+    ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
-
-
-def _str_to_time_sql(self, expression):
-    return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
 
 
 def _ts_or_ds_add(self, expression):
     this = expression.args.get("this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
-
-
-def _ts_or_ds_to_date_sql(self, expression):
-    time_format = self.format_time(expression)
-    if time_format and time_format not in (DuckDB.time_format, DuckDB.date_format):
-        return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
-    return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
 
 def _date_add(self, expression):
@@ -159,8 +150,8 @@ class DuckDB(Dialect):
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: str_position_sql,
-            exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
-            exp.StrToTime: _str_to_time_sql,
+            exp.StrToDate: lambda self, e: f"CAST({str_to_time_sql(self, e)} AS DATE)",
+            exp.StrToTime: str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.Struct: _struct_sql,
             exp.TableSample: no_tablesample_sql,
@@ -171,7 +162,7 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add,
-            exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
+            exp.TsOrDsToDate: ts_or_ds_to_date_sql("duckdb"),
             exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",

@@ -18,7 +18,6 @@ from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.dataframe.sql.window import Window
 from sqlglot.helper import ensure_list, object_to_dict
 from sqlglot.optimizer import optimize as optimize_func
-from sqlglot.optimizer.qualify_columns import qualify_columns
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import (
@@ -376,9 +375,9 @@ class DataFrame:
                     else:
                         table_identifier = ctes_with_column[0].args["alias"].this
                     ambiguous_col.expression.set("table", table_identifier)
-        expression = self.expression.select(*[x.expression for x in cols], **kwargs)
-        qualify_columns(expression, sqlglot.schema)
-        return self.copy(expression=expression, **kwargs)
+        return self.copy(
+            expression=self.expression.select(*[x.expression for x in cols], **kwargs), **kwargs
+        )
 
     @operation(Operation.NO_OP)
     def alias(self, name: str, **kwargs) -> DataFrame:

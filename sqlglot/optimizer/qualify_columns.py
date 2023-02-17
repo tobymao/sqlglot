@@ -146,7 +146,7 @@ def _expand_group_by(scope, resolver):
 
             # Source columns get priority over select aliases
             if table:
-                node.set("table", exp.to_identifier(table))
+                node.set("table", table)
                 return node
 
             selects = {s.alias_or_name: s for s in scope.selects}
@@ -212,7 +212,7 @@ def _qualify_columns(scope, resolver):
 
             # column_table can be a '' because bigquery unnest has no table alias
             if column_table:
-                column.set("table", exp.to_identifier(column_table))
+                column.set("table", column_table)
 
     columns_missing_from_scope = []
     # Determine whether each reference in the order by clause is to a column or an alias.
@@ -239,7 +239,7 @@ def _qualify_columns(scope, resolver):
         column_table = resolver.get_table(column.name)
 
         if column_table:
-            column.set("table", exp.to_identifier(column_table))
+            column.set("table", column_table)
 
 
 def _expand_stars(scope, resolver):
@@ -340,7 +340,7 @@ class Resolver:
         self._unambiguous_columns = None
         self._all_columns = None
 
-    def get_table(self, column_name: str) -> t.Optional[str]:
+    def get_table(self, column_name: str) -> t.Optional[exp.Identifier]:
         """
         Get the table for a column name.
 
@@ -354,18 +354,29 @@ class Resolver:
                 self._get_all_source_columns()
             )
 
-        table = self._unambiguous_columns.get(column_name)
+        table_name = self._unambiguous_columns.get(column_name)
 
-        if not table:
+        if not table_name:
             sources_without_schema = tuple(
                 source
                 for source, columns in self._get_all_source_columns().items()
                 if not columns or "*" in columns
             )
             if len(sources_without_schema) == 1:
-                return sources_without_schema[0]
+                table_name = sources_without_schema[0]
 
-        return table
+        if table_name not in self.scope.selected_sources:
+            return exp.to_identifier(table_name)
+
+        node, _ = self.scope.selected_sources.get(table_name)
+
+        if isinstance(node, exp.Subqueryable):
+            while node and node.alias != table_name:
+                node = node.parent
+        node_alias = node.args.get("alias")
+        if node_alias:
+            return node_alias.this
+        return exp.to_identifier(table_name)
 
     @property
     def all_columns(self):

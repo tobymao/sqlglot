@@ -616,7 +616,7 @@ class Parser(metaclass=_Parser):
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }
 
-    SCHEMA_UNNAMED_CONSTRAINTS = {"UNIQUE", "LIKE", "FOREIGN KEY", "PRIMARY KEY"}
+    SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE"}
 
     NO_PAREN_FUNCTION_PARSERS = {
         TokenType.CASE: lambda self: self._parse_case(),

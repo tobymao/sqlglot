@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    rename_func,
     strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
@@ -442,6 +443,10 @@ class MySQL(Dialect):
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,

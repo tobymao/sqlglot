@@ -81,6 +81,15 @@ class TestDataframeSession(DataFrameSQLValidator):
         )
 
     @mock.patch("sqlglot.schema", MappingSchema())
+    def test_select_quoted(self):
+        sqlglot.schema.add_table('"TEST"', {"name": "string"})
+
+        self.assertEqual(
+            SparkSession().table('"TEST"').select(F.col("name")).sql(dialect="snowflake")[0],
+            '''SELECT "TEST"."name" AS "name" FROM "TEST" AS "TEST"''',
+        )
+
+    @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_with_aggs(self):
         # TODO: Do exact matches once CTE names are deterministic
         query = "SELECT cola, colb FROM table"

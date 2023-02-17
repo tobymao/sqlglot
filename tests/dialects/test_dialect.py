@@ -422,9 +422,11 @@ class TestDialect(Validator):
         self.validate_all(
             "TS_OR_DS_TO_DATE(x)",
             write={
+                "bigquery": "CAST(x AS DATE)",
                 "duckdb": "CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
                 "presto": "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
+                "snowflake": "CAST(x AS DATE)",
             },
         )
         self.validate_all(

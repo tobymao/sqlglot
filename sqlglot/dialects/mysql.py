@@ -8,7 +8,8 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
-    strposition_to_locate_sql, rename_func,
+    rename_func,
+    strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType

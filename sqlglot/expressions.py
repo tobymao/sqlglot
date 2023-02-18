@@ -946,6 +946,10 @@ class CommentColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class CompressColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class DateFormatColumnConstraint(ColumnConstraintKind):
     arg_types = {"this": True}
 
@@ -968,6 +972,10 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
         "maxvalue": False,
         "cycle": False,
     }
+
+
+class InlineLengthColumnConstraint(ColumnConstraintKind):
+    pass
 
 
 class NotNullColumnConstraint(ColumnConstraintKind):

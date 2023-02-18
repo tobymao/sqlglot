@@ -594,6 +594,7 @@ class Parser(metaclass=_Parser):
         "COMMENT": lambda self: self.expression(
             exp.CommentColumnConstraint, this=self._parse_string()
         ),
+        "COMPRESS": lambda self: self._parse_compress(),
         "DEFAULT": lambda self: self.expression(
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),
@@ -604,6 +605,7 @@ class Parser(metaclass=_Parser):
         ),
         "GENERATED": lambda self: self._parse_generated_as_identity(),
         "IDENTITY": lambda self: self._parse_auto_increment(),
+        "INLINE": lambda self: self._parse_inline(),
         "LIKE": lambda self: self._parse_create_like(),
         "NOT": lambda self: self._parse_not_constraint(),
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
@@ -2882,6 +2884,14 @@ class Parser(metaclass=_Parser):
 
         return exp.AutoIncrementColumnConstraint()
 
+    def _parse_compress(self) -> exp.Expression:
+        if self._match(TokenType.L_PAREN, advance=False):
+            return self.expression(
+                exp.CompressColumnConstraint, this=self._parse_wrapped_csv(self._parse_bitwise)
+            )
+
+        return self.expression(exp.CompressColumnConstraint, this=self._parse_bitwise())
+
     def _parse_generated_as_identity(self) -> exp.Expression:
         if self._match(TokenType.BY_DEFAULT):
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=False)
@@ -2908,6 +2918,10 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
 
         return this
+
+    def _parse_inline(self) -> t.Optional[exp.Expression]:
+        self._match_text_seq("LENGTH")
+        return self.expression(exp.InlineLengthColumnConstraint, this=self._parse_bitwise())
 
     def _parse_not_constraint(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("NULL"):

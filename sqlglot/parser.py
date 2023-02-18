@@ -2889,8 +2889,8 @@ class Parser(metaclass=_Parser):
             return self.expression(
                 exp.CompressColumnConstraint, this=self._parse_wrapped_csv(self._parse_bitwise)
             )
-        else:
-            return self.expression(exp.CompressColumnConstraint, this=self._parse_bitwise())
+
+        return self.expression(exp.CompressColumnConstraint, this=self._parse_bitwise())
 
     def _parse_generated_as_identity(self) -> exp.Expression:
         if self._match(TokenType.BY_DEFAULT):

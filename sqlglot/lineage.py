@@ -113,7 +113,7 @@ def lineage(
                 )
             else:
                 if table not in tables:
-                    tables[table] = Node(name=str(c.this), source=source, expression=source)
+                    tables[table] = Node(name=str(c), source=source, expression=source)
                 node.downstream.append(tables[table])
 
         return node

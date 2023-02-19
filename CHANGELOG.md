@@ -1,8 +1,32 @@
 Changelog
 =========
 
+v11.2.0
+------
+
+Changes:
+
+- Breaking: Replaced "schema" arg from Column expression with "db" and "catalog".
+
+- Breaking: Removed mapping of "{{" to BLOCK_START token.
+
+- New: Added new optimizer pass: [unknown star expansion](https://github.com/tobymao/sqlglot/commit/0e24be8487b94e8ae09ba57b6756788f631043ec).
+
+- New: Added support for INSERT OR ... syntax.
+
+- New: Added support for ILIKE/LIKE ANY.
+
+- Improvement: Made the optimizer more robust.
+
+- Improvement: Improved parsing of GROUP BY to better handle ROLLUP, CUBE and GROUPING SETS.
+
+- Improvement: [Refactored](https://github.com/tobymao/sqlglot/commit/d95317e1fe15f06768d613d1eee1ed88d0d1b95a) UDTF scope.
+
+- Improvement: Fixed parsing for UDF typical parameters in order to handle constraints.
+
 v11.1.0
 ------
+
 Changes:
 
 - Breaking: Although this is a breaking change, it fixes and makes the behavior of escaped characters more consistent. Now SQLGlot preserves all line break inputs as they come.

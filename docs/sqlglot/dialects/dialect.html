@@ -204,6 +204,12 @@
             <li>
                     <a class="function" href="#trim_sql">trim_sql</a>
             </li>
+            <li>
+                    <a class="function" href="#str_to_time_sql">str_to_time_sql</a>
+            </li>
+            <li>
+                    <a class="function" href="#ts_or_ds_to_date_sql">ts_or_ds_to_date_sql</a>
+            </li>
     </ul>
 
 
@@ -652,6 +658,21 @@
 </span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a>    <span class="n">from_part</span> <span class="o">=</span> <span class="s2">&quot;FROM &quot;</span> <span class="k">if</span> <span class="n">trim_type</span> <span class="ow">or</span> <span class="n">remove_chars</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
 </span><span id="L-424"><a href="#L-424"><span class="linenos">424</span></a>    <span class="n">collation</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; COLLATE </span><span class="si">{</span><span class="n">collation</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">collation</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
 </span><span id="L-425"><a href="#L-425"><span class="linenos">425</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;TRIM(</span><span class="si">{</span><span class="n">trim_type</span><span class="si">}{</span><span class="n">remove_chars</span><span class="si">}{</span><span class="n">from_part</span><span class="si">}{</span><span class="n">target</span><span class="si">}{</span><span class="n">collation</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span><span id="L-426"><a href="#L-426"><span class="linenos">426</span></a>
+</span><span id="L-427"><a href="#L-427"><span class="linenos">427</span></a>
+</span><span id="L-428"><a href="#L-428"><span class="linenos">428</span></a><span class="k">def</span> <span class="nf">str_to_time_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-429"><a href="#L-429"><span class="linenos">429</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;STRPTIME&quot;</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_time</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
+</span><span id="L-430"><a href="#L-430"><span class="linenos">430</span></a>
+</span><span id="L-431"><a href="#L-431"><span class="linenos">431</span></a>
+</span><span id="L-432"><a href="#L-432"><span class="linenos">432</span></a><span class="k">def</span> <span class="nf">ts_or_ds_to_date_sql</span><span class="p">(</span><span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
+</span><span id="L-433"><a href="#L-433"><span class="linenos">433</span></a>    <span class="k">def</span> <span class="nf">_ts_or_ds_to_date_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">TsOrDsToDate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a>        <span class="n">_dialect</span> <span class="o">=</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a>        <span class="n">time_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_time</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a>        <span class="k">if</span> <span class="n">time_format</span> <span class="ow">and</span> <span class="n">time_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_dialect</span><span class="o">.</span><span class="n">time_format</span><span class="p">,</span> <span class="n">_dialect</span><span class="o">.</span><span class="n">date_format</span><span class="p">):</span>
+</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a>            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="n">str_to_time_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">expression</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS DATE)&quot;</span>
+</span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS DATE)&quot;</span>
+</span><span id="L-439"><a href="#L-439"><span class="linenos">439</span></a>
+</span><span id="L-440"><a href="#L-440"><span class="linenos">440</span></a>    <span class="k">return</span> <span class="n">_ts_or_ds_to_date_sql</span>
 </span></pre></div>
 
 
@@ -1930,6 +1951,51 @@ columns are removed from the create statement.</p>
 </span><span id="trim_sql-424"><a href="#trim_sql-424"><span class="linenos">424</span></a>    <span class="n">from_part</span> <span class="o">=</span> <span class="s2">&quot;FROM &quot;</span> <span class="k">if</span> <span class="n">trim_type</span> <span class="ow">or</span> <span class="n">remove_chars</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
 </span><span id="trim_sql-425"><a href="#trim_sql-425"><span class="linenos">425</span></a>    <span class="n">collation</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; COLLATE </span><span class="si">{</span><span class="n">collation</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">collation</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
 </span><span id="trim_sql-426"><a href="#trim_sql-426"><span class="linenos">426</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;TRIM(</span><span class="si">{</span><span class="n">trim_type</span><span class="si">}{</span><span class="n">remove_chars</span><span class="si">}{</span><span class="n">from_part</span><span class="si">}{</span><span class="n">target</span><span class="si">}{</span><span class="n">collation</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="str_to_time_sql">
+                            <input id="str_to_time_sql-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">str_to_time_sql</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+                <label class="view-source-button" for="str_to_time_sql-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#str_to_time_sql"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="str_to_time_sql-429"><a href="#str_to_time_sql-429"><span class="linenos">429</span></a><span class="k">def</span> <span class="nf">str_to_time_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="str_to_time_sql-430"><a href="#str_to_time_sql-430"><span class="linenos">430</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;STRPTIME&quot;</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_time</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="ts_or_ds_to_date_sql">
+                            <input id="ts_or_ds_to_date_sql-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">ts_or_ds_to_date_sql</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="n">Callable</span>:</span></span>
+
+                <label class="view-source-button" for="ts_or_ds_to_date_sql-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#ts_or_ds_to_date_sql"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ts_or_ds_to_date_sql-433"><a href="#ts_or_ds_to_date_sql-433"><span class="linenos">433</span></a><span class="k">def</span> <span class="nf">ts_or_ds_to_date_sql</span><span class="p">(</span><span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">:</span>
+</span><span id="ts_or_ds_to_date_sql-434"><a href="#ts_or_ds_to_date_sql-434"><span class="linenos">434</span></a>    <span class="k">def</span> <span class="nf">_ts_or_ds_to_date_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">TsOrDsToDate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="ts_or_ds_to_date_sql-435"><a href="#ts_or_ds_to_date_sql-435"><span class="linenos">435</span></a>        <span class="n">_dialect</span> <span class="o">=</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="ts_or_ds_to_date_sql-436"><a href="#ts_or_ds_to_date_sql-436"><span class="linenos">436</span></a>        <span class="n">time_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_time</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="ts_or_ds_to_date_sql-437"><a href="#ts_or_ds_to_date_sql-437"><span class="linenos">437</span></a>        <span class="k">if</span> <span class="n">time_format</span> <span class="ow">and</span> <span class="n">time_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_dialect</span><span class="o">.</span><span class="n">time_format</span><span class="p">,</span> <span class="n">_dialect</span><span class="o">.</span><span class="n">date_format</span><span class="p">):</span>
+</span><span id="ts_or_ds_to_date_sql-438"><a href="#ts_or_ds_to_date_sql-438"><span class="linenos">438</span></a>            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="n">str_to_time_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">expression</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS DATE)&quot;</span>
+</span><span id="ts_or_ds_to_date_sql-439"><a href="#ts_or_ds_to_date_sql-439"><span class="linenos">439</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS DATE)&quot;</span>
+</span><span id="ts_or_ds_to_date_sql-440"><a href="#ts_or_ds_to_date_sql-440"><span class="linenos">440</span></a>
+</span><span id="ts_or_ds_to_date_sql-441"><a href="#ts_or_ds_to_date_sql-441"><span class="linenos">441</span></a>    <span class="k">return</span> <span class="n">_ts_or_ds_to_date_sql</span>
 </span></pre></div>
 
 

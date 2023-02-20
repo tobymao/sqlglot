@@ -769,7 +769,10 @@ FROM foo""",
         )
 
     def test_is_star(self):
+        assert parse_one("*").is_star
+        assert parse_one("foo.*").is_star
         assert parse_one("SELECT * FROM foo").is_star
+        assert parse_one("(SELECT * FROM foo)").is_star
         assert parse_one("SELECT *, 1 FROM foo").is_star
         assert parse_one("SELECT foo.* FROM foo").is_star
         assert parse_one("SELECT * EXCEPT (a, b) FROM foo").is_star
@@ -777,5 +780,7 @@ FROM foo""",
         assert parse_one("SELECT * REPLACE (a AS b, b AS C)").is_star
         assert parse_one("SELECT * EXCEPT (a, b) REPLACE (a AS b, b AS C)").is_star
         assert parse_one("SELECT * INTO newevent FROM event").is_star
-        assert parse_one("*").is_star
-        assert parse_one("foo.*").is_star
+        assert parse_one("SELECT * FROM foo UNION SELECT * FROM bar")
+        assert parse_one("SELECT * FROM bla UNION SELECT 1 AS x")
+        assert parse_one("SELECT 1 AS x UNION SELECT * FROM bla")
+        assert parse_one("SELECT 1 AS x UNION SELECT 1 AS x UNION SELECT * FROM foo").is_star

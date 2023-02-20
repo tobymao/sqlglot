@@ -1798,6 +1798,10 @@ class Union(Subqueryable):
         return self.this.unnest().named_selects
 
     @property
+    def is_star(self) -> bool:
+        return self.this.is_star or self.expression.is_star
+
+    @property
     def selects(self):
         return self.this.unnest().selects
 
@@ -2425,6 +2429,10 @@ class Select(Subqueryable):
         return [e.output_name for e in self.expressions if e.alias_or_name]
 
     @property
+    def is_star(self) -> bool:
+        return any(expression.is_star for expression in self.expressions)
+
+    @property
     def selects(self) -> t.List[Expression]:
         return self.expressions
 
@@ -2445,6 +2453,10 @@ class Subquery(DerivedTable, Unionable):
         while isinstance(expression, Subquery):
             expression = expression.this
         return expression
+
+    @property
+    def is_star(self) -> bool:
+        return self.this.is_star
 
     @property
     def output_name(self):

@@ -2426,7 +2426,7 @@ class Select(Subqueryable):
 
     @property
     def is_star(self) -> bool:
-        return len(self.expressions) == 1 and self.expressions[0].is_star
+        return any(expression.is_star for expression in self.expressions)
 
     @property
     def selects(self) -> t.List[Expression]:

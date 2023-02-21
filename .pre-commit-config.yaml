@@ -9,6 +9,7 @@ repos:
         require_serial: true
         files: ^(sqlglot/|tests/|setup.py)
       - id: isort
+        args: [--combine-as]
         name: isort
         entry: isort
         language: system

@@ -9,33 +9,40 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
-from sqlglot.dialects import Dialect, Dialects
-from sqlglot.diff import diff
-from sqlglot.errors import ErrorLevel, ParseError, TokenError, UnsupportedError
-from sqlglot.expressions import Expression
-from sqlglot.expressions import alias_ as alias
-from sqlglot.expressions import (
-    and_,
-    column,
-    condition,
-    except_,
-    from_,
-    intersect,
-    maybe_parse,
-    not_,
-    or_,
-    select,
-    subquery,
+from sqlglot.dialects.dialect import Dialect as Dialect, Dialects as Dialects
+from sqlglot.diff import diff as diff
+from sqlglot.errors import (
+    ErrorLevel as ErrorLevel,
+    ParseError as ParseError,
+    TokenError as TokenError,
+    UnsupportedError as UnsupportedError,
 )
-from sqlglot.expressions import table_ as table
-from sqlglot.expressions import to_column, to_table, union
-from sqlglot.generator import Generator
-from sqlglot.parser import Parser
-from sqlglot.schema import MappingSchema, Schema
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.expressions import (
+    Expression as Expression,
+    alias_ as alias,
+    and_ as and_,
+    column as column,
+    condition as condition,
+    except_ as except_,
+    from_ as from_,
+    intersect as intersect,
+    maybe_parse as maybe_parse,
+    not_ as not_,
+    or_ as or_,
+    select as select,
+    subquery as subquery,
+    table_ as table,
+    to_column as to_column,
+    to_table as to_table,
+    union as union,
+)
+from sqlglot.generator import Generator as Generator
+from sqlglot.parser import Parser as Parser
+from sqlglot.schema import MappingSchema as MappingSchema, Schema as Schema
+from sqlglot.tokens import Tokenizer as Tokenizer, TokenType as TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot.dialects.dialect import DialectType
+    from sqlglot.dialects.dialect import DialectType as DialectType
 
     T = t.TypeVar("T", bound=Expression)
 

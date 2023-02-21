@@ -4,8 +4,7 @@ import typing as t
 
 from sqlglot import exp as expression
 from sqlglot.dataframe.sql.column import Column
-from sqlglot.helper import ensure_list
-from sqlglot.helper import flatten as _flatten
+from sqlglot.helper import ensure_list, flatten as _flatten
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import ColumnOrLiteral, ColumnOrName

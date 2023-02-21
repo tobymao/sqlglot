@@ -32,6 +32,9 @@ def dump(node: Node) -> JSON:
             obj["type"] = node.type.sql()
         if node.comments:
             obj["comments"] = node.comments
+        if node._meta is not None:
+            obj["meta"] = node._meta
+
         return obj
     return node
 
@@ -57,11 +60,9 @@ def load(obj: JSON) -> Node:
         klass = getattr(module, class_name)
 
         expression = klass(**{k: load(v) for k, v in obj["args"].items()})
-        type_ = obj.get("type")
-        if type_:
-            expression.type = exp.DataType.build(type_)
-        comments = obj.get("comments")
-        if comments:
-            expression.comments = load(comments)
+        expression.type = obj.get("type")
+        expression.comments = obj.get("comments")
+        expression._meta = obj.get("meta")
+
         return expression
     return obj

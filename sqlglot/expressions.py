@@ -82,7 +82,7 @@ class Expression(metaclass=_Expression):
 
     key = "expression"
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key", "comments", "_type")
+    __slots__ = ("args", "parent", "arg_key", "comments", "_type", "_meta")
 
     def __init__(self, **args: t.Any):
         self.args: t.Dict[str, t.Any] = args
@@ -90,6 +90,7 @@ class Expression(metaclass=_Expression):
         self.arg_key: t.Optional[str] = None
         self.comments: t.Optional[t.List[str]] = None
         self._type: t.Optional[DataType] = None
+        self._meta: t.Optional[t.Dict[str, t.Any]] = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
@@ -219,10 +220,23 @@ class Expression(metaclass=_Expression):
             dtype = DataType.build(dtype)
         self._type = dtype  # type: ignore
 
+    @property
+    def meta(self) -> t.Dict[str, t.Any]:
+        if self._meta is None:
+            self._meta = {}
+        return self._meta
+
     def __deepcopy__(self, memo):
         copy = self.__class__(**deepcopy(self.args))
-        copy.comments = self.comments
-        copy.type = self.type
+        if self.comments is not None:
+            copy.comments = deepcopy(self.comments)
+
+        if self._type is not None:
+            copy._type = self._type.copy()
+
+        if self._meta is not None:
+            copy._meta = deepcopy(self._meta)
+
         return copy
 
     def copy(self):

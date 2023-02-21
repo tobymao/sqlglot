@@ -327,3 +327,10 @@ class Snowflake(Dialect):
             increment = expression.args.get("increment")
             increment = f" INCREMENT {increment}" if increment else ""
             return f"AUTOINCREMENT{start}{increment}"
+
+        def create_sql(self, expression: exp.Create) -> str:
+            unsupported = ["set", "multiset", "global_temporary"]
+            for prop in unsupported:
+                expression.set(prop, False)
+            create_sql = super().create_sql(expression)
+            return create_sql

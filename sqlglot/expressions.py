@@ -234,7 +234,7 @@ class Expression(metaclass=_Expression):
         if self.type is not None:
             copy.type = self.type.copy()
 
-        if self.meta is not None:
+        if self._meta is not None:
             copy._meta = deepcopy(self.meta)
 
         return copy

@@ -235,7 +235,7 @@ class Expression(metaclass=_Expression):
             copy._type = self._type.copy()
 
         if self._meta is not None:
-            copy._meta = deepcopy(self.meta)
+            copy._meta = deepcopy(self._meta)
 
         return copy
 

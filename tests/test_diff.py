@@ -152,6 +152,9 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
+        with self.assertRaises(ValueError):
+            diff(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt), (expr_src, expr_tgt)])
+
     def _validate_delta_only(self, actual_diff, expected_delta):
         actual_delta = _delta_only(actual_diff)
         self.assertEqual(set(actual_delta), set(expected_delta))

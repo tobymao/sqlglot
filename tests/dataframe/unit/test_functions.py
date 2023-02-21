@@ -2,8 +2,7 @@ import datetime
 import inspect
 import unittest
 
-from sqlglot import expressions as exp
-from sqlglot import parse_one
+from sqlglot import expressions as exp, parse_one
 from sqlglot.dataframe.sql import functions as SF
 from sqlglot.errors import ErrorLevel
 

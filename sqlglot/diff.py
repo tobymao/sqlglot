@@ -11,8 +11,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from heapq import heappop, heappush
 
-from sqlglot import Dialect
-from sqlglot import expressions as exp
+from sqlglot import Dialect, expressions as exp
 from sqlglot.helper import ensure_collection
 
 

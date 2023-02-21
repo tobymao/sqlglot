@@ -31,3 +31,9 @@ class TestSerDe(unittest.TestCase):
         after = self.dump_load(before)
         self.assertEqual(before.type, after.type)
         self.assertEqual(before.this.type, after.this.type)
+
+    def test_meta(self):
+        before = parse_one("SELECT * FROM X")
+        before.meta["x"] = 1
+        after = self.dump_load(before)
+        self.assertEqual(before.meta, after.meta)

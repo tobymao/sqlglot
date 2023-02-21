@@ -227,7 +227,10 @@ class Expression(metaclass=_Expression):
         copy = self.__class__(**deepcopy(self.args))
         copy.comments = self.comments
         copy.type = self.type
-        copy._meta = self.metadata
+
+        if self.meta is not None:
+            copy.meta = deepcopy(self.meta)
+
         return copy
 
     def copy(self):

@@ -784,3 +784,19 @@ FROM foo""",
         assert parse_one("SELECT * FROM bla UNION SELECT 1 AS x").is_star
         assert parse_one("SELECT 1 AS x UNION SELECT * FROM bla").is_star
         assert parse_one("SELECT 1 AS x UNION SELECT 1 AS x UNION SELECT * FROM foo").is_star
+
+    def test_set_metadata(self):
+        ast = parse_one("SELECT foo.col FROM foo")
+
+        self.assertIsNone(ast._meta)
+
+        # calling ast.meta would lazily instantiate self._meta
+        self.assertEqual(ast.meta, {})
+        self.assertEqual(ast._meta, {})
+
+        ast.meta["some_meta_key"] = "some_meta_value"
+        self.assertEqual(ast.meta.get("some_meta_key"), "some_meta_value")
+        self.assertEqual(ast.meta.get("some_other_meta_key"), None)
+
+        ast.meta["some_other_meta_key"] = "some_other_meta_value"
+        self.assertEqual(ast.meta.get("some_other_meta_key"), "some_other_meta_value")

@@ -329,7 +329,7 @@ class Snowflake(Dialect):
             return f"AUTOINCREMENT{start}{increment}"
 
         def create_sql(self, expression: exp.Create) -> str:
-            unsupported = ["set", "multiset", "global_temporary"]
+            unsupported = ["set", "multiset", "global_temporary", "volatile"]
             for prop in unsupported:
                 expression.set(prop, False)
             create_sql = super().create_sql(expression)

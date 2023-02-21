@@ -400,7 +400,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "CREATE TABLE a (b INT)",
             read={
-                "teradata": "CREATE SET MULTISET GLOBAL TEMPORARY TABLE a (b INT)",
+                "teradata": "CREATE SET MULTISET GLOBAL TEMPORARY VOLATILE TABLE a (b INT)",
             },
             write={
                 "snowflake": "CREATE TABLE a (b INT)",

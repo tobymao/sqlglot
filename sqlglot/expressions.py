@@ -231,7 +231,7 @@ class Expression(metaclass=_Expression):
         if self.comments is not None:
             copy.comments = deepcopy(self.comments)
 
-        if self.type is not None:
+        if self._type is not None:
             copy._type = self._type.copy()
 
         if self._meta is not None:

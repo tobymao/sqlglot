@@ -144,7 +144,7 @@ class TestDiff(unittest.TestCase):
         )
 
         self._validate_delta_only(
-            diff(expr_src, expr_tgt, pre_matchings=[(expr_src, expr_tgt)]),
+            diff(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt)]),
             [
                 Insert(exp.Literal.number(2)),
                 Insert(exp.Literal.number(3)),

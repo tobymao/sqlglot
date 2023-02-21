@@ -61,7 +61,7 @@ if t.TYPE_CHECKING:
 def diff(
     source: exp.Expression,
     target: exp.Expression,
-    pre_matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+    matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
 ) -> t.List[Edit]:
     """
     Returns the list of changes between the source and the target expressions.
@@ -84,7 +84,7 @@ def diff(
     Args:
         source: the source expression.
         target: the target expression against which the diff should be calculated.
-        pre_matchings: the list of pre-matched node pairs which is used to help the algorithm's
+        matchings: the list of pre-matched node pairs which is used to help the algorithm's
             heuristics produce better results for subtrees that are known by a caller to be matching.
 
     Returns:
@@ -92,7 +92,7 @@ def diff(
         target expression trees. This list represents a sequence of steps needed to transform the source
         expression tree into the target one.
     """
-    return ChangeDistiller().diff(source.copy(), target.copy(), pre_matchings=pre_matchings)
+    return ChangeDistiller().diff(source.copy(), target.copy(), matchings=matchings)
 
 
 LEAF_EXPRESSION_TYPES = (
@@ -119,11 +119,11 @@ class ChangeDistiller:
         self,
         source: exp.Expression,
         target: exp.Expression,
-        pre_matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+        matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
     ) -> t.List[Edit]:
-        pre_matchings = pre_matchings or []
+        matchings = matchings or []
 
-        pre_matched_nodes = {n: n for pair in pre_matchings for n in pair}
+        pre_matched_nodes = {n: n for pair in matchings for n in pair}
         pre_matched_id_mappings = {}
 
         def build_index(
@@ -148,8 +148,7 @@ class ChangeDistiller:
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
 
         matching_set = self._compute_matching_set() | {
-            (pre_matched_id_mappings[id(s)], pre_matched_id_mappings[id(t)])
-            for s, t in pre_matchings
+            (pre_matched_id_mappings[id(s)], pre_matched_id_mappings[id(t)]) for s, t in matchings
         }
         return self._generate_edit_script(matching_set)
 

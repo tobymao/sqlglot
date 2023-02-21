@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot import parse_one
+from sqlglot import exp, parse_one
 from sqlglot.diff import Insert, Keep, Move, Remove, Update, diff
 from sqlglot.expressions import Join, to_identifier
 
@@ -127,6 +127,33 @@ class TestDiff(unittest.TestCase):
                 Insert(parse_one("RANK()")),  # the Anonymous node
             ],
         )
+
+    def test_pre_matchings(self):
+        expr_src = parse_one("SELECT 1")
+        expr_tgt = parse_one("SELECT 1, 2, 3, 4")
+
+        self._validate_delta_only(
+            diff(expr_src, expr_tgt),
+            [
+                Remove(expr_src),
+                Insert(expr_tgt),
+                Insert(exp.Literal.number(2)),
+                Insert(exp.Literal.number(3)),
+                Insert(exp.Literal.number(4)),
+            ],
+        )
+
+        self._validate_delta_only(
+            diff(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt)]),
+            [
+                Insert(exp.Literal.number(2)),
+                Insert(exp.Literal.number(3)),
+                Insert(exp.Literal.number(4)),
+            ],
+        )
+
+        with self.assertRaises(ValueError):
+            diff(expr_src, expr_tgt, matchings=[(expr_src, expr_tgt), (expr_src, expr_tgt)])
 
     def _validate_delta_only(self, actual_diff, expected_delta):
         actual_delta = _delta_only(actual_diff)

@@ -795,6 +795,4 @@ FROM foo""",
         self.assertIsNone(ast.metadata.get("some_other_meta_key"))
 
         ast.set_metadata("some_other_meta_key", "some_other_meta_value")
-        self.assertEqual(
-            ast.metadata.get("some_other_meta_key"), "some_other_meta_value"
-        )
+        self.assertEqual(ast.metadata.get("some_other_meta_key"), "some_other_meta_value")

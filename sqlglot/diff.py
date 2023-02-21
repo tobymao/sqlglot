@@ -58,7 +58,11 @@ if t.TYPE_CHECKING:
     Edit = t.Union[Insert, Remove, Move, Update, Keep]
 
 
-def diff(source: exp.Expression, target: exp.Expression) -> t.List[Edit]:
+def diff(
+    source: exp.Expression,
+    target: exp.Expression,
+    pre_matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+) -> t.List[Edit]:
     """
     Returns the list of changes between the source and the target expressions.
 
@@ -80,13 +84,15 @@ def diff(source: exp.Expression, target: exp.Expression) -> t.List[Edit]:
     Args:
         source: the source expression.
         target: the target expression against which the diff should be calculated.
+        pre_matchings: the list of pre-matched node pairs which is used to help the algorithm's
+            heuristics produce better results for subtrees that are known by a caller to be matching.
 
     Returns:
         the list of Insert, Remove, Move, Update and Keep objects for each node in the source and the
         target expression trees. This list represents a sequence of steps needed to transform the source
         expression tree into the target one.
     """
-    return ChangeDistiller().diff(source.copy(), target.copy())
+    return ChangeDistiller().diff(source.copy(), target.copy(), pre_matchings=pre_matchings)
 
 
 LEAF_EXPRESSION_TYPES = (
@@ -109,16 +115,42 @@ class ChangeDistiller:
         self.t = t
         self._sql_generator = Dialect().generator()
 
-    def diff(self, source: exp.Expression, target: exp.Expression) -> t.List[Edit]:
+    def diff(
+        self,
+        source: exp.Expression,
+        target: exp.Expression,
+        pre_matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+    ) -> t.List[Edit]:
+        pre_matchings = pre_matchings or []
+
+        pre_matched_nodes = {n: n for pair in pre_matchings for n in pair}
+        pre_matched_id_mappings = {}
+
+        def build_index(
+            expression: exp.Expression,
+        ) -> t.Tuple[t.Dict[int, exp.Expression], t.Set[int]]:
+            index = {}
+            unmatched_nodes = set()
+            for node, _, _ in expression.bfs():
+                node_id = id(node)
+                index[node_id] = node
+                pre_matched_node = pre_matched_nodes.get(node)
+                if pre_matched_node is None:
+                    unmatched_nodes.add(node_id)
+                else:
+                    pre_matched_id_mappings[id(pre_matched_node)] = node_id
+            return index, unmatched_nodes
+
+        self._source_index, self._unmatched_source_nodes = build_index(source)
+        self._target_index, self._unmatched_target_nodes = build_index(target)
         self._source = source
         self._target = target
-        self._source_index = {id(n[0]): n[0] for n in source.bfs()}
-        self._target_index = {id(n[0]): n[0] for n in target.bfs()}
-        self._unmatched_source_nodes = set(self._source_index)
-        self._unmatched_target_nodes = set(self._target_index)
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
 
-        matching_set = self._compute_matching_set()
+        matching_set = self._compute_matching_set() | {
+            (pre_matched_id_mappings[id(s)], pre_matched_id_mappings[id(t)])
+            for s, t in pre_matchings
+        }
         return self._generate_edit_script(matching_set)
 
     def _generate_edit_script(self, matching_set: t.Set[t.Tuple[int, int]]) -> t.List[Edit]:

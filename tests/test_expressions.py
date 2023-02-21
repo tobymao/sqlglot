@@ -788,11 +788,15 @@ FROM foo""",
     def test_set_metadata(self):
         ast = parse_one("SELECT foo.col FROM foo")
 
-        self.assertIsNone(ast.metadata)
+        self.assertIsNone(ast._meta)
 
-        ast.set_metadata("some_meta_key", "some_meta_value")
-        self.assertEqual(ast.metadata.get("some_meta_key"), "some_meta_value")
-        self.assertIsNone(ast.metadata.get("some_other_meta_key"))
+        # calling ast.meta would lazily instantiate self._meta
+        self.assertEqual(ast.meta, {})
+        self.assertEqual(ast._meta, {})
 
-        ast.set_metadata("some_other_meta_key", "some_other_meta_value")
-        self.assertEqual(ast.metadata.get("some_other_meta_key"), "some_other_meta_value")
+        ast.meta["some_meta_key"] = "some_meta_value"
+        self.assertEqual(ast.meta.get("some_meta_key"), "some_meta_value")
+        self.assertEqual(ast.meta.get("some_other_meta_key"), None)
+
+        ast.meta["some_other_meta_key"] = "some_other_meta_value"
+        self.assertEqual(ast.meta.get("some_other_meta_key"), "some_other_meta_value")

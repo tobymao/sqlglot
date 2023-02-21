@@ -221,7 +221,7 @@ class Expression(metaclass=_Expression):
         self._type = dtype  # type: ignore
 
     @property
-    def meta(self):
+    def meta(self) -> t.Dict[str, t.Any]:
         if self._meta is None:
             self._meta = {}
         return self._meta

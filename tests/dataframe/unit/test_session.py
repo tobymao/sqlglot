@@ -1,8 +1,7 @@
 from unittest import mock
 
 import sqlglot
-from sqlglot.dataframe.sql import functions as F
-from sqlglot.dataframe.sql import types
+from sqlglot.dataframe.sql import functions as F, types
 from sqlglot.dataframe.sql.session import SparkSession
 from sqlglot.schema import MappingSchema
 from tests.dataframe.unit.dataframe_sql_validator import DataFrameSQLValidator

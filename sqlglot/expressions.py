@@ -2630,6 +2630,7 @@ class DataType(Expression):
         IMAGE = auto()
         VARIANT = auto()
         OBJECT = auto()
+        INET = auto()
         NULL = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
 

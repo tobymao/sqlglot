@@ -28,6 +28,11 @@ class TestTranspile(unittest.TestCase):
         self.assertEqual(transpile("SELECT 1 current_datetime")[0], "SELECT 1 AS current_datetime")
         self.assertEqual(transpile("SELECT 1 row")[0], "SELECT 1 AS row")
 
+        self.assertEqual(
+            transpile("SELECT 1 FROM a.b.table1 t UNPIVOT((c3) FOR c4 IN (a, b))")[0],
+            "SELECT 1 FROM a.b.table1 AS t UNPIVOT((c3) FOR c4 IN (a, b))",
+        )
+
         for key in ("union", "over", "from", "join"):
             with self.subTest(f"alias {key}"):
                 self.validate(f"SELECT x AS {key}", f"SELECT x AS {key}")

@@ -2504,6 +2504,7 @@ class Tag(Expression):
 class Pivot(Expression):
     arg_types = {
         "this": False,
+        "alias": False,
         "expressions": True,
         "field": True,
         "unpivot": True,

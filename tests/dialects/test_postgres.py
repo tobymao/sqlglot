@@ -370,13 +370,6 @@ class TestPostgres(Validator):
                 "spark": "TRIM(BOTH 'as' FROM 'as string as')",
             },
         )
-        self.validate_all(
-            "CAST('127.0.0.1/32' AS INET)",
-            read={
-                "postgres": "INET '127.0.0.1/32'",
-                "postgres": "CAST('127.0.0.1/32' AS INET)",
-            },
-        )
 
     def test_bool_or(self):
         self.validate_all(

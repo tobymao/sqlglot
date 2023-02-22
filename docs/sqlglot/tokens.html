@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.3.1"/>
+    <meta name="generator" content="pdoc 13.0.0"/>
     <title>sqlglot.tokens API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
     <style>/*! syntax-highlighting.css */pre{line-height:125%;}span.linenos{color:inherit; background-color:transparent; padding-left:5px; padding-right:20px;}.pdoc-code .hll{background-color:#ffffcc}.pdoc-code{background:#f8f8f8;}.pdoc-code .c{color:#3D7B7B; font-style:italic}.pdoc-code .err{border:1px solid #FF0000}.pdoc-code .k{color:#008000; font-weight:bold}.pdoc-code .o{color:#666666}.pdoc-code .ch{color:#3D7B7B; font-style:italic}.pdoc-code .cm{color:#3D7B7B; font-style:italic}.pdoc-code .cp{color:#9C6500}.pdoc-code .cpf{color:#3D7B7B; font-style:italic}.pdoc-code .c1{color:#3D7B7B; font-style:italic}.pdoc-code .cs{color:#3D7B7B; font-style:italic}.pdoc-code .gd{color:#A00000}.pdoc-code .ge{font-style:italic}.pdoc-code .gr{color:#E40000}.pdoc-code .gh{color:#000080; font-weight:bold}.pdoc-code .gi{color:#008400}.pdoc-code .go{color:#717171}.pdoc-code .gp{color:#000080; font-weight:bold}.pdoc-code .gs{font-weight:bold}.pdoc-code .gu{color:#800080; font-weight:bold}.pdoc-code .gt{color:#0044DD}.pdoc-code .kc{color:#008000; font-weight:bold}.pdoc-code .kd{color:#008000; font-weight:bold}.pdoc-code .kn{color:#008000; font-weight:bold}.pdoc-code .kp{color:#008000}.pdoc-code .kr{color:#008000; font-weight:bold}.pdoc-code .kt{color:#B00040}.pdoc-code .m{color:#666666}.pdoc-code .s{color:#BA2121}.pdoc-code .na{color:#687822}.pdoc-code .nb{color:#008000}.pdoc-code .nc{color:#0000FF; font-weight:bold}.pdoc-code .no{color:#880000}.pdoc-code .nd{color:#AA22FF}.pdoc-code .ni{color:#717171; font-weight:bold}.pdoc-code .ne{color:#CB3F38; font-weight:bold}.pdoc-code .nf{color:#0000FF}.pdoc-code .nl{color:#767600}.pdoc-code .nn{color:#0000FF; font-weight:bold}.pdoc-code .nt{color:#008000; font-weight:bold}.pdoc-code .nv{color:#19177C}.pdoc-code .ow{color:#AA22FF; font-weight:bold}.pdoc-code .w{color:#bbbbbb}.pdoc-code .mb{color:#666666}.pdoc-code .mf{color:#666666}.pdoc-code .mh{color:#666666}.pdoc-code .mi{color:#666666}.pdoc-code .mo{color:#666666}.pdoc-code .sa{color:#BA2121}.pdoc-code .sb{color:#BA2121}.pdoc-code .sc{color:#BA2121}.pdoc-code .dl{color:#BA2121}.pdoc-code .sd{color:#BA2121; font-style:italic}.pdoc-code .s2{color:#BA2121}.pdoc-code .se{color:#AA5D1F; font-weight:bold}.pdoc-code .sh{color:#BA2121}.pdoc-code .si{color:#A45A77; font-weight:bold}.pdoc-code .sx{color:#008000}.pdoc-code .sr{color:#A45A77}.pdoc-code .s1{color:#BA2121}.pdoc-code .ss{color:#19177C}.pdoc-code .bp{color:#008000}.pdoc-code .fm{color:#0000FF}.pdoc-code .vc{color:#19177C}.pdoc-code .vg{color:#19177C}.pdoc-code .vi{color:#19177C}.pdoc-code .vm{color:#19177C}.pdoc-code .il{color:#666666}</style>
     <style>/*! theme.css */:root{--pdoc-background:#fff;}.pdoc{--text:#212529;--muted:#6c757d;--link:#3660a5;--link-hover:#1659c5;--code:#f8f8f8;--active:#fff598;--accent:#eee;--accent2:#c1c1c1;--nav-hover:rgba(255, 255, 255, 0.5);--name:#0066BB;--def:#008800;--annotation:#007020;}</style>
-    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;opacity:0;}nav.pdoc{--pad:clamp(0.5rem, 2vw, 1.75rem);--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent }nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc > div > ul{margin-left:calc(0px - var(--pad));}nav.pdoc li a{padding:.2rem 0 .2rem calc(var(--pad) + var(--indent));}nav.pdoc > div > ul > li > a{padding-left:var(--pad);}nav.pdoc li{transition:all 100ms;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
-    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .pdoc-alert{padding:1rem 1rem 1rem calc(1.5rem + 24px);border:1px solid transparent;border-radius:.25rem;background-repeat:no-repeat;background-position:1rem center;margin-bottom:1rem;}.pdoc .pdoc-alert > *:last-child{margin-bottom:0;}.pdoc .pdoc-alert-note {color:#084298;background-color:#cfe2ff;border-color:#b6d4fe;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23084298%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2016A8%208%200%201%200%208%200a8%208%200%200%200%200%2016zm.93-9.412-1%204.705c-.07.34.029.533.304.533.194%200%20.487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703%200-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381%202.29-.287zM8%205.5a1%201%200%201%201%200-2%201%201%200%200%201%200%202z%22/%3E%3C/svg%3E");}.pdoc .pdoc-alert-warning{color:#664d03;background-color:#fff3cd;border-color:#ffecb5;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23664d03%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8.982%201.566a1.13%201.13%200%200%200-1.96%200L.165%2013.233c-.457.778.091%201.767.98%201.767h13.713c.889%200%201.438-.99.98-1.767L8.982%201.566zM8%205c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%205.995A.905.905%200%200%201%208%205zm.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2z%22/%3E%3C/svg%3E");}.pdoc .pdoc-alert-danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M5.52.359A.5.5%200%200%201%206%200h4a.5.5%200%200%201%20.474.658L8.694%206H12.5a.5.5%200%200%201%20.395.807l-7%209a.5.5%200%200%201-.873-.454L6.823%209.5H3.5a.5.5%200%200%201-.48-.641l2.5-8.5z%22/%3E%3C/svg%3E");}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc > section:not(.module-info) h1{font-size:1.5rem;font-weight:500;}.pdoc > section:not(.module-info) h2{font-size:1.4rem;font-weight:500;}.pdoc > section:not(.module-info) h3{font-size:1.3rem;font-weight:500;}.pdoc > section:not(.module-info) h4{font-size:1.2rem;}.pdoc > section:not(.module-info) h5{font-size:1.1rem;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--code);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc > section:not(.module-info){margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.view-source-toggle-state,.view-source-toggle-state ~ .pdoc-code{display:none;}.view-source-toggle-state:checked ~ .pdoc-code{display:block;}.view-source-button{display:inline-block;float:right;font-size:.75rem;line-height:1.5rem;color:var(--muted);padding:0 .4rem 0 1.3rem;cursor:pointer;text-indent:-2px;}.view-source-button > span{visibility:hidden;}.module-info .view-source-button{float:none;display:flex;justify-content:flex-end;margin:-1.2rem .4rem -.2rem 0;}.view-source-button::before{position:absolute;content:"View Source";display:list-item;list-style-type:disclosure-closed;}.view-source-toggle-state:checked ~ .attr .view-source-button::before,.view-source-toggle-state:checked ~ .view-source-button::before{list-style-type:disclosure-open;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc section:not(.module-info) .docstring{margin-left:clamp(0rem, 5vw - 2rem, 1rem);}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target,.pdoc .pdoc-code > pre > span:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc .pdoc-code > pre > span:target{display:block;}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc *{scroll-margin:2rem;}.pdoc .pdoc-code .linenos{user-select:none;}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc section, .pdoc .classattr{position:relative;}.pdoc .headerlink{--width:clamp(1rem, 3vw, 2rem);position:absolute;top:0;left:calc(0rem - var(--width));transition:all 100ms ease-in-out;opacity:0;}.pdoc .headerlink::before{content:"#";display:block;text-align:center;width:var(--width);height:2.3rem;line-height:2.3rem;font-size:1.5rem;}.pdoc .attr:hover ~ .headerlink,.pdoc *:target > .headerlink,.pdoc .headerlink:hover{opacity:1;}.pdoc .attr{display:block;margin:.5rem 0 .5rem;padding:.4rem .4rem .4rem 1rem;background-color:var(--accent);overflow-x:auto;}.pdoc .classattr{margin-left:2rem;}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{background-color:transparent;}.pdoc .param, .pdoc .return-annotation{white-space:pre;}.pdoc .signature.multiline .param{display:block;}.pdoc .signature.condensed .param{display:inline-block;}.pdoc .annotation{color:var(--annotation);}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:35px;vertical-align:middle;width:70px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
+    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;z-index:999;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;opacity:0;}nav.pdoc{--pad:clamp(0.5rem, 2vw, 1.75rem);--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent }nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc > div > ul{margin-left:calc(0px - var(--pad));}nav.pdoc li a{padding:.2rem 0 .2rem calc(var(--pad) + var(--indent));}nav.pdoc > div > ul > li > a{padding-left:var(--pad);}nav.pdoc li{transition:all 100ms;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
+    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{cursor:pointer;display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .pdoc-alert{padding:1rem 1rem 1rem calc(1.5rem + 24px);border:1px solid transparent;border-radius:.25rem;background-repeat:no-repeat;background-position:1rem center;margin-bottom:1rem;}.pdoc .pdoc-alert > *:last-child{margin-bottom:0;}.pdoc .pdoc-alert-note {color:#084298;background-color:#cfe2ff;border-color:#b6d4fe;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23084298%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2016A8%208%200%201%200%208%200a8%208%200%200%200%200%2016zm.93-9.412-1%204.705c-.07.34.029.533.304.533.194%200%20.487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703%200-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381%202.29-.287zM8%205.5a1%201%200%201%201%200-2%201%201%200%200%201%200%202z%22/%3E%3C/svg%3E");}.pdoc .pdoc-alert-warning{color:#664d03;background-color:#fff3cd;border-color:#ffecb5;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23664d03%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8.982%201.566a1.13%201.13%200%200%200-1.96%200L.165%2013.233c-.457.778.091%201.767.98%201.767h13.713c.889%200%201.438-.99.98-1.767L8.982%201.566zM8%205c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%205.995A.905.905%200%200%201%208%205zm.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2z%22/%3E%3C/svg%3E");}.pdoc .pdoc-alert-danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M5.52.359A.5.5%200%200%201%206%200h4a.5.5%200%200%201%20.474.658L8.694%206H12.5a.5.5%200%200%201%20.395.807l-7%209a.5.5%200%200%201-.873-.454L6.823%209.5H3.5a.5.5%200%200%201-.48-.641l2.5-8.5z%22/%3E%3C/svg%3E");}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc > section:not(.module-info) h1{font-size:1.5rem;font-weight:500;}.pdoc > section:not(.module-info) h2{font-size:1.4rem;font-weight:500;}.pdoc > section:not(.module-info) h3{font-size:1.3rem;font-weight:500;}.pdoc > section:not(.module-info) h4{font-size:1.2rem;}.pdoc > section:not(.module-info) h5{font-size:1.1rem;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--code);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc > section:not(.module-info){margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.view-source-toggle-state,.view-source-toggle-state ~ .pdoc-code{display:none;}.view-source-toggle-state:checked ~ .pdoc-code{display:block;}.view-source-button{display:inline-block;float:right;font-size:.75rem;line-height:1.5rem;color:var(--muted);padding:0 .4rem 0 1.3rem;cursor:pointer;text-indent:-2px;}.view-source-button > span{visibility:hidden;}.module-info .view-source-button{float:none;display:flex;justify-content:flex-end;margin:-1.2rem .4rem -.2rem 0;}.view-source-button::before{position:absolute;content:"View Source";display:list-item;list-style-type:disclosure-closed;}.view-source-toggle-state:checked ~ .attr .view-source-button::before,.view-source-toggle-state:checked ~ .view-source-button::before{list-style-type:disclosure-open;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc section:not(.module-info) .docstring{margin-left:clamp(0rem, 5vw - 2rem, 1rem);}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target,.pdoc .pdoc-code > pre > span:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc .pdoc-code > pre > span:target{display:block;}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc *{scroll-margin:2rem;}.pdoc .pdoc-code .linenos{user-select:none;}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc section, .pdoc .classattr{position:relative;}.pdoc .headerlink{--width:clamp(1rem, 3vw, 2rem);position:absolute;top:0;left:calc(0rem - var(--width));transition:all 100ms ease-in-out;opacity:0;}.pdoc .headerlink::before{content:"#";display:block;text-align:center;width:var(--width);height:2.3rem;line-height:2.3rem;font-size:1.5rem;}.pdoc .attr:hover ~ .headerlink,.pdoc *:target > .headerlink,.pdoc .headerlink:hover{opacity:1;}.pdoc .attr{display:block;margin:.5rem 0 .5rem;padding:.4rem .4rem .4rem 1rem;background-color:var(--accent);overflow-x:auto;}.pdoc .classattr{margin-left:2rem;}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{background-color:transparent;}.pdoc .param, .pdoc .return-annotation{white-space:pre;}.pdoc .signature.multiline .param{display:block;}.pdoc .signature.condensed .param{display:inline-block;}.pdoc .annotation{color:var(--annotation);}.pdoc .view-value-toggle-state,.pdoc .view-value-toggle-state ~ .default_value{display:none;}.pdoc .view-value-toggle-state:checked ~ .default_value{display:inherit;}.pdoc .view-value-button{font-size:.5rem;vertical-align:middle;border-style:dashed;margin-top:-0.1rem;}.pdoc .view-value-button:hover{background:white;}.pdoc .view-value-button::before{content:"show";text-align:center;width:2.2em;display:inline-block;}.pdoc .view-value-toggle-state:checked ~ .view-value-button::before{content:"hide";}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:35px;vertical-align:middle;width:70px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
     <style>/*! custom.css */</style></head>
 <body>
     <nav class="pdoc">
@@ -909,9 +909,6 @@
             <li>
                     <a class="class" href="#Tokenizer">Tokenizer</a>
                             <ul class="memberlist">
-                        <li>
-                                <a class="function" href="#Tokenizer.__init__">Tokenizer</a>
-                        </li>
                         <li>
                                 <a class="function" href="#Tokenizer.reset">reset</a>
                         </li>
@@ -2369,7 +2366,8 @@
 
                             <div id="TokenType.L_PAREN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">L_PAREN</span><span class="default_value"> = &lt;<a href="#TokenType.L_PAREN">TokenType.L_PAREN</a>: &#39;L_PAREN&#39;&gt;</span>
+            <span class="name">L_PAREN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.L_PAREN">TokenType.L_PAREN</a>: &#39;L_PAREN&#39;&gt;</span>
 
         
     </div>
@@ -2380,7 +2378,8 @@
                             </div>
                             <div id="TokenType.R_PAREN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">R_PAREN</span><span class="default_value"> = &lt;<a href="#TokenType.R_PAREN">TokenType.R_PAREN</a>: &#39;R_PAREN&#39;&gt;</span>
+            <span class="name">R_PAREN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.R_PAREN">TokenType.R_PAREN</a>: &#39;R_PAREN&#39;&gt;</span>
 
         
     </div>
@@ -2391,7 +2390,8 @@
                             </div>
                             <div id="TokenType.L_BRACKET" class="classattr">
                                 <div class="attr variable">
-            <span class="name">L_BRACKET</span><span class="default_value"> = &lt;<a href="#TokenType.L_BRACKET">TokenType.L_BRACKET</a>: &#39;L_BRACKET&#39;&gt;</span>
+            <span class="name">L_BRACKET</span>        =
+<span class="default_value">&lt;<a href="#TokenType.L_BRACKET">TokenType.L_BRACKET</a>: &#39;L_BRACKET&#39;&gt;</span>
 
         
     </div>
@@ -2402,7 +2402,8 @@
                             </div>
                             <div id="TokenType.R_BRACKET" class="classattr">
                                 <div class="attr variable">
-            <span class="name">R_BRACKET</span><span class="default_value"> = &lt;<a href="#TokenType.R_BRACKET">TokenType.R_BRACKET</a>: &#39;R_BRACKET&#39;&gt;</span>
+            <span class="name">R_BRACKET</span>        =
+<span class="default_value">&lt;<a href="#TokenType.R_BRACKET">TokenType.R_BRACKET</a>: &#39;R_BRACKET&#39;&gt;</span>
 
         
     </div>
@@ -2413,7 +2414,8 @@
                             </div>
                             <div id="TokenType.L_BRACE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">L_BRACE</span><span class="default_value"> = &lt;<a href="#TokenType.L_BRACE">TokenType.L_BRACE</a>: &#39;L_BRACE&#39;&gt;</span>
+            <span class="name">L_BRACE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.L_BRACE">TokenType.L_BRACE</a>: &#39;L_BRACE&#39;&gt;</span>
 
         
     </div>
@@ -2424,7 +2426,8 @@
                             </div>
                             <div id="TokenType.R_BRACE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">R_BRACE</span><span class="default_value"> = &lt;<a href="#TokenType.R_BRACE">TokenType.R_BRACE</a>: &#39;R_BRACE&#39;&gt;</span>
+            <span class="name">R_BRACE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.R_BRACE">TokenType.R_BRACE</a>: &#39;R_BRACE&#39;&gt;</span>
 
         
     </div>
@@ -2435,7 +2438,8 @@
                             </div>
                             <div id="TokenType.COMMA" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COMMA</span><span class="default_value"> = &lt;<a href="#TokenType.COMMA">TokenType.COMMA</a>: &#39;COMMA&#39;&gt;</span>
+            <span class="name">COMMA</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COMMA">TokenType.COMMA</a>: &#39;COMMA&#39;&gt;</span>
 
         
     </div>
@@ -2446,7 +2450,8 @@
                             </div>
                             <div id="TokenType.DOT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DOT</span><span class="default_value"> = &lt;<a href="#TokenType.DOT">TokenType.DOT</a>: &#39;DOT&#39;&gt;</span>
+            <span class="name">DOT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DOT">TokenType.DOT</a>: &#39;DOT&#39;&gt;</span>
 
         
     </div>
@@ -2457,7 +2462,8 @@
                             </div>
                             <div id="TokenType.DASH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DASH</span><span class="default_value"> = &lt;<a href="#TokenType.DASH">TokenType.DASH</a>: &#39;DASH&#39;&gt;</span>
+            <span class="name">DASH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DASH">TokenType.DASH</a>: &#39;DASH&#39;&gt;</span>
 
         
     </div>
@@ -2468,7 +2474,8 @@
                             </div>
                             <div id="TokenType.PLUS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PLUS</span><span class="default_value"> = &lt;<a href="#TokenType.PLUS">TokenType.PLUS</a>: &#39;PLUS&#39;&gt;</span>
+            <span class="name">PLUS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PLUS">TokenType.PLUS</a>: &#39;PLUS&#39;&gt;</span>
 
         
     </div>
@@ -2479,7 +2486,8 @@
                             </div>
                             <div id="TokenType.COLON" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COLON</span><span class="default_value"> = &lt;<a href="#TokenType.COLON">TokenType.COLON</a>: &#39;COLON&#39;&gt;</span>
+            <span class="name">COLON</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COLON">TokenType.COLON</a>: &#39;COLON&#39;&gt;</span>
 
         
     </div>
@@ -2490,7 +2498,8 @@
                             </div>
                             <div id="TokenType.DCOLON" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DCOLON</span><span class="default_value"> = &lt;<a href="#TokenType.DCOLON">TokenType.DCOLON</a>: &#39;DCOLON&#39;&gt;</span>
+            <span class="name">DCOLON</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DCOLON">TokenType.DCOLON</a>: &#39;DCOLON&#39;&gt;</span>
 
         
     </div>
@@ -2501,7 +2510,8 @@
                             </div>
                             <div id="TokenType.SEMICOLON" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SEMICOLON</span><span class="default_value"> = &lt;<a href="#TokenType.SEMICOLON">TokenType.SEMICOLON</a>: &#39;SEMICOLON&#39;&gt;</span>
+            <span class="name">SEMICOLON</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SEMICOLON">TokenType.SEMICOLON</a>: &#39;SEMICOLON&#39;&gt;</span>
 
         
     </div>
@@ -2512,7 +2522,8 @@
                             </div>
                             <div id="TokenType.STAR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">STAR</span><span class="default_value"> = &lt;<a href="#TokenType.STAR">TokenType.STAR</a>: &#39;STAR&#39;&gt;</span>
+            <span class="name">STAR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.STAR">TokenType.STAR</a>: &#39;STAR&#39;&gt;</span>
 
         
     </div>
@@ -2523,7 +2534,8 @@
                             </div>
                             <div id="TokenType.BACKSLASH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BACKSLASH</span><span class="default_value"> = &lt;<a href="#TokenType.BACKSLASH">TokenType.BACKSLASH</a>: &#39;BACKSLASH&#39;&gt;</span>
+            <span class="name">BACKSLASH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BACKSLASH">TokenType.BACKSLASH</a>: &#39;BACKSLASH&#39;&gt;</span>
 
         
     </div>
@@ -2534,7 +2546,8 @@
                             </div>
                             <div id="TokenType.SLASH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SLASH</span><span class="default_value"> = &lt;<a href="#TokenType.SLASH">TokenType.SLASH</a>: &#39;SLASH&#39;&gt;</span>
+            <span class="name">SLASH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SLASH">TokenType.SLASH</a>: &#39;SLASH&#39;&gt;</span>
 
         
     </div>
@@ -2545,7 +2558,8 @@
                             </div>
                             <div id="TokenType.LT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LT</span><span class="default_value"> = &lt;<a href="#TokenType.LT">TokenType.LT</a>: &#39;LT&#39;&gt;</span>
+            <span class="name">LT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LT">TokenType.LT</a>: &#39;LT&#39;&gt;</span>
 
         
     </div>
@@ -2556,7 +2570,8 @@
                             </div>
                             <div id="TokenType.LTE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LTE</span><span class="default_value"> = &lt;<a href="#TokenType.LTE">TokenType.LTE</a>: &#39;LTE&#39;&gt;</span>
+            <span class="name">LTE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LTE">TokenType.LTE</a>: &#39;LTE&#39;&gt;</span>
 
         
     </div>
@@ -2567,7 +2582,8 @@
                             </div>
                             <div id="TokenType.GT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GT</span><span class="default_value"> = &lt;<a href="#TokenType.GT">TokenType.GT</a>: &#39;GT&#39;&gt;</span>
+            <span class="name">GT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GT">TokenType.GT</a>: &#39;GT&#39;&gt;</span>
 
         
     </div>
@@ -2578,7 +2594,8 @@
                             </div>
                             <div id="TokenType.GTE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GTE</span><span class="default_value"> = &lt;<a href="#TokenType.GTE">TokenType.GTE</a>: &#39;GTE&#39;&gt;</span>
+            <span class="name">GTE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GTE">TokenType.GTE</a>: &#39;GTE&#39;&gt;</span>
 
         
     </div>
@@ -2589,7 +2606,8 @@
                             </div>
                             <div id="TokenType.NOT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NOT</span><span class="default_value"> = &lt;<a href="#TokenType.NOT">TokenType.NOT</a>: &#39;NOT&#39;&gt;</span>
+            <span class="name">NOT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NOT">TokenType.NOT</a>: &#39;NOT&#39;&gt;</span>
 
         
     </div>
@@ -2600,7 +2618,8 @@
                             </div>
                             <div id="TokenType.EQ" class="classattr">
                                 <div class="attr variable">
-            <span class="name">EQ</span><span class="default_value"> = &lt;<a href="#TokenType.EQ">TokenType.EQ</a>: &#39;EQ&#39;&gt;</span>
+            <span class="name">EQ</span>        =
+<span class="default_value">&lt;<a href="#TokenType.EQ">TokenType.EQ</a>: &#39;EQ&#39;&gt;</span>
 
         
     </div>
@@ -2611,7 +2630,8 @@
                             </div>
                             <div id="TokenType.NEQ" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NEQ</span><span class="default_value"> = &lt;<a href="#TokenType.NEQ">TokenType.NEQ</a>: &#39;NEQ&#39;&gt;</span>
+            <span class="name">NEQ</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NEQ">TokenType.NEQ</a>: &#39;NEQ&#39;&gt;</span>
 
         
     </div>
@@ -2622,7 +2642,8 @@
                             </div>
                             <div id="TokenType.NULLSAFE_EQ" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NULLSAFE_EQ</span><span class="default_value"> = &lt;<a href="#TokenType.NULLSAFE_EQ">TokenType.NULLSAFE_EQ</a>: &#39;NULLSAFE_EQ&#39;&gt;</span>
+            <span class="name">NULLSAFE_EQ</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NULLSAFE_EQ">TokenType.NULLSAFE_EQ</a>: &#39;NULLSAFE_EQ&#39;&gt;</span>
 
         
     </div>
@@ -2633,7 +2654,8 @@
                             </div>
                             <div id="TokenType.AND" class="classattr">
                                 <div class="attr variable">
-            <span class="name">AND</span><span class="default_value"> = &lt;<a href="#TokenType.AND">TokenType.AND</a>: &#39;AND&#39;&gt;</span>
+            <span class="name">AND</span>        =
+<span class="default_value">&lt;<a href="#TokenType.AND">TokenType.AND</a>: &#39;AND&#39;&gt;</span>
 
         
     </div>
@@ -2644,7 +2666,8 @@
                             </div>
                             <div id="TokenType.OR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OR</span><span class="default_value"> = &lt;<a href="#TokenType.OR">TokenType.OR</a>: &#39;OR&#39;&gt;</span>
+            <span class="name">OR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OR">TokenType.OR</a>: &#39;OR&#39;&gt;</span>
 
         
     </div>
@@ -2655,7 +2678,8 @@
                             </div>
                             <div id="TokenType.AMP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">AMP</span><span class="default_value"> = &lt;<a href="#TokenType.AMP">TokenType.AMP</a>: &#39;AMP&#39;&gt;</span>
+            <span class="name">AMP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.AMP">TokenType.AMP</a>: &#39;AMP&#39;&gt;</span>
 
         
     </div>
@@ -2666,7 +2690,8 @@
                             </div>
                             <div id="TokenType.DPIPE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DPIPE</span><span class="default_value"> = &lt;<a href="#TokenType.DPIPE">TokenType.DPIPE</a>: &#39;DPIPE&#39;&gt;</span>
+            <span class="name">DPIPE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DPIPE">TokenType.DPIPE</a>: &#39;DPIPE&#39;&gt;</span>
 
         
     </div>
@@ -2677,7 +2702,8 @@
                             </div>
                             <div id="TokenType.PIPE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PIPE</span><span class="default_value"> = &lt;<a href="#TokenType.PIPE">TokenType.PIPE</a>: &#39;PIPE&#39;&gt;</span>
+            <span class="name">PIPE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PIPE">TokenType.PIPE</a>: &#39;PIPE&#39;&gt;</span>
 
         
     </div>
@@ -2688,7 +2714,8 @@
                             </div>
                             <div id="TokenType.CARET" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CARET</span><span class="default_value"> = &lt;<a href="#TokenType.CARET">TokenType.CARET</a>: &#39;CARET&#39;&gt;</span>
+            <span class="name">CARET</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CARET">TokenType.CARET</a>: &#39;CARET&#39;&gt;</span>
 
         
     </div>
@@ -2699,7 +2726,8 @@
                             </div>
                             <div id="TokenType.TILDA" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TILDA</span><span class="default_value"> = &lt;<a href="#TokenType.TILDA">TokenType.TILDA</a>: &#39;TILDA&#39;&gt;</span>
+            <span class="name">TILDA</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TILDA">TokenType.TILDA</a>: &#39;TILDA&#39;&gt;</span>
 
         
     </div>
@@ -2710,7 +2738,8 @@
                             </div>
                             <div id="TokenType.ARROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ARROW</span><span class="default_value"> = &lt;<a href="#TokenType.ARROW">TokenType.ARROW</a>: &#39;ARROW&#39;&gt;</span>
+            <span class="name">ARROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ARROW">TokenType.ARROW</a>: &#39;ARROW&#39;&gt;</span>
 
         
     </div>
@@ -2721,7 +2750,8 @@
                             </div>
                             <div id="TokenType.DARROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DARROW</span><span class="default_value"> = &lt;<a href="#TokenType.DARROW">TokenType.DARROW</a>: &#39;DARROW&#39;&gt;</span>
+            <span class="name">DARROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DARROW">TokenType.DARROW</a>: &#39;DARROW&#39;&gt;</span>
 
         
     </div>
@@ -2732,7 +2762,8 @@
                             </div>
                             <div id="TokenType.FARROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FARROW</span><span class="default_value"> = &lt;<a href="#TokenType.FARROW">TokenType.FARROW</a>: &#39;FARROW&#39;&gt;</span>
+            <span class="name">FARROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FARROW">TokenType.FARROW</a>: &#39;FARROW&#39;&gt;</span>
 
         
     </div>
@@ -2743,7 +2774,8 @@
                             </div>
                             <div id="TokenType.HASH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HASH</span><span class="default_value"> = &lt;<a href="#TokenType.HASH">TokenType.HASH</a>: &#39;HASH&#39;&gt;</span>
+            <span class="name">HASH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.HASH">TokenType.HASH</a>: &#39;HASH&#39;&gt;</span>
 
         
     </div>
@@ -2754,7 +2786,8 @@
                             </div>
                             <div id="TokenType.HASH_ARROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HASH_ARROW</span><span class="default_value"> = &lt;<a href="#TokenType.HASH_ARROW">TokenType.HASH_ARROW</a>: &#39;HASH_ARROW&#39;&gt;</span>
+            <span class="name">HASH_ARROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.HASH_ARROW">TokenType.HASH_ARROW</a>: &#39;HASH_ARROW&#39;&gt;</span>
 
         
     </div>
@@ -2765,7 +2798,8 @@
                             </div>
                             <div id="TokenType.DHASH_ARROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DHASH_ARROW</span><span class="default_value"> = &lt;<a href="#TokenType.DHASH_ARROW">TokenType.DHASH_ARROW</a>: &#39;DHASH_ARROW&#39;&gt;</span>
+            <span class="name">DHASH_ARROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DHASH_ARROW">TokenType.DHASH_ARROW</a>: &#39;DHASH_ARROW&#39;&gt;</span>
 
         
     </div>
@@ -2776,7 +2810,8 @@
                             </div>
                             <div id="TokenType.LR_ARROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LR_ARROW</span><span class="default_value"> = &lt;<a href="#TokenType.LR_ARROW">TokenType.LR_ARROW</a>: &#39;LR_ARROW&#39;&gt;</span>
+            <span class="name">LR_ARROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LR_ARROW">TokenType.LR_ARROW</a>: &#39;LR_ARROW&#39;&gt;</span>
 
         
     </div>
@@ -2787,7 +2822,8 @@
                             </div>
                             <div id="TokenType.DOLLAR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DOLLAR</span><span class="default_value"> = &lt;<a href="#TokenType.DOLLAR">TokenType.DOLLAR</a>: &#39;DOLLAR&#39;&gt;</span>
+            <span class="name">DOLLAR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DOLLAR">TokenType.DOLLAR</a>: &#39;DOLLAR&#39;&gt;</span>
 
         
     </div>
@@ -2798,7 +2834,8 @@
                             </div>
                             <div id="TokenType.PARAMETER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PARAMETER</span><span class="default_value"> = &lt;<a href="#TokenType.PARAMETER">TokenType.PARAMETER</a>: &#39;PARAMETER&#39;&gt;</span>
+            <span class="name">PARAMETER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PARAMETER">TokenType.PARAMETER</a>: &#39;PARAMETER&#39;&gt;</span>
 
         
     </div>
@@ -2809,7 +2846,8 @@
                             </div>
                             <div id="TokenType.SESSION_PARAMETER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SESSION_PARAMETER</span><span class="default_value"> = &lt;<a href="#TokenType.SESSION_PARAMETER">TokenType.SESSION_PARAMETER</a>: &#39;SESSION_PARAMETER&#39;&gt;</span>
+            <span class="name">SESSION_PARAMETER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SESSION_PARAMETER">TokenType.SESSION_PARAMETER</a>: &#39;SESSION_PARAMETER&#39;&gt;</span>
 
         
     </div>
@@ -2820,7 +2858,8 @@
                             </div>
                             <div id="TokenType.NATIONAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NATIONAL</span><span class="default_value"> = &lt;<a href="#TokenType.NATIONAL">TokenType.NATIONAL</a>: &#39;NATIONAL&#39;&gt;</span>
+            <span class="name">NATIONAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NATIONAL">TokenType.NATIONAL</a>: &#39;NATIONAL&#39;&gt;</span>
 
         
     </div>
@@ -2831,7 +2870,8 @@
                             </div>
                             <div id="TokenType.BLOCK_START" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BLOCK_START</span><span class="default_value"> = &lt;<a href="#TokenType.BLOCK_START">TokenType.BLOCK_START</a>: &#39;BLOCK_START&#39;&gt;</span>
+            <span class="name">BLOCK_START</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BLOCK_START">TokenType.BLOCK_START</a>: &#39;BLOCK_START&#39;&gt;</span>
 
         
     </div>
@@ -2842,7 +2882,8 @@
                             </div>
                             <div id="TokenType.BLOCK_END" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BLOCK_END</span><span class="default_value"> = &lt;<a href="#TokenType.BLOCK_END">TokenType.BLOCK_END</a>: &#39;BLOCK_END&#39;&gt;</span>
+            <span class="name">BLOCK_END</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BLOCK_END">TokenType.BLOCK_END</a>: &#39;BLOCK_END&#39;&gt;</span>
 
         
     </div>
@@ -2853,7 +2894,8 @@
                             </div>
                             <div id="TokenType.SPACE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SPACE</span><span class="default_value"> = &lt;<a href="#TokenType.SPACE">TokenType.SPACE</a>: &#39;SPACE&#39;&gt;</span>
+            <span class="name">SPACE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SPACE">TokenType.SPACE</a>: &#39;SPACE&#39;&gt;</span>
 
         
     </div>
@@ -2864,7 +2906,8 @@
                             </div>
                             <div id="TokenType.BREAK" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BREAK</span><span class="default_value"> = &lt;<a href="#TokenType.BREAK">TokenType.BREAK</a>: &#39;BREAK&#39;&gt;</span>
+            <span class="name">BREAK</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BREAK">TokenType.BREAK</a>: &#39;BREAK&#39;&gt;</span>
 
         
     </div>
@@ -2875,7 +2918,8 @@
                             </div>
                             <div id="TokenType.STRING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">STRING</span><span class="default_value"> = &lt;<a href="#TokenType.STRING">TokenType.STRING</a>: &#39;STRING&#39;&gt;</span>
+            <span class="name">STRING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.STRING">TokenType.STRING</a>: &#39;STRING&#39;&gt;</span>
 
         
     </div>
@@ -2886,7 +2930,8 @@
                             </div>
                             <div id="TokenType.NUMBER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NUMBER</span><span class="default_value"> = &lt;<a href="#TokenType.NUMBER">TokenType.NUMBER</a>: &#39;NUMBER&#39;&gt;</span>
+            <span class="name">NUMBER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NUMBER">TokenType.NUMBER</a>: &#39;NUMBER&#39;&gt;</span>
 
         
     </div>
@@ -2897,7 +2942,8 @@
                             </div>
                             <div id="TokenType.IDENTIFIER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">IDENTIFIER</span><span class="default_value"> = &lt;<a href="#TokenType.IDENTIFIER">TokenType.IDENTIFIER</a>: &#39;IDENTIFIER&#39;&gt;</span>
+            <span class="name">IDENTIFIER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.IDENTIFIER">TokenType.IDENTIFIER</a>: &#39;IDENTIFIER&#39;&gt;</span>
 
         
     </div>
@@ -2908,7 +2954,8 @@
                             </div>
                             <div id="TokenType.COLUMN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COLUMN</span><span class="default_value"> = &lt;<a href="#TokenType.COLUMN">TokenType.COLUMN</a>: &#39;COLUMN&#39;&gt;</span>
+            <span class="name">COLUMN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COLUMN">TokenType.COLUMN</a>: &#39;COLUMN&#39;&gt;</span>
 
         
     </div>
@@ -2919,7 +2966,8 @@
                             </div>
                             <div id="TokenType.COLUMN_DEF" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COLUMN_DEF</span><span class="default_value"> = &lt;<a href="#TokenType.COLUMN_DEF">TokenType.COLUMN_DEF</a>: &#39;COLUMN_DEF&#39;&gt;</span>
+            <span class="name">COLUMN_DEF</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COLUMN_DEF">TokenType.COLUMN_DEF</a>: &#39;COLUMN_DEF&#39;&gt;</span>
 
         
     </div>
@@ -2930,7 +2978,8 @@
                             </div>
                             <div id="TokenType.SCHEMA" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SCHEMA</span><span class="default_value"> = &lt;<a href="#TokenType.SCHEMA">TokenType.SCHEMA</a>: &#39;SCHEMA&#39;&gt;</span>
+            <span class="name">SCHEMA</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SCHEMA">TokenType.SCHEMA</a>: &#39;SCHEMA&#39;&gt;</span>
 
         
     </div>
@@ -2941,7 +2990,8 @@
                             </div>
                             <div id="TokenType.TABLE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TABLE</span><span class="default_value"> = &lt;<a href="#TokenType.TABLE">TokenType.TABLE</a>: &#39;TABLE&#39;&gt;</span>
+            <span class="name">TABLE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TABLE">TokenType.TABLE</a>: &#39;TABLE&#39;&gt;</span>
 
         
     </div>
@@ -2952,7 +3002,8 @@
                             </div>
                             <div id="TokenType.VAR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">VAR</span><span class="default_value"> = &lt;<a href="#TokenType.VAR">TokenType.VAR</a>: &#39;VAR&#39;&gt;</span>
+            <span class="name">VAR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.VAR">TokenType.VAR</a>: &#39;VAR&#39;&gt;</span>
 
         
     </div>
@@ -2963,7 +3014,8 @@
                             </div>
                             <div id="TokenType.BIT_STRING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BIT_STRING</span><span class="default_value"> = &lt;<a href="#TokenType.BIT_STRING">TokenType.BIT_STRING</a>: &#39;BIT_STRING&#39;&gt;</span>
+            <span class="name">BIT_STRING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BIT_STRING">TokenType.BIT_STRING</a>: &#39;BIT_STRING&#39;&gt;</span>
 
         
     </div>
@@ -2974,7 +3026,8 @@
                             </div>
                             <div id="TokenType.HEX_STRING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HEX_STRING</span><span class="default_value"> = &lt;<a href="#TokenType.HEX_STRING">TokenType.HEX_STRING</a>: &#39;HEX_STRING&#39;&gt;</span>
+            <span class="name">HEX_STRING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.HEX_STRING">TokenType.HEX_STRING</a>: &#39;HEX_STRING&#39;&gt;</span>
 
         
     </div>
@@ -2985,7 +3038,8 @@
                             </div>
                             <div id="TokenType.BYTE_STRING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BYTE_STRING</span><span class="default_value"> = &lt;<a href="#TokenType.BYTE_STRING">TokenType.BYTE_STRING</a>: &#39;BYTE_STRING&#39;&gt;</span>
+            <span class="name">BYTE_STRING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BYTE_STRING">TokenType.BYTE_STRING</a>: &#39;BYTE_STRING&#39;&gt;</span>
 
         
     </div>
@@ -2996,7 +3050,8 @@
                             </div>
                             <div id="TokenType.BOOLEAN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BOOLEAN</span><span class="default_value"> = &lt;<a href="#TokenType.BOOLEAN">TokenType.BOOLEAN</a>: &#39;BOOLEAN&#39;&gt;</span>
+            <span class="name">BOOLEAN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BOOLEAN">TokenType.BOOLEAN</a>: &#39;BOOLEAN&#39;&gt;</span>
 
         
     </div>
@@ -3007,7 +3062,8 @@
                             </div>
                             <div id="TokenType.TINYINT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TINYINT</span><span class="default_value"> = &lt;<a href="#TokenType.TINYINT">TokenType.TINYINT</a>: &#39;TINYINT&#39;&gt;</span>
+            <span class="name">TINYINT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TINYINT">TokenType.TINYINT</a>: &#39;TINYINT&#39;&gt;</span>
 
         
     </div>
@@ -3018,7 +3074,8 @@
                             </div>
                             <div id="TokenType.SMALLINT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SMALLINT</span><span class="default_value"> = &lt;<a href="#TokenType.SMALLINT">TokenType.SMALLINT</a>: &#39;SMALLINT&#39;&gt;</span>
+            <span class="name">SMALLINT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SMALLINT">TokenType.SMALLINT</a>: &#39;SMALLINT&#39;&gt;</span>
 
         
     </div>
@@ -3029,7 +3086,8 @@
                             </div>
                             <div id="TokenType.INT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INT</span><span class="default_value"> = &lt;<a href="#TokenType.INT">TokenType.INT</a>: &#39;INT&#39;&gt;</span>
+            <span class="name">INT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INT">TokenType.INT</a>: &#39;INT&#39;&gt;</span>
 
         
     </div>
@@ -3040,7 +3098,8 @@
                             </div>
                             <div id="TokenType.BIGINT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BIGINT</span><span class="default_value"> = &lt;<a href="#TokenType.BIGINT">TokenType.BIGINT</a>: &#39;BIGINT&#39;&gt;</span>
+            <span class="name">BIGINT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BIGINT">TokenType.BIGINT</a>: &#39;BIGINT&#39;&gt;</span>
 
         
     </div>
@@ -3051,7 +3110,8 @@
                             </div>
                             <div id="TokenType.FLOAT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FLOAT</span><span class="default_value"> = &lt;<a href="#TokenType.FLOAT">TokenType.FLOAT</a>: &#39;FLOAT&#39;&gt;</span>
+            <span class="name">FLOAT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FLOAT">TokenType.FLOAT</a>: &#39;FLOAT&#39;&gt;</span>
 
         
     </div>
@@ -3062,7 +3122,8 @@
                             </div>
                             <div id="TokenType.DOUBLE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DOUBLE</span><span class="default_value"> = &lt;<a href="#TokenType.DOUBLE">TokenType.DOUBLE</a>: &#39;DOUBLE&#39;&gt;</span>
+            <span class="name">DOUBLE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DOUBLE">TokenType.DOUBLE</a>: &#39;DOUBLE&#39;&gt;</span>
 
         
     </div>
@@ -3073,7 +3134,8 @@
                             </div>
                             <div id="TokenType.DECIMAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DECIMAL</span><span class="default_value"> = &lt;<a href="#TokenType.DECIMAL">TokenType.DECIMAL</a>: &#39;DECIMAL&#39;&gt;</span>
+            <span class="name">DECIMAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DECIMAL">TokenType.DECIMAL</a>: &#39;DECIMAL&#39;&gt;</span>
 
         
     </div>
@@ -3084,7 +3146,8 @@
                             </div>
                             <div id="TokenType.CHAR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CHAR</span><span class="default_value"> = &lt;<a href="#TokenType.CHAR">TokenType.CHAR</a>: &#39;CHAR&#39;&gt;</span>
+            <span class="name">CHAR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CHAR">TokenType.CHAR</a>: &#39;CHAR&#39;&gt;</span>
 
         
     </div>
@@ -3095,7 +3158,8 @@
                             </div>
                             <div id="TokenType.NCHAR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NCHAR</span><span class="default_value"> = &lt;<a href="#TokenType.NCHAR">TokenType.NCHAR</a>: &#39;NCHAR&#39;&gt;</span>
+            <span class="name">NCHAR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NCHAR">TokenType.NCHAR</a>: &#39;NCHAR&#39;&gt;</span>
 
         
     </div>
@@ -3106,7 +3170,8 @@
                             </div>
                             <div id="TokenType.VARCHAR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">VARCHAR</span><span class="default_value"> = &lt;<a href="#TokenType.VARCHAR">TokenType.VARCHAR</a>: &#39;VARCHAR&#39;&gt;</span>
+            <span class="name">VARCHAR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.VARCHAR">TokenType.VARCHAR</a>: &#39;VARCHAR&#39;&gt;</span>
 
         
     </div>
@@ -3117,7 +3182,8 @@
                             </div>
                             <div id="TokenType.NVARCHAR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NVARCHAR</span><span class="default_value"> = &lt;<a href="#TokenType.NVARCHAR">TokenType.NVARCHAR</a>: &#39;NVARCHAR&#39;&gt;</span>
+            <span class="name">NVARCHAR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NVARCHAR">TokenType.NVARCHAR</a>: &#39;NVARCHAR&#39;&gt;</span>
 
         
     </div>
@@ -3128,7 +3194,8 @@
                             </div>
                             <div id="TokenType.TEXT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TEXT</span><span class="default_value"> = &lt;<a href="#TokenType.TEXT">TokenType.TEXT</a>: &#39;TEXT&#39;&gt;</span>
+            <span class="name">TEXT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TEXT">TokenType.TEXT</a>: &#39;TEXT&#39;&gt;</span>
 
         
     </div>
@@ -3139,7 +3206,8 @@
                             </div>
                             <div id="TokenType.MEDIUMTEXT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MEDIUMTEXT</span><span class="default_value"> = &lt;<a href="#TokenType.MEDIUMTEXT">TokenType.MEDIUMTEXT</a>: &#39;MEDIUMTEXT&#39;&gt;</span>
+            <span class="name">MEDIUMTEXT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MEDIUMTEXT">TokenType.MEDIUMTEXT</a>: &#39;MEDIUMTEXT&#39;&gt;</span>
 
         
     </div>
@@ -3150,7 +3218,8 @@
                             </div>
                             <div id="TokenType.LONGTEXT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LONGTEXT</span><span class="default_value"> = &lt;<a href="#TokenType.LONGTEXT">TokenType.LONGTEXT</a>: &#39;LONGTEXT&#39;&gt;</span>
+            <span class="name">LONGTEXT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LONGTEXT">TokenType.LONGTEXT</a>: &#39;LONGTEXT&#39;&gt;</span>
 
         
     </div>
@@ -3161,7 +3230,8 @@
                             </div>
                             <div id="TokenType.MEDIUMBLOB" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MEDIUMBLOB</span><span class="default_value"> = &lt;<a href="#TokenType.MEDIUMBLOB">TokenType.MEDIUMBLOB</a>: &#39;MEDIUMBLOB&#39;&gt;</span>
+            <span class="name">MEDIUMBLOB</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MEDIUMBLOB">TokenType.MEDIUMBLOB</a>: &#39;MEDIUMBLOB&#39;&gt;</span>
 
         
     </div>
@@ -3172,7 +3242,8 @@
                             </div>
                             <div id="TokenType.LONGBLOB" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LONGBLOB</span><span class="default_value"> = &lt;<a href="#TokenType.LONGBLOB">TokenType.LONGBLOB</a>: &#39;LONGBLOB&#39;&gt;</span>
+            <span class="name">LONGBLOB</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LONGBLOB">TokenType.LONGBLOB</a>: &#39;LONGBLOB&#39;&gt;</span>
 
         
     </div>
@@ -3183,7 +3254,8 @@
                             </div>
                             <div id="TokenType.BINARY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BINARY</span><span class="default_value"> = &lt;<a href="#TokenType.BINARY">TokenType.BINARY</a>: &#39;BINARY&#39;&gt;</span>
+            <span class="name">BINARY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BINARY">TokenType.BINARY</a>: &#39;BINARY&#39;&gt;</span>
 
         
     </div>
@@ -3194,7 +3266,8 @@
                             </div>
                             <div id="TokenType.VARBINARY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">VARBINARY</span><span class="default_value"> = &lt;<a href="#TokenType.VARBINARY">TokenType.VARBINARY</a>: &#39;VARBINARY&#39;&gt;</span>
+            <span class="name">VARBINARY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.VARBINARY">TokenType.VARBINARY</a>: &#39;VARBINARY&#39;&gt;</span>
 
         
     </div>
@@ -3205,7 +3278,8 @@
                             </div>
                             <div id="TokenType.JSON" class="classattr">
                                 <div class="attr variable">
-            <span class="name">JSON</span><span class="default_value"> = &lt;<a href="#TokenType.JSON">TokenType.JSON</a>: &#39;JSON&#39;&gt;</span>
+            <span class="name">JSON</span>        =
+<span class="default_value">&lt;<a href="#TokenType.JSON">TokenType.JSON</a>: &#39;JSON&#39;&gt;</span>
 
         
     </div>
@@ -3216,7 +3290,8 @@
                             </div>
                             <div id="TokenType.JSONB" class="classattr">
                                 <div class="attr variable">
-            <span class="name">JSONB</span><span class="default_value"> = &lt;<a href="#TokenType.JSONB">TokenType.JSONB</a>: &#39;JSONB&#39;&gt;</span>
+            <span class="name">JSONB</span>        =
+<span class="default_value">&lt;<a href="#TokenType.JSONB">TokenType.JSONB</a>: &#39;JSONB&#39;&gt;</span>
 
         
     </div>
@@ -3227,7 +3302,8 @@
                             </div>
                             <div id="TokenType.TIME" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TIME</span><span class="default_value"> = &lt;<a href="#TokenType.TIME">TokenType.TIME</a>: &#39;TIME&#39;&gt;</span>
+            <span class="name">TIME</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TIME">TokenType.TIME</a>: &#39;TIME&#39;&gt;</span>
 
         
     </div>
@@ -3238,7 +3314,8 @@
                             </div>
                             <div id="TokenType.TIMESTAMP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TIMESTAMP</span><span class="default_value"> = &lt;<a href="#TokenType.TIMESTAMP">TokenType.TIMESTAMP</a>: &#39;TIMESTAMP&#39;&gt;</span>
+            <span class="name">TIMESTAMP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TIMESTAMP">TokenType.TIMESTAMP</a>: &#39;TIMESTAMP&#39;&gt;</span>
 
         
     </div>
@@ -3249,7 +3326,8 @@
                             </div>
                             <div id="TokenType.TIMESTAMPTZ" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TIMESTAMPTZ</span><span class="default_value"> = &lt;<a href="#TokenType.TIMESTAMPTZ">TokenType.TIMESTAMPTZ</a>: &#39;TIMESTAMPTZ&#39;&gt;</span>
+            <span class="name">TIMESTAMPTZ</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TIMESTAMPTZ">TokenType.TIMESTAMPTZ</a>: &#39;TIMESTAMPTZ&#39;&gt;</span>
 
         
     </div>
@@ -3260,7 +3338,8 @@
                             </div>
                             <div id="TokenType.TIMESTAMPLTZ" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TIMESTAMPLTZ</span><span class="default_value"> = &lt;<a href="#TokenType.TIMESTAMPLTZ">TokenType.TIMESTAMPLTZ</a>: &#39;TIMESTAMPLTZ&#39;&gt;</span>
+            <span class="name">TIMESTAMPLTZ</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TIMESTAMPLTZ">TokenType.TIMESTAMPLTZ</a>: &#39;TIMESTAMPLTZ&#39;&gt;</span>
 
         
     </div>
@@ -3271,7 +3350,8 @@
                             </div>
                             <div id="TokenType.DATETIME" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DATETIME</span><span class="default_value"> = &lt;<a href="#TokenType.DATETIME">TokenType.DATETIME</a>: &#39;DATETIME&#39;&gt;</span>
+            <span class="name">DATETIME</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DATETIME">TokenType.DATETIME</a>: &#39;DATETIME&#39;&gt;</span>
 
         
     </div>
@@ -3282,7 +3362,8 @@
                             </div>
                             <div id="TokenType.DATE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DATE</span><span class="default_value"> = &lt;<a href="#TokenType.DATE">TokenType.DATE</a>: &#39;DATE&#39;&gt;</span>
+            <span class="name">DATE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DATE">TokenType.DATE</a>: &#39;DATE&#39;&gt;</span>
 
         
     </div>
@@ -3293,7 +3374,8 @@
                             </div>
                             <div id="TokenType.UUID" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UUID</span><span class="default_value"> = &lt;<a href="#TokenType.UUID">TokenType.UUID</a>: &#39;UUID&#39;&gt;</span>
+            <span class="name">UUID</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UUID">TokenType.UUID</a>: &#39;UUID&#39;&gt;</span>
 
         
     </div>
@@ -3304,7 +3386,8 @@
                             </div>
                             <div id="TokenType.GEOGRAPHY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GEOGRAPHY</span><span class="default_value"> = &lt;<a href="#TokenType.GEOGRAPHY">TokenType.GEOGRAPHY</a>: &#39;GEOGRAPHY&#39;&gt;</span>
+            <span class="name">GEOGRAPHY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GEOGRAPHY">TokenType.GEOGRAPHY</a>: &#39;GEOGRAPHY&#39;&gt;</span>
 
         
     </div>
@@ -3315,7 +3398,8 @@
                             </div>
                             <div id="TokenType.NULLABLE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NULLABLE</span><span class="default_value"> = &lt;<a href="#TokenType.NULLABLE">TokenType.NULLABLE</a>: &#39;NULLABLE&#39;&gt;</span>
+            <span class="name">NULLABLE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NULLABLE">TokenType.NULLABLE</a>: &#39;NULLABLE&#39;&gt;</span>
 
         
     </div>
@@ -3326,7 +3410,8 @@
                             </div>
                             <div id="TokenType.GEOMETRY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GEOMETRY</span><span class="default_value"> = &lt;<a href="#TokenType.GEOMETRY">TokenType.GEOMETRY</a>: &#39;GEOMETRY&#39;&gt;</span>
+            <span class="name">GEOMETRY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GEOMETRY">TokenType.GEOMETRY</a>: &#39;GEOMETRY&#39;&gt;</span>
 
         
     </div>
@@ -3337,7 +3422,8 @@
                             </div>
                             <div id="TokenType.HLLSKETCH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HLLSKETCH</span><span class="default_value"> = &lt;<a href="#TokenType.HLLSKETCH">TokenType.HLLSKETCH</a>: &#39;HLLSKETCH&#39;&gt;</span>
+            <span class="name">HLLSKETCH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.HLLSKETCH">TokenType.HLLSKETCH</a>: &#39;HLLSKETCH&#39;&gt;</span>
 
         
     </div>
@@ -3348,7 +3434,8 @@
                             </div>
                             <div id="TokenType.HSTORE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HSTORE</span><span class="default_value"> = &lt;<a href="#TokenType.HSTORE">TokenType.HSTORE</a>: &#39;HSTORE&#39;&gt;</span>
+            <span class="name">HSTORE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.HSTORE">TokenType.HSTORE</a>: &#39;HSTORE&#39;&gt;</span>
 
         
     </div>
@@ -3359,7 +3446,8 @@
                             </div>
                             <div id="TokenType.SUPER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SUPER</span><span class="default_value"> = &lt;<a href="#TokenType.SUPER">TokenType.SUPER</a>: &#39;SUPER&#39;&gt;</span>
+            <span class="name">SUPER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SUPER">TokenType.SUPER</a>: &#39;SUPER&#39;&gt;</span>
 
         
     </div>
@@ -3370,7 +3458,8 @@
                             </div>
                             <div id="TokenType.SERIAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SERIAL</span><span class="default_value"> = &lt;<a href="#TokenType.SERIAL">TokenType.SERIAL</a>: &#39;SERIAL&#39;&gt;</span>
+            <span class="name">SERIAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SERIAL">TokenType.SERIAL</a>: &#39;SERIAL&#39;&gt;</span>
 
         
     </div>
@@ -3381,7 +3470,8 @@
                             </div>
                             <div id="TokenType.SMALLSERIAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SMALLSERIAL</span><span class="default_value"> = &lt;<a href="#TokenType.SMALLSERIAL">TokenType.SMALLSERIAL</a>: &#39;SMALLSERIAL&#39;&gt;</span>
+            <span class="name">SMALLSERIAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SMALLSERIAL">TokenType.SMALLSERIAL</a>: &#39;SMALLSERIAL&#39;&gt;</span>
 
         
     </div>
@@ -3392,7 +3482,8 @@
                             </div>
                             <div id="TokenType.BIGSERIAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BIGSERIAL</span><span class="default_value"> = &lt;<a href="#TokenType.BIGSERIAL">TokenType.BIGSERIAL</a>: &#39;BIGSERIAL&#39;&gt;</span>
+            <span class="name">BIGSERIAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BIGSERIAL">TokenType.BIGSERIAL</a>: &#39;BIGSERIAL&#39;&gt;</span>
 
         
     </div>
@@ -3403,7 +3494,8 @@
                             </div>
                             <div id="TokenType.XML" class="classattr">
                                 <div class="attr variable">
-            <span class="name">XML</span><span class="default_value"> = &lt;<a href="#TokenType.XML">TokenType.XML</a>: &#39;XML&#39;&gt;</span>
+            <span class="name">XML</span>        =
+<span class="default_value">&lt;<a href="#TokenType.XML">TokenType.XML</a>: &#39;XML&#39;&gt;</span>
 
         
     </div>
@@ -3414,7 +3506,8 @@
                             </div>
                             <div id="TokenType.UNIQUEIDENTIFIER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNIQUEIDENTIFIER</span><span class="default_value"> = &lt;<a href="#TokenType.UNIQUEIDENTIFIER">TokenType.UNIQUEIDENTIFIER</a>: &#39;UNIQUEIDENTIFIER&#39;&gt;</span>
+            <span class="name">UNIQUEIDENTIFIER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNIQUEIDENTIFIER">TokenType.UNIQUEIDENTIFIER</a>: &#39;UNIQUEIDENTIFIER&#39;&gt;</span>
 
         
     </div>
@@ -3425,7 +3518,8 @@
                             </div>
                             <div id="TokenType.MONEY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MONEY</span><span class="default_value"> = &lt;<a href="#TokenType.MONEY">TokenType.MONEY</a>: &#39;MONEY&#39;&gt;</span>
+            <span class="name">MONEY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MONEY">TokenType.MONEY</a>: &#39;MONEY&#39;&gt;</span>
 
         
     </div>
@@ -3436,7 +3530,8 @@
                             </div>
                             <div id="TokenType.SMALLMONEY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SMALLMONEY</span><span class="default_value"> = &lt;<a href="#TokenType.SMALLMONEY">TokenType.SMALLMONEY</a>: &#39;SMALLMONEY&#39;&gt;</span>
+            <span class="name">SMALLMONEY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SMALLMONEY">TokenType.SMALLMONEY</a>: &#39;SMALLMONEY&#39;&gt;</span>
 
         
     </div>
@@ -3447,7 +3542,8 @@
                             </div>
                             <div id="TokenType.ROWVERSION" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ROWVERSION</span><span class="default_value"> = &lt;<a href="#TokenType.ROWVERSION">TokenType.ROWVERSION</a>: &#39;ROWVERSION&#39;&gt;</span>
+            <span class="name">ROWVERSION</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ROWVERSION">TokenType.ROWVERSION</a>: &#39;ROWVERSION&#39;&gt;</span>
 
         
     </div>
@@ -3458,7 +3554,8 @@
                             </div>
                             <div id="TokenType.IMAGE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">IMAGE</span><span class="default_value"> = &lt;<a href="#TokenType.IMAGE">TokenType.IMAGE</a>: &#39;IMAGE&#39;&gt;</span>
+            <span class="name">IMAGE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.IMAGE">TokenType.IMAGE</a>: &#39;IMAGE&#39;&gt;</span>
 
         
     </div>
@@ -3469,7 +3566,8 @@
                             </div>
                             <div id="TokenType.VARIANT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">VARIANT</span><span class="default_value"> = &lt;<a href="#TokenType.VARIANT">TokenType.VARIANT</a>: &#39;VARIANT&#39;&gt;</span>
+            <span class="name">VARIANT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.VARIANT">TokenType.VARIANT</a>: &#39;VARIANT&#39;&gt;</span>
 
         
     </div>
@@ -3480,7 +3578,8 @@
                             </div>
                             <div id="TokenType.OBJECT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OBJECT</span><span class="default_value"> = &lt;<a href="#TokenType.OBJECT">TokenType.OBJECT</a>: &#39;OBJECT&#39;&gt;</span>
+            <span class="name">OBJECT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OBJECT">TokenType.OBJECT</a>: &#39;OBJECT&#39;&gt;</span>
 
         
     </div>
@@ -3491,7 +3590,8 @@
                             </div>
                             <div id="TokenType.ALIAS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ALIAS</span><span class="default_value"> = &lt;<a href="#TokenType.ALIAS">TokenType.ALIAS</a>: &#39;ALIAS&#39;&gt;</span>
+            <span class="name">ALIAS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ALIAS">TokenType.ALIAS</a>: &#39;ALIAS&#39;&gt;</span>
 
         
     </div>
@@ -3502,7 +3602,8 @@
                             </div>
                             <div id="TokenType.ALTER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ALTER</span><span class="default_value"> = &lt;<a href="#TokenType.ALTER">TokenType.ALTER</a>: &#39;ALTER&#39;&gt;</span>
+            <span class="name">ALTER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ALTER">TokenType.ALTER</a>: &#39;ALTER&#39;&gt;</span>
 
         
     </div>
@@ -3513,7 +3614,8 @@
                             </div>
                             <div id="TokenType.ALWAYS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ALWAYS</span><span class="default_value"> = &lt;<a href="#TokenType.ALWAYS">TokenType.ALWAYS</a>: &#39;ALWAYS&#39;&gt;</span>
+            <span class="name">ALWAYS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ALWAYS">TokenType.ALWAYS</a>: &#39;ALWAYS&#39;&gt;</span>
 
         
     </div>
@@ -3524,7 +3626,8 @@
                             </div>
                             <div id="TokenType.ALL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ALL</span><span class="default_value"> = &lt;<a href="#TokenType.ALL">TokenType.ALL</a>: &#39;ALL&#39;&gt;</span>
+            <span class="name">ALL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ALL">TokenType.ALL</a>: &#39;ALL&#39;&gt;</span>
 
         
     </div>
@@ -3535,7 +3638,8 @@
                             </div>
                             <div id="TokenType.ANTI" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ANTI</span><span class="default_value"> = &lt;<a href="#TokenType.ANTI">TokenType.ANTI</a>: &#39;ANTI&#39;&gt;</span>
+            <span class="name">ANTI</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ANTI">TokenType.ANTI</a>: &#39;ANTI&#39;&gt;</span>
 
         
     </div>
@@ -3546,7 +3650,8 @@
                             </div>
                             <div id="TokenType.ANY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ANY</span><span class="default_value"> = &lt;<a href="#TokenType.ANY">TokenType.ANY</a>: &#39;ANY&#39;&gt;</span>
+            <span class="name">ANY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ANY">TokenType.ANY</a>: &#39;ANY&#39;&gt;</span>
 
         
     </div>
@@ -3557,7 +3662,8 @@
                             </div>
                             <div id="TokenType.APPLY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">APPLY</span><span class="default_value"> = &lt;<a href="#TokenType.APPLY">TokenType.APPLY</a>: &#39;APPLY&#39;&gt;</span>
+            <span class="name">APPLY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.APPLY">TokenType.APPLY</a>: &#39;APPLY&#39;&gt;</span>
 
         
     </div>
@@ -3568,7 +3674,8 @@
                             </div>
                             <div id="TokenType.ARRAY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ARRAY</span><span class="default_value"> = &lt;<a href="#TokenType.ARRAY">TokenType.ARRAY</a>: &#39;ARRAY&#39;&gt;</span>
+            <span class="name">ARRAY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ARRAY">TokenType.ARRAY</a>: &#39;ARRAY&#39;&gt;</span>
 
         
     </div>
@@ -3579,7 +3686,8 @@
                             </div>
                             <div id="TokenType.ASC" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ASC</span><span class="default_value"> = &lt;<a href="#TokenType.ASC">TokenType.ASC</a>: &#39;ASC&#39;&gt;</span>
+            <span class="name">ASC</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ASC">TokenType.ASC</a>: &#39;ASC&#39;&gt;</span>
 
         
     </div>
@@ -3590,7 +3698,8 @@
                             </div>
                             <div id="TokenType.ASOF" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ASOF</span><span class="default_value"> = &lt;<a href="#TokenType.ASOF">TokenType.ASOF</a>: &#39;ASOF&#39;&gt;</span>
+            <span class="name">ASOF</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ASOF">TokenType.ASOF</a>: &#39;ASOF&#39;&gt;</span>
 
         
     </div>
@@ -3601,7 +3710,8 @@
                             </div>
                             <div id="TokenType.AT_TIME_ZONE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">AT_TIME_ZONE</span><span class="default_value"> = &lt;<a href="#TokenType.AT_TIME_ZONE">TokenType.AT_TIME_ZONE</a>: &#39;AT_TIME_ZONE&#39;&gt;</span>
+            <span class="name">AT_TIME_ZONE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.AT_TIME_ZONE">TokenType.AT_TIME_ZONE</a>: &#39;AT_TIME_ZONE&#39;&gt;</span>
 
         
     </div>
@@ -3612,7 +3722,8 @@
                             </div>
                             <div id="TokenType.AUTO_INCREMENT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">AUTO_INCREMENT</span><span class="default_value"> = &lt;<a href="#TokenType.AUTO_INCREMENT">TokenType.AUTO_INCREMENT</a>: &#39;AUTO_INCREMENT&#39;&gt;</span>
+            <span class="name">AUTO_INCREMENT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.AUTO_INCREMENT">TokenType.AUTO_INCREMENT</a>: &#39;AUTO_INCREMENT&#39;&gt;</span>
 
         
     </div>
@@ -3623,7 +3734,8 @@
                             </div>
                             <div id="TokenType.BEGIN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BEGIN</span><span class="default_value"> = &lt;<a href="#TokenType.BEGIN">TokenType.BEGIN</a>: &#39;BEGIN&#39;&gt;</span>
+            <span class="name">BEGIN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BEGIN">TokenType.BEGIN</a>: &#39;BEGIN&#39;&gt;</span>
 
         
     </div>
@@ -3634,7 +3746,8 @@
                             </div>
                             <div id="TokenType.BETWEEN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BETWEEN</span><span class="default_value"> = &lt;<a href="#TokenType.BETWEEN">TokenType.BETWEEN</a>: &#39;BETWEEN&#39;&gt;</span>
+            <span class="name">BETWEEN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BETWEEN">TokenType.BETWEEN</a>: &#39;BETWEEN&#39;&gt;</span>
 
         
     </div>
@@ -3645,7 +3758,8 @@
                             </div>
                             <div id="TokenType.BOTH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BOTH</span><span class="default_value"> = &lt;<a href="#TokenType.BOTH">TokenType.BOTH</a>: &#39;BOTH&#39;&gt;</span>
+            <span class="name">BOTH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BOTH">TokenType.BOTH</a>: &#39;BOTH&#39;&gt;</span>
 
         
     </div>
@@ -3656,7 +3770,8 @@
                             </div>
                             <div id="TokenType.BUCKET" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BUCKET</span><span class="default_value"> = &lt;<a href="#TokenType.BUCKET">TokenType.BUCKET</a>: &#39;BUCKET&#39;&gt;</span>
+            <span class="name">BUCKET</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BUCKET">TokenType.BUCKET</a>: &#39;BUCKET&#39;&gt;</span>
 
         
     </div>
@@ -3667,7 +3782,8 @@
                             </div>
                             <div id="TokenType.BY_DEFAULT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BY_DEFAULT</span><span class="default_value"> = &lt;<a href="#TokenType.BY_DEFAULT">TokenType.BY_DEFAULT</a>: &#39;BY_DEFAULT&#39;&gt;</span>
+            <span class="name">BY_DEFAULT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.BY_DEFAULT">TokenType.BY_DEFAULT</a>: &#39;BY_DEFAULT&#39;&gt;</span>
 
         
     </div>
@@ -3678,7 +3794,8 @@
                             </div>
                             <div id="TokenType.CACHE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CACHE</span><span class="default_value"> = &lt;<a href="#TokenType.CACHE">TokenType.CACHE</a>: &#39;CACHE&#39;&gt;</span>
+            <span class="name">CACHE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CACHE">TokenType.CACHE</a>: &#39;CACHE&#39;&gt;</span>
 
         
     </div>
@@ -3689,7 +3806,8 @@
                             </div>
                             <div id="TokenType.CASCADE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CASCADE</span><span class="default_value"> = &lt;<a href="#TokenType.CASCADE">TokenType.CASCADE</a>: &#39;CASCADE&#39;&gt;</span>
+            <span class="name">CASCADE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CASCADE">TokenType.CASCADE</a>: &#39;CASCADE&#39;&gt;</span>
 
         
     </div>
@@ -3700,7 +3818,8 @@
                             </div>
                             <div id="TokenType.CASE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CASE</span><span class="default_value"> = &lt;<a href="#TokenType.CASE">TokenType.CASE</a>: &#39;CASE&#39;&gt;</span>
+            <span class="name">CASE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CASE">TokenType.CASE</a>: &#39;CASE&#39;&gt;</span>
 
         
     </div>
@@ -3711,7 +3830,8 @@
                             </div>
                             <div id="TokenType.CHARACTER_SET" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CHARACTER_SET</span><span class="default_value"> = &lt;<a href="#TokenType.CHARACTER_SET">TokenType.CHARACTER_SET</a>: &#39;CHARACTER_SET&#39;&gt;</span>
+            <span class="name">CHARACTER_SET</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CHARACTER_SET">TokenType.CHARACTER_SET</a>: &#39;CHARACTER_SET&#39;&gt;</span>
 
         
     </div>
@@ -3722,7 +3842,8 @@
                             </div>
                             <div id="TokenType.CLUSTER_BY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CLUSTER_BY</span><span class="default_value"> = &lt;<a href="#TokenType.CLUSTER_BY">TokenType.CLUSTER_BY</a>: &#39;CLUSTER_BY&#39;&gt;</span>
+            <span class="name">CLUSTER_BY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CLUSTER_BY">TokenType.CLUSTER_BY</a>: &#39;CLUSTER_BY&#39;&gt;</span>
 
         
     </div>
@@ -3733,7 +3854,8 @@
                             </div>
                             <div id="TokenType.COLLATE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COLLATE</span><span class="default_value"> = &lt;<a href="#TokenType.COLLATE">TokenType.COLLATE</a>: &#39;COLLATE&#39;&gt;</span>
+            <span class="name">COLLATE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COLLATE">TokenType.COLLATE</a>: &#39;COLLATE&#39;&gt;</span>
 
         
     </div>
@@ -3744,7 +3866,8 @@
                             </div>
                             <div id="TokenType.COMMAND" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COMMAND</span><span class="default_value"> = &lt;<a href="#TokenType.COMMAND">TokenType.COMMAND</a>: &#39;COMMAND&#39;&gt;</span>
+            <span class="name">COMMAND</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COMMAND">TokenType.COMMAND</a>: &#39;COMMAND&#39;&gt;</span>
 
         
     </div>
@@ -3755,7 +3878,8 @@
                             </div>
                             <div id="TokenType.COMMENT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COMMENT</span><span class="default_value"> = &lt;<a href="#TokenType.COMMENT">TokenType.COMMENT</a>: &#39;COMMENT&#39;&gt;</span>
+            <span class="name">COMMENT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COMMENT">TokenType.COMMENT</a>: &#39;COMMENT&#39;&gt;</span>
 
         
     </div>
@@ -3766,7 +3890,8 @@
                             </div>
                             <div id="TokenType.COMMIT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COMMIT</span><span class="default_value"> = &lt;<a href="#TokenType.COMMIT">TokenType.COMMIT</a>: &#39;COMMIT&#39;&gt;</span>
+            <span class="name">COMMIT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COMMIT">TokenType.COMMIT</a>: &#39;COMMIT&#39;&gt;</span>
 
         
     </div>
@@ -3777,7 +3902,8 @@
                             </div>
                             <div id="TokenType.COMPOUND" class="classattr">
                                 <div class="attr variable">
-            <span class="name">COMPOUND</span><span class="default_value"> = &lt;<a href="#TokenType.COMPOUND">TokenType.COMPOUND</a>: &#39;COMPOUND&#39;&gt;</span>
+            <span class="name">COMPOUND</span>        =
+<span class="default_value">&lt;<a href="#TokenType.COMPOUND">TokenType.COMPOUND</a>: &#39;COMPOUND&#39;&gt;</span>
 
         
     </div>
@@ -3788,7 +3914,8 @@
                             </div>
                             <div id="TokenType.CONSTRAINT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CONSTRAINT</span><span class="default_value"> = &lt;<a href="#TokenType.CONSTRAINT">TokenType.CONSTRAINT</a>: &#39;CONSTRAINT&#39;&gt;</span>
+            <span class="name">CONSTRAINT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CONSTRAINT">TokenType.CONSTRAINT</a>: &#39;CONSTRAINT&#39;&gt;</span>
 
         
     </div>
@@ -3799,7 +3926,8 @@
                             </div>
                             <div id="TokenType.CREATE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CREATE</span><span class="default_value"> = &lt;<a href="#TokenType.CREATE">TokenType.CREATE</a>: &#39;CREATE&#39;&gt;</span>
+            <span class="name">CREATE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CREATE">TokenType.CREATE</a>: &#39;CREATE&#39;&gt;</span>
 
         
     </div>
@@ -3810,7 +3938,8 @@
                             </div>
                             <div id="TokenType.CROSS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CROSS</span><span class="default_value"> = &lt;<a href="#TokenType.CROSS">TokenType.CROSS</a>: &#39;CROSS&#39;&gt;</span>
+            <span class="name">CROSS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CROSS">TokenType.CROSS</a>: &#39;CROSS&#39;&gt;</span>
 
         
     </div>
@@ -3821,7 +3950,8 @@
                             </div>
                             <div id="TokenType.CUBE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CUBE</span><span class="default_value"> = &lt;<a href="#TokenType.CUBE">TokenType.CUBE</a>: &#39;CUBE&#39;&gt;</span>
+            <span class="name">CUBE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CUBE">TokenType.CUBE</a>: &#39;CUBE&#39;&gt;</span>
 
         
     </div>
@@ -3832,7 +3962,8 @@
                             </div>
                             <div id="TokenType.CURRENT_DATE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CURRENT_DATE</span><span class="default_value"> = &lt;<a href="#TokenType.CURRENT_DATE">TokenType.CURRENT_DATE</a>: &#39;CURRENT_DATE&#39;&gt;</span>
+            <span class="name">CURRENT_DATE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CURRENT_DATE">TokenType.CURRENT_DATE</a>: &#39;CURRENT_DATE&#39;&gt;</span>
 
         
     </div>
@@ -3843,7 +3974,8 @@
                             </div>
                             <div id="TokenType.CURRENT_DATETIME" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CURRENT_DATETIME</span><span class="default_value"> = &lt;<a href="#TokenType.CURRENT_DATETIME">TokenType.CURRENT_DATETIME</a>: &#39;CURRENT_DATETIME&#39;&gt;</span>
+            <span class="name">CURRENT_DATETIME</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CURRENT_DATETIME">TokenType.CURRENT_DATETIME</a>: &#39;CURRENT_DATETIME&#39;&gt;</span>
 
         
     </div>
@@ -3854,7 +3986,8 @@
                             </div>
                             <div id="TokenType.CURRENT_ROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CURRENT_ROW</span><span class="default_value"> = &lt;<a href="#TokenType.CURRENT_ROW">TokenType.CURRENT_ROW</a>: &#39;CURRENT_ROW&#39;&gt;</span>
+            <span class="name">CURRENT_ROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CURRENT_ROW">TokenType.CURRENT_ROW</a>: &#39;CURRENT_ROW&#39;&gt;</span>
 
         
     </div>
@@ -3865,7 +3998,8 @@
                             </div>
                             <div id="TokenType.CURRENT_TIME" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CURRENT_TIME</span><span class="default_value"> = &lt;<a href="#TokenType.CURRENT_TIME">TokenType.CURRENT_TIME</a>: &#39;CURRENT_TIME&#39;&gt;</span>
+            <span class="name">CURRENT_TIME</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CURRENT_TIME">TokenType.CURRENT_TIME</a>: &#39;CURRENT_TIME&#39;&gt;</span>
 
         
     </div>
@@ -3876,7 +4010,8 @@
                             </div>
                             <div id="TokenType.CURRENT_TIMESTAMP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">CURRENT_TIMESTAMP</span><span class="default_value"> = &lt;<a href="#TokenType.CURRENT_TIMESTAMP">TokenType.CURRENT_TIMESTAMP</a>: &#39;CURRENT_TIMESTAMP&#39;&gt;</span>
+            <span class="name">CURRENT_TIMESTAMP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.CURRENT_TIMESTAMP">TokenType.CURRENT_TIMESTAMP</a>: &#39;CURRENT_TIMESTAMP&#39;&gt;</span>
 
         
     </div>
@@ -3887,7 +4022,8 @@
                             </div>
                             <div id="TokenType.DEFAULT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DEFAULT</span><span class="default_value"> = &lt;<a href="#TokenType.DEFAULT">TokenType.DEFAULT</a>: &#39;DEFAULT&#39;&gt;</span>
+            <span class="name">DEFAULT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DEFAULT">TokenType.DEFAULT</a>: &#39;DEFAULT&#39;&gt;</span>
 
         
     </div>
@@ -3898,7 +4034,8 @@
                             </div>
                             <div id="TokenType.DELETE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DELETE</span><span class="default_value"> = &lt;<a href="#TokenType.DELETE">TokenType.DELETE</a>: &#39;DELETE&#39;&gt;</span>
+            <span class="name">DELETE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DELETE">TokenType.DELETE</a>: &#39;DELETE&#39;&gt;</span>
 
         
     </div>
@@ -3909,7 +4046,8 @@
                             </div>
                             <div id="TokenType.DESC" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DESC</span><span class="default_value"> = &lt;<a href="#TokenType.DESC">TokenType.DESC</a>: &#39;DESC&#39;&gt;</span>
+            <span class="name">DESC</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DESC">TokenType.DESC</a>: &#39;DESC&#39;&gt;</span>
 
         
     </div>
@@ -3920,7 +4058,8 @@
                             </div>
                             <div id="TokenType.DESCRIBE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DESCRIBE</span><span class="default_value"> = &lt;<a href="#TokenType.DESCRIBE">TokenType.DESCRIBE</a>: &#39;DESCRIBE&#39;&gt;</span>
+            <span class="name">DESCRIBE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DESCRIBE">TokenType.DESCRIBE</a>: &#39;DESCRIBE&#39;&gt;</span>
 
         
     </div>
@@ -3931,7 +4070,8 @@
                             </div>
                             <div id="TokenType.DISTINCT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DISTINCT</span><span class="default_value"> = &lt;<a href="#TokenType.DISTINCT">TokenType.DISTINCT</a>: &#39;DISTINCT&#39;&gt;</span>
+            <span class="name">DISTINCT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DISTINCT">TokenType.DISTINCT</a>: &#39;DISTINCT&#39;&gt;</span>
 
         
     </div>
@@ -3942,7 +4082,8 @@
                             </div>
                             <div id="TokenType.DISTINCT_FROM" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DISTINCT_FROM</span><span class="default_value"> = &lt;<a href="#TokenType.DISTINCT_FROM">TokenType.DISTINCT_FROM</a>: &#39;DISTINCT_FROM&#39;&gt;</span>
+            <span class="name">DISTINCT_FROM</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DISTINCT_FROM">TokenType.DISTINCT_FROM</a>: &#39;DISTINCT_FROM&#39;&gt;</span>
 
         
     </div>
@@ -3953,7 +4094,8 @@
                             </div>
                             <div id="TokenType.DISTRIBUTE_BY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DISTRIBUTE_BY</span><span class="default_value"> = &lt;<a href="#TokenType.DISTRIBUTE_BY">TokenType.DISTRIBUTE_BY</a>: &#39;DISTRIBUTE_BY&#39;&gt;</span>
+            <span class="name">DISTRIBUTE_BY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DISTRIBUTE_BY">TokenType.DISTRIBUTE_BY</a>: &#39;DISTRIBUTE_BY&#39;&gt;</span>
 
         
     </div>
@@ -3964,7 +4106,8 @@
                             </div>
                             <div id="TokenType.DIV" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DIV</span><span class="default_value"> = &lt;<a href="#TokenType.DIV">TokenType.DIV</a>: &#39;DIV&#39;&gt;</span>
+            <span class="name">DIV</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DIV">TokenType.DIV</a>: &#39;DIV&#39;&gt;</span>
 
         
     </div>
@@ -3975,7 +4118,8 @@
                             </div>
                             <div id="TokenType.DROP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">DROP</span><span class="default_value"> = &lt;<a href="#TokenType.DROP">TokenType.DROP</a>: &#39;DROP&#39;&gt;</span>
+            <span class="name">DROP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.DROP">TokenType.DROP</a>: &#39;DROP&#39;&gt;</span>
 
         
     </div>
@@ -3986,7 +4130,8 @@
                             </div>
                             <div id="TokenType.ELSE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ELSE</span><span class="default_value"> = &lt;<a href="#TokenType.ELSE">TokenType.ELSE</a>: &#39;ELSE&#39;&gt;</span>
+            <span class="name">ELSE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ELSE">TokenType.ELSE</a>: &#39;ELSE&#39;&gt;</span>
 
         
     </div>
@@ -3997,7 +4142,8 @@
                             </div>
                             <div id="TokenType.END" class="classattr">
                                 <div class="attr variable">
-            <span class="name">END</span><span class="default_value"> = &lt;<a href="#TokenType.END">TokenType.END</a>: &#39;END&#39;&gt;</span>
+            <span class="name">END</span>        =
+<span class="default_value">&lt;<a href="#TokenType.END">TokenType.END</a>: &#39;END&#39;&gt;</span>
 
         
     </div>
@@ -4008,7 +4154,8 @@
                             </div>
                             <div id="TokenType.ESCAPE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ESCAPE</span><span class="default_value"> = &lt;<a href="#TokenType.ESCAPE">TokenType.ESCAPE</a>: &#39;ESCAPE&#39;&gt;</span>
+            <span class="name">ESCAPE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ESCAPE">TokenType.ESCAPE</a>: &#39;ESCAPE&#39;&gt;</span>
 
         
     </div>
@@ -4019,7 +4166,8 @@
                             </div>
                             <div id="TokenType.EXCEPT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">EXCEPT</span><span class="default_value"> = &lt;<a href="#TokenType.EXCEPT">TokenType.EXCEPT</a>: &#39;EXCEPT&#39;&gt;</span>
+            <span class="name">EXCEPT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.EXCEPT">TokenType.EXCEPT</a>: &#39;EXCEPT&#39;&gt;</span>
 
         
     </div>
@@ -4030,7 +4178,8 @@
                             </div>
                             <div id="TokenType.EXECUTE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">EXECUTE</span><span class="default_value"> = &lt;<a href="#TokenType.EXECUTE">TokenType.EXECUTE</a>: &#39;EXECUTE&#39;&gt;</span>
+            <span class="name">EXECUTE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.EXECUTE">TokenType.EXECUTE</a>: &#39;EXECUTE&#39;&gt;</span>
 
         
     </div>
@@ -4041,7 +4190,8 @@
                             </div>
                             <div id="TokenType.EXISTS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">EXISTS</span><span class="default_value"> = &lt;<a href="#TokenType.EXISTS">TokenType.EXISTS</a>: &#39;EXISTS&#39;&gt;</span>
+            <span class="name">EXISTS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.EXISTS">TokenType.EXISTS</a>: &#39;EXISTS&#39;&gt;</span>
 
         
     </div>
@@ -4052,7 +4202,8 @@
                             </div>
                             <div id="TokenType.FALSE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FALSE</span><span class="default_value"> = &lt;<a href="#TokenType.FALSE">TokenType.FALSE</a>: &#39;FALSE&#39;&gt;</span>
+            <span class="name">FALSE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FALSE">TokenType.FALSE</a>: &#39;FALSE&#39;&gt;</span>
 
         
     </div>
@@ -4063,7 +4214,8 @@
                             </div>
                             <div id="TokenType.FETCH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FETCH</span><span class="default_value"> = &lt;<a href="#TokenType.FETCH">TokenType.FETCH</a>: &#39;FETCH&#39;&gt;</span>
+            <span class="name">FETCH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FETCH">TokenType.FETCH</a>: &#39;FETCH&#39;&gt;</span>
 
         
     </div>
@@ -4074,7 +4226,8 @@
                             </div>
                             <div id="TokenType.FILTER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FILTER</span><span class="default_value"> = &lt;<a href="#TokenType.FILTER">TokenType.FILTER</a>: &#39;FILTER&#39;&gt;</span>
+            <span class="name">FILTER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FILTER">TokenType.FILTER</a>: &#39;FILTER&#39;&gt;</span>
 
         
     </div>
@@ -4085,7 +4238,8 @@
                             </div>
                             <div id="TokenType.FINAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FINAL</span><span class="default_value"> = &lt;<a href="#TokenType.FINAL">TokenType.FINAL</a>: &#39;FINAL&#39;&gt;</span>
+            <span class="name">FINAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FINAL">TokenType.FINAL</a>: &#39;FINAL&#39;&gt;</span>
 
         
     </div>
@@ -4096,7 +4250,8 @@
                             </div>
                             <div id="TokenType.FIRST" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FIRST</span><span class="default_value"> = &lt;<a href="#TokenType.FIRST">TokenType.FIRST</a>: &#39;FIRST&#39;&gt;</span>
+            <span class="name">FIRST</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FIRST">TokenType.FIRST</a>: &#39;FIRST&#39;&gt;</span>
 
         
     </div>
@@ -4107,7 +4262,8 @@
                             </div>
                             <div id="TokenType.FOLLOWING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FOLLOWING</span><span class="default_value"> = &lt;<a href="#TokenType.FOLLOWING">TokenType.FOLLOWING</a>: &#39;FOLLOWING&#39;&gt;</span>
+            <span class="name">FOLLOWING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FOLLOWING">TokenType.FOLLOWING</a>: &#39;FOLLOWING&#39;&gt;</span>
 
         
     </div>
@@ -4118,7 +4274,8 @@
                             </div>
                             <div id="TokenType.FOR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FOR</span><span class="default_value"> = &lt;<a href="#TokenType.FOR">TokenType.FOR</a>: &#39;FOR&#39;&gt;</span>
+            <span class="name">FOR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FOR">TokenType.FOR</a>: &#39;FOR&#39;&gt;</span>
 
         
     </div>
@@ -4129,7 +4286,8 @@
                             </div>
                             <div id="TokenType.FOREIGN_KEY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FOREIGN_KEY</span><span class="default_value"> = &lt;<a href="#TokenType.FOREIGN_KEY">TokenType.FOREIGN_KEY</a>: &#39;FOREIGN_KEY&#39;&gt;</span>
+            <span class="name">FOREIGN_KEY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FOREIGN_KEY">TokenType.FOREIGN_KEY</a>: &#39;FOREIGN_KEY&#39;&gt;</span>
 
         
     </div>
@@ -4140,7 +4298,8 @@
                             </div>
                             <div id="TokenType.FORMAT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FORMAT</span><span class="default_value"> = &lt;<a href="#TokenType.FORMAT">TokenType.FORMAT</a>: &#39;FORMAT&#39;&gt;</span>
+            <span class="name">FORMAT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FORMAT">TokenType.FORMAT</a>: &#39;FORMAT&#39;&gt;</span>
 
         
     </div>
@@ -4151,7 +4310,8 @@
                             </div>
                             <div id="TokenType.FROM" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FROM</span><span class="default_value"> = &lt;<a href="#TokenType.FROM">TokenType.FROM</a>: &#39;FROM&#39;&gt;</span>
+            <span class="name">FROM</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FROM">TokenType.FROM</a>: &#39;FROM&#39;&gt;</span>
 
         
     </div>
@@ -4162,7 +4322,8 @@
                             </div>
                             <div id="TokenType.FULL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FULL</span><span class="default_value"> = &lt;<a href="#TokenType.FULL">TokenType.FULL</a>: &#39;FULL&#39;&gt;</span>
+            <span class="name">FULL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FULL">TokenType.FULL</a>: &#39;FULL&#39;&gt;</span>
 
         
     </div>
@@ -4173,7 +4334,8 @@
                             </div>
                             <div id="TokenType.FUNCTION" class="classattr">
                                 <div class="attr variable">
-            <span class="name">FUNCTION</span><span class="default_value"> = &lt;<a href="#TokenType.FUNCTION">TokenType.FUNCTION</a>: &#39;FUNCTION&#39;&gt;</span>
+            <span class="name">FUNCTION</span>        =
+<span class="default_value">&lt;<a href="#TokenType.FUNCTION">TokenType.FUNCTION</a>: &#39;FUNCTION&#39;&gt;</span>
 
         
     </div>
@@ -4184,7 +4346,8 @@
                             </div>
                             <div id="TokenType.GLOB" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GLOB</span><span class="default_value"> = &lt;<a href="#TokenType.GLOB">TokenType.GLOB</a>: &#39;GLOB&#39;&gt;</span>
+            <span class="name">GLOB</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GLOB">TokenType.GLOB</a>: &#39;GLOB&#39;&gt;</span>
 
         
     </div>
@@ -4195,7 +4358,8 @@
                             </div>
                             <div id="TokenType.GLOBAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GLOBAL</span><span class="default_value"> = &lt;<a href="#TokenType.GLOBAL">TokenType.GLOBAL</a>: &#39;GLOBAL&#39;&gt;</span>
+            <span class="name">GLOBAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GLOBAL">TokenType.GLOBAL</a>: &#39;GLOBAL&#39;&gt;</span>
 
         
     </div>
@@ -4206,7 +4370,8 @@
                             </div>
                             <div id="TokenType.GROUP_BY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GROUP_BY</span><span class="default_value"> = &lt;<a href="#TokenType.GROUP_BY">TokenType.GROUP_BY</a>: &#39;GROUP_BY&#39;&gt;</span>
+            <span class="name">GROUP_BY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GROUP_BY">TokenType.GROUP_BY</a>: &#39;GROUP_BY&#39;&gt;</span>
 
         
     </div>
@@ -4217,7 +4382,8 @@
                             </div>
                             <div id="TokenType.GROUPING_SETS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">GROUPING_SETS</span><span class="default_value"> = &lt;<a href="#TokenType.GROUPING_SETS">TokenType.GROUPING_SETS</a>: &#39;GROUPING_SETS&#39;&gt;</span>
+            <span class="name">GROUPING_SETS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.GROUPING_SETS">TokenType.GROUPING_SETS</a>: &#39;GROUPING_SETS&#39;&gt;</span>
 
         
     </div>
@@ -4228,7 +4394,8 @@
                             </div>
                             <div id="TokenType.HAVING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HAVING</span><span class="default_value"> = &lt;<a href="#TokenType.HAVING">TokenType.HAVING</a>: &#39;HAVING&#39;&gt;</span>
+            <span class="name">HAVING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.HAVING">TokenType.HAVING</a>: &#39;HAVING&#39;&gt;</span>
 
         
     </div>
@@ -4239,7 +4406,8 @@
                             </div>
                             <div id="TokenType.HINT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HINT</span><span class="default_value"> = &lt;<a href="#TokenType.HINT">TokenType.HINT</a>: &#39;HINT&#39;&gt;</span>
+            <span class="name">HINT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.HINT">TokenType.HINT</a>: &#39;HINT&#39;&gt;</span>
 
         
     </div>
@@ -4250,7 +4418,8 @@
                             </div>
                             <div id="TokenType.IF" class="classattr">
                                 <div class="attr variable">
-            <span class="name">IF</span><span class="default_value"> = &lt;<a href="#TokenType.IF">TokenType.IF</a>: &#39;IF&#39;&gt;</span>
+            <span class="name">IF</span>        =
+<span class="default_value">&lt;<a href="#TokenType.IF">TokenType.IF</a>: &#39;IF&#39;&gt;</span>
 
         
     </div>
@@ -4261,7 +4430,8 @@
                             </div>
                             <div id="TokenType.IGNORE_NULLS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">IGNORE_NULLS</span><span class="default_value"> = &lt;<a href="#TokenType.IGNORE_NULLS">TokenType.IGNORE_NULLS</a>: &#39;IGNORE_NULLS&#39;&gt;</span>
+            <span class="name">IGNORE_NULLS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.IGNORE_NULLS">TokenType.IGNORE_NULLS</a>: &#39;IGNORE_NULLS&#39;&gt;</span>
 
         
     </div>
@@ -4272,7 +4442,8 @@
                             </div>
                             <div id="TokenType.ILIKE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ILIKE</span><span class="default_value"> = &lt;<a href="#TokenType.ILIKE">TokenType.ILIKE</a>: &#39;ILIKE&#39;&gt;</span>
+            <span class="name">ILIKE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ILIKE">TokenType.ILIKE</a>: &#39;ILIKE&#39;&gt;</span>
 
         
     </div>
@@ -4283,7 +4454,8 @@
                             </div>
                             <div id="TokenType.ILIKE_ANY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ILIKE_ANY</span><span class="default_value"> = &lt;<a href="#TokenType.ILIKE_ANY">TokenType.ILIKE_ANY</a>: &#39;ILIKE_ANY&#39;&gt;</span>
+            <span class="name">ILIKE_ANY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ILIKE_ANY">TokenType.ILIKE_ANY</a>: &#39;ILIKE_ANY&#39;&gt;</span>
 
         
     </div>
@@ -4294,7 +4466,8 @@
                             </div>
                             <div id="TokenType.IN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">IN</span><span class="default_value"> = &lt;<a href="#TokenType.IN">TokenType.IN</a>: &#39;IN&#39;&gt;</span>
+            <span class="name">IN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.IN">TokenType.IN</a>: &#39;IN&#39;&gt;</span>
 
         
     </div>
@@ -4305,7 +4478,8 @@
                             </div>
                             <div id="TokenType.INDEX" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INDEX</span><span class="default_value"> = &lt;<a href="#TokenType.INDEX">TokenType.INDEX</a>: &#39;INDEX&#39;&gt;</span>
+            <span class="name">INDEX</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INDEX">TokenType.INDEX</a>: &#39;INDEX&#39;&gt;</span>
 
         
     </div>
@@ -4316,7 +4490,8 @@
                             </div>
                             <div id="TokenType.INNER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INNER</span><span class="default_value"> = &lt;<a href="#TokenType.INNER">TokenType.INNER</a>: &#39;INNER&#39;&gt;</span>
+            <span class="name">INNER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INNER">TokenType.INNER</a>: &#39;INNER&#39;&gt;</span>
 
         
     </div>
@@ -4327,7 +4502,8 @@
                             </div>
                             <div id="TokenType.INSERT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INSERT</span><span class="default_value"> = &lt;<a href="#TokenType.INSERT">TokenType.INSERT</a>: &#39;INSERT&#39;&gt;</span>
+            <span class="name">INSERT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INSERT">TokenType.INSERT</a>: &#39;INSERT&#39;&gt;</span>
 
         
     </div>
@@ -4338,7 +4514,8 @@
                             </div>
                             <div id="TokenType.INTERSECT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INTERSECT</span><span class="default_value"> = &lt;<a href="#TokenType.INTERSECT">TokenType.INTERSECT</a>: &#39;INTERSECT&#39;&gt;</span>
+            <span class="name">INTERSECT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INTERSECT">TokenType.INTERSECT</a>: &#39;INTERSECT&#39;&gt;</span>
 
         
     </div>
@@ -4349,7 +4526,8 @@
                             </div>
                             <div id="TokenType.INTERVAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INTERVAL</span><span class="default_value"> = &lt;<a href="#TokenType.INTERVAL">TokenType.INTERVAL</a>: &#39;INTERVAL&#39;&gt;</span>
+            <span class="name">INTERVAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INTERVAL">TokenType.INTERVAL</a>: &#39;INTERVAL&#39;&gt;</span>
 
         
     </div>
@@ -4360,7 +4538,8 @@
                             </div>
                             <div id="TokenType.INTO" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INTO</span><span class="default_value"> = &lt;<a href="#TokenType.INTO">TokenType.INTO</a>: &#39;INTO&#39;&gt;</span>
+            <span class="name">INTO</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INTO">TokenType.INTO</a>: &#39;INTO&#39;&gt;</span>
 
         
     </div>
@@ -4371,7 +4550,8 @@
                             </div>
                             <div id="TokenType.INTRODUCER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INTRODUCER</span><span class="default_value"> = &lt;<a href="#TokenType.INTRODUCER">TokenType.INTRODUCER</a>: &#39;INTRODUCER&#39;&gt;</span>
+            <span class="name">INTRODUCER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.INTRODUCER">TokenType.INTRODUCER</a>: &#39;INTRODUCER&#39;&gt;</span>
 
         
     </div>
@@ -4382,7 +4562,8 @@
                             </div>
                             <div id="TokenType.IRLIKE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">IRLIKE</span><span class="default_value"> = &lt;<a href="#TokenType.IRLIKE">TokenType.IRLIKE</a>: &#39;IRLIKE&#39;&gt;</span>
+            <span class="name">IRLIKE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.IRLIKE">TokenType.IRLIKE</a>: &#39;IRLIKE&#39;&gt;</span>
 
         
     </div>
@@ -4393,7 +4574,8 @@
                             </div>
                             <div id="TokenType.IS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">IS</span><span class="default_value"> = &lt;<a href="#TokenType.IS">TokenType.IS</a>: &#39;IS&#39;&gt;</span>
+            <span class="name">IS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.IS">TokenType.IS</a>: &#39;IS&#39;&gt;</span>
 
         
     </div>
@@ -4404,7 +4586,8 @@
                             </div>
                             <div id="TokenType.ISNULL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ISNULL</span><span class="default_value"> = &lt;<a href="#TokenType.ISNULL">TokenType.ISNULL</a>: &#39;ISNULL&#39;&gt;</span>
+            <span class="name">ISNULL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ISNULL">TokenType.ISNULL</a>: &#39;ISNULL&#39;&gt;</span>
 
         
     </div>
@@ -4415,7 +4598,8 @@
                             </div>
                             <div id="TokenType.JOIN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">JOIN</span><span class="default_value"> = &lt;<a href="#TokenType.JOIN">TokenType.JOIN</a>: &#39;JOIN&#39;&gt;</span>
+            <span class="name">JOIN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.JOIN">TokenType.JOIN</a>: &#39;JOIN&#39;&gt;</span>
 
         
     </div>
@@ -4426,7 +4610,8 @@
                             </div>
                             <div id="TokenType.LANGUAGE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LANGUAGE</span><span class="default_value"> = &lt;<a href="#TokenType.LANGUAGE">TokenType.LANGUAGE</a>: &#39;LANGUAGE&#39;&gt;</span>
+            <span class="name">LANGUAGE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LANGUAGE">TokenType.LANGUAGE</a>: &#39;LANGUAGE&#39;&gt;</span>
 
         
     </div>
@@ -4437,7 +4622,8 @@
                             </div>
                             <div id="TokenType.LATERAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LATERAL</span><span class="default_value"> = &lt;<a href="#TokenType.LATERAL">TokenType.LATERAL</a>: &#39;LATERAL&#39;&gt;</span>
+            <span class="name">LATERAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LATERAL">TokenType.LATERAL</a>: &#39;LATERAL&#39;&gt;</span>
 
         
     </div>
@@ -4448,7 +4634,8 @@
                             </div>
                             <div id="TokenType.LAZY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LAZY</span><span class="default_value"> = &lt;<a href="#TokenType.LAZY">TokenType.LAZY</a>: &#39;LAZY&#39;&gt;</span>
+            <span class="name">LAZY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LAZY">TokenType.LAZY</a>: &#39;LAZY&#39;&gt;</span>
 
         
     </div>
@@ -4459,7 +4646,8 @@
                             </div>
                             <div id="TokenType.LEADING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LEADING</span><span class="default_value"> = &lt;<a href="#TokenType.LEADING">TokenType.LEADING</a>: &#39;LEADING&#39;&gt;</span>
+            <span class="name">LEADING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LEADING">TokenType.LEADING</a>: &#39;LEADING&#39;&gt;</span>
 
         
     </div>
@@ -4470,7 +4658,8 @@
                             </div>
                             <div id="TokenType.LEFT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LEFT</span><span class="default_value"> = &lt;<a href="#TokenType.LEFT">TokenType.LEFT</a>: &#39;LEFT&#39;&gt;</span>
+            <span class="name">LEFT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LEFT">TokenType.LEFT</a>: &#39;LEFT&#39;&gt;</span>
 
         
     </div>
@@ -4481,7 +4670,8 @@
                             </div>
                             <div id="TokenType.LIKE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LIKE</span><span class="default_value"> = &lt;<a href="#TokenType.LIKE">TokenType.LIKE</a>: &#39;LIKE&#39;&gt;</span>
+            <span class="name">LIKE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LIKE">TokenType.LIKE</a>: &#39;LIKE&#39;&gt;</span>
 
         
     </div>
@@ -4492,7 +4682,8 @@
                             </div>
                             <div id="TokenType.LIKE_ANY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LIKE_ANY</span><span class="default_value"> = &lt;<a href="#TokenType.LIKE_ANY">TokenType.LIKE_ANY</a>: &#39;LIKE_ANY&#39;&gt;</span>
+            <span class="name">LIKE_ANY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LIKE_ANY">TokenType.LIKE_ANY</a>: &#39;LIKE_ANY&#39;&gt;</span>
 
         
     </div>
@@ -4503,7 +4694,8 @@
                             </div>
                             <div id="TokenType.LIMIT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LIMIT</span><span class="default_value"> = &lt;<a href="#TokenType.LIMIT">TokenType.LIMIT</a>: &#39;LIMIT&#39;&gt;</span>
+            <span class="name">LIMIT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LIMIT">TokenType.LIMIT</a>: &#39;LIMIT&#39;&gt;</span>
 
         
     </div>
@@ -4514,7 +4706,8 @@
                             </div>
                             <div id="TokenType.LOAD_DATA" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LOAD_DATA</span><span class="default_value"> = &lt;<a href="#TokenType.LOAD_DATA">TokenType.LOAD_DATA</a>: &#39;LOAD_DATA&#39;&gt;</span>
+            <span class="name">LOAD_DATA</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LOAD_DATA">TokenType.LOAD_DATA</a>: &#39;LOAD_DATA&#39;&gt;</span>
 
         
     </div>
@@ -4525,7 +4718,8 @@
                             </div>
                             <div id="TokenType.LOCAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">LOCAL</span><span class="default_value"> = &lt;<a href="#TokenType.LOCAL">TokenType.LOCAL</a>: &#39;LOCAL&#39;&gt;</span>
+            <span class="name">LOCAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.LOCAL">TokenType.LOCAL</a>: &#39;LOCAL&#39;&gt;</span>
 
         
     </div>
@@ -4536,7 +4730,8 @@
                             </div>
                             <div id="TokenType.MAP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MAP</span><span class="default_value"> = &lt;<a href="#TokenType.MAP">TokenType.MAP</a>: &#39;MAP&#39;&gt;</span>
+            <span class="name">MAP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MAP">TokenType.MAP</a>: &#39;MAP&#39;&gt;</span>
 
         
     </div>
@@ -4547,7 +4742,8 @@
                             </div>
                             <div id="TokenType.MATCH_RECOGNIZE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MATCH_RECOGNIZE</span><span class="default_value"> = &lt;<a href="#TokenType.MATCH_RECOGNIZE">TokenType.MATCH_RECOGNIZE</a>: &#39;MATCH_RECOGNIZE&#39;&gt;</span>
+            <span class="name">MATCH_RECOGNIZE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MATCH_RECOGNIZE">TokenType.MATCH_RECOGNIZE</a>: &#39;MATCH_RECOGNIZE&#39;&gt;</span>
 
         
     </div>
@@ -4558,7 +4754,8 @@
                             </div>
                             <div id="TokenType.MATERIALIZED" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MATERIALIZED</span><span class="default_value"> = &lt;<a href="#TokenType.MATERIALIZED">TokenType.MATERIALIZED</a>: &#39;MATERIALIZED&#39;&gt;</span>
+            <span class="name">MATERIALIZED</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MATERIALIZED">TokenType.MATERIALIZED</a>: &#39;MATERIALIZED&#39;&gt;</span>
 
         
     </div>
@@ -4569,7 +4766,8 @@
                             </div>
                             <div id="TokenType.MERGE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MERGE</span><span class="default_value"> = &lt;<a href="#TokenType.MERGE">TokenType.MERGE</a>: &#39;MERGE&#39;&gt;</span>
+            <span class="name">MERGE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MERGE">TokenType.MERGE</a>: &#39;MERGE&#39;&gt;</span>
 
         
     </div>
@@ -4580,7 +4778,8 @@
                             </div>
                             <div id="TokenType.MOD" class="classattr">
                                 <div class="attr variable">
-            <span class="name">MOD</span><span class="default_value"> = &lt;<a href="#TokenType.MOD">TokenType.MOD</a>: &#39;MOD&#39;&gt;</span>
+            <span class="name">MOD</span>        =
+<span class="default_value">&lt;<a href="#TokenType.MOD">TokenType.MOD</a>: &#39;MOD&#39;&gt;</span>
 
         
     </div>
@@ -4591,7 +4790,8 @@
                             </div>
                             <div id="TokenType.NATURAL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NATURAL</span><span class="default_value"> = &lt;<a href="#TokenType.NATURAL">TokenType.NATURAL</a>: &#39;NATURAL&#39;&gt;</span>
+            <span class="name">NATURAL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NATURAL">TokenType.NATURAL</a>: &#39;NATURAL&#39;&gt;</span>
 
         
     </div>
@@ -4602,7 +4802,8 @@
                             </div>
                             <div id="TokenType.NEXT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NEXT</span><span class="default_value"> = &lt;<a href="#TokenType.NEXT">TokenType.NEXT</a>: &#39;NEXT&#39;&gt;</span>
+            <span class="name">NEXT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NEXT">TokenType.NEXT</a>: &#39;NEXT&#39;&gt;</span>
 
         
     </div>
@@ -4613,7 +4814,8 @@
                             </div>
                             <div id="TokenType.NO_ACTION" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NO_ACTION</span><span class="default_value"> = &lt;<a href="#TokenType.NO_ACTION">TokenType.NO_ACTION</a>: &#39;NO_ACTION&#39;&gt;</span>
+            <span class="name">NO_ACTION</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NO_ACTION">TokenType.NO_ACTION</a>: &#39;NO_ACTION&#39;&gt;</span>
 
         
     </div>
@@ -4624,7 +4826,8 @@
                             </div>
                             <div id="TokenType.NOTNULL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NOTNULL</span><span class="default_value"> = &lt;<a href="#TokenType.NOTNULL">TokenType.NOTNULL</a>: &#39;NOTNULL&#39;&gt;</span>
+            <span class="name">NOTNULL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NOTNULL">TokenType.NOTNULL</a>: &#39;NOTNULL&#39;&gt;</span>
 
         
     </div>
@@ -4635,7 +4838,8 @@
                             </div>
                             <div id="TokenType.NULL" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NULL</span><span class="default_value"> = &lt;<a href="#TokenType.NULL">TokenType.NULL</a>: &#39;NULL&#39;&gt;</span>
+            <span class="name">NULL</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NULL">TokenType.NULL</a>: &#39;NULL&#39;&gt;</span>
 
         
     </div>
@@ -4646,7 +4850,8 @@
                             </div>
                             <div id="TokenType.NULLS_FIRST" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NULLS_FIRST</span><span class="default_value"> = &lt;<a href="#TokenType.NULLS_FIRST">TokenType.NULLS_FIRST</a>: &#39;NULLS_FIRST&#39;&gt;</span>
+            <span class="name">NULLS_FIRST</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NULLS_FIRST">TokenType.NULLS_FIRST</a>: &#39;NULLS_FIRST&#39;&gt;</span>
 
         
     </div>
@@ -4657,7 +4862,8 @@
                             </div>
                             <div id="TokenType.NULLS_LAST" class="classattr">
                                 <div class="attr variable">
-            <span class="name">NULLS_LAST</span><span class="default_value"> = &lt;<a href="#TokenType.NULLS_LAST">TokenType.NULLS_LAST</a>: &#39;NULLS_LAST&#39;&gt;</span>
+            <span class="name">NULLS_LAST</span>        =
+<span class="default_value">&lt;<a href="#TokenType.NULLS_LAST">TokenType.NULLS_LAST</a>: &#39;NULLS_LAST&#39;&gt;</span>
 
         
     </div>
@@ -4668,7 +4874,8 @@
                             </div>
                             <div id="TokenType.OFFSET" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OFFSET</span><span class="default_value"> = &lt;<a href="#TokenType.OFFSET">TokenType.OFFSET</a>: &#39;OFFSET&#39;&gt;</span>
+            <span class="name">OFFSET</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OFFSET">TokenType.OFFSET</a>: &#39;OFFSET&#39;&gt;</span>
 
         
     </div>
@@ -4679,7 +4886,8 @@
                             </div>
                             <div id="TokenType.ON" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ON</span><span class="default_value"> = &lt;<a href="#TokenType.ON">TokenType.ON</a>: &#39;ON&#39;&gt;</span>
+            <span class="name">ON</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ON">TokenType.ON</a>: &#39;ON&#39;&gt;</span>
 
         
     </div>
@@ -4690,7 +4898,8 @@
                             </div>
                             <div id="TokenType.ONLY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ONLY</span><span class="default_value"> = &lt;<a href="#TokenType.ONLY">TokenType.ONLY</a>: &#39;ONLY&#39;&gt;</span>
+            <span class="name">ONLY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ONLY">TokenType.ONLY</a>: &#39;ONLY&#39;&gt;</span>
 
         
     </div>
@@ -4701,7 +4910,8 @@
                             </div>
                             <div id="TokenType.OPTIONS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OPTIONS</span><span class="default_value"> = &lt;<a href="#TokenType.OPTIONS">TokenType.OPTIONS</a>: &#39;OPTIONS&#39;&gt;</span>
+            <span class="name">OPTIONS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OPTIONS">TokenType.OPTIONS</a>: &#39;OPTIONS&#39;&gt;</span>
 
         
     </div>
@@ -4712,7 +4922,8 @@
                             </div>
                             <div id="TokenType.ORDER_BY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ORDER_BY</span><span class="default_value"> = &lt;<a href="#TokenType.ORDER_BY">TokenType.ORDER_BY</a>: &#39;ORDER_BY&#39;&gt;</span>
+            <span class="name">ORDER_BY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ORDER_BY">TokenType.ORDER_BY</a>: &#39;ORDER_BY&#39;&gt;</span>
 
         
     </div>
@@ -4723,7 +4934,8 @@
                             </div>
                             <div id="TokenType.ORDERED" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ORDERED</span><span class="default_value"> = &lt;<a href="#TokenType.ORDERED">TokenType.ORDERED</a>: &#39;ORDERED&#39;&gt;</span>
+            <span class="name">ORDERED</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ORDERED">TokenType.ORDERED</a>: &#39;ORDERED&#39;&gt;</span>
 
         
     </div>
@@ -4734,7 +4946,8 @@
                             </div>
                             <div id="TokenType.ORDINALITY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ORDINALITY</span><span class="default_value"> = &lt;<a href="#TokenType.ORDINALITY">TokenType.ORDINALITY</a>: &#39;ORDINALITY&#39;&gt;</span>
+            <span class="name">ORDINALITY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ORDINALITY">TokenType.ORDINALITY</a>: &#39;ORDINALITY&#39;&gt;</span>
 
         
     </div>
@@ -4745,7 +4958,8 @@
                             </div>
                             <div id="TokenType.OUTER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OUTER</span><span class="default_value"> = &lt;<a href="#TokenType.OUTER">TokenType.OUTER</a>: &#39;OUTER&#39;&gt;</span>
+            <span class="name">OUTER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OUTER">TokenType.OUTER</a>: &#39;OUTER&#39;&gt;</span>
 
         
     </div>
@@ -4756,7 +4970,8 @@
                             </div>
                             <div id="TokenType.OUT_OF" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OUT_OF</span><span class="default_value"> = &lt;<a href="#TokenType.OUT_OF">TokenType.OUT_OF</a>: &#39;OUT_OF&#39;&gt;</span>
+            <span class="name">OUT_OF</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OUT_OF">TokenType.OUT_OF</a>: &#39;OUT_OF&#39;&gt;</span>
 
         
     </div>
@@ -4767,7 +4982,8 @@
                             </div>
                             <div id="TokenType.OVER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OVER</span><span class="default_value"> = &lt;<a href="#TokenType.OVER">TokenType.OVER</a>: &#39;OVER&#39;&gt;</span>
+            <span class="name">OVER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OVER">TokenType.OVER</a>: &#39;OVER&#39;&gt;</span>
 
         
     </div>
@@ -4778,7 +4994,8 @@
                             </div>
                             <div id="TokenType.OVERWRITE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">OVERWRITE</span><span class="default_value"> = &lt;<a href="#TokenType.OVERWRITE">TokenType.OVERWRITE</a>: &#39;OVERWRITE&#39;&gt;</span>
+            <span class="name">OVERWRITE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.OVERWRITE">TokenType.OVERWRITE</a>: &#39;OVERWRITE&#39;&gt;</span>
 
         
     </div>
@@ -4789,7 +5006,8 @@
                             </div>
                             <div id="TokenType.PARTITION" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PARTITION</span><span class="default_value"> = &lt;<a href="#TokenType.PARTITION">TokenType.PARTITION</a>: &#39;PARTITION&#39;&gt;</span>
+            <span class="name">PARTITION</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PARTITION">TokenType.PARTITION</a>: &#39;PARTITION&#39;&gt;</span>
 
         
     </div>
@@ -4800,7 +5018,8 @@
                             </div>
                             <div id="TokenType.PARTITION_BY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PARTITION_BY</span><span class="default_value"> = &lt;<a href="#TokenType.PARTITION_BY">TokenType.PARTITION_BY</a>: &#39;PARTITION_BY&#39;&gt;</span>
+            <span class="name">PARTITION_BY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PARTITION_BY">TokenType.PARTITION_BY</a>: &#39;PARTITION_BY&#39;&gt;</span>
 
         
     </div>
@@ -4811,7 +5030,8 @@
                             </div>
                             <div id="TokenType.PERCENT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PERCENT</span><span class="default_value"> = &lt;<a href="#TokenType.PERCENT">TokenType.PERCENT</a>: &#39;PERCENT&#39;&gt;</span>
+            <span class="name">PERCENT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PERCENT">TokenType.PERCENT</a>: &#39;PERCENT&#39;&gt;</span>
 
         
     </div>
@@ -4822,7 +5042,8 @@
                             </div>
                             <div id="TokenType.PIVOT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PIVOT</span><span class="default_value"> = &lt;<a href="#TokenType.PIVOT">TokenType.PIVOT</a>: &#39;PIVOT&#39;&gt;</span>
+            <span class="name">PIVOT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PIVOT">TokenType.PIVOT</a>: &#39;PIVOT&#39;&gt;</span>
 
         
     </div>
@@ -4833,7 +5054,8 @@
                             </div>
                             <div id="TokenType.PLACEHOLDER" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PLACEHOLDER</span><span class="default_value"> = &lt;<a href="#TokenType.PLACEHOLDER">TokenType.PLACEHOLDER</a>: &#39;PLACEHOLDER&#39;&gt;</span>
+            <span class="name">PLACEHOLDER</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PLACEHOLDER">TokenType.PLACEHOLDER</a>: &#39;PLACEHOLDER&#39;&gt;</span>
 
         
     </div>
@@ -4844,7 +5066,8 @@
                             </div>
                             <div id="TokenType.PRECEDING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PRECEDING</span><span class="default_value"> = &lt;<a href="#TokenType.PRECEDING">TokenType.PRECEDING</a>: &#39;PRECEDING&#39;&gt;</span>
+            <span class="name">PRECEDING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PRECEDING">TokenType.PRECEDING</a>: &#39;PRECEDING&#39;&gt;</span>
 
         
     </div>
@@ -4855,7 +5078,8 @@
                             </div>
                             <div id="TokenType.PRIMARY_KEY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PRIMARY_KEY</span><span class="default_value"> = &lt;<a href="#TokenType.PRIMARY_KEY">TokenType.PRIMARY_KEY</a>: &#39;PRIMARY_KEY&#39;&gt;</span>
+            <span class="name">PRIMARY_KEY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PRIMARY_KEY">TokenType.PRIMARY_KEY</a>: &#39;PRIMARY_KEY&#39;&gt;</span>
 
         
     </div>
@@ -4866,7 +5090,8 @@
                             </div>
                             <div id="TokenType.PROCEDURE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PROCEDURE</span><span class="default_value"> = &lt;<a href="#TokenType.PROCEDURE">TokenType.PROCEDURE</a>: &#39;PROCEDURE&#39;&gt;</span>
+            <span class="name">PROCEDURE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PROCEDURE">TokenType.PROCEDURE</a>: &#39;PROCEDURE&#39;&gt;</span>
 
         
     </div>
@@ -4877,7 +5102,8 @@
                             </div>
                             <div id="TokenType.PROPERTIES" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PROPERTIES</span><span class="default_value"> = &lt;<a href="#TokenType.PROPERTIES">TokenType.PROPERTIES</a>: &#39;PROPERTIES&#39;&gt;</span>
+            <span class="name">PROPERTIES</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PROPERTIES">TokenType.PROPERTIES</a>: &#39;PROPERTIES&#39;&gt;</span>
 
         
     </div>
@@ -4888,7 +5114,8 @@
                             </div>
                             <div id="TokenType.PSEUDO_TYPE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">PSEUDO_TYPE</span><span class="default_value"> = &lt;<a href="#TokenType.PSEUDO_TYPE">TokenType.PSEUDO_TYPE</a>: &#39;PSEUDO_TYPE&#39;&gt;</span>
+            <span class="name">PSEUDO_TYPE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.PSEUDO_TYPE">TokenType.PSEUDO_TYPE</a>: &#39;PSEUDO_TYPE&#39;&gt;</span>
 
         
     </div>
@@ -4899,7 +5126,8 @@
                             </div>
                             <div id="TokenType.QUALIFY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">QUALIFY</span><span class="default_value"> = &lt;<a href="#TokenType.QUALIFY">TokenType.QUALIFY</a>: &#39;QUALIFY&#39;&gt;</span>
+            <span class="name">QUALIFY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.QUALIFY">TokenType.QUALIFY</a>: &#39;QUALIFY&#39;&gt;</span>
 
         
     </div>
@@ -4910,7 +5138,8 @@
                             </div>
                             <div id="TokenType.QUOTE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">QUOTE</span><span class="default_value"> = &lt;<a href="#TokenType.QUOTE">TokenType.QUOTE</a>: &#39;QUOTE&#39;&gt;</span>
+            <span class="name">QUOTE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.QUOTE">TokenType.QUOTE</a>: &#39;QUOTE&#39;&gt;</span>
 
         
     </div>
@@ -4921,7 +5150,8 @@
                             </div>
                             <div id="TokenType.RANGE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">RANGE</span><span class="default_value"> = &lt;<a href="#TokenType.RANGE">TokenType.RANGE</a>: &#39;RANGE&#39;&gt;</span>
+            <span class="name">RANGE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.RANGE">TokenType.RANGE</a>: &#39;RANGE&#39;&gt;</span>
 
         
     </div>
@@ -4932,7 +5162,8 @@
                             </div>
                             <div id="TokenType.RECURSIVE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">RECURSIVE</span><span class="default_value"> = &lt;<a href="#TokenType.RECURSIVE">TokenType.RECURSIVE</a>: &#39;RECURSIVE&#39;&gt;</span>
+            <span class="name">RECURSIVE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.RECURSIVE">TokenType.RECURSIVE</a>: &#39;RECURSIVE&#39;&gt;</span>
 
         
     </div>
@@ -4943,7 +5174,8 @@
                             </div>
                             <div id="TokenType.REPLACE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">REPLACE</span><span class="default_value"> = &lt;<a href="#TokenType.REPLACE">TokenType.REPLACE</a>: &#39;REPLACE&#39;&gt;</span>
+            <span class="name">REPLACE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.REPLACE">TokenType.REPLACE</a>: &#39;REPLACE&#39;&gt;</span>
 
         
     </div>
@@ -4954,7 +5186,8 @@
                             </div>
                             <div id="TokenType.RESPECT_NULLS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">RESPECT_NULLS</span><span class="default_value"> = &lt;<a href="#TokenType.RESPECT_NULLS">TokenType.RESPECT_NULLS</a>: &#39;RESPECT_NULLS&#39;&gt;</span>
+            <span class="name">RESPECT_NULLS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.RESPECT_NULLS">TokenType.RESPECT_NULLS</a>: &#39;RESPECT_NULLS&#39;&gt;</span>
 
         
     </div>
@@ -4965,7 +5198,8 @@
                             </div>
                             <div id="TokenType.RETURNING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">RETURNING</span><span class="default_value"> = &lt;<a href="#TokenType.RETURNING">TokenType.RETURNING</a>: &#39;RETURNING&#39;&gt;</span>
+            <span class="name">RETURNING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.RETURNING">TokenType.RETURNING</a>: &#39;RETURNING&#39;&gt;</span>
 
         
     </div>
@@ -4976,7 +5210,8 @@
                             </div>
                             <div id="TokenType.REFERENCES" class="classattr">
                                 <div class="attr variable">
-            <span class="name">REFERENCES</span><span class="default_value"> = &lt;<a href="#TokenType.REFERENCES">TokenType.REFERENCES</a>: &#39;REFERENCES&#39;&gt;</span>
+            <span class="name">REFERENCES</span>        =
+<span class="default_value">&lt;<a href="#TokenType.REFERENCES">TokenType.REFERENCES</a>: &#39;REFERENCES&#39;&gt;</span>
 
         
     </div>
@@ -4987,7 +5222,8 @@
                             </div>
                             <div id="TokenType.RIGHT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">RIGHT</span><span class="default_value"> = &lt;<a href="#TokenType.RIGHT">TokenType.RIGHT</a>: &#39;RIGHT&#39;&gt;</span>
+            <span class="name">RIGHT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.RIGHT">TokenType.RIGHT</a>: &#39;RIGHT&#39;&gt;</span>
 
         
     </div>
@@ -4998,7 +5234,8 @@
                             </div>
                             <div id="TokenType.RLIKE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">RLIKE</span><span class="default_value"> = &lt;<a href="#TokenType.RLIKE">TokenType.RLIKE</a>: &#39;RLIKE&#39;&gt;</span>
+            <span class="name">RLIKE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.RLIKE">TokenType.RLIKE</a>: &#39;RLIKE&#39;&gt;</span>
 
         
     </div>
@@ -5009,7 +5246,8 @@
                             </div>
                             <div id="TokenType.ROLLBACK" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ROLLBACK</span><span class="default_value"> = &lt;<a href="#TokenType.ROLLBACK">TokenType.ROLLBACK</a>: &#39;ROLLBACK&#39;&gt;</span>
+            <span class="name">ROLLBACK</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ROLLBACK">TokenType.ROLLBACK</a>: &#39;ROLLBACK&#39;&gt;</span>
 
         
     </div>
@@ -5020,7 +5258,8 @@
                             </div>
                             <div id="TokenType.ROLLUP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ROLLUP</span><span class="default_value"> = &lt;<a href="#TokenType.ROLLUP">TokenType.ROLLUP</a>: &#39;ROLLUP&#39;&gt;</span>
+            <span class="name">ROLLUP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ROLLUP">TokenType.ROLLUP</a>: &#39;ROLLUP&#39;&gt;</span>
 
         
     </div>
@@ -5031,7 +5270,8 @@
                             </div>
                             <div id="TokenType.ROW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ROW</span><span class="default_value"> = &lt;<a href="#TokenType.ROW">TokenType.ROW</a>: &#39;ROW&#39;&gt;</span>
+            <span class="name">ROW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ROW">TokenType.ROW</a>: &#39;ROW&#39;&gt;</span>
 
         
     </div>
@@ -5042,7 +5282,8 @@
                             </div>
                             <div id="TokenType.ROWS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">ROWS</span><span class="default_value"> = &lt;<a href="#TokenType.ROWS">TokenType.ROWS</a>: &#39;ROWS&#39;&gt;</span>
+            <span class="name">ROWS</span>        =
+<span class="default_value">&lt;<a href="#TokenType.ROWS">TokenType.ROWS</a>: &#39;ROWS&#39;&gt;</span>
 
         
     </div>
@@ -5053,7 +5294,8 @@
                             </div>
                             <div id="TokenType.SEED" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SEED</span><span class="default_value"> = &lt;<a href="#TokenType.SEED">TokenType.SEED</a>: &#39;SEED&#39;&gt;</span>
+            <span class="name">SEED</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SEED">TokenType.SEED</a>: &#39;SEED&#39;&gt;</span>
 
         
     </div>
@@ -5064,7 +5306,8 @@
                             </div>
                             <div id="TokenType.SELECT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SELECT</span><span class="default_value"> = &lt;<a href="#TokenType.SELECT">TokenType.SELECT</a>: &#39;SELECT&#39;&gt;</span>
+            <span class="name">SELECT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SELECT">TokenType.SELECT</a>: &#39;SELECT&#39;&gt;</span>
 
         
     </div>
@@ -5075,7 +5318,8 @@
                             </div>
                             <div id="TokenType.SEMI" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SEMI</span><span class="default_value"> = &lt;<a href="#TokenType.SEMI">TokenType.SEMI</a>: &#39;SEMI&#39;&gt;</span>
+            <span class="name">SEMI</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SEMI">TokenType.SEMI</a>: &#39;SEMI&#39;&gt;</span>
 
         
     </div>
@@ -5086,7 +5330,8 @@
                             </div>
                             <div id="TokenType.SEPARATOR" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SEPARATOR</span><span class="default_value"> = &lt;<a href="#TokenType.SEPARATOR">TokenType.SEPARATOR</a>: &#39;SEPARATOR&#39;&gt;</span>
+            <span class="name">SEPARATOR</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SEPARATOR">TokenType.SEPARATOR</a>: &#39;SEPARATOR&#39;&gt;</span>
 
         
     </div>
@@ -5097,7 +5342,8 @@
                             </div>
                             <div id="TokenType.SERDE_PROPERTIES" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SERDE_PROPERTIES</span><span class="default_value"> = &lt;<a href="#TokenType.SERDE_PROPERTIES">TokenType.SERDE_PROPERTIES</a>: &#39;SERDE_PROPERTIES&#39;&gt;</span>
+            <span class="name">SERDE_PROPERTIES</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SERDE_PROPERTIES">TokenType.SERDE_PROPERTIES</a>: &#39;SERDE_PROPERTIES&#39;&gt;</span>
 
         
     </div>
@@ -5108,7 +5354,8 @@
                             </div>
                             <div id="TokenType.SET" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SET</span><span class="default_value"> = &lt;<a href="#TokenType.SET">TokenType.SET</a>: &#39;SET&#39;&gt;</span>
+            <span class="name">SET</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SET">TokenType.SET</a>: &#39;SET&#39;&gt;</span>
 
         
     </div>
@@ -5119,7 +5366,8 @@
                             </div>
                             <div id="TokenType.SHOW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SHOW</span><span class="default_value"> = &lt;<a href="#TokenType.SHOW">TokenType.SHOW</a>: &#39;SHOW&#39;&gt;</span>
+            <span class="name">SHOW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SHOW">TokenType.SHOW</a>: &#39;SHOW&#39;&gt;</span>
 
         
     </div>
@@ -5130,7 +5378,8 @@
                             </div>
                             <div id="TokenType.SIMILAR_TO" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SIMILAR_TO</span><span class="default_value"> = &lt;<a href="#TokenType.SIMILAR_TO">TokenType.SIMILAR_TO</a>: &#39;SIMILAR_TO&#39;&gt;</span>
+            <span class="name">SIMILAR_TO</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SIMILAR_TO">TokenType.SIMILAR_TO</a>: &#39;SIMILAR_TO&#39;&gt;</span>
 
         
     </div>
@@ -5141,7 +5390,8 @@
                             </div>
                             <div id="TokenType.SOME" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SOME</span><span class="default_value"> = &lt;<a href="#TokenType.SOME">TokenType.SOME</a>: &#39;SOME&#39;&gt;</span>
+            <span class="name">SOME</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SOME">TokenType.SOME</a>: &#39;SOME&#39;&gt;</span>
 
         
     </div>
@@ -5152,7 +5402,8 @@
                             </div>
                             <div id="TokenType.SORTKEY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SORTKEY</span><span class="default_value"> = &lt;<a href="#TokenType.SORTKEY">TokenType.SORTKEY</a>: &#39;SORTKEY&#39;&gt;</span>
+            <span class="name">SORTKEY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SORTKEY">TokenType.SORTKEY</a>: &#39;SORTKEY&#39;&gt;</span>
 
         
     </div>
@@ -5163,7 +5414,8 @@
                             </div>
                             <div id="TokenType.SORT_BY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">SORT_BY</span><span class="default_value"> = &lt;<a href="#TokenType.SORT_BY">TokenType.SORT_BY</a>: &#39;SORT_BY&#39;&gt;</span>
+            <span class="name">SORT_BY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.SORT_BY">TokenType.SORT_BY</a>: &#39;SORT_BY&#39;&gt;</span>
 
         
     </div>
@@ -5174,7 +5426,8 @@
                             </div>
                             <div id="TokenType.STRUCT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">STRUCT</span><span class="default_value"> = &lt;<a href="#TokenType.STRUCT">TokenType.STRUCT</a>: &#39;STRUCT&#39;&gt;</span>
+            <span class="name">STRUCT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.STRUCT">TokenType.STRUCT</a>: &#39;STRUCT&#39;&gt;</span>
 
         
     </div>
@@ -5185,7 +5438,8 @@
                             </div>
                             <div id="TokenType.TABLE_SAMPLE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TABLE_SAMPLE</span><span class="default_value"> = &lt;<a href="#TokenType.TABLE_SAMPLE">TokenType.TABLE_SAMPLE</a>: &#39;TABLE_SAMPLE&#39;&gt;</span>
+            <span class="name">TABLE_SAMPLE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TABLE_SAMPLE">TokenType.TABLE_SAMPLE</a>: &#39;TABLE_SAMPLE&#39;&gt;</span>
 
         
     </div>
@@ -5196,7 +5450,8 @@
                             </div>
                             <div id="TokenType.TEMPORARY" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TEMPORARY</span><span class="default_value"> = &lt;<a href="#TokenType.TEMPORARY">TokenType.TEMPORARY</a>: &#39;TEMPORARY&#39;&gt;</span>
+            <span class="name">TEMPORARY</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TEMPORARY">TokenType.TEMPORARY</a>: &#39;TEMPORARY&#39;&gt;</span>
 
         
     </div>
@@ -5207,7 +5462,8 @@
                             </div>
                             <div id="TokenType.TOP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TOP</span><span class="default_value"> = &lt;<a href="#TokenType.TOP">TokenType.TOP</a>: &#39;TOP&#39;&gt;</span>
+            <span class="name">TOP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TOP">TokenType.TOP</a>: &#39;TOP&#39;&gt;</span>
 
         
     </div>
@@ -5218,7 +5474,8 @@
                             </div>
                             <div id="TokenType.THEN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">THEN</span><span class="default_value"> = &lt;<a href="#TokenType.THEN">TokenType.THEN</a>: &#39;THEN&#39;&gt;</span>
+            <span class="name">THEN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.THEN">TokenType.THEN</a>: &#39;THEN&#39;&gt;</span>
 
         
     </div>
@@ -5229,7 +5486,8 @@
                             </div>
                             <div id="TokenType.TRAILING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TRAILING</span><span class="default_value"> = &lt;<a href="#TokenType.TRAILING">TokenType.TRAILING</a>: &#39;TRAILING&#39;&gt;</span>
+            <span class="name">TRAILING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TRAILING">TokenType.TRAILING</a>: &#39;TRAILING&#39;&gt;</span>
 
         
     </div>
@@ -5240,7 +5498,8 @@
                             </div>
                             <div id="TokenType.TRUE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">TRUE</span><span class="default_value"> = &lt;<a href="#TokenType.TRUE">TokenType.TRUE</a>: &#39;TRUE&#39;&gt;</span>
+            <span class="name">TRUE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.TRUE">TokenType.TRUE</a>: &#39;TRUE&#39;&gt;</span>
 
         
     </div>
@@ -5251,7 +5510,8 @@
                             </div>
                             <div id="TokenType.UNBOUNDED" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNBOUNDED</span><span class="default_value"> = &lt;<a href="#TokenType.UNBOUNDED">TokenType.UNBOUNDED</a>: &#39;UNBOUNDED&#39;&gt;</span>
+            <span class="name">UNBOUNDED</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNBOUNDED">TokenType.UNBOUNDED</a>: &#39;UNBOUNDED&#39;&gt;</span>
 
         
     </div>
@@ -5262,7 +5522,8 @@
                             </div>
                             <div id="TokenType.UNCACHE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNCACHE</span><span class="default_value"> = &lt;<a href="#TokenType.UNCACHE">TokenType.UNCACHE</a>: &#39;UNCACHE&#39;&gt;</span>
+            <span class="name">UNCACHE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNCACHE">TokenType.UNCACHE</a>: &#39;UNCACHE&#39;&gt;</span>
 
         
     </div>
@@ -5273,7 +5534,8 @@
                             </div>
                             <div id="TokenType.UNION" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNION</span><span class="default_value"> = &lt;<a href="#TokenType.UNION">TokenType.UNION</a>: &#39;UNION&#39;&gt;</span>
+            <span class="name">UNION</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNION">TokenType.UNION</a>: &#39;UNION&#39;&gt;</span>
 
         
     </div>
@@ -5284,7 +5546,8 @@
                             </div>
                             <div id="TokenType.UNLOGGED" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNLOGGED</span><span class="default_value"> = &lt;<a href="#TokenType.UNLOGGED">TokenType.UNLOGGED</a>: &#39;UNLOGGED&#39;&gt;</span>
+            <span class="name">UNLOGGED</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNLOGGED">TokenType.UNLOGGED</a>: &#39;UNLOGGED&#39;&gt;</span>
 
         
     </div>
@@ -5295,7 +5558,8 @@
                             </div>
                             <div id="TokenType.UNNEST" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNNEST</span><span class="default_value"> = &lt;<a href="#TokenType.UNNEST">TokenType.UNNEST</a>: &#39;UNNEST&#39;&gt;</span>
+            <span class="name">UNNEST</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNNEST">TokenType.UNNEST</a>: &#39;UNNEST&#39;&gt;</span>
 
         
     </div>
@@ -5306,7 +5570,8 @@
                             </div>
                             <div id="TokenType.UNPIVOT" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNPIVOT</span><span class="default_value"> = &lt;<a href="#TokenType.UNPIVOT">TokenType.UNPIVOT</a>: &#39;UNPIVOT&#39;&gt;</span>
+            <span class="name">UNPIVOT</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNPIVOT">TokenType.UNPIVOT</a>: &#39;UNPIVOT&#39;&gt;</span>
 
         
     </div>
@@ -5317,7 +5582,8 @@
                             </div>
                             <div id="TokenType.UPDATE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UPDATE</span><span class="default_value"> = &lt;<a href="#TokenType.UPDATE">TokenType.UPDATE</a>: &#39;UPDATE&#39;&gt;</span>
+            <span class="name">UPDATE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UPDATE">TokenType.UPDATE</a>: &#39;UPDATE&#39;&gt;</span>
 
         
     </div>
@@ -5328,7 +5594,8 @@
                             </div>
                             <div id="TokenType.USE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">USE</span><span class="default_value"> = &lt;<a href="#TokenType.USE">TokenType.USE</a>: &#39;USE&#39;&gt;</span>
+            <span class="name">USE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.USE">TokenType.USE</a>: &#39;USE&#39;&gt;</span>
 
         
     </div>
@@ -5339,7 +5606,8 @@
                             </div>
                             <div id="TokenType.USING" class="classattr">
                                 <div class="attr variable">
-            <span class="name">USING</span><span class="default_value"> = &lt;<a href="#TokenType.USING">TokenType.USING</a>: &#39;USING&#39;&gt;</span>
+            <span class="name">USING</span>        =
+<span class="default_value">&lt;<a href="#TokenType.USING">TokenType.USING</a>: &#39;USING&#39;&gt;</span>
 
         
     </div>
@@ -5350,7 +5618,8 @@
                             </div>
                             <div id="TokenType.VALUES" class="classattr">
                                 <div class="attr variable">
-            <span class="name">VALUES</span><span class="default_value"> = &lt;<a href="#TokenType.VALUES">TokenType.VALUES</a>: &#39;VALUES&#39;&gt;</span>
+            <span class="name">VALUES</span>        =
+<span class="default_value">&lt;<a href="#TokenType.VALUES">TokenType.VALUES</a>: &#39;VALUES&#39;&gt;</span>
 
         
     </div>
@@ -5361,7 +5630,8 @@
                             </div>
                             <div id="TokenType.VIEW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">VIEW</span><span class="default_value"> = &lt;<a href="#TokenType.VIEW">TokenType.VIEW</a>: &#39;VIEW&#39;&gt;</span>
+            <span class="name">VIEW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.VIEW">TokenType.VIEW</a>: &#39;VIEW&#39;&gt;</span>
 
         
     </div>
@@ -5372,7 +5642,8 @@
                             </div>
                             <div id="TokenType.VOLATILE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">VOLATILE</span><span class="default_value"> = &lt;<a href="#TokenType.VOLATILE">TokenType.VOLATILE</a>: &#39;VOLATILE&#39;&gt;</span>
+            <span class="name">VOLATILE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.VOLATILE">TokenType.VOLATILE</a>: &#39;VOLATILE&#39;&gt;</span>
 
         
     </div>
@@ -5383,7 +5654,8 @@
                             </div>
                             <div id="TokenType.WHEN" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WHEN</span><span class="default_value"> = &lt;<a href="#TokenType.WHEN">TokenType.WHEN</a>: &#39;WHEN&#39;&gt;</span>
+            <span class="name">WHEN</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WHEN">TokenType.WHEN</a>: &#39;WHEN&#39;&gt;</span>
 
         
     </div>
@@ -5394,7 +5666,8 @@
                             </div>
                             <div id="TokenType.WHERE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WHERE</span><span class="default_value"> = &lt;<a href="#TokenType.WHERE">TokenType.WHERE</a>: &#39;WHERE&#39;&gt;</span>
+            <span class="name">WHERE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WHERE">TokenType.WHERE</a>: &#39;WHERE&#39;&gt;</span>
 
         
     </div>
@@ -5405,7 +5678,8 @@
                             </div>
                             <div id="TokenType.WINDOW" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WINDOW</span><span class="default_value"> = &lt;<a href="#TokenType.WINDOW">TokenType.WINDOW</a>: &#39;WINDOW&#39;&gt;</span>
+            <span class="name">WINDOW</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WINDOW">TokenType.WINDOW</a>: &#39;WINDOW&#39;&gt;</span>
 
         
     </div>
@@ -5416,7 +5690,8 @@
                             </div>
                             <div id="TokenType.WITH" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WITH</span><span class="default_value"> = &lt;<a href="#TokenType.WITH">TokenType.WITH</a>: &#39;WITH&#39;&gt;</span>
+            <span class="name">WITH</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WITH">TokenType.WITH</a>: &#39;WITH&#39;&gt;</span>
 
         
     </div>
@@ -5427,7 +5702,8 @@
                             </div>
                             <div id="TokenType.WITH_TIME_ZONE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WITH_TIME_ZONE</span><span class="default_value"> = &lt;<a href="#TokenType.WITH_TIME_ZONE">TokenType.WITH_TIME_ZONE</a>: &#39;WITH_TIME_ZONE&#39;&gt;</span>
+            <span class="name">WITH_TIME_ZONE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WITH_TIME_ZONE">TokenType.WITH_TIME_ZONE</a>: &#39;WITH_TIME_ZONE&#39;&gt;</span>
 
         
     </div>
@@ -5438,7 +5714,8 @@
                             </div>
                             <div id="TokenType.WITH_LOCAL_TIME_ZONE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WITH_LOCAL_TIME_ZONE</span><span class="default_value"> = &lt;<a href="#TokenType.WITH_LOCAL_TIME_ZONE">TokenType.WITH_LOCAL_TIME_ZONE</a>: &#39;WITH_LOCAL_TIME_ZONE&#39;&gt;</span>
+            <span class="name">WITH_LOCAL_TIME_ZONE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WITH_LOCAL_TIME_ZONE">TokenType.WITH_LOCAL_TIME_ZONE</a>: &#39;WITH_LOCAL_TIME_ZONE&#39;&gt;</span>
 
         
     </div>
@@ -5449,7 +5726,8 @@
                             </div>
                             <div id="TokenType.WITHIN_GROUP" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WITHIN_GROUP</span><span class="default_value"> = &lt;<a href="#TokenType.WITHIN_GROUP">TokenType.WITHIN_GROUP</a>: &#39;WITHIN_GROUP&#39;&gt;</span>
+            <span class="name">WITHIN_GROUP</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WITHIN_GROUP">TokenType.WITHIN_GROUP</a>: &#39;WITHIN_GROUP&#39;&gt;</span>
 
         
     </div>
@@ -5460,7 +5738,8 @@
                             </div>
                             <div id="TokenType.WITHOUT_TIME_ZONE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">WITHOUT_TIME_ZONE</span><span class="default_value"> = &lt;<a href="#TokenType.WITHOUT_TIME_ZONE">TokenType.WITHOUT_TIME_ZONE</a>: &#39;WITHOUT_TIME_ZONE&#39;&gt;</span>
+            <span class="name">WITHOUT_TIME_ZONE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.WITHOUT_TIME_ZONE">TokenType.WITHOUT_TIME_ZONE</a>: &#39;WITHOUT_TIME_ZONE&#39;&gt;</span>
 
         
     </div>
@@ -5471,7 +5750,8 @@
                             </div>
                             <div id="TokenType.UNIQUE" class="classattr">
                                 <div class="attr variable">
-            <span class="name">UNIQUE</span><span class="default_value"> = &lt;<a href="#TokenType.UNIQUE">TokenType.UNIQUE</a>: &#39;UNIQUE&#39;&gt;</span>
+            <span class="name">UNIQUE</span>        =
+<span class="default_value">&lt;<a href="#TokenType.UNIQUE">TokenType.UNIQUE</a>: &#39;UNIQUE&#39;&gt;</span>
 
         
     </div>
@@ -6415,24 +6695,6 @@
 
     
 
-                            <div id="Tokenizer.__init__" class="classattr">
-                                        <input id="Tokenizer.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-            
-        <span class="name">Tokenizer</span><span class="signature pdoc-code condensed">()</span>
-
-                <label class="view-source-button" for="Tokenizer.__init__-view-source"><span>View Source</span></label>
-
-    </div>
-    <a class="headerlink" href="#Tokenizer.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Tokenizer.__init__-749"><a href="#Tokenizer.__init__-749"><span class="linenos">749</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Tokenizer.__init__-750"><a href="#Tokenizer.__init__-750"><span class="linenos">750</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-</span></pre></div>
-
-
-    
-
-                            </div>
                             <div id="Tokenizer.reset" class="classattr">
                                         <input id="Tokenizer.reset-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -6613,7 +6875,7 @@
                         if (doc.annotation)
                             heading += `<span class="annotation">${doc.annotation}</span>`;
                         if (doc.default_value)
-                            heading += `<span class="default_value">${doc.default_value}</span>`;
+                            heading += `<span class="default_value"> = ${doc.default_value}</span>`;
                         break;
                     default:
                         heading = `<span class="name">${doc.fullname}</span>`;

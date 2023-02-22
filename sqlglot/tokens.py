@@ -115,6 +115,7 @@ class TokenType(AutoName):
     IMAGE = auto()
     VARIANT = auto()
     OBJECT = auto()
+    INET = auto()
 
     # keywords
     ALIAS = auto()
@@ -533,6 +534,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
+        "INET": TokenType.INET,
         "INNER": TokenType.INNER,
         "INSERT": TokenType.INSERT,
         "INTERVAL": TokenType.INTERVAL,

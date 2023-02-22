@@ -1350,27 +1350,39 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
+class AfterJournalProperty(Property):
+    arg_types = {"no": True, "dual": False, "local": False}
+
+
 class AlgorithmProperty(Property):
     arg_types = {"this": True}
 
 
+class AutoIncrementProperty(Property):
+    arg_types = {"this": True}
+
+
+class BlockCompressionProperty(Property):
+    arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
+
+
+class CharacterSetProperty(Property):
+    arg_types = {"this": True, "default": True}
+
+
+class ChecksumProperty(Property):
+    arg_types = {"on": False, "default": False}
+
+
+class CollateProperty(Property):
+    arg_types = {"this": True}
+
+
+class DataBlocksizeProperty(Property):
+    arg_types = {"size": False, "units": False, "min": False, "default": False}
+
+
 class DefinerProperty(Property):
-    arg_types = {"this": True}
-
-
-class SqlSecurityProperty(Property):
-    arg_types = {"definer": True}
-
-
-class TableFormatProperty(Property):
-    arg_types = {"this": True}
-
-
-class PartitionedByProperty(Property):
-    arg_types = {"this": True}
-
-
-class FileFormatProperty(Property):
     arg_types = {"this": True}
 
 
@@ -1378,11 +1390,45 @@ class DistKeyProperty(Property):
     arg_types = {"this": True}
 
 
-class SortKeyProperty(Property):
-    arg_types = {"this": True, "compound": False}
-
-
 class DistStyleProperty(Property):
+    arg_types = {"this": True}
+
+
+class EngineProperty(Property):
+    arg_types = {"this": True}
+
+
+class ExecuteAsProperty(Property):
+    arg_types = {"this": True}
+
+
+class FallbackProperty(Property):
+    arg_types = {"no": True, "protection": False}
+
+
+class FileFormatProperty(Property):
+    arg_types = {"this": True}
+
+
+class FreespaceProperty(Property):
+    arg_types = {"this": True, "percent": False}
+
+
+class IsolatedLoadingProperty(Property):
+    arg_types = {
+        "no": True,
+        "concurrent": True,
+        "for_all": True,
+        "for_insert": True,
+        "for_none": True,
+    }
+
+
+class JournalProperty(Property):
+    arg_types = {"no": True, "dual": False, "before": False}
+
+
+class LanguageProperty(Property):
     arg_types = {"this": True}
 
 
@@ -1394,40 +1440,30 @@ class LocationProperty(Property):
     arg_types = {"this": True}
 
 
-class EngineProperty(Property):
-    arg_types = {"this": True}
+class LockingProperty(Property):
+    arg_types = {
+        "this": False,
+        "kind": True,
+        "for_or_in": True,
+        "lock_type": True,
+        "override": False,
+    }
 
 
-class AutoIncrementProperty(Property):
-    arg_types = {"this": True}
+class LogProperty(Property):
+    arg_types = {"no": True}
 
 
-class CharacterSetProperty(Property):
-    arg_types = {"this": True, "default": True}
+class MergeBlockRatioProperty(Property):
+    arg_types = {"this": False, "no": False, "default": False, "percent": False}
 
 
-class CollateProperty(Property):
-    arg_types = {"this": True}
-
-
-class SchemaCommentProperty(Property):
+class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
 
 class ReturnsProperty(Property):
     arg_types = {"this": True, "is_table": False, "table": False}
-
-
-class LanguageProperty(Property):
-    arg_types = {"this": True}
-
-
-class ExecuteAsProperty(Property):
-    arg_types = {"this": True}
-
-
-class VolatilityProperty(Property):
-    arg_types = {"this": True}
 
 
 class RowFormatDelimitedProperty(Property):
@@ -1447,68 +1483,36 @@ class RowFormatSerdeProperty(Property):
     arg_types = {"this": True}
 
 
+class SchemaCommentProperty(Property):
+    arg_types = {"this": True}
+
+
 class SerdeProperties(Property):
     arg_types = {"expressions": True}
 
 
-class FallbackProperty(Property):
-    arg_types = {"no": True, "protection": False}
+class SetProperty(Property):
+    arg_types = {"multi": True}
+
+
+class SortKeyProperty(Property):
+    arg_types = {"this": True, "compound": False}
+
+
+class SqlSecurityProperty(Property):
+    arg_types = {"definer": True}
+
+
+class TableFormatProperty(Property):
+    arg_types = {"this": True}
+
+
+class VolatilityProperty(Property):
+    arg_types = {"this": True}
 
 
 class WithJournalTableProperty(Property):
     arg_types = {"this": True}
-
-
-class LogProperty(Property):
-    arg_types = {"no": True}
-
-
-class JournalProperty(Property):
-    arg_types = {"no": True, "dual": False, "before": False}
-
-
-class AfterJournalProperty(Property):
-    arg_types = {"no": True, "dual": False, "local": False}
-
-
-class ChecksumProperty(Property):
-    arg_types = {"on": False, "default": False}
-
-
-class FreespaceProperty(Property):
-    arg_types = {"this": True, "percent": False}
-
-
-class MergeBlockRatioProperty(Property):
-    arg_types = {"this": False, "no": False, "default": False, "percent": False}
-
-
-class DataBlocksizeProperty(Property):
-    arg_types = {"size": False, "units": False, "min": False, "default": False}
-
-
-class BlockCompressionProperty(Property):
-    arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
-
-
-class IsolatedLoadingProperty(Property):
-    arg_types = {
-        "no": True,
-        "concurrent": True,
-        "for_all": True,
-        "for_insert": True,
-        "for_none": True,
-    }
-
-
-class LockingProperty(Property):
-    arg_types = {
-        "this": False,
-        "kind": True,
-        "for_or_in": True,
-        "lock_type": True,
-        "override": False,
-    }
 
 
 class Properties(Expression):

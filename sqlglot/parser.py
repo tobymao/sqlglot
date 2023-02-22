@@ -509,73 +509,75 @@ class Parser(metaclass=_Parser):
     }
 
     PROPERTY_PARSERS = {
+        "AFTER": lambda self: self._parse_afterjournal(
+            no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
+        ),
+        "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+        "BEFORE": lambda self: self._parse_journal(
+            no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
+        ),
+        "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
         "CHARACTER SET": lambda self: self._parse_character_set(),
+        "CHECKSUM": lambda self: self._parse_checksum(),
         "CLUSTER BY": lambda self: self.expression(
             exp.Cluster, expressions=self._parse_csv(self._parse_ordered)
         ),
-        "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
-        "PARTITION BY": lambda self: self._parse_partitioned_by(),
-        "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
-        "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
-        "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
-        "STORED": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
-        "DISTKEY": lambda self: self._parse_distkey(),
-        "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
-        "SORTKEY": lambda self: self._parse_sortkey(),
-        "LIKE": lambda self: self._parse_create_like(),
-        "RETURNS": lambda self: self._parse_returns(),
-        "ROW": lambda self: self._parse_row(),
         "COLLATE": lambda self: self._parse_property_assignment(exp.CollateProperty),
-        "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
-        "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
-        "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
-        "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
-        "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
+        "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "DATABLOCKSIZE": lambda self: self._parse_datablocksize(
+            default=self._prev.text.upper() == "DEFAULT"
+        ),
+        "DEFINER": lambda self: self._parse_definer(),
         "DETERMINISTIC": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
+        "DISTKEY": lambda self: self._parse_distkey(),
+        "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
+        "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
+        "FALLBACK": lambda self: self._parse_fallback(no=self._prev.text.upper() == "NO"),
+        "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+        "FREESPACE": lambda self: self._parse_freespace(),
         "IMMUTABLE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
-        ),
-        "STABLE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("STABLE")
-        ),
-        "VOLATILE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
-        ),
-        "WITH": lambda self: self._parse_with_property(),
-        "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
-        "FALLBACK": lambda self: self._parse_fallback(no=self._prev.text.upper() == "NO"),
-        "LOG": lambda self: self._parse_log(no=self._prev.text.upper() == "NO"),
-        "BEFORE": lambda self: self._parse_journal(
-            no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
         ),
         "JOURNAL": lambda self: self._parse_journal(
             no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
         ),
-        "AFTER": lambda self: self._parse_afterjournal(
-            no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
-        ),
+        "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
+        "LIKE": lambda self: self._parse_create_like(),
         "LOCAL": lambda self: self._parse_afterjournal(no=False, dual=False, local=True),
-        "NOT": lambda self: self._parse_afterjournal(no=False, dual=False, local=False),
-        "CHECKSUM": lambda self: self._parse_checksum(),
-        "FREESPACE": lambda self: self._parse_freespace(),
+        "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
+        "LOCK": lambda self: self._parse_locking(),
+        "LOCKING": lambda self: self._parse_locking(),
+        "LOG": lambda self: self._parse_log(no=self._prev.text.upper() == "NO"),
+        "MAX": lambda self: self._parse_datablocksize(),
+        "MAXIMUM": lambda self: self._parse_datablocksize(),
         "MERGEBLOCKRATIO": lambda self: self._parse_mergeblockratio(
             no=self._prev.text.upper() == "NO", default=self._prev.text.upper() == "DEFAULT"
         ),
         "MIN": lambda self: self._parse_datablocksize(),
         "MINIMUM": lambda self: self._parse_datablocksize(),
-        "MAX": lambda self: self._parse_datablocksize(),
-        "MAXIMUM": lambda self: self._parse_datablocksize(),
-        "DATABLOCKSIZE": lambda self: self._parse_datablocksize(
-            default=self._prev.text.upper() == "DEFAULT"
+        "MULTISET": lambda self: self.expression(exp.SetProperty, multi=True),
+        "NOT": lambda self: self._parse_afterjournal(no=False, dual=False, local=False),
+        "PARTITION BY": lambda self: self._parse_partitioned_by(),
+        "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
+        "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
+        "RETURNS": lambda self: self._parse_returns(),
+        "ROW": lambda self: self._parse_row(),
+        "SET": lambda self: self.expression(exp.SetProperty, multi=False),
+        "SORTKEY": lambda self: self._parse_sortkey(),
+        "STABLE": lambda self: self.expression(
+            exp.VolatilityProperty, this=exp.Literal.string("STABLE")
         ),
-        "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
-        "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
-        "DEFINER": lambda self: self._parse_definer(),
-        "LOCK": lambda self: self._parse_locking(),
-        "LOCKING": lambda self: self._parse_locking(),
+        "STORED": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+        "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
+        "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        "VOLATILE": lambda self: self.expression(
+            exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
+        ),
+        "WITH": lambda self: self._parse_with_property(),
     }
 
     CONSTRAINT_PARSERS = {

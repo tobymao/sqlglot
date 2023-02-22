@@ -2188,7 +2188,9 @@ class Parser(metaclass=_Parser):
         pivot = self.expression(exp.Pivot, expressions=expressions, field=field, unpivot=unpivot)
 
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
-            return self._parse_alias(pivot)
+            alias = self._parse_alias(pivot)
+            if alias:
+                pivot.set("alias", alias.alias)
 
         return pivot
 

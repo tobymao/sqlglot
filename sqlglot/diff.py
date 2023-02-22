@@ -100,12 +100,11 @@ def diff(
     def compute_node_mappings(
         original: exp.Expression, copy: exp.Expression
     ) -> t.Dict[int, exp.Expression]:
-        mappings = {}
-        for (old_node, _, _), (new_node, _, _) in zip(original.walk(), copy.walk()):
-            old_node_id = id(old_node)
-            if old_node_id in matching_ids:
-                mappings[old_node_id] = new_node
-        return mappings
+        return {
+            id(old_node): new_node
+            for (old_node, _, _), (new_node, _, _) in zip(original.walk(), copy.walk())
+            if id(old_node) in matching_ids
+        }
 
     source_copy = source.copy()
     target_copy = target.copy()

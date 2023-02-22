@@ -377,9 +377,9 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            "INET '127.0.0.1/32'",
+            "CAST('127.0.0.1/32' AS INET)",
             read={
-                "postgres": "CAST('127.0.0.1/32' AS INET)",
+                "postgres": "INET '127.0.0.1/32'",
             },
         )
 

@@ -287,9 +287,7 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "CAST('127.0.0.1/32' AS INET)",
-            read={
-                "postgres": "INET '127.0.0.1/32'"
-            },
+            read={"postgres": "INET '127.0.0.1/32'"},
         )
 
     def test_if_null(self):

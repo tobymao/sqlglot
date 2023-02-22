@@ -1003,10 +1003,6 @@ class Generator:
         system_time = expression.args.get("system_time")
         system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
 
-        if alias and pivots:
-            pivots = f"{pivots}{alias}"
-            alias = ""
-
         return f"{table}{system_time}{alias}{hints}{laterals}{joins}{pivots}"
 
     def tablesample_sql(self, expression: exp.TableSample) -> str:
@@ -1034,11 +1030,13 @@ class Generator:
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         this = self.sql(expression, "this")
+        alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else ""
         unpivot = expression.args.get("unpivot")
         direction = "UNPIVOT" if unpivot else "PIVOT"
         expressions = self.expressions(expression, key="expressions")
         field = self.sql(expression, "field")
-        return f"{this} {direction}({expressions} FOR {field})"
+        return f"{this} {direction}({expressions} FOR {field}){alias}"
 
     def tuple_sql(self, expression: exp.Tuple) -> str:
         return f"({self.expressions(expression, flat=True)})"

@@ -2042,6 +2042,9 @@ class Parser(metaclass=_Parser):
         if alias:
             this.set("alias", alias)
 
+        if not this.args.get("pivots"):
+            this.set("pivots", self._parse_pivots())
+
         if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
             this.set(
                 "hints",
@@ -2182,7 +2185,12 @@ class Parser(metaclass=_Parser):
 
         self._match_r_paren()
 
-        return self.expression(exp.Pivot, expressions=expressions, field=field, unpivot=unpivot)
+        pivot = self.expression(exp.Pivot, expressions=expressions, field=field, unpivot=unpivot)
+
+        if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
+            pivot.set("alias", self._parse_table_alias())
+
+        return pivot
 
     def _parse_where(self, skip_where_token: bool = False) -> t.Optional[exp.Expression]:
         if not skip_where_token and not self._match(TokenType.WHERE):
@@ -3783,12 +3791,13 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _match_set(self, types):
+    def _match_set(self, types, advance=True):
         if not self._curr:
             return None
 
         if self._curr.token_type in types:
-            self._advance()
+            if advance:
+                self._advance()
             return True
 
         return None
@@ -3816,9 +3825,10 @@ class Parser(metaclass=_Parser):
         if expression and self._prev_comments:
             expression.comments = self._prev_comments
 
-    def _match_texts(self, texts):
+    def _match_texts(self, texts, advance=True):
         if self._curr and self._curr.text.upper() in texts:
-            self._advance()
+            if advance:
+                self._advance()
             return True
         return False
 

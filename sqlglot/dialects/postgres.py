@@ -237,6 +237,7 @@ class Postgres(Dialect):
             "TEMP": TokenType.TEMPORARY,
             "UUID": TokenType.UUID,
             "CSTRING": TokenType.PSEUDO_TYPE,
+            "INET": TokenType.INET,
         }
 
         SINGLE_TOKENS = {
@@ -277,6 +278,7 @@ class Postgres(Dialect):
             exp.DataType.Type.BINARY: "BYTEA",
             exp.DataType.Type.VARBINARY: "BYTEA",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.INET: "INET",
         }
 
         TRANSFORMS = {

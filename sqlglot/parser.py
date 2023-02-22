@@ -144,6 +144,7 @@ class Parser(metaclass=_Parser):
         TokenType.IMAGE,
         TokenType.VARIANT,
         TokenType.OBJECT,
+        TokenType.INET,
         *NESTED_TYPE_TOKENS,
     }
 

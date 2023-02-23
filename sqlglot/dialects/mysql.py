@@ -462,6 +462,11 @@ class MySQL(Dialect):
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         def show_sql(self, expression):
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""

@@ -219,7 +219,6 @@ class Snowflake(Dialect):
         }
 
     class Generator(generator.Generator):
-        CREATE_TRANSIENT = True
         PARAMETER_TOKEN = "$"
 
         TRANSFORMS = {
@@ -254,6 +253,11 @@ class Snowflake(Dialect):
         STAR_MAPPING = {
             "except": "EXCLUDE",
             "replace": "RENAME",
+        }
+
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         def ilikeany_sql(self, expression: exp.ILikeAny) -> str:

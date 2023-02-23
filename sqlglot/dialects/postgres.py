@@ -318,3 +318,8 @@ class Postgres(Dialect):
             if isinstance(seq_get(e.expressions, 0), exp.Select)
             else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]",
         }
+
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
+        }

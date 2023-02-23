@@ -8,7 +8,13 @@ from sqlglot.helper import seq_get
 
 def _create_sql(self, e):
     kind = e.args.get("kind")
-    temporary = e.args.get("temporary")
+    properties = e.args.get("properties")
+    if properties:
+        temporary = any(
+            [isinstance(prop, exp.TemporaryProperty) for prop in properties.expressions]
+        )
+    else:
+        temporary = None
 
     if kind.upper() == "TABLE" and temporary is True:
         return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"

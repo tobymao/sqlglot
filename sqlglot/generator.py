@@ -64,14 +64,19 @@ class Generator:
             "TS_OR_DS_ADD", e.this, e.expression, e.args.get("unit")
         ),
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
-        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'this')}",
+        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
+        exp.ExternalProperty: lambda self, e: "EXTERNAL",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
+        exp.MaterializedProperty: lambda self, e: "MATERIALIZED",
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
+        exp.TemporaryProperty: lambda self, e: f"{'GLOBAL ' if e.args.get('global_') else ''}TEMPORARY",
+        exp.TransientProperty: lambda self, e: "TRANSIENT",
+        exp.UniqueProperty: lambda self, e: "UNIQUE",
         exp.VolatilityProperty: lambda self, e: e.name,
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda self, e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
@@ -141,6 +146,7 @@ class Generator:
         exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ExecuteAsProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.ExternalProperty: exp.Properties.Location.POST_CREATE,
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
@@ -151,6 +157,7 @@ class Generator:
         exp.LocationProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LockingProperty: exp.Properties.Location.POST_ALIAS,
         exp.LogProperty: exp.Properties.Location.POST_NAME,
+        exp.MaterializedProperty: exp.Properties.Location.POST_CREATE,
         exp.MergeBlockRatioProperty: exp.Properties.Location.POST_NAME,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
         exp.Property: exp.Properties.Location.POST_WITH,
@@ -163,6 +170,9 @@ class Generator:
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
+        exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
+        exp.TransientProperty: exp.Properties.Location.POST_CREATE,
+        exp.UniqueProperty: exp.Properties.Location.POST_CREATE,
         exp.VolatilityProperty: exp.Properties.Location.POST_SCHEMA,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
@@ -539,19 +549,9 @@ class Generator:
                 else:
                     expression_sql = f" AS{expression_sql}"
 
-        temporary = " TEMPORARY" if expression.args.get("temporary") else ""
-        transient = (
-            " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""
-        )
-        external = " EXTERNAL" if expression.args.get("external") else ""
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
-        unique = " UNIQUE" if expression.args.get("unique") else ""
-        materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
-        set_ = " SET" if expression.args.get("set") else ""
-        multiset = " MULTISET" if expression.args.get("multiset") else ""
-        global_temporary = " GLOBAL TEMPORARY" if expression.args.get("global_temporary") else ""
-        volatile = " VOLATILE" if expression.args.get("volatile") else ""
+
         data = expression.args.get("data")
         if data is None:
             data = ""
@@ -607,26 +607,12 @@ class Generator:
                 wrapped=False,
             )
 
-        modifiers = "".join(
-            (
-                replace,
-                temporary,
-                transient,
-                external,
-                unique,
-                materialized,
-                set_,
-                multiset,
-                global_temporary,
-                volatile,
-                postcreate_props_sql,
-            )
-        )
+        modifiers = "".join((replace, postcreate_props_sql))
+        post_expression_modifiers = "".join((data, statistics, no_primary_index))
+
         no_schema_binding = (
             " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
         )
-
-        post_expression_modifiers = "".join((data, statistics, no_primary_index))
 
         expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{post_expression_modifiers}{index_sql}{no_schema_binding}"
         return self.prepend_ctes(expression, expression_sql)

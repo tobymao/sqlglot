@@ -535,9 +535,11 @@ class Parser(metaclass=_Parser):
         "DISTKEY": lambda self: self._parse_distkey(),
         "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
         "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
+        "EXTERNAL": lambda self: self.expression(exp.ExternalProperty),
         "FALLBACK": lambda self: self._parse_fallback(no=self._prev.text.upper() == "NO"),
         "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "FREESPACE": lambda self: self._parse_freespace(),
+        "GLOBAL": lambda self: self._parse_temporary(global_=True),
         "IMMUTABLE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
@@ -551,6 +553,7 @@ class Parser(metaclass=_Parser):
         "LOCK": lambda self: self._parse_locking(),
         "LOCKING": lambda self: self._parse_locking(),
         "LOG": lambda self: self._parse_log(no=self._prev.text.upper() == "NO"),
+        "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty),
         "MAX": lambda self: self._parse_datablocksize(),
         "MAXIMUM": lambda self: self._parse_datablocksize(),
         "MERGEBLOCKRATIO": lambda self: self._parse_mergeblockratio(
@@ -573,6 +576,9 @@ class Parser(metaclass=_Parser):
         "STORED": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
+        "TEMPORARY": lambda self: self._parse_temporary(global_=False),
+        "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
+        "UNIQUE": lambda self: self.expression(exp.UniqueProperty),
         "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         "VOLATILE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
@@ -981,15 +987,6 @@ class Parser(metaclass=_Parser):
         replace = self._prev.text.upper() == "REPLACE" or self._match_pair(
             TokenType.OR, TokenType.REPLACE
         )
-        set_ = self._match(TokenType.SET)  # Teradata
-        multiset = self._match_text_seq("MULTISET")  # Teradata
-        global_temporary = self._match_text_seq("GLOBAL", "TEMPORARY")  # Teradata
-        volatile = self._match(TokenType.VOLATILE)  # Teradata
-        temporary = self._match(TokenType.TEMPORARY)
-        transient = self._match_text_seq("TRANSIENT")
-        external = self._match_text_seq("EXTERNAL")
-        unique = self._match(TokenType.UNIQUE)
-        materialized = self._match(TokenType.MATERIALIZED)
 
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
@@ -1016,7 +1013,11 @@ class Parser(metaclass=_Parser):
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
-            properties = self._parse_properties()
+            temp_properties = self._parse_properties()
+            if properties and temp_properties:
+                properties.expressions.extend(temp_properties.expressions)
+            elif temp_properties:
+                properties = temp_properties
 
             self._match(TokenType.ALIAS)
             begin = self._match(TokenType.BEGIN)
@@ -1038,7 +1039,7 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.COMMA):
                 temp_properties = self._parse_properties(before=True)
                 if properties and temp_properties:
-                    properties.expressions.append(temp_properties.expressions)
+                    properties.expressions.extend(temp_properties.expressions)
                 elif temp_properties:
                     properties = temp_properties
 
@@ -1047,7 +1048,7 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA and POST_WITH
             temp_properties = self._parse_properties()
             if properties and temp_properties:
-                properties.expressions.append(temp_properties.expressions)
+                properties.expressions.extend(temp_properties.expressions)
             elif temp_properties:
                 properties = temp_properties
 
@@ -1061,7 +1062,7 @@ class Parser(metaclass=_Parser):
             ):
                 temp_properties = self._parse_properties()
                 if properties and temp_properties:
-                    properties.expressions.append(temp_properties.expressions)
+                    properties.expressions.extend(temp_properties.expressions)
                 elif temp_properties:
                     properties = temp_properties
 
@@ -1088,7 +1089,7 @@ class Parser(metaclass=_Parser):
                     if self._match(TokenType.PARTITION_BY, advance=False):
                         temp_properties = self._parse_properties()
                         if properties and temp_properties:
-                            properties.expressions.append(temp_properties.expressions)
+                            properties.expressions.extend(temp_properties.expressions)
                         elif temp_properties:
                             properties = temp_properties
 
@@ -1105,18 +1106,9 @@ class Parser(metaclass=_Parser):
             this=this,
             kind=create_token.text,
             expression=expression,
-            set=set_,
-            multiset=multiset,
-            global_temporary=global_temporary,
-            volatile=volatile,
             exists=exists,
             properties=properties,
-            temporary=temporary,
-            transient=transient,
-            external=external,
             replace=replace,
-            unique=unique,
-            materialized=materialized,
             data=data,
             statistics=statistics,
             no_primary_index=no_primary_index,
@@ -1451,6 +1443,10 @@ class Parser(metaclass=_Parser):
             value = self._parse_types()
 
         return self.expression(exp.ReturnsProperty, this=value, is_table=is_table)
+
+    def _parse_temporary(self, global_=False) -> exp.Expression:
+        self._match(TokenType.TEMPORARY)  # in case calling from "GLOBAL"
+        return self.expression(exp.TemporaryProperty, global_=global_)
 
     def _parse_describe(self) -> exp.Expression:
         kind = self._match_set(self.CREATABLES) and self._prev.text

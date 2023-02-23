@@ -1402,6 +1402,10 @@ class ExecuteAsProperty(Property):
     arg_types = {"this": True}
 
 
+class ExternalProperty(Property):
+    arg_types = {"this": False}
+
+
 class FallbackProperty(Property):
     arg_types = {"no": True, "protection": False}
 
@@ -1452,6 +1456,10 @@ class LockingProperty(Property):
 
 class LogProperty(Property):
     arg_types = {"no": True}
+
+
+class MaterializedProperty(Property):
+    arg_types = {"this": False}
 
 
 class MergeBlockRatioProperty(Property):
@@ -1505,6 +1513,18 @@ class SqlSecurityProperty(Property):
 
 class TableFormatProperty(Property):
     arg_types = {"this": True}
+
+
+class TemporaryProperty(Property):
+    arg_types = {"global_": True}
+
+
+class TransientProperty(Property):
+    arg_types = {"this": False}
+
+
+class UniqueProperty(Property):
+    arg_types = {"this": False}
 
 
 class VolatilityProperty(Property):

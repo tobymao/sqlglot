@@ -614,8 +614,10 @@ class Generator:
         no_schema_binding = (
             " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
         )
+        preserve_rows = " ON COMMIT PRESERVE ROWS" if expression.args.get("preserve_rows") else ""
+        post_index_modifiers = "".join((no_schema_binding, preserve_rows))
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{post_expression_modifiers}{index_sql}{no_schema_binding}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{post_expression_modifiers}{index_sql}{post_index_modifiers}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:

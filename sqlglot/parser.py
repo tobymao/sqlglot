@@ -1010,6 +1010,7 @@ class Parser(metaclass=_Parser):
         no_primary_index = None
         indexes = None
         no_schema_binding = None
+        preserve_rows = None
         begin = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
@@ -1082,6 +1083,8 @@ class Parser(metaclass=_Parser):
 
                 no_primary_index = self._match_text_seq("NO", "PRIMARY", "INDEX")
 
+                preserve_rows = self._match_text_seq("ON", "COMMIT", "PRESERVE", "ROWS")
+
                 indexes = []
                 while True:
                     index = self._parse_create_table_index()
@@ -1113,6 +1116,7 @@ class Parser(metaclass=_Parser):
             data=data,
             statistics=statistics,
             no_primary_index=no_primary_index,
+            preserve_rows=preserve_rows,
             indexes=indexes,
             no_schema_binding=no_schema_binding,
             begin=begin,

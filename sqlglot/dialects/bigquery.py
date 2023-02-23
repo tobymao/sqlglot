@@ -34,12 +34,12 @@ def _date_add(expression_class: t.Type[E]) -> t.Callable[[t.Sequence], E]:
 
 
 def _date_add_sql(
-    data_type: str, kind: str, unit_type: t.Type[exp.Expression] = exp.Literal
+    data_type: str, kind: str
 ) -> t.Callable[[generator.Generator, exp.Expression], str]:
     def func(self, expression):
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
-        unit = unit_type(this=unit.name if unit else "day")
+        unit = exp.Var(this=unit.name.upper() if unit else "DAY")
         interval = exp.Interval(this=expression.expression, unit=unit)
         return f"{data_type}_{kind}({this}, {self.sql(interval)})"
 
@@ -238,7 +238,7 @@ class BigQuery(Dialect):
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
-            exp.TsOrDsAdd: _date_add_sql("DATE", "ADD", unit_type=exp.Var),
+            exp.TsOrDsAdd: _date_add_sql("DATE", "ADD"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Values: _derived_table_values_to_unnest,

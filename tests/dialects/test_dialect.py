@@ -513,7 +513,7 @@ class TestDialect(Validator):
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
             write={
-                "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "bigquery": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "drill": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "duckdb": "x + INTERVAL 1 day",
                 "hive": "DATE_ADD(x, 1)",
@@ -530,7 +530,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_ADD(x, 1)",
             write={
-                "bigquery": "DATE_ADD(x, INTERVAL 1 'day')",
+                "bigquery": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "drill": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "duckdb": "x + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(x, 1)",

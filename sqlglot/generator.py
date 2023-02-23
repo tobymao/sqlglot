@@ -64,15 +64,22 @@ class Generator:
             "TS_OR_DS_ADD", e.this, e.expression, e.args.get("unit")
         ),
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
-        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args['default'] else ''}CHARACTER SET={self.sql(e, 'this')}",
+        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",
+        exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
+        exp.ExternalProperty: lambda self, e: "EXTERNAL",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
+        exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
+        exp.MaterializedProperty: lambda self, e: "MATERIALIZED",
+        exp.NoPrimaryIndexProperty: lambda self, e: "NO PRIMARY INDEX",
+        exp.OnCommitProperty: lambda self, e: "ON COMMIT PRESERVE ROWS",
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
-        exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
+        exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
+        exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
+        exp.TemporaryProperty: lambda self, e: f"{'GLOBAL ' if e.args.get('global_') else ''}TEMPORARY",
+        exp.TransientProperty: lambda self, e: "TRANSIENT",
         exp.VolatilityProperty: lambda self, e: e.name,
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
-        exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
-        exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.CaseSpecificColumnConstraint: lambda self, e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
@@ -86,9 +93,6 @@ class Generator:
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
     }
-
-    # Whether 'CREATE ... TRANSIENT ... TABLE' is allowed
-    CREATE_TRANSIENT = False
 
     # Whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
@@ -141,6 +145,7 @@ class Generator:
         exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ExecuteAsProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.ExternalProperty: exp.Properties.Location.POST_CREATE,
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
@@ -151,7 +156,10 @@ class Generator:
         exp.LocationProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LockingProperty: exp.Properties.Location.POST_ALIAS,
         exp.LogProperty: exp.Properties.Location.POST_NAME,
+        exp.MaterializedProperty: exp.Properties.Location.POST_CREATE,
         exp.MergeBlockRatioProperty: exp.Properties.Location.POST_NAME,
+        exp.NoPrimaryIndexProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.OnCommitProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
         exp.Property: exp.Properties.Location.POST_WITH,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,
@@ -159,10 +167,14 @@ class Generator:
         exp.RowFormatSerdeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SchemaCommentProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SerdeProperties: exp.Properties.Location.POST_SCHEMA,
+        exp.SetProperty: exp.Properties.Location.POST_CREATE,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
+        exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
+        exp.TransientProperty: exp.Properties.Location.POST_CREATE,
         exp.VolatilityProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
@@ -538,34 +550,9 @@ class Generator:
                 else:
                     expression_sql = f" AS{expression_sql}"
 
-        temporary = " TEMPORARY" if expression.args.get("temporary") else ""
-        transient = (
-            " TRANSIENT" if self.CREATE_TRANSIENT and expression.args.get("transient") else ""
-        )
-        external = " EXTERNAL" if expression.args.get("external") else ""
         replace = " OR REPLACE" if expression.args.get("replace") else ""
-        exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
-        materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
-        set_ = " SET" if expression.args.get("set") else ""
-        multiset = " MULTISET" if expression.args.get("multiset") else ""
-        global_temporary = " GLOBAL TEMPORARY" if expression.args.get("global_temporary") else ""
-        volatile = " VOLATILE" if expression.args.get("volatile") else ""
-        data = expression.args.get("data")
-        if data is None:
-            data = ""
-        elif data:
-            data = " WITH DATA"
-        else:
-            data = " WITH NO DATA"
-        statistics = expression.args.get("statistics")
-        if statistics is None:
-            statistics = ""
-        elif statistics:
-            statistics = " AND STATISTICS"
-        else:
-            statistics = " AND NO STATISTICS"
-        no_primary_index = " NO PRIMARY INDEX" if expression.args.get("no_primary_index") else ""
+        exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
 
         indexes = expression.args.get("indexes")
         index_sql = ""
@@ -606,28 +593,24 @@ class Generator:
                 wrapped=False,
             )
 
-        modifiers = "".join(
-            (
-                replace,
-                temporary,
-                transient,
-                external,
-                unique,
-                materialized,
-                set_,
-                multiset,
-                global_temporary,
-                volatile,
-                postcreate_props_sql,
+        modifiers = "".join((replace, unique, postcreate_props_sql))
+
+        postexpression_props_sql = ""
+        if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
+            postexpression_props_sql = self.properties(
+                exp.Properties(
+                    expressions=properties_locs[exp.Properties.Location.POST_EXPRESSION]
+                ),
+                sep=" ",
+                prefix=" ",
+                wrapped=False,
             )
-        )
+
         no_schema_binding = (
             " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
         )
 
-        post_expression_modifiers = "".join((data, statistics, no_primary_index))
-
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{post_expression_modifiers}{index_sql}{no_schema_binding}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}"
         return self.prepend_ctes(expression, expression_sql)
 
     def describe_sql(self, expression: exp.Describe) -> str:
@@ -811,6 +794,8 @@ class Generator:
                 properties_locs[exp.Properties.Location.POST_CREATE].append(p)
             elif p_loc == exp.Properties.Location.POST_ALIAS:
                 properties_locs[exp.Properties.Location.POST_ALIAS].append(p)
+            elif p_loc == exp.Properties.Location.POST_EXPRESSION:
+                properties_locs[exp.Properties.Location.POST_EXPRESSION].append(p)
             elif p_loc == exp.Properties.Location.UNSUPPORTED:
                 self.unsupported(f"Unsupported property {p.key}")
 
@@ -931,6 +916,14 @@ class Generator:
         lock_type = expression.args.get("lock_type")
         override = " OVERRIDE" if expression.args.get("override") else ""
         return f"LOCKING {kind}{this} {for_or_in} {lock_type}{override}"
+
+    def withdataproperty_sql(self, expression: exp.WithDataProperty) -> str:
+        data_sql = f"WITH {'NO ' if expression.args.get('no') else ''}DATA"
+        statistics = expression.args.get("statistics")
+        statistics_sql = ""
+        if statistics is not None:
+            statistics_sql = f" AND {'NO ' if not statistics else ''}STATISTICS"
+        return f"{data_sql}{statistics_sql}"
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")

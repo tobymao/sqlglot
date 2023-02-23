@@ -35,6 +35,8 @@ class TestTeradata(Validator):
             write={"teradata": "SELECT a FROM b"},
         )
 
+        self.validate_identity("CREATE VOLATILE TABLE a (b INT)")
+
     def test_insert(self):
         self.validate_all(
             "INS INTO x SELECT * FROM y", write={"teradata": "INSERT INTO x SELECT * FROM y"}

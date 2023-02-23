@@ -397,6 +397,12 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_all(
+            "CREATE TABLE a (b INT)",
+            read={"teradata": "CREATE MULTISET TABLE a (b INT)"},
+            write={"snowflake": "CREATE TABLE a (b INT)"},
+        )
+
     def test_user_defined_functions(self):
         self.validate_all(
             "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS $$ SELECT 1 $$",

@@ -703,7 +703,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "VACUUM": TokenType.COMMAND,
     }
 
-    WHITE_SPACE = {
+    WHITE_SPACE: t.Dict[str, TokenType] = {
         " ": TokenType.SPACE,
         "\t": TokenType.SPACE,
         "\n": TokenType.BREAK,
@@ -780,22 +780,16 @@ class Tokenizer(metaclass=_Tokenizer):
             self._start = self._current
             self._advance()
 
-            if not self._char:
+            if self._char is None:
                 break
 
-            white_space = self.WHITE_SPACE.get(self._char)  # type: ignore
-            identifier_end = self._IDENTIFIERS.get(self._char)  # type: ignore
-
-            if white_space:
-                if white_space == TokenType.BREAK:
-                    self._col = 1
-                    self._line += 1
-            elif self._char.isdigit():  # type:ignore
-                self._scan_number()
-            elif identifier_end:
-                self._scan_identifier(identifier_end)
-            else:
-                self._scan_keywords()
+            if self._char not in self.WHITE_SPACE:
+                if self._char.isdigit():
+                    self._scan_number()
+                elif self._char in self._IDENTIFIERS:
+                    self._scan_identifier(self._IDENTIFIERS[self._char])
+                else:
+                    self._scan_keywords()
 
             if until and until():
                 break
@@ -809,12 +803,22 @@ class Tokenizer(metaclass=_Tokenizer):
             return self.sql[start:end]
         return ""
 
+    def _line_break(self, char: t.Optional[str]) -> bool:
+        return self.WHITE_SPACE.get(char) == TokenType.BREAK  # type: ignore
+
     def _advance(self, i: int = 1) -> None:
+        if self._line_break(self._char):
+            self._set_new_line()
+
         self._col += i
         self._current += i
         self._end = self._current >= self.size  # type: ignore
         self._char = self.sql[self._current - 1]  # type: ignore
         self._peek = self.sql[self._current] if self._current < self.size else ""  # type: ignore
+
+    def _set_new_line(self) -> None:
+        self._col = 1
+        self._line += 1
 
     @property
     def _text(self) -> str:
@@ -919,7 +923,7 @@ class Tokenizer(metaclass=_Tokenizer):
             self._comments.append(self._text[comment_start_size : -comment_end_size + 1])  # type: ignore
             self._advance(comment_end_size - 1)
         else:
-            while not self._end and self.WHITE_SPACE.get(self._peek) != TokenType.BREAK:  # type: ignore
+            while not self._end and not self._line_break(self._peek):
                 self._advance()
             self._comments.append(self._text[comment_start_size:])  # type: ignore
 
@@ -928,6 +932,7 @@ class Tokenizer(metaclass=_Tokenizer):
         if comment_start_line == self._prev_token_line:
             self.tokens[-1].comments.extend(self._comments)
             self._comments = []
+            self._prev_token_line = self._line
 
         return True
 

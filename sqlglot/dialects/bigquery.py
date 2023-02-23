@@ -235,6 +235,7 @@ class BigQuery(Dialect):
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
+            exp.TsOrDsAdd: _date_add_sql("DATE", "ADD"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Values: _derived_table_values_to_unnest,

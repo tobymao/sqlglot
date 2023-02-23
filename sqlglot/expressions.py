@@ -784,12 +784,9 @@ class Create(Expression):
         "exists": False,
         "properties": False,
         "replace": False,
-        "data": False,
-        "statistics": False,
-        "no_primary_index": False,
+        "unique": False,
         "indexes": False,
         "no_schema_binding": False,
-        "preserve_rows": False,
         "begin": False,
     }
 
@@ -1458,6 +1455,14 @@ class MergeBlockRatioProperty(Property):
     arg_types = {"this": False, "no": False, "default": False, "percent": False}
 
 
+class NoPrimaryIndexProperty(Property):
+    arg_types = {"this": False}
+
+
+class OnCommitProperty(Property):
+    arg_type = {"this": False}
+
+
 class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
@@ -1515,12 +1520,12 @@ class TransientProperty(Property):
     arg_types = {"this": False}
 
 
-class UniqueProperty(Property):
-    arg_types = {"this": False}
-
-
 class VolatilityProperty(Property):
     arg_types = {"this": True}
+
+
+class WithDataProperty(Property):
+    arg_types = {"no": True, "statistics": False}
 
 
 class WithJournalTableProperty(Property):
@@ -1563,7 +1568,7 @@ class Properties(Expression):
     # Form: alias selection
     #   create [POST_CREATE]
     #     table a [POST_NAME]
-    #     as [POST_ALIAS] (select * from b)
+    #     as [POST_ALIAS] (select * from b) [POST_EXPRESSION]
     #     index (c) [POST_INDEX]
     class Location(AutoName):
         POST_CREATE = auto()
@@ -1571,6 +1576,7 @@ class Properties(Expression):
         POST_SCHEMA = auto()
         POST_WITH = auto()
         POST_ALIAS = auto()
+        POST_EXPRESSION = auto()
         POST_INDEX = auto()
         UNSUPPORTED = auto()
 

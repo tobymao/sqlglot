@@ -215,7 +215,6 @@ class Snowflake(Dialect):
         }
 
     class Generator(generator.Generator):
-        CREATE_TRANSIENT = True
         PARAMETER_TOKEN = "$"
 
         TRANSFORMS = {

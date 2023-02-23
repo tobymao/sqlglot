@@ -563,7 +563,9 @@ class Parser(metaclass=_Parser):
         "MIN": lambda self: self._parse_datablocksize(),
         "MINIMUM": lambda self: self._parse_datablocksize(),
         "MULTISET": lambda self: self.expression(exp.SetProperty, multi=True),
+        "NO": lambda self: self._parse_noprimaryindex(),
         "NOT": lambda self: self._parse_afterjournal(no=False, dual=False, local=False),
+        "ON": lambda self: self._parse_oncommit(),
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
@@ -579,7 +581,6 @@ class Parser(metaclass=_Parser):
         "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
         "TEMPORARY": lambda self: self._parse_temporary(global_=False),
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
-        "UNIQUE": lambda self: self.expression(exp.UniqueProperty),
         "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         "VOLATILE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
@@ -988,6 +989,7 @@ class Parser(metaclass=_Parser):
         replace = self._prev.text.upper() == "REPLACE" or self._match_pair(
             TokenType.OR, TokenType.REPLACE
         )
+        unique = self._match(TokenType.UNIQUE)
 
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
@@ -1005,12 +1007,8 @@ class Parser(metaclass=_Parser):
         exists = self._parse_exists(not_=True)
         this = None
         expression = None
-        data = None
-        statistics = None
-        no_primary_index = None
         indexes = None
         no_schema_binding = None
-        preserve_rows = None
         begin = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
@@ -1071,19 +1069,12 @@ class Parser(metaclass=_Parser):
             expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
-                if self._match_text_seq("WITH", "DATA"):
-                    data = True
-                elif self._match_text_seq("WITH", "NO", "DATA"):
-                    data = False
-
-                if self._match_text_seq("AND", "STATISTICS"):
-                    statistics = True
-                elif self._match_text_seq("AND", "NO", "STATISTICS"):
-                    statistics = False
-
-                no_primary_index = self._match_text_seq("NO", "PRIMARY", "INDEX")
-
-                preserve_rows = self._match_text_seq("ON", "COMMIT", "PRESERVE", "ROWS")
+                # exp.Properties.Location.POST_EXPRESSION
+                temp_properties = self._parse_properties()
+                if properties and temp_properties:
+                    properties.expressions.extend(temp_properties.expressions)
+                elif temp_properties:
+                    properties = temp_properties
 
                 indexes = []
                 while True:
@@ -1109,14 +1100,11 @@ class Parser(metaclass=_Parser):
             exp.Create,
             this=this,
             kind=create_token.text,
+            unique=unique,
             expression=expression,
             exists=exists,
             properties=properties,
             replace=replace,
-            data=data,
-            statistics=statistics,
-            no_primary_index=no_primary_index,
-            preserve_rows=preserve_rows,
             indexes=indexes,
             no_schema_binding=no_schema_binding,
             begin=begin,
@@ -1195,14 +1183,20 @@ class Parser(metaclass=_Parser):
     def _parse_with_property(
         self,
     ) -> t.Union[t.Optional[exp.Expression], t.List[t.Optional[exp.Expression]]]:
+        self._match(TokenType.WITH)
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_property)
 
+        if self._match_text_seq("JOURNAL"):
+            return self._parse_withjournaltable()
+
+        if self._match_text_seq("DATA"):
+            return self._parse_withdata(no=False)
+        elif self._match_text_seq("NO", "DATA"):
+            return self._parse_withdata(no=True)
+
         if not self._next:
             return None
-
-        if self._next.text.upper() == "JOURNAL":
-            return self._parse_withjournaltable()
 
         return self._parse_withisolatedloading()
 
@@ -1220,7 +1214,7 @@ class Parser(metaclass=_Parser):
         return exp.DefinerProperty(this=f"{user}@{host}")
 
     def _parse_withjournaltable(self) -> exp.Expression:
-        self._match_text_seq("WITH", "JOURNAL", "TABLE")
+        self._match(TokenType.TABLE)
         self._match(TokenType.EQ)
         return self.expression(exp.WithJournalTableProperty, this=self._parse_table_parts())
 
@@ -1318,7 +1312,6 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_withisolatedloading(self) -> exp.Expression:
-        self._match(TokenType.WITH)
         no = self._match_text_seq("NO")
         concurrent = self._match_text_seq("CONCURRENT")
         self._match_text_seq("ISOLATED", "LOADING")
@@ -1395,6 +1388,29 @@ class Parser(metaclass=_Parser):
             exp.PartitionedByProperty,
             this=self._parse_schema() or self._parse_bracket(self._parse_field()),
         )
+
+    def _parse_withdata(self, no=False) -> exp.Expression:
+        if self._match_text_seq("AND", "STATISTICS"):
+            statistics = True
+        elif self._match_text_seq("AND", "NO", "STATISTICS"):
+            statistics = False
+        else:
+            statistics = None
+
+        return self.expression(exp.WithDataProperty, no=no, statistics=statistics)
+
+    def _parse_noprimaryindex(self) -> exp.Expression:
+        self._match_text_seq("PRIMARY", "INDEX")
+        return exp.NoPrimaryIndexProperty()
+
+    def _parse_oncommit(self) -> exp.Expression:
+        self._match_text_seq("COMMIT", "PRESERVE", "ROWS")
+        return exp.OnCommitProperty()
+
+    # def _parse_unique_property(self) -> exp.Expression:
+    #     if self._next.text.upper() == "PRIMARY":
+    #         return None
+    #     return exp.UniqueProperty()
 
     def _parse_distkey(self) -> exp.Expression:
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))

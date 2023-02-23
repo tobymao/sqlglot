@@ -118,6 +118,7 @@ class Generator:
         exp.DataType.Type.LONGTEXT: "TEXT",
         exp.DataType.Type.MEDIUMBLOB: "BLOB",
         exp.DataType.Type.LONGBLOB: "BLOB",
+        exp.DataType.Type.INET: "INET",
     }
 
     STAR_MAPPING = {

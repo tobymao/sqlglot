@@ -399,7 +399,7 @@ class TestSnowflake(Validator):
 
         self.validate_all(
             "CREATE TABLE a (b INT)",
-            read={"teradata": "CREATE MULTISET VOLATILE TABLE a (b INT)"},
+            read={"teradata": "CREATE MULTISET TABLE a (b INT)"},
             write={"snowflake": "CREATE TABLE a (b INT)"},
         )
 

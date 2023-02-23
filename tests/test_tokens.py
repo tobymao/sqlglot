@@ -38,6 +38,7 @@ class TestTokens(unittest.TestCase):
             SELECT
                {{ x }},
                {{- x -}},
+               {# it's a comment #}
                {% for x in y -%}
                a {{+ b }}
                {% endfor %};

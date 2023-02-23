@@ -18,6 +18,18 @@ class TestTokens(unittest.TestCase):
         for sql, comment in sql_comment:
             self.assertEqual(tokenizer.tokenize(sql)[0].comments, comment)
 
+    def test_token_line(self):
+        tokens = Tokenizer().tokenize(
+            """SELECT /*
+            line break
+            */
+            'x
+            y',
+            x"""
+        )
+
+        self.assertEqual(tokens[-1].line, 6)
+
     def test_jinja(self):
         tokenizer = Tokenizer()
 

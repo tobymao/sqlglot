@@ -71,6 +71,8 @@ Changes:
 
 - Breaking: Change Power to binary expression.
 
+- Breaking: Removed mapping of "}}" to BLOCK_END token.
+
 - New: x GLOB y support.
 
 v10.5.0

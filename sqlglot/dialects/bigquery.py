@@ -39,7 +39,7 @@ def _date_add_sql(
     def func(self, expression):
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
-        unit = exp.Var(this=unit.name.upper() if unit else "DAY")
+        unit = exp.var(unit.name.upper() if unit else "DAY")
         interval = exp.Interval(this=expression.expression, unit=unit)
         return f"{data_type}_{kind}({this}, {self.sql(interval)})"
 

@@ -252,6 +252,11 @@ class Snowflake(Dialect):
             "replace": "RENAME",
         }
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         def ilikeany_sql(self, expression: exp.ILikeAny) -> str:
             return self.binary(expression, "ILIKE ANY")
 

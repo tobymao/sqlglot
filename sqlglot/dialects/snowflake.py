@@ -150,6 +150,10 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
+            "DATE_TRUNC": lambda args: exp.DateTrunc(
+                unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
+                this=seq_get(args, 1),
+            ),
             "IFF": exp.If.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,

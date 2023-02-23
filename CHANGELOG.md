@@ -8,7 +8,7 @@ Changes:
 
 - Breaking: Replaced "schema" arg from Column expression with "db" and "catalog".
 
-- Breaking: Removed mapping of "{{" to BLOCK_START token.
+- Breaking: Removed mapping of "{{" and "}}" to BLOCK_START and BLOCK_END tokens, respectively.
 
 - New: Added new optimizer pass: [unknown star expansion](https://github.com/tobymao/sqlglot/commit/0e24be8487b94e8ae09ba57b6756788f631043ec).
 

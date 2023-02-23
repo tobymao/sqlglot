@@ -438,16 +438,8 @@ class Tokenizer(metaclass=_Tokenizer):
     _IDENTIFIER_ESCAPES: t.Set[str] = set()
 
     KEYWORDS = {
-        **{
-            f"{key}{postfix}": TokenType.BLOCK_START
-            for key in ("{%", "{#")
-            for postfix in ("", "+", "-")
-        },
-        **{
-            f"{prefix}{key}": TokenType.BLOCK_END
-            for key in ("%}", "#}")
-            for prefix in ("", "+", "-")
-        },
+        **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
+        **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
         "{{+": TokenType.BLOCK_START,
         "{{-": TokenType.BLOCK_START,
         "+}}": TokenType.BLOCK_END,
@@ -725,7 +717,7 @@ class Tokenizer(metaclass=_Tokenizer):
     NUMERIC_LITERALS: t.Dict[str, str] = {}
     ENCODE: t.Optional[str] = None
 
-    COMMENTS = ["--", ("/*", "*/")]
+    COMMENTS = ["--", ("/*", "*/"), ("{#", "#}")]
     KEYWORD_TRIE = None  # autofilled
 
     IDENTIFIER_CAN_START_WITH_DIGIT = False

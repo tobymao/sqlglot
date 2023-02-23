@@ -343,6 +343,15 @@ class Expression(metaclass=_Expression):
         """
         return self.find_ancestor(Select)
 
+    def root(self) -> Expression:
+        """
+        Returns the root expression of this tree.
+        """
+        expression = self
+        while expression.parent:
+            expression = expression.parent
+        return expression
+
     def walk(self, bfs=True, prune=None):
         """
         Returns a generator object which visits all nodes in this tree.

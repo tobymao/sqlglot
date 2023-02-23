@@ -1407,11 +1407,6 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("COMMIT", "PRESERVE", "ROWS")
         return exp.OnCommitProperty()
 
-    # def _parse_unique_property(self) -> exp.Expression:
-    #     if self._next.text.upper() == "PRIMARY":
-    #         return None
-    #     return exp.UniqueProperty()
-
     def _parse_distkey(self) -> exp.Expression:
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))
 

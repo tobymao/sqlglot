@@ -142,6 +142,9 @@ class Oracle(Dialect):
         def table_sql(self, expression: exp.Table, sep: str = " ") -> str:
             return super().table_sql(expression, sep=sep)
 
+        def subquery_sql(self, expression: exp.Subquery, sep: str = " ") -> str:
+            return super().subquery_sql(expression, sep=sep)
+
         def xmltable_sql(self, expression: exp.XMLTable) -> str:
             this = self.sql(expression, "this")
             passing = self.expressions(expression, "passing")

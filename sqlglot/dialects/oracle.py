@@ -114,6 +114,8 @@ class Oracle(Dialect):
             exp.Trim: trim_sql,
             exp.Matches: rename_func("DECODE"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
+            exp.Table: lambda self, e: self.table_sql(e, sep=" "),
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
             exp.Substring: rename_func("SUBSTR"),
@@ -144,9 +146,6 @@ class Oracle(Dialect):
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
-
-        def table_sql(self, expression: exp.Table, sep: str = " ") -> str:
-            return super().table_sql(expression, sep=sep)
 
         def column_sql(self, expression: exp.Column) -> str:
             column = super().column_sql(expression)

@@ -91,6 +91,11 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(column.parent_select, exp.Select)
         self.assertIsNone(column.find_ancestor(exp.Join))
 
+    def test_root(self):
+        ast = parse_one("select * from (select a from x)")
+        self.assertIs(ast, ast.root())
+        self.assertIs(ast, ast.find(exp.Column).root())
+
     def test_alias_or_name(self):
         expression = parse_one(
             "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"

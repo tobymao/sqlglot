@@ -7,6 +7,11 @@ class TestOracle(Validator):
     def test_oracle(self):
         self.validate_identity("SELECT * FROM V$SESSION")
 
+    def test_join_marker(self):
+        self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
+        self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)")
+        self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y (+)")
+
     def test_xml_table(self):
         self.validate_identity("XMLTABLE('x')")
         self.validate_identity("XMLTABLE('x' RETURNING SEQUENCE BY REF)")

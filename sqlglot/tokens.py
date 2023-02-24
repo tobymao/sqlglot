@@ -203,6 +203,7 @@ class TokenType(AutoName):
     IS = auto()
     ISNULL = auto()
     JOIN = auto()
+    JOIN_MARKER = auto()
     LANGUAGE = auto()
     LATERAL = auto()
     LAZY = auto()

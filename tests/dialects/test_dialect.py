@@ -1280,6 +1280,16 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
+            write={
+                "drill": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
+                "hive": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
+                "oracle": "SELECT * FROM (SELECT * FROM my_table t) tbl",
+                "postgres": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
+                "sqlite": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
+            },
+        )
+        self.validate_all(
             "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",
             write={
                 "hive": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t JOIN cte2 WHERE cte1.a = cte2.c",

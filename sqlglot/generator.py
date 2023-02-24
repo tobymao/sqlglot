@@ -1335,14 +1335,15 @@ class Generator:
     def placeholder_sql(self, expression: exp.Placeholder) -> str:
         return f":{expression.name}" if expression.name else "?"
 
-    def subquery_sql(self, expression: exp.Subquery) -> str:
+    def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
         alias = self.sql(expression, "alias")
+        alias = f"{sep}{alias}" if alias else ""
 
         sql = self.query_modifiers(
             expression,
             self.wrap(expression),
             self.expressions(expression, key="pivots", sep=" "),
-            f" AS {alias}" if alias else "",
+            alias,
         )
 
         return self.prepend_ctes(expression, sql)

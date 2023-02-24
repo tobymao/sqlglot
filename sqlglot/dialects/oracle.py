@@ -82,6 +82,12 @@ class Oracle(Dialect):
             "XMLTABLE": _parse_xml_table,
         }
 
+        def _parse_column(self) -> t.Optional[exp.Expression]:
+            column = super()._parse_column()
+            if column:
+                column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+            return column
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
 
@@ -142,6 +148,10 @@ class Oracle(Dialect):
         def table_sql(self, expression: exp.Table, sep: str = " ") -> str:
             return super().table_sql(expression, sep=sep)
 
+        def column_sql(self, expression: exp.Column) -> str:
+            column = super().column_sql(expression)
+            return f"{column} (+)" if expression.args.get("join_mark") else column
+
         def xmltable_sql(self, expression: exp.XMLTable) -> str:
             this = self.sql(expression, "this")
             passing = self.expressions(expression, "passing")
@@ -156,6 +166,7 @@ class Oracle(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "(+)": TokenType.JOIN_MARKER,
             "COLUMNS": TokenType.COLUMN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,

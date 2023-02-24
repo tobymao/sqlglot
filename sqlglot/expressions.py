@@ -883,7 +883,7 @@ class ByteString(Condition):
 
 
 class Column(Condition):
-    arg_types = {"this": True, "table": False, "db": False, "catalog": False}
+    arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
 
     @property
     def table(self) -> str:

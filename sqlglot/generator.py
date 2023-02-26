@@ -1742,6 +1742,9 @@ class Generator:
     def div_sql(self, expression: exp.Div) -> str:
         return self.binary(expression, "/")
 
+    def overlaps_sql(self, expression: exp.Overlaps) -> str:
+        return self.binary(expression, "OVERLAPS")
+
     def distance_sql(self, expression: exp.Distance) -> str:
         return self.binary(expression, "<->")
 

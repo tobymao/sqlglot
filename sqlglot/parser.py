@@ -490,6 +490,9 @@ class Parser(metaclass=_Parser):
         TokenType.GLOB: lambda self, this: self._parse_escape(
             self.expression(exp.Glob, this=this, expression=self._parse_bitwise())
         ),
+        TokenType.OVERLAPS: lambda self, this: self._parse_escape(
+            self.expression(exp.Overlaps, this=this, expression=self._parse_bitwise())
+        ),
         TokenType.IN: lambda self, this: self._parse_in(this),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: lambda self, this: self._parse_escape(

@@ -2829,6 +2829,10 @@ class Div(Binary):
     pass
 
 
+class Overlaps(Binary):
+    pass
+
+
 class Dot(Binary):
     @property
     def name(self) -> str:

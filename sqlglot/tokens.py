@@ -236,6 +236,7 @@ class TokenType(AutoName):
     OUTER = auto()
     OUT_OF = auto()
     OVER = auto()
+    OVERLAPS = auto()
     OVERWRITE = auto()
     PARTITION = auto()
     PARTITION_BY = auto()
@@ -565,6 +566,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "OUTER": TokenType.OUTER,
         "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
+        "OVERLAPS": TokenType.OVERLAPS,
         "OVERWRITE": TokenType.OVERWRITE,
         "PARTITION": TokenType.PARTITION,
         "PARTITION BY": TokenType.PARTITION_BY,

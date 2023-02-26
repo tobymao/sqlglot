@@ -105,7 +105,15 @@ class TestPostgres(Validator):
         )
         self.validate_identity("x ~ 'y'")
         self.validate_identity("x ~* 'y'")
+        self.validate_identity("a OVERLAPS b")
 
+        self.validate_all(
+            "SELECT (DATE '2016-01-10', DATE '2016-02-01') OVERLAPS (DATE '2016-01-20', DATE '2016-02-10')",
+            write={
+                "postgres": "SELECT (CAST('2016-01-10' AS DATE), CAST('2016-02-01' AS DATE)) OVERLAPS (CAST('2016-01-20' AS DATE), CAST('2016-02-10' AS DATE))",
+                "tsql": "SELECT (CAST('2016-01-10' AS DATE), CAST('2016-02-01' AS DATE)) OVERLAPS (CAST('2016-01-20' AS DATE), CAST('2016-02-10' AS DATE))",
+            },
+        )
         self.validate_all(
             "x ^ y",
             write={

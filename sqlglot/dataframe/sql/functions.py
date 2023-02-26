@@ -954,10 +954,12 @@ def array_join(
     col: ColumnOrName, delimiter: str, null_replacement: t.Optional[str] = None
 ) -> Column:
     if null_replacement is not None:
-        return Column.invoke_anonymous_function(
-            col, "ARRAY_JOIN", lit(delimiter), lit(null_replacement)
+        return Column.invoke_expression_over_column(
+            col, expression.ArrayJoin, expression=lit(delimiter), null=lit(null_replacement)
         )
-    return Column.invoke_anonymous_function(col, "ARRAY_JOIN", lit(delimiter))
+    return Column.invoke_expression_over_column(
+        col, expression.ArrayJoin, expression=lit(delimiter)
+    )
 
 
 def concat(*cols: ColumnOrName) -> Column:

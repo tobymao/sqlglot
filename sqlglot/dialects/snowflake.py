@@ -150,6 +150,7 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
+            "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
                 this=seq_get(args, 1),
@@ -225,6 +226,7 @@ class Snowflake(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
             exp.DateAdd: rename_func("DATEADD"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,

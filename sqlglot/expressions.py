@@ -3125,6 +3125,10 @@ class ArrayFilter(Func):
     _sql_names = ["FILTER", "ARRAY_FILTER"]
 
 
+class ArrayJoin(Func):
+    arg_types = {"this": True, "expression": True, "null": False}
+
+
 class ArraySize(Func):
     arg_types = {"this": True, "expression": False}
 

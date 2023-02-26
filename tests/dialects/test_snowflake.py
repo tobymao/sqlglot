@@ -171,6 +171,13 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "ARRAY_TO_STRING(x, '')",
+            write={
+                "spark": "ARRAY_JOIN(x, '')",
+                "snowflake": "ARRAY_TO_STRING(x, '')",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
             write={
                 "snowflake": UnsupportedError,

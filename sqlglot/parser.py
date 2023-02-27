@@ -990,6 +990,7 @@ class Parser(metaclass=_Parser):
             TokenType.OR, TokenType.REPLACE
         )
         unique = self._match(TokenType.UNIQUE)
+        volatile = self._match(TokenType.VOLATILE)
 
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
@@ -1100,11 +1101,12 @@ class Parser(metaclass=_Parser):
             exp.Create,
             this=this,
             kind=create_token.text,
+            replace=replace,
             unique=unique,
+            volatile=volatile,
             expression=expression,
             exists=exists,
             properties=properties,
-            replace=replace,
             indexes=indexes,
             no_schema_binding=no_schema_binding,
             begin=begin,

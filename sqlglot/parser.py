@@ -174,6 +174,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMPOUND,
         TokenType.CONSTRAINT,
         TokenType.CURRENT_TIME,
+        TokenType.DATABASE,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESCRIBE,
@@ -674,6 +675,7 @@ class Parser(metaclass=_Parser):
 
     CREATABLES = {
         TokenType.COLUMN,
+        TokenType.DATABASE,
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,
@@ -1032,6 +1034,7 @@ class Parser(metaclass=_Parser):
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
         elif create_token.token_type in (
+            TokenType.DATABASE,
             TokenType.TABLE,
             TokenType.VIEW,
             TokenType.SCHEMA,

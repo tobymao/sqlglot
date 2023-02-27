@@ -60,6 +60,7 @@ class TokenType(AutoName):
     STRING = auto()
     NUMBER = auto()
     IDENTIFIER = auto()
+    DATABASE = auto()
     COLUMN = auto()
     COLUMN_DEF = auto()
     SCHEMA = auto()
@@ -493,6 +494,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
+        "DATABASE": TokenType.DATABASE,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,

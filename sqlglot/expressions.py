@@ -794,6 +794,7 @@ class Create(Expression):
         "properties": False,
         "replace": False,
         "unique": False,
+        "volatile": False,
         "indexes": False,
         "no_schema_binding": False,
         "begin": False,

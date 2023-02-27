@@ -550,10 +550,6 @@ class Generator:
                 else:
                     expression_sql = f" AS{expression_sql}"
 
-        replace = " OR REPLACE" if expression.args.get("replace") else ""
-        unique = " UNIQUE" if expression.args.get("unique") else ""
-        exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
-
         indexes = expression.args.get("indexes")
         index_sql = ""
         if indexes:
@@ -584,6 +580,10 @@ class Generator:
                 )
             index_sql = "".join(indexes_sql)
 
+        replace = " OR REPLACE" if expression.args.get("replace") else ""
+        unique = " UNIQUE" if expression.args.get("unique") else ""
+        volatile = " VOLATILE" if expression.args.get("volatile") else ""
+
         postcreate_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_CREATE):
             postcreate_props_sql = self.properties(
@@ -593,7 +593,7 @@ class Generator:
                 wrapped=False,
             )
 
-        modifiers = "".join((replace, unique, postcreate_props_sql))
+        modifiers = "".join((replace, unique, volatile, postcreate_props_sql))
 
         postexpression_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
@@ -606,6 +606,7 @@ class Generator:
                 wrapped=False,
             )
 
+        exists_sql = " IF NOT EXISTS" if expression.args.get("exists") else ""
         no_schema_binding = (
             " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
         )

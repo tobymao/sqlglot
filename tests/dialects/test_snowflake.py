@@ -95,7 +95,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT TO_ARRAY(1)",
             write={
-                "snowflake": "SELECT [1]",
+                "snowflake": "SELECT TO_ARRAY(1)",
                 "spark": "SELECT ARRAY(1)",
             },
 

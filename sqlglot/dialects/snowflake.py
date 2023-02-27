@@ -156,6 +156,7 @@ class Snowflake(Dialect):
                 this=seq_get(args, 1),
             ),
             "IFF": exp.If.from_arg_list,
+            "TO_ARRAY": exp.Array.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,

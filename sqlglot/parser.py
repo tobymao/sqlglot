@@ -3775,7 +3775,9 @@ class Parser(metaclass=_Parser):
     def _parse_as_command(self, start: Token) -> exp.Command:
         while self._curr:
             self._advance()
-        return exp.Command(this=self._find_sql(start, self._prev))
+        text = self._find_sql(start, self._prev)
+        size = len(start.text)
+        return exp.Command(this=text[:size], expression=text[size:])
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

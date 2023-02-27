@@ -157,6 +157,21 @@ class Parser(metaclass=_Parser):
 
     RESERVED_KEYWORDS = {*Tokenizer.SINGLE_TOKENS.values(), TokenType.SELECT}
 
+    DB_CREATABLES = {
+        TokenType.DATABASE,
+        TokenType.SCHEMA,
+        TokenType.TABLE,
+        TokenType.VIEW,
+    }
+
+    CREATABLES = {
+        TokenType.COLUMN,
+        TokenType.FUNCTION,
+        TokenType.INDEX,
+        TokenType.PROCEDURE,
+        *DB_CREATABLES,
+    }
+
     ID_VAR_TOKENS = {
         TokenType.VAR,
         TokenType.ANTI,
@@ -168,13 +183,11 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE,
         TokenType.CASCADE,
         TokenType.COLLATE,
-        TokenType.COLUMN,
         TokenType.COMMAND,
         TokenType.COMMIT,
         TokenType.COMPOUND,
         TokenType.CONSTRAINT,
         TokenType.CURRENT_TIME,
-        TokenType.DATABASE,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESCRIBE,
@@ -187,9 +200,7 @@ class Parser(metaclass=_Parser):
         TokenType.FILTER,
         TokenType.FOLLOWING,
         TokenType.FORMAT,
-        TokenType.FUNCTION,
         TokenType.IF,
-        TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
@@ -212,13 +223,11 @@ class Parser(metaclass=_Parser):
         TokenType.RIGHT,
         TokenType.ROW,
         TokenType.ROWS,
-        TokenType.SCHEMA,
         TokenType.SEED,
         TokenType.SEMI,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.SORTKEY,
-        TokenType.TABLE,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRAILING,
@@ -227,10 +236,9 @@ class Parser(metaclass=_Parser):
         TokenType.UNIQUE,
         TokenType.UNLOGGED,
         TokenType.UNPIVOT,
-        TokenType.PROCEDURE,
-        TokenType.VIEW,
         TokenType.VOLATILE,
         TokenType.WINDOW,
+        *CREATABLES,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
         *NO_PAREN_FUNCTIONS,
@@ -673,17 +681,6 @@ class Parser(metaclass=_Parser):
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
-    CREATABLES = {
-        TokenType.COLUMN,
-        TokenType.DATABASE,
-        TokenType.FUNCTION,
-        TokenType.INDEX,
-        TokenType.PROCEDURE,
-        TokenType.SCHEMA,
-        TokenType.TABLE,
-        TokenType.VIEW,
-    }
-
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
@@ -1033,12 +1030,7 @@ class Parser(metaclass=_Parser):
                 expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
-        elif create_token.token_type in (
-            TokenType.DATABASE,
-            TokenType.TABLE,
-            TokenType.VIEW,
-            TokenType.SCHEMA,
-        ):
+        elif create_token.token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(schema=True)
 
             # exp.Properties.Location.POST_NAME

@@ -93,6 +93,14 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT TO_ARRAY(1)",
+            write={
+                "spark": "SELECT ARRAY(1)",
+                "snowflake": "SELECT TO_ARRAY(1)",
+            },
+
+        )
+        self.validate_all(
             "SELECT TO_TIMESTAMP(1659981729)",
             write={
                 "bigquery": "SELECT UNIX_TO_TIME(1659981729)",

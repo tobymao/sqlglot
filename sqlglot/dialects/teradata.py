@@ -64,7 +64,7 @@ class Teradata(Dialect):
             "UNICODE_TO_UNICODE_NFKD",
         }
 
-        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS}
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.RANGE_N}
         FUNC_TOKENS.remove(TokenType.REPLACE)
 
         STATEMENT_PARSERS = {
@@ -74,6 +74,7 @@ class Teradata(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,  # type: ignore
+            "RANGE_N": lambda self: self._parse_rangen(),
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
 
@@ -104,6 +105,19 @@ class Teradata(Dialect):
                     "where": self._parse_where(),
                 },
             )
+
+        def _parse_rangen(self):
+            this = self._parse_id_var()
+            self._match(TokenType.BETWEEN)
+
+            expressions = []
+            while self._next and not self._match_text_seq("EACH"):
+                self._match(TokenType.COMMA)
+                expressions.append(self._parse_conjunction() or self._parse_expression())
+
+            each = self._parse_expression()
+
+            return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
@@ -136,3 +150,20 @@ class Teradata(Dialect):
             type_sql = super().datatype_sql(expression)
             prefix_sql = expression.args.get("prefix")
             return f"SYSUDTLIB.{type_sql}" if prefix_sql else type_sql
+
+        def rangen_sql(self, expression: exp.RangeN) -> str:
+            this = self.sql(expression, "this")
+            expressions = [self.sql(e) for e in expression.args.get("expressions", [])]
+            if len(expressions) > 1:
+                expressions_sql = (
+                    f"{', '.join(expressions[:(len(expressions) - 1)])}, {expressions[-1]}"
+                )
+            else:
+                expressions_sql = expressions[0]
+            each_sql = (
+                f" EACH {self.sql(expression.args.get('each'))}"
+                if expression.args.get("each")
+                else ""
+            )
+
+            return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"

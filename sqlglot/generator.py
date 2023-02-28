@@ -550,10 +550,17 @@ class Generator:
                 else:
                     expression_sql = f" AS{expression_sql}"
 
+        postindex_props_sql = ""
+        if properties_locs.get(exp.Properties.Location.POST_INDEX):
+            postindex_props_sql = self.properties(
+                exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_INDEX]),
+                wrapped=False,
+                prefix=" ",
+            )
+
         indexes = expression.args.get("indexes")
-        index_sql = ""
         if indexes:
-            indexes_sql = []
+            indexes_sql: t.List[str] = []
             for index in indexes:
                 ind_unique = " UNIQUE" if index.args.get("unique") else ""
                 ind_primary = " PRIMARY" if index.args.get("primary") else ""
@@ -564,21 +571,18 @@ class Generator:
                     if index.args.get("columns")
                     else ""
                 )
-                if index.args.get("primary") and properties_locs.get(
-                    exp.Properties.Location.POST_INDEX
-                ):
-                    postindex_props_sql = self.properties(
-                        exp.Properties(
-                            expressions=properties_locs[exp.Properties.Location.POST_INDEX]
-                        ),
-                        wrapped=False,
-                    )
-                    ind_columns = f"{ind_columns} {postindex_props_sql}"
+                ind_sql = f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
 
-                indexes_sql.append(
-                    f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
-                )
+                if len(indexes_sql) == 0:
+                    if index.args.get("primary"):
+                        indexes_sql.append(f"{ind_sql}{postindex_props_sql}")
+                    else:
+                        indexes_sql.append(f"{postindex_props_sql}{ind_sql}")
+                else:
+                    indexes_sql.append(ind_sql)
             index_sql = "".join(indexes_sql)
+        else:
+            index_sql = postindex_props_sql
 
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""

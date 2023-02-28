@@ -24,15 +24,19 @@ class TestTeradata(Validator):
 
     def test_create(self):
         self.validate_identity("CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)")
+        self.validate_identify(
+            "CREATE TABLE a (b INT) PRIMARY INDEX (y) PARTITION BY RANGE_N(b BETWEEN 'a', 'b' AND 'c' EACH '1')"
+        )
+        self.validate_identify(
+            "CREATE TABLE a (b INT) PARTITION BY RANGE_N(b BETWEEN 0, 1 AND 2 EACH 1)"
+        )
+        self.validate_identify(
+            "CREATE TABLE a (b INT) PARTITION BY RANGE_N(b BETWEEN *, 1 AND * EACH b) INDEX (a)"
+        )
 
         self.validate_all(
             "REPLACE VIEW a AS (SELECT b FROM c)",
             write={"teradata": "CREATE OR REPLACE VIEW a AS (SELECT b FROM c)"},
-        )
-
-        self.validate_all(
-            "SEL a FROM b",
-            write={"teradata": "SELECT a FROM b"},
         )
 
     def test_insert(self):
@@ -51,6 +55,11 @@ class TestTeradata(Validator):
         self.validate_all("a ^= b", write={"teradata": "a <> b"})
         self.validate_all("a NE b", write={"teradata": "a <> b"})
         self.validate_all("a NOT= b", write={"teradata": "a <> b"})
+
+        self.validate_all(
+            "SEL a FROM b",
+            write={"teradata": "SELECT a FROM b"},
+        )
 
     def test_datatype(self):
         self.validate_all(

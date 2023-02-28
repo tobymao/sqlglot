@@ -249,6 +249,7 @@ class TokenType(AutoName):
     QUALIFY = auto()
     QUOTE = auto()
     RANGE = auto()
+    RANGE_N = auto()
     RECURSIVE = auto()
     REPLACE = auto()
     RESPECT_NULLS = auto()
@@ -576,6 +577,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PROCEDURE": TokenType.PROCEDURE,
         "QUALIFY": TokenType.QUALIFY,
         "RANGE": TokenType.RANGE,
+        "RANGE_N": TokenType.RANGE_N,
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
         "REPLACE": TokenType.REPLACE,

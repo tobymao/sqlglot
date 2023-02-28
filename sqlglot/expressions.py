@@ -3511,6 +3511,10 @@ class ApproxQuantile(Quantile):
     arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 
 
+class RangeN(Func):
+    arg_types = {"this": True, "expressions": True, "each": False}
+
+
 class ReadCSV(Func):
     _sql_names = ["READ_CSV"]
     is_var_len_args = True

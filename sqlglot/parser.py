@@ -1386,10 +1386,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_partitioned_by(self) -> exp.Expression:
         self._match(TokenType.EQ)
-        return self.expression(
-            exp.PartitionedByProperty,
-            this=self._parse_schema() or self._parse_bracket(self._parse_field()),
-        )
+        if self._curr.token_type in self.FUNC_TOKENS:
+            this = self._parse_function()
+        else:
+            this = self._parse_schema() or self._parse_bracket(self._parse_field())
+
+        return self.expression(exp.PartitionedByProperty, this=this)
 
     def _parse_withdata(self, no=False) -> exp.Expression:
         if self._match_text_seq("AND", "STATISTICS"):

@@ -1386,10 +1386,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_partitioned_by(self) -> exp.Expression:
         self._match(TokenType.EQ)
-        if self._curr.token_type in self.FUNC_TOKENS:
-            this = self._parse_function()
-        else:
-            this = self._parse_schema() or self._parse_bracket(self._parse_field())
+        this = (
+            self._parse_schema()
+            or self._parse_function()
+            or self._parse_bracket(self._parse_field())
+        )
 
         return self.expression(exp.PartitionedByProperty, this=this)
 

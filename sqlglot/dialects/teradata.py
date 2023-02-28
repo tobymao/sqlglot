@@ -153,13 +153,9 @@ class Teradata(Dialect):
 
         def rangen_sql(self, expression: exp.RangeN) -> str:
             this = self.sql(expression, "this")
-            expressions = [self.sql(e) for e in expression.args.get("expressions", [])]
-            if len(expressions) > 1:
-                expressions_sql = (
-                    f"{', '.join(expressions[:(len(expressions) - 1)])}, {expressions[-1]}"
-                )
-            else:
-                expressions_sql = expressions[0]
+            expressions_sql = ", ".join(
+                [self.sql(e) for e in expression.args.get("expressions", [])]
+            )
             each_sql = (
                 f" EACH {self.sql(expression.args.get('each'))}"
                 if expression.args.get("each")

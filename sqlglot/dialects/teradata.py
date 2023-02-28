@@ -154,10 +154,7 @@ class Teradata(Dialect):
         def rangen_sql(self, expression: exp.RangeN) -> str:
             this = self.sql(expression, "this")
             expressions_sql = self.expressions(expression)
-            each_sql = (
-                f" EACH {self.sql(expression.args.get('each'))}"
-                if expression.args.get("each")
-                else ""
-            )
+            each_sql = self.sql(expression, "each")
+            each_sql = f" EACH {each_sql}" if each_sql else ""
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"

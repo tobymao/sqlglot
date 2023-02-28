@@ -64,7 +64,7 @@ class Teradata(Dialect):
             "UNICODE_TO_UNICODE_NFKD",
         }
 
-        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.RANGE_N}
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS}
         FUNC_TOKENS.remove(TokenType.REPLACE)
 
         STATEMENT_PARSERS = {
@@ -110,12 +110,8 @@ class Teradata(Dialect):
             this = self._parse_id_var()
             self._match(TokenType.BETWEEN)
 
-            expressions = []
-            while self._next and not self._match_text_seq("EACH"):
-                self._match(TokenType.COMMA)
-                expressions.append(self._parse_conjunction() or self._parse_expression())
-
-            each = self._parse_expression()
+            expressions = self._parse_csv(self._parse_conjunction)
+            each = self._match_text_seq("EACH") and self._parse_conjunction()
 
             return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 

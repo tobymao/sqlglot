@@ -573,13 +573,15 @@ class Generator:
                 )
                 ind_sql = f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
 
-                if len(indexes_sql) == 0:
-                    if index.args.get("primary"):
-                        indexes_sql.append(f"{ind_sql}{postindex_props_sql}")
-                    else:
-                        indexes_sql.append(f"{postindex_props_sql}{ind_sql}")
-                else:
+                if indexes_sql:
                     indexes_sql.append(ind_sql)
+                else:
+                    indexes_sql.append(
+                        f"{ind_sql}{postindex_props_sql}"
+                        if index.args.get("primary")
+                        else f"{postindex_props_sql}{ind_sql}"
+                    )
+
             index_sql = "".join(indexes_sql)
         else:
             index_sql = postindex_props_sql

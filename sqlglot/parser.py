@@ -157,6 +157,21 @@ class Parser(metaclass=_Parser):
 
     RESERVED_KEYWORDS = {*Tokenizer.SINGLE_TOKENS.values(), TokenType.SELECT}
 
+    DB_CREATABLES = {
+        TokenType.DATABASE,
+        TokenType.SCHEMA,
+        TokenType.TABLE,
+        TokenType.VIEW,
+    }
+
+    CREATABLES = {
+        TokenType.COLUMN,
+        TokenType.FUNCTION,
+        TokenType.INDEX,
+        TokenType.PROCEDURE,
+        *DB_CREATABLES,
+    }
+
     ID_VAR_TOKENS = {
         TokenType.VAR,
         TokenType.ANTI,
@@ -168,7 +183,6 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE,
         TokenType.CASCADE,
         TokenType.COLLATE,
-        TokenType.COLUMN,
         TokenType.COMMAND,
         TokenType.COMMIT,
         TokenType.COMPOUND,
@@ -186,9 +200,7 @@ class Parser(metaclass=_Parser):
         TokenType.FILTER,
         TokenType.FOLLOWING,
         TokenType.FORMAT,
-        TokenType.FUNCTION,
         TokenType.IF,
-        TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
@@ -211,13 +223,11 @@ class Parser(metaclass=_Parser):
         TokenType.RIGHT,
         TokenType.ROW,
         TokenType.ROWS,
-        TokenType.SCHEMA,
         TokenType.SEED,
         TokenType.SEMI,
         TokenType.SET,
         TokenType.SHOW,
         TokenType.SORTKEY,
-        TokenType.TABLE,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRAILING,
@@ -226,10 +236,9 @@ class Parser(metaclass=_Parser):
         TokenType.UNIQUE,
         TokenType.UNLOGGED,
         TokenType.UNPIVOT,
-        TokenType.PROCEDURE,
-        TokenType.VIEW,
         TokenType.VOLATILE,
         TokenType.WINDOW,
+        *CREATABLES,
         *SUBQUERY_PREDICATES,
         *TYPE_TOKENS,
         *NO_PAREN_FUNCTIONS,
@@ -490,6 +499,9 @@ class Parser(metaclass=_Parser):
         TokenType.GLOB: lambda self, this: self._parse_escape(
             self.expression(exp.Glob, this=this, expression=self._parse_bitwise())
         ),
+        TokenType.OVERLAPS: lambda self, this: self._parse_escape(
+            self.expression(exp.Overlaps, this=this, expression=self._parse_bitwise())
+        ),
         TokenType.IN: lambda self, this: self._parse_in(this),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: lambda self, this: self._parse_escape(
@@ -668,16 +680,6 @@ class Parser(metaclass=_Parser):
     SET_PARSERS: t.Dict[str, t.Callable] = {}
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
-
-    CREATABLES = {
-        TokenType.COLUMN,
-        TokenType.FUNCTION,
-        TokenType.INDEX,
-        TokenType.PROCEDURE,
-        TokenType.SCHEMA,
-        TokenType.TABLE,
-        TokenType.VIEW,
-    }
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
 
@@ -1029,11 +1031,7 @@ class Parser(metaclass=_Parser):
                 expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index()
-        elif create_token.token_type in (
-            TokenType.TABLE,
-            TokenType.VIEW,
-            TokenType.SCHEMA,
-        ):
+        elif create_token.token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(schema=True)
 
             # exp.Properties.Location.POST_NAME
@@ -3777,7 +3775,9 @@ class Parser(metaclass=_Parser):
     def _parse_as_command(self, start: Token) -> exp.Command:
         while self._curr:
             self._advance()
-        return exp.Command(this=self._find_sql(start, self._prev))
+        text = self._find_sql(start, self._prev)
+        size = len(start.text)
+        return exp.Command(this=text[:size], expression=text[size:])
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

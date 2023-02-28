@@ -884,7 +884,7 @@ class ByteString(Condition):
 
 
 class Column(Condition):
-    arg_types = {"this": True, "table": False, "db": False, "catalog": False}
+    arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
 
     @property
     def table(self) -> str:
@@ -2830,6 +2830,10 @@ class Div(Binary):
     pass
 
 
+class Overlaps(Binary):
+    pass
+
+
 class Dot(Binary):
     @property
     def name(self) -> str:
@@ -3124,6 +3128,10 @@ class ArrayContains(Func):
 class ArrayFilter(Func):
     arg_types = {"this": True, "expression": True}
     _sql_names = ["FILTER", "ARRAY_FILTER"]
+
+
+class ArrayJoin(Func):
+    arg_types = {"this": True, "expression": True, "null": False}
 
 
 class ArraySize(Func):

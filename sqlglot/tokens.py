@@ -60,6 +60,7 @@ class TokenType(AutoName):
     STRING = auto()
     NUMBER = auto()
     IDENTIFIER = auto()
+    DATABASE = auto()
     COLUMN = auto()
     COLUMN_DEF = auto()
     SCHEMA = auto()
@@ -203,6 +204,7 @@ class TokenType(AutoName):
     IS = auto()
     ISNULL = auto()
     JOIN = auto()
+    JOIN_MARKER = auto()
     LANGUAGE = auto()
     LATERAL = auto()
     LAZY = auto()
@@ -235,6 +237,7 @@ class TokenType(AutoName):
     OUTER = auto()
     OUT_OF = auto()
     OVER = auto()
+    OVERLAPS = auto()
     OVERWRITE = auto()
     PARTITION = auto()
     PARTITION_BY = auto()
@@ -492,6 +495,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
+        "DATABASE": TokenType.DATABASE,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,
         "DESC": TokenType.DESC,
@@ -565,6 +569,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "OUTER": TokenType.OUTER,
         "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
+        "OVERLAPS": TokenType.OVERLAPS,
         "OVERWRITE": TokenType.OVERWRITE,
         "PARTITION": TokenType.PARTITION,
         "PARTITION BY": TokenType.PARTITION_BY,

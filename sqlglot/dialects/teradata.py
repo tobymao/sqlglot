@@ -74,6 +74,7 @@ class Teradata(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,  # type: ignore
+            "RANGE_N": lambda self: self._parse_rangen(),
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
 
@@ -104,6 +105,15 @@ class Teradata(Dialect):
                     "where": self._parse_where(),
                 },
             )
+
+        def _parse_rangen(self):
+            this = self._parse_id_var()
+            self._match(TokenType.BETWEEN)
+
+            expressions = self._parse_csv(self._parse_conjunction)
+            each = self._match_text_seq("EACH") and self._parse_conjunction()
+
+            return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
@@ -136,3 +146,11 @@ class Teradata(Dialect):
             type_sql = super().datatype_sql(expression)
             prefix_sql = expression.args.get("prefix")
             return f"SYSUDTLIB.{type_sql}" if prefix_sql else type_sql
+
+        def rangen_sql(self, expression: exp.RangeN) -> str:
+            this = self.sql(expression, "this")
+            expressions_sql = self.expressions(expression)
+            each_sql = self.sql(expression, "each")
+            each_sql = f" EACH {each_sql}" if each_sql else ""
+
+            return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"

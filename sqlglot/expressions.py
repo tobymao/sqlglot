@@ -35,6 +35,8 @@ from sqlglot.tokens import Token
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
+E = t.TypeVar("E", bound="Expression")
+
 
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
@@ -293,7 +295,7 @@ class Expression(metaclass=_Expression):
             return self.parent.depth + 1
         return 0
 
-    def find(self, *expression_types, bfs=True):
+    def find(self, *expression_types: t.Type[E], bfs=True) -> E | None:
         """
         Returns the first node in this tree which matches at least one of
         the specified types.
@@ -306,7 +308,7 @@ class Expression(metaclass=_Expression):
         """
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
-    def find_all(self, *expression_types, bfs=True):
+    def find_all(self, *expression_types: t.Type[E], bfs=True) -> t.Iterator[E]:
         """
         Returns a generator object which visits all nodes in this tree and only
         yields those that match at least one of the specified expression types.
@@ -321,7 +323,7 @@ class Expression(metaclass=_Expression):
             if isinstance(expression, expression_types):
                 yield expression
 
-    def find_ancestor(self, *expression_types):
+    def find_ancestor(self, *expression_types: t.Type[E]) -> E | None:
         """
         Returns a nearest parent matching expression_types.
 
@@ -334,7 +336,8 @@ class Expression(metaclass=_Expression):
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
-        return ancestor
+        # ignore type because mypy doesn't know that we're checking type in the loop
+        return ancestor  # type: ignore[return-value]
 
     @property
     def parent_select(self):

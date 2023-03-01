@@ -385,3 +385,48 @@ SELECT
   "x"."a" + 1 AS "b",
   "x"."b" + 1 AS "c"
 FROM "x" AS "x";
+
+# title: left join doesnt push down predicate to join in merge subqueries
+# execute: false
+SELECT
+  main_query.id,
+  main_query.score
+FROM (
+  SELECT
+    alias_1.id,
+    score
+  FROM (
+    SELECT
+      company_table.score AS score,
+      id
+    FROM company_table
+  ) AS alias_1
+  JOIN (
+    SELECT
+      id
+    FROM (
+      SELECT
+        company_table_2.id,
+        CASE WHEN unlocked.company_id IS NULL THEN 0 ELSE 1 END AS is_exported
+      FROM company_table AS company_table_2
+      LEFT JOIN unlocked AS unlocked
+        ON company_table_2.id = unlocked.company_id
+    )
+    WHERE
+      NOT id IS NULL AND is_exported = FALSE
+  ) AS alias_2
+    ON (
+      alias_1.id = alias_2.id
+    )
+) AS main_query;
+SELECT
+  "company_table"."id" AS "id",
+  "company_table"."score" AS "score"
+FROM "company_table" AS "company_table"
+JOIN "company_table" AS "company_table_2"
+  ON "company_table"."id" = "company_table_2"."id"
+LEFT JOIN "unlocked" AS "unlocked"
+  ON "company_table_2"."id" = "unlocked"."company_id"
+WHERE
+  CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE
+  AND NOT "company_table_2"."id" IS NULL;

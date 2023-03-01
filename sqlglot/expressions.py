@@ -337,7 +337,7 @@ class Expression(metaclass=_Expression):
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
         # ignore type because mypy doesn't know that we're checking type in the loop
-        return ancestor # type: ignore[return-value]
+        return ancestor  # type: ignore[return-value]
 
     @property
     def parent_select(self):

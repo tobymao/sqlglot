@@ -361,7 +361,7 @@ def create_with_partitions_sql(self: Generator, expression: exp.Create) -> str:
         expression = expression.copy()
         prop = expression.find(exp.PartitionedByProperty)
         this = prop and prop.this
-        if prop and not isinstance(this, exp.Schema):
+        if prop and this and not isinstance(this, exp.Schema):
             schema = expression.this
             columns = {v.name.upper() for v in this.expressions}
             partitions = [col for col in schema.expressions if col.name.upper() in columns]

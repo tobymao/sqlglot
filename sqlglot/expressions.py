@@ -308,7 +308,7 @@ class Expression(metaclass=_Expression):
         """
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
-    def find_all(self, *expression_types: t.Type[E], bfs=True) -> t.Generator[E, None, None]:
+    def find_all(self, *expression_types: t.Type[E], bfs=True) -> t.Iterator[E]:
         """
         Returns a generator object which visits all nodes in this tree and only
         yields those that match at least one of the specified expression types.

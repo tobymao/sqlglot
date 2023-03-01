@@ -83,6 +83,7 @@ class DuckDB(Dialect):
             ":=": TokenType.EQ,
             "ATTACH": TokenType.COMMAND,
             "CHARACTER VARYING": TokenType.VARCHAR,
+            "EXCLUDE": TokenType.EXCEPT,
         }
 
     class Parser(parser.Parser):
@@ -172,4 +173,9 @@ class DuckDB(Dialect):
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.VARCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
+        }
+
+        STAR_MAPPING = {
+            **generator.Generator.STAR_MAPPING,
+            "except": "EXCLUDE",
         }

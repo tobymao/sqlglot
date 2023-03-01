@@ -63,9 +63,13 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT * EXCLUDE a, b RENAME (c AS d, E as F) FROM xxx",
+            "SELECT * EXCLUDE (a, b) RENAME (c AS d, E AS F) FROM xxx",
+            read={
+                "duckdb": "SELECT * EXCLUDE (a, b) REPLACE (c AS d, E AS F) FROM xxx",
+            },
             write={
                 "snowflake": "SELECT * EXCLUDE (a, b) RENAME (c AS d, E AS F) FROM xxx",
+                "duckdb": "SELECT * EXCLUDE (a, b) REPLACE (c AS d, E AS F) FROM xxx",
             },
         )
         self.validate_all(

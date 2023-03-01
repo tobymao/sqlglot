@@ -640,6 +640,14 @@ class Parser(metaclass=_Parser):
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }
 
+    ALTER_PARSERS = {
+        "ADD": lambda self: self._parse_alter_table_add(),
+        "ALTER": lambda self: self._parse_alter_table_alter(),
+        "DELETE": lambda self: self.expression(exp.Delete, where=self._parse_where()),
+        "DROP": lambda self: self._parse_alter_table_drop(),
+        "RENAME": lambda self: self._parse_alter_table_rename(),
+    }
+
     SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE"}
 
     NO_PAREN_FUNCTION_PARSERS = {
@@ -3648,6 +3656,47 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.AddConstraint, this=this, expression=expression)
 
+    def _parse_alter_table_add(self) -> t.List[t.Optional[exp.Expression]]:
+        index = self._index - 1
+
+        if self._match_set(self.ADD_CONSTRAINT_TOKENS):
+            return self._parse_csv(self._parse_add_constraint)
+
+        self._retreat(index)
+        return self._parse_csv(self._parse_add_column)
+
+    def _parse_alter_table_alter(self) -> exp.Expression:
+        self._match(TokenType.COLUMN)
+        column = self._parse_field(any_token=True)
+
+        if self._match_pair(TokenType.DROP, TokenType.DEFAULT):
+            return self.expression(exp.AlterColumn, this=column, drop=True)
+        if self._match_pair(TokenType.SET, TokenType.DEFAULT):
+            return self.expression(exp.AlterColumn, this=column, default=self._parse_conjunction())
+
+        self._match_text_seq("SET", "DATA")
+        return self.expression(
+            exp.AlterColumn,
+            this=column,
+            dtype=self._match_text_seq("TYPE") and self._parse_types(),
+            collate=self._match(TokenType.COLLATE) and self._parse_term(),
+            using=self._match(TokenType.USING) and self._parse_conjunction(),
+        )
+
+    def _parse_alter_table_drop(self) -> t.List[t.Optional[exp.Expression]]:
+        index = self._index - 1
+
+        partition_exists = self._parse_exists()
+        if self._match(TokenType.PARTITION, advance=False):
+            return self._parse_csv(lambda: self._parse_drop_partition(exists=partition_exists))
+
+        self._retreat(index)
+        return self._parse_csv(self._parse_drop_column)
+
+    def _parse_alter_table_rename(self) -> exp.Expression:
+        self._match_text_seq("TO")
+        return self.expression(exp.RenameTable, this=self._parse_table(schema=True))
+
     def _parse_alter(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.TABLE):
             return self._parse_as_command(self._prev)
@@ -3655,50 +3704,12 @@ class Parser(metaclass=_Parser):
         exists = self._parse_exists()
         this = self._parse_table(schema=True)
 
-        actions: t.Optional[exp.Expression | t.List[t.Optional[exp.Expression]]] = None
+        if not self._curr:
+            return None
 
-        index = self._index
-        if self._match(TokenType.DELETE):
-            actions = [self.expression(exp.Delete, where=self._parse_where())]
-        elif self._match_text_seq("ADD"):
-            if self._match_set(self.ADD_CONSTRAINT_TOKENS):
-                actions = self._parse_csv(self._parse_add_constraint)
-            else:
-                self._retreat(index)
-                actions = self._parse_csv(self._parse_add_column)
-        elif self._match_text_seq("DROP"):
-            partition_exists = self._parse_exists()
+        parser = self.ALTER_PARSERS.get(self._curr.text.upper())
+        actions = ensure_list(self._advance() or parser(self)) if parser else []  # type: ignore
 
-            if self._match(TokenType.PARTITION, advance=False):
-                actions = self._parse_csv(
-                    lambda: self._parse_drop_partition(exists=partition_exists)
-                )
-            else:
-                self._retreat(index)
-                actions = self._parse_csv(self._parse_drop_column)
-        elif self._match_text_seq("RENAME", "TO"):
-            actions = self.expression(exp.RenameTable, this=self._parse_table(schema=True))
-        elif self._match_text_seq("ALTER"):
-            self._match(TokenType.COLUMN)
-            column = self._parse_field(any_token=True)
-
-            if self._match_pair(TokenType.DROP, TokenType.DEFAULT):
-                actions = self.expression(exp.AlterColumn, this=column, drop=True)
-            elif self._match_pair(TokenType.SET, TokenType.DEFAULT):
-                actions = self.expression(
-                    exp.AlterColumn, this=column, default=self._parse_conjunction()
-                )
-            else:
-                self._match_text_seq("SET", "DATA")
-                actions = self.expression(
-                    exp.AlterColumn,
-                    this=column,
-                    dtype=self._match_text_seq("TYPE") and self._parse_types(),
-                    collate=self._match(TokenType.COLLATE) and self._parse_term(),
-                    using=self._match(TokenType.USING) and self._parse_conjunction(),
-                )
-
-        actions = ensure_list(actions)
         return self.expression(exp.AlterTable, this=this, exists=exists, actions=actions)
 
     def _parse_show(self) -> t.Optional[exp.Expression]:

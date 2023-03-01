@@ -930,6 +930,10 @@ class RenameTable(Expression):
     pass
 
 
+class SetTag(Expression):
+    arg_types = {"expressions": True, "unset": False}
+
+
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 

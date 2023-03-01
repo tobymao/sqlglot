@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -195,6 +197,17 @@ class Snowflake(Dialect):
             ),
         }
 
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,  # type: ignore
+            "UNSET": lambda self: self._parse_alter_table_set_tag(unset=True),
+            "SET": lambda self: self._parse_alter_table_set_tag(),
+        }
+
+        def _parse_alter_table_set_tag(self, unset: bool = False) -> exp.Expression:
+            self._match_text_seq("TAG")
+            parser = t.cast(t.Callable, self._parse_id_var if unset else self._parse_conjunction)
+            return self.expression(exp.SetTag, expressions=self._parse_csv(parser), unset=unset)
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
@@ -296,6 +309,10 @@ class Snowflake(Dialect):
                 )
                 return self.no_identify(lambda: super(self.__class__, self).values_sql(expression))
             return super().values_sql(expression)
+
+        def settag_sql(self, expression: exp.SetTag) -> str:
+            action = "UNSET" if expression.args.get("unset") else "SET"
+            return f"{action} TAG {self.expressions(expression)}"
 
         def select_sql(self, expression: exp.Select) -> str:
             """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted and also

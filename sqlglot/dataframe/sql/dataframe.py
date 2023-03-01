@@ -260,7 +260,7 @@ class DataFrame:
     @classmethod
     def _get_outer_select_columns(cls, item: t.Union[exp.Expression, DataFrame]) -> t.List[Column]:
         expression = item.expression if isinstance(item, DataFrame) else item
-        return [Column(x) for x in expression.find(exp.Select).expressions]
+        return [Column(x) for x in (expression.find(exp.Select) or exp.Select()).expressions]
 
     @classmethod
     def _create_hash_from_expression(cls, expression: exp.Select):

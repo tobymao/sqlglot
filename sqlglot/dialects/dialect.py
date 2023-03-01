@@ -360,10 +360,9 @@ def create_with_partitions_sql(self: Generator, expression: exp.Create) -> str:
     if has_schema and is_partitionable:
         expression = expression.copy()
         prop = expression.find(exp.PartitionedByProperty)
-        this = prop and prop.this
-        if prop and this and not isinstance(this, exp.Schema):
+        if prop and prop.this and not isinstance(prop.this, exp.Schema):
             schema = expression.this
-            columns = {v.name.upper() for v in this.expressions}
+            columns = {v.name.upper() for v in prop.this.expressions}
             partitions = [col for col in schema.expressions if col.name.upper() in columns]
             schema.set("expressions", [e for e in schema.expressions if e not in partitions])
             prop.replace(exp.PartitionedByProperty(this=exp.Schema(expressions=partitions)))

@@ -693,6 +693,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ALTER VIEW": TokenType.COMMAND,
         "ANALYZE": TokenType.COMMAND,
         "CALL": TokenType.COMMAND,
+        "COMMENT ON": TokenType.COMMAND,
         "COPY": TokenType.COMMAND,
         "EXPLAIN": TokenType.COMMAND,
         "OPTIMIZE": TokenType.COMMAND,

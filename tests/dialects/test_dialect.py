@@ -520,7 +520,7 @@ class TestDialect(Validator):
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "postgres": "x + INTERVAL '1' 'day'",
                 "presto": "DATE_ADD('day', 1, x)",
-                "snowflake": "DATEADD(x, 1, 'day')",
+                "snowflake": "DATEADD(day, 1, x)",
                 "spark": "DATE_ADD(x, 1)",
                 "sqlite": "DATE(x, '1 day')",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",

@@ -657,6 +657,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DOUBLE PRECISION": TokenType.DOUBLE,
         "JSON": TokenType.JSON,
         "CHAR": TokenType.CHAR,
+        "CHARACTER": TokenType.CHAR,
         "NCHAR": TokenType.NCHAR,
         "VARCHAR": TokenType.VARCHAR,
         "VARCHAR2": TokenType.VARCHAR,

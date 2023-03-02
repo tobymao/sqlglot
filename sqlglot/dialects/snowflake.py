@@ -197,6 +197,11 @@ class Snowflake(Dialect):
             ),
         }
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.COMMENT: lambda self: self._parse_comment(),
+        }
+
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,  # type: ignore
             "UNSET": lambda self: self._parse_alter_table_set_tag(unset=True),
@@ -208,13 +213,17 @@ class Snowflake(Dialect):
             parser = t.cast(t.Callable, self._parse_id_var if unset else self._parse_conjunction)
             return self.expression(exp.SetTag, expressions=self._parse_csv(parser), unset=unset)
 
+        def _parse_comment(self) -> exp.Expression:
+            return self._parse_as_command(self._prev)
+            # return self.expression(exp.Comment, expressions=self._parse_csv(self._parse_set_item))
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "COMMENT": TokenType.COMMAND,
+            "COMMENT": TokenType.COMMENT,
             "EXCLUDE": TokenType.EXCEPT,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,

@@ -264,11 +264,6 @@ class Postgres(Dialect):
             TokenType.CARET: exp.Pow,
         }
 
-        STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
-            TokenType.COMMENT: lambda self: self._parse_comment(allow_exists=False),
-        }
-
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         PARAMETER_TOKEN = "$"

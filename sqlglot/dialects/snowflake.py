@@ -197,11 +197,6 @@ class Snowflake(Dialect):
             ),
         }
 
-        STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
-            TokenType.COMMENT: lambda self: self._parse_comment(),
-        }
-
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,  # type: ignore
             "UNSET": lambda self: self._parse_alter_table_set_tag(unset=True),

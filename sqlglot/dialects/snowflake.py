@@ -213,10 +213,6 @@ class Snowflake(Dialect):
             parser = t.cast(t.Callable, self._parse_id_var if unset else self._parse_conjunction)
             return self.expression(exp.SetTag, expressions=self._parse_csv(parser), unset=unset)
 
-        def _parse_comment(self) -> exp.Expression:
-            return self._parse_as_command(self._prev)
-            # return self.expression(exp.Comment, expressions=self._parse_csv(self._parse_set_item))
-
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]

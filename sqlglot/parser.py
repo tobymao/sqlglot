@@ -950,6 +950,27 @@ class Parser(metaclass=_Parser):
     def _parse_command(self) -> exp.Expression:
         return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
 
+    def _parse_comment(self, allow_exists=True) -> exp.Expression:
+        start = self._prev
+        exists = self._parse_exists() if allow_exists else False
+
+        if not self._match(TokenType.ON):
+            self.raise_error(f"Expected ON but got {self._curr}")
+
+        kind = self._match_set(self.CREATABLES) and self._prev.text
+
+        if not kind:
+            return self._parse_as_command(start)
+
+        this = self._parse_id_var()
+
+        if not self._match(TokenType.IS):
+            self.raise_error(f"Expected IS but got {self._curr}")
+
+        return self.expression(
+            exp.Comment, this=this, kind=kind, expression=self._parse_string(), exists=exists
+        )
+
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:
             return None

@@ -222,7 +222,6 @@ class Postgres(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
             "CHARACTER VARYING": TokenType.VARCHAR,
-            "COMMENT ON": TokenType.COMMAND,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
             "GRANT": TokenType.COMMAND,
@@ -263,6 +262,11 @@ class Postgres(Dialect):
         FACTOR = {
             **parser.Parser.FACTOR,  # type: ignore
             TokenType.CARET: exp.Pow,
+        }
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.COMMENT: lambda self: self._parse_comment(allow_exists=False),
         }
 
     class Generator(generator.Generator):

@@ -224,7 +224,6 @@ class Postgres(Dialect):
             "CHARACTER VARYING": TokenType.VARCHAR,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
-            "GRANT": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
             "JSONB": TokenType.JSONB,
             "REFRESH": TokenType.COMMAND,

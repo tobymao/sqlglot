@@ -1762,11 +1762,8 @@ class Generator:
 
     def floatdiv_sql(self, expression: exp.FloatDiv) -> str:
         if self.INTEGER_DIVISION:
-            # Multiply divident by 1.0 so that the expression's type can be coerced to float
-            this = exp.Mul(this=expression.this, expression=exp.Literal.number(1.0))
-            return self.div_sql(
-                exp.Div(this=exp.Paren(this=this), expression=expression.expression)
-            )
+            this = exp.Cast(this=expression.this, to=exp.DataType.build("DOUBLE"))
+            return self.div_sql(exp.Div(this=this, expression=expression.expression))
 
         return self.binary(expression, "/")
 

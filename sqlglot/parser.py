@@ -184,6 +184,7 @@ class Parser(metaclass=_Parser):
         TokenType.CASCADE,
         TokenType.COLLATE,
         TokenType.COMMAND,
+        TokenType.COMMENT,
         TokenType.COMMIT,
         TokenType.COMPOUND,
         TokenType.CONSTRAINT,

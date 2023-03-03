@@ -109,6 +109,9 @@ class Generator:
     # Whether or not create function uses an AS before the RETURN
     CREATE_FUNCTION_RETURN_AS = True
 
+    # Whether or not to treat the division operator "/" as integer division
+    INTEGER_DIVISION = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1743,17 +1746,28 @@ class Generator:
         return f"{self.sql(expression, 'this')} RESPECT NULLS"
 
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
-        return self.sql(
-            exp.Cast(
-                this=exp.Div(this=expression.this, expression=expression.expression),
-                to=exp.DataType(this=exp.DataType.Type.INT),
-            )
-        )
+        div = self.binary(expression, "/")
+        return self.sql(exp.Cast(this=div, to=exp.DataType.build("INT")))
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         return self.binary(expression, "||")
 
     def div_sql(self, expression: exp.Div) -> str:
+        div = self.binary(expression, "/")
+
+        if not self.INTEGER_DIVISION:
+            return self.sql(exp.Cast(this=div, to=exp.DataType.build("INT")))
+
+        return div
+
+    def floatdiv_sql(self, expression: exp.FloatDiv) -> str:
+        if self.INTEGER_DIVISION:
+            # Multiply divident by 1.0 so that the expression's type can be coerced to float
+            this = exp.Mul(this=expression.this, expression=exp.Literal.number(1.0))
+            return self.div_sql(
+                exp.Div(this=exp.Paren(this=this), expression=expression.expression)
+            )
+
         return self.binary(expression, "/")
 
     def overlaps_sql(self, expression: exp.Overlaps) -> str:

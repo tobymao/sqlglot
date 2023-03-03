@@ -2841,6 +2841,10 @@ class Div(Binary):
     pass
 
 
+class FloatDiv(Binary):
+    pass
+
+
 class Overlaps(Binary):
     pass
 

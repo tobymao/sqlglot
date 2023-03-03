@@ -18,14 +18,48 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
+            "1 / 2",
+            read={
+                "bigquery": "1 / 2",
+                "clickhouse": "1 / 2",
+                "databricks": "1 / 2",
+                "hive": "1 / 2",
+                "mysql": "1 / 2",
+                "oracle": "1 / 2",
+                "snowflake": "1 / 2",
+                "spark": "1 / 2",
+                "starrocks": "1 / 2",
+            },
+            write={
+                "bigquery": "1 / 2",
+                "clickhouse": "1 / 2",
+                "databricks": "1 / 2",
+                "hive": "1 / 2",
+                "mysql": "1 / 2",
+                "oracle": "1 / 2",
+                "snowflake": "1 / 2",
+                "spark": "1 / 2",
+                "starrocks": "1 / 2",
+                "drill": "(1 * 1.0) / 2",
+                "duckdb": "(1 * 1.0) / 2",
+                "postgres": "(1 * 1.0) / 2",
+                "presto": "(1 * 1.0) / 2",
+                "redshift": "(1 * 1.0) / 2",
+                "sqlite": "(1 * 1.0) / 2",
+                "teradata": "(1 * 1.0) / 2",
+                "trino": "(1 * 1.0) / 2",
+                "tsql": "(1 * 1.0) / 2",
+            },
+        )
+        self.validate_all(
             "DIV0(foo, bar)",
             write={
                 "snowflake": "IFF(bar = 0, 0, foo / bar)",
-                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
-                "presto": "IF(bar = 0, 0, foo / bar)",
+                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE (foo * 1.0) / bar END",
+                "presto": "IF(bar = 0, 0, (foo * 1.0) / bar)",
                 "spark": "IF(bar = 0, 0, foo / bar)",
                 "hive": "IF(bar = 0, 0, foo / bar)",
-                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
+                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE (foo * 1.0) / bar END",
             },
         )
         self.validate_all(

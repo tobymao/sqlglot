@@ -193,6 +193,11 @@ class MySQL(Dialect):
             ),
         }
 
+        FACTOR = {
+            **parser.Parser.FACTOR,
+            TokenType.SLASH: exp.FloatDiv,
+        }
+
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,  # type: ignore
             "GROUP_CONCAT": lambda self: self.expression(
@@ -432,6 +437,7 @@ class MySQL(Dialect):
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
+        INTEGER_DIVISION = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

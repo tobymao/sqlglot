@@ -437,6 +437,7 @@ class Parser(metaclass=_Parser):
         TokenType.BEGIN: lambda self: self._parse_transaction(),
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
+        TokenType.COMMENT: lambda self: self._parse_comment(),
         TokenType.CREATE: lambda self: self._parse_create(),
         TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.DESC: lambda self: self._parse_describe(),
@@ -957,18 +958,21 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.ON):
             self.raise_error(f"Expected ON but got {self._curr}")
 
-        kind = self._match_set(self.CREATABLES) and self._prev.text
+        kind = self._match_set(self.CREATABLES) and self._prev
 
         if not kind:
             return self._parse_as_command(start)
 
-        this = self._parse_id_var()
+        if kind.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
+            this = self._parse_user_defined_function(kind=kind.token_type)
+        else:
+            this = self._parse_id_var()
 
         if not self._match(TokenType.IS):
             self.raise_error(f"Expected IS but got {self._curr}")
 
         return self.expression(
-            exp.Comment, this=this, kind=kind, expression=self._parse_string(), exists=exists
+            exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists
         )
 
     def _parse_statement(self) -> t.Optional[exp.Expression]:

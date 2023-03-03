@@ -106,6 +106,20 @@ def _parse_date_part(self):
     return self.expression(exp.Extract, this=this, expression=expression)
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/div0
+def _div0_to_if(args):
+    cond = exp.EQ(this=seq_get(args, 1), expression=exp.Literal.number(0))
+    true = exp.Literal.number(0)
+    false = exp.Div(this=seq_get(args, 0), expression=seq_get(args, 1))
+    return exp.If(this=cond, true=true, false=false)
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
+def _zeroifnull_to_if(args):
+    cond = exp.EQ(this=seq_get(args, 0), expression=exp.Null())
+    return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
+
+
 def _datatype_sql(self, expression):
     if expression.this == exp.DataType.Type.ARRAY:
         return "ARRAY"
@@ -157,6 +171,7 @@ class Snowflake(Dialect):
                 unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
                 this=seq_get(args, 1),
             ),
+            "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
             "TO_ARRAY": exp.Array.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
@@ -164,6 +179,7 @@ class Snowflake(Dialect):
             "RLIKE": exp.RegexpLike.from_arg_list,
             "DECODE": exp.Matches.from_arg_list,
             "OBJECT_CONSTRUCT": parser.parse_var_map,
+            "ZEROIFNULL": _zeroifnull_to_if,
         }
 
         FUNCTION_PARSERS = {

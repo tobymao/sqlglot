@@ -437,6 +437,7 @@ class Parser(metaclass=_Parser):
         TokenType.BEGIN: lambda self: self._parse_transaction(),
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
+        TokenType.COMMENT: lambda self: self._parse_comment(),
         TokenType.CREATE: lambda self: self._parse_create(),
         TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.DESC: lambda self: self._parse_describe(),
@@ -949,6 +950,32 @@ class Parser(metaclass=_Parser):
 
     def _parse_command(self) -> exp.Expression:
         return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
+
+    def _parse_comment(self, allow_exists: bool = True) -> exp.Expression:
+        start = self._prev
+        exists = self._parse_exists() if allow_exists else None
+
+        self._match(TokenType.ON)
+
+        kind = self._match_set(self.CREATABLES) and self._prev
+
+        if not kind:
+            return self._parse_as_command(start)
+
+        if kind.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
+            this = self._parse_user_defined_function(kind=kind.token_type)
+        elif kind.token_type == TokenType.TABLE:
+            this = self._parse_table()
+        elif kind.token_type == TokenType.COLUMN:
+            this = self._parse_column()
+        else:
+            this = self._parse_id_var()
+
+        self._match(TokenType.IS)
+
+        return self.expression(
+            exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists
+        )
 
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:

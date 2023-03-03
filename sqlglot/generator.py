@@ -1651,6 +1651,13 @@ class Generator:
     def command_sql(self, expression: exp.Command) -> str:
         return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
 
+    def comment_sql(self, expression: exp.Comment) -> str:
+        this = self.sql(expression, "this")
+        kind = expression.args["kind"]
+        exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
+        expression_sql = self.sql(expression, "expression")
+        return f"COMMENT{exists_sql}ON {kind} {this} IS {expression_sql}"
+
     def transaction_sql(self, *_) -> str:
         return "BEGIN"
 

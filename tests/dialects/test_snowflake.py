@@ -15,6 +15,7 @@ class TestSnowflake(Validator):
         self.validate_identity(
             'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)'
         )
+        self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
             "CREATE OR REPLACE TEMPORARY TABLE x (y NUMBER IDENTITY(0, 1))",

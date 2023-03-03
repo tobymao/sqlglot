@@ -934,6 +934,10 @@ class SetTag(Expression):
     arg_types = {"expressions": True, "unset": False}
 
 
+class Comment(Expression):
+    arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
+
+
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 

@@ -13,7 +13,7 @@ SELECT_ALL = object()
 DEFAULT_SELECTION = lambda: alias("1", "_")
 
 
-def pushdown_projections(expression, schema=None):
+def pushdown_projections(expression, schema=None, remove_unused_selections=True):
     """
     Rewrite sqlglot AST to remove unused columns projections.
 
@@ -26,6 +26,7 @@ def pushdown_projections(expression, schema=None):
 
     Args:
         expression (sqlglot.Expression): expression to optimize
+        remove_unused_selections (bool): remove selects that are unused
     Returns:
         sqlglot.Expression: optimized expression
     """
@@ -57,7 +58,8 @@ def pushdown_projections(expression, schema=None):
                 ]
 
         if isinstance(scope.expression, exp.Select):
-            _remove_unused_selections(scope, parent_selections, schema)
+            if remove_unused_selections:
+                _remove_unused_selections(scope, parent_selections, schema)
 
             # Group columns by source name
             selects = defaultdict(set)

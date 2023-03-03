@@ -696,6 +696,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMENT": TokenType.COMMENT,
         "COPY": TokenType.COMMAND,
         "EXPLAIN": TokenType.COMMAND,
+        "GRANT": TokenType.COMMAND,
         "OPTIMIZE": TokenType.COMMAND,
         "PREPARE": TokenType.COMMAND,
         "TRUNCATE": TokenType.COMMAND,

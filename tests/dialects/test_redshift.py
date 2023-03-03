@@ -39,6 +39,12 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
+            "SELECT 'abc'::CHARACTER",
+            write={
+                "redshift": "SELECT CAST('abc' AS CHAR)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid",
             write={
                 "redshift": "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid",

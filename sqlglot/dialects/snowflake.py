@@ -214,7 +214,6 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "COMMENT": TokenType.COMMENT,
             "EXCLUDE": TokenType.EXCEPT,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,

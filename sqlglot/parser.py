@@ -951,12 +951,11 @@ class Parser(metaclass=_Parser):
     def _parse_command(self) -> exp.Expression:
         return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
 
-    def _parse_comment(self, allow_exists=True) -> exp.Expression:
+    def _parse_comment(self, allow_exists: bool = True) -> exp.Expression:
         start = self._prev
-        exists = self._parse_exists() if allow_exists else False
+        exists = self._parse_exists() if allow_exists else None
 
-        if not self._match(TokenType.ON):
-            self.raise_error(f"Expected ON but got {self._curr}")
+        self._match(TokenType.ON)
 
         kind = self._match_set(self.CREATABLES) and self._prev
 
@@ -965,11 +964,14 @@ class Parser(metaclass=_Parser):
 
         if kind.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=kind.token_type)
+        elif kind.token_type == TokenType.TABLE:
+            this = self._parse_table()
+        elif kind.token_type == TokenType.COLUMN:
+            this = self._parse_column()
         else:
             this = self._parse_id_var()
 
-        if not self._match(TokenType.IS):
-            self.raise_error(f"Expected IS but got {self._curr}")
+        self._match(TokenType.IS)
 
         return self.expression(
             exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists

@@ -674,7 +674,11 @@ UPDATE db.tbl_name SET foo = 123, foo_1 = 234 WHERE tbl_name.bar = 234
 TRUNCATE TABLE x
 OPTIMIZE TABLE y
 VACUUM FREEZE my_table
+COMMENT ON ACCESS METHOD gin IS 'GIN index access method'
+COMMENT ON COLUMN my_schema.my_table.my_column IS 'Employee ID number'
+COMMENT ON DATABASE my_database IS 'Development Database'
 COMMENT ON PROCEDURE my_proc(integer, integer) IS 'Runs a report'
+COMMENT ON TABLE my_schema.my_table IS 'Employee Information'
 WITH a AS (SELECT 1) INSERT INTO b SELECT * FROM a
 WITH a AS (SELECT * FROM b) UPDATE a SET col = 1
 WITH a AS (SELECT * FROM b) CREATE TABLE b AS SELECT * FROM a

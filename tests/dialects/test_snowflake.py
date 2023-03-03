@@ -18,6 +18,17 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
+            "DIV0(foo, bar)",
+            write={
+                "snowflake": "IFF(bar = 0, 0, foo / bar)",
+                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
+                "presto": "IF(bar = 0, 0, foo / bar)",
+                "spark": "IF(bar = 0, 0, foo / bar)",
+                "hive": "IF(bar = 0, 0, foo / bar)",
+                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
+            },
+        )
+        self.validate_all(
             "CREATE OR REPLACE TEMPORARY TABLE x (y NUMBER IDENTITY(0, 1))",
             write={
                 "snowflake": "CREATE OR REPLACE TEMPORARY TABLE x (y DECIMAL AUTOINCREMENT START 0 INCREMENT 1)",

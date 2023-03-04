@@ -37,10 +37,8 @@ class _Parser(type):
         klass._show_trie = new_trie(key.split(" ") for key in klass.SHOW_PARSERS)
         klass._set_trie = new_trie(key.split(" ") for key in klass.SET_PARSERS)
 
-        klass.FACTOR = {
-            **klass.FACTOR,
-            TokenType.SLASH: exp.Div if klass.INTEGER_DIVISION else exp.FloatDiv,
-        }
+        if not klass.INTEGER_DIVISION:
+            klass.FACTOR = {**klass.FACTOR, TokenType.SLASH: exp.FloatDiv}
 
         return klass
 
@@ -332,6 +330,7 @@ class Parser(metaclass=_Parser):
     FACTOR = {
         TokenType.DIV: exp.IntDiv,
         TokenType.LR_ARROW: exp.Distance,
+        TokenType.SLASH: exp.Div,
         TokenType.STAR: exp.Mul,
     }
 

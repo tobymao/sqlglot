@@ -3764,7 +3764,7 @@ class Merge(Expression):
 
 
 class When(Func):
-    arg_types = {"this": True, "then": True}
+    arg_types = {"matched": True, "source": False, "condition": False, "then": True}
 
 
 def _norm_args(expression):

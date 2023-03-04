@@ -112,6 +112,9 @@ class Generator:
     # Whether or not to treat the division operator "/" as integer division
     INTEGER_DIVISION = True
 
+    # Whether or not MERGE ... WHEN MATCHED BY SOURCE is allowed
+    MATCHED_BY_SOURCE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1956,7 +1959,11 @@ class Generator:
         return self.binary(expression, "=>")
 
     def when_sql(self, expression: exp.When) -> str:
-        this = self.sql(expression, "this")
+        matched = "MATCHED" if expression.args["matched"] else "NOT MATCHED"
+        source = " BY SOURCE" if self.MATCHED_BY_SOURCE and expression.args.get("source") else ""
+        condition = self.sql(expression, "condition")
+        condition = f" AND {condition}" if condition else ""
+
         then_expression = expression.args.get("then")
         if isinstance(then_expression, exp.Insert):
             then = f"INSERT {self.sql(then_expression, 'this')}"
@@ -1969,7 +1976,7 @@ class Generator:
                 then = f"UPDATE SET {self.expressions(then_expression, flat=True)}"
         else:
             then = self.sql(then_expression)
-        return f"WHEN {this} THEN {then}"
+        return f"WHEN {matched}{source}{condition} THEN {then}"
 
     def merge_sql(self, expression: exp.Merge) -> str:
         this = self.sql(expression, "this")

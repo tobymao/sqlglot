@@ -390,3 +390,18 @@ class TestBigQuery(Validator):
                 "bigquery": "INSERT INTO test (cola, colb) VALUES (CAST(7 AS STRING), CAST(14 AS STRING))",
             },
         )
+
+    def test_merge(self):
+        self.validate_all(
+            """
+            MERGE dataset.Inventory T
+            USING dataset.NewArrivals S ON FALSE
+            WHEN NOT MATCHED BY TARGET AND product LIKE '%a%'
+            THEN DELETE
+            WHEN NOT MATCHED BY SOURCE AND product LIKE '%b%'
+            THEN DELETE""",
+            write={
+                "bigquery": "MERGE INTO dataset.Inventory AS T USING dataset.NewArrivals AS S ON FALSE WHEN NOT MATCHED AND product LIKE '%a%' THEN DELETE WHEN NOT MATCHED BY SOURCE AND product LIKE '%b%' THEN DELETE",
+                "snowflake": "MERGE INTO dataset.Inventory AS T USING dataset.NewArrivals AS S ON FALSE WHEN NOT MATCHED AND product LIKE '%a%' THEN DELETE WHEN NOT MATCHED AND product LIKE '%b%' THEN DELETE",
+            },
+        )

@@ -193,11 +193,6 @@ class MySQL(Dialect):
             ),
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,
-            TokenType.SLASH: exp.FloatDiv,
-        }
-
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,  # type: ignore
             "GROUP_CONCAT": lambda self: self.expression(
@@ -304,6 +299,8 @@ class MySQL(Dialect):
             "READ WRITE",
             "READ ONLY",
         }
+
+        INTEGER_DIVISION = False
 
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
             if target:

@@ -52,14 +52,11 @@ class ClickHouse(Dialect):
             and self._parse_in(this, is_global=True),
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,
-            TokenType.SLASH: exp.FloatDiv,
-        }
-
         JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}  # type: ignore
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}  # type: ignore
+
+        INTEGER_DIVISION = False
 
         def _parse_in(
             self, this: t.Optional[exp.Expression], is_global: bool = False

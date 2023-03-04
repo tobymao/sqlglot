@@ -256,10 +256,7 @@ class Hive(Dialect):
             ),
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,
-            TokenType.SLASH: exp.FloatDiv,
-        }
+        INTEGER_DIVISION = False
 
     class Generator(generator.Generator):
         INTEGER_DIVISION = False

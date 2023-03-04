@@ -184,11 +184,6 @@ class BigQuery(Dialect):
             ),
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,
-            TokenType.SLASH: exp.FloatDiv,
-        }
-
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,  # type: ignore
             "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
@@ -217,6 +212,8 @@ class BigQuery(Dialect):
                 exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
             ),
         }
+
+        INTEGER_DIVISION = False
 
     class Generator(generator.Generator):
         INTEGER_DIVISION = False

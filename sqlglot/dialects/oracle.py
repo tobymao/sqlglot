@@ -82,10 +82,7 @@ class Oracle(Dialect):
             "XMLTABLE": _parse_xml_table,
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,
-            TokenType.SLASH: exp.FloatDiv,
-        }
+        INTEGER_DIVISION = False
 
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()

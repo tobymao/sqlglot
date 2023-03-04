@@ -182,11 +182,6 @@ class Snowflake(Dialect):
             "ZEROIFNULL": _zeroifnull_to_if,
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,
-            TokenType.SLASH: exp.FloatDiv,
-        }
-
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": _parse_date_part,
@@ -223,6 +218,8 @@ class Snowflake(Dialect):
             "UNSET": lambda self: self._parse_alter_table_set_tag(unset=True),
             "SET": lambda self: self._parse_alter_table_set_tag(),
         }
+
+        INTEGER_DIVISION = False
 
         def _parse_alter_table_set_tag(self, unset: bool = False) -> exp.Expression:
             self._match_text_seq("TAG")

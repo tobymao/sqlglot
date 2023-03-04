@@ -3775,7 +3775,15 @@ class Parser(metaclass=_Parser):
 
         whens = []
         while self._match(TokenType.WHEN):
-            this = self._parse_conjunction()
+            matched = not self._match(TokenType.NOT)
+            self._match_text_seq("MATCHED")
+            source = (
+                False
+                if self._match_text_seq("BY", "TARGET")
+                else self._match_text_seq("BY", "SOURCE")
+            )
+            condition = self._parse_conjunction() if self._match(TokenType.AND) else None
+
             self._match(TokenType.THEN)
 
             if self._match(TokenType.INSERT):
@@ -3800,8 +3808,18 @@ class Parser(metaclass=_Parser):
                     )
             elif self._match(TokenType.DELETE):
                 then = self.expression(exp.Var, this=self._prev.text)
+            else:
+                then = None
 
-            whens.append(self.expression(exp.When, this=this, then=then))
+            whens.append(
+                self.expression(
+                    exp.When,
+                    matched=matched,
+                    source=source,
+                    condition=condition,
+                    then=then,
+                )
+            )
 
         return self.expression(
             exp.Merge,

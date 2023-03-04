@@ -254,6 +254,7 @@ class Snowflake(Dialect):
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
         INTEGER_DIVISION = False
+        MATCHED_BY_SOURCE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

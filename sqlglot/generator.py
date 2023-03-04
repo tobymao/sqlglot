@@ -1366,8 +1366,6 @@ class Generator:
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def setitem_sql(self, expression):
-        print(dir(expression.this.left))
-        print(expression.this)
         left = expression.this.left
         right = expression.this.right
         local = f"{self.sep()}LOCAL" if expression.args.get("local") else ""

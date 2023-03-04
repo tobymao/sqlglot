@@ -300,6 +300,8 @@ class MySQL(Dialect):
             "READ ONLY",
         }
 
+        INTEGER_DIVISION = False
+
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
             if target:
                 if isinstance(target, str):
@@ -432,6 +434,7 @@ class MySQL(Dialect):
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
+        INTEGER_DIVISION = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

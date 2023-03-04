@@ -67,10 +67,10 @@ class Column:
         return self.binary_op(exp.Mul, other)
 
     def __truediv__(self, other: ColumnOrLiteral) -> Column:
-        return self.binary_op(exp.Div, other)
+        return self.binary_op(exp.FloatDiv, other)
 
     def __div__(self, other: ColumnOrLiteral) -> Column:
-        return self.binary_op(exp.Div, other)
+        return self.binary_op(exp.FloatDiv, other)
 
     def __neg__(self) -> Column:
         return self.unary_op(exp.Neg)
@@ -85,10 +85,10 @@ class Column:
         return self.inverse_binary_op(exp.Mul, other)
 
     def __rdiv__(self, other: ColumnOrLiteral) -> Column:
-        return self.inverse_binary_op(exp.Div, other)
+        return self.inverse_binary_op(exp.FloatDiv, other)
 
     def __rtruediv__(self, other: ColumnOrLiteral) -> Column:
-        return self.inverse_binary_op(exp.Div, other)
+        return self.inverse_binary_op(exp.FloatDiv, other)
 
     def __rmod__(self, other: ColumnOrLiteral) -> Column:
         return self.inverse_binary_op(exp.Mod, other)

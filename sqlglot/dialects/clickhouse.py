@@ -56,6 +56,8 @@ class ClickHouse(Dialect):
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}  # type: ignore
 
+        INTEGER_DIVISION = False
+
         def _parse_in(
             self, this: t.Optional[exp.Expression], is_global: bool = False
         ) -> exp.Expression:
@@ -94,6 +96,7 @@ class ClickHouse(Dialect):
 
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
+        INTEGER_DIVISION = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

@@ -110,7 +110,7 @@ def _parse_date_part(self):
 def _div0_to_if(args):
     cond = exp.EQ(this=seq_get(args, 1), expression=exp.Literal.number(0))
     true = exp.Literal.number(0)
-    false = exp.Div(this=seq_get(args, 0), expression=seq_get(args, 1))
+    false = exp.FloatDiv(this=seq_get(args, 0), expression=seq_get(args, 1))
     return exp.If(this=cond, true=true, false=false)
 
 
@@ -219,6 +219,8 @@ class Snowflake(Dialect):
             "SET": lambda self: self._parse_alter_table_set_tag(),
         }
 
+        INTEGER_DIVISION = False
+
         def _parse_alter_table_set_tag(self, unset: bool = False) -> exp.Expression:
             self._match_text_seq("TAG")
             parser = t.cast(t.Callable, self._parse_id_var if unset else self._parse_conjunction)
@@ -251,6 +253,7 @@ class Snowflake(Dialect):
 
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
+        INTEGER_DIVISION = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

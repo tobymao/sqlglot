@@ -258,10 +258,7 @@ class Postgres(Dialect):
             TokenType.HASH: exp.BitwiseXor,
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,  # type: ignore
-            TokenType.CARET: exp.Pow,
-        }
+        FACTOR = {**parser.Parser.FACTOR, TokenType.CARET: exp.Pow}
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

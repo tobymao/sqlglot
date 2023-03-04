@@ -213,7 +213,11 @@ class BigQuery(Dialect):
             ),
         }
 
+        INTEGER_DIVISION = False
+
     class Generator(generator.Generator):
+        INTEGER_DIVISION = False
+
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore

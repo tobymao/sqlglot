@@ -1,6 +1,39 @@
 Changelog
 =========
 
+v11.3.0
+------
+
+Changes:
+
+- Breaking/Improvement: Fixed transpilation of the division ("/") operator, because some dialects do integer division while others do float division. For example, "a / b" will now be transpiled to "CAST(a AS DOUBLE PRECISION) / b" for Snowflake -> Postgres, and to "CAST(a / b AS INT)" for Postgres -> Snowflake.
+
+- New: Added support for the COMMENT ON statement.
+
+- New: Added support for old (+) JOIN syntax (Oracle).
+
+- New: Added "root" helper method on Expression.
+
+- New: Added "meta" property on Expression.
+
+- Improvement: Refactored parsing of ALTER TABLE so it's easily extensible.
+
+- Improvement: Merging subquery to out of scope join bug fixed.
+
+- Improvement: Tokenize Jinja comments as comments.
+
+- Improvement: Refactor POST_CREATE and POST_EXPRESSION properties.
+
+- Improvement: Fix line numbers for strings that contain multi-line comments.
+
+- Improvement: Fix aliasing for pivot/unpivot expressions.
+
+- Improvement: Enhance AST diff (https://github.com/tobymao/sqlglot/commit/2093626e798fc12124fdf1f25ea63662f2953966).
+
+- Improvement: Better python typing.
+
+- Improvement: Added support for is_star helper on exp.Select.
+
 v11.2.0
 ------
 

@@ -461,6 +461,7 @@ class Parser(metaclass=_Parser):
             and exp.Var(this=self._prev.text),
             this=self._parse_table(schema=False),
         ),
+        TokenType.SET: lambda self: self._parse_set(),
     }
 
     UNARY_PARSERS = {
@@ -3753,15 +3754,11 @@ class Parser(metaclass=_Parser):
         self._advance()
         return self.expression(exp.Show, this=self._prev.text.upper())
 
-    def _default_parse_set_item(self) -> exp.Expression:
+    def _parse_set_item(self) -> t.Optional[exp.Expression]:
         return self.expression(
             exp.SetItem,
             this=self._parse_statement(),
         )
-
-    def _parse_set_item(self) -> t.Optional[exp.Expression]:
-        parser = self._find_parser(self.SET_PARSERS, self._set_trie)  # type: ignore
-        return parser(self) if parser else self._default_parse_set_item()
 
     def _parse_merge(self) -> exp.Expression:
         self._match(TokenType.INTO)
@@ -3829,8 +3826,42 @@ class Parser(metaclass=_Parser):
             expressions=whens,
         )
 
-    def _parse_set(self) -> exp.Expression:
-        return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
+    def _parse_set(self):
+        start = self._prev
+
+        local = self._match(TokenType.LOCAL) is not None
+        global_ = self._match(TokenType.GLOBAL) is not None
+        session = self._match(TokenType.SESSION) is not None
+
+        left = self._parse_var_or_string()
+        
+        assignment_operator = ""
+        if self._match(TokenType.EQ) is not None:
+            assignment_operator = "="
+        elif self._match(TokenType.TO) is not None:
+            assignment_operator = "TO"
+
+        right = self._parse_var_or_string()
+
+        # if we have tokens left, the set was not a recognised variable setting
+        # form of the statement
+        if self._curr is not None:
+            return self._parse_as_command(start)
+
+        this = self.expression(
+            exp.EQ,
+            this=left,
+            expression=right,
+        )
+
+        return self.expression(
+            exp.SetItem,
+            this=this,
+            local=local,
+            global_=global_,
+            session=session,
+            assignment_operator=assignment_operator
+        )
 
     def _parse_as_command(self, start: Token) -> exp.Command:
         while self._curr:

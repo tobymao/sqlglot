@@ -1454,3 +1454,11 @@ SELECT
                 "postgres": "SUBSTRING('123456' FROM 2 FOR 3)",
             },
         )
+
+    def test_set_variables(self):
+        self.validate_all(
+            "SET GLOBAL variable = value",
+            write={
+                "postgres": "SET GLOBAL variable = value",
+            },
+        )

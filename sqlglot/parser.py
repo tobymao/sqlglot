@@ -3742,19 +3742,16 @@ class Parser(metaclass=_Parser):
         start = self._prev
 
         if not self._match(TokenType.TABLE):
-            return self._parse_as_command(self._prev)
+            return self._parse_as_command(start)
 
         exists = self._parse_exists()
         this = self._parse_table(schema=True)
 
-        if not self._curr:
-            return None
-
-        parser = self.ALTER_PARSERS.get(self._curr.text.upper())
+        if self._next:
+            self._advance()
+        parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
 
         if parser:
-            self._advance()
-
             return self.expression(
                 exp.AlterTable,
                 this=this,

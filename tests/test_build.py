@@ -504,6 +504,12 @@ class TestBuild(unittest.TestCase):
                 .window("d AS (PARTITION BY g ORDER BY h)"),
                 "SELECT AVG(a) OVER b, MIN(c) OVER d FROM table WINDOW b AS (PARTITION BY e ORDER BY f), d AS (PARTITION BY g ORDER BY h)",
             ),
+            (
+                lambda: select("*")
+                .from_("table")
+                .qualify("row_number() OVER (PARTITION BY a ORDER BY b) = 1"),
+                "SELECT * FROM table QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

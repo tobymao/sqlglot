@@ -691,7 +691,8 @@ class Generator:
             else ""
         )
         where_sql = self.sql(expression, "where")
-        sql = f"DELETE{this}{using_sql}{where_sql}"
+        returning = self.sql(expression, "returning")
+        sql = f"DELETE{this}{using_sql}{where_sql}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression: exp.Drop) -> str:
@@ -955,8 +956,9 @@ class Generator:
             self.sql(expression, "partition") if expression.args.get("partition") else ""
         )
         expression_sql = self.sql(expression, "expression")
+        returning = self.sql(expression, "returning")
         sep = self.sep() if partition_sql else ""
-        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}"
+        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -973,6 +975,9 @@ class Generator:
 
     def pseudotype_sql(self, expression: exp.PseudoType) -> str:
         return expression.name.upper()
+
+    def returning_sql(self, expression: exp.Returning) -> str:
+        return f"{self.seg('RETURNING')} {self.expressions(expression, flat=True)}"
 
     def rowformatdelimitedproperty_sql(self, expression: exp.RowFormatDelimitedProperty) -> str:
         fields = expression.args.get("fields")
@@ -1053,7 +1058,8 @@ class Generator:
         set_sql = self.expressions(expression, flat=True)
         from_sql = self.sql(expression, "from")
         where_sql = self.sql(expression, "where")
-        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}"
+        returning = self.sql(expression, "returning")
+        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:

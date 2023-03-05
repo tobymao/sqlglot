@@ -1515,12 +1515,10 @@ class Parser(metaclass=_Parser):
     def _parse_insert(self) -> exp.Expression:
         overwrite = self._match(TokenType.OVERWRITE)
         local = self._match(TokenType.LOCAL)
-
-        this: t.Optional[exp.Expression]
-
         alternative = None
+
         if self._match_text_seq("DIRECTORY"):
-            this = self.expression(
+            this: t.Optional[exp.Expression] = self.expression(
                 exp.Directory,
                 this=self._parse_var_or_string(),
                 local=local,
@@ -1540,9 +1538,16 @@ class Parser(metaclass=_Parser):
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_ddl_select(),
+            returning=self._parse_returning(),
             overwrite=overwrite,
             alternative=alternative,
         )
+
+    def _parse_returning(self) -> t.Optional[exp.Expression]:
+        if not self._match(TokenType.RETURNING):
+            return None
+
+        return self.expression(exp.Returning, expressions=self._parse_csv(self._parse_column))
 
     def _parse_row(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.FORMAT):
@@ -1601,6 +1606,7 @@ class Parser(metaclass=_Parser):
             this=self._parse_table(schema=True),
             using=self._parse_csv(lambda: self._match(TokenType.USING) and self._parse_table()),
             where=self._parse_where(),
+            returning=self._parse_returning(),
         )
 
     def _parse_update(self) -> exp.Expression:
@@ -1611,6 +1617,7 @@ class Parser(metaclass=_Parser):
                 "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
                 "from": self._parse_from(),
                 "where": self._parse_where(),
+                "returning": self._parse_returning(),
             },
         )
 

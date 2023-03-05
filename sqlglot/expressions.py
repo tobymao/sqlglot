@@ -1031,7 +1031,7 @@ class Constraint(Expression):
 
 
 class Delete(Expression):
-    arg_types = {"with": False, "this": False, "using": False, "where": False}
+    arg_types = {"with": False, "this": False, "using": False, "where": False, "returning": False}
 
 
 class Drop(Expression):
@@ -1132,11 +1132,16 @@ class Insert(Expression):
         "with": False,
         "this": True,
         "expression": False,
+        "returning": False,
         "overwrite": False,
         "exists": False,
         "partition": False,
         "alternative": False,
     }
+
+
+class Returning(Expression):
+    arg_types = {"expressions": True}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html
@@ -1895,6 +1900,7 @@ class Update(Expression):
         "expressions": True,
         "from": False,
         "where": False,
+        "returning": False,
     }
 
 

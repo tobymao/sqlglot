@@ -11,6 +11,14 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE test (foo JSONB)")
         self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
 
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
+        self.validate_identity(
+            "DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid RETURNING a"
+        )
+        self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
+
         self.validate_all(
             "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
             write={

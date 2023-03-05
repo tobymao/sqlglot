@@ -3739,6 +3739,8 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.RenameTable, this=self._parse_table(schema=True))
 
     def _parse_alter(self) -> t.Optional[exp.Expression]:
+        start = self._prev
+
         if not self._match(TokenType.TABLE):
             return self._parse_as_command(self._prev)
 
@@ -3749,9 +3751,17 @@ class Parser(metaclass=_Parser):
             return None
 
         parser = self.ALTER_PARSERS.get(self._curr.text.upper())
-        actions = ensure_list(self._advance() or parser(self)) if parser else []  # type: ignore
 
-        return self.expression(exp.AlterTable, this=this, exists=exists, actions=actions)
+        if parser:
+            self._advance()
+
+            return self.expression(
+                exp.AlterTable,
+                this=this,
+                exists=exists,
+                actions=ensure_list(parser(self)),
+            )
+        return self._parse_as_command(start)
 
     def _parse_show(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore

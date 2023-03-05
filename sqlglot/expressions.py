@@ -2407,6 +2407,18 @@ class Select(Subqueryable):
             **opts,
         )
 
+    def qualify(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
+        return _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="qualify",
+            append=append,
+            into=Qualify,
+            dialect=dialect,
+            copy=copy,
+            **opts,
+        )
+
     def distinct(self, distinct=True, copy=True) -> Select:
         """
         Set the OFFSET expression.

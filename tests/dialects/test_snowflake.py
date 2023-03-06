@@ -415,6 +415,13 @@ class TestSnowflake(Validator):
                 "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) * 1000 AS ddate FROM table_name",
             },
         )
+        self.validate_all(
+            "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            write={
+                "bigquery": "DATE_ADD(CAST('2008-12-25' AS DATE), INTERVAL 5 DAY)",
+                "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            },
+        )
 
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")

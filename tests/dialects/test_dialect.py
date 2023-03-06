@@ -510,6 +510,7 @@ class TestDialect(Validator):
             "DATE_ADD(x, 1, 'day')",
             read={
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
+                "snowflake": "DATEADD('day', 1, x)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
             write={

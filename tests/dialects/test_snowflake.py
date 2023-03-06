@@ -356,7 +356,9 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE (50) WHERE t2.j = t1.i"
         )
-        self.validate_identity("SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)")
+        self.validate_identity(
+            "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)"
+        )
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
 

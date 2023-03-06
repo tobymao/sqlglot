@@ -704,8 +704,8 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
         self.validate_all(
             """SELECT $1 AS "_1" FROM VALUES ('a'), ('b')""",
             write={
-                """snowflake": "SELECT $1 AS "_1" FROM (VALUES ('a'), ('b'))""",
-                """spark": "SELECT @1 AS `_1` FROM VALUES ('a'), ('b')""",
+                "snowflake": """SELECT $1 AS "_1" FROM (VALUES ('a'), ('b'))""",
+                "spark": """SELECT @1 AS `_1` FROM VALUES ('a'), ('b')""",
             },
         )
 

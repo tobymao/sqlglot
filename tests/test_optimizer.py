@@ -364,6 +364,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         expression = annotate_types(parse_one("ARRAY(1)::ARRAY<INT>"))
         self.assertEqual(expression.type, parse_one("ARRAY<INT>", into=exp.DataType))
 
+        expression = annotate_types(parse_one("CAST(x AS INTERVAL)"))
+        self.assertEqual(expression.type.this, exp.DataType.Type.INTERVAL)
+        self.assertEqual(expression.this.type.this, exp.DataType.Type.UNKNOWN)
+        self.assertEqual(expression.args["to"].type.this, exp.DataType.Type.INTERVAL)
+
     def test_cache_annotation(self):
         expression = annotate_types(
             parse_one("CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1")

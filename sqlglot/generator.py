@@ -1017,7 +1017,7 @@ class Generator:
 
         return f"{table}{system_time}{alias}{hints}{laterals}{joins}{pivots}"
 
-    def tablesample_sql(self, expression: exp.TableSample) -> str:
+    def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:
         if self.alias_post_tablesample and expression.this.alias:
             this = self.sql(expression.this, "this")
             alias = f" AS {self.sql(expression.this, 'alias')}"
@@ -1025,7 +1025,7 @@ class Generator:
             this = self.sql(expression, "this")
             alias = ""
         method = self.sql(expression, "method")
-        method = f" {method.upper()} " if method else ""
+        method = f"{method.upper()} " if method else ""
         numerator = self.sql(expression, "bucket_numerator")
         denominator = self.sql(expression, "bucket_denominator")
         field = self.sql(expression, "bucket_field")
@@ -1037,8 +1037,9 @@ class Generator:
         rows = f"{rows} ROWS" if rows else ""
         size = self.sql(expression, "size")
         seed = self.sql(expression, "seed")
-        seed = f" SEED ({seed})" if seed else ""
-        return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size}){seed}{alias}"
+        seed = f" {seed_prefix} ({seed})" if seed else ""
+        kind = expression.args.get("kind", "TABLESAMPLE")
+        return f"{this} {kind} {method}({bucket}{percent}{rows}{size}){seed}{alias}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         this = self.sql(expression, "this")
@@ -1306,6 +1307,7 @@ class Generator:
             self.sql(expression, "limit"),
             self.sql(expression, "offset"),
             self.sql(expression, "lock"),
+            self.sql(expression, "sample"),
             sep="",
         )
 

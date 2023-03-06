@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_properties_sql,
     no_safe_divide_sql,
-    no_tablesample_sql,
     rename_func,
     str_position_sql,
     str_to_time_sql,
@@ -155,7 +154,6 @@ class DuckDB(Dialect):
             exp.StrToTime: str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.Struct: _struct_sql,
-            exp.TableSample: no_tablesample_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
@@ -179,3 +177,6 @@ class DuckDB(Dialect):
             **generator.Generator.STAR_MAPPING,
             "except": "EXCLUDE",
         }
+
+        def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:
+            return super().tablesample_sql(expression, seed_prefix="REPEATABLE")

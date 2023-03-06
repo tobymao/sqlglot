@@ -482,9 +482,9 @@ class TestHive(Validator):
         self.validate_all(
             "SELECT * FROM x TABLESAMPLE(10) y",
             write={
-                "presto": "SELECT * FROM x AS y TABLESAMPLE(10)",
-                "hive": "SELECT * FROM x TABLESAMPLE(10) AS y",
-                "spark": "SELECT * FROM x TABLESAMPLE(10) AS y",
+                "presto": "SELECT * FROM x AS y TABLESAMPLE (10)",
+                "hive": "SELECT * FROM x TABLESAMPLE (10) AS y",
+                "spark": "SELECT * FROM x TABLESAMPLE (10) AS y",
             },
         )
         self.validate_all(
@@ -626,25 +626,25 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM x TABLESAMPLE(1) AS foo",
+            "SELECT * FROM x TABLESAMPLE (1) AS foo",
             read={
-                "presto": "SELECT * FROM x AS foo TABLESAMPLE(1)",
+                "presto": "SELECT * FROM x AS foo TABLESAMPLE (1)",
             },
             write={
-                "presto": "SELECT * FROM x AS foo TABLESAMPLE(1)",
-                "hive": "SELECT * FROM x TABLESAMPLE(1) AS foo",
-                "spark": "SELECT * FROM x TABLESAMPLE(1) AS foo",
+                "presto": "SELECT * FROM x AS foo TABLESAMPLE (1)",
+                "hive": "SELECT * FROM x TABLESAMPLE (1) AS foo",
+                "spark": "SELECT * FROM x TABLESAMPLE (1) AS foo",
             },
         )
         self.validate_all(
-            "SELECT * FROM x TABLESAMPLE(1) AS foo",
+            "SELECT * FROM x TABLESAMPLE (1) AS foo",
             read={
-                "presto": "SELECT * FROM x AS foo TABLESAMPLE(1)",
+                "presto": "SELECT * FROM x AS foo TABLESAMPLE (1)",
             },
             write={
-                "presto": "SELECT * FROM x AS foo TABLESAMPLE(1)",
-                "hive": "SELECT * FROM x TABLESAMPLE(1) AS foo",
-                "spark": "SELECT * FROM x TABLESAMPLE(1) AS foo",
+                "presto": "SELECT * FROM x AS foo TABLESAMPLE (1)",
+                "hive": "SELECT * FROM x TABLESAMPLE (1) AS foo",
+                "spark": "SELECT * FROM x TABLESAMPLE (1) AS foo",
             },
         )
         self.validate_all(

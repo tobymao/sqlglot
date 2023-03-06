@@ -1752,6 +1752,7 @@ QUERY_MODIFIERS = {
     "limit": False,
     "offset": False,
     "lock": False,
+    "sample": False,
 }
 
 
@@ -2549,6 +2550,7 @@ class TableSample(Expression):
         "rows": False,
         "size": False,
         "seed": False,
+        "kind": False,
     }
 
 

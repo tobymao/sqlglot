@@ -373,7 +373,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
             write={
-                "snowflake": "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
+                "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
             },
         )
         self.validate_all(
@@ -385,13 +385,13 @@ class TestSnowflake(Validator):
                      table2 AS t2 SAMPLE (50)     -- 50% of rows in table2
                 WHERE t2.j = t1.i""",
             write={
-                "snowflake": "SELECT i, j FROM table1 AS t1 SAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 SAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
+                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
             },
         )
         self.validate_all(
             "SELECT * FROM testtable SAMPLE BLOCK (0.012) REPEATABLE (99992)",
             write={
-                "snowflake": "SELECT * FROM testtable SAMPLE BLOCK (0.012) SEED (99992)",
+                "snowflake": "SELECT * FROM testtable TABLESAMPLE BLOCK (0.012) SEED (99992)",
             },
         )
 

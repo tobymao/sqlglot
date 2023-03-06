@@ -349,11 +349,10 @@ class Snowflake(Dialect):
             expression. This might not be true in a case where the same column name can be sourced from another table that can
             properly quote but should be true in most cases.
             """
-            values_expressions = expression.find_all(exp.Values)
             values_identifiers = set(
                 flatten(
-                    v.args.get("alias", exp.Alias()).args.get("columns", [])
-                    for v in values_expressions
+                    (v.args.get("alias") or exp.Alias()).args.get("columns", [])
+                    for v in expression.find_all(exp.Values)
                 )
             )
             if values_identifiers:

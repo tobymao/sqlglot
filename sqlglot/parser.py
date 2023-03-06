@@ -255,7 +255,6 @@ class Parser(metaclass=_Parser):
         TokenType.NATURAL,
         TokenType.OFFSET,
         TokenType.RIGHT,
-        TokenType.USING_SAMPLE,
         TokenType.WINDOW,
     }
 
@@ -2168,7 +2167,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.TABLE_SAMPLE) and not (
-            as_modifier and self._match(TokenType.USING_SAMPLE)
+            as_modifier and self._match_text_seq("USING", "SAMPLE")
         ):
             return None
 
@@ -2180,7 +2179,7 @@ class Parser(metaclass=_Parser):
         size = None
         seed = None
 
-        kind = self._prev.text
+        kind = "TABLESAMPLE" if self._prev.token_type == TokenType.TABLE_SAMPLE else "USING SAMPLE"
         method = self._parse_var(tokens=(TokenType.ROW,))
 
         self._match(TokenType.L_PAREN)

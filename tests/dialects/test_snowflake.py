@@ -351,17 +351,23 @@ class TestSnowflake(Validator):
         )
 
     def test_sample(self):
-        self.validate_identity("SELECT * FROM testtable SAMPLE (10)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE (100)")
-        self.validate_identity("SELECT * FROM testtable SAMPLE ROW (0)")
         self.validate_identity(
-            "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 SAMPLE (50) WHERE t2.j = t1.i"
+            "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE (50) WHERE t2.j = t1.i"
         )
-        self.validate_identity("SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) SAMPLE (1)")
-        self.validate_identity("SELECT * FROM testtable SAMPLE SYSTEM (3) SEED (82)")
-        self.validate_identity("SELECT * FROM testtable SAMPLE (10 ROWS)")
+        self.validate_identity("SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)")
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
 
+        self.validate_all(
+            "SELECT * FROM testtable SAMPLE (10)",
+            write={"snowflake": "SELECT * FROM testtable TABLESAMPLE (10)"},
+        )
+        self.validate_all(
+            "SELECT * FROM testtable SAMPLE ROW (0)",
+            write={"snowflake": "SELECT * FROM testtable TABLESAMPLE ROW (0)"},
+        )
         self.validate_all(
             "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
             write={

@@ -290,7 +290,6 @@ class TokenType(AutoName):
     UPDATE = auto()
     USE = auto()
     USING = auto()
-    USING_SAMPLE = auto()
     VALUES = auto()
     VIEW = auto()
     VOLATILE = auto()
@@ -618,7 +617,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
-        "USING SAMPLE": TokenType.USING_SAMPLE,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "VOLATILE": TokenType.VOLATILE,

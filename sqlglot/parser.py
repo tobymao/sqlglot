@@ -255,6 +255,7 @@ class Parser(metaclass=_Parser):
         TokenType.NATURAL,
         TokenType.OFFSET,
         TokenType.RIGHT,
+        TokenType.USING_SAMPLE,
         TokenType.WINDOW,
     }
 
@@ -689,6 +690,7 @@ class Parser(metaclass=_Parser):
         "limit": lambda self: self._parse_limit(),
         "offset": lambda self: self._parse_offset(),
         "lock": lambda self: self._parse_lock(),
+        "sample": lambda self: self._parse_table_sample(as_modifier=True),
     }
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
@@ -2164,11 +2166,11 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Values, expressions=expressions, alias=self._parse_table_alias())
 
-    def _parse_table_sample(self) -> t.Optional[exp.Expression]:
+    def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.TABLE_SAMPLE):
-            return None
+            if not (as_modifier and self._match(TokenType.USING_SAMPLE)):
+                return None
 
-        method = self._parse_var()
         bucket_numerator = None
         bucket_denominator = None
         bucket_field = None
@@ -2177,7 +2179,12 @@ class Parser(metaclass=_Parser):
         size = None
         seed = None
 
-        self._match_l_paren()
+        kind = self._prev.text
+        method = self._parse_var(tokens=(TokenType.ROW,))
+
+        self._match(TokenType.L_PAREN)
+
+        num = self._parse_number()
 
         if self._match(TokenType.BUCKET):
             bucket_numerator = self._parse_number()
@@ -2185,19 +2192,20 @@ class Parser(metaclass=_Parser):
             bucket_denominator = bucket_denominator = self._parse_number()
             self._match(TokenType.ON)
             bucket_field = self._parse_field()
+        elif self._match_set((TokenType.PERCENT, TokenType.MOD)):
+            percent = num
+        elif self._match(TokenType.ROWS):
+            rows = num
         else:
-            num = self._parse_number()
+            size = num
 
-            if self._match(TokenType.PERCENT):
-                percent = num
-            elif self._match(TokenType.ROWS):
-                rows = num
-            else:
-                size = num
+        self._match(TokenType.R_PAREN)
 
-        self._match_r_paren()
-
-        if self._match(TokenType.SEED):
+        if self._match(TokenType.L_PAREN):
+            method = self._parse_var()
+            seed = self._match(TokenType.COMMA) and self._parse_number()
+            self._match_r_paren()
+        elif self._match_texts(("SEED", "REPEATABLE")):
             seed = self._parse_wrapped(self._parse_number)
 
         return self.expression(
@@ -2210,6 +2218,7 @@ class Parser(metaclass=_Parser):
             rows=rows,
             size=size,
             seed=seed,
+            kind=kind,
         )
 
     def _parse_pivots(self) -> t.List[t.Optional[exp.Expression]]:
@@ -3503,8 +3512,14 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Identifier, this=self._prev.text, quoted=True)
         return self._parse_placeholder()
 
-    def _parse_var(self, any_token: bool = False) -> t.Optional[exp.Expression]:
-        if (any_token and self._advance_any()) or self._match(TokenType.VAR):
+    def _parse_var(
+        self, any_token: bool = False, tokens: t.Optional[t.Collection[TokenType]] = None
+    ) -> t.Optional[exp.Expression]:
+        if (
+            (any_token and self._advance_any())
+            or self._match(TokenType.VAR)
+            or self._match_set(tokens or {})
+        ):
             return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()
 

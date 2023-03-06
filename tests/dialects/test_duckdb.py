@@ -75,6 +75,40 @@ class TestDuckDB(Validator):
             },
         )
 
+    def test_sample(self):
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 5",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (5)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 10%",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (10 PERCENT)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 10 PERCENT (bernoulli)",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE BERNOULLI (10 PERCENT)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE reservoir(50 ROWS) REPEATABLE (100)",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE RESERVOIR (50 ROWS) REPEATABLE (100)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 10% (system, 377)",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE SYSTEM (10 PERCENT) REPEATABLE (377)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl TABLESAMPLE RESERVOIR(20%), tbl2 WHERE tbl.i=tbl2.i",
+            write={
+                "duckdb": "SELECT * FROM tbl TABLESAMPLE RESERVOIR (20 PERCENT), tbl2 WHERE tbl.i = tbl2.i"
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM tbl, tbl2 WHERE tbl.i=tbl2.i USING SAMPLE RESERVOIR(20%)",
+            write={
+                "duckdb": "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)"
+            },
+        )
+
     def test_duckdb(self):
         self.validate_identity("SELECT {'a': 1} AS x")
         self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")

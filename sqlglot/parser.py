@@ -2167,9 +2167,10 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Values, expressions=expressions, alias=self._parse_table_alias())
 
     def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.Expression]:
-        if not self._match(TokenType.TABLE_SAMPLE):
-            if not (as_modifier and self._match(TokenType.USING_SAMPLE)):
-                return None
+        if not self._match(TokenType.TABLE_SAMPLE) and not (
+            as_modifier and self._match(TokenType.USING_SAMPLE)
+        ):
+            return None
 
         bucket_numerator = None
         bucket_denominator = None
@@ -3518,9 +3519,7 @@ class Parser(metaclass=_Parser):
         if (
             (any_token and self._advance_any())
             or self._match(TokenType.VAR)
-            or self._match_set(tokens)
-            if tokens
-            else False
+            or (self._match_set(tokens) if tokens else False)
         ):
             return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()

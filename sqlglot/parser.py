@@ -3518,7 +3518,9 @@ class Parser(metaclass=_Parser):
         if (
             (any_token and self._advance_any())
             or self._match(TokenType.VAR)
-            or self._match_set(tokens or {})
+            or self._match_set(tokens)
+            if tokens
+            else False
         ):
             return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()

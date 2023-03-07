@@ -64,6 +64,7 @@ class TestMySQL(Validator):
         self.validate_identity("SET TRANSACTION READ ONLY")
         self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE")
         self.validate_identity("SELECT SCHEMA()")
+        self.validate_identity("SELECT DATABASE()")
 
     def test_types(self):
         self.validate_all(

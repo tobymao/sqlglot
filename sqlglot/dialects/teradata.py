@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, min_or_least
 from sqlglot.tokens import TokenType
 
 
@@ -124,6 +124,11 @@ class Teradata(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.PartitionedByProperty: exp.Properties.Location.POST_INDEX,
+        }
+
+        TRANSFORMS = {
+            **generator.Generator.TRANSFORMS,
+            exp.Min: min_or_least,
         }
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:

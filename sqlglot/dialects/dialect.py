@@ -407,6 +407,11 @@ def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
     return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
 
+def min_or_least(self: Generator, expression: exp.Min) -> str:
+    name = "LEAST" if expression.expressions else "MIN"
+    return rename_func(name)(self, expression)
+
+
 def trim_sql(self: Generator, expression: exp.Trim) -> str:
     target = self.sql(expression, "this")
     trim_type = self.sql(expression, "position")

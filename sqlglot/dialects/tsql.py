@@ -4,7 +4,12 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
+from sqlglot.dialects.dialect import (
+    Dialect,
+    min_or_least,
+    parse_date_delta,
+    rename_func,
+)
 from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
@@ -433,6 +438,7 @@ class TSQL(Dialect):
             exp.NumberToStr: _format_sql,
             exp.TimeToStr: _format_sql,
             exp.GroupConcat: _string_agg_sql,
+            exp.Min: min_or_least,
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

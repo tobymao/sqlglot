@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
+    min_or_least,
     rename_func,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
@@ -291,6 +292,7 @@ class Snowflake(Dialect):
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.Min: min_or_least,
         }
 
         TYPE_MAPPING = {

@@ -81,6 +81,13 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
             },
         )
+        self.validate_all("x", read={"snowflake": "LEAST(x)"})
+        self.validate_all("MIN(x)", read={"snowflake": "MIN(x)"}, write={"snowflake": "MIN(x)"})
+        self.validate_all(
+            "MIN(x, y, z)",
+            read={"snowflake": "LEAST(x, y, z)"},
+            write={"snowflake": "LEAST(x, y, z)"},
+        )
 
     def test_hexadecimal_literal(self):
         self.validate_all(

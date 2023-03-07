@@ -179,7 +179,7 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SET, TokenType.SHOW}
 
     class Parser(parser.Parser):
-        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA}  # type: ignore
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}  # type: ignore
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore

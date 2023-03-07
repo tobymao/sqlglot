@@ -120,6 +120,12 @@ def _zeroifnull_to_if(args):
     return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
+def _nullifzero_to_if(args):
+    cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
+    return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
+
+
 def _datatype_sql(self, expression):
     if expression.this == exp.DataType.Type.ARRAY:
         return "ARRAY"
@@ -185,6 +191,7 @@ class Snowflake(Dialect):
             "DECODE": exp.Matches.from_arg_list,
             "OBJECT_CONSTRUCT": parser.parse_var_map,
             "ZEROIFNULL": _zeroifnull_to_if,
+            "NULLIFZERO": _nullifzero_to_if,
         }
 
         FUNCTION_PARSERS = {

@@ -63,6 +63,28 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "ZEROIFNULL(foo)",
+            write={
+                "snowflake": "IFF(foo IS NULL, 0, foo)",
+                "sqlite": "CASE WHEN foo IS NULL THEN 0 ELSE foo END",
+                "presto": "IF(foo IS NULL, 0, foo)",
+                "spark": "IF(foo IS NULL, 0, foo)",
+                "hive": "IF(foo IS NULL, 0, foo)",
+                "duckdb": "CASE WHEN foo IS NULL THEN 0 ELSE foo END",
+            },
+        )
+        self.validate_all(
+            "NULLIFZERO(foo)",
+            write={
+                "snowflake": "IFF(foo = 0, NULL, foo)",
+                "sqlite": "CASE WHEN foo = 0 THEN NULL ELSE foo END",
+                "presto": "IF(foo = 0, NULL, foo)",
+                "spark": "IF(foo = 0, NULL, foo)",
+                "hive": "IF(foo = 0, NULL, foo)",
+                "duckdb": "CASE WHEN foo = 0 THEN NULL ELSE foo END",
+            },
+        )
+        self.validate_all(
             "CREATE OR REPLACE TEMPORARY TABLE x (y NUMBER IDENTITY(0, 1))",
             write={
                 "snowflake": "CREATE OR REPLACE TEMPORARY TABLE x (y DECIMAL AUTOINCREMENT START 0 INCREMENT 1)",

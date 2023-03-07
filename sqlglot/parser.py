@@ -955,7 +955,8 @@ class Parser(metaclass=_Parser):
             self._prev_comments = None
 
     def _retreat(self, index: int) -> None:
-        self._advance(index - self._index)
+        if index != self._index:
+            self._advance(index - self._index)
 
     def _parse_command(self) -> exp.Expression:
         return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())

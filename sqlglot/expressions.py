@@ -3443,7 +3443,7 @@ class JSONBExtractScalar(JSONExtract):
 
 
 class Least(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"expressions": False}
     is_var_len_args = True
 
 
@@ -3505,11 +3505,13 @@ class Matches(Func):
 
 
 class Max(AggFunc):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
 
 
 class Min(AggFunc):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
 
 
 class Month(Func):

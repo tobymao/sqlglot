@@ -324,6 +324,10 @@ class Snowflake(Dialect):
                 self.unsupported("INTERSECT with All is not supported in Snowflake")
             return super().intersect_op(expression)
 
+        def min_sql(self, expression):
+            name = "LEAST" if expression.expressions else "MIN"
+            return rename_func(name)(self, expression)
+
         def values_sql(self, expression: exp.Values) -> str:
             """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted.
 

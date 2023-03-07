@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
+    min_or_least,
     rename_func,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
@@ -291,6 +292,7 @@ class Snowflake(Dialect):
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.Min: min_or_least,
         }
 
         TYPE_MAPPING = {
@@ -323,10 +325,6 @@ class Snowflake(Dialect):
             if not expression.args.get("distinct", False):
                 self.unsupported("INTERSECT with All is not supported in Snowflake")
             return super().intersect_op(expression)
-
-        def min_sql(self, expression):
-            name = "LEAST" if expression.expressions else "MIN"
-            return rename_func(name)(self, expression)
 
         def values_sql(self, expression: exp.Values) -> str:
             """Due to a bug in Snowflake we want to make sure that all columns in a VALUES table alias are unquoted.

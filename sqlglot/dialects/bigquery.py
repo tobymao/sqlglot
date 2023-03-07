@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
     inline_array_sql,
+    min_or_least,
     no_ilike_sql,
     rename_func,
     timestrtotime_sql,
@@ -232,6 +233,7 @@ class BigQuery(Dialect):
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
+            exp.Min: min_or_least,
             exp.Select: transforms.preprocess(
                 [_unqualify_unnest], transforms.delegate("select_sql")
             ),

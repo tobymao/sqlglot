@@ -53,6 +53,7 @@ class Redshift(Postgres):
             "SUPER": TokenType.SUPER,
             "TIME": TokenType.TIMESTAMP,
             "TIMETZ": TokenType.TIMESTAMPTZ,
+            "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
         }

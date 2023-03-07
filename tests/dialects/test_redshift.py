@@ -85,6 +85,12 @@ class TestRedshift(Validator):
                 "presto": "DATE_DIFF(d, a, b)",
             },
         )
+        self.validate_all(
+            "SELECT TOP 1 x FROM y",
+            write={
+                "redshift": "SELECT x FROM y LIMIT 1",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity(

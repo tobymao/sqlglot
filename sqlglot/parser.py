@@ -3285,12 +3285,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
         to: t.Optional[exp.Expression]
-        this = self._parse_column()
+        this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
             to = self.expression(exp.CharacterSet, this=self._parse_var())
         elif self._match(TokenType.COMMA):
-            to = self._parse_types()
+            to = self._parse_bitwise()
         else:
             to = None
 

@@ -116,7 +116,7 @@ def _div0_to_if(args):
 
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
 def _zeroifnull_to_if(args):
-    cond = exp.EQ(this=seq_get(args, 0), expression=exp.Null())
+    cond = exp.Is(this=seq_get(args, 0), expression=exp.Null())
     return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
 
 

@@ -219,6 +219,9 @@ class Postgres(Dialect):
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
+            "&&": TokenType.ARRAY_OVERLAPS,
+            "@>": TokenType.CONTAINS,
+            "<@": TokenType.CONTAINS,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
@@ -260,7 +263,24 @@ class Postgres(Dialect):
             TokenType.HASH: exp.BitwiseXor,
         }
 
-        FACTOR = {**parser.Parser.FACTOR, TokenType.CARET: exp.Pow}
+        FACTOR = {
+            **parser.Parser.FACTOR,  # type: ignore
+            TokenType.CARET: exp.Pow,
+            TokenType.ARRAY_OVERLAPS: exp.ArrayOverlaps,
+        }
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,  # type: ignore
+            TokenType.CONTAINS: lambda self, this: self._parse_contains(this),
+        }
+
+        def _parse_contains(self, this: exp.Expression) -> exp.Expression:
+            is_contained = self._prev.text == "<@"
+            expression = self._parse_bitwise()
+
+            return self.expression(
+                exp.ArrayContains, this=this, expression=expression, is_contained=is_contained
+            )
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -299,6 +319,7 @@ class Postgres(Dialect):
             exp.DateDiff: _date_diff_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Min: min_or_least,
+            exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,
@@ -321,3 +342,6 @@ class Postgres(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def arraycontains_sql(self, expression: exp.ArrayContains) -> str:
+            return self.binary(expression, "<@" if expression.args.get("is_contained") else "@>")

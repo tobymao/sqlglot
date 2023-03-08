@@ -2971,6 +2971,10 @@ class Sub(Binary):
     pass
 
 
+class ArrayOverlaps(Binary):
+    pass
+
+
 # Unary Expressions
 # (NOT a)
 class Unary(Expression):
@@ -3156,8 +3160,8 @@ class ArrayConcat(Func):
     is_var_len_args = True
 
 
-class ArrayContains(Func):
-    arg_types = {"this": True, "expression": True}
+class ArrayContains(Func, Binary):
+    arg_types = {"this": True, "expression": True, "is_contained": False}
 
 
 class ArrayFilter(Func):

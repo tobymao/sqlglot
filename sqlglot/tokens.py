@@ -50,6 +50,7 @@ class TokenType(AutoName):
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
     NATIONAL = auto()
+    CONTAINS = auto()
 
     BLOCK_START = auto()
     BLOCK_END = auto()
@@ -127,6 +128,7 @@ class TokenType(AutoName):
     ANY = auto()
     APPLY = auto()
     ARRAY = auto()
+    ARRAY_OVERLAPS = auto()
     ASC = auto()
     ASOF = auto()
     AT_TIME_ZONE = auto()

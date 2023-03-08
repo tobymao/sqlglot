@@ -71,6 +71,9 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
+        self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
+        self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
+        self.validate_identity("SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]")
         self.validate_identity("$x")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")

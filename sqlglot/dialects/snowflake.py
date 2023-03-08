@@ -180,6 +180,11 @@ class Snowflake(Dialect):
                 expression=seq_get(args, 1),
                 unit=seq_get(args, 0),
             ),
+            "DATEDIFF": lambda args: exp.DateDiff(
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
+            ),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
                 this=seq_get(args, 1),

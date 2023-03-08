@@ -89,6 +89,20 @@ class TestSQLite(Validator):
             write={"snowflake": "LEAST(x, y, z)"},
         )
 
+    def test_datediff(self):
+        self.validate_all(
+            "DATEDIFF(a, b, 'day')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'hour')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 24.0 AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'year')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) / 365.0 AS INTEGER)"},
+        )
+
     def test_hexadecimal_literal(self):
         self.validate_all(
             "SELECT 0XCC",

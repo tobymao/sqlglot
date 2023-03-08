@@ -4861,19 +4861,19 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
 
     from sqlglot.dialects.dialect import Dialect
 
-    args = tuple(convert(arg) for arg in args)
+    converted = [convert(arg) for arg in args]
     kwargs = {key: convert(value) for key, value in kwargs.items()}
 
     parser = Dialect.get_or_raise(dialect)().parser()
     from_args_list = parser.FUNCTIONS.get(name.upper())
 
     if from_args_list:
-        function = from_args_list(args) if args else from_args_list.__self__(**kwargs)  # type: ignore
+        function = from_args_list(converted) if converted else from_args_list.__self__(**kwargs)  # type: ignore
     else:
-        kwargs = kwargs or {"expressions": args}
+        kwargs = kwargs or {"expressions": converted}
         function = Anonymous(this=name, **kwargs)
 
-    for error_message in function.error_messages(args):
+    for error_message in function.error_messages(converted):
         raise ValueError(error_message)
 
     return function

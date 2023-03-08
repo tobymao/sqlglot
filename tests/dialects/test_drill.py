@@ -53,13 +53,14 @@ class TestDrill(Validator):
         )
 
     def test_validate_pivot(self):
-        self.validate_all("SELECT * FROM (SELECT education_level, salary, marital_status, "
+        self.validate_all(
+            "SELECT * FROM (SELECT education_level, salary, marital_status, "
             "EXTRACT(year FROM age(birth_date)) age FROM cp.`employee.json`) PIVOT (avg(salary) AS "
             "avg_salary, avg(age) AS avg_age FOR marital_status IN ('M' married, 'S' single))",
             write={
                 "drill": "SELECT * FROM (SELECT education_level, salary, marital_status, "
-                         "EXTRACT(year FROM age(birth_date)) AS age FROM cp.`employee.json`) "
-                          "PIVOT(AVG(salary) AS avg_salary, AVG(age) AS avg_age FOR marital_status "
-                          "IN ('M' AS married, 'S' AS single))"
+                "EXTRACT(year FROM age(birth_date)) AS age FROM cp.`employee.json`) "
+                "PIVOT(AVG(salary) AS avg_salary, AVG(age) AS avg_age FOR marital_status "
+                "IN ('M' AS married, 'S' AS single))"
             },
         )

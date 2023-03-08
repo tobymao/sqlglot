@@ -46,10 +46,13 @@ class TokenType(AutoName):
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
     LR_ARROW = auto()
+    LT_AT = auto()
+    AT_GT = auto()
     DOLLAR = auto()
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
     NATIONAL = auto()
+    DAMP = auto()
 
     BLOCK_START = auto()
     BLOCK_END = auto()
@@ -467,6 +470,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
+        "&&": TokenType.DAMP,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,

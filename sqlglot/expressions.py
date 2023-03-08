@@ -3160,8 +3160,12 @@ class ArrayConcat(Func):
     is_var_len_args = True
 
 
-class ArrayContains(Func, Binary):
-    arg_types = {"this": True, "expression": True, "is_contained": False}
+class ArrayContains(Binary, Func):
+    pass
+
+
+class ArrayContained(Binary):
+    pass
 
 
 class ArrayFilter(Func):

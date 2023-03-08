@@ -31,6 +31,14 @@ def parse_var_map(args):
     )
 
 
+def binary_range_parser(
+    expr_type: t.Type[exp.Expression],
+) -> t.Callable[[Parser, t.Optional[exp.Expression]], t.Optional[exp.Expression]]:
+    return lambda self, this: self._parse_escape(
+        self.expression(expr_type, this=this, expression=self._parse_bitwise())
+    )
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -503,29 +511,15 @@ class Parser(metaclass=_Parser):
 
     RANGE_PARSERS = {
         TokenType.BETWEEN: lambda self, this: self._parse_between(this),
-        TokenType.GLOB: lambda self, this: self._parse_escape(
-            self.expression(exp.Glob, this=this, expression=self._parse_bitwise())
-        ),
-        TokenType.OVERLAPS: lambda self, this: self._parse_escape(
-            self.expression(exp.Overlaps, this=this, expression=self._parse_bitwise())
-        ),
+        TokenType.GLOB: binary_range_parser(exp.Glob),
+        TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
         TokenType.IN: lambda self, this: self._parse_in(this),
         TokenType.IS: lambda self, this: self._parse_is(this),
-        TokenType.LIKE: lambda self, this: self._parse_escape(
-            self.expression(exp.Like, this=this, expression=self._parse_bitwise())
-        ),
-        TokenType.ILIKE: lambda self, this: self._parse_escape(
-            self.expression(exp.ILike, this=this, expression=self._parse_bitwise())
-        ),
-        TokenType.IRLIKE: lambda self, this: self.expression(
-            exp.RegexpILike, this=this, expression=self._parse_bitwise()
-        ),
-        TokenType.RLIKE: lambda self, this: self.expression(
-            exp.RegexpLike, this=this, expression=self._parse_bitwise()
-        ),
-        TokenType.SIMILAR_TO: lambda self, this: self.expression(
-            exp.SimilarTo, this=this, expression=self._parse_bitwise()
-        ),
+        TokenType.LIKE: binary_range_parser(exp.Like),
+        TokenType.ILIKE: binary_range_parser(exp.ILike),
+        TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
+        TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
+        TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
     }
 
     PROPERTY_PARSERS = {

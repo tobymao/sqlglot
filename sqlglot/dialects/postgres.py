@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import delegate, preprocess
 
@@ -264,26 +265,16 @@ class Postgres(Dialect):
         }
 
         FACTOR = {
-            **parser.Parser.FACTOR,  # type: ignore
+            **parser.Parser.FACTOR,
             TokenType.CARET: exp.Pow,
         }
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,  # type: ignore
-            TokenType.DAMP: lambda self, this: self._parse_escape(
-                self.expression(exp.ArrayOverlaps, this=this, expression=self._parse_bitwise())
-            ),
-            TokenType.LT_AT: lambda self, this: self._parse_contains(this),
-            TokenType.AT_GT: lambda self, this: self._parse_contains(this),
+            TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
+            TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
         }
-
-        def _parse_contains(self, this: exp.Expression) -> exp.Expression:
-            is_contained = self._prev.token_type == TokenType.LT_AT
-            expression = self._parse_bitwise()
-
-            return self.expression(
-                exp.ArrayContains, this=this, expression=expression, is_contained=is_contained
-            )
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -323,6 +314,8 @@ class Postgres(Dialect):
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Min: min_or_least,
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
+            exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
+            exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,
@@ -345,6 +338,3 @@ class Postgres(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         }
-
-        def arraycontains_sql(self, expression: exp.ArrayContains) -> str:
-            return self.binary(expression, "<@" if expression.args.get("is_contained") else "@>")

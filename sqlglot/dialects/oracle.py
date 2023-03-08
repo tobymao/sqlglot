@@ -83,8 +83,6 @@ class Oracle(Dialect):
             "XMLTABLE": _parse_xml_table,
         }
 
-        INTEGER_DIVISION = False
-
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()
             if column:
@@ -93,7 +91,6 @@ class Oracle(Dialect):
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
-        INTEGER_DIVISION = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

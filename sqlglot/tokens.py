@@ -71,11 +71,16 @@ class TokenType(AutoName):
     BYTE_STRING = auto()
 
     # types
+    BIT = auto()
     BOOLEAN = auto()
     TINYINT = auto()
+    UTINYINT = auto()
     SMALLINT = auto()
+    USMALLINT = auto()
     INT = auto()
+    UINT = auto()
     BIGINT = auto()
+    UBIGINT = auto()
     FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()
@@ -630,6 +635,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "WITHOUT TIME ZONE": TokenType.WITHOUT_TIME_ZONE,
         "APPLY": TokenType.APPLY,
         "ARRAY": TokenType.ARRAY,
+        "BIT": TokenType.BIT,
         "BOOL": TokenType.BOOLEAN,
         "BOOLEAN": TokenType.BOOLEAN,
         "BYTE": TokenType.TINYINT,

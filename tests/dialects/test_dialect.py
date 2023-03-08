@@ -98,7 +98,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(a AS BINARY)",
                 "clickhouse": "CAST(a AS BINARY(4))",
                 "drill": "CAST(a AS VARBINARY(4))",
-                "duckdb": "CAST(a AS BINARY(4))",
+                "duckdb": "CAST(a AS BLOB(4))",
                 "mysql": "CAST(a AS BINARY(4))",
                 "hive": "CAST(a AS BINARY(4))",
                 "oracle": "CAST(a AS BLOB(4))",
@@ -116,7 +116,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS VARBINARY)",
                 "clickhouse": "CAST(a AS VARBINARY(4))",
-                "duckdb": "CAST(a AS VARBINARY(4))",
+                "duckdb": "CAST(a AS BLOB(4))",
                 "mysql": "CAST(a AS VARBINARY(4))",
                 "hive": "CAST(a AS BINARY(4))",
                 "oracle": "CAST(a AS BLOB(4))",
@@ -1208,7 +1208,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CREATE TABLE t (c CHAR, nc NCHAR, v1 VARCHAR, v2 VARCHAR2, nv NVARCHAR, nv2 NVARCHAR2)",
             write={
-                "duckdb": "CREATE TABLE t (c CHAR, nc CHAR, v1 TEXT, v2 TEXT, nv TEXT, nv2 TEXT)",
+                "duckdb": "CREATE TABLE t (c TEXT, nc TEXT, v1 TEXT, v2 TEXT, nv TEXT, nv2 TEXT)",
                 "hive": "CREATE TABLE t (c CHAR, nc CHAR, v1 STRING, v2 STRING, nv STRING, nv2 STRING)",
                 "oracle": "CREATE TABLE t (c CHAR, nc CHAR, v1 VARCHAR2, v2 VARCHAR2, nv NVARCHAR2, nv2 NVARCHAR2)",
                 "postgres": "CREATE TABLE t (c CHAR, nc CHAR, v1 VARCHAR, v2 VARCHAR, nv VARCHAR, nv2 VARCHAR)",
@@ -1249,7 +1249,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CREATE TABLE t (b1 BINARY, b2 BINARY(1024), c1 TEXT, c2 TEXT(1024))",
             write={
-                "duckdb": "CREATE TABLE t (b1 BINARY, b2 BINARY(1024), c1 TEXT, c2 TEXT(1024))",
+                "duckdb": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
                 "hive": "CREATE TABLE t (b1 BINARY, b2 BINARY(1024), c1 STRING, c2 STRING(1024))",
                 "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
                 "postgres": "CREATE TABLE t (b1 BYTEA, b2 BYTEA(1024), c1 TEXT, c2 TEXT(1024))",

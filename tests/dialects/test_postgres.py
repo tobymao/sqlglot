@@ -196,7 +196,7 @@ class TestPostgres(Validator):
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",
             write={
-                "duckdb": "CREATE TABLE x (a UUID, b VARBINARY)",
+                "duckdb": "CREATE TABLE x (a UUID, b BLOB)",
                 "presto": "CREATE TABLE x (a UUID, b VARBINARY)",
                 "hive": "CREATE TABLE x (a UUID, b BINARY)",
                 "spark": "CREATE TABLE x (a UUID, b BINARY)",

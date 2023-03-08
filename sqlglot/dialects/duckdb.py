@@ -81,8 +81,21 @@ class DuckDB(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             ":=": TokenType.EQ,
             "ATTACH": TokenType.COMMAND,
-            "CHARACTER VARYING": TokenType.VARCHAR,
+            "BINARY": TokenType.VARBINARY,
+            "BPCHAR": TokenType.TEXT,
+            "BITSTRING": TokenType.BIT,
+            "CHAR": TokenType.TEXT,
+            "CHARACTER VARYING": TokenType.TEXT,
             "EXCLUDE": TokenType.EXCEPT,
+            "INT1": TokenType.TINYINT,
+            "LOGICAL": TokenType.BOOLEAN,
+            "NUMERIC": TokenType.DOUBLE,
+            "SIGNED": TokenType.INT,
+            "STRING": TokenType.VARCHAR,
+            "UBIGINT": TokenType.UBIGINT,
+            "UINTEGER": TokenType.UINT,
+            "USMALLINT": TokenType.USMALLINT,
+            "UTINYINT": TokenType.UTINYINT,
         }
 
     class Parser(parser.Parser):
@@ -113,6 +126,14 @@ class DuckDB(Dialect):
             "STRUCT_PACK": exp.Struct.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
+        }
+
+        TYPE_TOKENS = {
+            *parser.Parser.TYPE_TOKENS,
+            TokenType.UBIGINT,
+            TokenType.UINT,
+            TokenType.USMALLINT,
+            TokenType.UTINYINT,
         }
 
     class Generator(generator.Generator):
@@ -169,8 +190,14 @@ class DuckDB(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
-            exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.BINARY: "BLOB",
+            exp.DataType.Type.CHAR: "TEXT",
+            exp.DataType.Type.FLOAT: "REAL",
+            exp.DataType.Type.NCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
+            exp.DataType.Type.UINT: "UINTEGER",
+            exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DataType.Type.VARCHAR: "TEXT",
         }
 
         STAR_MAPPING = {

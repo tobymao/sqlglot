@@ -1860,7 +1860,7 @@ class Generator:
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []
         for arg_value in expression.args.values():
-            if isinstance(arg_value, list):
+            if isinstance(arg_value, (list, tuple)):
                 for value in arg_value:
                     args.append(value)
             else:

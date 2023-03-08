@@ -174,6 +174,7 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
+            "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
             "DATEADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2),
@@ -189,16 +190,16 @@ class Snowflake(Dialect):
                 unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
                 this=seq_get(args, 1),
             ),
+            "DECODE": exp.Matches.from_arg_list,
             "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
+            "NULLIFZERO": _nullifzero_to_if,
+            "OBJECT_CONSTRUCT": parser.parse_var_map,
+            "RLIKE": exp.RegexpLike.from_arg_list,
+            "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_ARRAY": exp.Array.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
-            "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
-            "RLIKE": exp.RegexpLike.from_arg_list,
-            "DECODE": exp.Matches.from_arg_list,
-            "OBJECT_CONSTRUCT": parser.parse_var_map,
             "ZEROIFNULL": _zeroifnull_to_if,
-            "NULLIFZERO": _nullifzero_to_if,
         }
 
         FUNCTION_PARSERS = {

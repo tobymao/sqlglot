@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
-from sqlglot.helper import csv
+from sqlglot.helper import csv, seq_get
 from sqlglot.tokens import TokenType
 
 PASSING_TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
@@ -75,6 +75,7 @@ class Oracle(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DECODE": exp.Matches.from_arg_list,
+            "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {

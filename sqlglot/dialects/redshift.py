@@ -85,6 +85,9 @@ class Redshift(Postgres):
             exp.Matches: rename_func("DECODE"),
         }
 
+        # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
+        TRANSFORMS.pop(exp.Pow)
+
         def values_sql(self, expression: exp.Values) -> str:
             """
             Converts `VALUES...` expression into a series of unions.

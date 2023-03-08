@@ -18,6 +18,36 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
+            "SQUARE(x)",
+            write={
+                "bigquery": "POWER(x, 2)",
+                "clickhouse": "POWER(x, 2)",
+                "databricks": "POWER(x, 2)",
+                "drill": "POW(x, 2)",
+                "duckdb": "POWER(x, 2)",
+                "hive": "POWER(x, 2)",
+                "mysql": "POWER(x, 2)",
+                "oracle": "POWER(x, 2)",
+                "postgres": "x ^ 2",
+                "presto": "POWER(x, 2)",
+                "redshift": "POWER(x, 2)",
+                "snowflake": "POWER(x, 2)",
+                "spark": "POWER(x, 2)",
+                "sqlite": "POWER(x, 2)",
+                "starrocks": "POWER(x, 2)",
+                "trino": "POWER(x, 2)",
+                "tsql": "POWER(x, 2)",
+            },
+        )
+        self.validate_all(
+            "POWER(x, 2)",
+            read={
+                "oracle": "SQUARE(x)",
+                "snowflake": "SQUARE(x)",
+                "tsql": "SQUARE(x)",
+            },
+        )
+        self.validate_all(
             "1 / 2",
             read={
                 "bigquery": "1 / 2",

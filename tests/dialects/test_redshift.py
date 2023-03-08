@@ -5,6 +5,7 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})
         self.validate_all(
             'create table "group" ("col" char(10))',
             write={

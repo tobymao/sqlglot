@@ -29,6 +29,8 @@ class Redshift(Postgres):
             "NVL": exp.Coalesce.from_arg_list,
         }
 
+        CONVERT_TYPE_FIRST = True
+
         def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
             this = super()._parse_types(check_func=check_func)
 

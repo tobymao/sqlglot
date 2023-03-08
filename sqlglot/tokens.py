@@ -465,6 +465,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
+        "&&": TokenType.DAMP,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,

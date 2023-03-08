@@ -220,7 +220,6 @@ class Postgres(Dialect):
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
-            "&&": TokenType.DAMP,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
             "BEGIN": TokenType.COMMAND,

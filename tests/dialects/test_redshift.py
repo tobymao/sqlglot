@@ -7,6 +7,9 @@ class TestRedshift(Validator):
     def test_redshift(self):
         self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})
         self.validate_all(
+            "DATE_ADD('day', ndays, caldate)", write={"redshift": "DATEADD('day', ndays, caldate)"}
+        )
+        self.validate_all(
             'create table "group" ("col" char(10))',
             write={
                 "redshift": 'CREATE TABLE "group" ("col" CHAR(10))',

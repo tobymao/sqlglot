@@ -2539,7 +2539,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_type(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.INTERVAL):
-            return self.expression(exp.Interval, this=self._parse_term(), unit=self._parse_var())
+            return self.expression(exp.Interval, this=self._parse_term(), unit=self._parse_field())
 
         index = self._index
         type_token = self._parse_types(check_func=True)

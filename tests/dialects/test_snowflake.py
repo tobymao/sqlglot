@@ -26,6 +26,7 @@ class TestSnowflake(Validator):
             write={
                 "": "CAST(x AS TEXT)",
                 "snowflake": "TO_CHAR(x, y)",
+            }
         )
         self.validate_all(
             "SQUARE(x)",

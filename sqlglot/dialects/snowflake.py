@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.expressions import Literal
 from sqlglot.helper import flatten, seq_get
+from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
 
@@ -218,12 +219,8 @@ class Snowflake(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,  # type: ignore
-            TokenType.LIKE_ANY: lambda self, this: self._parse_escape(
-                self.expression(exp.LikeAny, this=this, expression=self._parse_bitwise())
-            ),
-            TokenType.ILIKE_ANY: lambda self, this: self._parse_escape(
-                self.expression(exp.ILikeAny, this=this, expression=self._parse_bitwise())
-            ),
+            TokenType.LIKE_ANY: binary_range_parser(exp.LikeAny),
+            TokenType.ILIKE_ANY: binary_range_parser(exp.ILikeAny),
         }
 
         ALTER_PARSERS = {

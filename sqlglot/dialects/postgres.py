@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import delegate, preprocess
 
@@ -219,6 +220,8 @@ class Postgres(Dialect):
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
+            "@>": TokenType.AT_GT,
+            "<@": TokenType.LT_AT,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
@@ -260,7 +263,17 @@ class Postgres(Dialect):
             TokenType.HASH: exp.BitwiseXor,
         }
 
-        FACTOR = {**parser.Parser.FACTOR, TokenType.CARET: exp.Pow}
+        FACTOR = {
+            **parser.Parser.FACTOR,
+            TokenType.CARET: exp.Pow,
+        }
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,  # type: ignore
+            TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
+            TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
+        }
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -299,6 +312,9 @@ class Postgres(Dialect):
             exp.DateDiff: _date_diff_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Min: min_or_least,
+            exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
+            exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
+            exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,

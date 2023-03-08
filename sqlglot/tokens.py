@@ -855,11 +855,12 @@ class Tokenizer(metaclass=_Tokenizer):
     def _scan_keywords(self) -> None:
         size = 0
         word = None
-        chars: t.Optional[str] = self._text
+        chars = self._text
         char = chars
         prev_space = False
         skip = False
         trie = self.KEYWORD_TRIE
+        single_token = char in self.SINGLE_TOKENS
 
         while chars:
             if skip:
@@ -876,6 +877,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
             if end < self.size:
                 char = self.sql[end]
+                single_token = single_token or char in self.SINGLE_TOKENS
                 is_space = char in self.WHITE_SPACE
 
                 if not is_space or not prev_space:
@@ -887,7 +889,9 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     skip = True
             else:
-                chars = None
+                chars = " "
+
+        word = None if not single_token and chars[-1] not in self.WHITE_SPACE else word
 
         if not word:
             if self._char in self.SINGLE_TOKENS:

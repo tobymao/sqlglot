@@ -257,11 +257,7 @@ class Hive(Dialect):
             ),
         }
 
-        INTEGER_DIVISION = False
-
     class Generator(generator.Generator):
-        INTEGER_DIVISION = False
-
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TEXT: "STRING",

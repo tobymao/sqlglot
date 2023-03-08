@@ -118,40 +118,6 @@ class TestPostgres(Validator):
         self.validate_identity("x ~* 'y'")
 
         self.validate_all(
-            "1 / 2",
-            read={
-                "drill": "1 / 2",
-                "duckdb": "1 / 2",
-                "postgres": "1 / 2",
-                "presto": "1 / 2",
-                "redshift": "1 / 2",
-                "sqlite": "1 / 2",
-                "teradata": "1 / 2",
-                "trino": "1 / 2",
-                "tsql": "1 / 2",
-            },
-            write={
-                "drill": "1 / 2",
-                "duckdb": "1 / 2",
-                "postgres": "1 / 2",
-                "presto": "1 / 2",
-                "redshift": "1 / 2",
-                "sqlite": "1 / 2",
-                "teradata": "1 / 2",
-                "trino": "1 / 2",
-                "tsql": "1 / 2",
-                "bigquery": "CAST(1 / 2 AS INT64)",
-                "clickhouse": "CAST(1 / 2 AS Int32)",
-                "databricks": "CAST(1 / 2 AS INT)",
-                "hive": "CAST(1 / 2 AS INT)",
-                "mysql": "CAST(1 / 2 AS INT)",
-                "oracle": "CAST(1 / 2 AS NUMBER)",
-                "snowflake": "CAST(1 / 2 AS INT)",
-                "spark": "CAST(1 / 2 AS INT)",
-                "starrocks": "CAST(1 / 2 AS INT)",
-            },
-        )
-        self.validate_all(
             "SELECT (DATE '2016-01-10', DATE '2016-02-01') OVERLAPS (DATE '2016-01-20', DATE '2016-02-10')",
             write={
                 "postgres": "SELECT (CAST('2016-01-10' AS DATE), CAST('2016-02-01' AS DATE)) OVERLAPS (CAST('2016-01-20' AS DATE), CAST('2016-02-10' AS DATE))",

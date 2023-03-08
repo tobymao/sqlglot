@@ -21,10 +21,10 @@ class TestDuckDB(Validator):
         self.validate_all(
             "EPOCH_MS(x)",
             write={
-                "bigquery": "UNIX_TO_TIME(CAST(x / 1000 AS INT64))",
+                "bigquery": "UNIX_TO_TIME(x / 1000)",
                 "duckdb": "TO_TIMESTAMP(x / 1000)",
                 "presto": "FROM_UNIXTIME(x / 1000)",
-                "spark": "FROM_UNIXTIME(CAST(x / 1000 AS INT))",
+                "spark": "FROM_UNIXTIME(x / 1000)",
             },
         )
         self.validate_all(

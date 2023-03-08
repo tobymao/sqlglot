@@ -323,6 +323,7 @@ class Postgres(Dialect):
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",

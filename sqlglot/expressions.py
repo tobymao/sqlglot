@@ -3144,6 +3144,11 @@ class Array(Func):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/to_char
+class ToChar(Func):
+    arg_types = {"this": True, "format": False}
+
+
 class GenerateSeries(Func):
     arg_types = {"start": True, "end": True, "step": False}
 

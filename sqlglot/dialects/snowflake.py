@@ -198,6 +198,7 @@ class Snowflake(Dialect):
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_ARRAY": exp.Array.from_arg_list,
+            "TO_VARCHAR": exp.ToChar.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
             "ZEROIFNULL": _zeroifnull_to_if,
         }
@@ -292,6 +293,7 @@ class Snowflake(Dialect):
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),

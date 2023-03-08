@@ -21,6 +21,7 @@ class Databricks(Spark):
             **Spark.Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
         PARAMETER_TOKEN = "$"

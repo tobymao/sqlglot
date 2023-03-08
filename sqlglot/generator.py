@@ -1990,3 +1990,9 @@ class Generator:
         using = f"USING {self.sql(expression, 'using')}"
         on = f"ON {self.sql(expression, 'on')}"
         return f"MERGE INTO {this} {using} {on} {self.expressions(expression, sep=' ')}"
+
+    def tochar_sql(self, expression: exp.ToChar) -> str:
+        if expression.args.get("format"):
+            self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
+
+        return self.sql(exp.cast(expression.this, "text"))

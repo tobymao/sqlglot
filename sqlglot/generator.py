@@ -1570,7 +1570,7 @@ class Generator:
             )
         else:
             this = ""
-        unit = expression.args.get("unit")
+        unit = self.sql(expression, "unit")
         unit = f" {unit}" if unit else ""
         return f"INTERVAL{this}{unit}"
 

@@ -219,9 +219,9 @@ class Postgres(Dialect):
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
-            "&&": TokenType.ARRAY_OVERLAPS,
-            "@>": TokenType.CONTAINS,
-            "<@": TokenType.CONTAINS,
+            "&&": TokenType.DAMP,
+            "@>": TokenType.AT_GT,
+            "<@": TokenType.LT_AT,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
@@ -266,16 +266,19 @@ class Postgres(Dialect):
         FACTOR = {
             **parser.Parser.FACTOR,  # type: ignore
             TokenType.CARET: exp.Pow,
-            TokenType.ARRAY_OVERLAPS: exp.ArrayOverlaps,
         }
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,  # type: ignore
-            TokenType.CONTAINS: lambda self, this: self._parse_contains(this),
+            TokenType.DAMP: lambda self, this: self._parse_escape(
+                self.expression(exp.ArrayOverlaps, this=this, expression=self._parse_bitwise())
+            ),
+            TokenType.LT_AT: lambda self, this: self._parse_contains(this),
+            TokenType.AT_GT: lambda self, this: self._parse_contains(this),
         }
 
         def _parse_contains(self, this: exp.Expression) -> exp.Expression:
-            is_contained = self._prev.text == "<@"
+            is_contained = self._prev.token_type == TokenType.LT_AT
             expression = self._parse_bitwise()
 
             return self.expression(

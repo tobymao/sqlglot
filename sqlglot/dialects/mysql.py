@@ -446,6 +446,7 @@ class MySQL(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
             exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),

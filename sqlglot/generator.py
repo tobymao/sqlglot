@@ -59,7 +59,6 @@ class Generator:
         exp.DateAdd: lambda self, e: self.func(
             "DATE_ADD", e.this, e.expression, e.args.get("unit")
         ),
-        exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
         exp.TsOrDsAdd: lambda self, e: self.func(
             "TS_OR_DS_ADD", e.this, e.expression, e.args.get("unit")
         ),

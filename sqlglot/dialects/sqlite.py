@@ -92,6 +92,33 @@ class SQLite(Dialect):
             exp.GroupConcat: _group_concat_sql,
         }
 
+        def datediff_sql(self, expression: exp.DateDiff) -> str:
+            unit = expression.args.get("unit")
+            unit = unit.name.upper() if unit else "DAY"
+
+            sql = f"(JULIANDAY({self.sql(expression, 'this')}) - JULIANDAY({self.sql(expression, 'expression')}))"
+
+            if unit == "MONTH":
+                sql = f"{sql} / 30.0"
+            elif unit == "YEAR":
+                sql = f"{sql} / 365.0"
+            elif unit == "HOUR":
+                sql = f"{sql} * 24.0"
+            elif unit == "MINUTE":
+                sql = f"{sql} * 1440.0"
+            elif unit == "SECOND":
+                sql = f"{sql} * 86400.0"
+            elif unit == "MILLISECOND":
+                sql = f"{sql} * 86400000.0"
+            elif unit == "MICROSECOND":
+                sql = f"{sql} * 86400000000.0"
+            elif unit == "NANOSECOND":
+                sql = f"{sql} * 8640000000000.0"
+            else:
+                self.unsupported("DATEDIFF unsupported for '{unit}'.")
+
+            return f"CAST({sql} AS INTEGER)"
+
         def fetch_sql(self, expression):
             return self.limit_sql(exp.Limit(expression=expression.args.get("count")))
 

@@ -3285,6 +3285,7 @@ class DateSub(Func, TimeUnit):
 
 
 class DateDiff(Func, TimeUnit):
+    _sql_names = ["DATEDIFF", "DATE_DIFF"]
     arg_types = {"this": True, "expression": True, "unit": False}
 
 

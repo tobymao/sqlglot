@@ -45,9 +45,6 @@ class _Parser(type):
         klass._show_trie = new_trie(key.split(" ") for key in klass.SHOW_PARSERS)
         klass._set_trie = new_trie(key.split(" ") for key in klass.SET_PARSERS)
 
-        if not klass.INTEGER_DIVISION:
-            klass.FACTOR = {**klass.FACTOR, TokenType.SLASH: exp.FloatDiv}
-
         return klass
 
 
@@ -701,8 +698,6 @@ class Parser(metaclass=_Parser):
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
     STRICT_CAST = True
-
-    INTEGER_DIVISION = True
 
     CONVERT_TYPE_FIRST = False
 

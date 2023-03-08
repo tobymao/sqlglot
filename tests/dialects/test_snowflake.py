@@ -64,48 +64,14 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "1 / 2",
-            read={
-                "bigquery": "1 / 2",
-                "clickhouse": "1 / 2",
-                "databricks": "1 / 2",
-                "hive": "1 / 2",
-                "mysql": "1 / 2",
-                "oracle": "1 / 2",
-                "snowflake": "1 / 2",
-                "spark": "1 / 2",
-                "starrocks": "1 / 2",
-            },
-            write={
-                "bigquery": "1 / 2",
-                "clickhouse": "1 / 2",
-                "databricks": "1 / 2",
-                "hive": "1 / 2",
-                "mysql": "1 / 2",
-                "oracle": "1 / 2",
-                "snowflake": "1 / 2",
-                "spark": "1 / 2",
-                "starrocks": "1 / 2",
-                "drill": "CAST(1 AS DOUBLE) / 2",
-                "duckdb": "CAST(1 AS DOUBLE) / 2",
-                "postgres": "CAST(1 AS DOUBLE PRECISION) / 2",
-                "presto": "CAST(1 AS DOUBLE) / 2",
-                "redshift": "CAST(1 AS DOUBLE PRECISION) / 2",
-                "sqlite": "CAST(1 AS REAL) / 2",
-                "teradata": "CAST(1 AS DOUBLE) / 2",
-                "trino": "CAST(1 AS DOUBLE) / 2",
-                "tsql": "CAST(1 AS DOUBLE) / 2",
-            },
-        )
-        self.validate_all(
             "DIV0(foo, bar)",
             write={
                 "snowflake": "IFF(bar = 0, 0, foo / bar)",
-                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE CAST(foo AS REAL) / bar END",
-                "presto": "IF(bar = 0, 0, CAST(foo AS DOUBLE) / bar)",
+                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
+                "presto": "IF(bar = 0, 0, foo / bar)",
                 "spark": "IF(bar = 0, 0, foo / bar)",
                 "hive": "IF(bar = 0, 0, foo / bar)",
-                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE CAST(foo AS DOUBLE) / bar END",
+                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
             },
         )
         self.validate_all(

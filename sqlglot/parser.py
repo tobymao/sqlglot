@@ -3283,7 +3283,7 @@ class Parser(metaclass=_Parser):
         order = self._parse_order(this=expression)
         return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
 
-    def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
+    def _parse_convert(self, strict: bool, type_first: bool = False) -> t.Optional[exp.Expression]:
         to: t.Optional[exp.Expression]
         this = self._parse_bitwise()
 
@@ -3293,6 +3293,10 @@ class Parser(metaclass=_Parser):
             to = self._parse_bitwise()
         else:
             to = None
+
+        # Swap the argument order if needed to produce the correct AST
+        if type_first:
+            this, to = to, this
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 

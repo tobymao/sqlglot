@@ -358,7 +358,9 @@ class TSQL(Dialect):
             returns.set("table", table)
             return returns
 
-        def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
+        def _parse_convert(
+            self, strict: bool, type_first: bool = False
+        ) -> t.Optional[exp.Expression]:
             to = self._parse_types()
             self._match(TokenType.COMMA)
             this = self._parse_conjunction()

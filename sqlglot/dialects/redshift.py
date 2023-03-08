@@ -43,10 +43,10 @@ class Redshift(Postgres):
             return this
 
         # https://docs.aws.amazon.com/redshift/latest/dg/r_CAST_function.html
-        def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
-            # The base parser always returns a Cast expression for Redshift
-            convert = t.cast(exp.Cast, super()._parse_convert(strict=strict))
-            return self.expression(exp.Cast, this=convert.to, to=convert.this)
+        def _parse_convert(
+            self, strict: bool, type_first: bool = False
+        ) -> t.Optional[exp.Expression]:
+            return super()._parse_convert(strict=strict, type_first=True)
 
     class Tokenizer(Postgres.Tokenizer):
         STRING_ESCAPES = ["\\"]

@@ -199,6 +199,8 @@ class TestExpressions(unittest.TestCase):
         )
 
     def test_function_building(self):
+        self.assertEqual(exp.func("max", 1).sql(), "MAX(1)")
+        self.assertEqual(exp.func("max", 1, 2).sql(), "MAX(1, 2)")
         self.assertEqual(exp.func("bla", 1, "foo").sql(), "BLA(1, 'foo')")
         self.assertEqual(exp.func("COUNT", exp.Star()).sql(), "COUNT(*)")
         self.assertEqual(exp.func("bloo").sql(), "BLOO()")

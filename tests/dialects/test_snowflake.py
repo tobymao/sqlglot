@@ -18,6 +18,17 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
+            "TO_CHAR(x, y)",
+            read={
+                "": "TO_CHAR(x, y)",
+                "snowflake": "TO_VARCHAR(x, y)",
+            },
+            write={
+                "": "CAST(x AS TEXT)",
+                "snowflake": "TO_CHAR(x, y)",
+            },
+        )
+        self.validate_all(
             "1 / 2",
             read={
                 "bigquery": "1 / 2",

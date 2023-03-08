@@ -120,28 +120,17 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT ROW(x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
         self.validate_identity("SELECT (x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
         self.validate_identity("SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a)")
+        self.validate_identity("ATTACH DATABASE ':memory:' AS new_database")
         self.validate_identity(
             "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a)"
         )
+
         self.validate_all(
             "CREATE TABLE IF NOT EXISTS table (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={
                 "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
             },
         )
-
-        self.validate_all(
-            "COL::BIGINT[]",
-            write={
-                "duckdb": "CAST(COL AS BIGINT[])",
-                "presto": "CAST(COL AS ARRAY(BIGINT))",
-                "hive": "CAST(COL AS ARRAY<BIGINT>)",
-                "spark": "CAST(COL AS ARRAY<LONG>)",
-                "postgres": "CAST(COL AS BIGINT[])",
-                "snowflake": "CAST(COL AS ARRAY)",
-            },
-        )
-
         self.validate_all(
             "LIST_VALUE(0, 1, 2)",
             read={
@@ -212,7 +201,6 @@ class TestDuckDB(Validator):
                 "spark": "x.`y`.`abc`",
             },
         )
-
         self.validate_all(
             "QUANTILE(x, 0.5)",
             write={
@@ -220,14 +208,6 @@ class TestDuckDB(Validator):
                 "presto": "APPROX_PERCENTILE(x, 0.5)",
                 "hive": "PERCENTILE(x, 0.5)",
                 "spark": "PERCENTILE(x, 0.5)",
-            },
-        )
-
-        self.validate_all(
-            "CAST(x AS DATE)",
-            write={
-                "duckdb": "CAST(x AS DATE)",
-                "": "CAST(x AS DATE)",
             },
         )
         self.validate_all(
@@ -240,19 +220,11 @@ class TestDuckDB(Validator):
                 "spark": "EXPLODE(x)",
             },
         )
-
         self.validate_all(
             "1d",
             write={
                 "duckdb": "1 AS d",
                 "spark": "1 AS d",
-            },
-        )
-        self.validate_all(
-            "CAST(1 AS DOUBLE)",
-            read={
-                "hive": "1d",
-                "spark": "1d",
             },
         )
         self.validate_all(
@@ -351,8 +323,6 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_identity("ATTACH DATABASE ':memory:' AS new_database")
-
         with self.assertRaises(UnsupportedError):
             transpile(
                 "SELECT a FROM b PIVOT(SUM(x) FOR y IN ('z', 'q'))",
@@ -372,13 +342,44 @@ class TestDuckDB(Validator):
         self.validate_identity("ARRAY(SELECT id FROM t)")
 
     def test_cast(self):
+        self.validate_identity("CAST(x AS REAL)")
+        self.validate_identity("CAST(x AS UINTEGER)")
+        self.validate_identity("CAST(x AS UBIGINT)")
+        self.validate_identity("CAST(x AS USMALLINT)")
+        self.validate_identity("CAST(x AS UTINYINT)")
+        self.validate_identity("CAST(x AS TEXT)")
+
+        self.validate_all("CAST(x AS NUMERIC)", write={"duckdb": "CAST(x AS DOUBLE)"})
+        self.validate_all("CAST(x AS CHAR)", write={"duckdb": "CAST(x AS TEXT)"})
+        self.validate_all("CAST(x AS BPCHAR)", write={"duckdb": "CAST(x AS TEXT)"})
+        self.validate_all("CAST(x AS STRING)", write={"duckdb": "CAST(x AS TEXT)"})
+        self.validate_all("CAST(x AS INT1)", write={"duckdb": "CAST(x AS TINYINT)"})
+        self.validate_all("CAST(x AS FLOAT4)", write={"duckdb": "CAST(x AS REAL)"})
+        self.validate_all("CAST(x AS FLOAT)", write={"duckdb": "CAST(x AS REAL)"})
+        self.validate_all("CAST(x AS INT4)", write={"duckdb": "CAST(x AS INT)"})
+        self.validate_all("CAST(x AS INTEGER)", write={"duckdb": "CAST(x AS INT)"})
+        self.validate_all("CAST(x AS SIGNED)", write={"duckdb": "CAST(x AS INT)"})
+        self.validate_all("CAST(x AS BLOB)", write={"duckdb": "CAST(x AS BLOB)"})
+        self.validate_all("CAST(x AS BYTEA)", write={"duckdb": "CAST(x AS BLOB)"})
+        self.validate_all("CAST(x AS BINARY)", write={"duckdb": "CAST(x AS BLOB)"})
+        self.validate_all("CAST(x AS VARBINARY)", write={"duckdb": "CAST(x AS BLOB)"})
+        self.validate_all("CAST(x AS LOGICAL)", write={"duckdb": "CAST(x AS BOOLEAN)"})
+        self.validate_all(
+            "CAST(x AS BIT)",
+            read={
+                "duckdb": "CAST(x AS BITSTRING)",
+            },
+            write={
+                "duckdb": "CAST(x AS BIT)",
+                "tsql": "CAST(x AS BIT)",
+            },
+        )
         self.validate_all(
             "123::CHARACTER VARYING",
             write={
                 "duckdb": "CAST(123 AS TEXT)",
             },
         )
-
         self.validate_all(
             "cast([[1]] as int[][])",
             write={
@@ -386,9 +387,33 @@ class TestDuckDB(Validator):
                 "spark": "CAST(ARRAY(ARRAY(1)) AS ARRAY<ARRAY<INT>>)",
             },
         )
-
         self.validate_all(
             "CAST(x AS DATE) + INTERVAL (7 * -1) DAY", read={"spark": "DATE_SUB(x, 7)"}
+        )
+        self.validate_all(
+            "CAST(1 AS DOUBLE)",
+            read={
+                "hive": "1d",
+                "spark": "1d",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS DATE)",
+            write={
+                "duckdb": "CAST(x AS DATE)",
+                "": "CAST(x AS DATE)",
+            },
+        )
+        self.validate_all(
+            "COL::BIGINT[]",
+            write={
+                "duckdb": "CAST(COL AS BIGINT[])",
+                "presto": "CAST(COL AS ARRAY(BIGINT))",
+                "hive": "CAST(COL AS ARRAY<BIGINT>)",
+                "spark": "CAST(COL AS ARRAY<LONG>)",
+                "postgres": "CAST(COL AS BIGINT[])",
+                "snowflake": "CAST(COL AS ARRAY)",
+            },
         )
 
     def test_bool_or(self):

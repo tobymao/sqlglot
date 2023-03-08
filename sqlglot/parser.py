@@ -102,6 +102,7 @@ class Parser(metaclass=_Parser):
     }
 
     TYPE_TOKENS = {
+        TokenType.BIT,
         TokenType.BOOLEAN,
         TokenType.TINYINT,
         TokenType.SMALLINT,

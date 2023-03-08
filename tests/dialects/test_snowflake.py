@@ -25,8 +25,13 @@ class TestSnowflake(Validator):
             },
             write={
                 "": "CAST(x AS TEXT)",
+                "databricks": "TO_CHAR(x, y)",
+                "drill": "TO_CHAR(x, y)",
+                "oracle": "TO_CHAR(x, y)",
+                "postgres": "TO_CHAR(x, y)",
                 "snowflake": "TO_CHAR(x, y)",
-            }
+                "teradata": "TO_CHAR(x, y)",
+            },
         )
         self.validate_all(
             "SQUARE(x)",

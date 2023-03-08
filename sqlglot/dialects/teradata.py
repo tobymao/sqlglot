@@ -129,6 +129,7 @@ class Teradata(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Min: min_or_least,
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:

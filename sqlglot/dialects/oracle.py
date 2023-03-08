@@ -123,6 +123,7 @@ class Oracle(Dialect):
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
             exp.Substring: rename_func("SUBSTR"),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
         def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:

@@ -18,6 +18,22 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
+            "TO_CHAR(x, y)",
+            read={
+                "": "TO_CHAR(x, y)",
+                "snowflake": "TO_VARCHAR(x, y)",
+            },
+            write={
+                "": "CAST(x AS TEXT)",
+                "databricks": "TO_CHAR(x, y)",
+                "drill": "TO_CHAR(x, y)",
+                "oracle": "TO_CHAR(x, y)",
+                "postgres": "TO_CHAR(x, y)",
+                "snowflake": "TO_CHAR(x, y)",
+                "teradata": "TO_CHAR(x, y)",
+            },
+        )
+        self.validate_all(
             "SQUARE(x)",
             write={
                 "bigquery": "POWER(x, 2)",

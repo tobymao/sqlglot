@@ -1067,7 +1067,7 @@ class Delete(Expression):
 
         Example:
             >>> Delete().from_("tbl").where("x = 'a' OR x < 'b'").sql()
-            "DELETE FROM tbl WHERE x = 'a' OR x < 'b' "
+            "DELETE FROM tbl WHERE x = 'a' OR x < 'b'"
 
         Args:
             *expressions (str | Expression): the SQL code strings to parse.

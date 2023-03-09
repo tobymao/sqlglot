@@ -1,7 +1,6 @@
 from collections import defaultdict
 
 from sqlglot import alias, exp
-from sqlglot.helper import flatten
 from sqlglot.optimizer.qualify_columns import Resolver
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
@@ -86,14 +85,14 @@ def _remove_unused_selections(scope, parent_selections, schema):
     else:
         order_refs = set()
 
-    new_selections = defaultdict(list)
+    new_selections = []
     removed = False
     star = False
     for selection in scope.selects:
         name = selection.alias_or_name
 
         if SELECT_ALL in parent_selections or name in parent_selections or name in order_refs:
-            new_selections[name].append(selection)
+            new_selections.append(selection)
         else:
             if selection.is_star:
                 star = True
@@ -101,18 +100,17 @@ def _remove_unused_selections(scope, parent_selections, schema):
 
     if star:
         resolver = Resolver(scope, schema)
+        names = {s.alias_or_name for s in new_selections}
 
         for name in sorted(parent_selections):
-            if name not in new_selections:
-                new_selections[name].append(
-                    alias(exp.column(name, table=resolver.get_table(name)), name)
-                )
+            if name not in names:
+                new_selections.append(alias(exp.column(name, table=resolver.get_table(name)), name))
 
     # If there are no remaining selections, just select a single constant
     if not new_selections:
-        new_selections[""].append(DEFAULT_SELECTION())
+        new_selections.append(DEFAULT_SELECTION())
 
-    scope.expression.select(*flatten(new_selections.values()), append=False, copy=False)
+    scope.expression.select(*new_selections, append=False, copy=False)
 
     if removed:
         scope.clear_cache()

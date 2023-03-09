@@ -1033,6 +1033,65 @@ class Constraint(Expression):
 class Delete(Expression):
     arg_types = {"with": False, "this": False, "using": False, "where": False, "returning": False}
 
+    def from_(self, expression, dialect=None, copy=True, **opts) -> Delete:
+        """
+        Set the FROM part of the DELETE expression.
+
+        Example:
+            >>> Delete().from_("tbl").sql()
+            'DELETE FROM tbl'
+
+        Args:
+            expressions (str | Expression): the SQL code strings to parse.
+            append (bool): if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `From` expression into a single expression.
+            dialect (str): the dialect used to parse the input expression.
+            copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
+
+        Returns:
+            Delete: the modified expression.
+        """
+        return _apply_builder(
+            expression=expression.this if isinstance(expression, Expression) else expression,
+            instance=self,
+            arg="this",
+            dialect=dialect,
+            copy=copy,
+            **opts,
+        )
+
+    def where(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Delete:
+        """
+        Append to or set the WHERE expressions.
+
+        Example:
+            >>> Delete().from_("tbl").where("x = 'a' OR x < 'b'").sql()
+            "DELETE FROM tbl WHERE x = 'a' OR x < 'b' "
+
+        Args:
+            *expressions (str | Expression): the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+                Multiple expressions are combined with an AND operator.
+            append (bool): if `True`, AND the new expressions to any existing expression.
+                Otherwise, this resets the expression.
+            dialect (str): the dialect used to parse the input expressions.
+            copy (bool): if `False`, modify this expression instance in-place.
+            opts (kwargs): other options to use to parse the input expressions.
+
+        Returns:
+            Delete: the modified expression.
+        """
+        return _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="where",
+            append=append,
+            into=Where,
+            dialect=dialect,
+            copy=copy,
+            **opts,
+        )
 
 class Drop(Expression):
     arg_types = {

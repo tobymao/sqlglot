@@ -510,6 +510,20 @@ class TestBuild(unittest.TestCase):
                 .qualify("row_number() OVER (PARTITION BY a ORDER BY b) = 1"),
                 "SELECT * FROM table QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1",
             ),
+            (lambda: exp.delete("tbl", "x = 1").from_("table"), "DELETE FROM table WHERE x = 1"),
+            (
+                lambda: exp.delete("tbl", "x = 1").from_("table").where("y = 2"),
+                "DELETE FROM table WHERE x = 1 AND y = 2",
+            ),
+            (lambda: exp.Delete(this="tbl"), "DELETE FROM tbl"),
+            (lambda: exp.Delete(this="tbl").where("x = 1"), "DELETE FROM tbl WHERE x = 1"),
+            (lambda: exp.Delete().from_("tbl").where("x = 1"), "DELETE FROM tbl WHERE x = 1"),
+            (
+                lambda: exp.Delete(this="tbl").from_("tbl2").where("x = 1"),
+                "DELETE FROM tbl2 WHERE x = 1",
+            ),
+            (lambda: exp.Delete().from_(exp.From(this="tbl")), "DELETE FROM tbl"),
+            (lambda: exp.Delete().from_(exp.Table(this="tbl")), "DELETE FROM tbl"),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

@@ -124,6 +124,7 @@ class Spark(Hive):
             exp.DataType.Type.TINYINT: "BYTE",
             exp.DataType.Type.SMALLINT: "SHORT",
             exp.DataType.Type.BIGINT: "LONG",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {

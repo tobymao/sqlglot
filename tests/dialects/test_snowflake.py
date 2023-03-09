@@ -18,6 +18,28 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
+            "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
+            write={
+                "": "SELECT LOGICAL_OR(c1), LOGICAL_OR(c2) FROM test",
+                "duckdb": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "postgres": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "snowflake": "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
+                "spark": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "sqlite": "SELECT MAX(c1), MAX(c2) FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
+            write={
+                "": "SELECT LOGICAL_AND(c1), LOGICAL_AND(c2) FROM test",
+                "duckdb": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "postgres": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "snowflake": "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
+                "spark": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "sqlite": "SELECT MIN(c1), MIN(c2) FROM test",
+            },
+        )
+        self.validate_all(
             "TO_CHAR(x, y)",
             read={
                 "": "TO_CHAR(x, y)",

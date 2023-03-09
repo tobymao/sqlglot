@@ -3493,7 +3493,11 @@ class Log10(Func):
 
 
 class LogicalOr(AggFunc):
-    _sql_names = ["LOGICAL_OR", "BOOL_OR"]
+    _sql_names = ["LOGICAL_OR", "BOOL_OR", "BOOLOR_AGG"]
+
+
+class LogicalAnd(AggFunc):
+    _sql_names = ["LOGICAL_AND", "BOOL_AND", "BOOLAND_AGG"]
 
 
 class Lower(Func):

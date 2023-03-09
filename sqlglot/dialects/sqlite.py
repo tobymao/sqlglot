@@ -79,17 +79,19 @@ class SQLite(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: _date_add_sql,
+            exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
+            exp.GroupConcat: _group_concat_sql,
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: arrow_json_extract_sql,
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.Levenshtein: rename_func("EDITDIST3"),
+            exp.LogicalOr: rename_func("MAX"),
+            exp.LogicalAnd: rename_func("MIN"),
             exp.TableSample: no_tablesample_sql,
-            exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
             exp.TryCast: no_trycast_sql,
-            exp.GroupConcat: _group_concat_sql,
         }
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:

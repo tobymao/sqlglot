@@ -3261,6 +3261,10 @@ class Count(AggFunc):
     arg_types = {"this": False}
 
 
+class CountIf(AggFunc):
+    pass
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

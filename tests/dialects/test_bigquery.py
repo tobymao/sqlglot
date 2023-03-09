@@ -8,6 +8,9 @@ class TestBigQuery(Validator):
     def test_bigquery(self):
         self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
+        self.validate_identity(
+            "SELECT * FROM (SELECT * FROM `t`) AS a UNPIVOT((c) FOR c_name IN (v1, v2))"
+        )
 
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
         self.validate_all(

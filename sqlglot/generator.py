@@ -1359,8 +1359,8 @@ class Generator:
         sql = self.query_modifiers(
             expression,
             self.wrap(expression),
-            self.expressions(expression, key="pivots", sep=" "),
             alias,
+            self.expressions(expression, key="pivots", sep=" "),
         )
 
         return self.prepend_ctes(expression, sql)

@@ -2085,6 +2085,8 @@ class Parser(metaclass=_Parser):
         subquery = self._parse_select(table=True)
 
         if subquery:
+            if not subquery.args.get("pivots"):
+                subquery.set("pivots", self._parse_pivots())
             return subquery
 
         this = self._parse_table_parts(schema=schema)

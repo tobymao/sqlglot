@@ -5,6 +5,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    count_if_to_sum,
     no_ilike_sql,
     no_tablesample_sql,
     no_trycast_sql,
@@ -78,6 +79,7 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            exp.CountIf: count_if_to_sum,
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.GroupConcat: _group_concat_sql,

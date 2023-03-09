@@ -1455,3 +1455,34 @@ SELECT
                 "postgres": "SUBSTRING('123456' FROM 2 FOR 3)",
             },
         )
+
+    def test_count_if(self):
+        self.validate_identity("COUNT_IF(DISTINCT cond)")
+
+        self.validate_all(
+            "SELECT COUNT_IF(col % 2 = 0) FROM foo",
+            write={
+                "": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
+                "databricks": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
+                "presto": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
+                "snowflake": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
+                "sqlite": "SELECT SUM(CASE WHEN col % 2 = 0 THEN 1 ELSE 0 END) FROM foo",
+                "tsql": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
+            },
+        )
+        self.validate_all(
+            "SELECT COUNT_IF(col % 2 = 0 AND col < 1000) FROM foo",
+            read={
+                "": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
+                "databricks": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
+                "tsql": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
+            },
+            write={
+                "": "SELECT COUNT_IF(col % 2 = 0 AND col < 1000) FROM foo",
+                "databricks": "SELECT COUNT_IF(col % 2 = 0 AND col < 1000) FROM foo",
+                "presto": "SELECT COUNT_IF(col % 2 = 0 AND col < 1000) FROM foo",
+                "snowflake": "SELECT COUNT_IF(col % 2 = 0 AND col < 1000) FROM foo",
+                "sqlite": "SELECT SUM(CASE WHEN col % 2 = 0 AND col < 1000 THEN 1 ELSE 0 END) FROM foo",
+                "tsql": "SELECT COUNT_IF(col % 2 = 0 AND col < 1000) FROM foo",
+            },
+        )

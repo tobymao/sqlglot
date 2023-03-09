@@ -656,15 +656,16 @@ class Parser(metaclass=_Parser):
     }
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+        "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
-        "TRY_CONVERT": lambda self: self._parse_convert(False),
+        "COUNT_IF": lambda self: self._parse_count_if(),
         "EXTRACT": lambda self: self._parse_extract(),
         "POSITION": lambda self: self._parse_position(),
+        "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
         "TRIM": lambda self: self._parse_trim(),
-        "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "TRY_CAST": lambda self: self._parse_cast(False),
-        "STRING_AGG": lambda self: self._parse_string_agg(),
+        "TRY_CONVERT": lambda self: self._parse_convert(False),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -3218,6 +3219,30 @@ class Parser(metaclass=_Parser):
             this = self.expression(exp.If, this=condition, true=true, false=false)
 
         return self._parse_window(this)
+
+    # https://docs.databricks.com/sql/language-manual/functions/count_if.html#returns
+    # https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/functions/count_if#returns
+    def _parse_count_if(self) -> exp.Expression:
+        all_ = self._match(TokenType.ALL)
+        distinct = self._match(TokenType.DISTINCT)
+
+        if all_ and distinct:
+            self.raise_error("Cannot specify both ALL and DISTINCT in COUNT_IF")
+
+        cond = self._parse_conjunction()
+
+        index = self._index
+        if self._match_pair(TokenType.R_PAREN, TokenType.FILTER):
+            if self._match(TokenType.L_PAREN):
+                self._match(TokenType.WHERE)
+                cond = exp.and_(cond, self._parse_conjunction())
+            else:
+                self._retreat(index)
+
+        if distinct:
+            cond = self.expression(exp.Distinct, expressions=[cond])
+
+        return self.expression(exp.CountIf, this=cond)
 
     def _parse_extract(self) -> exp.Expression:
         this = self._parse_function() or self._parse_var() or self._parse_type()

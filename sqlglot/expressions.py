@@ -1093,6 +1093,7 @@ class Delete(Expression):
             **opts,
         )
 
+
 class Drop(Expression):
     arg_types = {
         "this": False,

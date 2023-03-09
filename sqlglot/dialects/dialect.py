@@ -419,7 +419,7 @@ def count_if_to_sum(self: Generator, expression: exp.CountIf) -> str:
         cond = expression.this.expressions[0]
         self.unsupported("DISTINCT is not supported when converting COUNT_IF to SUM")
 
-    return self.sql(exp.func("sum", exp.func("if", cond, 1, 0)))
+    return self.func("sum", exp.func("if", cond, 1, 0))
 
 
 def trim_sql(self: Generator, expression: exp.Trim) -> str:

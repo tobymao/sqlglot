@@ -1460,6 +1460,9 @@ SELECT
         self.validate_identity("COUNT_IF(DISTINCT cond)")
 
         self.validate_all(
+            "SELECT COUNT_IF(cond) FILTER", write={"": "SELECT COUNT_IF(cond) AS FILTER"}
+        )
+        self.validate_all(
             "SELECT COUNT_IF(col % 2 = 0) FROM foo",
             write={
                 "": "SELECT COUNT_IF(col % 2 = 0) FROM foo",

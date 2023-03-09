@@ -3395,9 +3395,9 @@ class Parser(metaclass=_Parser):
     def _parse_window(
         self, this: t.Optional[exp.Expression], alias: bool = False
     ) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.FILTER):
-            where = self._parse_wrapped(self._parse_where)
-            this = self.expression(exp.Filter, this=this, expression=where)
+        if self._match_pair(TokenType.FILTER, TokenType.L_PAREN):
+            this = self.expression(exp.Filter, this=this, expression=self._parse_where())
+            self._match_r_paren()
 
         # T-SQL allows the OVER (...) syntax after WITHIN GROUP.
         # https://learn.microsoft.com/en-us/sql/t-sql/functions/percentile-disc-transact-sql?view=sql-server-ver16

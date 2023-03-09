@@ -162,6 +162,7 @@ class DuckDB(Dialect):
             exp.JSONBExtract: arrow_json_extract_sql,
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.Pivot: no_pivot_sql,
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: _regexp_extract_sql,

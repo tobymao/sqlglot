@@ -480,6 +480,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("COMMIT"), exp.Commit)
         self.assertIsInstance(parse_one("ROLLBACK"), exp.Rollback)
         self.assertIsInstance(parse_one("GENERATE_SERIES(a, b, c)"), exp.GenerateSeries)
+        self.assertIsInstance(parse_one("COUNT_IF(a > 0)"), exp.CountIf)
 
     def test_column(self):
         column = parse_one("a.b.c.d")

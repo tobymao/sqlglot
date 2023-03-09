@@ -412,6 +412,16 @@ def min_or_least(self: Generator, expression: exp.Min) -> str:
     return rename_func(name)(self, expression)
 
 
+def count_if_to_sum(self: Generator, expression: exp.CountIf) -> str:
+    cond = expression.this
+
+    if isinstance(expression.this, exp.Distinct):
+        cond = expression.this.expressions[0]
+        self.unsupported("DISTINCT is not supported when converting COUNT_IF to SUM")
+
+    return self.func("sum", exp.func("if", cond, 1, 0))
+
+
 def trim_sql(self: Generator, expression: exp.Trim) -> str:
     target = self.sql(expression, "this")
     trim_type = self.sql(expression, "position")

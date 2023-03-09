@@ -311,6 +311,7 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.DateDiff: _date_diff_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.Min: min_or_least,
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),

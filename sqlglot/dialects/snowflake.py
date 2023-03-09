@@ -280,6 +280,8 @@ class Snowflake(Dialect):
             exp.DataType: _datatype_sql,
             exp.If: rename_func("IFF"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.LogicalOr: rename_func("BOOLOR_AGG"),
+            exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),

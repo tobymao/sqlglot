@@ -157,6 +157,7 @@ class Spark(Hive):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),

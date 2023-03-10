@@ -502,6 +502,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CUBE": TokenType.CUBE,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
+        "CURRENT_TIME": TokenType.CURRENT_TIME,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
         "DATABASE": TokenType.DATABASE,
         "DEFAULT": TokenType.DEFAULT,

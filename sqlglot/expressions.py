@@ -626,7 +626,8 @@ IntoType = t.Union[
     t.Type[Expression],
     t.Collection[t.Union[str, t.Type[Expression]]],
 ]
-ExpressionType = t.Union[str, Expression, t.Type[Expression], None]
+ExpressionType = t.Union[str, Expression]
+ExpressionTypeNone = t.Union[str, Expression, None]
 
 
 class Condition(Expression):
@@ -1036,7 +1037,7 @@ class Delete(Expression):
 
     def delete(
         self,
-        table: str | Expression,
+        table: ExpressionType,
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
@@ -1069,7 +1070,7 @@ class Delete(Expression):
 
     def where(
         self,
-        *expressions: str | Expression,
+        *expressions: ExpressionType,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -1108,7 +1109,7 @@ class Delete(Expression):
 
     def returning(
         self,
-        expression: str | Expression,
+        expression: ExpressionType,
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
@@ -1932,7 +1933,7 @@ class Union(Subqueryable):
 
     def select(
         self,
-        *expressions: str | Expression,
+        *expressions: ExpressionType,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2278,7 +2279,7 @@ class Select(Subqueryable):
 
     def select(
         self,
-        *expressions: str | Expression,
+        *expressions: ExpressionType,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -3938,7 +3939,7 @@ ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 # Helpers
 def maybe_parse(
-    sql_or_expression: str | Expression,
+    sql_or_expression: ExpressionType,
     *,
     into: t.Optional[IntoType] = None,
     dialect: DialectType = None,
@@ -4199,7 +4200,7 @@ def except_(left, right, distinct=True, dialect=None, **opts):
     return Except(this=left, expression=right, distinct=distinct)
 
 
-def select(*expressions: str | Expression, dialect: DialectType = None, **opts) -> Select:
+def select(*expressions: ExpressionType, dialect: DialectType = None, **opts) -> Select:
     """
     Initializes a syntax tree from one or multiple SELECT expressions.
 
@@ -4246,8 +4247,8 @@ def from_(*expressions, dialect=None, **opts) -> Select:
 def update(
     table: str | Table,
     properties: dict,
-    where: ExpressionType = None,
-    from_: ExpressionType = None,
+    where: ExpressionTypeNone = None,
+    from_: ExpressionTypeNone = None,
     dialect: DialectType = None,
     **opts,
 ) -> Update:
@@ -4294,8 +4295,8 @@ def update(
 
 def delete(
     table: ExpressionType,
-    where: ExpressionType = None,
-    returning: ExpressionType = None,
+    where: ExpressionTypeNone = None,
+    returning: ExpressionTypeNone = None,
     dialect: DialectType = None,
     **opts,
 ) -> Delete:
@@ -4536,7 +4537,7 @@ def to_column(sql_path: str | Column, **kwargs) -> Column:
 
 
 def alias_(
-    expression: str | Expression,
+    expression: ExpressionType,
     alias: str | Identifier,
     table: bool | t.Sequence[str | Identifier] = False,
     quoted: t.Optional[bool] = None,
@@ -4638,7 +4639,7 @@ def column(
     )
 
 
-def cast(expression: str | Expression, to: str | DataType | DataType.Type, **opts) -> Cast:
+def cast(expression: ExpressionType, to: str | DataType | DataType.Type, **opts) -> Cast:
     """Cast an expression to a data type.
 
     Example:
@@ -4717,7 +4718,7 @@ def values(
     )
 
 
-def var(name: t.Optional[str | Expression]) -> Var:
+def var(name: t.Optional[ExpressionType]) -> Var:
     """Build a SQL variable.
 
     Example:

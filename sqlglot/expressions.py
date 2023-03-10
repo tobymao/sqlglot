@@ -626,6 +626,7 @@ IntoType = t.Union[
     t.Type[Expression],
     t.Collection[t.Union[str, t.Type[Expression]]],
 ]
+ExpressionType = t.Union[str, Expression, t.Type[Expression], None]
 
 
 class Condition(Expression):
@@ -4245,8 +4246,8 @@ def from_(*expressions, dialect=None, **opts) -> Select:
 def update(
     table: str | Table,
     properties: dict,
-    where: str | Expression = None,
-    from_: str | Expression = None,
+    where: ExpressionType = None,
+    from_: ExpressionType = None,
     dialect: DialectType = None,
     **opts,
 ) -> Update:
@@ -4292,9 +4293,9 @@ def update(
 
 
 def delete(
-    table: str | Expression,
-    where: str | Expression = None,
-    returning: str | Expression = None,
+    table: ExpressionType,
+    where: ExpressionType = None,
+    returning: ExpressionType = None,
     dialect: DialectType = None,
     **opts,
 ) -> Delete:

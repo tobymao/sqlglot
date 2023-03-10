@@ -818,10 +818,9 @@ class SetItem(Expression):
         "expressions": False,
         "kind": False,
         "collate": False,  # MySQL SET NAMES statement
-        "global_": False,
+        "global": False,
         "session": False,
         "local": False,
-        "assignment_operator": ""
     }
 
 

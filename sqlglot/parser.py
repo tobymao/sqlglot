@@ -3829,38 +3829,19 @@ class Parser(metaclass=_Parser):
     def _parse_set(self):
         start = self._prev
 
-        local = self._match(TokenType.LOCAL) is not None
-        global_ = self._match(TokenType.GLOBAL) is not None
-        session = self._match(TokenType.SESSION) is not None
+        local = self._match_text_seq("LOCAL")
+        global_ = self._match_text_seq("GLOBAL")
+        session = self._match_text_seq("SESSION")
 
-        left = self._parse_var_or_string()
-        
-        assignment_operator = ""
-        if self._match(TokenType.EQ) is not None:
-            assignment_operator = "="
-        elif self._match(TokenType.TO) is not None:
-            assignment_operator = "TO"
-
-        right = self._parse_var_or_string()
+        this = self._parse_equality()
 
         # if we have tokens left, the set was not a recognised variable setting
         # form of the statement
         if self._curr is not None:
             return self._parse_as_command(start)
 
-        this = self.expression(
-            exp.EQ,
-            this=left,
-            expression=right,
-        )
-
         return self.expression(
-            exp.SetItem,
-            this=this,
-            local=local,
-            global_=global_,
-            session=session,
-            assignment_operator=assignment_operator
+            exp.SetItem, **{"this": this, "local": local, "global": global_, "session": session}
         )
 
     def _parse_as_command(self, start: Token) -> exp.Command:

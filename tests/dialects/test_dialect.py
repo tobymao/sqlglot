@@ -1457,8 +1457,26 @@ SELECT
 
     def test_set_variables(self):
         self.validate_all(
+            "SET variable = value",
+            write={
+                "postgres": "SET variable = value",
+            },
+        )
+        self.validate_all(
             "SET GLOBAL variable = value",
             write={
                 "postgres": "SET GLOBAL variable = value",
+            },
+        )
+        self.validate_all(
+            "SET LOCAL variable = value",
+            write={
+                "postgres": "SET LOCAL variable = value",
+            },
+        )
+        self.validate_all(
+            "SET TEMPORAL variable = value",
+            write={
+                "postgres": "SET TEMPORAL variable = value",
             },
         )

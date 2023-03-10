@@ -303,9 +303,6 @@ class TokenType(AutoName):
     WITHOUT_TIME_ZONE = auto()
     UNIQUE = auto()
 
-    SESSION = auto()
-    TO = auto()
-
 
 class Token:
     __slots__ = ("token_type", "text", "line", "col", "comments")
@@ -704,10 +701,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "PREPARE": TokenType.COMMAND,
         "TRUNCATE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
-        "GLOBAL": TokenType.GLOBAL,
-        "LOCAL": TokenType.LOCAL,
-        "SESSION": TokenType.SESSION,
-        "TO": TokenType.TO,
     }
 
     WHITE_SPACE: t.Dict[str, TokenType] = {

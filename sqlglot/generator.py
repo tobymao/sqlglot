@@ -1366,15 +1366,12 @@ class Generator:
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def setitem_sql(self, expression):
-        left = expression.this.left
-        right = expression.this.right
         local = f"{self.sep()}LOCAL" if expression.args.get("local") else ""
-        global_ = f"{self.sep()}GLOBAL" if expression.args.get("global_") else ""
+        global_ = f"{self.sep()}GLOBAL" if expression.args.get("global") else ""
         session = f"{self.sep()}SESSION" if expression.args.get("session") else ""
-        assignment_operator = expression.args.get("assignment_operator", "")
-        if assignment_operator:
-            assignment_operator += self.sep()
-        return f"{self.seg('SET')}{local}{global_}{session}{self.sep()}{left}{self.sep()}{assignment_operator}{right}"
+        return (
+            f"{self.seg('SET')}{local}{global_}{session}{self.sep()}{self.sql(expression, 'this')}"
+        )
 
     def union_sql(self, expression: exp.Union) -> str:
         return self.prepend_ctes(

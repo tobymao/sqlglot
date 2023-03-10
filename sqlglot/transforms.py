@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import itertools
 import typing as t
 
+from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
 
 if t.TYPE_CHECKING:
     from sqlglot.generator import Generator
-
-from sqlglot import expressions as exp
 
 
 def unalias_group(expression: exp.Expression) -> exp.Expression:
@@ -79,6 +79,35 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
+    """
+    Convert SELECT statements that contain the QUALIFY clause into subqueries, filtered equivalently.
+
+    The idea behind this transformation can be seen in Snowflake's documentation for QUALIFY:
+    https://docs.snowflake.com/en/sql-reference/constructs/qualify
+
+    Some dialects don't support window functions in the WHERE clause -- we need to add them in the
+    subquery's projection list so they can be referenced in the outer filter using an alias. if the
+    selected columns are known (i.e. no "*"), we can simply copy them to the outer query without
+    including the window function.
+    """
+
+    if isinstance(expression, exp.Select) and expression.args.get("qualify"):
+        outer_selects = exp.select(*[s.alias_or_name or s for s in expression.selects])
+        qualify_filters = expression.args["qualify"].this
+        expression.args["qualify"].pop()
+        sequence = itertools.count()
+
+        for window in qualify_filters.find_all(exp.Window):
+            window_alias = f"_w_{next(sequence)}"
+            expression.select(exp.alias_(window.copy(), window_alias), copy=False)
+            window.replace(exp.column(window_alias))
+
+        return outer_selects.from_(expression.subquery()).where(qualify_filters)
+
+    return expression
+
+
 def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expression:
     """
     Some dialects only allow the precision for parameterized types to be defined in the DDL and not in other expressions.
@@ -139,6 +168,7 @@ def delegate(attr: str) -> t.Callable:
 
 UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
 ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on], delegate("select_sql"))}
+ELIMINATE_QUALIFY = {exp.Select: preprocess([eliminate_qualify], delegate("select_sql"))}
 REMOVE_PRECISION_PARAMETERIZED_TYPES = {
     exp.Cast: preprocess([remove_precision_parameterized_types], delegate("cast_sql"))
 }

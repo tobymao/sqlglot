@@ -14,6 +14,14 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
+def _date_add_sql(self, expression):
+    modifier = expression.expression
+    modifier = expression.name if modifier.is_string else self.sql(modifier)
+    unit = expression.args.get("unit")
+    modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
+    return self.func("DATE", expression.this, modifier)
+
+
 class SQLite(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -58,6 +66,7 @@ class SQLite(Dialect):
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
@@ -77,13 +86,6 @@ class SQLite(Dialect):
                 return self.func("DATE", expression.this)
 
             return super().cast_sql(expression)
-
-        def dateadd_sql(self, expression: exp.DateAdd) -> str:
-            modifier = expression.expression
-            modifier = expression.name if modifier.is_string else self.sql(modifier)
-            unit = expression.args.get("unit")
-            modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
-            return self.func("DATE", expression.this, modifier)
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:
             unit = expression.args.get("unit")

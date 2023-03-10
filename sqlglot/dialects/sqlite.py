@@ -14,31 +14,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
-# https://www.sqlite.org/lang_aggfunc.html#group_concat
-def _group_concat_sql(self, expression):
-    this = expression.this
-    distinct = expression.find(exp.Distinct)
-    if distinct:
-        this = distinct.expressions[0]
-        distinct = "DISTINCT "
-
-    if isinstance(expression.this, exp.Order):
-        self.unsupported("SQLite GROUP_CONCAT doesn't support ORDER BY.")
-        if expression.this.this and not distinct:
-            this = expression.this.this
-
-    separator = expression.args.get("separator")
-    return f"GROUP_CONCAT({distinct or ''}{self.format_args(this, separator)})"
-
-
-def _date_add_sql(self, expression):
-    modifier = expression.expression
-    modifier = expression.name if modifier.is_string else self.sql(modifier)
-    unit = expression.args.get("unit")
-    modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
-    return self.func("DATE", expression.this, modifier)
-
-
 class SQLite(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -85,7 +60,6 @@ class SQLite(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
-            exp.GroupConcat: _group_concat_sql,
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
@@ -98,6 +72,19 @@ class SQLite(Dialect):
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
             exp.TryCast: no_trycast_sql,
         }
+
+        def cast_sql(self, expression: exp.Cast) -> str:
+            if expression.to.this == exp.DataType.Type.DATE:
+                return self.func("DATE", expression.this)
+
+            return super().cast_sql(expression)
+
+        def dateadd_sql(self, expression: exp.DateAdd) -> str:
+            modifier = expression.expression
+            modifier = expression.name if modifier.is_string else self.sql(modifier)
+            unit = expression.args.get("unit")
+            modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
+            return self.func("DATE", expression.this, modifier)
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:
             unit = expression.args.get("unit")
@@ -126,16 +113,32 @@ class SQLite(Dialect):
 
             return f"CAST({sql} AS INTEGER)"
 
-        def fetch_sql(self, expression):
+        def fetch_sql(self, expression: exp.Fetch) -> str:
             return self.limit_sql(exp.Limit(expression=expression.args.get("count")))
 
-        def least_sql(self, expression):
+        # https://www.sqlite.org/lang_aggfunc.html#group_concat
+        def groupconcat_sql(self, expression):
+            this = expression.this
+            distinct = expression.find(exp.Distinct)
+            if distinct:
+                this = distinct.expressions[0]
+                distinct = "DISTINCT "
+
+            if isinstance(expression.this, exp.Order):
+                self.unsupported("SQLite GROUP_CONCAT doesn't support ORDER BY.")
+                if expression.this.this and not distinct:
+                    this = expression.this.this
+
+            separator = expression.args.get("separator")
+            return f"GROUP_CONCAT({distinct or ''}{self.format_args(this, separator)})"
+
+        def least_sql(self, expression: exp.Least) -> str:
             if len(expression.expressions) > 1:
                 return rename_func("MIN")(self, expression)
 
             return self.expressions(expression)
 
-        def transaction_sql(self, expression):
+        def transaction_sql(self, expression: exp.Transaction) -> str:
             this = expression.this
             this = f" {this}" if this else ""
             return f"BEGIN{this} TRANSACTION"

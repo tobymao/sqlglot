@@ -75,6 +75,12 @@ class TestSQLite(Validator):
             read={
                 "": "CURRENT_TIMESTAMP",
                 "snowflake": "CURRENT_TIMESTAMP()",
+            }
+        )
+        self.validate_all(
+            "SELECT DATE('2020-01-01 16:03:05')",
+            read={
+                "snowflake": "SELECT CAST('2020-01-01 16:03:05' AS DATE)",
             },
         )
         self.validate_all(

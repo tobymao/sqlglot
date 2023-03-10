@@ -1475,6 +1475,12 @@ SELECT
             },
         )
         self.validate_all(
+            "SET @user OFF",
+            write={
+                "postgres": "SET @user OFF",
+            },
+        )
+        self.validate_all(
             "SET TEMPORAL variable = value",
             write={
                 "postgres": "SET TEMPORAL variable = value",

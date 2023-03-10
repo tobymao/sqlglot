@@ -1035,7 +1035,7 @@ class Delete(Expression):
 
     def delete(
         self,
-        table: str | Table,
+        table: str | Expression,
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
@@ -1048,7 +1048,7 @@ class Delete(Expression):
             'DELETE FROM tbl'
 
         Args:
-            table (str | Table): the table from which to delete.
+            table (str | Expression): the table from which to delete.
             dialect (str): the dialect used to parse the input expression.
             copy (bool): if `False`, modify this expression instance in-place.
             opts (kwargs): other options to use to parse the input expressions.
@@ -1107,7 +1107,7 @@ class Delete(Expression):
 
     def returning(
         self,
-        expression: str | Returning,
+        expression: str | Expression,
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
@@ -4245,7 +4245,7 @@ def from_(*expressions, dialect=None, **opts) -> Select:
 def update(
     table: str | Table,
     properties: dict,
-    where: str | Condition = None,
+    where: str | Expression = None,
     from_: str | Expression = None,
     dialect: DialectType = None,
     **opts,
@@ -4260,7 +4260,7 @@ def update(
     Args:
         *properties (Dict[str, Any]): dictionary of properties to set which are
             auto converted to sql objects eg None -> NULL
-        where (str|Condition): sql conditional parsed into a WHERE statement
+        where (str|Expression): sql conditional parsed into a WHERE statement
         from_ (str|Table): sql statement parsed into a FROM statement
         dialect (str): the dialect used to parse the input expressions.
         **opts: other options to use to parse the input expressions.
@@ -4293,8 +4293,8 @@ def update(
 
 def delete(
     table: str | Expression,
-    where: str | Condition = None,
-    returning: str | Returning = None,
+    where: str | Expression = None,
+    returning: str | Expression = None,
     dialect: DialectType = None,
     **opts,
 ) -> Delete:
@@ -4306,7 +4306,8 @@ def delete(
         'DELETE FROM my_table WHERE id > 1'
 
     Args:
-        where (str|Condition): sql conditional parsed into a WHERE statement
+        where (str|Expression): sql conditional parsed into a WHERE statement
+        returning (str|Expression): sql conditional parsed into a RETURNING statement
         dialect (str): the dialect used to parse the input expressions.
         **opts: other options to use to parse the input expressions.
 

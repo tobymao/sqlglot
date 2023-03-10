@@ -1033,18 +1033,22 @@ class Constraint(Expression):
 class Delete(Expression):
     arg_types = {"with": False, "this": False, "using": False, "where": False, "returning": False}
 
-    def from_(self, expression, dialect=None, copy=True, **opts) -> Delete:
+    def delete(
+        self,
+        table: str | Table,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Delete:
         """
-        Set the FROM part of the DELETE expression.
+        Create a DELETE expression or replace the table on an existing DELETE expression.
 
         Example:
-            >>> Delete().from_("tbl").sql()
+            >>> delete("tbl").sql()
             'DELETE FROM tbl'
 
         Args:
-            expressions (str | Expression): the SQL code strings to parse.
-            append (bool): if `True`, add to any existing expressions.
-                Otherwise, this flattens all the `From` expression into a single expression.
+            table (str | Table): the table from which to delete.
             dialect (str): the dialect used to parse the input expression.
             copy (bool): if `False`, modify this expression instance in-place.
             opts (kwargs): other options to use to parse the input expressions.
@@ -1053,20 +1057,28 @@ class Delete(Expression):
             Delete: the modified expression.
         """
         return _apply_builder(
-            expression=expression.this if isinstance(expression, Expression) else expression,
+            expression=table,
             instance=self,
             arg="this",
             dialect=dialect,
+            into=Table,
             copy=copy,
             **opts,
         )
 
-    def where(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Delete:
+    def where(
+        self,
+        *expressions: str | Expression,
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Delete:
         """
         Append to or set the WHERE expressions.
 
         Example:
-            >>> Delete().from_("tbl").where("x = 'a' OR x < 'b'").sql()
+            >>> delete("tbl").where("x = 'a' OR x < 'b'").sql()
             "DELETE FROM tbl WHERE x = 'a' OR x < 'b'"
 
         Args:
@@ -1090,6 +1102,41 @@ class Delete(Expression):
             into=Where,
             dialect=dialect,
             copy=copy,
+            **opts,
+        )
+
+    def returning(
+        self,
+        expression: str | Returning,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Delete:
+        """
+        Set the RETURNING expression. Not supported by all dialects.
+
+        Example:
+            >>> delete("tbl").returning("*", dialect="postgres").sql()
+            'DELETE FROM tbl RETURNING *'
+
+        Args:
+            expression: the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            Delete: the modified expression.
+        """
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="returning",
+            prefix="RETURNING",
+            dialect=dialect,
+            copy=copy,
+            into=Returning,
             **opts,
         )
 
@@ -4195,7 +4242,14 @@ def from_(*expressions, dialect=None, **opts) -> Select:
     return Select().from_(*expressions, dialect=dialect, **opts)
 
 
-def update(table, properties, where=None, from_=None, dialect=None, **opts) -> Update:
+def update(
+    table: str | Table,
+    properties: dict,
+    where: str | Condition = None,
+    from_: str | Expression = None,
+    dialect: DialectType = None,
+    **opts,
+) -> Update:
     """
     Creates an update statement.
 
@@ -4206,16 +4260,16 @@ def update(table, properties, where=None, from_=None, dialect=None, **opts) -> U
     Args:
         *properties (Dict[str, Any]): dictionary of properties to set which are
             auto converted to sql objects eg None -> NULL
-        where (str): sql conditional parsed into a WHERE statement
-        from_ (str): sql statement parsed into a FROM statement
+        where (str|Condition): sql conditional parsed into a WHERE statement
+        from_ (str|Table): sql statement parsed into a FROM statement
         dialect (str): the dialect used to parse the input expressions.
         **opts: other options to use to parse the input expressions.
 
     Returns:
         Update: the syntax tree for the UPDATE statement.
     """
-    update = Update(this=maybe_parse(table, into=Table, dialect=dialect))
-    update.set(
+    update_expr = Update(this=maybe_parse(table, into=Table, dialect=dialect))
+    update_expr.set(
         "expressions",
         [
             EQ(this=maybe_parse(k, dialect=dialect, **opts), expression=convert(v))
@@ -4223,21 +4277,27 @@ def update(table, properties, where=None, from_=None, dialect=None, **opts) -> U
         ],
     )
     if from_:
-        update.set(
+        update_expr.set(
             "from",
             maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", **opts),
         )
     if isinstance(where, Condition):
         where = Where(this=where)
     if where:
-        update.set(
+        update_expr.set(
             "where",
             maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", **opts),
         )
-    return update
+    return update_expr
 
 
-def delete(table, where=None, dialect=None, **opts) -> Delete:
+def delete(
+    table: str | Expression,
+    where: str | Condition = None,
+    returning: str | Returning = None,
+    dialect: DialectType = None,
+    **opts,
+) -> Delete:
     """
     Builds a delete statement.
 
@@ -4253,12 +4313,12 @@ def delete(table, where=None, dialect=None, **opts) -> Delete:
     Returns:
         Delete: the syntax tree for the DELETE statement.
     """
-    return Delete(
-        this=maybe_parse(table, into=Table, dialect=dialect, **opts),
-        where=Where(this=where)
-        if isinstance(where, Condition)
-        else maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", **opts),
-    )
+    delete_expr = Delete().delete(table, dialect=dialect, **opts)
+    if where:
+        delete_expr = delete_expr.where(where, dialect=dialect, **opts)
+    if returning:
+        delete_expr = delete_expr.returning(returning, dialect=dialect, **opts)
+    return delete_expr
 
 
 def condition(expression, dialect=None, **opts) -> Condition:
@@ -4672,7 +4732,7 @@ def var(name: t.Optional[str | Expression]) -> Var:
         The new variable node.
     """
     if not name:
-        raise ValueError(f"Cannot convert empty name into var.")
+        raise ValueError("Cannot convert empty name into var.")
 
     if isinstance(name, Expression):
         name = name.name

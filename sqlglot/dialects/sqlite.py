@@ -80,6 +80,9 @@ class SQLite(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.CountIf: count_if_to_sum,
+            exp.CurrentDate: lambda *_: "CURRENT_DATE",
+            exp.CurrentTime: lambda *_: "CURRENT_TIME",
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.GroupConcat: _group_concat_sql,

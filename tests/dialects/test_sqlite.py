@@ -57,6 +57,27 @@ class TestSQLite(Validator):
 
     def test_sqlite(self):
         self.validate_all(
+            "CURRENT_DATE",
+            read={
+                "": "CURRENT_DATE",
+                "snowflake": "CURRENT_DATE()",
+            },
+        )
+        self.validate_all(
+            "CURRENT_TIME",
+            read={
+                "": "CURRENT_TIME",
+                "snowflake": "CURRENT_TIME()",
+            },
+        )
+        self.validate_all(
+            "CURRENT_TIMESTAMP",
+            read={
+                "": "CURRENT_TIMESTAMP",
+                "snowflake": "CURRENT_TIMESTAMP()",
+            },
+        )
+        self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={
                 "sqlite": 'SELECT CAST("a"."b" AS INTEGER) FROM foo',

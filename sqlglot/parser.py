@@ -96,6 +96,7 @@ class Parser(metaclass=_Parser):
     NO_PAREN_FUNCTIONS = {
         TokenType.CURRENT_DATE: exp.CurrentDate,
         TokenType.CURRENT_DATETIME: exp.CurrentDate,
+        TokenType.CURRENT_TIME: exp.CurrentTime,
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
     }
 
@@ -198,7 +199,6 @@ class Parser(metaclass=_Parser):
         TokenType.COMMIT,
         TokenType.COMPOUND,
         TokenType.CONSTRAINT,
-        TokenType.CURRENT_TIME,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESCRIBE,

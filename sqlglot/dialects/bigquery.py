@@ -144,7 +144,6 @@ class BigQuery(Dialect):
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
-            "CURRENT_TIME": TokenType.CURRENT_TIME,
             "DECLARE": TokenType.COMMAND,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "FLOAT64": TokenType.DOUBLE,
@@ -194,7 +193,6 @@ class BigQuery(Dialect):
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,  # type: ignore
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
-            TokenType.CURRENT_TIME: exp.CurrentTime,
         }
 
         NESTED_TYPE_TOKENS = {

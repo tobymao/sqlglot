@@ -1668,7 +1668,7 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         return f"COMMENT{exists_sql}ON {kind} {this} IS {expression_sql}"
 
-    def transaction_sql(self, *_) -> str:
+    def transaction_sql(self, expression: exp.Transaction) -> str:
         return "BEGIN"
 
     def commit_sql(self, expression: exp.Commit) -> str:

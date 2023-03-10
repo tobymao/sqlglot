@@ -5,6 +5,10 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})
+        self.validate_all(
+            "DATE_ADD('day', ndays, caldate)", write={"redshift": "DATEADD('day', ndays, caldate)"}
+        )
         self.validate_all(
             'create table "group" ("col" char(10))',
             write={
@@ -83,6 +87,12 @@ class TestRedshift(Validator):
             write={
                 "redshift": "DATEDIFF(d, a, b)",
                 "presto": "DATE_DIFF(d, a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT TOP 1 x FROM y",
+            write={
+                "redshift": "SELECT x FROM y LIMIT 1",
             },
         )
 

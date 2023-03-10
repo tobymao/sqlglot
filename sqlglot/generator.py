@@ -59,7 +59,6 @@ class Generator:
         exp.DateAdd: lambda self, e: self.func(
             "DATE_ADD", e.this, e.expression, e.args.get("unit")
         ),
-        exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
         exp.TsOrDsAdd: lambda self, e: self.func(
             "TS_OR_DS_ADD", e.this, e.expression, e.args.get("unit")
         ),
@@ -108,9 +107,6 @@ class Generator:
 
     # Whether or not create function uses an AS before the RETURN
     CREATE_FUNCTION_RETURN_AS = True
-
-    # Whether or not to treat the division operator "/" as integer division
-    INTEGER_DIVISION = True
 
     # Whether or not MERGE ... WHEN MATCHED BY SOURCE is allowed
     MATCHED_BY_SOURCE = True
@@ -691,7 +687,8 @@ class Generator:
             else ""
         )
         where_sql = self.sql(expression, "where")
-        sql = f"DELETE{this}{using_sql}{where_sql}"
+        returning = self.sql(expression, "returning")
+        sql = f"DELETE{this}{using_sql}{where_sql}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression: exp.Drop) -> str:
@@ -955,8 +952,9 @@ class Generator:
             self.sql(expression, "partition") if expression.args.get("partition") else ""
         )
         expression_sql = self.sql(expression, "expression")
+        returning = self.sql(expression, "returning")
         sep = self.sep() if partition_sql else ""
-        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}"
+        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -973,6 +971,9 @@ class Generator:
 
     def pseudotype_sql(self, expression: exp.PseudoType) -> str:
         return expression.name.upper()
+
+    def returning_sql(self, expression: exp.Returning) -> str:
+        return f"{self.seg('RETURNING')} {self.expressions(expression, flat=True)}"
 
     def rowformatdelimitedproperty_sql(self, expression: exp.RowFormatDelimitedProperty) -> str:
         fields = expression.args.get("fields")
@@ -1012,7 +1013,7 @@ class Generator:
 
         return f"{table}{system_time}{alias}{hints}{laterals}{joins}{pivots}"
 
-    def tablesample_sql(self, expression: exp.TableSample) -> str:
+    def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:
         if self.alias_post_tablesample and expression.this.alias:
             this = self.sql(expression.this, "this")
             alias = f" AS {self.sql(expression.this, 'alias')}"
@@ -1020,7 +1021,7 @@ class Generator:
             this = self.sql(expression, "this")
             alias = ""
         method = self.sql(expression, "method")
-        method = f" {method.upper()} " if method else ""
+        method = f"{method.upper()} " if method else ""
         numerator = self.sql(expression, "bucket_numerator")
         denominator = self.sql(expression, "bucket_denominator")
         field = self.sql(expression, "bucket_field")
@@ -1032,8 +1033,9 @@ class Generator:
         rows = f"{rows} ROWS" if rows else ""
         size = self.sql(expression, "size")
         seed = self.sql(expression, "seed")
-        seed = f" SEED ({seed})" if seed else ""
-        return f"{this} TABLESAMPLE{method}({bucket}{percent}{rows}{size}){seed}{alias}"
+        seed = f" {seed_prefix} ({seed})" if seed else ""
+        kind = expression.args.get("kind", "TABLESAMPLE")
+        return f"{this} {kind} {method}({bucket}{percent}{rows}{size}){seed}{alias}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         this = self.sql(expression, "this")
@@ -1053,7 +1055,8 @@ class Generator:
         set_sql = self.expressions(expression, flat=True)
         from_sql = self.sql(expression, "from")
         where_sql = self.sql(expression, "where")
-        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}"
+        returning = self.sql(expression, "returning")
+        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:
@@ -1300,6 +1303,7 @@ class Generator:
             self.sql(expression, "limit"),
             self.sql(expression, "offset"),
             self.sql(expression, "lock"),
+            self.sql(expression, "sample"),
             sep="",
         )
 
@@ -1355,8 +1359,8 @@ class Generator:
         sql = self.query_modifiers(
             expression,
             self.wrap(expression),
-            self.expressions(expression, key="pivots", sep=" "),
             alias,
+            self.expressions(expression, key="pivots", sep=" "),
         )
 
         return self.prepend_ctes(expression, sql)
@@ -1571,7 +1575,7 @@ class Generator:
             )
         else:
             this = ""
-        unit = expression.args.get("unit")
+        unit = self.sql(expression, "unit")
         unit = f" {unit}" if unit else ""
         return f"INTERVAL{this}{unit}"
 
@@ -1672,7 +1676,7 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         return f"COMMENT{exists_sql}ON {kind} {this} IS {expression_sql}"
 
-    def transaction_sql(self, *_) -> str:
+    def transaction_sql(self, expression: exp.Transaction) -> str:
         return "BEGIN"
 
     def commit_sql(self, expression: exp.Commit) -> str:
@@ -1757,25 +1761,17 @@ class Generator:
         return f"{self.sql(expression, 'this')} RESPECT NULLS"
 
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
-        div = self.binary(expression, "/")
-        return self.sql(exp.Cast(this=div, to=exp.DataType.build("INT")))
+        return self.sql(
+            exp.Cast(
+                this=exp.Div(this=expression.this, expression=expression.expression),
+                to=exp.DataType(this=exp.DataType.Type.INT),
+            )
+        )
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         return self.binary(expression, "||")
 
     def div_sql(self, expression: exp.Div) -> str:
-        div = self.binary(expression, "/")
-
-        if not self.INTEGER_DIVISION:
-            return self.sql(exp.Cast(this=div, to=exp.DataType.build("INT")))
-
-        return div
-
-    def floatdiv_sql(self, expression: exp.FloatDiv) -> str:
-        if self.INTEGER_DIVISION:
-            this = exp.Cast(this=expression.this, to=exp.DataType.build("DOUBLE"))
-            return self.div_sql(exp.Div(this=this, expression=expression.expression))
-
         return self.binary(expression, "/")
 
     def overlaps_sql(self, expression: exp.Overlaps) -> str:
@@ -1991,3 +1987,9 @@ class Generator:
         using = f"USING {self.sql(expression, 'using')}"
         on = f"ON {self.sql(expression, 'on')}"
         return f"MERGE INTO {this} {using} {on} {self.expressions(expression, sep=' ')}"
+
+    def tochar_sql(self, expression: exp.ToChar) -> str:
+        if expression.args.get("format"):
+            self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
+
+        return self.sql(exp.cast(expression.this, "text"))

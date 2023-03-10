@@ -202,9 +202,9 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         )
 
     def test_types(self):
-        self.validate("INT x", "CAST(x AS INT)")
-        self.validate("VARCHAR x y", "CAST(x AS VARCHAR) AS y")
-        self.validate("STRING x y", "CAST(x AS TEXT) AS y")
+        self.validate("INT 1", "CAST(1 AS INT)")
+        self.validate("VARCHAR 'x' y", "CAST('x' AS VARCHAR) AS y")
+        self.validate("STRING 'x' y", "CAST('x' AS TEXT) AS y")
         self.validate("x::INT", "CAST(x AS INT)")
         self.validate("x::INTEGER", "CAST(x AS INT)")
         self.validate("x::INT y", "CAST(x AS INT) AS y")
@@ -221,7 +221,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         self.validate("a NOT BETWEEN b AND c", "NOT a BETWEEN b AND c")
         self.validate("a NOT IN (1, 2)", "NOT a IN (1, 2)")
         self.validate("a IS NOT NULL", "NOT a IS NULL")
-        self.validate("a LIKE TEXT y", "a LIKE CAST(y AS TEXT)")
+        self.validate("a LIKE TEXT 'y'", "a LIKE CAST('y' AS TEXT)")
 
     def test_extract(self):
         self.validate(

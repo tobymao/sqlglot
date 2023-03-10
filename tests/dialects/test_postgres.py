@@ -11,6 +11,14 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE test (foo JSONB)")
         self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
 
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
+        self.validate_identity(
+            "DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid RETURNING a"
+        )
+        self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
+
         self.validate_all(
             "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
             write={
@@ -63,6 +71,9 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
+        self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
+        self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
+        self.validate_identity("SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]")
         self.validate_identity("$x")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")
@@ -106,40 +117,6 @@ class TestPostgres(Validator):
         self.validate_identity("x ~ 'y'")
         self.validate_identity("x ~* 'y'")
 
-        self.validate_all(
-            "1 / 2",
-            read={
-                "drill": "1 / 2",
-                "duckdb": "1 / 2",
-                "postgres": "1 / 2",
-                "presto": "1 / 2",
-                "redshift": "1 / 2",
-                "sqlite": "1 / 2",
-                "teradata": "1 / 2",
-                "trino": "1 / 2",
-                "tsql": "1 / 2",
-            },
-            write={
-                "drill": "1 / 2",
-                "duckdb": "1 / 2",
-                "postgres": "1 / 2",
-                "presto": "1 / 2",
-                "redshift": "1 / 2",
-                "sqlite": "1 / 2",
-                "teradata": "1 / 2",
-                "trino": "1 / 2",
-                "tsql": "1 / 2",
-                "bigquery": "CAST(1 / 2 AS INT64)",
-                "clickhouse": "CAST(1 / 2 AS Int32)",
-                "databricks": "CAST(1 / 2 AS INT)",
-                "hive": "CAST(1 / 2 AS INT)",
-                "mysql": "CAST(1 / 2 AS INT)",
-                "oracle": "CAST(1 / 2 AS NUMBER)",
-                "snowflake": "CAST(1 / 2 AS INT)",
-                "spark": "CAST(1 / 2 AS INT)",
-                "starrocks": "CAST(1 / 2 AS INT)",
-            },
-        )
         self.validate_all(
             "SELECT (DATE '2016-01-10', DATE '2016-02-01') OVERLAPS (DATE '2016-01-20', DATE '2016-02-10')",
             write={
@@ -188,7 +165,7 @@ class TestPostgres(Validator):
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",
             write={
-                "duckdb": "CREATE TABLE x (a UUID, b VARBINARY)",
+                "duckdb": "CREATE TABLE x (a UUID, b BLOB)",
                 "presto": "CREATE TABLE x (a UUID, b VARBINARY)",
                 "hive": "CREATE TABLE x (a UUID, b BINARY)",
                 "spark": "CREATE TABLE x (a UUID, b BINARY)",

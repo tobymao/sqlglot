@@ -20,6 +20,7 @@ class Redshift(Postgres):
     class Parser(Postgres.Parser):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,  # type: ignore
+            "DATEADD": exp.DateAdd.from_arg_list,
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2),
                 expression=seq_get(args, 1),
@@ -28,6 +29,8 @@ class Redshift(Postgres):
             "DECODE": exp.Matches.from_arg_list,
             "NVL": exp.Coalesce.from_arg_list,
         }
+
+        CONVERT_TYPE_FIRST = True
 
         def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
             this = super()._parse_types(check_func=check_func)
@@ -53,6 +56,7 @@ class Redshift(Postgres):
             "SUPER": TokenType.SUPER,
             "TIME": TokenType.TIMESTAMP,
             "TIMETZ": TokenType.TIMESTAMPTZ,
+            "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
         }
@@ -73,14 +77,18 @@ class Redshift(Postgres):
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,  # type: ignore
             **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
+            exp.DateAdd: rename_func("DATEADD"),  # redshift supports DATEADD, postgres doesn't
             exp.DateDiff: lambda self, e: self.func(
                 "DATEDIFF", e.args.get("unit") or "day", e.expression, e.this
             ),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
-            exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.Matches: rename_func("DECODE"),
+            exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
         }
+
+        # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
+        TRANSFORMS.pop(exp.Pow)
 
         def values_sql(self, expression: exp.Values) -> str:
             """

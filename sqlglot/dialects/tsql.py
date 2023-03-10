@@ -4,7 +4,12 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.dialect import Dialect, parse_date_delta, rename_func
+from sqlglot.dialects.dialect import (
+    Dialect,
+    min_or_least,
+    parse_date_delta,
+    rename_func,
+)
 from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
@@ -243,7 +248,6 @@ class TSQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "BIT": TokenType.BOOLEAN,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
@@ -278,19 +282,20 @@ class TSQL(Dialect):
                 substr=seq_get(args, 0),
                 position=seq_get(args, 2),
             ),
-            "ISNULL": exp.Coalesce.from_arg_list,
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
             "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": _format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _format_time_lambda(exp.TimeToStr),
+            "EOMONTH": _parse_eomonth,
+            "FORMAT": _parse_format,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
-            "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
             "IIF": exp.If.from_arg_list,
+            "ISNULL": exp.Coalesce.from_arg_list,
+            "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
             "LEN": exp.Length.from_arg_list,
             "REPLICATE": exp.Repeat.from_arg_list,
-            "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
-            "FORMAT": _parse_format,
-            "EOMONTH": _parse_eomonth,
+            "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
         }
 
         VAR_LENGTH_DATATYPES = {
@@ -416,7 +421,6 @@ class TSQL(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
-            exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.DECIMAL: "NUMERIC",
             exp.DataType.Type.DATETIME: "DATETIME2",
@@ -433,6 +437,7 @@ class TSQL(Dialect):
             exp.NumberToStr: _format_sql,
             exp.TimeToStr: _format_sql,
             exp.GroupConcat: _string_agg_sql,
+            exp.Min: min_or_least,
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

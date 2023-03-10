@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
-from sqlglot.helper import csv
+from sqlglot.helper import csv, seq_get
 from sqlglot.tokens import TokenType
 
 PASSING_TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
@@ -75,14 +75,13 @@ class Oracle(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DECODE": exp.Matches.from_arg_list,
+            "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
             "XMLTABLE": _parse_xml_table,
         }
-
-        INTEGER_DIVISION = False
 
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()
@@ -92,7 +91,6 @@ class Oracle(Dialect):
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
-        INTEGER_DIVISION = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
@@ -122,6 +120,7 @@ class Oracle(Dialect):
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
             exp.Substring: rename_func("SUBSTR"),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
         def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:

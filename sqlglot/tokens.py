@@ -46,10 +46,13 @@ class TokenType(AutoName):
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
     LR_ARROW = auto()
+    LT_AT = auto()
+    AT_GT = auto()
     DOLLAR = auto()
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
     NATIONAL = auto()
+    DAMP = auto()
 
     BLOCK_START = auto()
     BLOCK_END = auto()
@@ -71,11 +74,16 @@ class TokenType(AutoName):
     BYTE_STRING = auto()
 
     # types
+    BIT = auto()
     BOOLEAN = auto()
     TINYINT = auto()
+    UTINYINT = auto()
     SMALLINT = auto()
+    USMALLINT = auto()
     INT = auto()
+    UINT = auto()
     BIGINT = auto()
+    UBIGINT = auto()
     FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()
@@ -462,6 +470,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
+        "&&": TokenType.DAMP,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,
@@ -493,6 +502,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CUBE": TokenType.CUBE,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
         "CURRENT ROW": TokenType.CURRENT_ROW,
+        "CURRENT_TIME": TokenType.CURRENT_TIME,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
         "DATABASE": TokenType.DATABASE,
         "DEFAULT": TokenType.DEFAULT,
@@ -630,6 +640,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "WITHOUT TIME ZONE": TokenType.WITHOUT_TIME_ZONE,
         "APPLY": TokenType.APPLY,
         "ARRAY": TokenType.ARRAY,
+        "BIT": TokenType.BIT,
         "BOOL": TokenType.BOOLEAN,
         "BOOLEAN": TokenType.BOOLEAN,
         "BYTE": TokenType.TINYINT,
@@ -854,11 +865,12 @@ class Tokenizer(metaclass=_Tokenizer):
     def _scan_keywords(self) -> None:
         size = 0
         word = None
-        chars: t.Optional[str] = self._text
+        chars = self._text
         char = chars
         prev_space = False
         skip = False
         trie = self.KEYWORD_TRIE
+        single_token = char in self.SINGLE_TOKENS
 
         while chars:
             if skip:
@@ -875,6 +887,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
             if end < self.size:
                 char = self.sql[end]
+                single_token = single_token or char in self.SINGLE_TOKENS
                 is_space = char in self.WHITE_SPACE
 
                 if not is_space or not prev_space:
@@ -886,7 +899,9 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     skip = True
             else:
-                chars = None
+                chars = " "
+
+        word = None if not single_token and chars[-1] not in self.WHITE_SPACE else word
 
         if not word:
             if self._char in self.SINGLE_TOKENS:

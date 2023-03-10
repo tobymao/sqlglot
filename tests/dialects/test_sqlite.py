@@ -57,6 +57,33 @@ class TestSQLite(Validator):
 
     def test_sqlite(self):
         self.validate_all(
+            "CURRENT_DATE",
+            read={
+                "": "CURRENT_DATE",
+                "snowflake": "CURRENT_DATE()",
+            },
+        )
+        self.validate_all(
+            "CURRENT_TIME",
+            read={
+                "": "CURRENT_TIME",
+                "snowflake": "CURRENT_TIME()",
+            },
+        )
+        self.validate_all(
+            "CURRENT_TIMESTAMP",
+            read={
+                "": "CURRENT_TIMESTAMP",
+                "snowflake": "CURRENT_TIMESTAMP()",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE('2020-01-01 16:03:05')",
+            read={
+                "snowflake": "SELECT CAST('2020-01-01 16:03:05' AS DATE)",
+            },
+        )
+        self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={
                 "sqlite": 'SELECT CAST("a"."b" AS INTEGER) FROM foo',
@@ -80,6 +107,27 @@ class TestSQLite(Validator):
                 "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
                 "sqlite": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
             },
+        )
+        self.validate_all("x", read={"snowflake": "LEAST(x)"})
+        self.validate_all("MIN(x)", read={"snowflake": "MIN(x)"}, write={"snowflake": "MIN(x)"})
+        self.validate_all(
+            "MIN(x, y, z)",
+            read={"snowflake": "LEAST(x, y, z)"},
+            write={"snowflake": "LEAST(x, y, z)"},
+        )
+
+    def test_datediff(self):
+        self.validate_all(
+            "DATEDIFF(a, b, 'day')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'hour')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 24.0 AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'year')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) / 365.0 AS INTEGER)"},
         )
 
     def test_hexadecimal_literal(self):

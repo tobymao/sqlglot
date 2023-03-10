@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_properties_sql,
     no_safe_divide_sql,
-    no_tablesample_sql,
     rename_func,
     str_position_sql,
     str_to_time_sql,
@@ -82,8 +81,21 @@ class DuckDB(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             ":=": TokenType.EQ,
             "ATTACH": TokenType.COMMAND,
-            "CHARACTER VARYING": TokenType.VARCHAR,
+            "BINARY": TokenType.VARBINARY,
+            "BPCHAR": TokenType.TEXT,
+            "BITSTRING": TokenType.BIT,
+            "CHAR": TokenType.TEXT,
+            "CHARACTER VARYING": TokenType.TEXT,
             "EXCLUDE": TokenType.EXCEPT,
+            "INT1": TokenType.TINYINT,
+            "LOGICAL": TokenType.BOOLEAN,
+            "NUMERIC": TokenType.DOUBLE,
+            "SIGNED": TokenType.INT,
+            "STRING": TokenType.VARCHAR,
+            "UBIGINT": TokenType.UBIGINT,
+            "UINTEGER": TokenType.UINT,
+            "USMALLINT": TokenType.USMALLINT,
+            "UTINYINT": TokenType.UTINYINT,
         }
 
     class Parser(parser.Parser):
@@ -116,6 +128,14 @@ class DuckDB(Dialect):
             "UNNEST": exp.Explode.from_arg_list,
         }
 
+        TYPE_TOKENS = {
+            *parser.Parser.TYPE_TOKENS,
+            TokenType.UBIGINT,
+            TokenType.UINT,
+            TokenType.USMALLINT,
+            TokenType.UTINYINT,
+        }
+
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 
@@ -142,6 +162,7 @@ class DuckDB(Dialect):
             exp.JSONBExtract: arrow_json_extract_sql,
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.Pivot: no_pivot_sql,
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: _regexp_extract_sql,
@@ -155,7 +176,6 @@ class DuckDB(Dialect):
             exp.StrToTime: str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.Struct: _struct_sql,
-            exp.TableSample: no_tablesample_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
@@ -171,11 +191,20 @@ class DuckDB(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
-            exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.BINARY: "BLOB",
+            exp.DataType.Type.CHAR: "TEXT",
+            exp.DataType.Type.FLOAT: "REAL",
+            exp.DataType.Type.NCHAR: "TEXT",
             exp.DataType.Type.NVARCHAR: "TEXT",
+            exp.DataType.Type.UINT: "UINTEGER",
+            exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DataType.Type.VARCHAR: "TEXT",
         }
 
         STAR_MAPPING = {
             **generator.Generator.STAR_MAPPING,
             "except": "EXCLUDE",
         }
+
+        def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:
+            return super().tablesample_sql(expression, seed_prefix="REPEATABLE")

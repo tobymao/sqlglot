@@ -63,8 +63,8 @@ class TestPresto(Validator):
                 "bigquery": "CAST(x AS TIMESTAMPTZ)",
                 "duckdb": "CAST(x AS TIMESTAMPTZ(9))",
                 "presto": "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
-                "hive": "CAST(x AS TIMESTAMPTZ)",
-                "spark": "CAST(x AS TIMESTAMPTZ)",
+                "hive": "CAST(x AS TIMESTAMP)",
+                "spark": "CAST(x AS TIMESTAMP)",
             },
         )
 

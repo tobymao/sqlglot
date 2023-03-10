@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
     format_time_lambda,
+    min_or_least,
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
@@ -14,6 +15,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import delegate, preprocess
 
@@ -218,6 +220,8 @@ class Postgres(Dialect):
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
+            "@>": TokenType.AT_GT,
+            "<@": TokenType.LT_AT,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
@@ -229,6 +233,7 @@ class Postgres(Dialect):
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,
+            "RETURNING": TokenType.RETURNING,
             "REVOKE": TokenType.COMMAND,
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
@@ -258,7 +263,17 @@ class Postgres(Dialect):
             TokenType.HASH: exp.BitwiseXor,
         }
 
-        FACTOR = {**parser.Parser.FACTOR, TokenType.CARET: exp.Pow}
+        FACTOR = {
+            **parser.Parser.FACTOR,
+            TokenType.CARET: exp.Pow,
+        }
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,  # type: ignore
+            TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
+            TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
+        }
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -296,6 +311,11 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.DateDiff: _date_diff_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.Min: min_or_least,
+            exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
+            exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
+            exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,
@@ -304,6 +324,7 @@ class Postgres(Dialect):
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",

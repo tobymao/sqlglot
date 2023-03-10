@@ -55,9 +55,11 @@ class TypeAnnotator:
             expr, exp.DataType.Type.BIGINT
         ),
         exp.Avg: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DOUBLE),
-        exp.Min: lambda self, expr: self._annotate_by_args(expr, "this"),
-        exp.Max: lambda self, expr: self._annotate_by_args(expr, "this"),
-        exp.Sum: lambda self, expr: self._annotate_by_args(expr, "this", promote=True),
+        exp.Min: lambda self, expr: self._annotate_by_args(expr, "this", "expressions"),
+        exp.Max: lambda self, expr: self._annotate_by_args(expr, "this", "expressions"),
+        exp.Sum: lambda self, expr: self._annotate_by_args(
+            expr, "this", "expressions", promote=True
+        ),
         exp.Ceil: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
         exp.Count: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BIGINT),
         exp.CurrentDate: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DATE),
@@ -114,6 +116,7 @@ class TypeAnnotator:
             expr, exp.DataType.Type.VARCHAR
         ),
         exp.Initcap: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
+        exp.Least: lambda self, expr: self._annotate_by_args(expr, "expressions"),
         exp.Length: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BIGINT),
         exp.Levenshtein: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
         exp.Ln: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.DOUBLE),

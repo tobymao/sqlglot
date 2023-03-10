@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
+    min_or_least,
     rename_func,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
@@ -15,6 +16,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.expressions import Literal
 from sqlglot.helper import flatten, seq_get
+from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
 
@@ -110,14 +112,20 @@ def _parse_date_part(self):
 def _div0_to_if(args):
     cond = exp.EQ(this=seq_get(args, 1), expression=exp.Literal.number(0))
     true = exp.Literal.number(0)
-    false = exp.FloatDiv(this=seq_get(args, 0), expression=seq_get(args, 1))
+    false = exp.Div(this=seq_get(args, 0), expression=seq_get(args, 1))
     return exp.If(this=cond, true=true, false=false)
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
 def _zeroifnull_to_if(args):
-    cond = exp.EQ(this=seq_get(args, 0), expression=exp.Null())
+    cond = exp.Is(this=seq_get(args, 0), expression=exp.Null())
     return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
+def _nullifzero_to_if(args):
+    cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
+    return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
 
 def _datatype_sql(self, expression):
@@ -166,19 +174,32 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
+            "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
+            "DATEADD": lambda args: exp.DateAdd(
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
+            ),
+            "DATEDIFF": lambda args: exp.DateDiff(
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
+            ),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
                 this=seq_get(args, 1),
             ),
+            "DECODE": exp.Matches.from_arg_list,
             "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
-            "TO_ARRAY": exp.Array.from_arg_list,
-            "TO_TIMESTAMP": _snowflake_to_timestamp,
-            "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
-            "RLIKE": exp.RegexpLike.from_arg_list,
-            "DECODE": exp.Matches.from_arg_list,
+            "NULLIFZERO": _nullifzero_to_if,
             "OBJECT_CONSTRUCT": parser.parse_var_map,
+            "RLIKE": exp.RegexpLike.from_arg_list,
+            "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "TO_ARRAY": exp.Array.from_arg_list,
+            "TO_VARCHAR": exp.ToChar.from_arg_list,
+            "TO_TIMESTAMP": _snowflake_to_timestamp,
             "ZEROIFNULL": _zeroifnull_to_if,
         }
 
@@ -205,12 +226,8 @@ class Snowflake(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,  # type: ignore
-            TokenType.LIKE_ANY: lambda self, this: self._parse_escape(
-                self.expression(exp.LikeAny, this=this, expression=self._parse_bitwise())
-            ),
-            TokenType.ILIKE_ANY: lambda self, this: self._parse_escape(
-                self.expression(exp.ILikeAny, this=this, expression=self._parse_bitwise())
-            ),
+            TokenType.LIKE_ANY: binary_range_parser(exp.LikeAny),
+            TokenType.ILIKE_ANY: binary_range_parser(exp.ILikeAny),
         }
 
         ALTER_PARSERS = {
@@ -218,8 +235,6 @@ class Snowflake(Dialect):
             "UNSET": lambda self: self._parse_alter_table_set_tag(unset=True),
             "SET": lambda self: self._parse_alter_table_set_tag(),
         }
-
-        INTEGER_DIVISION = False
 
         def _parse_alter_table_set_tag(self, unset: bool = False) -> exp.Expression:
             self._match_text_seq("TAG")
@@ -253,7 +268,6 @@ class Snowflake(Dialect):
 
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
-        INTEGER_DIVISION = False
         MATCHED_BY_SOURCE = False
 
         TRANSFORMS = {
@@ -266,6 +280,8 @@ class Snowflake(Dialect):
             exp.DataType: _datatype_sql,
             exp.If: rename_func("IFF"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.LogicalOr: rename_func("BOOLOR_AGG"),
+            exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Matches: rename_func("DECODE"),
@@ -276,9 +292,11 @@ class Snowflake(Dialect):
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.Min: min_or_least,
         }
 
         TYPE_MAPPING = {
@@ -344,11 +362,10 @@ class Snowflake(Dialect):
             expression. This might not be true in a case where the same column name can be sourced from another table that can
             properly quote but should be true in most cases.
             """
-            values_expressions = expression.find_all(exp.Values)
             values_identifiers = set(
                 flatten(
-                    v.args.get("alias", exp.Alias()).args.get("columns", [])
-                    for v in values_expressions
+                    (v.args.get("alias") or exp.Alias()).args.get("columns", [])
+                    for v in expression.find_all(exp.Values)
                 )
             )
             if values_identifiers:

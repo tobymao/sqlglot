@@ -4,6 +4,7 @@ from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     locate_to_strposition,
+    min_or_least,
     no_ilike_sql,
     no_paren_current_date_sql,
     no_tablesample_sql,
@@ -179,7 +180,7 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SET, TokenType.SHOW}
 
     class Parser(parser.Parser):
-        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA}  # type: ignore
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}  # type: ignore
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
@@ -299,8 +300,6 @@ class MySQL(Dialect):
             "READ WRITE",
             "READ ONLY",
         }
-
-        INTEGER_DIVISION = False
 
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
             if target:
@@ -434,16 +433,17 @@ class MySQL(Dialect):
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
-        INTEGER_DIVISION = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ILike: no_ilike_sql,
+            exp.Min: min_or_least,
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,
             exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),

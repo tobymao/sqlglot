@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
     inline_array_sql,
+    min_or_least,
     no_ilike_sql,
     rename_func,
     timestrtotime_sql,
@@ -143,7 +144,6 @@ class BigQuery(Dialect):
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
-            "CURRENT_TIME": TokenType.CURRENT_TIME,
             "DECLARE": TokenType.COMMAND,
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "FLOAT64": TokenType.DOUBLE,
@@ -193,7 +193,6 @@ class BigQuery(Dialect):
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,  # type: ignore
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
-            TokenType.CURRENT_TIME: exp.CurrentTime,
         }
 
         NESTED_TYPE_TOKENS = {
@@ -213,11 +212,7 @@ class BigQuery(Dialect):
             ),
         }
 
-        INTEGER_DIVISION = False
-
     class Generator(generator.Generator):
-        INTEGER_DIVISION = False
-
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
@@ -232,6 +227,7 @@ class BigQuery(Dialect):
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
+            exp.Min: min_or_least,
             exp.Select: transforms.preprocess(
                 [_unqualify_unnest], transforms.delegate("select_sql")
             ),

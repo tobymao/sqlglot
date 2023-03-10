@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     format_time_lambda,
     if_sql,
     locate_to_strposition,
+    min_or_least,
     no_ilike_sql,
     no_recursive_cte_sql,
     no_safe_divide_sql,
@@ -256,16 +257,13 @@ class Hive(Dialect):
             ),
         }
 
-        INTEGER_DIVISION = False
-
     class Generator(generator.Generator):
-        INTEGER_DIVISION = False
-
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "BINARY",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
         }
 
         TRANSFORMS = {
@@ -291,6 +289,7 @@ class Hive(Dialect):
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
             exp.Map: var_map_sql,
+            exp.Min: min_or_least,
             exp.VarMap: var_map_sql,
             exp.Create: create_with_partitions_sql,
             exp.Quantile: rename_func("PERCENTILE"),

@@ -18,48 +18,104 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
 
         self.validate_all(
-            "1 / 2",
+            "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
+            write={
+                "": "SELECT LOGICAL_OR(c1), LOGICAL_OR(c2) FROM test",
+                "duckdb": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "postgres": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "snowflake": "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
+                "spark": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "sqlite": "SELECT MAX(c1), MAX(c2) FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
+            write={
+                "": "SELECT LOGICAL_AND(c1), LOGICAL_AND(c2) FROM test",
+                "duckdb": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "postgres": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "snowflake": "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
+                "spark": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "sqlite": "SELECT MIN(c1), MIN(c2) FROM test",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(x, y)",
             read={
-                "bigquery": "1 / 2",
-                "clickhouse": "1 / 2",
-                "databricks": "1 / 2",
-                "hive": "1 / 2",
-                "mysql": "1 / 2",
-                "oracle": "1 / 2",
-                "snowflake": "1 / 2",
-                "spark": "1 / 2",
-                "starrocks": "1 / 2",
+                "": "TO_CHAR(x, y)",
+                "snowflake": "TO_VARCHAR(x, y)",
             },
             write={
-                "bigquery": "1 / 2",
-                "clickhouse": "1 / 2",
-                "databricks": "1 / 2",
-                "hive": "1 / 2",
-                "mysql": "1 / 2",
-                "oracle": "1 / 2",
-                "snowflake": "1 / 2",
-                "spark": "1 / 2",
-                "starrocks": "1 / 2",
-                "drill": "CAST(1 AS DOUBLE) / 2",
-                "duckdb": "CAST(1 AS DOUBLE) / 2",
-                "postgres": "CAST(1 AS DOUBLE PRECISION) / 2",
-                "presto": "CAST(1 AS DOUBLE) / 2",
-                "redshift": "CAST(1 AS DOUBLE PRECISION) / 2",
-                "sqlite": "CAST(1 AS REAL) / 2",
-                "teradata": "CAST(1 AS DOUBLE) / 2",
-                "trino": "CAST(1 AS DOUBLE) / 2",
-                "tsql": "CAST(1 AS DOUBLE) / 2",
+                "": "CAST(x AS TEXT)",
+                "databricks": "TO_CHAR(x, y)",
+                "drill": "TO_CHAR(x, y)",
+                "oracle": "TO_CHAR(x, y)",
+                "postgres": "TO_CHAR(x, y)",
+                "snowflake": "TO_CHAR(x, y)",
+                "teradata": "TO_CHAR(x, y)",
+            },
+        )
+        self.validate_all(
+            "SQUARE(x)",
+            write={
+                "bigquery": "POWER(x, 2)",
+                "clickhouse": "POWER(x, 2)",
+                "databricks": "POWER(x, 2)",
+                "drill": "POW(x, 2)",
+                "duckdb": "POWER(x, 2)",
+                "hive": "POWER(x, 2)",
+                "mysql": "POWER(x, 2)",
+                "oracle": "POWER(x, 2)",
+                "postgres": "x ^ 2",
+                "presto": "POWER(x, 2)",
+                "redshift": "POWER(x, 2)",
+                "snowflake": "POWER(x, 2)",
+                "spark": "POWER(x, 2)",
+                "sqlite": "POWER(x, 2)",
+                "starrocks": "POWER(x, 2)",
+                "trino": "POWER(x, 2)",
+                "tsql": "POWER(x, 2)",
+            },
+        )
+        self.validate_all(
+            "POWER(x, 2)",
+            read={
+                "oracle": "SQUARE(x)",
+                "snowflake": "SQUARE(x)",
+                "tsql": "SQUARE(x)",
             },
         )
         self.validate_all(
             "DIV0(foo, bar)",
             write={
                 "snowflake": "IFF(bar = 0, 0, foo / bar)",
-                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE CAST(foo AS REAL) / bar END",
-                "presto": "IF(bar = 0, 0, CAST(foo AS DOUBLE) / bar)",
+                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
+                "presto": "IF(bar = 0, 0, foo / bar)",
                 "spark": "IF(bar = 0, 0, foo / bar)",
                 "hive": "IF(bar = 0, 0, foo / bar)",
-                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE CAST(foo AS DOUBLE) / bar END",
+                "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
+            },
+        )
+        self.validate_all(
+            "ZEROIFNULL(foo)",
+            write={
+                "snowflake": "IFF(foo IS NULL, 0, foo)",
+                "sqlite": "CASE WHEN foo IS NULL THEN 0 ELSE foo END",
+                "presto": "IF(foo IS NULL, 0, foo)",
+                "spark": "IF(foo IS NULL, 0, foo)",
+                "hive": "IF(foo IS NULL, 0, foo)",
+                "duckdb": "CASE WHEN foo IS NULL THEN 0 ELSE foo END",
+            },
+        )
+        self.validate_all(
+            "NULLIFZERO(foo)",
+            write={
+                "snowflake": "IFF(foo = 0, NULL, foo)",
+                "sqlite": "CASE WHEN foo = 0 THEN NULL ELSE foo END",
+                "presto": "IF(foo = 0, NULL, foo)",
+                "spark": "IF(foo = 0, NULL, foo)",
+                "hive": "IF(foo = 0, NULL, foo)",
+                "duckdb": "CASE WHEN foo = 0 THEN NULL ELSE foo END",
             },
         )
         self.validate_all(
@@ -280,12 +336,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
-            write={
-                "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
-            },
-        )
-        self.validate_all(
             "SELECT a FROM test pivot",
             write={
                 "snowflake": "SELECT a FROM test AS pivot",
@@ -356,6 +406,51 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_sample(self):
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (100)")
+        self.validate_identity(
+            "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE (50) WHERE t2.j = t1.i"
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)"
+        )
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
+
+        self.validate_all(
+            "SELECT * FROM testtable SAMPLE (10)",
+            write={"snowflake": "SELECT * FROM testtable TABLESAMPLE (10)"},
+        )
+        self.validate_all(
+            "SELECT * FROM testtable SAMPLE ROW (0)",
+            write={"snowflake": "SELECT * FROM testtable TABLESAMPLE ROW (0)"},
+        )
+        self.validate_all(
+            "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
+            write={
+                "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
+            },
+        )
+        self.validate_all(
+            """
+            SELECT i, j
+                FROM
+                     table1 AS t1 SAMPLE (25)     -- 25% of rows in table1
+                         INNER JOIN
+                     table2 AS t2 SAMPLE (50)     -- 50% of rows in table2
+                WHERE t2.j = t1.i""",
+            write={
+                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM testtable SAMPLE BLOCK (0.012) REPEATABLE (99992)",
+            write={
+                "snowflake": "SELECT * FROM testtable TABLESAMPLE BLOCK (0.012) SEED (99992)",
+            },
+        )
+
     def test_timestamps(self):
         self.validate_identity("SELECT EXTRACT(month FROM a)")
 
@@ -413,6 +508,13 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMPNTZ)) * 1000 AS ddate FROM table_name",
                 "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) * 1000 AS ddate FROM table_name",
+            },
+        )
+        self.validate_all(
+            "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            write={
+                "bigquery": "DATE_ADD(CAST('2008-12-25' AS DATE), INTERVAL 5 DAY)",
+                "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
             },
         )
 
@@ -652,6 +754,14 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
             'SELECT c0, c1 FROM (VALUES (1, 2), (3, 4)) AS "t0"(c0, c1)',
             read={
                 "spark": "SELECT `c0`, `c1` FROM (VALUES (1, 2), (3, 4)) AS `t0`(`c0`, `c1`)",
+            },
+        )
+
+        self.validate_all(
+            """SELECT $1 AS "_1" FROM VALUES ('a'), ('b')""",
+            write={
+                "snowflake": """SELECT $1 AS "_1" FROM (VALUES ('a'), ('b'))""",
+                "spark": """SELECT @1 AS `_1` FROM VALUES ('a'), ('b')""",
             },
         )
 

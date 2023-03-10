@@ -1033,7 +1033,7 @@ class Constraint(Expression):
 
 
 class Delete(Expression):
-    arg_types = {"with": False, "this": False, "using": False, "where": False}
+    arg_types = {"with": False, "this": False, "using": False, "where": False, "returning": False}
 
 
 class Drop(Expression):
@@ -1134,11 +1134,16 @@ class Insert(Expression):
         "with": False,
         "this": True,
         "expression": False,
+        "returning": False,
         "overwrite": False,
         "exists": False,
         "partition": False,
         "alternative": False,
     }
+
+
+class Returning(Expression):
+    arg_types = {"expressions": True}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html
@@ -1749,6 +1754,7 @@ QUERY_MODIFIERS = {
     "limit": False,
     "offset": False,
     "lock": False,
+    "sample": False,
 }
 
 
@@ -1897,6 +1903,7 @@ class Update(Expression):
         "expressions": True,
         "from": False,
         "where": False,
+        "returning": False,
     }
 
 
@@ -2403,6 +2410,18 @@ class Select(Subqueryable):
             **opts,
         )
 
+    def qualify(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
+        return _apply_conjunction_builder(
+            *expressions,
+            instance=self,
+            arg="qualify",
+            append=append,
+            into=Qualify,
+            dialect=dialect,
+            copy=copy,
+            **opts,
+        )
+
     def distinct(self, distinct=True, copy=True) -> Select:
         """
         Set the OFFSET expression.
@@ -2533,6 +2552,7 @@ class TableSample(Expression):
         "rows": False,
         "size": False,
         "seed": False,
+        "kind": False,
     }
 
 
@@ -2638,12 +2658,17 @@ class DataType(Expression):
         BINARY = auto()
         VARBINARY = auto()
         INT = auto()
+        UINT = auto()
         TINYINT = auto()
+        UTINYINT = auto()
         SMALLINT = auto()
+        USMALLINT = auto()
         BIGINT = auto()
+        UBIGINT = auto()
         FLOAT = auto()
         DOUBLE = auto()
         DECIMAL = auto()
+        BIT = auto()
         BOOLEAN = auto()
         JSON = auto()
         JSONB = auto()
@@ -2843,10 +2868,6 @@ class Div(Binary):
     pass
 
 
-class FloatDiv(Binary):
-    pass
-
-
 class Overlaps(Binary):
     pass
 
@@ -2950,6 +2971,10 @@ class Slice(Binary):
 
 
 class Sub(Binary):
+    pass
+
+
+class ArrayOverlaps(Binary):
     pass
 
 
@@ -3117,6 +3142,11 @@ class Array(Func):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/to_char
+class ToChar(Func):
+    arg_types = {"this": True, "format": False}
+
+
 class GenerateSeries(Func):
     arg_types = {"start": True, "end": True, "step": False}
 
@@ -3138,8 +3168,12 @@ class ArrayConcat(Func):
     is_var_len_args = True
 
 
-class ArrayContains(Func):
-    arg_types = {"this": True, "expression": True}
+class ArrayContains(Binary, Func):
+    pass
+
+
+class ArrayContained(Binary):
+    pass
 
 
 class ArrayFilter(Func):
@@ -3229,6 +3263,10 @@ class Count(AggFunc):
     arg_types = {"this": False}
 
 
+class CountIf(AggFunc):
+    pass
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 
@@ -3254,6 +3292,7 @@ class DateSub(Func, TimeUnit):
 
 
 class DateDiff(Func, TimeUnit):
+    _sql_names = ["DATEDIFF", "DATE_DIFF"]
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
@@ -3425,7 +3464,7 @@ class JSONBExtractScalar(JSONExtract):
 
 
 class Least(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"expressions": False}
     is_var_len_args = True
 
 
@@ -3460,7 +3499,11 @@ class Log10(Func):
 
 
 class LogicalOr(AggFunc):
-    _sql_names = ["LOGICAL_OR", "BOOL_OR"]
+    _sql_names = ["LOGICAL_OR", "BOOL_OR", "BOOLOR_AGG"]
+
+
+class LogicalAnd(AggFunc):
+    _sql_names = ["LOGICAL_AND", "BOOL_AND", "BOOLAND_AGG"]
 
 
 class Lower(Func):
@@ -3487,11 +3530,13 @@ class Matches(Func):
 
 
 class Max(AggFunc):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
 
 
 class Min(AggFunc):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
 
 
 class Month(Func):
@@ -4841,19 +4886,19 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
 
     from sqlglot.dialects.dialect import Dialect
 
-    args = tuple(convert(arg) for arg in args)
+    converted = [convert(arg) for arg in args]
     kwargs = {key: convert(value) for key, value in kwargs.items()}
 
     parser = Dialect.get_or_raise(dialect)().parser()
     from_args_list = parser.FUNCTIONS.get(name.upper())
 
     if from_args_list:
-        function = from_args_list(args) if args else from_args_list.__self__(**kwargs)  # type: ignore
+        function = from_args_list(converted) if converted else from_args_list.__self__(**kwargs)  # type: ignore
     else:
-        kwargs = kwargs or {"expressions": args}
+        kwargs = kwargs or {"expressions": converted}
         function = Anonymous(this=name, **kwargs)
 
-    for error_message in function.error_messages(args):
+    for error_message in function.error_messages(converted):
         raise ValueError(error_message)
 
     return function

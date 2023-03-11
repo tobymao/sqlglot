@@ -1,6 +1,13 @@
 import unittest
 
-from sqlglot import Dialect, Dialects, ErrorLevel, UnsupportedError, parse_one
+from sqlglot import (
+    Dialect,
+    Dialects,
+    ErrorLevel,
+    UnsupportedError,
+    expressions,
+    parse_one,
+)
 from sqlglot.dialects import Hive
 
 
@@ -1485,6 +1492,22 @@ SELECT
             "SET TEMPORAL variable = value",
             write={
                 "postgres": "SET TEMPORAL variable = value",
+            },
+        )
+
+    def test_set_variable(self):
+        cmd = self.parse_one("SET SESSION x = 1")
+        self.assertEqual(cmd.key, "setitem")
+        self.assertEqual(cmd.args["local"], False)
+        self.assertEqual(cmd.args["global"], False)
+        self.assertEqual(cmd.args["session"], True)
+        self.assertIsInstance(cmd.this, expressions.EQ)
+        self.assertEqual(cmd.this.left.name, "x")
+        self.assertEqual(cmd.this.right.name, "1")
+
+        cmd = parse_one("SET DEFAULT ROLE ALL TO USER")
+        self.assertEqual(cmd.key, "command")
+        self.assertEqual(cmd.expression, " DEFAULT ROLE ALL TO USER")
 
     def test_count_if(self):
         self.validate_identity("COUNT_IF(DISTINCT cond)")

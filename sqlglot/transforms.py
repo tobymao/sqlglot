@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import typing as t
 
 from sqlglot import expressions as exp
@@ -86,24 +85,25 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
     The idea behind this transformation can be seen in Snowflake's documentation for QUALIFY:
     https://docs.snowflake.com/en/sql-reference/constructs/qualify
 
-    Some dialects don't support window functions in the WHERE clause -- we need to add them in the
-    subquery's projection list so they can be referenced in the outer filter using an alias. if the
-    selected columns are known (i.e. no "*"), we can simply copy them to the outer query without
-    including the window function.
+    Some dialects don't support window functions in the WHERE clause, so we need to include them as
+    projections in the subquery, in order to refer to them in the outer filter using aliases. Also,
+    if a column is referenced in the QUALIFY clause but is not selected, we need to include it too,
+    otherwise we won't be able to refer to it in the outer query's WHERE clause.
     """
-
     if isinstance(expression, exp.Select) and expression.args.get("qualify"):
         outer_selects = exp.select(*[s.alias_or_name or s for s in expression.selects])
         qualify_filters = expression.args["qualify"].this
         expression.args["qualify"].pop()
-        sequence = itertools.count()
 
-        for window in qualify_filters.find_all(exp.Window):
-            window_alias = f"_w_{next(sequence)}"
-            expression.select(exp.alias_(window.copy(), window_alias), copy=False)
-            window.replace(exp.column(window_alias))
+        for expr in qualify_filters.find_all((exp.Window, exp.Column)):
+            if isinstance(expr, exp.Window):
+                alias = find_new_name(expression.named_selects, "_w")
+                expression.select(exp.alias_(expr.copy(), alias), copy=False)
+                expr.replace(exp.column(alias))
+            elif expr.name not in expression.named_selects:
+                expression.select(expr.copy(), copy=False)
 
-        return outer_selects.from_(expression.subquery()).where(qualify_filters)
+        return outer_selects.from_(expression.subquery(alias="_t")).where(qualify_filters)
 
     return expression
 

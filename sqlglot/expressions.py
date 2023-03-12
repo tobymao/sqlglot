@@ -549,8 +549,12 @@ class Expression(metaclass=_Expression):
     def pop(self):
         """
         Remove this expression from its AST.
+
+        Returns:
+            The popped expression.
         """
         self.replace(None)
+        return self
 
     def assert_is(self, type_):
         """

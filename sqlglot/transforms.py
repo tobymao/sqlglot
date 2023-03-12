@@ -60,8 +60,7 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         and expression.args["distinct"].args.get("on")
         and isinstance(expression.args["distinct"].args["on"], exp.Tuple)
     ):
-        distinct_cols = expression.args["distinct"].args["on"].expressions
-        expression.args["distinct"].pop()
+        distinct_cols = expression.args["distinct"].pop().args["on"].expressions
         outer_selects = expression.selects
         row_number = find_new_name(expression.named_selects, "_row_number")
         window = exp.Window(
@@ -70,8 +69,7 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         )
         order = expression.args.get("order")
         if order:
-            window.set("order", order.copy())
-            order.pop()
+            window.set("order", order.pop().copy())
         window = exp.alias_(window, row_number)
         expression.select(window, copy=False)
         return exp.select(*outer_selects).from_(expression.subquery()).where(f'"{row_number}" = 1')
@@ -91,9 +89,15 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
     otherwise we won't be able to refer to it in the outer query's WHERE clause.
     """
     if isinstance(expression, exp.Select) and expression.args.get("qualify"):
-        outer_selects = exp.select(*[s.alias_or_name or s for s in expression.selects])
-        qualify_filters = expression.args["qualify"].this
-        expression.args["qualify"].pop()
+        taken = set(expression.named_selects)
+        for select in expression.selects:
+            if not select.alias_or_name:
+                alias = find_new_name(taken, "_c")
+                select.replace(exp.alias_(select.copy(), alias))
+                taken.add(alias)
+
+        outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
+        qualify_filters = expression.args["qualify"].pop().this
 
         for expr in qualify_filters.find_all((exp.Window, exp.Column)):
             if isinstance(expr, exp.Window):

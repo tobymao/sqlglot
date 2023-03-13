@@ -1775,9 +1775,10 @@ class Parser(metaclass=_Parser):
         self, alias_tokens: t.Optional[t.Collection[TokenType]] = None
     ) -> t.Optional[exp.Expression]:
         any_token = self._match(TokenType.ALIAS)
-        alias = self._parse_id_var(
-            any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
-        ) or self._parse_string_as_identifier()
+        alias = (
+            self._parse_id_var(any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
+            or self._parse_string_as_identifier()
+        )
 
         index = self._index
         if self._match(TokenType.L_PAREN):

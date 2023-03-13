@@ -4,6 +4,12 @@ from tests.dialects.test_dialect import Validator
 class TestDrill(Validator):
     dialect = "drill"
 
+    def test_drill(self):
+        self.validate_all(
+            "DATE_FORMAT(a, 'yyyy')",
+            write={"drill": "TO_CHAR(a, 'yyyy')"},
+        )
+
     def test_string_literals(self):
         self.validate_all(
             "SELECT '2021-01-01' + INTERVAL 1 MONTH",

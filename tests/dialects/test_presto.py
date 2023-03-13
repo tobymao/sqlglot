@@ -193,6 +193,7 @@ class TestPresto(Validator):
             write={
                 "spark": "DAYOFWEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
                 "presto": "DAY_OF_WEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "duckdb": "DAYOFWEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))"
             },
         )
 

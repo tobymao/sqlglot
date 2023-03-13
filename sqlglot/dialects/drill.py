@@ -97,6 +97,7 @@ class Drill(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
+            "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "drill"),
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "drill"),
         }

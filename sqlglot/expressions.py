@@ -1050,10 +1050,10 @@ class Delete(Expression):
             'DELETE FROM tbl'
 
         Args:
-            table (str | Expression): the table from which to delete.
-            dialect (str): the dialect used to parse the input expression.
-            copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.
+            table: the table from which to delete.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
 
         Returns:
             Delete: the modified expression.
@@ -1084,14 +1084,14 @@ class Delete(Expression):
             "DELETE FROM tbl WHERE x = 'a' OR x < 'b'"
 
         Args:
-            *expressions (str | Expression): the SQL code strings to parse.
+            *expressions: the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
                 Multiple expressions are combined with an AND operator.
-            append (bool): if `True`, AND the new expressions to any existing expression.
+            append: if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
-            dialect (str): the dialect used to parse the input expressions.
-            copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
 
         Returns:
             Delete: the modified expression.
@@ -4260,11 +4260,11 @@ def update(
         "UPDATE my_table SET x = 1, y = '2', z = NULL FROM baz WHERE id > 1"
 
     Args:
-        *properties (Dict[str, Any]): dictionary of properties to set which are
+        *properties: dictionary of properties to set which are
             auto converted to sql objects eg None -> NULL
-        where (str|Expression): sql conditional parsed into a WHERE statement
-        from_ (str|Table): sql statement parsed into a FROM statement
-        dialect (str): the dialect used to parse the input expressions.
+        where: sql conditional parsed into a WHERE statement
+        from_: sql statement parsed into a FROM statement
+        dialect: the dialect used to parse the input expressions.
         **opts: other options to use to parse the input expressions.
 
     Returns:
@@ -4308,19 +4308,19 @@ def delete(
         'DELETE FROM my_table WHERE id > 1'
 
     Args:
-        where (str|Expression): sql conditional parsed into a WHERE statement
-        returning (str|Expression): sql conditional parsed into a RETURNING statement
-        dialect (str): the dialect used to parse the input expressions.
+        where: sql conditional parsed into a WHERE statement
+        returning: sql conditional parsed into a RETURNING statement
+        dialect: the dialect used to parse the input expressions.
         **opts: other options to use to parse the input expressions.
 
     Returns:
         Delete: the syntax tree for the DELETE statement.
     """
-    delete_expr = Delete().delete(table, dialect=dialect, **opts)
+    delete_expr = Delete().delete(table, dialect=dialect, copy=False, **opts)
     if where:
-        delete_expr = delete_expr.where(where, dialect=dialect, **opts)
+        delete_expr = delete_expr.where(where, dialect=dialect, copy=False, **opts)
     if returning:
-        delete_expr = delete_expr.returning(returning, dialect=dialect, **opts)
+        delete_expr = delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
     return delete_expr
 
 

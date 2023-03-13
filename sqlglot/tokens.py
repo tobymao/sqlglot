@@ -726,7 +726,6 @@ class Tokenizer(metaclass=_Tokenizer):
         TokenType.COMMAND,
         TokenType.EXECUTE,
         TokenType.FETCH,
-        TokenType.SET,
         TokenType.SHOW,
     }
 

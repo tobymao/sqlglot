@@ -1176,6 +1176,20 @@ class Generator:
         this = self.sql(expression, "this")
         return f"{this}{self.seg('OFFSET')} {self.sql(expression, 'expression')}"
 
+    def setitem_sql(self, expression: exp.SetItem) -> str:
+        kind = self.sql(expression, "kind")
+        kind = f"{kind} " if kind else ""
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression)
+        collate = self.sql(expression, "collate")
+        collate = f" COLLATE {collate}" if collate else ""
+        global_ = "GLOBAL " if expression.args.get("global") else ""
+        return f"{global_}{kind}{this}{expressions}{collate}"
+
+    def set_sql(self, expression: exp.Set) -> str:
+        expressions = f" {self.expressions(expression)}" if expression.expressions else ""
+        return f"SET{expressions}"
+
     def lock_sql(self, expression: exp.Lock) -> str:
         if self.LOCKING_READS_SUPPORTED:
             lock_type = "UPDATE" if expression.args["update"] else "SHARE"

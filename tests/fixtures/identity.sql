@@ -161,6 +161,10 @@ CAST('2025-11-20 00:00:00+00' AS TIMESTAMP) AT TIME ZONE 'Africa/Cairo'
 SET x = 1
 SET -v
 SET x = ';'
+SET variable = value
+SET GLOBAL variable = value
+SET LOCAL variable = value
+SET @user OFF
 COMMIT
 USE db
 USE role x

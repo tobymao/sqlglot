@@ -8,7 +8,7 @@ from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
-from sqlglot.tokens import Tokenizer
+from sqlglot.tokens import Token, Tokenizer
 from sqlglot.trie import new_trie
 
 E = t.TypeVar("E", bound=exp.Expression)
@@ -160,18 +160,21 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
-        return self.parser(**opts).parse(self.tokenizer.tokenize(sql), sql)
+        return self.parser(**opts).parse(self.tokenize(sql), sql)
 
     def parse_into(
         self, expression_type: exp.IntoType, sql: str, **opts
     ) -> t.List[t.Optional[exp.Expression]]:
-        return self.parser(**opts).parse_into(expression_type, self.tokenizer.tokenize(sql), sql)
+        return self.parser(**opts).parse_into(expression_type, self.tokenize(sql), sql)
 
     def generate(self, expression: t.Optional[exp.Expression], **opts) -> str:
         return self.generator(**opts).generate(expression)
 
     def transpile(self, sql: str, **opts) -> t.List[str]:
         return [self.generate(expression, **opts) for expression in self.parse(sql)]
+
+    def tokenize(self, sql: str) -> t.List[Token]:
+        return self.tokenizer.tokenize(sql)
 
     @property
     def tokenizer(self) -> Tokenizer:

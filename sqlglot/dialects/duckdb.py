@@ -148,6 +148,7 @@ class DuckDB(Dialect):
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DataType: _datatype_sql,
             exp.DateAdd: _date_add,
             exp.DateDiff: lambda self, e: self.func(

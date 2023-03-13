@@ -1775,11 +1775,12 @@ class Parser(metaclass=_Parser):
         self, alias_tokens: t.Optional[t.Collection[TokenType]] = None
     ) -> t.Optional[exp.Expression]:
         any_token = self._match(TokenType.ALIAS)
-        alias = self._parse_id_var(
-            any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
+        alias = (
+            self._parse_id_var(any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
+            or self._parse_string_as_identifier()
         )
-        index = self._index
 
+        index = self._index
         if self._match(TokenType.L_PAREN):
             columns = self._parse_csv(self._parse_function_parameter)
             self._match_r_paren() if columns else self._retreat(index)
@@ -2046,7 +2047,12 @@ class Parser(metaclass=_Parser):
     def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
         catalog = None
         db = None
-        table = (not schema and self._parse_function()) or self._parse_id_var(any_token=False)
+
+        table = (
+            (not schema and self._parse_function())
+            or self._parse_id_var(any_token=False)
+            or self._parse_string_as_identifier()
+        )
 
         while self._match(TokenType.DOT):
             if catalog:
@@ -3505,6 +3511,9 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.STRING):
             return self.PRIMARY_PARSERS[TokenType.STRING](self, self._prev)
         return self._parse_placeholder()
+
+    def _parse_string_as_identifier(self) -> t.Optional[exp.Expression]:
+        return exp.to_identifier(self._match(TokenType.STRING) and self._prev.text, quoted=True)
 
     def _parse_number(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.NUMBER):

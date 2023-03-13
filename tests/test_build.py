@@ -510,6 +510,27 @@ class TestBuild(unittest.TestCase):
                 .qualify("row_number() OVER (PARTITION BY a ORDER BY b) = 1"),
                 "SELECT * FROM table QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1",
             ),
+            (lambda: exp.delete("tbl1", "x = 1").delete("tbl2"), "DELETE FROM tbl2 WHERE x = 1"),
+            (lambda: exp.delete("tbl").where("x = 1"), "DELETE FROM tbl WHERE x = 1"),
+            (lambda: exp.delete(exp.table_("tbl")), "DELETE FROM tbl"),
+            (
+                lambda: exp.delete("tbl", "x = 1").where("y = 2"),
+                "DELETE FROM tbl WHERE x = 1 AND y = 2",
+            ),
+            (
+                lambda: exp.delete("tbl", "x = 1").where(exp.condition("y = 2").or_("z = 3")),
+                "DELETE FROM tbl WHERE x = 1 AND (y = 2 OR z = 3)",
+            ),
+            (
+                lambda: exp.delete("tbl").where("x = 1").returning("*", dialect="postgres"),
+                "DELETE FROM tbl WHERE x = 1 RETURNING *",
+                "postgres",
+            ),
+            (
+                lambda: exp.delete("tbl", where="x = 1", returning="*", dialect="postgres"),
+                "DELETE FROM tbl WHERE x = 1 RETURNING *",
+                "postgres",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

@@ -441,6 +441,7 @@ class Parser(metaclass=_Parser):
         exp.With: lambda self: self._parse_with(),
         exp.Window: lambda self: self._parse_named_window(),
         exp.Qualify: lambda self: self._parse_qualify(),
+        exp.Returning: lambda self: self._parse_returning(),
         "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 

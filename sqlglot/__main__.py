@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import argparse
 import sys
+import typing as t
 
 import sqlglot
 
@@ -43,6 +46,12 @@ parser.add_argument(
     help="Parse and return the expression tree",
 )
 parser.add_argument(
+    "--tokenize",
+    dest="tokenize",
+    action="store_true",
+    help="Tokenize and return the tokens list",
+)
+parser.add_argument(
     "--error-level",
     dest="error_level",
     type=str,
@@ -57,7 +66,7 @@ error_level = sqlglot.ErrorLevel[args.error_level.upper()]
 sql = sys.stdin.read() if args.sql == "-" else args.sql
 
 if args.parse:
-    sqls = [
+    objs: t.Union[t.List[str], t.List[sqlglot.tokens.Token]] = [
         repr(expression)
         for expression in sqlglot.parse(
             sql,
@@ -65,8 +74,10 @@ if args.parse:
             error_level=error_level,
         )
     ]
+elif args.tokenize:
+    objs = sqlglot.Dialect.get_or_raise(args.read)().tokenize(sql)
 else:
-    sqls = sqlglot.transpile(
+    objs = sqlglot.transpile(
         sql,
         read=args.read,
         write=args.write,
@@ -75,5 +86,5 @@ else:
         error_level=error_level,
     )
 
-for sql in sqls:
-    print(sql)
+for obj in objs:
+    print(obj)

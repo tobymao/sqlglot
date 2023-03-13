@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import typing as t
 
+from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
 
 if t.TYPE_CHECKING:
     from sqlglot.generator import Generator
-
-from sqlglot import expressions as exp
 
 
 def unalias_group(expression: exp.Expression) -> exp.Expression:
@@ -61,8 +60,7 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         and expression.args["distinct"].args.get("on")
         and isinstance(expression.args["distinct"].args["on"], exp.Tuple)
     ):
-        distinct_cols = expression.args["distinct"].args["on"].expressions
-        expression.args["distinct"].pop()
+        distinct_cols = expression.args["distinct"].pop().args["on"].expressions
         outer_selects = expression.selects
         row_number = find_new_name(expression.named_selects, "_row_number")
         window = exp.Window(
@@ -71,11 +69,46 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         )
         order = expression.args.get("order")
         if order:
-            window.set("order", order.copy())
-            order.pop()
+            window.set("order", order.pop().copy())
         window = exp.alias_(window, row_number)
         expression.select(window, copy=False)
         return exp.select(*outer_selects).from_(expression.subquery()).where(f'"{row_number}" = 1')
+    return expression
+
+
+def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
+    """
+    Convert SELECT statements that contain the QUALIFY clause into subqueries, filtered equivalently.
+
+    The idea behind this transformation can be seen in Snowflake's documentation for QUALIFY:
+    https://docs.snowflake.com/en/sql-reference/constructs/qualify
+
+    Some dialects don't support window functions in the WHERE clause, so we need to include them as
+    projections in the subquery, in order to refer to them in the outer filter using aliases. Also,
+    if a column is referenced in the QUALIFY clause but is not selected, we need to include it too,
+    otherwise we won't be able to refer to it in the outer query's WHERE clause.
+    """
+    if isinstance(expression, exp.Select) and expression.args.get("qualify"):
+        taken = set(expression.named_selects)
+        for select in expression.selects:
+            if not select.alias_or_name:
+                alias = find_new_name(taken, "_c")
+                select.replace(exp.alias_(select.copy(), alias))
+                taken.add(alias)
+
+        outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
+        qualify_filters = expression.args["qualify"].pop().this
+
+        for expr in qualify_filters.find_all((exp.Window, exp.Column)):
+            if isinstance(expr, exp.Window):
+                alias = find_new_name(expression.named_selects, "_w")
+                expression.select(exp.alias_(expr.copy(), alias), copy=False)
+                expr.replace(exp.column(alias))
+            elif expr.name not in expression.named_selects:
+                expression.select(expr.copy(), copy=False)
+
+        return outer_selects.from_(expression.subquery(alias="_t")).where(qualify_filters)
+
     return expression
 
 
@@ -139,6 +172,7 @@ def delegate(attr: str) -> t.Callable:
 
 UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
 ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on], delegate("select_sql"))}
+ELIMINATE_QUALIFY = {exp.Select: preprocess([eliminate_qualify], delegate("select_sql"))}
 REMOVE_PRECISION_PARAMETERIZED_TYPES = {
     exp.Cast: preprocess([remove_precision_parameterized_types], delegate("cast_sql"))
 }

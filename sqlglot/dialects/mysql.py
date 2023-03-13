@@ -177,7 +177,7 @@ class MySQL(Dialect):
             "@@": TokenType.SESSION_PARAMETER,
         }
 
-        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SET, TokenType.SHOW}
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
         FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}  # type: ignore
@@ -211,7 +211,6 @@ class MySQL(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,  # type: ignore
             TokenType.SHOW: lambda self: self._parse_show(),
-            TokenType.SET: lambda self: self._parse_set(),
         }
 
         SHOW_PARSERS = {
@@ -269,15 +268,12 @@ class MySQL(Dialect):
         }
 
         SET_PARSERS = {
-            "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
+            **parser.Parser.SET_PARSERS,
             "PERSIST": lambda self: self._parse_set_item_assignment("PERSIST"),
             "PERSIST_ONLY": lambda self: self._parse_set_item_assignment("PERSIST_ONLY"),
-            "SESSION": lambda self: self._parse_set_item_assignment("SESSION"),
-            "LOCAL": lambda self: self._parse_set_item_assignment("LOCAL"),
             "CHARACTER SET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
             "CHARSET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
             "NAMES": lambda self: self._parse_set_item_names(),
-            "TRANSACTION": lambda self: self._parse_set_transaction(),
         }
 
         PROFILE_TYPES = {
@@ -290,15 +286,6 @@ class MySQL(Dialect):
             "PAGE FAULTS",
             "SOURCE",
             "SWAPS",
-        }
-
-        TRANSACTION_CHARACTERISTICS = {
-            "ISOLATION LEVEL REPEATABLE READ",
-            "ISOLATION LEVEL READ COMMITTED",
-            "ISOLATION LEVEL READ UNCOMMITTED",
-            "ISOLATION LEVEL SERIALIZABLE",
-            "READ WRITE",
-            "READ ONLY",
         }
 
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
@@ -354,12 +341,6 @@ class MySQL(Dialect):
                 **{"global": global_},
             )
 
-        def _parse_var_from_options(self, options):
-            for option in options:
-                if self._match_text_seq(*option.split(" ")):
-                    return exp.Var(this=option)
-            return None
-
         def _parse_oldstyle_limit(self):
             limit = None
             offset = None
@@ -371,30 +352,6 @@ class MySQL(Dialect):
                     limit = parts[1]
                     offset = parts[0]
             return offset, limit
-
-        def _default_parse_set_item(self):
-            return self._parse_set_item_assignment(kind=None)
-
-        def _parse_set_item_assignment(self, kind):
-            if kind in {"GLOBAL", "SESSION"} and self._match_text_seq("TRANSACTION"):
-                return self._parse_set_transaction(global_=kind == "GLOBAL")
-
-            left = self._parse_primary() or self._parse_id_var()
-            if not self._match(TokenType.EQ):
-                self.raise_error("Expected =")
-            right = self._parse_statement() or self._parse_id_var()
-
-            this = self.expression(
-                exp.EQ,
-                this=left,
-                expression=right,
-            )
-
-            return self.expression(
-                exp.SetItem,
-                this=this,
-                kind=kind,
-            )
 
         def _parse_set_item_charset(self, kind):
             this = self._parse_string() or self._parse_id_var()
@@ -416,18 +373,6 @@ class MySQL(Dialect):
                 this=charset,
                 collate=collate,
                 kind="NAMES",
-            )
-
-        def _parse_set_transaction(self, global_=False):
-            self._match_text_seq("TRANSACTION")
-            characteristics = self._parse_csv(
-                lambda: self._parse_var_from_options(self.TRANSACTION_CHARACTERISTICS)
-            )
-            return self.expression(
-                exp.SetItem,
-                expressions=characteristics,
-                kind="TRANSACTION",
-                **{"global": global_},
             )
 
     class Generator(generator.Generator):
@@ -523,16 +468,3 @@ class MySQL(Dialect):
                 limit_offset = f"{offset}, {limit}" if offset else limit
                 return f" LIMIT {limit_offset}"
             return ""
-
-        def setitem_sql(self, expression):
-            kind = self.sql(expression, "kind")
-            kind = f"{kind} " if kind else ""
-            this = self.sql(expression, "this")
-            expressions = self.expressions(expression)
-            collate = self.sql(expression, "collate")
-            collate = f" COLLATE {collate}" if collate else ""
-            global_ = "GLOBAL " if expression.args.get("global") else ""
-            return f"{global_}{kind}{this}{expressions}{collate}"
-
-        def set_sql(self, expression):
-            return f"SET {self.expressions(expression)}"

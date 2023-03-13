@@ -852,8 +852,10 @@ class Tokenizer(metaclass=_Tokenizer):
 
         # If we have either a semicolon or a begin token before the command's token, we'll parse
         # whatever follows the command's token as a string
-        if token_type in self.COMMANDS and (
-            len(self.tokens) == 1 or self.tokens[-2].token_type in self.COMMAND_PREFIX_TOKENS
+        if (
+            token_type in self.COMMANDS
+            and self._peek != ";"
+            and (len(self.tokens) == 1 or self.tokens[-2].token_type in self.COMMAND_PREFIX_TOKENS)
         ):
             start = self._current
             tokens = len(self.tokens)

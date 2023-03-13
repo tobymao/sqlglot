@@ -3796,54 +3796,6 @@ class Parser(metaclass=_Parser):
             )
         return self._parse_as_command(start)
 
-    def _parse_show(self) -> t.Optional[exp.Expression]:
-        parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore
-        if parser:
-            return parser(self)
-        self._advance()
-        return self.expression(exp.Show, this=self._prev.text.upper())
-
-    def _default_parse_set_item(self) -> exp.Expression:
-        return self._parse_set_item_assignment(kind=None)
-
-    def _parse_set_item_assignment(self, kind: t.Optional[str] = None) -> exp.Expression:
-        if kind in {"GLOBAL", "SESSION"} and self._match_text_seq("TRANSACTION"):
-            return self._parse_set_transaction(global_=kind == "GLOBAL")
-
-        left = self._parse_primary() or self._parse_id_var()
-
-        if not self._match(TokenType.EQ):
-            self.raise_error("Expected =")
-
-        right = self._parse_statement() or self._parse_id_var()
-        this = self.expression(
-            exp.EQ,
-            this=left,
-            expression=right,
-        )
-
-        return self.expression(
-            exp.SetItem,
-            this=this,
-            kind=kind,
-        )
-
-    def _parse_set_transaction(self, global_: bool = False) -> exp.Expression:
-        self._match_text_seq("TRANSACTION")
-        characteristics = self._parse_csv(
-            lambda: self._parse_var_from_options(self.TRANSACTION_CHARACTERISTICS)
-        )
-        return self.expression(
-            exp.SetItem,
-            expressions=characteristics,
-            kind="TRANSACTION",
-            **{"global": global_},  # type: ignore
-        )
-
-    def _parse_set_item(self) -> t.Optional[exp.Expression]:
-        parser = self._find_parser(self.SET_PARSERS, self._set_trie)  # type: ignore
-        return parser(self) if parser else self._default_parse_set_item()
-
     def _parse_merge(self) -> exp.Expression:
         self._match(TokenType.INTO)
         target = self._parse_table()
@@ -3910,13 +3862,65 @@ class Parser(metaclass=_Parser):
             expressions=whens,
         )
 
+    def _parse_show(self) -> t.Optional[exp.Expression]:
+        parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore
+        if parser:
+            return parser(self)
+        self._advance()
+        return self.expression(exp.Show, this=self._prev.text.upper())
+
+    def _parse_set_item_assignment(
+        self, kind: t.Optional[str] = None
+    ) -> t.Optional[exp.Expression]:
+        index = self._index
+
+        if kind in {"GLOBAL", "SESSION"} and self._match_text_seq("TRANSACTION"):
+            return self._parse_set_transaction(global_=kind == "GLOBAL")
+
+        left = self._parse_primary() or self._parse_id_var()
+
+        if not self._match(TokenType.EQ):
+            self._retreat(index)
+            return None
+
+        right = self._parse_statement() or self._parse_id_var()
+        this = self.expression(
+            exp.EQ,
+            this=left,
+            expression=right,
+        )
+
+        return self.expression(
+            exp.SetItem,
+            this=this,
+            kind=kind,
+        )
+
+    def _parse_set_transaction(self, global_: bool = False) -> exp.Expression:
+        self._match_text_seq("TRANSACTION")
+        characteristics = self._parse_csv(
+            lambda: self._parse_var_from_options(self.TRANSACTION_CHARACTERISTICS)
+        )
+        return self.expression(
+            exp.SetItem,
+            expressions=characteristics,
+            kind="TRANSACTION",
+            **{"global": global_},  # type: ignore
+        )
+
+    def _parse_set_item(self) -> t.Optional[exp.Expression]:
+        parser = self._find_parser(self.SET_PARSERS, self._set_trie)  # type: ignore
+        return parser(self) if parser else self._parse_set_item_assignment(kind=None)
+
     def _parse_set(self) -> exp.Expression:
         index = self._index
-        try:
-            return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
-        except ParseError:
+        set_ = self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
+
+        if self._curr:
             self._retreat(index)
             return self._parse_as_command(self._prev)
+
+        return set_
 
     def _parse_var_from_options(self, options: t.Collection[str]) -> t.Optional[exp.Expression]:
         for option in options:
@@ -3934,6 +3938,9 @@ class Parser(metaclass=_Parser):
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict
     ) -> t.Optional[t.Callable]:
+        if not self._curr:
+            return None
+
         index = self._index
         this = []
         while True:

@@ -809,7 +809,7 @@ class Describe(Expression):
 
 
 class Set(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": False}
 
 
 class SetItem(Expression):

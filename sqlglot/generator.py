@@ -1187,7 +1187,8 @@ class Generator:
         return f"{global_}{kind}{this}{expressions}{collate}"
 
     def set_sql(self, expression: exp.Set) -> str:
-        return f"SET {self.expressions(expression)}"
+        expressions = f" {self.expressions(expression)}" if expression.expressions else ""
+        return f"SET{expressions}"
 
     def lock_sql(self, expression: exp.Lock) -> str:
         if self.LOCKING_READS_SUPPORTED:

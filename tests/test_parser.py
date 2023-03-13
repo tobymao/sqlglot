@@ -281,6 +281,11 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("map.x"), exp.Column)
 
     def test_set_expression(self):
+        set_ = parse_one("SET")
+
+        self.assertEqual(set_.sql(), "SET")
+        self.assertIsInstance(set_, exp.Set)
+
         set_session = parse_one("SET SESSION x = 1")
 
         self.assertEqual(set_session.sql(), "SET SESSION x = 1")

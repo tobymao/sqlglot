@@ -300,6 +300,11 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(set_item.args.get("kind"), "SESSION")
 
+        set_to = parse_one("SET x TO 1")
+
+        self.assertEqual(set_to.sql(), "SET x = 1")
+        self.assertIsInstance(set_to, exp.Set)
+
         set_as_command = parse_one("SET DEFAULT ROLE ALL TO USER")
 
         self.assertEqual(set_as_command.sql(), "SET DEFAULT ROLE ALL TO USER")

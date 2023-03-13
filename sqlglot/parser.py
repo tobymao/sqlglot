@@ -3879,7 +3879,7 @@ class Parser(metaclass=_Parser):
 
         left = self._parse_primary() or self._parse_id_var()
 
-        if not self._match(TokenType.EQ):
+        if not self._match_texts(("=", "TO")):
             self._retreat(index)
             return None
 

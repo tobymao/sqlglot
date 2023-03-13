@@ -110,6 +110,8 @@ class TestDuckDB(Validator):
         )
 
     def test_duckdb(self):
+        self.validate_identity("SELECT * FROM 'x.y'")
+        self.validate_identity("WITH 'x' AS (SELECT 1) SELECT * FROM x")
         self.validate_identity("SELECT {'a': 1} AS x")
         self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")
         self.validate_identity("SELECT {'x': 1, 'y': 2, 'z': 3}")

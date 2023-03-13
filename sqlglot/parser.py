@@ -1759,7 +1759,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.With, expressions=expressions, recursive=recursive)
 
     def _parse_cte(self) -> exp.Expression:
-        alias = self._parse_table_alias()
+        alias = self._parse_table_alias() or self._parse_string()
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
 
@@ -2046,7 +2046,12 @@ class Parser(metaclass=_Parser):
     def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
         catalog = None
         db = None
-        table = (not schema and self._parse_function()) or self._parse_id_var(any_token=False)
+
+        table = (
+            (not schema and self._parse_function())
+            or self._parse_id_var(any_token=False)
+            or self._parse_string()
+        )
 
         while self._match(TokenType.DOT):
             if catalog:

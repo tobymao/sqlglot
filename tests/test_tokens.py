@@ -30,6 +30,21 @@ class TestTokens(unittest.TestCase):
 
         self.assertEqual(tokens[-1].line, 6)
 
+    def test_command(self):
+        tokens = Tokenizer().tokenize("SHOW;")
+        self.assertEqual(tokens[0].token_type, TokenType.SHOW)
+        self.assertEqual(tokens[1].token_type, TokenType.SEMICOLON)
+
+        tokens = Tokenizer().tokenize("EXECUTE")
+        self.assertEqual(tokens[0].token_type, TokenType.EXECUTE)
+        self.assertEqual(len(tokens), 1)
+
+        tokens = Tokenizer().tokenize("FETCH;SHOW;")
+        self.assertEqual(tokens[0].token_type, TokenType.FETCH)
+        self.assertEqual(tokens[1].token_type, TokenType.SEMICOLON)
+        self.assertEqual(tokens[2].token_type, TokenType.SHOW)
+        self.assertEqual(tokens[3].token_type, TokenType.SEMICOLON)
+
     def test_jinja(self):
         tokenizer = Tokenizer()
 

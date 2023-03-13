@@ -1,3 +1,6 @@
+SET x TO 1;
+SET x = 1;
+
 SELECT * FROM test;
 SELECT
   *

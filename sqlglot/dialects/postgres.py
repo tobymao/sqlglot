@@ -92,8 +92,7 @@ def _string_agg_sql(self, expression):
     this = expression.this
     if isinstance(this, exp.Order):
         if this.this:
-            this = this.this
-            this.pop()
+            this = this.this.pop()
         order = self.sql(expression.this)  # Order has a leading space
 
     return f"STRING_AGG({self.format_args(this, separator)}{order})"

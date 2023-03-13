@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
@@ -62,6 +62,7 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.ELIMINATE_QUALIFY,  # type: ignore
             exp.CountIf: count_if_to_sum,
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",

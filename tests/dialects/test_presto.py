@@ -189,34 +189,38 @@ class TestPresto(Validator):
         )
 
         self.validate_all(
-            "DAY_OF_WEEK(timestamp '2012-08-08 01:00')",
+            "DAY_OF_WEEK(timestamp '2012-08-08 01:00:00')",
             write={
-                "spark": "DAYOFWEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_WEEK(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "spark": "DAYOFWEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_WEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "duckdb": "DAYOFWEEK(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
 
         self.validate_all(
-            "DAY_OF_MONTH(timestamp '2012-08-08 01:00')",
+            "DAY_OF_MONTH(timestamp '2012-08-08 01:00:00')",
             write={
-                "spark": "DAYOFMONTH(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_MONTH(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "spark": "DAYOFMONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_MONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "duckdb": "DAYOFMONTH(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
 
         self.validate_all(
-            "DAY_OF_YEAR(timestamp '2012-08-08 01:00')",
+            "DAY_OF_YEAR(timestamp '2012-08-08 01:00:00')",
             write={
-                "spark": "DAYOFYEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "DAY_OF_YEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "spark": "DAYOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "presto": "DAY_OF_YEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "duckdb": "DAYOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
 
         self.validate_all(
-            "WEEK_OF_YEAR(timestamp '2012-08-08 01:00')",
+            "WEEK_OF_YEAR(timestamp '2012-08-08 01:00:00')",
             write={
-                "spark": "WEEKOFYEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
-                "presto": "WEEK_OF_YEAR(CAST('2012-08-08 01:00' AS TIMESTAMP))",
+                "spark": "WEEKOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "presto": "WEEK_OF_YEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
+                "duckdb": "WEEKOFYEAR(CAST('2012-08-08 01:00:00' AS TIMESTAMP))",
             },
         )
 

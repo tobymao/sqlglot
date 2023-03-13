@@ -1759,7 +1759,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.With, expressions=expressions, recursive=recursive)
 
     def _parse_cte(self) -> exp.Expression:
-        alias = self._parse_table_alias() or self._parse_string()
+        alias = self._parse_table_alias()
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
 
@@ -1777,9 +1777,9 @@ class Parser(metaclass=_Parser):
         any_token = self._match(TokenType.ALIAS)
         alias = self._parse_id_var(
             any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
-        )
-        index = self._index
+        ) or self._parse_string_as_identifier()
 
+        index = self._index
         if self._match(TokenType.L_PAREN):
             columns = self._parse_csv(self._parse_function_parameter)
             self._match_r_paren() if columns else self._retreat(index)
@@ -2050,7 +2050,7 @@ class Parser(metaclass=_Parser):
         table = (
             (not schema and self._parse_function())
             or self._parse_id_var(any_token=False)
-            or self._parse_string()
+            or self._parse_string_as_identifier()
         )
 
         while self._match(TokenType.DOT):
@@ -3510,6 +3510,9 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.STRING):
             return self.PRIMARY_PARSERS[TokenType.STRING](self, self._prev)
         return self._parse_placeholder()
+
+    def _parse_string_as_identifier(self) -> t.Optional[exp.Expression]:
+        return exp.to_identifier(self._match(TokenType.STRING) and self._prev.text, quoted=True)
 
     def _parse_number(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.NUMBER):

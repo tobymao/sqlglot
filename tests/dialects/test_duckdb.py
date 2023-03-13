@@ -110,8 +110,6 @@ class TestDuckDB(Validator):
         )
 
     def test_duckdb(self):
-        self.validate_identity("SELECT * FROM 'x.y'")
-        self.validate_identity("WITH 'x' AS (SELECT 1) SELECT * FROM x")
         self.validate_identity("SELECT {'a': 1} AS x")
         self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")
         self.validate_identity("SELECT {'x': 1, 'y': 2, 'z': 3}")
@@ -127,6 +125,11 @@ class TestDuckDB(Validator):
             "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a)"
         )
 
+        self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
+        self.validate_all(
+            "WITH 'x' AS (SELECT 1) SELECT * FROM x",
+            write={"duckdb": 'WITH "x" AS (SELECT 1) SELECT * FROM x'},
+        )
         self.validate_all(
             "CREATE TABLE IF NOT EXISTS table (cola INT, colb STRING) USING ICEBERG PARTITIONED BY (colb)",
             write={

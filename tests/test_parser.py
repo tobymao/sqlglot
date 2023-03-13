@@ -280,6 +280,39 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("TIMESTAMP()"), exp.Func)
         self.assertIsInstance(parse_one("map.x"), exp.Column)
 
+    def test_set_expression(self):
+        set_ = parse_one("SET")
+
+        self.assertEqual(set_.sql(), "SET")
+        self.assertIsInstance(set_, exp.Set)
+
+        set_session = parse_one("SET SESSION x = 1")
+
+        self.assertEqual(set_session.sql(), "SET SESSION x = 1")
+        self.assertIsInstance(set_session, exp.Set)
+
+        set_item = set_session.expressions[0]
+
+        self.assertIsInstance(set_item, exp.SetItem)
+        self.assertIsInstance(set_item.this, exp.EQ)
+        self.assertIsInstance(set_item.this.this, exp.Identifier)
+        self.assertIsInstance(set_item.this.expression, exp.Literal)
+
+        self.assertEqual(set_item.args.get("kind"), "SESSION")
+
+        set_to = parse_one("SET x TO 1")
+
+        self.assertEqual(set_to.sql(), "SET x = 1")
+        self.assertIsInstance(set_to, exp.Set)
+
+        set_as_command = parse_one("SET DEFAULT ROLE ALL TO USER")
+
+        self.assertEqual(set_as_command.sql(), "SET DEFAULT ROLE ALL TO USER")
+
+        self.assertIsInstance(set_as_command, exp.Command)
+        self.assertEqual(set_as_command.this, "SET")
+        self.assertEqual(set_as_command.expression, " DEFAULT ROLE ALL TO USER")
+
     def test_pretty_config_override(self):
         self.assertEqual(parse_one("SELECT col FROM x").sql(), "SELECT col FROM x")
         with patch("sqlglot.pretty", True):

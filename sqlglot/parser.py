@@ -460,6 +460,7 @@ class Parser(metaclass=_Parser):
         TokenType.LOAD_DATA: lambda self: self._parse_load_data(),
         TokenType.MERGE: lambda self: self._parse_merge(),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
+        TokenType.SET: lambda self: self._parse_set(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.UPDATE: lambda self: self._parse_update(),
         TokenType.USE: lambda self: self.expression(
@@ -684,12 +685,27 @@ class Parser(metaclass=_Parser):
         "sample": lambda self: self._parse_table_sample(as_modifier=True),
     }
 
+    SET_PARSERS = {
+        "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
+        "LOCAL": lambda self: self._parse_set_item_assignment("LOCAL"),
+        "SESSION": lambda self: self._parse_set_item_assignment("SESSION"),
+        "TRANSACTION": lambda self: self._parse_set_transaction(),
+    }
+
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
-    SET_PARSERS: t.Dict[str, t.Callable] = {}
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
+
+    TRANSACTION_CHARACTERISTICS = {
+        "ISOLATION LEVEL REPEATABLE READ",
+        "ISOLATION LEVEL READ COMMITTED",
+        "ISOLATION LEVEL READ UNCOMMITTED",
+        "ISOLATION LEVEL SERIALIZABLE",
+        "READ WRITE",
+        "READ ONLY",
+    }
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
@@ -3789,23 +3805,6 @@ class Parser(metaclass=_Parser):
             )
         return self._parse_as_command(start)
 
-    def _parse_show(self) -> t.Optional[exp.Expression]:
-        parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore
-        if parser:
-            return parser(self)
-        self._advance()
-        return self.expression(exp.Show, this=self._prev.text.upper())
-
-    def _default_parse_set_item(self) -> exp.Expression:
-        return self.expression(
-            exp.SetItem,
-            this=self._parse_statement(),
-        )
-
-    def _parse_set_item(self) -> t.Optional[exp.Expression]:
-        parser = self._find_parser(self.SET_PARSERS, self._set_trie)  # type: ignore
-        return parser(self) if parser else self._default_parse_set_item()
-
     def _parse_merge(self) -> exp.Expression:
         self._match(TokenType.INTO)
         target = self._parse_table()
@@ -3872,8 +3871,71 @@ class Parser(metaclass=_Parser):
             expressions=whens,
         )
 
+    def _parse_show(self) -> t.Optional[exp.Expression]:
+        parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore
+        if parser:
+            return parser(self)
+        self._advance()
+        return self.expression(exp.Show, this=self._prev.text.upper())
+
+    def _parse_set_item_assignment(
+        self, kind: t.Optional[str] = None
+    ) -> t.Optional[exp.Expression]:
+        index = self._index
+
+        if kind in {"GLOBAL", "SESSION"} and self._match_text_seq("TRANSACTION"):
+            return self._parse_set_transaction(global_=kind == "GLOBAL")
+
+        left = self._parse_primary() or self._parse_id_var()
+
+        if not self._match_texts(("=", "TO")):
+            self._retreat(index)
+            return None
+
+        right = self._parse_statement() or self._parse_id_var()
+        this = self.expression(
+            exp.EQ,
+            this=left,
+            expression=right,
+        )
+
+        return self.expression(
+            exp.SetItem,
+            this=this,
+            kind=kind,
+        )
+
+    def _parse_set_transaction(self, global_: bool = False) -> exp.Expression:
+        self._match_text_seq("TRANSACTION")
+        characteristics = self._parse_csv(
+            lambda: self._parse_var_from_options(self.TRANSACTION_CHARACTERISTICS)
+        )
+        return self.expression(
+            exp.SetItem,
+            expressions=characteristics,
+            kind="TRANSACTION",
+            **{"global": global_},  # type: ignore
+        )
+
+    def _parse_set_item(self) -> t.Optional[exp.Expression]:
+        parser = self._find_parser(self.SET_PARSERS, self._set_trie)  # type: ignore
+        return parser(self) if parser else self._parse_set_item_assignment(kind=None)
+
     def _parse_set(self) -> exp.Expression:
-        return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
+        index = self._index
+        set_ = self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
+
+        if self._curr:
+            self._retreat(index)
+            return self._parse_as_command(self._prev)
+
+        return set_
+
+    def _parse_var_from_options(self, options: t.Collection[str]) -> t.Optional[exp.Expression]:
+        for option in options:
+            if self._match_text_seq(*option.split(" ")):
+                return exp.Var(this=option)
+        return None
 
     def _parse_as_command(self, start: Token) -> exp.Command:
         while self._curr:
@@ -3885,6 +3947,9 @@ class Parser(metaclass=_Parser):
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict
     ) -> t.Optional[t.Callable]:
+        if not self._curr:
+            return None
+
         index = self._index
         this = []
         while True:

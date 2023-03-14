@@ -545,6 +545,7 @@ class TestDialect(Validator):
             "DATE_TRUNC('day', x)",
             write={
                 "mysql": "DATE(x)",
+                "postgres": "DATE_TRUNC('day', x)",
                 "snowflake": "DATE_TRUNC('day', x)",
             },
         )
@@ -582,6 +583,7 @@ class TestDialect(Validator):
             "DATE_TRUNC('year', x)",
             read={
                 "bigquery": "DATE_TRUNC(x, year)",
+                "postgres": "DATE_TRUNC(year, x)",
                 "snowflake": "DATE_TRUNC(year, x)",
                 "starrocks": "DATE_TRUNC('year', x)",
                 "spark": "TRUNC(x, 'year')",

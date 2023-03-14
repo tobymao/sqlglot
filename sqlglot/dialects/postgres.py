@@ -255,6 +255,10 @@ class Postgres(Dialect):
             "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
             "GENERATE_SERIES": _generate_series,
+            "DATE_TRUNC": lambda args: exp.DateTrunc(
+                unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
+                this=seq_get(args, 1),
+            ),
         }
 
         BITWISE = {

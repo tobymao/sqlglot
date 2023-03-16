@@ -37,6 +37,7 @@ def qualify_columns(expression, schema):
             _qualify_outputs(scope)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
+
     return expression
 
 
@@ -213,6 +214,31 @@ def _qualify_columns(scope, resolver):
             # column_table can be a '' because bigquery unnest has no table alias
             if column_table:
                 column.set("table", column_table)
+        elif column_table not in scope.sources:
+            # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
+            # separately and represented as dot(dot(...(<table>.<column>, field1), field2, ...))
+
+            struct_fields = [val for val in reversed(list(column.args.values())) if val is not None]
+            struct_root = struct_fields[0]
+
+            if struct_root.name in scope.sources:
+                # struct is already qualified, but we still need to change the AST representation
+                struct_table = struct_root
+                struct_fields = struct_fields[1:]
+                struct_root = struct_fields[0]
+            else:
+                struct_table = resolver.get_table(struct_root.name)
+
+            if struct_table:
+                while column.parent and isinstance(column.parent, exp.Dot):
+                    column = column.parent
+                    struct_fields.append(column.expression)
+
+                new_column = exp.column(struct_root, table=struct_table)
+                for field in struct_fields[1:]:
+                    new_column = exp.Dot(this=new_column, expression=field)
+
+                column.replace(new_column)
 
     columns_missing_from_scope = []
     # Determine whether each reference in the order by clause is to a column or an alias.
@@ -373,10 +399,14 @@ class Resolver:
         if isinstance(node, exp.Subqueryable):
             while node and node.alias != table_name:
                 node = node.parent
+
         node_alias = node.args.get("alias")
         if node_alias:
             return node_alias.this
-        return exp.to_identifier(table_name)
+
+        return exp.to_identifier(
+            table_name, quoted=node.this.quoted if isinstance(node, exp.Table) else None
+        )
 
     @property
     def all_columns(self):

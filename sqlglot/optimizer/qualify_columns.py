@@ -218,14 +218,14 @@ def _qualify_columns(scope, resolver):
             # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
             # separately and represented as dot(dot(...(<table>.<column>, field1), field2, ...))
 
-            struct_fields = [val for val in reversed(list(column.args.values())) if val is not None]
-            struct_root = struct_fields[0]
+            struct_root, *struct_fields = [
+                val for val in reversed(list(column.args.values())) if val is not None
+            ]
 
             if struct_root.name in scope.sources:
                 # struct is already qualified, but we still need to change the AST representation
                 struct_table = struct_root
-                struct_fields = struct_fields[1:]
-                struct_root = struct_fields[0]
+                struct_root, *struct_fields = struct_fields
             else:
                 struct_table = resolver.get_table(struct_root.name)
 
@@ -235,7 +235,7 @@ def _qualify_columns(scope, resolver):
                     struct_fields.append(column.expression)
 
                 new_column = exp.column(struct_root, table=struct_table)
-                for field in struct_fields[1:]:
+                for field in struct_fields:
                     new_column = exp.Dot(this=new_column, expression=field)
 
                 column.replace(new_column)

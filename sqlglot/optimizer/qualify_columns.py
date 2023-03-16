@@ -216,7 +216,7 @@ def _qualify_columns(scope, resolver):
                 column.set("table", column_table)
         elif column_table not in scope.sources:
             # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
-            # separately by parsing them as <table>.<column>.dot.dot.dot ...
+            # separately and represented as <table>.<column>.dot.dot.dot ...
 
             struct_fields = [val for val in reversed(list(column.args.values())) if val is not None]
             struct_root = struct_fields[0]

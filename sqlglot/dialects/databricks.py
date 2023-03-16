@@ -23,6 +23,7 @@ class Databricks(Spark):
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
+        TRANSFORMS.pop(exp.Select)  # Remove the ELIMINATE_QUALIFY transformation
 
         PARAMETER_TOKEN = "$"
 

@@ -339,8 +339,10 @@ class Hive(Dialect):
         }
 
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
-            arg = expression.this if isinstance(expression.this, exp.Order) else expression
-            return f"COLLECT_LIST({self.sql(arg, 'this')})"
+            return self.func(
+                "COLLECT_LIST",
+                expression.this.this if isinstance(expression.this, exp.Order) else expression.this,
+            )
 
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(

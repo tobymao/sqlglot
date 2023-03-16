@@ -386,16 +386,31 @@ SELECT
   "x"."b" + 1 AS "c"
 FROM "x" AS "x";
 
-# title: struct element is selected in the outer query
+# title: unqualified struct element is selected in the outer query
+# execute: false
 WITH "cte" AS (
   SELECT
     FROM_JSON("value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct"
   FROM "tbl"
 ) SELECT "struct"."f1"."f2"."f3"."f4" AS "f4" FROM "cte";
-SELECT
-  FROM_JSON("tbl"."value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>')."f1"."f2"."f3"."f4" AS "f4"
-FROM "tbl" AS "tbl";
+WITH "cte" AS (
+  SELECT
+    FROM_JSON("tbl"."value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct"
+  FROM "tbl"
+) SELECT "cte"."struct"."f1"."f2"."f3"."f4" AS "f4" FROM "cte" AS "cte";
 
+# title: qualified struct element is selected in the outer query
+# execute: false
+WITH "cte" AS (
+  SELECT
+    FROM_JSON("value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct"
+  FROM "tbl"
+) SELECT "cte"."struct"."f1"."f2"."f3"."f4" AS "f4" FROM "cte";
+WITH "cte" AS (
+  SELECT
+    FROM_JSON("tbl"."value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct"
+  FROM "tbl"
+) SELECT "cte"."struct"."f1"."f2"."f3"."f4" AS "f4" FROM "cte" AS "cte";
 
 # title: left join doesnt push down predicate to join in merge subqueries
 # execute: false

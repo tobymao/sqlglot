@@ -37,6 +37,7 @@ def qualify_columns(expression, schema):
             _qualify_outputs(scope)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
+
     return expression
 
 
@@ -213,6 +214,23 @@ def _qualify_columns(scope, resolver):
             # column_table can be a '' because bigquery unnest has no table alias
             if column_table:
                 column.set("table", column_table)
+        elif column_table not in scope.sources:
+            # structs are used as tables (e.g. "struct"."field"), so we need to qualify them separately
+            struct_fields = list(val for val in reversed(column.args.values()) if val is not None)
+
+            root_struct = struct_fields[0]
+            struct_table = resolver.get_table(root_struct.name)
+
+            if struct_table:
+                while column.parent and isinstance(column.parent, exp.Dot):
+                    column = column.parent
+                    struct_fields.append(column.expression)
+
+                new_column = exp.column(root_struct, table=struct_table)
+                for field in struct_fields[1:]:
+                    new_column = exp.Dot(this=new_column, expression=exp.to_identifier(field))
+
+                column.replace(new_column)
 
     columns_missing_from_scope = []
     # Determine whether each reference in the order by clause is to a column or an alias.

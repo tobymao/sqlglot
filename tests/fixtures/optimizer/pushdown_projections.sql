@@ -61,9 +61,6 @@ SELECT q.x AS x FROM (VALUES (1, 2)) AS q(x, y);
 SELECT i.a FROM x AS i LEFT JOIN (SELECT a, b FROM (SELECT a, b FROM x)) AS j ON i.a = j.a;
 SELECT i.a AS a FROM x AS i LEFT JOIN (SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0) AS j ON i.a = j.a;
 
-WITH "cte" AS (SELECT FROM_JSON("value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct" FROM "tbl") SELECT "struct"."f1"."f2"."f3"."f4" AS "f4" FROM "cte";
-WITH "cte" AS (SELECT FROM_JSON("tbl"."value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct" FROM "tbl" AS "tbl") SELECT "struct"."f1"."f2"."f3"."f4" AS "f4" FROM "cte";
-
 --------------------------------------
 -- Unknown Star Expansion
 --------------------------------------

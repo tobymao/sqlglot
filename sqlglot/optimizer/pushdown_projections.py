@@ -89,20 +89,10 @@ def _remove_unused_selections(scope, parent_selections, schema):
     removed = False
     star = False
 
-    possible_struct_selections = set()
-    if scope.parent:
-        for column in scope.parent.columns:
-            possible_struct_selections.add(column.catalog or column.db or column.table)
-
     for selection in scope.selects:
         name = selection.alias_or_name
 
-        if (
-            SELECT_ALL in parent_selections
-            or name in parent_selections
-            or name in order_refs
-            or name in possible_struct_selections
-        ):
+        if SELECT_ALL in parent_selections or name in parent_selections or name in order_refs:
             new_selections.append(selection)
         else:
             if selection.is_star:

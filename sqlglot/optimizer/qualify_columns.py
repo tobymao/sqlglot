@@ -236,7 +236,7 @@ def _qualify_columns(scope, resolver):
 
                 new_column = exp.column(struct_root, table=struct_table)
                 for field in struct_fields[1:]:
-                    new_column = exp.Dot(this=new_column, expression=exp.to_identifier(field))
+                    new_column = exp.Dot(this=new_column, expression=field)
 
                 column.replace(new_column)
 

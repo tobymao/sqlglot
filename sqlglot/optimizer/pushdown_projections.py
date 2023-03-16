@@ -88,6 +88,7 @@ def _remove_unused_selections(scope, parent_selections, schema):
     new_selections = []
     removed = False
     star = False
+
     for selection in scope.selects:
         name = selection.alias_or_name
 

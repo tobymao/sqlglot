@@ -399,10 +399,14 @@ class Resolver:
         if isinstance(node, exp.Subqueryable):
             while node and node.alias != table_name:
                 node = node.parent
+
         node_alias = node.args.get("alias")
         if node_alias:
             return node_alias.this
-        return exp.to_identifier(table_name)
+
+        return exp.to_identifier(
+            table_name, quoted=node.this.quoted if isinstance(node, exp.Table) else False
+        )
 
     @property
     def all_columns(self):

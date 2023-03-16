@@ -218,7 +218,7 @@ def _qualify_columns(scope, resolver):
             # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
             # separately by parsing them as <table>.<column>.dot.dot.dot ...
 
-            struct_fields = list(val for val in reversed(column.args.values()) if val is not None)
+            struct_fields = [val for val in reversed(list(column.args.values())) if val is not None]
             struct_root = struct_fields[0]
 
             if struct_root.name in scope.sources:

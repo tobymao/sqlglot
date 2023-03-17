@@ -84,4 +84,4 @@ def _replace_cast(node: exp.Expression, to: str) -> None:
 
 def _replace_int_predicate(expression: exp.Expression) -> None:
     if expression.type and expression.type.this in exp.DataType.INTEGER_TYPES:
-        expression.replace(exp.GT(this=expression.copy(), expression=exp.Literal.number(0)))
+        expression.replace(exp.NEQ(this=expression.copy(), expression=exp.Literal.number(0)))

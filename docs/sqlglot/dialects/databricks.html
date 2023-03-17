@@ -102,14 +102,15 @@
 </span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
 </span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
 </span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="p">}</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="p">}</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -141,14 +142,15 @@
 </span><span id="Databricks-24"><a href="#Databricks-24"><span class="linenos">24</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
 </span><span id="Databricks-25"><a href="#Databricks-25"><span class="linenos">25</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
 </span><span id="Databricks-26"><a href="#Databricks-26"><span class="linenos">26</span></a>        <span class="p">}</span>
-</span><span id="Databricks-27"><a href="#Databricks-27"><span class="linenos">27</span></a>
-</span><span id="Databricks-28"><a href="#Databricks-28"><span class="linenos">28</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
-</span><span id="Databricks-29"><a href="#Databricks-29"><span class="linenos">29</span></a>
-</span><span id="Databricks-30"><a href="#Databricks-30"><span class="linenos">30</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Databricks-31"><a href="#Databricks-31"><span class="linenos">31</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks-32"><a href="#Databricks-32"><span class="linenos">32</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="Databricks-33"><a href="#Databricks-33"><span class="linenos">33</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="Databricks-34"><a href="#Databricks-34"><span class="linenos">34</span></a>        <span class="p">}</span>
+</span><span id="Databricks-27"><a href="#Databricks-27"><span class="linenos">27</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
+</span><span id="Databricks-28"><a href="#Databricks-28"><span class="linenos">28</span></a>
+</span><span id="Databricks-29"><a href="#Databricks-29"><span class="linenos">29</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+</span><span id="Databricks-30"><a href="#Databricks-30"><span class="linenos">30</span></a>
+</span><span id="Databricks-31"><a href="#Databricks-31"><span class="linenos">31</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Databricks-32"><a href="#Databricks-32"><span class="linenos">32</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks-33"><a href="#Databricks-33"><span class="linenos">33</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="Databricks-34"><a href="#Databricks-34"><span class="linenos">34</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="Databricks-35"><a href="#Databricks-35"><span class="linenos">35</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -253,8 +255,9 @@ Default: "nulls_are_small"</li>
 </span><span id="Databricks.Generator-24"><a href="#Databricks.Generator-24"><span class="linenos">24</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
 </span><span id="Databricks.Generator-25"><a href="#Databricks.Generator-25"><span class="linenos">25</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
 </span><span id="Databricks.Generator-26"><a href="#Databricks.Generator-26"><span class="linenos">26</span></a>        <span class="p">}</span>
-</span><span id="Databricks.Generator-27"><a href="#Databricks.Generator-27"><span class="linenos">27</span></a>
-</span><span id="Databricks.Generator-28"><a href="#Databricks.Generator-28"><span class="linenos">28</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+</span><span id="Databricks.Generator-27"><a href="#Databricks.Generator-27"><span class="linenos">27</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
+</span><span id="Databricks.Generator-28"><a href="#Databricks.Generator-28"><span class="linenos">28</span></a>
+</span><span id="Databricks.Generator-29"><a href="#Databricks.Generator-29"><span class="linenos">29</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
 </span></pre></div>
 
 
@@ -271,8 +274,7 @@ represents a python time format and the output the target time format</li>
 <li><strong>quote_end (str):</strong>  specifies which ending character to use to delimit quotes. Default: '.</li>
 <li><strong>identifier_start (str):</strong>  specifies which starting character to use to delimit identifiers. Default: ".</li>
 <li><strong>identifier_end (str):</strong>  specifies which ending character to use to delimit identifiers. Default: ".</li>
-<li><strong>identify (bool):</strong>  if set to True all identifiers will be delimited by the corresponding
-character.</li>
+<li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
 <li><strong>identifier_escape (str):</strong>  specifies an identifier escape character. Default: ".</li>
@@ -525,7 +527,8 @@ Default: True</li>
 
             </div>
             <div><dt><a href="hive.html#Hive.Generator">sqlglot.dialects.hive.Hive.Generator</a></dt>
-                                <dd id="Databricks.Generator.with_properties" class="function"><a href="hive.html#Hive.Generator.with_properties">with_properties</a></dd>
+                                <dd id="Databricks.Generator.arrayagg_sql" class="function"><a href="hive.html#Hive.Generator.arrayagg_sql">arrayagg_sql</a></dd>
+                <dd id="Databricks.Generator.with_properties" class="function"><a href="hive.html#Hive.Generator.with_properties">with_properties</a></dd>
                 <dd id="Databricks.Generator.datatype_sql" class="function"><a href="hive.html#Hive.Generator.datatype_sql">datatype_sql</a></dd>
 
             </div>
@@ -543,11 +546,11 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Databricks.Tokenizer"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Tokenizer-30"><a href="#Databricks.Tokenizer-30"><span class="linenos">30</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Databricks.Tokenizer-31"><a href="#Databricks.Tokenizer-31"><span class="linenos">31</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks.Tokenizer-32"><a href="#Databricks.Tokenizer-32"><span class="linenos">32</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="Databricks.Tokenizer-33"><a href="#Databricks.Tokenizer-33"><span class="linenos">33</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="Databricks.Tokenizer-34"><a href="#Databricks.Tokenizer-34"><span class="linenos">34</span></a>        <span class="p">}</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Tokenizer-31"><a href="#Databricks.Tokenizer-31"><span class="linenos">31</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Databricks.Tokenizer-32"><a href="#Databricks.Tokenizer-32"><span class="linenos">32</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks.Tokenizer-33"><a href="#Databricks.Tokenizer-33"><span class="linenos">33</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="Databricks.Tokenizer-34"><a href="#Databricks.Tokenizer-34"><span class="linenos">34</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="Databricks.Tokenizer-35"><a href="#Databricks.Tokenizer-35"><span class="linenos">35</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 

@@ -93,6 +93,9 @@
             <li>
                     <a class="function" href="#first">first</a>
             </li>
+            <li>
+                    <a class="function" href="#should_identify">should_identify</a>
+            </li>
     </ul>
 
 
@@ -521,6 +524,23 @@
 </span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a><span class="sd">    Useful for sets.</span>
 </span><span id="L-404"><a href="#L-404"><span class="linenos">404</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
+</span><span id="L-406"><a href="#L-406"><span class="linenos">406</span></a>
+</span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a>
+</span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a><span class="k">def</span> <span class="nf">should_identify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if text should be identified given an identify option.</span>
+</span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a>
+</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a><span class="sd">    Args:</span>
+</span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a><span class="sd">        text: the text to check.</span>
+</span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a><span class="sd">        identify: &quot;always&quot; | True - always returns true, &quot;safe&quot; - true if no upper case</span>
+</span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a>
+</span><span id="L-415"><a href="#L-415"><span class="linenos">415</span></a><span class="sd">    Returns:</span>
+</span><span id="L-416"><a href="#L-416"><span class="linenos">416</span></a><span class="sd">        Whether or not a string should be identified.</span>
+</span><span id="L-417"><a href="#L-417"><span class="linenos">417</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a>        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
+</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a>    <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1461,6 +1481,53 @@ and "cls", in case of instance and class methods, respectively.</p>
             <div class="docstring"><p>Returns the first element from an iterable.</p>
 
 <p>Useful for sets.</p>
+</div>
+
+
+                </section>
+                <section id="should_identify">
+                            <input id="should_identify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">should_identify</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">text</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+                <label class="view-source-button" for="should_identify-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#should_identify"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="should_identify-409"><a href="#should_identify-409"><span class="linenos">409</span></a><span class="k">def</span> <span class="nf">should_identify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="should_identify-410"><a href="#should_identify-410"><span class="linenos">410</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if text should be identified given an identify option.</span>
+</span><span id="should_identify-411"><a href="#should_identify-411"><span class="linenos">411</span></a>
+</span><span id="should_identify-412"><a href="#should_identify-412"><span class="linenos">412</span></a><span class="sd">    Args:</span>
+</span><span id="should_identify-413"><a href="#should_identify-413"><span class="linenos">413</span></a><span class="sd">        text: the text to check.</span>
+</span><span id="should_identify-414"><a href="#should_identify-414"><span class="linenos">414</span></a><span class="sd">        identify: &quot;always&quot; | True - always returns true, &quot;safe&quot; - true if no upper case</span>
+</span><span id="should_identify-415"><a href="#should_identify-415"><span class="linenos">415</span></a>
+</span><span id="should_identify-416"><a href="#should_identify-416"><span class="linenos">416</span></a><span class="sd">    Returns:</span>
+</span><span id="should_identify-417"><a href="#should_identify-417"><span class="linenos">417</span></a><span class="sd">        Whether or not a string should be identified.</span>
+</span><span id="should_identify-418"><a href="#should_identify-418"><span class="linenos">418</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="should_identify-419"><a href="#should_identify-419"><span class="linenos">419</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="should_identify-420"><a href="#should_identify-420"><span class="linenos">420</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="should_identify-421"><a href="#should_identify-421"><span class="linenos">421</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="should_identify-422"><a href="#should_identify-422"><span class="linenos">422</span></a>        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
+</span><span id="should_identify-423"><a href="#should_identify-423"><span class="linenos">423</span></a>    <span class="k">return</span> <span class="kc">False</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Checks if text should be identified given an identify option.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>text:</strong>  the text to check.</li>
+<li><strong>identify:</strong>  "always" | True - always returns true, "safe" - true if no upper case</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>Whether or not a string should be identified.</p>
+</blockquote>
 </div>
 
 

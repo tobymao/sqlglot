@@ -653,8 +653,7 @@ represents a python time format and the output the target time format</li>
 <li><strong>quote_end (str):</strong>  specifies which ending character to use to delimit quotes. Default: '.</li>
 <li><strong>identifier_start (str):</strong>  specifies which starting character to use to delimit identifiers. Default: ".</li>
 <li><strong>identifier_end (str):</strong>  specifies which ending character to use to delimit identifiers. Default: ".</li>
-<li><strong>identify (bool):</strong>  if set to True all identifiers will be delimited by the corresponding
-character.</li>
+<li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
 <li><strong>identifier_escape (str):</strong>  specifies an identifier escape character. Default: ".</li>
@@ -930,7 +929,8 @@ Default: True</li>
 
             </div>
             <div><dt><a href="hive.html#Hive.Generator">sqlglot.dialects.hive.Hive.Generator</a></dt>
-                                <dd id="Spark.Generator.with_properties" class="function"><a href="hive.html#Hive.Generator.with_properties">with_properties</a></dd>
+                                <dd id="Spark.Generator.arrayagg_sql" class="function"><a href="hive.html#Hive.Generator.arrayagg_sql">arrayagg_sql</a></dd>
+                <dd id="Spark.Generator.with_properties" class="function"><a href="hive.html#Hive.Generator.with_properties">with_properties</a></dd>
                 <dd id="Spark.Generator.datatype_sql" class="function"><a href="hive.html#Hive.Generator.datatype_sql">datatype_sql</a></dd>
 
             </div>

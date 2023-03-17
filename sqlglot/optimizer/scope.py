@@ -598,7 +598,7 @@ def _traverse_tables(scope):
                 # This is a reference to a parent source (e.g. a CTE), not an actual table.
                 sources[source_name] = scope.sources[table_name]
             elif source_name in sources:
-                sources[find_new_name(sources.keys(), table_name)] = expression
+                sources[find_new_name(sources, table_name)] = expression
             else:
                 sources[source_name] = expression
             continue

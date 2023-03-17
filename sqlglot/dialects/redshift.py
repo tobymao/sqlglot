@@ -20,7 +20,11 @@ class Redshift(Postgres):
     class Parser(Postgres.Parser):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,  # type: ignore
-            "DATEADD": exp.DateAdd.from_arg_list,
+            "DATEADD": lambda args: exp.DateAdd(
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
+            ),
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2),
                 expression=seq_get(args, 1),
@@ -77,9 +81,11 @@ class Redshift(Postgres):
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,  # type: ignore
             **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
-            exp.DateAdd: rename_func("DATEADD"),  # redshift supports DATEADD, postgres doesn't
+            exp.DateAdd: lambda self, e: self.func(
+                "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this
+            ),
             exp.DateDiff: lambda self, e: self.func(
-                "DATEDIFF", e.args.get("unit") or "day", e.expression, e.this
+                "DATEDIFF", exp.var(e.text("unit") or "day"), e.expression, e.this
             ),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),

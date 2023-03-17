@@ -7,7 +7,7 @@ class TestRedshift(Validator):
     def test_redshift(self):
         self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})
         self.validate_all(
-            "DATE_ADD('day', ndays, caldate)", write={"redshift": "DATEADD('day', ndays, caldate)"}
+            "DATEADD('day', ndays, caldate)", write={"redshift": "DATEADD(day, ndays, caldate)"}
         )
         self.validate_all(
             'create table "group" ("col" char(10))',
@@ -83,10 +83,10 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
-            "DATEDIFF(d, a, b)",
+            "DATEDIFF('day', a, b)",
             write={
-                "redshift": "DATEDIFF(d, a, b)",
-                "presto": "DATE_DIFF(d, a, b)",
+                "redshift": "DATEDIFF(day, a, b)",
+                "presto": "DATE_DIFF('day', a, b)",
             },
         )
         self.validate_all(

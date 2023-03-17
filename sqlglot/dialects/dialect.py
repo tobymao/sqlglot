@@ -388,6 +388,21 @@ def parse_date_delta(
     return inner_func
 
 
+def date_trunc_to_time(args: t.Sequence) -> exp.DateTrunc | exp.TimestampTrunc:
+    unit = seq_get(args, 0)
+    this = seq_get(args, 1)
+
+    if isinstance(this, exp.Cast) and this.is_type(exp.DataType.Type.DATE):
+        return exp.DateTrunc(unit=unit, this=this)
+    return exp.TimestampTrunc(this=this, unit=unit)
+
+
+def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
+    return self.func(
+        "DATE_TRUNC", exp.Literal.string(expression.text("unit") or "day"), expression.this
+    )
+
+
 def locate_to_strposition(args: t.Sequence) -> exp.Expression:
     return exp.StrPosition(
         this=seq_get(args, 1),

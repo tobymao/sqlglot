@@ -3161,7 +3161,7 @@ class TimeUnit(Expression):
 
     def __init__(self, **args):
         unit = args.get("unit")
-        if isinstance(unit, Column):
+        if isinstance(unit, (Column, Literal)):
             args["unit"] = Var(this=unit.name)
         elif isinstance(unit, Week):
             unit.set("this", Var(this=unit.this.name))

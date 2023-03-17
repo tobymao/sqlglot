@@ -57,10 +57,10 @@ class Generator:
 
     TRANSFORMS = {
         exp.DateAdd: lambda self, e: self.func(
-            "DATE_ADD", e.this, e.expression, e.args.get("unit")
+            "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
         ),
         exp.TsOrDsAdd: lambda self, e: self.func(
-            "TS_OR_DS_ADD", e.this, e.expression, e.args.get("unit")
+            "TS_OR_DS_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
         ),
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",

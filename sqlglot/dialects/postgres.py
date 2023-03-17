@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     rename_func,
     str_position_sql,
+    timestamptrunc_sql,
     trim_sql,
 )
 from sqlglot.helper import seq_get
@@ -34,7 +35,7 @@ def _date_add_sql(kind):
         from sqlglot.optimizer.simplify import simplify
 
         this = self.sql(expression, "this")
-        unit = self.sql(expression, "unit")
+        unit = expression.args.get("unit")
         expression = simplify(expression.args["expression"])
 
         if not isinstance(expression, exp.Literal):
@@ -255,9 +256,8 @@ class Postgres(Dialect):
             "TO_TIMESTAMP": _to_timestamp,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
             "GENERATE_SERIES": _generate_series,
-            "DATE_TRUNC": lambda args: exp.DateTrunc(
-                unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
-                this=seq_get(args, 1),
+            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
+                this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
         }
 
@@ -324,6 +324,7 @@ class Postgres(Dialect):
             exp.StrPosition: str_position_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,
+            exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,

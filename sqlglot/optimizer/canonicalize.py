@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import itertools
 
 from sqlglot import exp
+from sqlglot.helper import should_identify
 
 
-def canonicalize(expression: exp.Expression) -> exp.Expression:
+def canonicalize(expression: exp.Expression, identify: str = "safe") -> exp.Expression:
     """Converts a sql expression into a standard form.
 
     This method relies on annotate_types because many of the
@@ -11,8 +14,9 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
 
     Args:
         expression: The expression to canonicalize.
+        identify: Whether or not to force identify identifier.
     """
-    exp.replace_children(expression, canonicalize)
+    exp.replace_children(expression, canonicalize, identify=identify)
 
     expression = add_text_to_concat(expression)
     expression = coerce_type(expression)
@@ -20,7 +24,8 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
     expression = ensure_bool_predicates(expression)
 
     if isinstance(expression, exp.Identifier):
-        expression.set("quoted", True)
+        if should_identify(expression.this, identify):
+            expression.set("quoted", True)
 
     return expression
 

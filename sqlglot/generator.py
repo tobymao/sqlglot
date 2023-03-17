@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
-from sqlglot.helper import apply_index_offset, csv, seq_get
+from sqlglot.helper import apply_index_offset, csv, seq_get, should_identify
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -25,8 +25,7 @@ class Generator:
         quote_end (str): specifies which ending character to use to delimit quotes. Default: '.
         identifier_start (str): specifies which starting character to use to delimit identifiers. Default: ".
         identifier_end (str): specifies which ending character to use to delimit identifiers. Default: ".
-        identify (bool): if set to True all identifiers will be delimited by the corresponding
-            character.
+        identify (bool | str): 'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.
         normalize (bool): if set to True all identifiers will lower cased
         string_escape (str): specifies a string escape character. Default: '.
         identifier_escape (str): specifies an identifier escape character. Default: ".
@@ -736,7 +735,7 @@ class Generator:
         text = expression.name
         text = text.lower() if self.normalize else text
         text = text.replace(self.identifier_end, self._escaped_identifier_end)
-        if expression.args.get("quoted") or self.identify:
+        if expression.args.get("quoted") or should_identify(text, self.identify):
             text = f"{self.identifier_start}{text}{self.identifier_end}"
         return text
 

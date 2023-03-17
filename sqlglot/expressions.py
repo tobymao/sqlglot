@@ -3681,6 +3681,7 @@ class Quantile(AggFunc):
 # https://clickhouse.com/docs/en/sql-reference/aggregate-functions/reference/quantiles/#quantiles
 class Quantiles(AggFunc):
     arg_types = {"parameters": True, "expressions": True}
+    is_var_len_args = True
 
 
 class QuantileIf(AggFunc):

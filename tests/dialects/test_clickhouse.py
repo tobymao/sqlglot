@@ -16,6 +16,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM foo ANY JOIN bla")
         self.validate_identity("SELECT quantile(0.5)(a)")
         self.validate_identity("SELECT quantiles(0.5)(a) AS x FROM t")
+        self.validate_identity("SELECT quantiles(0.1, 0.2, 0.3)(a)")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
         self.validate_identity("position(haystack, needle)")
         self.validate_identity("position(haystack, needle, position)")

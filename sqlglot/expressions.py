@@ -3523,6 +3523,10 @@ class Explode(Func):
     pass
 
 
+class ExponentialTimeDecayedAvg(AggFunc):
+    arg_types = {"this": True, "time": False, "decay": False}
+
+
 class Floor(Func):
     arg_types = {"this": True, "decimals": False}
 
@@ -3536,8 +3540,16 @@ class GroupConcat(Func):
     arg_types = {"this": True, "separator": False}
 
 
+class GroupUniqArray(AggFunc):
+    arg_types = {"this": True, "size": False}
+
+
 class Hex(Func):
     pass
+
+
+class Histogram(AggFunc):
+    arg_types = {"this": True, "bins": False}
 
 
 class If(Func):

@@ -3,12 +3,14 @@ from __future__ import annotations
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    date_trunc_to_time,
     format_time_lambda,
     if_sql,
     no_ilike_sql,
     no_safe_divide_sql,
     rename_func,
     struct_extract_sql,
+    timestamptrunc_sql,
     timestrtotime_sql,
 )
 from sqlglot.dialects.mysql import MySQL
@@ -98,10 +100,16 @@ def _ts_or_ds_to_date_sql(self, expression):
 
 
 def _ts_or_ds_add_sql(self, expression):
-    this = self.sql(expression, "this")
-    e = self.sql(expression, "expression")
-    unit = self.sql(expression, "unit") or "'day'"
-    return f"DATE_ADD({unit}, {e}, DATE_PARSE(SUBSTR({this}, 1, 10), {Presto.date_format}))"
+    return self.func(
+        "DATE_ADD",
+        exp.Literal.string(expression.text("unit") or "day"),
+        expression.expression,
+        self.func(
+            "DATE_PARSE",
+            self.func("SUBSTR", expression.this, exp.Literal.number(1), exp.Literal.number(10)),
+            Presto.date_format,
+        ),
+    )
 
 
 def _sequence_sql(self, expression):
@@ -195,6 +203,7 @@ class Presto(Dialect):
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
+            "DATE_TRUNC": date_trunc_to_time,
             "FROM_UNIXTIME": _from_unixtime,
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "STRPOS": lambda args: exp.StrPosition(
@@ -251,8 +260,12 @@ class Presto(Dialect):
             exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DataType: _datatype_sql,
-            exp.DateAdd: lambda self, e: f"""DATE_ADD({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
-            exp.DateDiff: lambda self, e: f"""DATE_DIFF({self.sql(e, 'unit') or "'day'"}, {self.sql(e, 'expression')}, {self.sql(e, 'this')})""",
+            exp.DateAdd: lambda self, e: self.func(
+                "DATE_ADD", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+            ),
+            exp.DateDiff: lambda self, e: self.func(
+                "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+            ),
             exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.date_format}) AS DATE)",
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.dateint_format}) AS INT)",
             exp.Decode: _decode_sql,
@@ -279,6 +292,7 @@ class Presto(Dialect):
             exp.StructExtract: struct_extract_sql,
             exp.TableFormatProperty: lambda self, e: f"TABLE_FORMAT='{e.name.upper()}'",
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
+            exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToDate: timestrtotime_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.time_format}))",

@@ -4817,7 +4817,7 @@ def convert(value) -> Expression:
     raise ValueError(f"Cannot convert {value}")
 
 
-def replace_children(expression, fun):
+def replace_children(expression, fun, *args, **kwargs):
     """
     Replace children of an expression with the result of a lambda fun(child) -> exp.
     """
@@ -4829,7 +4829,7 @@ def replace_children(expression, fun):
 
         for cn in child_nodes:
             if isinstance(cn, Expression):
-                for child_node in ensure_collection(fun(cn)):
+                for child_node in ensure_collection(fun(cn, *args, **kwargs)):
                     new_child_nodes.append(child_node)
                     child_node.parent = expression
                     child_node.arg_key = k

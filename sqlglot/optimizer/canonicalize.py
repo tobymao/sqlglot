@@ -17,6 +17,7 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
     expression = add_text_to_concat(expression)
     expression = coerce_type(expression)
     expression = remove_redundant_casts(expression)
+    expression = ensure_bool_predicates(expression)
 
     if isinstance(expression, exp.Identifier):
         expression.set("quoted", True)
@@ -52,6 +53,17 @@ def remove_redundant_casts(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def ensure_bool_predicates(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Connector):
+        _replace_int_predicate(expression.left)
+        _replace_int_predicate(expression.right)
+
+    elif isinstance(expression, (exp.Where, exp.Having)):
+        _replace_int_predicate(expression.this)
+
+    return expression
+
+
 def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
     for a, b in itertools.permutations([a, b]):
         if (
@@ -68,3 +80,8 @@ def _replace_cast(node: exp.Expression, to: str) -> None:
     cast = exp.Cast(this=node.copy(), to=data_type)
     cast.type = data_type
     node.replace(cast)
+
+
+def _replace_int_predicate(expression: exp.Expression) -> None:
+    if expression.type and expression.type.this in exp.DataType.INTEGER_TYPES:
+        expression.replace(exp.GT(this=expression.copy(), expression=exp.Literal.number(0)))

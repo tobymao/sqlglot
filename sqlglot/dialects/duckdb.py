@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     str_position_sql,
     str_to_time_sql,
+    timestamptrunc_sql,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
 )
@@ -179,6 +180,7 @@ class DuckDB(Dialect):
             exp.StrToTime: str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.Struct: _struct_sql,
+            exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",

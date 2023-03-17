@@ -5,11 +5,13 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    date_trunc_to_time,
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
     min_or_least,
     rename_func,
+    timestamptrunc_sql,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
     var_map_sql,
@@ -176,6 +178,7 @@ class Snowflake(Dialect):
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
+            "DATE_TRUNC": date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2),
                 expression=seq_get(args, 1),
@@ -185,10 +188,6 @@ class Snowflake(Dialect):
                 this=seq_get(args, 2),
                 expression=seq_get(args, 1),
                 unit=seq_get(args, 0),
-            ),
-            "DATE_TRUNC": lambda args: exp.DateTrunc(
-                unit=exp.Literal.string(seq_get(args, 0).name),  # type: ignore
-                this=seq_get(args, 1),
             ),
             "DECODE": exp.Matches.from_arg_list,
             "DIV0": _div0_to_if,
@@ -289,6 +288,7 @@ class Snowflake(Dialect):
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),

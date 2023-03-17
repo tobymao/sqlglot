@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
 from sqlglot.errors import ParseError
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import parse_var_map
 from sqlglot.tokens import TokenType
 
@@ -40,7 +41,18 @@ class ClickHouse(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
+            "EXPONENTIALTIMEDECAYEDAVG": lambda params, args: exp.ExponentialTimeDecayedAvg(
+                this=seq_get(args, 0),
+                time=seq_get(args, 1),
+                decay=seq_get(params, 0),
+            ),
             "MAP": parse_var_map,
+            "HISTOGRAM": lambda params, args: exp.Histogram(
+                this=seq_get(args, 0), bins=seq_get(params, 0)
+            ),
+            "GROUPUNIQARRAY": lambda params, args: exp.GroupUniqArray(
+                this=seq_get(args, 0), size=seq_get(params, 0)
+            ),
             "QUANTILE": lambda params, args: exp.Quantile(this=args, quantile=params),
             "QUANTILES": lambda params, args: exp.Quantiles(parameters=params, expressions=args),
             "QUANTILEIF": lambda params, args: exp.QuantileIf(parameters=params, expressions=args),
@@ -113,22 +125,40 @@ class ClickHouse(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
-            exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
+            exp.ExponentialTimeDecayedAvg: lambda self, e: f"exponentialTimeDecayedAvg{self._param_args_sql(e, 'decay', ['this', 'time'])}",
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
+            exp.GroupUniqArray: lambda self, e: f"groupUniqArray{self._param_args_sql(e, 'size', 'this')}",
+            exp.Histogram: lambda self, e: f"histogram{self._param_args_sql(e, 'bins', 'this')}",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
-            exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Quantile: lambda self, e: f"quantile{self._param_args_sql(e, 'quantile', 'this')}",
             exp.Quantiles: lambda self, e: f"quantiles{self._param_args_sql(e, 'parameters', 'expressions')}",
             exp.QuantileIf: lambda self, e: f"quantileIf{self._param_args_sql(e, 'parameters', 'expressions')}",
+            exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
+            exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
         }
 
         EXPLICIT_UNION = True
 
         def _param_args_sql(
-            self, expression: exp.Expression, params_name: str, args_name: str
+            self,
+            expression: exp.Expression,
+            param_names: str | t.List[str],
+            arg_names: str | t.List[str],
         ) -> str:
-            params = self.format_args(self.expressions(expression, params_name))
-            args = self.format_args(self.expressions(expression, args_name))
+            params = self.format_args(
+                *(
+                    arg
+                    for name in ensure_list(param_names)
+                    for arg in ensure_list(expression.args.get(name))
+                )
+            )
+            args = self.format_args(
+                *(
+                    arg
+                    for name in ensure_list(arg_names)
+                    for arg in ensure_list(expression.args.get(name))
+                )
+            )
             return f"({params})({args})"
 
         def cte_sql(self, expression: exp.CTE) -> str:

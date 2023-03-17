@@ -4,6 +4,7 @@ from enum import Enum, auto
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
+from sqlglot.helper import find_new_name
 
 
 class ScopeType(Enum):
@@ -293,6 +294,8 @@ class Scope:
             result = {}
 
             for name, node in referenced_names:
+                if name in result:
+                    raise OptimizeError(f"Alias already used: {name}")
                 if name in self.sources:
                     result[name] = (node, self.sources[name])
 
@@ -594,6 +597,8 @@ def _traverse_tables(scope):
             if table_name in scope.sources:
                 # This is a reference to a parent source (e.g. a CTE), not an actual table.
                 sources[source_name] = scope.sources[table_name]
+            elif source_name in sources:
+                sources[find_new_name(sources.keys(), table_name)] = expression
             else:
                 sources[source_name] = expression
             continue

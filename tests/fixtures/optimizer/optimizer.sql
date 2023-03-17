@@ -453,3 +453,11 @@ LEFT JOIN "unlocked" AS "unlocked"
 WHERE
   CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE
   AND NOT "company_table_2"."id" IS NULL;
+
+# title: db.table alias clash
+# execute: false
+select * from db1.tbl, db2.tbl;
+SELECT
+  *
+FROM "db1"."tbl" AS "tbl"
+CROSS JOIN "db2"."tbl" AS "tbl_2";

@@ -34,11 +34,9 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
                 derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))
                 scope.rename_source(None, alias_)
 
-        for source in scope.sources.values():
+        for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
-                identifier = isinstance(source.this, exp.Identifier)
-
-                if identifier:
+                if isinstance(source.this, exp.Identifier):
                     if not source.args.get("db"):
                         source.set("db", exp.to_identifier(db))
                     if not source.args.get("catalog"):
@@ -48,7 +46,7 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
                     source = source.replace(
                         alias(
                             source.copy(),
-                            source.this if identifier else next_name(),
+                            name if name else next_name(),
                             table=True,
                         )
                     )

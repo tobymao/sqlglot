@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v11.4.0
+______
+
+- Breaking/Improvement: Canonicalization now only quotes when safe.
+
 v11.3.0
 ------
 

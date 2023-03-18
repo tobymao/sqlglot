@@ -935,7 +935,7 @@ class Column(Condition):
 
     def to_dot(self) -> Expression:
         fields = [val for val in reversed(list(self.args.values())) if val is not None]
-        return t.cast(Expression, Dot.from_list(fields + list(self.find_all_ancestors())))
+        return t.cast(Expression, Dot.from_list(fields + list(self.find_all_ancestors(Dot))))
 
 
 class ColumnDef(Expression):

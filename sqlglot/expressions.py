@@ -301,7 +301,7 @@ class Expression(metaclass=_Expression):
         the specified types.
 
         Args:
-            expression_types (type): the expression type(s) to match.
+            expression_types: the expression type(s) to match.
 
         Returns:
             The node which matches the criteria or None if no such node was found.
@@ -314,7 +314,7 @@ class Expression(metaclass=_Expression):
         yields those that match at least one of the specified expression types.
 
         Args:
-            expression_types (type): the expression type(s) to match.
+            expression_types: the expression type(s) to match.
 
         Returns:
             The generator object.
@@ -328,7 +328,7 @@ class Expression(metaclass=_Expression):
         Returns a nearest parent matching expression_types.
 
         Args:
-            expression_types (type): the expression type(s) to match.
+            expression_types: the expression type(s) to match.
 
         Returns:
             The parent node.
@@ -336,8 +336,7 @@ class Expression(metaclass=_Expression):
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
-        # ignore type because mypy doesn't know that we're checking type in the loop
-        return ancestor  # type: ignore[return-value]
+        return t.cast(E, ancestor)
 
     @property
     def parent_select(self):
@@ -909,6 +908,23 @@ class Column(Condition):
     @property
     def output_name(self) -> str:
         return self.name
+
+    @property
+    def parts(self) -> t.List[Identifier]:
+        """Return the parts of a column in order catalog, db, table, name."""
+        return [part for part in reversed(list(self.args.values())) if part]
+
+    def to_dot(self) -> Dot:
+        """Converts the column into a dot expression."""
+        parts = self.parts
+        parent = self.parent
+
+        while parent:
+            if isinstance(parent, Dot):
+                parts.append(parent.expression)
+            parent = parent.parent
+
+        return Dot.build(parts)
 
 
 class ColumnDef(Expression):
@@ -2986,6 +3002,20 @@ class Dot(Binary):
     @property
     def name(self) -> str:
         return self.expression.name
+
+    @classmethod
+    def build(self, expressions: t.Sequence[Expression]) -> Dot:
+        """Build a Dot object with a sequence of expressions."""
+        if len(expressions) < 2:
+            raise ValueError(f"Dot requires >= 2 expressions.")
+
+        a, b, *expressions = expressions
+        dot = Dot(this=a, expression=b)
+
+        for expression in expressions:
+            dot = Dot(this=dot, expression=expression)
+
+        return dot
 
 
 class DPipe(Binary):

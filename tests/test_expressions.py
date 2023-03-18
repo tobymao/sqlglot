@@ -6,6 +6,8 @@ from sqlglot import alias, exp, parse_one
 
 
 class TestExpressions(unittest.TestCase):
+    maxDiff = None
+
     def test_arg_key(self):
         self.assertEqual(parse_one("sum(1)").find(exp.Literal).arg_key, "this")
 
@@ -90,6 +92,32 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(column, exp.Column)
         self.assertIsInstance(column.parent_select, exp.Select)
         self.assertIsNone(column.find_ancestor(exp.Join))
+
+    def test_to_dot(self):
+        column = parse_one('a.b.c."d".e.f').find(exp.Column)
+        dot = column.to_dot()
+
+        self.assertEqual(dot.sql(), 'a.b.c."d".e.f')
+
+        self.assertEqual(
+            dot,
+            exp.Dot(
+                this=exp.Dot(
+                    this=exp.Dot(
+                        this=exp.Dot(
+                            this=exp.Dot(
+                                this=exp.to_identifier("a"),
+                                expression=exp.to_identifier("b"),
+                            ),
+                            expression=exp.to_identifier("c"),
+                        ),
+                        expression=exp.to_identifier("d", quoted=True),
+                    ),
+                    expression=exp.to_identifier("e"),
+                ),
+                expression=exp.to_identifier("f"),
+            ),
+        )
 
     def test_root(self):
         ast = parse_one("select * from (select a from x)")

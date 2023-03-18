@@ -2,10 +2,12 @@ import datetime
 import math
 import unittest
 
-from sqlglot import alias, exp, parse, parse_one
+from sqlglot import alias, exp, parse_one
 
 
 class TestExpressions(unittest.TestCase):
+    maxDiff = None
+
     def test_arg_key(self):
         self.assertEqual(parse_one("sum(1)").find(exp.Literal).arg_key, "this")
 
@@ -91,50 +93,31 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(column.parent_select, exp.Select)
         self.assertIsNone(column.find_ancestor(exp.Join))
 
-    def test_find_all_ancestors(self):
-        column = parse_one("select 1 + FUNC(1 + b.x)").find(exp.Column)
-
-        ancestor_sqls = [
-            ancestor.sql() for ancestor in column.find_all_ancestors(exp.Add, only_immediate=False)
-        ]
-        expected_ancestor_sqls = ["1 + b.x", "1 + FUNC(1 + b.x)"]
-
-        self.assertEqual(len(ancestor_sqls), 2)
-        self.assertEqual(ancestor_sqls[0], expected_ancestor_sqls[0])
-        self.assertEqual(ancestor_sqls[1], expected_ancestor_sqls[1])
-
-        only_immediate_ancestors = list(column.find_all_ancestors(exp.Add))
-
-        self.assertEqual(len(only_immediate_ancestors), 1)
-        self.assertEqual(only_immediate_ancestors[0].sql(), expected_ancestor_sqls[0])
-
     def test_to_dot(self):
-        column = parse_one('a.b.c."d"')
+        column = parse_one('a.b.c."d".e.f').find(exp.Column)
         dot = column.to_dot()
 
-        self.assertEqual(dot.sql(), column.sql())
+        self.assertEqual(dot.sql(), 'a.b.c."d".e.f')
 
-        self.assertIsInstance(dot, exp.Dot)
-        self.assertIsInstance(dot.this, exp.Dot)
-        self.assertIsInstance(dot.expression, exp.Identifier)
-        self.assertIsInstance(dot.this.this, exp.Dot)
-        self.assertIsInstance(dot.this.expression, exp.Identifier)
-        self.assertIsInstance(dot.this.this.this, exp.Identifier)
-        self.assertIsInstance(dot.this.this.expression, exp.Identifier)
-
-    def test_dot_from_list(self):
-        self.assertIsNone(exp.Dot.from_list([]))
-
-        select = exp.Dot.from_list([parse_one("SELECT 1")])
-
-        self.assertIsInstance(select, exp.Select)
-        self.assertEqual(select.sql(), "SELECT 1")
-
-        idents = parse('a;b;c;"d"')
-        dot = exp.Dot.from_list(idents)
-
-        self.assertIsInstance(dot, exp.Dot)
-        self.assertEqual(dot.sql(), 'a.b.c."d"')
+        self.assertEqual(
+            dot,
+            exp.Dot(
+                this=exp.Dot(
+                    this=exp.Dot(
+                        this=exp.Dot(
+                            this=exp.Dot(
+                                this=exp.to_identifier("a"),
+                                expression=exp.to_identifier("b"),
+                            ),
+                            expression=exp.to_identifier("c"),
+                        ),
+                        expression=exp.to_identifier("d", quoted=True),
+                    ),
+                    expression=exp.to_identifier("e"),
+                ),
+                expression=exp.to_identifier("f"),
+            ),
+        )
 
     def test_root(self):
         ast = parse_one("select * from (select a from x)")

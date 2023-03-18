@@ -218,27 +218,17 @@ def _qualify_columns(scope, resolver):
             # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
             # separately and represented as dot(dot(...(<table>.<column>, field1), field2, ...))
 
-            struct_root, *struct_fields = [
-                val for val in reversed(list(column.args.values())) if val is not None
-            ]
+            root, *parts = column.parts
 
-            if struct_root.name in scope.sources:
+            if root.name in scope.sources:
                 # struct is already qualified, but we still need to change the AST representation
-                struct_table = struct_root
-                struct_root, *struct_fields = struct_fields
+                column_table = root
+                root, *parts = parts
             else:
-                struct_table = resolver.get_table(struct_root.name)
+                column_table = resolver.get_table(root.name)
 
-            if struct_table:
-                while column.parent and isinstance(column.parent, exp.Dot):
-                    column = column.parent
-                    struct_fields.append(column.expression)
-
-                new_column = exp.column(struct_root, table=struct_table)
-                for field in struct_fields:
-                    new_column = exp.Dot(this=new_column, expression=field)
-
-                column.replace(new_column)
+            if column_table:
+                column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
 
     columns_missing_from_scope = []
     # Determine whether each reference in the order by clause is to a column or an alias.

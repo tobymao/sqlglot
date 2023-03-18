@@ -370,8 +370,9 @@ class Parser(metaclass=_Parser):
     LAMBDAS = {
         TokenType.ARROW: lambda self, expressions: self.expression(
             exp.Lambda,
-            this=self._parse_conjunction().transform(
-                self._replace_lambda, {node.name for node in expressions}, copy=False
+            this=self._replace_lambda(
+                self._parse_conjunction(),
+                {node.name for node in expressions},
             ),
             expressions=expressions,
         ),
@@ -4050,7 +4051,16 @@ class Parser(metaclass=_Parser):
         return this
 
     def _replace_lambda(self, node, lambda_variables):
-        if isinstance(node, exp.Column):
-            if tuple(arg for arg in node.args.values() if arg)[-1].name in lambda_variables:
-                return node.to_dot()
+        for column in node.find_all(exp.Column):
+            if column.parts[0].name in lambda_variables:
+                dot_or_id = column.to_dot() if column.table else column.this
+                parent = column.parent
+
+                while isinstance(parent, exp.Dot):
+                    if not isinstance(parent.parent, exp.Dot):
+                        parent.replace(dot_or_id)
+                        break
+                    parent = parent.parent
+                else:
+                    column.replace(dot_or_id)
         return node

@@ -102,6 +102,13 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
         self.assertEqual(expressions[2].sql(), "SELECT 1")
 
+    def test_lambda_struct(self):
+        expression = parse_one("FILTER(a.b, x -> x.id = id)")
+        lambda_expr = expression.expression
+
+        self.assertIsInstance(lambda_expr.this.this, exp.Dot)
+        self.assertEqual(lambda_expr.sql(), "x -> x.id = id")
+
     def test_transactions(self):
         expression = parse_one("BEGIN TRANSACTION")
         self.assertIsNone(expression.this)

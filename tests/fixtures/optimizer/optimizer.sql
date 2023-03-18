@@ -409,15 +409,6 @@ SELECT
   FROM_JSON("tbl"."value", 'STRUCT<f1: STRUCT<f2: INTEGER>, STRUCT<f3: STRING>>')."f1"."f3" AS "f3"
 FROM "tbl" AS "tbl";
 
-# title: struct as lambda variable
-# execute: false
-SELECT FILTER(a.b, x -> x.id = tbl.id) as cola FROM tbl LATERAL VIEW EXPLODE(array_col) as bla;
-SELECT
-  FILTER("tbl"."a"."b", "x" -> "x"."id" = "tbl"."id") AS "cola"
-FROM "tbl" AS "tbl"
-LATERAL VIEW
-EXPLODE("tbl"."array_col") _q_0 AS "bla";
-
 # title: left join doesnt push down predicate to join in merge subqueries
 # execute: false
 SELECT

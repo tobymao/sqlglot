@@ -301,7 +301,7 @@ class Expression(metaclass=_Expression):
         the specified types.
 
         Args:
-            expression_types (type): the expression type(s) to match.
+            expression_types: the expression type(s) to match.
 
         Returns:
             The node which matches the criteria or None if no such node was found.
@@ -314,7 +314,7 @@ class Expression(metaclass=_Expression):
         yields those that match at least one of the specified expression types.
 
         Args:
-            expression_types (type): the expression type(s) to match.
+            expression_types: the expression type(s) to match.
 
         Returns:
             The generator object.
@@ -328,7 +328,7 @@ class Expression(metaclass=_Expression):
         Returns a nearest parent matching expression_types.
 
         Args:
-            expression_types (type): the expression type(s) to match.
+            expression_types: the expression type(s) to match.
 
         Returns:
             The parent node.
@@ -336,8 +336,31 @@ class Expression(metaclass=_Expression):
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
+
         # ignore type because mypy doesn't know that we're checking type in the loop
         return ancestor  # type: ignore[return-value]
+
+    def find_all_ancestors(
+        self, *expression_types: t.Type[E], only_immediate: bool = True
+    ) -> t.Iterator[E]:
+        """
+        Returns a generator object which visits all ancestor nodes in this tree and
+        only yields those that match at least one of the specified expression types.
+
+        Args:
+            expression_types: the expression type(s) to match.
+            only_immediate: if True, stops at first non-matching ancestor.
+
+        Returns:
+            The generator object.
+        """
+        ancestor = self.parent
+        while ancestor:
+            if isinstance(ancestor, expression_types):
+                yield t.cast(E, ancestor)
+            elif only_immediate:
+                break
+            ancestor = ancestor.parent
 
     @property
     def parent_select(self):
@@ -909,6 +932,10 @@ class Column(Condition):
     @property
     def output_name(self) -> str:
         return self.name
+
+    def to_dot(self) -> Expression:
+        fields = [val for val in reversed(list(self.args.values())) if val is not None]
+        return t.cast(Expression, Dot.from_list(fields + list(self.find_all_ancestors())))
 
 
 class ColumnDef(Expression):
@@ -2986,6 +3013,18 @@ class Dot(Binary):
     @property
     def name(self) -> str:
         return self.expression.name
+
+    @classmethod
+    def from_list(self, expressions: t.List[Expression]) -> t.Optional[Expression]:
+        if len(expressions) < 2:
+            return seq_get(expressions, 0)
+
+        this, expression, *expressions = deepcopy(expressions)
+        dot = Dot(this=this, expression=expression)
+        for expression in expressions:
+            dot = Dot(this=dot, expression=expression)
+
+        return dot
 
 
 class DPipe(Binary):

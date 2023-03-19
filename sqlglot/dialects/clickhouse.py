@@ -130,6 +130,7 @@ class ClickHouse(Dialect):
             exp.GroupUniqArray: lambda self, e: f"groupUniqArray{self._param_args_sql(e, 'size', 'this')}",
             exp.Histogram: lambda self, e: f"histogram{self._param_args_sql(e, 'bins', 'this')}",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.ParametricAnonymous: lambda self, e: f"{e.this}{self._param_args_sql(e, 'parameters', 'expressions')}",
             exp.Quantile: lambda self, e: f"quantile{self._param_args_sql(e, 'quantile', 'this')}",
             exp.Quantiles: lambda self, e: f"quantiles{self._param_args_sql(e, 'parameters', 'expressions')}",
             exp.QuantileIf: lambda self, e: f"quantileIf{self._param_args_sql(e, 'parameters', 'expressions')}",

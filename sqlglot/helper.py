@@ -356,15 +356,6 @@ def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:
             yield value
 
 
-def count_params(function: t.Callable) -> int:
-    """
-    Returns the number of formal parameters expected by a function, without counting "self"
-    and "cls", in case of instance and class methods, respectively.
-    """
-    count = function.__code__.co_argcount
-    return count - 1 if inspect.ismethod(function) else count
-
-
 def dict_depth(d: t.Dict) -> int:
     """
     Get the nesting depth of a dictionary.

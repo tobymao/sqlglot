@@ -3273,6 +3273,11 @@ class Anonymous(Func):
     is_var_len_args = True
 
 
+class ParametricAnonymous(Func):
+    arg_types = {"this": True, "parameters": True, "expressions": False}
+    is_var_len_args = True
+
+
 class ApproxDistinct(AggFunc):
     arg_types = {"this": True, "accuracy": False}
 

@@ -6,13 +6,7 @@ from collections import defaultdict
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
-from sqlglot.helper import (
-    apply_index_offset,
-    count_params,
-    ensure_collection,
-    ensure_list,
-    seq_get,
-)
+from sqlglot.helper import apply_index_offset, ensure_collection, ensure_list, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
@@ -2849,21 +2843,23 @@ class Parser(metaclass=_Parser):
             function = functions.get(upper)
             args = self._parse_csv(self._parse_lambda)
 
-            if function:
-                # Clickhouse supports function calls like foo(x, y)(z), so for these we need to also parse the
-                # second parameter list (i.e. "(z)") and the corresponding function will receive both arg lists.
-                if count_params(function) == 2:
-                    params = None
-                    if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
-                        params = self._parse_csv(self._parse_lambda)
-
-                    this = function(args, params)
+            # ClickHouse supports parametric function calls like `foo(param1, param2)(arg1, arg2)`
+            if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
+                params = args
+                args = self._parse_csv(self._parse_lambda)
+                if function:
+                    this = function(params, args)
                 else:
-                    this = function(args)
-
-                self.validate_expression(this, args)
+                    this = self.expression(
+                        exp.ParametricAnonymous, this=this, parameters=params, expressions=args
+                    )
             else:
-                this = self.expression(exp.Anonymous, this=this, expressions=args)
+                if function:
+                    this = function(args)
+                else:
+                    this = self.expression(exp.Anonymous, this=this, expressions=args)
+
+            self.validate_expression(this, args)
 
         self._match_r_paren(this)
         return self._parse_window(this)

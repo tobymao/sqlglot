@@ -94,13 +94,10 @@ class PythonExecutor:
         if source and isinstance(source, exp.Expression):
             source = source.name or source.alias
 
-        condition = self.generate(step.condition)
-        projections = self.generate_tuple(step.projections)
-
         if source is None:
             context, table_iter = self.static()
         elif source in context:
-            if not projections and not condition:
+            if not step.projections and not step.condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
         elif isinstance(step.source, exp.Table) and isinstance(step.source.this, exp.ReadCSV):
@@ -109,10 +106,12 @@ class PythonExecutor:
         else:
             context, table_iter = self.scan_table(step)
 
-        if projections:
-            sink = self.table(step.projections)
-        else:
-            sink = self.table(context.columns)
+        return self.context({step.name: self._project_and_filter(context, step, table_iter)})
+
+    def _project_and_filter(self, context, step, table_iter):
+        sink = self.table(step.projections if step.projections else context.columns)
+        condition = self.generate(step.condition)
+        projections = self.generate_tuple(step.projections)
 
         for reader in table_iter:
             if len(sink) >= step.limit:
@@ -126,7 +125,7 @@ class PythonExecutor:
             else:
                 sink.append(reader.row)
 
-        return self.context({step.name: sink})
+        return sink
 
     def static(self):
         return self.context({}), [RowReader(())]
@@ -185,27 +184,16 @@ class PythonExecutor:
             if condition:
                 source_context.filter(condition)
 
-        condition = self.generate(step.condition)
-        projections = self.generate_tuple(step.projections)
-
-        if not condition and not projections:
+        if not step.condition and not step.projections:
             return source_context
 
-        sink = self.table(step.projections if projections else source_context.columns)
+        sink = self._project_and_filter(
+            source_context,
+            step,
+            (reader for reader, _ in iter(source_context)),
+        )
 
-        for reader, ctx in source_context:
-            if condition and not ctx.eval(condition):
-                continue
-
-            if projections:
-                sink.append(ctx.eval_tuple(projections))
-            else:
-                sink.append(reader.row)
-
-            if len(sink) >= step.limit:
-                break
-
-        if projections:
+        if step.projections:
             return self.context({step.name: sink})
         else:
             return self.context(

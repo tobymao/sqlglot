@@ -424,6 +424,10 @@ COMMENT='客户账户表'"""
         show = self.validate_identity("SHOW INDEX FROM foo FROM bar")
         self.assertEqual(show.text("db"), "bar")
 
+        self.validate_all(
+            "SHOW INDEX FROM bar.foo", write={"mysql": "SHOW INDEX FROM foo FROM bar"}
+        )
+
     def test_show_db_like_or_where_sql(self):
         for key in [
             "OPEN TABLES",

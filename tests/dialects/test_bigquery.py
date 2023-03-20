@@ -6,6 +6,8 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
+        self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
         self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_identity(
@@ -13,6 +15,12 @@ class TestBigQuery(Validator):
         )
 
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
+        self.validate_all(
+            "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
+            write={
+                "bigquery": "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
+            },
+        )
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",
             read={"bigquery": "REGEXP_CONTAINS('foo', '.*')"},

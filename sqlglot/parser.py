@@ -1704,6 +1704,11 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.SELECT):
             comments = self._prev_comments
 
+            kind = (
+                self._match(TokenType.ALIAS)
+                and self._match_texts(("STRUCT", "VALUE"))
+                and self._prev.text
+            )
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
             distinct = self._match(TokenType.DISTINCT)
@@ -1722,6 +1727,7 @@ class Parser(metaclass=_Parser):
 
             this = self.expression(
                 exp.Select,
+                kind=kind,
                 hint=hint,
                 distinct=distinct,
                 expressions=expressions,

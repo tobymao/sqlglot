@@ -2058,6 +2058,7 @@ class Lock(Expression):
 class Select(Subqueryable):
     arg_types = {
         "with": False,
+        "kind": False,
         "expressions": False,
         "hint": False,
         "distinct": False,

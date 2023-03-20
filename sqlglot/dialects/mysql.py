@@ -303,7 +303,13 @@ class MySQL(Dialect):
                 db = None
             else:
                 position = None
-                db = self._parse_id_var() if self._match_text_seq("FROM") else None
+                db = None
+
+                if self._match(TokenType.FROM):
+                    db = self._parse_id_var()
+                elif self._match(TokenType.DOT):
+                    db = target_id
+                    target_id = self._parse_id_var()
 
             channel = self._parse_id_var() if self._match_text_seq("FOR", "CHANNEL") else None
 

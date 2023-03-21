@@ -11,6 +11,7 @@ from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
+    TPCDS_SCHEMA,
     TPCH_SCHEMA,
     load_sql_fixture_pairs,
     load_sql_fixtures,
@@ -256,6 +257,9 @@ class TestOptimizer(unittest.TestCase):
 
     def test_tpch(self):
         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
+
+    def test_tpds(self):
+        self.check_file("tpc-ds/tpc-ds", optimizer.optimize, schema=TPCDS_SCHEMA, pretty=True)
 
     def test_file_schema(self):
         expression = parse_one(

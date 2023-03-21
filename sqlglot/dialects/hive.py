@@ -34,6 +34,13 @@ DATE_DELTA_INTERVAL = {
     "DAY": ("DATE_ADD", 1),
 }
 
+TIME_DIFF_FACTOR = {
+    "MILLISECOND": " * 1000",
+    "SECOND": " ",
+    "MINUTE": " / 60",
+    "HOUR": " / 3600",
+}
+
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 
@@ -51,6 +58,12 @@ def _add_date_sql(self: generator.Generator, expression: exp.DateAdd) -> str:
 
 def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     unit = expression.text("unit").upper()
+
+    factor = TIME_DIFF_FACTOR.get(unit)
+    if factor is not None:
+        sec_diff = f"UNIX_TIMESTAMP({expression.this}) - UNIX_TIMESTAMP({expression.expression})"
+        return f"({sec_diff}){factor}" if factor else sec_diff
+
     sql_func = "MONTHS_BETWEEN" if unit in DIFF_MONTH_SWITCH else "DATEDIFF"
     _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
     multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""

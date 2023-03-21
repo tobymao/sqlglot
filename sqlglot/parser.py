@@ -1221,7 +1221,7 @@ class Parser(metaclass=_Parser):
 
             if not identified_property:
                 break
-            for p in ensure_collection(identified_property):
+            for p in ensure_list(identified_property):
                 properties.append(p)
 
         if properties:

@@ -75,7 +75,7 @@ def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
             a.type
             and a.type.this == exp.DataType.Type.DATE
             and b.type
-            and b.type.this != exp.DataType.Type.DATE
+            and b.type.this not in (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL)
         ):
             _replace_cast(b, "date")
 

@@ -3900,7 +3900,6 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
         return self.expression(exp.Pragma, this=this, schema=schema, value=value, func=func)
 
-
     def _parse_show(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore
         if parser:

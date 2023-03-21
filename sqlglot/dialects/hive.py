@@ -36,7 +36,7 @@ DATE_DELTA_INTERVAL = {
 
 TIME_DIFF_FACTOR = {
     "MILLISECOND": " * 1000",
-    "SECOND": " ",
+    "SECOND": "",
     "MINUTE": " / 60",
     "HOUR": " / 3600",
 }

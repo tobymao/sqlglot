@@ -247,25 +247,25 @@ class TestHive(Validator):
 
     def test_time(self):
         self.validate_all(
-            "SELECT (UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) * 1000",
+            "(UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) * 1000",
             read={
                 "presto": "DATE_DIFF('millisecond', x, y)",
             },
         )
         self.validate_all(
-            "SELECT UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)",
+            "UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)",
             read={
                 "presto": "DATE_DIFF('second', x, y)",
             },
         )
         self.validate_all(
-            "SELECT (UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) / 60",
+            "(UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) / 60",
             read={
                 "presto": "DATE_DIFF('minute', x, y)",
             },
         )
         self.validate_all(
-            "SELECT (UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) / 3600",
+            "(UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) / 3600",
             read={
                 "presto": "DATE_DIFF('hour', x, y)",
             },

@@ -507,21 +507,12 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
 
         more_than_max_errors = "(((("
         expected_messages = (
-            "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
             "Required keyword: 'this' missing for <class 'sqlglot.expressions.Paren'>. Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
+            "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
             "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
             "... and 2 more"
         )
         expected_errors = [
-            {
-                "description": "Expecting )",
-                "line": 1,
-                "col": 4,
-                "start_context": "(((",
-                "highlight": "(",
-                "end_context": "",
-                "into_expression": None,
-            },
             {
                 "description": "Required keyword: 'this' missing for <class 'sqlglot.expressions.Paren'>",
                 "line": 1,
@@ -531,9 +522,18 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
                 "end_context": "",
                 "into_expression": None,
             },
+            {
+                "description": "Expecting )",
+                "line": 1,
+                "col": 4,
+                "start_context": "(((",
+                "highlight": "(",
+                "end_context": "",
+                "into_expression": None,
+            },
         ]
         # Also expect three trailing structured errors that match the first
-        expected_errors += [expected_errors[0]] * 3
+        expected_errors += [expected_errors[1]] * 3
 
         with self.assertRaises(ParseError) as ctx:
             transpile(more_than_max_errors, error_level=ErrorLevel.RAISE)

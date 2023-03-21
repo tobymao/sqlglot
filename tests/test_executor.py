@@ -401,18 +401,12 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
-        schema = {"table1": {"type": "str", "id": "str", "parent_id": "str", "sub_type": "str"}}
+        table1_view = exp.Select().select('id', 'sub_type').from_('table1').subquery()
+        select_from_sub_query = exp.Select().select('id AS id_alias', 'sub_type').from_(table1_view)
+        expression = exp.Select().select('*').from_('cte1').with_('cte1', as_=select_from_sub_query)
 
-        executed = execute(
-            """
-            WITH cte1 AS (
-                SELECT id AS id_alias, sub_type
-                FROM (SELECT id, sub_type FROM table1)
-            ) SELECT * FROM cte1
-            """,
-            tables={t: [] for t in schema},
-            schema=schema,
-        )
+        schema = {"table1": {"id": "str", "sub_type": "str"}}
+        executed = execute(expression, tables={t: [] for t in schema}, schema=schema)
 
         self.assertEqual(executed.rows, [])
         self.assertEqual(executed.columns, ("id_alias", "sub_type"))

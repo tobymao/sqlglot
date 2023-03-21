@@ -61,7 +61,9 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
 
     factor = TIME_DIFF_FACTOR.get(unit)
     if factor is not None:
-        sec_diff = f"UNIX_TIMESTAMP({expression.this}) - UNIX_TIMESTAMP({expression.expression})"
+        left = self.sql(expression, "this")
+        right = self.sql(expression, "expression")
+        sec_diff = f"UNIX_TIMESTAMP({left}) - UNIX_TIMESTAMP({right})"
         return f"({sec_diff}){factor}" if factor else sec_diff
 
     sql_func = "MONTHS_BETWEEN" if unit in DIFF_MONTH_SWITCH else "DATEDIFF"

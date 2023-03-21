@@ -79,6 +79,9 @@ class TestParser(unittest.TestCase):
 
     def test_union_order(self):
         self.assertIsInstance(parse_one("SELECT * FROM (SELECT 1) UNION SELECT 2"), exp.Union)
+        self.assertIsInstance(
+            parse_one("SELECT x FROM y HAVING x > (SELECT 1) UNION SELECT 2"), exp.Union
+        )
 
     def test_select(self):
         self.assertIsNotNone(parse_one("select 1 natural"))

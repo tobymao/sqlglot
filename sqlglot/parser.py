@@ -2791,7 +2791,6 @@ class Parser(metaclass=_Parser):
 
             this = seq_get(expressions, 0)
             self._parse_query_modifiers(this)
-            self._match_r_paren()
 
             if isinstance(this, exp.Subqueryable):
                 this = self._parse_set_operations(
@@ -2800,7 +2799,9 @@ class Parser(metaclass=_Parser):
             elif len(expressions) > 1:
                 this = self.expression(exp.Tuple, expressions=expressions)
             else:
-                this = self.expression(exp.Paren, this=this)
+                this = self.expression(exp.Paren, this=self._parse_set_operations(this))
+
+            self._match_r_paren()
 
             if this and comments:
                 this.comments = comments
@@ -3660,7 +3661,7 @@ class Parser(metaclass=_Parser):
         return parse_result
 
     def _parse_select_or_expression(self) -> t.Optional[exp.Expression]:
-        return self._parse_select() or self._parse_expression()
+        return self._parse_select() or self._parse_set_operations(self._parse_expression())
 
     def _parse_ddl_select(self) -> t.Optional[exp.Expression]:
         return self._parse_set_operations(

@@ -37,6 +37,11 @@ class SQLite(Dialect):
             "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
+        FUNC_TOKENS = {
+            *parser.Parser.FUNC_TOKENS,
+            TokenType.GLOB,
+        }
+
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

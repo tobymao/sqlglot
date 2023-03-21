@@ -152,3 +152,9 @@ class TestSQLite(Validator):
             "CREATE TABLE foo (bar LONGVARCHAR)",
             write={"sqlite": "CREATE TABLE foo (bar TEXT)"},
         )
+
+    def test_function_glob(self):
+        self.validate_all(
+            "SELECT GLOB('*y*', 'xyz')",
+            write={"sqlite": "SELECT GLOB('*y*', 'xyz')"},
+        )

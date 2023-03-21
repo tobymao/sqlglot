@@ -401,14 +401,7 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
-        schema = {
-            'table1': {
-                'type': 'str',
-                'id': 'str',
-                'parent_id': 'str',
-                'sub_type': 'str'
-            }
-        }
+        schema = {"table1": {"type": "str", "id": "str", "parent_id": "str", "sub_type": "str"}}
 
         executed = execute(
             """

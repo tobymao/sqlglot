@@ -415,7 +415,7 @@ class TestExecutor(unittest.TestCase):
         )
 
         self.assertEqual(executed.rows, [])
-        self.assertEqual(executed.columns, ("mainid", "sub_type"))
+        self.assertEqual(executed.columns, ("id_alias", "sub_type"))
 
     def test_correlated_count(self):
         tables = {

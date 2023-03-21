@@ -401,6 +401,16 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
+        table1_view = exp.Select().select("id", "sub_type").from_("table1").subquery()
+        select_from_sub_query = exp.Select().select("id AS id_alias", "sub_type").from_(table1_view)
+        expression = exp.Select().select("*").from_("cte1").with_("cte1", as_=select_from_sub_query)
+
+        schema = {"table1": {"id": "str", "sub_type": "str"}}
+        executed = execute(expression, tables={t: [] for t in schema}, schema=schema)
+
+        self.assertEqual(executed.rows, [])
+        self.assertEqual(executed.columns, ("id_alias", "sub_type"))
+
     def test_correlated_count(self):
         tables = {
             "parts": [{"pnum": 0, "qoh": 1}],

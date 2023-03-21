@@ -1784,7 +1784,7 @@ class Subqueryable(Unionable):
         instance = _maybe_copy(self, copy)
         return Subquery(
             this=instance,
-            alias=TableAlias(this=to_identifier(alias)),
+            alias=TableAlias(this=to_identifier(alias)) if alias else None,
         )
 
     def limit(self, expression, dialect=None, copy=True, **opts) -> Select:

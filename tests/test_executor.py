@@ -401,6 +401,29 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
+        schema = {
+            'table1': {
+                'type': 'str',
+                'id': 'str',
+                'parent_id': 'str',
+                'sub_type': 'str'
+            }
+        }
+
+        executed = execute(
+            """
+            WITH cte1 AS (
+                SELECT id AS id_alias, sub_type
+                FROM (SELECT id, sub_type FROM table1)
+            ) SELECT * FROM cte1
+            """,
+            tables={t: [] for t in schema},
+            schema=schema,
+        )
+
+        self.assertEqual(executed.rows, [])
+        self.assertEqual(executed.columns, ("mainid", "sub_type"))
+
     def test_correlated_count(self):
         tables = {
             "parts": [{"pnum": 0, "qoh": 1}],

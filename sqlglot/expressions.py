@@ -336,7 +336,7 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        for expression, _, _ in self.walk(bfs=bfs):
+        for expression, *_ in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
                 yield expression
 

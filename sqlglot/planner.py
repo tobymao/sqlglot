@@ -175,7 +175,7 @@ class Step:
             }
             for projection in projections:
                 for i, e in aggregate.group.items():
-                    for child, _, _ in projection.walk():
+                    for child, *_ in projection.walk():
                         if child == e:
                             child.replace(exp.column(i, step.name))
             aggregate.add_dependency(step)

@@ -89,6 +89,20 @@ class Oracle(Dialect):
                 column.set("join_mark", self._match(TokenType.JOIN_MARKER))
             return column
 
+        def _parse_hint(self) -> t.Optional[exp.Expression]:
+            if self._match(TokenType.HINT):
+                start = self._curr
+                while self._curr and not self._match_pair(TokenType.STAR, TokenType.SLASH):
+                    self._advance()
+
+                if not self._curr:
+                    self.raise_error("Expected */ after HINT")
+
+                end = self._tokens[self._index - 3]
+                return exp.Hint(expressions=[self._find_sql(start, end)])
+
+            return None
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
 
@@ -110,17 +124,18 @@ class Oracle(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
+            exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.ILike: no_ilike_sql,
             exp.Limit: _limit_sql,
-            exp.Trim: trim_sql,
             exp.Matches: rename_func("DECODE"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
+            exp.Substring: rename_func("SUBSTR"),
             exp.Table: lambda self, e: self.table_sql(e, sep=" "),
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
-            exp.Substring: rename_func("SUBSTR"),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.Trim: trim_sql,
+            exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }
 
         def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:

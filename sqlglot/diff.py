@@ -151,8 +151,8 @@ class ChangeDistiller:
 
         self._source = source
         self._target = target
-        self._source_index = {id(n[0]): n[0] for n in source.bfs()}
-        self._target_index = {id(n[0]): n[0] for n in target.bfs()}
+        self._source_index = {id(n): n for n, *_ in self._source.bfs()}
+        self._target_index = {id(n): n for n, *_ in self._target.bfs()}
         self._unmatched_source_nodes = set(self._source_index) - set(pre_matched_nodes)
         self._unmatched_target_nodes = set(self._target_index) - set(pre_matched_nodes.values())
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
@@ -199,10 +199,10 @@ class ChangeDistiller:
         matching_set = leaves_matching_set.copy()
 
         ordered_unmatched_source_nodes = {
-            id(n[0]): None for n in self._source.bfs() if id(n[0]) in self._unmatched_source_nodes
+            id(n): None for n, *_ in self._source.bfs() if id(n) in self._unmatched_source_nodes
         }
         ordered_unmatched_target_nodes = {
-            id(n[0]): None for n in self._target.bfs() if id(n[0]) in self._unmatched_target_nodes
+            id(n): None for n, *_ in self._target.bfs() if id(n) in self._unmatched_target_nodes
         }
 
         for source_node_id in ordered_unmatched_source_nodes:
@@ -313,7 +313,9 @@ def _get_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
 
 
 def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:
-    if type(source) is type(target):
+    if type(source) is type(target) and (
+        not isinstance(source, exp.Identifier) or type(source.parent) is type(target.parent)
+    ):
         if isinstance(source, exp.Join):
             return source.args.get("side") == target.args.get("side")
 

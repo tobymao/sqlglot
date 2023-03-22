@@ -102,18 +102,17 @@ class Expression(metaclass=_Expression):
     def __eq__(self, other) -> bool:
         return type(self) is type(other) and hash(self) == hash(other)
 
+    @property
+    def hashable_args(self) -> t.Any:
+        return tuple(
+            (k, tuple(v) if isinstance(v, list) else v) for k, v in _norm_args(self).items()
+        )
+
     def __hash__(self) -> int:
         if self._hash is not None:
             return self._hash
 
-        return hash(
-            (
-                self.__class__,
-                tuple(
-                    (k, tuple(v) if isinstance(v, list) else v) for k, v in _norm_args(self).items()
-                ),
-            )
-        )
+        return hash((self.__class__, self.hashable_args))
 
     @property
     def this(self):
@@ -450,7 +449,7 @@ class Expression(metaclass=_Expression):
         """
         Returns unnested operands as a tuple.
         """
-        return tuple(arg.unnest() for arg in self.args.values() if arg)
+        return tuple(arg.unnest() for _, arg in self.iter_expressions())
 
     def flatten(self, unnest=True):
         """
@@ -1248,12 +1247,11 @@ class Identifier(Expression):
     def quoted(self):
         return bool(self.args.get("quoted"))
 
-    def __hash__(self):
-        if self._hash is not None:
-            return self._hash
+    @property
+    def hashable_args(self) -> t.Any:
         if self.quoted and any(char.isupper() for char in self.this):
-            return hash((self.__class__, self.this, self.quoted))
-        return hash((self.__class__, self.this.lower()))
+            return (self.this, self.quoted)
+        return self.this.lower()
 
     @property
     def output_name(self):
@@ -1339,10 +1337,9 @@ class Limit(Expression):
 class Literal(Condition):
     arg_types = {"this": True, "is_string": True}
 
-    def __hash__(self):
-        if self._hash is not None:
-            return self._hash
-        return hash((self.__class__, self.this, self.args.get("is_string")))
+    @property
+    def hashable_args(self) -> t.Any:
+        return (self.this, self.args.get("is_string"))
 
     @classmethod
     def number(cls, number) -> Literal:

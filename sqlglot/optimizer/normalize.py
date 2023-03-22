@@ -1,29 +1,45 @@
+from __future__ import annotations
+
+import typing as t
+
 from sqlglot import exp
 from sqlglot.helper import while_changing
-from sqlglot.optimizer.simplify import flatten, simplify, uniq_sort
+from sqlglot.optimizer.simplify import flatten, uniq_sort
 
 
-def normalize(expression, dnf=False, max_distance=128):
+def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_distance: int = 128):
     """
-    Rewrite sqlglot AST into conjunctive normal form.
+    Rewrite sqlglot AST into conjunctive normal form or disjunctive normal form.
 
     Example:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("(x AND y) OR z")
-        >>> normalize(expression).sql()
+        >>> normalize(expression, dnf=False).sql()
         '(x OR z) AND (y OR z)'
 
     Args:
-        expression (sqlglot.Expression): expression to normalize
-        dnf (bool): rewrite in disjunctive normal form instead
-        max_distance (int): the maximal estimated distance from cnf to attempt conversion
+        expression: expression to normalize
+        dnf: rewrite in disjunctive normal form instead. if none then it will choose the closest form.
+        max_distance (int): the maximal estimated distance from cnf/dnf to attempt conversion
     Returns:
         sqlglot.Expression: normalized expression
     """
-    expression = simplify(expression)
+    for node, *_ in tuple(
+        expression.walk(prune=lambda e, *_: isinstance(expression, exp.Connector))
+    ):
+        if isinstance(node, exp.Connector):
+            if dnf is None:
+                dnf = normalization_distance(node, dnf=False) > normalization_distance(
+                    node, dnf=True
+                )
 
-    expression = while_changing(expression, lambda e: distributive_law(e, dnf, max_distance))
-    return simplify(expression)
+            root = node is expression
+            node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance))
+
+            if root:
+                expression = node
+
+    return expression
 
 
 def normalized(expression, dnf=False):
@@ -80,13 +96,14 @@ def distributive_law(expression, dnf, max_distance):
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
     """
-    if isinstance(expression.unnest(), exp.Connector):
-        if normalization_distance(expression, dnf) > max_distance:
-            return expression
-
-    to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)
+    if (
+        normalized(expression, dnf=dnf)
+        or normalization_distance(expression, dnf=dnf) > max_distance
+    ):
+        return expression
 
     exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance))
+    to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)
 
     if isinstance(expression, from_exp):
         a, b = expression.unnest_operands()

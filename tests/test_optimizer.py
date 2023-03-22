@@ -138,10 +138,18 @@ class TestOptimizer(unittest.TestCase):
             "(x AND y) OR (x AND z)",
         )
 
-        self.check_file(
-            "normalize",
-            optimizer.normalize.normalize,
+        self.assertEqual(
+            optimizer.normalize.normalize(
+                parse_one("x AND (y OR z)"),
+            ).sql(),
+            "x AND (y OR z)",
         )
+
+        def normalize(expression, **kwargs):
+            expression = optimizer.normalize.normalize(expression, dnf=False)
+            return optimizer.simplify.simplify(expression)
+
+        self.check_file("normalize", normalize)
 
     def test_qualify_columns(self):
         def qualify_columns(expression, **kwargs):
@@ -258,7 +266,7 @@ class TestOptimizer(unittest.TestCase):
     def test_tpch(self):
         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
 
-    def test_tpds(self):
+    def test_tpcds(self):
         self.check_file("tpc-ds/tpc-ds", optimizer.optimize, schema=TPCDS_SCHEMA, pretty=True)
 
     def test_file_schema(self):

@@ -15,6 +15,14 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("x(1)").find(exp.Literal).depth, 1)
 
     def test_eq(self):
+        self.assertEqual(exp.to_identifier("a"), exp.to_identifier("A"))
+        self.assertEqual(exp.to_identifier("a", quoted=True), exp.to_identifier("A"))
+        self.assertNotEqual(exp.to_identifier("A", quoted=True), exp.to_identifier("A"))
+        self.assertNotEqual(
+            exp.to_identifier("A", quoted=True), exp.to_identifier("a", quoted=True)
+        )
+        self.assertNotEqual(parse_one("'x'"), parse_one("'X'"))
+        self.assertNotEqual(parse_one("'1'"), parse_one("1"))
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"'))
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"  '))
         self.assertEqual(parse_one("`a`.b", read="hive"), parse_one('"a"."b"'))
@@ -330,6 +338,7 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("x + y * 2").sql(), "x + y * 2")
         self.assertEqual(parse_one('select "x"').sql(dialect="hive", pretty=True), "SELECT\n  `x`")
         self.assertEqual(parse_one("X + y").sql(identify=True, normalize=True), '"x" + "y"')
+        self.assertEqual(parse_one('"X" + Y').sql(identify=True, normalize=True), '"X" + "y"')
         self.assertEqual(parse_one("SUM(X)").sql(identify=True, normalize=True), 'SUM("x")')
 
     def test_transform_with_arguments(self):

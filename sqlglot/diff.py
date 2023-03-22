@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from heapq import heappop, heappush
 
 from sqlglot import Dialect, expressions as exp
-from sqlglot.helper import ensure_collection
+from sqlglot.helper import ensure_list
 
 
 @dataclass(frozen=True)
@@ -304,11 +304,9 @@ class ChangeDistiller:
 def _get_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
     has_child_exprs = False
 
-    for a in expression.args.values():
-        for node in ensure_collection(a):
-            if isinstance(node, exp.Expression):
-                has_child_exprs = True
-                yield from _get_leaves(node)
+    for _, node in expression.iter_expressions():
+        has_child_exprs = True
+        yield from _get_leaves(node)
 
     if not has_child_exprs:
         yield expression
@@ -331,7 +329,7 @@ def _expression_only_args(expression: exp.Expression) -> t.List[exp.Expression]:
     args: t.List[t.Union[exp.Expression, t.List]] = []
     if expression:
         for a in expression.args.values():
-            args.extend(ensure_collection(a))
+            args.extend(ensure_list(a))
     return [a for a in args if isinstance(a, exp.Expression)]
 
 

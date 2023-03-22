@@ -1,5 +1,4 @@
 from sqlglot import exp
-from sqlglot.helper import ensure_collection
 
 
 def lower_identities(expression):
@@ -40,13 +39,10 @@ def lower_identities(expression):
         lower_identities(expression.right)
         traversed |= {"this", "expression"}
 
-    for k, v in expression.args.items():
+    for k, v in expression.iter_expressions():
         if k in traversed:
             continue
-
-        for child in ensure_collection(v):
-            if isinstance(child, exp.Expression):
-                child.transform(_lower, copy=False)
+        v.transform(_lower, copy=False)
 
     return expression
 

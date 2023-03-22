@@ -141,6 +141,9 @@ A OR C;
 (A OR C) AND (A OR B OR C);
 A OR C;
 
+A AND (B AND C) AND (D AND E);
+A AND B AND C AND D AND E;
+
 --------------------------------------
 -- Elimination
 --------------------------------------

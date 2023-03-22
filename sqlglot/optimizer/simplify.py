@@ -28,10 +28,12 @@ def simplify(expression):
         sqlglot.Expression: simplified expression
     """
 
+    cache = {}
+
     def _simplify(expression, root=True):
         node = expression
         node = rewrite_between(node)
-        node = uniq_sort(node)
+        node = uniq_sort(node, cache)
         node = absorb_and_eliminate(node)
         exp.replace_children(node, lambda e: _simplify(e, False))
         node = simplify_not(node)
@@ -236,7 +238,7 @@ def remove_compliments(expression):
     return expression
 
 
-def uniq_sort(expression):
+def uniq_sort(expression, cache=None):
     """
     Uniq and sort a connector.
 
@@ -245,7 +247,7 @@ def uniq_sort(expression):
     if isinstance(expression, exp.Connector) and not expression.same_parent:
         result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
         flattened = tuple(expression.flatten())
-        deduped = {GENERATOR.generate(e): e for e in flattened}
+        deduped = {GENERATOR.generate(e, cache): e for e in flattened}
         arr = tuple(deduped.items())
 
         # check if the operands are already sorted, if not sort them

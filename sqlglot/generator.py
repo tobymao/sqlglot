@@ -209,6 +209,7 @@ class Generator:
         "_leading_comma",
         "_max_text_width",
         "_comments",
+        "_cache",
     )
 
     def __init__(
@@ -265,19 +266,28 @@ class Generator:
         self._leading_comma = leading_comma
         self._max_text_width = max_text_width
         self._comments = comments
+        self._cache = None
 
-    def generate(self, expression: t.Optional[exp.Expression]) -> str:
+    def generate(
+        self,
+        expression: t.Optional[exp.Expression],
+        cache: t.Optional[t.Dict[int, str]] = None,
+    ) -> str:
         """
         Generates a SQL string by interpreting the given syntax tree.
 
         Args
             expression: the syntax tree.
+            cache: an optional sql string cache. this leverages the hash of an expression which is slow, so only use this if you set _hash on each node.
 
         Returns
             the SQL string.
         """
+        if cache is not None:
+            self._cache = cache
         self.unsupported_messages = []
         sql = self.sql(expression).strip()
+        self._cache = None
 
         if self.unsupported_level == ErrorLevel.IGNORE:
             return sql
@@ -387,6 +397,12 @@ class Generator:
         if key:
             return self.sql(expression.args.get(key))
 
+        if self._cache is not None:
+            expression_id = hash(expression)
+
+            if expression_id in self._cache:
+                return self._cache[expression_id]
+
         transform = self.TRANSFORMS.get(expression.__class__)
 
         if callable(transform):
@@ -407,7 +423,11 @@ class Generator:
         else:
             raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
-        return self.maybe_comment(sql, expression) if self._comments and comment else sql
+        sql = self.maybe_comment(sql, expression) if self._comments and comment else sql
+
+        if self._cache is not None:
+            self._cache[expression_id] = sql
+        return sql
 
     def uncache_sql(self, expression: exp.Uncache) -> str:
         table = self.sql(expression, "this")

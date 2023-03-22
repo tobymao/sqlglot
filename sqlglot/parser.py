@@ -211,6 +211,7 @@ class Parser(metaclass=_Parser):
         TokenType.FILTER,
         TokenType.FOLLOWING,
         TokenType.FORMAT,
+        TokenType.FULL,
         TokenType.IF,
         TokenType.ISNULL,
         TokenType.INTERVAL,
@@ -258,6 +259,7 @@ class Parser(metaclass=_Parser):
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.APPLY,
+        TokenType.FULL,
         TokenType.LEFT,
         TokenType.NATURAL,
         TokenType.OFFSET,
@@ -3883,20 +3885,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_pragma(self) -> t.Optional[exp.Expression]:
-        this = self._parse_primary() or self._parse_id_var()
-        schema = None
-        value = None
-        func = None
-
-        if self._match(TokenType.DOT):
-            schema = this
-            this = self._parse_primary() or self._parse_id_var()
-
-        func = self._match(TokenType.L_PAREN)
-        self._match(TokenType.EQ)
-        value = self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
-        self._match(TokenType.R_PAREN)
-        return self.expression(exp.Pragma, this=this, schema=schema, value=value, func=func)
+        return self.expression(exp.Pragma, this=self._parse_expression())
 
     def _parse_show(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore

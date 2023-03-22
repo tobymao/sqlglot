@@ -252,6 +252,7 @@ class TokenType(AutoName):
     PERCENT = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()
+    PRAGMA = auto()
     PRECEDING = auto()
     PRIMARY_KEY = auto()
     PROCEDURE = auto()
@@ -586,6 +587,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PARTITIONED_BY": TokenType.PARTITION_BY,
         "PERCENT": TokenType.PERCENT,
         "PIVOT": TokenType.PIVOT,
+        "PRAGMA": TokenType.PRAGMA,
         "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "PROCEDURE": TokenType.PROCEDURE,

@@ -1,7 +1,6 @@
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.optimizer.simplify import simplify
 
 
 def eliminate_joins(expression):
@@ -179,6 +178,4 @@ def join_condition(join):
         for condition in conditions:
             extract_condition(condition)
 
-    on = simplify(on)
-    remaining_condition = None if on == exp.true() else on
-    return source_key, join_key, remaining_condition
+    return source_key, join_key, on

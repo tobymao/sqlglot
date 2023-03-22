@@ -56,6 +56,8 @@ class TestSQLite(Validator):
         )
 
     def test_sqlite(self):
+        self.validate_all("SELECT LIKE(y, x)", write={"sqlite": "SELECT x LIKE y"})
+        self.validate_all("SELECT GLOB('*y*', 'xyz')", write={"sqlite": "SELECT 'xyz' GLOB '*y*'"})
         self.validate_all(
             "CURRENT_DATE",
             read={
@@ -151,10 +153,4 @@ class TestSQLite(Validator):
         self.validate_all(
             "CREATE TABLE foo (bar LONGVARCHAR)",
             write={"sqlite": "CREATE TABLE foo (bar TEXT)"},
-        )
-
-    def test_function_glob(self):
-        self.validate_all(
-            "SELECT GLOB('*y*', 'xyz')",
-            write={"sqlite": "SELECT GLOB('*y*', 'xyz')"},
         )

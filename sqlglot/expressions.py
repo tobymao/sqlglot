@@ -827,6 +827,10 @@ class Describe(Expression):
     arg_types = {"this": True, "kind": False}
 
 
+class Pragma(Expression):
+    arg_types = {"this": True, "schema": False, "value": False, "func": False}
+
+
 class Set(Expression):
     arg_types = {"expressions": False}
 

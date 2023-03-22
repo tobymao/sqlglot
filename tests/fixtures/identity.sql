@@ -777,3 +777,15 @@ SELECT * FROM x WHERE name ILIKE ANY XXX('a', 'b')
 SELECT * FROM x WHERE name LIKE ANY XXX('a', 'b')
 a OVERLAPS b
 GRANT INSERT ON foo TO bla
+PRAGMA quick_check
+PRAGMA quick_check(0)
+PRAGMA quick_check('sqlite_master')
+PRAGMA schema.quick_check
+PRAGMA schema.quick_check(0)
+PRAGMA schema.quick_check('sqlite_master')
+PRAGMA synchronous = 2
+PRAGMA synchronous = FULL
+PRAGMA memory_limit = '1GB'
+PRAGMA schema.synchronous = 2
+PRAGMA schema.synchronous = FULL
+PRAGMA schema.memory_limit = '1GB'

@@ -464,7 +464,7 @@ class Parser(metaclass=_Parser):
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.LOAD_DATA: lambda self: self._parse_load_data(),
         TokenType.MERGE: lambda self: self._parse_merge(),
-        TokenType.PRAGMA: lambda self: self._parse_pragma(),
+        TokenType.PRAGMA: lambda self: self.expression(exp.Pragma, this=self._parse_expression()),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.SET: lambda self: self._parse_set(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
@@ -3883,9 +3883,6 @@ class Parser(metaclass=_Parser):
             on=on,
             expressions=whens,
         )
-
-    def _parse_pragma(self) -> t.Optional[exp.Expression]:
-        return self.expression(exp.Pragma, this=self._parse_expression())
 
     def _parse_show(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SHOW_PARSERS, self._show_trie)  # type: ignore

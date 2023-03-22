@@ -347,7 +347,8 @@ class Token:
         self.token_type = token_type
         self.text = text
         self.line = line
-        self.col = max(col - len(text), 1)
+        self.col = col - len(text)
+        self.col = self.col if self.col > 1 else 1
         self.comments = comments
 
     def __repr__(self) -> str:
@@ -717,7 +718,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "VACUUM": TokenType.COMMAND,
     }
 
-    WHITE_SPACE: t.Dict[str, TokenType] = {
+    WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {
         " ": TokenType.SPACE,
         "\t": TokenType.SPACE,
         "\n": TokenType.BREAK,
@@ -816,11 +817,8 @@ class Tokenizer(metaclass=_Tokenizer):
             return self.sql[start:end]
         return ""
 
-    def _line_break(self, char: t.Optional[str]) -> bool:
-        return self.WHITE_SPACE.get(char) == TokenType.BREAK  # type: ignore
-
     def _advance(self, i: int = 1) -> None:
-        if self._line_break(self._char):
+        if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             self._set_new_line()
 
         self._col += i
@@ -942,7 +940,7 @@ class Tokenizer(metaclass=_Tokenizer):
             self._comments.append(self._text[comment_start_size : -comment_end_size + 1])  # type: ignore
             self._advance(comment_end_size - 1)
         else:
-            while not self._end and not self._line_break(self._peek):
+            while not self._end and not self.WHITE_SPACE.get(self._peek) is TokenType.BREAK:
                 self._advance()
             self._comments.append(self._text[comment_start_size:])  # type: ignore
 

@@ -778,11 +778,11 @@ SELECT * FROM x WHERE name LIKE ANY XXX('a', 'b')
 a OVERLAPS b
 GRANT INSERT ON foo TO bla
 PRAGMA quick_check
-PRAGMA quick_check(0)
-PRAGMA quick_check('sqlite_master')
+PRAGMA QUICK_CHECK(0)
+PRAGMA QUICK_CHECK('sqlite_master')
 PRAGMA schema.quick_check
-PRAGMA schema.quick_check(0)
-PRAGMA schema.quick_check('sqlite_master')
+PRAGMA schema.QUICK_CHECK(0)
+PRAGMA schema.QUICK_CHECK('sqlite_master')
 PRAGMA synchronous = 2
 PRAGMA synchronous = FULL
 PRAGMA memory_limit = '1GB'

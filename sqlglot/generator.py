@@ -1212,14 +1212,7 @@ class Generator:
         return f"SET{expressions}"
 
     def pragma_sql(self, expression: exp.Pragma) -> str:
-        this = self.sql(expression, "this")
-        schema = self.sql(expression, "schema")
-        schema = f"{schema}." if schema else ""
-        value = self.sql(expression, "value")
-        if expression.args.get("func"):
-            return f"PRAGMA {schema}{this}({value})"
-        value = f" = {value}" if value else ""
-        return f"PRAGMA {schema}{this}{value}"
+        return f"PRAGMA {self.sql(expression, 'this')}"
 
     def lock_sql(self, expression: exp.Lock) -> str:
         if self.LOCKING_READS_SUPPORTED:

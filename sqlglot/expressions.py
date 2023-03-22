@@ -828,7 +828,7 @@ class Describe(Expression):
 
 
 class Pragma(Expression):
-    arg_types = {"this": True, "schema": False, "value": False, "func": False}
+    pass
 
 
 class Set(Expression):

@@ -4514,7 +4514,7 @@ def to_identifier(name, quoted=None):
     elif isinstance(name, str):
         identifier = Identifier(
             this=name,
-            quoted=not re.match(SAFE_IDENTIFIER_RE, name) if quoted is None else quoted,
+            quoted=not SAFE_IDENTIFIER_RE.match(name) if quoted is None else quoted,
         )
     else:
         raise ValueError(f"Name needs to be a string or an Identifier, got: {name.__class__}")

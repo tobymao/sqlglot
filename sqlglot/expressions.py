@@ -4588,7 +4588,7 @@ def to_column(sql_path: str | Column, **kwargs) -> Column:
         return sql_path
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for column: {type(sql_path)}")
-    return column(*reversed(sql_path.split(".")), **kwargs)
+    return column(*reversed(sql_path.split(".")), **kwargs)  # type: ignore
 
 
 def alias_(

@@ -5,7 +5,6 @@ from collections import deque
 from decimal import Decimal
 
 from sqlglot import exp
-from sqlglot.expressions import FALSE, NULL
 from sqlglot.generator import Generator
 from sqlglot.helper import first, while_changing
 
@@ -72,7 +71,7 @@ def simplify_not(expression):
     NOT (x AND y) -> NOT x OR NOT y
     """
     if isinstance(expression, exp.Not):
-        if isinstance(expression.this, exp.Null):
+        if is_null(expression.this):
             return exp.null()
         if isinstance(expression.this, exp.Paren):
             condition = expression.this.unnest()
@@ -80,11 +79,11 @@ def simplify_not(expression):
                 return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
             if isinstance(condition, exp.Or):
                 return exp.and_(exp.not_(condition.left), exp.not_(condition.right))
-            if isinstance(condition, exp.Null):
+            if is_null(condition):
                 return exp.null()
         if always_true(expression.this):
             return exp.false()
-        if expression.this == FALSE:
+        if is_false(expression.this):
             return exp.true()
         if isinstance(expression.this, exp.Not):
             # double negation
@@ -111,9 +110,9 @@ def simplify_connectors(expression):
         if left == right:
             return left
         if isinstance(expression, exp.And):
-            if FALSE in (left, right):
+            if is_false(left) or is_false(right):
                 return exp.false()
-            if NULL in (left, right):
+            if is_null(left) or is_null(right):
                 return exp.null()
             if always_true(left) and always_true(right):
                 return exp.true()
@@ -125,17 +124,18 @@ def simplify_connectors(expression):
         elif isinstance(expression, exp.Or):
             if always_true(left) or always_true(right):
                 return exp.true()
-            if left == FALSE and right == FALSE:
+            if is_false(left) and is_false(right):
                 return exp.false()
             if (
-                (left == NULL and right == NULL)
-                or (left == NULL and right == FALSE)
-                or (left == FALSE and right == NULL)
+                is_null(left)
+                and is_null(right)
+                or (is_null(left) and is_false(right))
+                or (is_false(left) and is_null(right))
             ):
                 return exp.null()
-            if left == FALSE:
+            if is_false(left):
                 return right
-            if right == FALSE:
+            if is_false(right):
                 return left
             return _simplify_comparison(expression, left, right, or_=True)
 
@@ -327,14 +327,14 @@ def _simplify_binary(expression, a, b):
             c = b
             not_ = False
 
-        if c == NULL:
+        if is_null(c):
             if isinstance(a, exp.Literal):
                 return exp.true() if not_ else exp.false()
-            if a == NULL:
+            if is_null(a):
                 return exp.false() if not_ else exp.true()
     elif isinstance(expression, (exp.NullSafeEQ, exp.NullSafeNEQ)):
         return None
-    elif NULL in (a, b):
+    elif is_null(a) or is_null(b):
         return exp.null()
 
     if a.is_number and b.is_number:
@@ -409,6 +409,14 @@ def always_true(expression):
 
 def is_complement(a, b):
     return isinstance(b, exp.Not) and b.this == a
+
+
+def is_false(a: exp.Expression) -> bool:
+    return type(a) is exp.Boolean and not a.this
+
+
+def is_null(a: exp.Expression) -> bool:
+    return type(a) is exp.Null
 
 
 def eval_boolean(expression, a, b):

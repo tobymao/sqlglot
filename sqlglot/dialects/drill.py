@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
@@ -154,4 +153,4 @@ class Drill(Dialect):
         }
 
         def normalize_func(self, name: str) -> str:
-            return name if re.match(exp.SAFE_IDENTIFIER_RE, name) else f"`{name}`"
+            return name if exp.SAFE_IDENTIFIER_RE.match(name) else f"`{name}`"

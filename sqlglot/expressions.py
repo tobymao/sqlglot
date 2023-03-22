@@ -4588,8 +4588,7 @@ def to_column(sql_path: str | Column, **kwargs) -> Column:
         return sql_path
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for column: {type(sql_path)}")
-    table_name, column_name = (to_identifier(x) for x in split_num_words(sql_path, ".", 2))
-    return Column(this=column_name, table=table_name, **kwargs)
+    return column(*reversed(sql_path.split(".")), **kwargs)
 
 
 def alias_(
@@ -4674,7 +4673,8 @@ def subquery(expression, alias=None, dialect=None, **opts):
 def column(
     col: str | Identifier,
     table: t.Optional[str | Identifier] = None,
-    schema: t.Optional[str | Identifier] = None,
+    db: t.Optional[str | Identifier] = None,
+    catalog: t.Optional[str | Identifier] = None,
     quoted: t.Optional[bool] = None,
 ) -> Column:
     """
@@ -4683,7 +4683,8 @@ def column(
     Args:
         col: column name
         table: table name
-        schema: schema name
+        db: db name
+        catalog: catalog name
         quoted: whether or not to force quote each part
     Returns:
         Column: column instance
@@ -4691,7 +4692,8 @@ def column(
     return Column(
         this=to_identifier(col, quoted=quoted),
         table=to_identifier(table, quoted=quoted),
-        schema=to_identifier(schema, quoted=quoted),
+        db=to_identifier(db, quoted=quoted),
+        catalog=to_identifier(catalog, quoted=quoted),
     )
 
 

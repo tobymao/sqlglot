@@ -559,6 +559,7 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(column.table, "a")
 
         self.assertIsInstance(parse_one("*"), exp.Star)
+        self.assertEqual(exp.column("a", table="b", db="c", catalog="d"), exp.to_column("d.c.b.a"))
 
     def test_text(self):
         column = parse_one("a.b.c.d.e")

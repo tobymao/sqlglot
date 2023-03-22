@@ -108,7 +108,7 @@ class Expression(metaclass=_Expression):
 
         return tuple(
             (tuple(_norm_arg(a) for a in arg) if arg else None)
-            if isinstance(arg, list)
+            if type(arg) is list
             else (_norm_arg(arg) if arg is not None and arg is not False else None)
             for arg in args
         )
@@ -256,9 +256,6 @@ class Expression(metaclass=_Expression):
         """
         new = deepcopy(self)
         new.parent = self.parent
-        for item, parent, _ in new.bfs():
-            if isinstance(item, Expression) and parent:
-                item.parent = parent
         return new
 
     def append(self, arg_key, value):
@@ -286,12 +283,12 @@ class Expression(metaclass=_Expression):
         self._set_parent(arg_key, value)
 
     def _set_parent(self, arg_key, value):
-        if isinstance(value, Expression):
+        if hasattr(value, "parent"):
             value.parent = self
             value.arg_key = arg_key
-        elif isinstance(value, list):
+        elif type(value) is list:
             for v in value:
-                if isinstance(v, Expression):
+                if hasattr(v, "parent"):
                     v.parent = self
                     v.arg_key = arg_key
 
@@ -307,12 +304,12 @@ class Expression(metaclass=_Expression):
     def iter_expressions(self) -> t.Iterator[t.Tuple[str, Expression]]:
         """Yields the key and expression for all arguments, exploding list args."""
         for k, vs in self.args.items():
-            if isinstance(vs, list):
+            if type(vs) is list:
                 for v in vs:
-                    if isinstance(v, Expression):
+                    if hasattr(v, "parent"):
                         yield k, v
             else:
-                if isinstance(vs, Expression):
+                if hasattr(vs, "parent"):
                     yield k, vs
 
     def find(self, *expression_types: t.Type[E], bfs=True) -> E | None:
@@ -368,7 +365,7 @@ class Expression(metaclass=_Expression):
     @property
     def same_parent(self):
         """Returns if the parent is the same class as itself."""
-        return isinstance(self.parent, self.__class__)
+        return type(self.parent) is self.__class__
 
     def root(self) -> Expression:
         """
@@ -438,7 +435,7 @@ class Expression(metaclass=_Expression):
         Returns the first non parenthesis child or self.
         """
         expression = self
-        while isinstance(expression, Paren):
+        while type(expression) is Paren:
             expression = expression.this
         return expression
 
@@ -462,8 +459,8 @@ class Expression(metaclass=_Expression):
 
         A AND B AND C -> [A, B, C]
         """
-        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and not isinstance(n, self.__class__)):
-            if not isinstance(node, self.__class__):
+        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and not type(n) is self.__class__):
+            if not type(node) is self.__class__:
                 yield node.unnest() if unnest else node
 
     def __str__(self):
@@ -3987,7 +3984,7 @@ class When(Func):
 
 
 def _norm_arg(arg):
-    return arg.lower() if isinstance(arg, str) else arg
+    return arg.lower() if type(arg) is str else arg
 
 
 ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
@@ -4868,7 +4865,7 @@ def replace_children(expression, fun, *args, **kwargs):
     Replace children of an expression with the result of a lambda fun(child) -> exp.
     """
     for k, v in expression.args.items():
-        is_list_arg = isinstance(v, list)
+        is_list_arg = type(v) is list
 
         child_nodes = v if is_list_arg else [v]
         new_child_nodes = []

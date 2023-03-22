@@ -127,8 +127,7 @@ def simplify_connectors(expression):
             if is_false(left) and is_false(right):
                 return exp.false()
             if (
-                is_null(left)
-                and is_null(right)
+                (is_null(left) and is_null(right))
                 or (is_null(left) and is_false(right))
                 or (is_false(left) and is_null(right))
             ):

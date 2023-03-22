@@ -77,6 +77,9 @@ class Parser(metaclass=_Parser):
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
+        "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
+        "IFNULL": exp.Coalesce.from_arg_list,
+        "LIKE": lambda args: exp.Like(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
@@ -90,7 +93,6 @@ class Parser(metaclass=_Parser):
             length=exp.Literal.number(10),
         ),
         "VAR_MAP": parse_var_map,
-        "IFNULL": exp.Coalesce.from_arg_list,
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -280,6 +282,7 @@ class Parser(metaclass=_Parser):
         TokenType.FILTER,
         TokenType.FIRST,
         TokenType.FORMAT,
+        TokenType.GLOB,
         TokenType.IDENTIFIER,
         TokenType.INDEX,
         TokenType.ISNULL,

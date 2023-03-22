@@ -1000,6 +1000,7 @@ class TestDialect(Validator):
         self.validate_identity("some.column LIKE 'foo' || another.column || 'bar' || LOWER(x)")
         self.validate_identity("some.column LIKE 'foo' + another.column + 'bar'")
 
+        self.validate_all("LIKE(x, 'z')", write={"": "'z' LIKE x"})
         self.validate_all(
             "x ILIKE '%y'",
             read={

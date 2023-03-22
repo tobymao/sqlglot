@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 
 from sqlglot import exp
+from sqlglot.errors import OptimizeError
 from sqlglot.helper import while_changing
 from sqlglot.optimizer.simplify import flatten, uniq_sort
+
+logger = logging.getLogger("sqlglot")
 
 
 def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_distance: int = 128):
@@ -36,7 +40,11 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
                 )
 
             root = node is expression
-            node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
+            try:
+                node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
+            except OptimizeError as e:
+                logger.error(f"Optimization Error: %s", e)
+                return expression
 
             if root:
                 expression = node
@@ -98,11 +106,13 @@ def distributive_law(expression, dnf, max_distance, cache=None):
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
     """
-    if (
-        normalized(expression, dnf=dnf)
-        or normalization_distance(expression, dnf=dnf) > max_distance
-    ):
+    if normalized(expression, dnf=dnf):
         return expression
+
+    distance = normalization_distance(expression, dnf=dnf)
+
+    if distance > max_distance:
+        raise OptimizeError(f"Normalization distance {distance} exceeds max {max_distance}")
 
     exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance, cache))
     to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)

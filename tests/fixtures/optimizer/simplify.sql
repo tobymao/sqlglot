@@ -249,6 +249,12 @@ x = x;
 (('a' = 'a') AND TRUE and NOT FALSE);
 TRUE;
 
+(x = y) and z;
+x = y AND z;
+
+x * (1 - y);
+x * (1 - y);
+
 --------------------------------------
 -- Literals
 --------------------------------------
@@ -310,7 +316,7 @@ TRUE;
 8.0;
 
 6 - 2 + 4 * 2 + a;
-12 + a;
+a + 12;
 
 a + 1 + 1 + 2;
 a + 4;
@@ -367,7 +373,7 @@ interval '1' year + date '1998-01-01';
 CAST('1999-01-01' AS DATE);
 
 interval '1' year + date '1998-01-01' + 3 * 7 * 4;
-CAST('1999-01-01' AS DATE) + 84;
+84 + CAST('1999-01-01' AS DATE);
 
 date '1998-12-01' - interval '90' foo;
 CAST('1998-12-01' AS DATE) - INTERVAL '90' foo;

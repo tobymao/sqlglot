@@ -3,7 +3,6 @@ import itertools
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import build_scope
-from sqlglot.optimizer.simplify import simplify
 
 
 def eliminate_subqueries(expression):
@@ -31,7 +30,6 @@ def eliminate_subqueries(expression):
         eliminate_subqueries(expression.this)
         return expression
 
-    expression = simplify(expression)
     root = build_scope(expression)
 
     # Map of alias->Scope|Table

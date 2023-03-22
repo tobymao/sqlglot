@@ -733,9 +733,9 @@ class Generator:
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name
-        text = text.lower() if self.normalize else text
+        text = text.lower() if self.normalize and not expression.quoted else text
         text = text.replace(self.identifier_end, self._escaped_identifier_end)
-        if expression.args.get("quoted") or should_identify(text, self.identify):
+        if expression.quoted or should_identify(text, self.identify):
             text = f"{self.identifier_start}{text}{self.identifier_end}"
         return text
 

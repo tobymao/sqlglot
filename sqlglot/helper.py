@@ -59,7 +59,7 @@ def ensure_list(value):
     """
     if value is None:
         return []
-    elif isinstance(value, (list, tuple)):
+    if isinstance(value, (list, tuple)):
         return list(value)
 
     return [value]
@@ -162,9 +162,7 @@ def camel_to_snake_case(name: str) -> str:
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
 
 
-def while_changing(
-    expression: t.Optional[Expression], func: t.Callable[[t.Optional[Expression]], E]
-) -> E:
+def while_changing(expression: Expression, func: t.Callable[[Expression], E]) -> E:
     """
     Applies a transformation to a given expression until a fix point is reached.
 
@@ -176,8 +174,13 @@ def while_changing(
         The transformed expression.
     """
     while True:
+        for n, _, _ in reversed(tuple(expression.walk())):
+            n._hash = hash(n)
         start = hash(expression)
         expression = func(expression)
+
+        for n, _, _ in expression.walk():
+            n._hash = None
         if start == hash(expression):
             break
     return expression

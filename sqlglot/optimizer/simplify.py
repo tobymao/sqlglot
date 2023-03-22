@@ -5,11 +5,11 @@ from collections import deque
 from decimal import Decimal
 
 from sqlglot import exp
-from sqlglot.expressions import FALSE, NULL, TRUE
+from sqlglot.expressions import FALSE, NULL
 from sqlglot.generator import Generator
 from sqlglot.helper import first, while_changing
 
-GENERATOR = Generator(normalize=True, identify=True)
+GENERATOR = Generator(normalize=True, identify="safe")
 
 
 def simplify(expression):
@@ -106,40 +106,40 @@ def flatten(expression):
 
 def simplify_connectors(expression):
     def _simplify_connectors(expression, left, right):
-        if isinstance(expression, exp.Connector):
-            if left == right:
+        if left == right:
+            return left
+        if isinstance(expression, exp.And):
+            if FALSE in (left, right):
+                return exp.false()
+            if NULL in (left, right):
+                return exp.null()
+            if always_true(left) and always_true(right):
+                return exp.true()
+            if always_true(left):
+                return right
+            if always_true(right):
                 return left
-            if isinstance(expression, exp.And):
-                if FALSE in (left, right):
-                    return exp.false()
-                if NULL in (left, right):
-                    return exp.null()
-                if always_true(left) and always_true(right):
-                    return exp.true()
-                if always_true(left):
-                    return right
-                if always_true(right):
-                    return left
-                return _simplify_comparison(expression, left, right)
-            elif isinstance(expression, exp.Or):
-                if always_true(left) or always_true(right):
-                    return exp.true()
-                if left == FALSE and right == FALSE:
-                    return exp.false()
-                if (
-                    (left == NULL and right == NULL)
-                    or (left == NULL and right == FALSE)
-                    or (left == FALSE and right == NULL)
-                ):
-                    return exp.null()
-                if left == FALSE:
-                    return right
-                if right == FALSE:
-                    return left
-                return _simplify_comparison(expression, left, right, or_=True)
-        return None
+            return _simplify_comparison(expression, left, right)
+        elif isinstance(expression, exp.Or):
+            if always_true(left) or always_true(right):
+                return exp.true()
+            if left == FALSE and right == FALSE:
+                return exp.false()
+            if (
+                (left == NULL and right == NULL)
+                or (left == NULL and right == FALSE)
+                or (left == FALSE and right == NULL)
+            ):
+                return exp.null()
+            if left == FALSE:
+                return right
+            if right == FALSE:
+                return left
+            return _simplify_comparison(expression, left, right, or_=True)
 
-    return _flat_simplify(expression, _simplify_connectors)
+    if isinstance(expression, exp.Connector):
+        return _flat_simplify(expression, _simplify_connectors)
+    return expression
 
 
 LT_LTE = (exp.LT, exp.LTE)
@@ -227,7 +227,7 @@ def remove_compliments(expression):
     A AND NOT A -> FALSE
     A OR NOT A -> TRUE
     """
-    if isinstance(expression, exp.Connector):
+    if isinstance(expression, exp.Connector) and not expression.same_parent:
         compliment = exp.false() if isinstance(expression, exp.And) else exp.true()
 
         for a, b in itertools.permutations(expression.flatten(), 2):
@@ -242,7 +242,7 @@ def uniq_sort(expression):
 
     C AND A AND B AND B -> A AND B AND C
     """
-    if isinstance(expression, exp.Connector):
+    if isinstance(expression, exp.Connector) and not expression.same_parent:
         result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
         flattened = tuple(expression.flatten())
         deduped = {GENERATOR.generate(e): e for e in flattened}
@@ -252,7 +252,7 @@ def uniq_sort(expression):
         # A AND C AND B -> A AND B AND C
         for i, (sql, e) in enumerate(arr[1:]):
             if sql < arr[i][0]:
-                expression = result_func(*(deduped[sql] for sql in sorted(deduped)))
+                expression = result_func(*(e for _, e in sorted(arr)))
                 break
         else:
             # we didn't have to sort but maybe we need to dedup
@@ -273,7 +273,7 @@ def absorb_and_eliminate(expression):
         (A AND B) OR (A AND NOT B) -> A
         (A OR B) AND (A OR NOT B) -> A
     """
-    if isinstance(expression, exp.Connector):
+    if isinstance(expression, exp.Connector) and not expression.same_parent:
         kind = exp.Or if isinstance(expression, exp.And) else exp.And
 
         for a, b in itertools.permutations(expression.flatten(), 2):
@@ -303,7 +303,7 @@ def absorb_and_eliminate(expression):
 
 
 def simplify_literals(expression):
-    if isinstance(expression, exp.Binary):
+    if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
         return _flat_simplify(expression, _simplify_binary)
     elif isinstance(expression, exp.Neg):
         this = expression.this
@@ -381,7 +381,7 @@ def simplify_parens(expression):
         and not isinstance(expression.this, exp.Select)
         and (
             not isinstance(expression.parent, (exp.Condition, exp.Binary))
-            or isinstance(expression.this, (exp.Is, exp.Like))
+            or isinstance(expression.this, exp.Predicate)
             or not isinstance(expression.this, exp.Binary)
         )
     ):
@@ -400,7 +400,9 @@ def remove_where_true(expression):
 
 
 def always_true(expression):
-    return expression == TRUE or isinstance(expression, exp.Literal)
+    return (isinstance(expression, exp.Boolean) and expression.this) or isinstance(
+        expression, exp.Literal
+    )
 
 
 def is_complement(a, b):
@@ -467,23 +469,26 @@ def boolean_literal(condition):
 
 
 def _flat_simplify(expression, simplifier):
-    operands = []
-    queue = deque(expression.flatten(unnest=False))
-    size = len(queue)
+    if not expression.same_parent:
+        operands = []
+        queue = deque(expression.flatten(unnest=False))
+        size = len(queue)
 
-    while queue:
-        a = queue.popleft()
+        while queue:
+            a = queue.popleft()
 
-        for b in queue:
-            result = simplifier(expression, a, b)
+            for b in queue:
+                result = simplifier(expression, a, b)
 
-            if result:
-                queue.remove(b)
-                queue.append(result)
-                break
-        else:
-            operands.append(a)
+                if result:
+                    queue.remove(b)
+                    queue.append(result)
+                    break
+            else:
+                operands.append(a)
 
-    if len(operands) < size:
-        return functools.reduce(lambda a, b: expression.__class__(this=a, expression=b), operands)
+        if len(operands) < size:
+            return functools.reduce(
+                lambda a, b: expression.__class__(this=a, expression=b), operands
+            )
     return expression

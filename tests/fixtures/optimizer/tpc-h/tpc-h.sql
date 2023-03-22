@@ -390,9 +390,9 @@ SELECT
   )) AS "revenue"
 FROM "supplier" AS "supplier"
 JOIN "lineitem" AS "lineitem"
-  ON CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1996-12-31' AS DATE)
+  ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+  AND CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1996-12-31' AS DATE)
   AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1995-01-01' AS DATE)
-  AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 JOIN "customer" AS "customer"
@@ -743,11 +743,11 @@ SELECT
 FROM "orders" AS "orders"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_commitdate" < "lineitem"."l_receiptdate"
-  AND CAST("lineitem"."l_receiptdate" AS DATE) < CAST('1995-01-01' AS DATE)
-  AND CAST("lineitem"."l_receiptdate" AS DATE) >= CAST('1994-01-01' AS DATE)
   AND "lineitem"."l_shipdate" < "lineitem"."l_commitdate"
   AND "lineitem"."l_shipmode" IN ('MAIL', 'SHIP')
   AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
+  AND CAST("lineitem"."l_receiptdate" AS DATE) < CAST('1995-01-01' AS DATE)
+  AND CAST("lineitem"."l_receiptdate" AS DATE) >= CAST('1994-01-01' AS DATE)
 GROUP BY
   "lineitem"."l_shipmode"
 ORDER BY
@@ -1225,9 +1225,17 @@ order by
         s_name;
 WITH "_u_0" AS (
   SELECT
+    "part"."p_partkey" AS "p_partkey"
+  FROM "part" AS "part"
+  WHERE
+    "part"."p_name" LIKE 'forest%'
+  GROUP BY
+    "part"."p_partkey"
+), "_u_1" AS (
+  SELECT
     0.5 * SUM("lineitem"."l_quantity") AS "_col_0",
-    "lineitem"."l_partkey" AS "_u_1",
-    "lineitem"."l_suppkey" AS "_u_2"
+    "lineitem"."l_partkey" AS "_u_2",
+    "lineitem"."l_suppkey" AS "_u_3"
   FROM "lineitem" AS "lineitem"
   WHERE
     CAST("lineitem"."l_shipdate" AS DATE) < CAST('1995-01-01' AS DATE)
@@ -1235,24 +1243,16 @@ WITH "_u_0" AS (
   GROUP BY
     "lineitem"."l_partkey",
     "lineitem"."l_suppkey"
-), "_u_3" AS (
-  SELECT
-    "part"."p_partkey" AS "p_partkey"
-  FROM "part" AS "part"
-  WHERE
-    "part"."p_name" LIKE 'forest%'
-  GROUP BY
-    "part"."p_partkey"
 ), "_u_4" AS (
   SELECT
     "partsupp"."ps_suppkey" AS "ps_suppkey"
   FROM "partsupp" AS "partsupp"
   LEFT JOIN "_u_0" AS "_u_0"
-    ON "_u_0"."_u_1" = "partsupp"."ps_partkey" AND "_u_0"."_u_2" = "partsupp"."ps_suppkey"
-  LEFT JOIN "_u_3" AS "_u_3"
-    ON "partsupp"."ps_partkey" = "_u_3"."p_partkey"
+    ON "partsupp"."ps_partkey" = "_u_0"."p_partkey"
+  LEFT JOIN "_u_1" AS "_u_1"
+    ON "_u_1"."_u_2" = "partsupp"."ps_partkey" AND "_u_1"."_u_3" = "partsupp"."ps_suppkey"
   WHERE
-    "partsupp"."ps_availqty" > "_u_0"."_col_0" AND NOT "_u_3"."p_partkey" IS NULL
+    "partsupp"."ps_availqty" > "_u_1"."_col_0" AND NOT "_u_0"."p_partkey" IS NULL
   GROUP BY
     "partsupp"."ps_suppkey"
 )

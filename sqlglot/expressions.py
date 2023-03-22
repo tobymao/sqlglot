@@ -26,6 +26,7 @@ from sqlglot.helper import (
     AutoName,
     camel_to_snake_case,
     ensure_collection,
+    ensure_list,
     seq_get,
     split_num_words,
     subclasses,
@@ -84,7 +85,7 @@ class Expression(metaclass=_Expression):
 
     key = "expression"
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key", "comments", "_type", "_meta")
+    __slots__ = ("args", "parent", "arg_key", "comments", "_type", "_meta", "_hash")
 
     def __init__(self, **args: t.Any):
         self.args: t.Dict[str, t.Any] = args
@@ -93,17 +94,21 @@ class Expression(metaclass=_Expression):
         self.comments: t.Optional[t.List[str]] = None
         self._type: t.Optional[DataType] = None
         self._meta: t.Optional[t.Dict[str, t.Any]] = None
+        self._hash: t.Optional[int] = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
 
     def __eq__(self, other) -> bool:
-        return type(self) is type(other) and _norm_args(self) == _norm_args(other)
+        return type(self) is type(other) and hash(self) == hash(other)
 
     def __hash__(self) -> int:
+        if self._hash is not None:
+            return self._hash
+
         return hash(
             (
-                self.key,
+                self.__class__,
                 tuple(
                     (k, tuple(v) if isinstance(v, list) else v) for k, v in _norm_args(self).items()
                 ),
@@ -295,6 +300,17 @@ class Expression(metaclass=_Expression):
             return self.parent.depth + 1
         return 0
 
+    def iter_expressions(self) -> t.Iterator[t.Tuple[str, Expression]]:
+        """Yields the key and expression for all arguments, exploding list args."""
+        for k, vs in self.args.items():
+            if isinstance(vs, list):
+                for v in vs:
+                    if isinstance(v, Expression):
+                        yield k, v
+            else:
+                if isinstance(vs, Expression):
+                    yield k, vs
+
     def find(self, *expression_types: t.Type[E], bfs=True) -> E | None:
         """
         Returns the first node in this tree which matches at least one of
@@ -345,6 +361,11 @@ class Expression(metaclass=_Expression):
         """
         return self.find_ancestor(Select)
 
+    @property
+    def same_parent(self):
+        """Returns if the parent is the same class as itself."""
+        return isinstance(self.parent, self.__class__)
+
     def root(self) -> Expression:
         """
         Returns the root expression of this tree.
@@ -385,10 +406,8 @@ class Expression(metaclass=_Expression):
         if prune and prune(self, parent, key):
             return
 
-        for k, v in self.args.items():
-            for node in ensure_collection(v):
-                if isinstance(node, Expression):
-                    yield from node.dfs(self, k, prune)
+        for k, v in self.iter_expressions():
+            yield from v.dfs(self, k, prune)
 
     def bfs(self, prune=None):
         """
@@ -407,11 +426,8 @@ class Expression(metaclass=_Expression):
             if prune and prune(item, parent, key):
                 continue
 
-            if isinstance(item, Expression):
-                for k, v in item.args.items():
-                    for node in ensure_collection(v):
-                        if isinstance(node, Expression):
-                            queue.append((node, item, k))
+            for k, v in item.iter_expressions():
+                queue.append((v, item, k))
 
     def unnest(self):
         """
@@ -477,7 +493,7 @@ class Expression(metaclass=_Expression):
                 v._to_s(hide_missing=hide_missing, level=level + 1)
                 if hasattr(v, "_to_s")
                 else str(v)
-                for v in ensure_collection(vs)
+                for v in ensure_list(vs)
                 if v is not None
             )
             for k, vs in self.args.items()
@@ -1232,11 +1248,12 @@ class Identifier(Expression):
     def quoted(self):
         return bool(self.args.get("quoted"))
 
-    def __eq__(self, other):
-        return isinstance(other, self.__class__) and _norm_arg(self.this) == _norm_arg(other.this)
-
     def __hash__(self):
-        return hash((self.key, self.this.lower()))
+        if self._hash is not None:
+            return self._hash
+        if self.quoted and any(char.isupper() for char in self.this):
+            return hash((self.__class__, self.this, self.quoted))
+        return hash((self.__class__, self.this.lower()))
 
     @property
     def output_name(self):
@@ -1322,15 +1339,10 @@ class Limit(Expression):
 class Literal(Condition):
     arg_types = {"this": True, "is_string": True}
 
-    def __eq__(self, other):
-        return (
-            isinstance(other, Literal)
-            and self.this == other.this
-            and self.args["is_string"] == other.args["is_string"]
-        )
-
     def __hash__(self):
-        return hash((self.key, self.this, self.args["is_string"]))
+        if self._hash is not None:
+            return self._hash
+        return hash((self.__class__, self.this, self.args.get("is_string")))
 
     @classmethod
     def number(cls, number) -> Literal:

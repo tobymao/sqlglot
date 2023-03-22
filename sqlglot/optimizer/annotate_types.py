@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.helper import ensure_collection, ensure_list, subclasses
+from sqlglot.helper import ensure_list, subclasses
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 
@@ -117,6 +117,7 @@ class TypeAnnotator:
             expr, exp.DataType.Type.VARCHAR
         ),
         exp.Initcap: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
+        exp.Interval: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INTERVAL),
         exp.Least: lambda self, expr: self._annotate_by_args(expr, "expressions"),
         exp.Length: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BIGINT),
         exp.Levenshtein: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INT),
@@ -297,9 +298,6 @@ class TypeAnnotator:
         return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
 
     def _maybe_annotate(self, expression):
-        if not isinstance(expression, exp.Expression):
-            return None
-
         if expression.type:
             return expression  # We've already inferred the expression's type
 
@@ -312,9 +310,8 @@ class TypeAnnotator:
         )
 
     def _annotate_args(self, expression):
-        for value in expression.args.values():
-            for v in ensure_collection(value):
-                self._maybe_annotate(v)
+        for _, value in expression.iter_expressions():
+            self._maybe_annotate(value)
 
         return expression
 

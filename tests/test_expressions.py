@@ -16,6 +16,12 @@ class TestExpressions(unittest.TestCase):
 
     def test_eq(self):
         self.assertEqual(exp.to_identifier("a"), exp.to_identifier("A"))
+
+        self.assertEqual(
+            exp.Column(table=exp.to_identifier("b"), this=exp.to_identifier("b")),
+            exp.Column(this=exp.to_identifier("b"), table=exp.to_identifier("b")),
+        )
+
         self.assertEqual(exp.to_identifier("a", quoted=True), exp.to_identifier("A"))
         self.assertNotEqual(exp.to_identifier("A", quoted=True), exp.to_identifier("A"))
         self.assertNotEqual(

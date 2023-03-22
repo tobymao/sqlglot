@@ -104,8 +104,13 @@ class Expression(metaclass=_Expression):
 
     @property
     def hashable_args(self) -> t.Any:
+        args = (self.args.get(k) for k in self.arg_types)
+
         return tuple(
-            (k, tuple(v) if isinstance(v, list) else v) for k, v in _norm_args(self).items()
+            (tuple(_norm_arg(a) for a in arg) if arg else None)
+            if isinstance(arg, list)
+            else (_norm_arg(arg) if arg is not None and arg is not False else None)
+            for arg in args
         )
 
     def __hash__(self) -> int:
@@ -3979,23 +3984,6 @@ class Merge(Expression):
 
 class When(Func):
     arg_types = {"matched": True, "source": False, "condition": False, "then": True}
-
-
-def _norm_args(expression):
-    args = {}
-
-    for k, arg in expression.args.items():
-        if isinstance(arg, list):
-            arg = [_norm_arg(a) for a in arg]
-            if not arg:
-                arg = None
-        else:
-            arg = _norm_arg(arg)
-
-        if arg is not None and arg is not False:
-            args[k] = arg
-
-    return args
 
 
 def _norm_arg(arg):

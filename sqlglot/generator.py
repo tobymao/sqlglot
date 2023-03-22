@@ -1196,8 +1196,7 @@ class Generator:
         schema = self.sql(expression, "schema")
         schema = f"{schema}." if schema else ""
         value = self.sql(expression, "value")
-        func = expression.args.get("func")
-        if func:
+        if expression.args.get("func"):
             return f"PRAGMA {schema}{this}({value})"
         value = f" = {value}" if value else ""
         return f"PRAGMA {schema}{this}{value}"

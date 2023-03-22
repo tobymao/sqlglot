@@ -228,6 +228,7 @@ class Parser(metaclass=_Parser):
         TokenType.ORDINALITY,
         TokenType.PERCENT,
         TokenType.PIVOT,
+        TokenType.PRAGMA,
         TokenType.PRECEDING,
         TokenType.RANGE,
         TokenType.REFERENCES,
@@ -3887,17 +3888,14 @@ class Parser(metaclass=_Parser):
         value = None
         func = None
 
-        while self._match(TokenType.DOT):
+        if self._match(TokenType.DOT):
             schema = this
             this = self._parse_primary() or self._parse_id_var()
 
-        if self._match(TokenType.EQ):
-            self._match(TokenType.EQ)
-            value = self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
-        elif self._match(TokenType.L_PAREN):
-            func = True
-            value = self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
-            self._match_r_paren()
+        func = self._match(TokenType.L_PAREN)
+        self._match(TokenType.EQ)
+        value = self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
+        self._match(TokenType.R_PAREN)
         return self.expression(exp.Pragma, this=this, schema=schema, value=value, func=func)
 
     def _parse_show(self) -> t.Optional[exp.Expression]:

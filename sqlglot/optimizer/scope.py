@@ -160,7 +160,7 @@ class Scope:
         Yields:
             exp.Expression: nodes
         """
-        for expression, _, _ in self.walk(bfs=bfs):
+        for expression, *_ in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
                 yield expression
 

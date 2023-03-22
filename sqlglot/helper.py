@@ -174,12 +174,12 @@ def while_changing(expression: Expression, func: t.Callable[[Expression], E]) ->
         The transformed expression.
     """
     while True:
-        for n, _, _ in reversed(tuple(expression.walk())):
+        for n, *_ in reversed(tuple(expression.walk())):
             n._hash = hash(n)
         start = hash(expression)
         expression = func(expression)
 
-        for n, _, _ in expression.walk():
+        for n, *_ in expression.walk():
             n._hash = None
         if start == hash(expression):
             break

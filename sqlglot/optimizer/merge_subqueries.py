@@ -3,7 +3,6 @@ from collections import defaultdict
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.optimizer.simplify import simplify
 
 
 def merge_subqueries(expression, leave_tables_isolated=False):
@@ -330,11 +329,11 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
 
         if set(exp.column_table_names(where.this)) <= sources:
             from_or_join.on(where.this, copy=False)
-            from_or_join.set("on", simplify(from_or_join.args.get("on")))
+            from_or_join.set("on", from_or_join.args.get("on"))
             return
 
     expression.where(where.this, copy=False)
-    expression.set("where", simplify(expression.args.get("where")))
+    expression.set("where", expression.args.get("where"))
 
 
 def _merge_order(outer_scope, inner_scope):

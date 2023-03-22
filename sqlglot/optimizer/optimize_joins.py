@@ -29,7 +29,6 @@ def optimize_joins(expression):
         for name, join in cross_joins:
             for dep in references.get(name, []):
                 on = dep.args["on"]
-                on = on.replace(simplify(on))
 
                 if isinstance(on, exp.Connector):
                     for predicate in on.flatten():

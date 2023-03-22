@@ -1,6 +1,5 @@
 from sqlglot import exp
 from sqlglot.helper import tsort
-from sqlglot.optimizer.simplify import simplify
 
 
 def optimize_joins(expression):

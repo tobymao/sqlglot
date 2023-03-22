@@ -656,6 +656,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LONG": TokenType.BIGINT,
         "BIGINT": TokenType.BIGINT,
         "INT8": TokenType.BIGINT,
+        "DEC": TokenType.DECIMAL,
         "DECIMAL": TokenType.DECIMAL,
         "MAP": TokenType.MAP,
         "NULLABLE": TokenType.NULLABLE,

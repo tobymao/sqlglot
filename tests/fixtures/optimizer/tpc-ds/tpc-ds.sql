@@ -12130,10 +12130,10 @@ WITH "store_sales_2" AS (
     AND (
       "household_demographics"."hd_dep_count" = -1
       AND "household_demographics"."hd_vehicle_count" <= 1
-      AND "time_dim"."t_hour" = 8
+      AND "time_dim"."t_minute" >= 30
       OR "household_demographics"."hd_dep_count" = 2
       AND "household_demographics"."hd_vehicle_count" <= 4
-      AND "time_dim"."t_hour" = 8
+      AND "time_dim"."t_minute" >= 30
     )
     AND "household_demographics"."hd_dep_count" = 2
     AND "household_demographics"."hd_dep_count" = 3
@@ -12143,60 +12143,6 @@ WITH "store_sales_2" AS (
     AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
     AND "time_dim"."t_hour" = 8
     AND "time_dim"."t_minute" >= 30
-    AND (
-      (
-        "household_demographics"."hd_dep_count" = -1
-        AND "household_demographics"."hd_dep_count" = 3
-        AND "household_demographics"."hd_vehicle_count" <= 1
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
-        AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
-        AND "time_dim"."t_minute" >= 30
-      )
-      OR (
-        "household_demographics"."hd_dep_count" = 2
-        AND "household_demographics"."hd_dep_count" = 3
-        AND "household_demographics"."hd_vehicle_count" <= 4
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
-        AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
-        AND "time_dim"."t_minute" >= 30
-      )
-    )
-    AND (
-      (
-        "household_demographics"."hd_dep_count" = -1
-        AND "household_demographics"."hd_vehicle_count" <= 1
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
-        AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
-        AND "time_dim"."t_hour" = 8
-        AND "time_dim"."t_minute" >= 30
-      )
-      OR (
-        "household_demographics"."hd_dep_count" = 2
-        AND "household_demographics"."hd_vehicle_count" <= 4
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
-        AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
-        AND "time_dim"."t_hour" = 8
-        AND "time_dim"."t_minute" >= 30
-      )
-    )
-    AND (
-      (
-        "household_demographics"."hd_dep_count" = -1
-        AND "household_demographics"."hd_vehicle_count" <= 1
-        AND "time_dim"."t_hour" = 8
-        AND "time_dim"."t_minute" >= 30
-      )
-      OR (
-        "household_demographics"."hd_dep_count" = 2
-        AND "household_demographics"."hd_vehicle_count" <= 4
-        AND "time_dim"."t_hour" = 8
-        AND "time_dim"."t_minute" >= 30
-      )
-    )
 ), "household_demographics_3" AS (
   SELECT
     "household_demographics"."hd_demo_sk" AS "hd_demo_sk",

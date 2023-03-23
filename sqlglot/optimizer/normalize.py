@@ -30,9 +30,7 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
     """
     cache: t.Dict[int, str] = {}
 
-    for node, *_ in tuple(
-        expression.walk(prune=lambda e, *_: isinstance(expression, exp.Connector))
-    ):
+    for node, *_ in tuple(expression.walk(prune=lambda e, *_: isinstance(e, exp.Connector))):
         if isinstance(node, exp.Connector):
             if dnf is None:
                 dnf = normalization_distance(node, dnf=False) > normalization_distance(
@@ -41,9 +39,7 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
 
             root = node is expression
             try:
-                node = while_changing(
-                    node, lambda e: distributive_law(e, dnf, max_distance, cache, root)
-                )
+                node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
             except OptimizeError as e:
                 logger.error(f"Optimization Error: %s", e)
                 return expression
@@ -103,7 +99,7 @@ def _predicate_lengths(expression, dnf):
     return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
 
 
-def distributive_law(expression, dnf, max_distance, cache=None, root=True):
+def distributive_law(expression, dnf, max_distance, cache=None):
     """
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
@@ -116,7 +112,7 @@ def distributive_law(expression, dnf, max_distance, cache=None, root=True):
     if distance > max_distance:
         raise OptimizeError(f"Normalization distance {distance} exceeds max {max_distance}")
 
-    exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance, cache, False))
+    exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance, cache))
     to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)
 
     if isinstance(expression, from_exp):
@@ -127,32 +123,29 @@ def distributive_law(expression, dnf, max_distance, cache=None, root=True):
 
         if isinstance(a, to_exp) and isinstance(b, to_exp):
             if len(tuple(a.find_all(exp.Connector))) > len(tuple(b.find_all(exp.Connector))):
-                return _distribute(a, b, from_func, to_func, cache, root)
-            return _distribute(b, a, from_func, to_func, cache, root)
+                return _distribute(a, b, from_func, to_func, cache)
+            return _distribute(b, a, from_func, to_func, cache)
         if isinstance(a, to_exp):
-            return _distribute(b, a, from_func, to_func, cache, root)
+            return _distribute(b, a, from_func, to_func, cache)
         if isinstance(b, to_exp):
-            return _distribute(a, b, from_func, to_func, cache, root)
+            return _distribute(a, b, from_func, to_func, cache)
 
     return expression
 
 
-def _distribute(a, b, from_func, to_func, cache, root):
+def _distribute(a, b, from_func, to_func, cache):
     if isinstance(a, exp.Connector):
         exp.replace_children(
             a,
             lambda c: to_func(
-                exp.paren(from_func(c, b.left)),
-                exp.paren(from_func(c, b.right)),
+                uniq_sort(flatten(from_func(c, b.left)), cache),
+                uniq_sort(flatten(from_func(c, b.right)), cache),
             ),
         )
     else:
-        a = to_func(from_func(a, b.left), from_func(a, b.right))
+        a = to_func(
+            uniq_sort(flatten(from_func(a, b.left)), cache),
+            uniq_sort(flatten(from_func(a, b.right)), cache),
+        )
 
-    return _simplify(a, cache, root)
-
-
-def _simplify(node, cache, root):
-    node = uniq_sort(flatten(node), cache, root)
-    exp.replace_children(node, lambda n: _simplify(n, cache, False))
-    return node
+    return a

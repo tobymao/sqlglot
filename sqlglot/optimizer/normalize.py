@@ -30,20 +30,34 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
     """
     cache: t.Dict[int, str] = {}
 
-    for node, *_ in tuple(
-        expression.walk(prune=lambda e, *_: isinstance(expression, exp.Connector))
-    ):
+    for node, *_ in tuple(expression.walk(prune=lambda e, *_: isinstance(e, exp.Connector))):
         if isinstance(node, exp.Connector):
             if dnf is None:
-                dnf = normalization_distance(node, dnf=False) > normalization_distance(
-                    node, dnf=True
+                dnf_distance = normalization_distance(node, dnf=True)
+                cnf_distance = normalization_distance(node, dnf=False)
+                dnf = cnf_distance > dnf_distance
+                distance = dnf_distance if dnf else cnf_distance
+            else:
+                distance = normalization_distance(node, dnf=dnf)
+
+            if normalized(node, dnf=dnf):
+                continue
+
+            if distance > max_distance:
+                logger.error(
+                    f"Optimization Error: Skipping normalization because distance {distance} exceeds max {max_distance}"
                 )
+                return expression
 
             root = node is expression
+            original = node.copy()
             try:
                 node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
             except OptimizeError as e:
                 logger.error(f"Optimization Error: %s", e)
+                node.replace(original)
+                if root:
+                    return original
                 return expression
 
             if root:
@@ -140,17 +154,14 @@ def _distribute(a, b, from_func, to_func, cache):
         exp.replace_children(
             a,
             lambda c: to_func(
-                exp.paren(from_func(c, b.left)),
-                exp.paren(from_func(c, b.right)),
+                uniq_sort(flatten(from_func(c, b.left)), cache),
+                uniq_sort(flatten(from_func(c, b.right)), cache),
             ),
         )
     else:
-        a = to_func(from_func(a, b.left), from_func(a, b.right))
+        a = to_func(
+            uniq_sort(flatten(from_func(a, b.left)), cache),
+            uniq_sort(flatten(from_func(a, b.right)), cache),
+        )
 
-    return _simplify(a, cache)
-
-
-def _simplify(node, cache):
-    node = uniq_sort(flatten(node), cache)
-    exp.replace_children(node, lambda n: _simplify(n, cache))
-    return node
+    return a

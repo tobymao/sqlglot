@@ -198,6 +198,10 @@ class TestOptimizer(unittest.TestCase):
     def test_simplify(self):
         self.check_file("simplify", optimizer.simplify.simplify)
 
+        expression = parse_one("TRUE AND TRUE AND TRUE")
+        self.assertEqual(exp.true(), optimizer.simplify.simplify(expression))
+        self.assertEqual(exp.true(), optimizer.simplify.simplify(expression.this))
+
     def test_unnest_subqueries(self):
         self.check_file(
             "unnest_subqueries",

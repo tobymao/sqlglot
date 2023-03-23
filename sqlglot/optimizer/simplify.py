@@ -37,10 +37,10 @@ def simplify(expression):
         exp.replace_children(node, lambda e: _simplify(e, False))
         node = simplify_not(node)
         node = flatten(node)
-        node = simplify_connectors(node)
+        node = simplify_connectors(node, root)
         node = remove_compliments(node)
         node.parent = expression.parent
-        node = simplify_literals(node)
+        node = simplify_literals(node, root)
         node = simplify_parens(node)
         if root:
             expression.replace(node)
@@ -105,7 +105,7 @@ def flatten(expression):
     return expression
 
 
-def simplify_connectors(expression):
+def simplify_connectors(expression, root=True):
     def _simplify_connectors(expression, left, right):
         if left == right:
             return left
@@ -139,7 +139,7 @@ def simplify_connectors(expression):
             return _simplify_comparison(expression, left, right, or_=True)
 
     if isinstance(expression, exp.Connector):
-        return _flat_simplify(expression, _simplify_connectors)
+        return _flat_simplify(expression, _simplify_connectors, root)
     return expression
 
 
@@ -303,9 +303,9 @@ def absorb_and_eliminate(expression):
     return expression
 
 
-def simplify_literals(expression):
+def simplify_literals(expression, root=True):
     if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
-        return _flat_simplify(expression, _simplify_binary)
+        return _flat_simplify(expression, _simplify_binary, root)
     elif isinstance(expression, exp.Neg):
         this = expression.this
         if this.is_number:
@@ -477,8 +477,8 @@ def boolean_literal(condition):
     return exp.true() if condition else exp.false()
 
 
-def _flat_simplify(expression, simplifier):
-    if not expression.same_parent:
+def _flat_simplify(expression, simplifier, root=True):
+    if root or not expression.same_parent:
         operands = []
         queue = deque(expression.flatten(unnest=False))
         size = len(queue)

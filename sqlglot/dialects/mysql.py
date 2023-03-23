@@ -421,6 +421,8 @@ class MySQL(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        LIMIT_FETCH = "LIMIT"
+
         def show_sql(self, expression):
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""

@@ -271,6 +271,7 @@ class BigQuery(Dialect):
         }
 
         EXPLICIT_UNION = True
+        LIMIT_FETCH = "LIMIT"
 
         def array_sql(self, expression: exp.Array) -> str:
             first_arg = seq_get(expression.expressions, 0)

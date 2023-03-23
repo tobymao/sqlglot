@@ -440,6 +440,11 @@ class TSQL(Dialect):
 
         TRANSFORMS.pop(exp.ReturnsProperty)
 
+        LIMIT_FETCH = "FETCH"
+
+        def offset_sql(self, expression: exp.Offset) -> str:
+            return f"{super().offset_sql(expression)} ROWS"
+
         def systemtime_sql(self, expression: exp.SystemTime) -> str:
             kind = expression.args["kind"]
             if kind == "ALL":

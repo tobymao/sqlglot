@@ -82,6 +82,8 @@ class SQLite(Dialect):
             exp.TryCast: no_trycast_sql,
         }
 
+        LIMIT_FETCH = "LIMIT"
+
         def cast_sql(self, expression: exp.Cast) -> str:
             if expression.to.this == exp.DataType.Type.DATE:
                 return self.func("DATE", expression.this)
@@ -114,9 +116,6 @@ class SQLite(Dialect):
                 self.unsupported("DATEDIFF unsupported for '{unit}'.")
 
             return f"CAST({sql} AS INTEGER)"
-
-        def fetch_sql(self, expression: exp.Fetch) -> str:
-            return self.limit_sql(exp.Limit(expression=expression.args.get("count")))
 
         # https://www.sqlite.org/lang_aggfunc.html#group_concat
         def groupconcat_sql(self, expression):

@@ -353,6 +353,8 @@ class Hive(Dialect):
             exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
+        LIMIT_FETCH = "LIMIT"
+
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
             return self.func(
                 "COLLECT_LIST",

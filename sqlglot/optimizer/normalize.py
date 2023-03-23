@@ -41,7 +41,9 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
 
             root = node is expression
             try:
-                node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
+                node = while_changing(
+                    node, lambda e: distributive_law(e, dnf, max_distance, cache, root)
+                )
             except OptimizeError as e:
                 logger.error(f"Optimization Error: %s", e)
                 return expression
@@ -101,7 +103,7 @@ def _predicate_lengths(expression, dnf):
     return _predicate_lengths(left, dnf) + _predicate_lengths(right, dnf)
 
 
-def distributive_law(expression, dnf, max_distance, cache=None):
+def distributive_law(expression, dnf, max_distance, cache=None, root=True):
     """
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
@@ -114,7 +116,7 @@ def distributive_law(expression, dnf, max_distance, cache=None):
     if distance > max_distance:
         raise OptimizeError(f"Normalization distance {distance} exceeds max {max_distance}")
 
-    exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance, cache))
+    exp.replace_children(expression, lambda e: distributive_law(e, dnf, max_distance, cache, False))
     to_exp, from_exp = (exp.Or, exp.And) if dnf else (exp.And, exp.Or)
 
     if isinstance(expression, from_exp):
@@ -125,17 +127,17 @@ def distributive_law(expression, dnf, max_distance, cache=None):
 
         if isinstance(a, to_exp) and isinstance(b, to_exp):
             if len(tuple(a.find_all(exp.Connector))) > len(tuple(b.find_all(exp.Connector))):
-                return _distribute(a, b, from_func, to_func, cache)
-            return _distribute(b, a, from_func, to_func, cache)
+                return _distribute(a, b, from_func, to_func, cache, root)
+            return _distribute(b, a, from_func, to_func, cache, root)
         if isinstance(a, to_exp):
-            return _distribute(b, a, from_func, to_func, cache)
+            return _distribute(b, a, from_func, to_func, cache, root)
         if isinstance(b, to_exp):
-            return _distribute(a, b, from_func, to_func, cache)
+            return _distribute(a, b, from_func, to_func, cache, root)
 
     return expression
 
 
-def _distribute(a, b, from_func, to_func, cache):
+def _distribute(a, b, from_func, to_func, cache, root):
     if isinstance(a, exp.Connector):
         exp.replace_children(
             a,
@@ -147,10 +149,10 @@ def _distribute(a, b, from_func, to_func, cache):
     else:
         a = to_func(from_func(a, b.left), from_func(a, b.right))
 
-    return _simplify(a, cache)
+    return _simplify(a, cache, root)
 
 
-def _simplify(node, cache):
-    node = uniq_sort(flatten(node), cache)
-    exp.replace_children(node, lambda n: _simplify(n, cache))
+def _simplify(node, cache, root):
+    node = uniq_sort(flatten(node), cache, root)
+    exp.replace_children(node, lambda n: _simplify(n, cache, False))
     return node

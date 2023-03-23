@@ -32,13 +32,13 @@ def simplify(expression):
     def _simplify(expression, root=True):
         node = expression
         node = rewrite_between(node)
-        node = uniq_sort(node, cache)
-        node = absorb_and_eliminate(node)
+        node = uniq_sort(node, cache, root)
+        node = absorb_and_eliminate(node, root)
         exp.replace_children(node, lambda e: _simplify(e, False))
         node = simplify_not(node)
         node = flatten(node)
         node = simplify_connectors(node, root)
-        node = remove_compliments(node)
+        node = remove_compliments(node, root)
         node.parent = expression.parent
         node = simplify_literals(node, root)
         node = simplify_parens(node)
@@ -221,14 +221,14 @@ def _simplify_comparison(expression, left, right, or_=False):
     return None
 
 
-def remove_compliments(expression):
+def remove_compliments(expression, root=True):
     """
     Removing compliments.
 
     A AND NOT A -> FALSE
     A OR NOT A -> TRUE
     """
-    if isinstance(expression, exp.Connector) and not expression.same_parent:
+    if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
         compliment = exp.false() if isinstance(expression, exp.And) else exp.true()
 
         for a, b in itertools.permutations(expression.flatten(), 2):
@@ -237,13 +237,13 @@ def remove_compliments(expression):
     return expression
 
 
-def uniq_sort(expression, cache=None):
+def uniq_sort(expression, cache=None, root=True):
     """
     Uniq and sort a connector.
 
     C AND A AND B AND B -> A AND B AND C
     """
-    if isinstance(expression, exp.Connector) and not expression.same_parent:
+    if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
         result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
         flattened = tuple(expression.flatten())
         deduped = {GENERATOR.generate(e, cache): e for e in flattened}
@@ -263,7 +263,7 @@ def uniq_sort(expression, cache=None):
     return expression
 
 
-def absorb_and_eliminate(expression):
+def absorb_and_eliminate(expression, root=True):
     """
     absorption:
         A AND (A OR B) -> A
@@ -274,7 +274,7 @@ def absorb_and_eliminate(expression):
         (A AND B) OR (A AND NOT B) -> A
         (A OR B) AND (A OR NOT B) -> A
     """
-    if isinstance(expression, exp.Connector) and not expression.same_parent:
+    if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
         kind = exp.Or if isinstance(expression, exp.And) else exp.And
 
         for a, b in itertools.permutations(expression.flatten(), 2):

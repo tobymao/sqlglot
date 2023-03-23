@@ -30,10 +30,10 @@ def qualify_columns(expression, schema):
         resolver = Resolver(scope, schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
-        _expand_using(scope, resolver)
+        using_column_tables = _expand_using(scope, resolver)
         _qualify_columns(scope, resolver)
         if not isinstance(scope.expression, exp.UDTF):
-            _expand_stars(scope, resolver)
+            _expand_stars(scope, resolver, using_column_tables)
             _qualify_outputs(scope)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
@@ -133,6 +133,8 @@ def _expand_using(scope, resolver):
                     replacement = exp.alias_(replacement, alias=column.name)
 
                 scope.replace(column, replacement)
+
+    return column_tables
 
 
 def _expand_group_by(scope, resolver):
@@ -258,12 +260,18 @@ def _qualify_columns(scope, resolver):
             column.set("table", column_table)
 
 
-def _expand_stars(scope, resolver):
+def _expand_stars(scope, resolver, using_column_tables):
     """Expand stars to lists of column selections"""
 
     new_selections = []
     except_columns = {}
     replace_columns = {}
+    coalesced_columns = set()
+
+    # Create a mapping of automatically joined column names to sets of
+    # the corresponding tables, to make the lookup more efficient
+    ordered_column_tables = using_column_tables
+    using_column_tables = {name: set(tables) for name, tables in using_column_tables.items()}
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
@@ -286,7 +294,21 @@ def _expand_stars(scope, resolver):
             if columns and "*" not in columns:
                 table_id = id(table)
                 for name in columns:
-                    if name not in except_columns.get(table_id, set()):
+                    if name in using_column_tables and table in using_column_tables[name]:
+                        if name in coalesced_columns:
+                            continue
+
+                        coalesced_columns.add(name)
+
+                        tables = ordered_column_tables[name]
+                        coalesce = [exp.column(name, table=table) for table in tables]
+
+                        new_selections.append(
+                            exp.alias_(
+                                exp.Coalesce(this=coalesce[0], expressions=coalesce[1:]), alias=name
+                            )
+                        )
+                    elif name not in except_columns.get(table_id, set()):
                         alias_ = replace_columns.get(table_id, {}).get(name, name)
                         column = exp.column(name, table)
                         new_selections.append(alias(column, alias_) if alias_ != name else column)

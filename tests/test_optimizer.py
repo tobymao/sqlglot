@@ -1,5 +1,6 @@
 import logging
 import unittest
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 
 import duckdb
@@ -18,6 +19,28 @@ from tests.helpers import (
     load_sql_fixtures,
     string_to_bool,
 )
+
+
+def parse_and_optimize(func, sql, dialect, **kwargs):
+    return func(parse_one(sql, read=dialect), **kwargs)
+
+
+def qualify_columns(expression, **kwargs):
+    expression = optimizer.qualify_tables.qualify_tables(expression)
+    expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+    return expression
+
+
+def pushdown_projections(expression, **kwargs):
+    expression = optimizer.qualify_tables.qualify_tables(expression)
+    expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+    expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
+    return expression
+
+
+def normalize(expression, **kwargs):
+    expression = optimizer.normalize.normalize(expression, dnf=False)
+    return optimizer.simplify.simplify(expression)
 
 
 class TestOptimizer(unittest.TestCase):
@@ -81,29 +104,35 @@ class TestOptimizer(unittest.TestCase):
         }
 
     def check_file(self, file, func, pretty=False, execute=False, **kwargs):
-        for i, (meta, sql, expected) in enumerate(
-            load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1
-        ):
-            title = meta.get("title") or f"{i}, {sql}"
-            dialect = meta.get("dialect")
-            leave_tables_isolated = meta.get("leave_tables_isolated")
+        with ProcessPoolExecutor() as pool:
+            results = {}
 
-            func_kwargs = {**kwargs}
-            if leave_tables_isolated is not None:
-                func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+            for i, (meta, sql, expected) in enumerate(
+                load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1
+            ):
+                title = meta.get("title") or f"{i}, {sql}"
+                dialect = meta.get("dialect")
+                execute = execute if meta.get("execute") is None else False
+                leave_tables_isolated = meta.get("leave_tables_isolated")
+
+                func_kwargs = {**kwargs}
+                if leave_tables_isolated is not None:
+                    func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+
+                future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
+                results[future] = (sql, title, expected, dialect, execute)
+
+        for future in as_completed(results):
+            optimized = future.result()
+            sql, title, expected, dialect, execute = results[future]
 
             with self.subTest(title):
-                optimized = func(parse_one(sql, read=dialect), **func_kwargs)
                 self.assertEqual(
                     expected,
                     optimized.sql(pretty=pretty, dialect=dialect),
                 )
 
-            should_execute = meta.get("execute")
-            if should_execute is None:
-                should_execute = execute
-
-            if string_to_bool(should_execute):
+            if string_to_bool(execute):
                 with self.subTest(f"(execute) {title}"):
                     df1 = self.conn.execute(
                         sqlglot.transpile(sql, read=dialect, write="duckdb")[0]
@@ -151,26 +180,12 @@ class TestOptimizer(unittest.TestCase):
             "x AND (y OR z)",
         )
 
-        def normalize(expression, **kwargs):
-            expression = optimizer.normalize.normalize(expression, dnf=False)
-            return optimizer.simplify.simplify(expression)
-
         self.check_file("normalize", normalize)
 
     def test_qualify_columns(self):
-        def qualify_columns(expression, **kwargs):
-            expression = optimizer.qualify_tables.qualify_tables(expression)
-            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
-            return expression
-
         self.check_file("qualify_columns", qualify_columns, execute=True, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):
-        def qualify_columns(expression, **kwargs):
-            expression = optimizer.qualify_tables.qualify_tables(expression)
-            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
-            return expression
-
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
 
@@ -187,12 +202,6 @@ class TestOptimizer(unittest.TestCase):
         self.check_file("lower_identities", optimizer.lower_identities.lower_identities)
 
     def test_pushdown_projection(self):
-        def pushdown_projections(expression, **kwargs):
-            expression = optimizer.qualify_tables.qualify_tables(expression)
-            expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
-            expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
-            return expression
-
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
     def test_simplify(self):

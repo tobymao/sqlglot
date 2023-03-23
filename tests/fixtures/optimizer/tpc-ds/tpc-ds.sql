@@ -1983,6 +1983,22 @@ SELECT
   AVG("store_sales"."ss_ext_wholesale_cost") AS "_col_2",
   SUM("store_sales"."ss_ext_wholesale_cost") AS "_col_3"
 FROM "store_sales" AS "store_sales"
+JOIN "store" AS "store"
+  ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
+CROSS JOIN "household_demographics" AS "household_demographics"
+JOIN "customer_demographics" AS "customer_demographics"
+  ON "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
+  AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
+  AND "customer_demographics"."cd_education_status" = 'Primary'
+  AND "customer_demographics"."cd_education_status" = 'Secondary'
+  AND "customer_demographics"."cd_marital_status" = 'D'
+  AND "customer_demographics"."cd_marital_status" = 'M'
+  AND "customer_demographics"."cd_marital_status" = 'U'
+  AND "household_demographics"."hd_dep_count" = 1
+  AND "household_demographics"."hd_dep_count" = 3
+  AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
+  AND "store_sales"."ss_sales_price" <= 100.00
+  AND "store_sales"."ss_sales_price" >= 150.00
 JOIN "customer_address" AS "customer_address"
   ON (
     "customer_address"."ca_country" = 'United States'
@@ -2005,204 +2021,9 @@ JOIN "customer_address" AS "customer_address"
     AND "store_sales"."ss_net_profit" <= 300
     AND "store_sales"."ss_net_profit" >= 150
   )
-CROSS JOIN "date_dim" AS "date_dim"
-CROSS JOIN "household_demographics" AS "household_demographics"
-JOIN "customer_demographics" AS "customer_demographics"
-  ON (
-    "customer_address"."ca_country" = 'United States'
-    AND "customer_address"."ca_state" IN ('GA', 'TX', 'NJ')
-    AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-    AND "store_sales"."ss_net_profit" <= 250
-    AND "store_sales"."ss_net_profit" >= 50
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = 'Secondary'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "date_dim"."d_year" = 2001
-        AND "household_demographics"."hd_dep_count" = 1
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-      )
-      OR (
-        "date_dim"."d_year" = 2001
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'U'
-            AND "household_demographics"."hd_dep_count" = 3
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Primary'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "household_demographics"."hd_dep_count" = 1
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-        )
-      )
-    )
-  )
-  OR (
-    (
-      (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('AZ', 'NE', 'IA')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 200
-        AND "store_sales"."ss_net_profit" >= 100
-      )
-      OR (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('MS', 'CA', 'NV')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 300
-        AND "store_sales"."ss_net_profit" >= 150
-      )
-    )
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = 'Secondary'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "date_dim"."d_year" = 2001
-        AND "household_demographics"."hd_dep_count" = 1
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-      )
-      OR (
-        "date_dim"."d_year" = 2001
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'U'
-            AND "household_demographics"."hd_dep_count" = 3
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Primary'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "household_demographics"."hd_dep_count" = 1
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-        )
-      )
-    )
-  )
-JOIN "store" AS "store"
-  ON (
-    "customer_address"."ca_country" = 'United States'
-    AND "customer_address"."ca_state" IN ('GA', 'TX', 'NJ')
-    AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-    AND "store_sales"."ss_net_profit" <= 250
-    AND "store_sales"."ss_net_profit" >= 50
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = 'Secondary'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "household_demographics"."hd_dep_count" = 1
-        AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-      )
-      OR (
-        "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'U'
-            AND "household_demographics"."hd_dep_count" = 3
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Primary'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "household_demographics"."hd_dep_count" = 1
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-        )
-      )
-    )
-  )
-  OR (
-    (
-      (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('AZ', 'NE', 'IA')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 200
-        AND "store_sales"."ss_net_profit" >= 100
-      )
-      OR (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('MS', 'CA', 'NV')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 300
-        AND "store_sales"."ss_net_profit" >= 150
-      )
-    )
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = 'Secondary'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "household_demographics"."hd_dep_count" = 1
-        AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-      )
-      OR (
-        "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'U'
-            AND "household_demographics"."hd_dep_count" = 3
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Primary'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "household_demographics"."hd_dep_count" = 1
-            AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-        )
-      )
-    )
-  );
+JOIN "date_dim" AS "date_dim"
+  ON "date_dim"."d_year" = 2001
+  AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk";
 
 --------------------------------------
 -- TPC-DS 14
@@ -5830,6 +5651,30 @@ WHERE  s_store_sk = ss_store_sk
 SELECT
   SUM("store_sales"."ss_quantity") AS "_col_0"
 FROM "store_sales" AS "store_sales"
+JOIN "store" AS "store"
+  ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
+JOIN "customer_demographics" AS "customer_demographics"
+  ON (
+    "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
+    AND "customer_demographics"."cd_education_status" = '2 yr Degree'
+    AND "customer_demographics"."cd_marital_status" = 'D'
+    AND "store_sales"."ss_sales_price" <= 200.00
+    AND "store_sales"."ss_sales_price" >= 150.00
+  )
+  OR (
+    "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
+    AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
+    AND "customer_demographics"."cd_marital_status" = 'M'
+    AND "store_sales"."ss_sales_price" <= 100.00
+    AND "store_sales"."ss_sales_price" >= 50.00
+  )
+  OR (
+    "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
+    AND "customer_demographics"."cd_education_status" = 'Secondary'
+    AND "customer_demographics"."cd_marital_status" = 'W'
+    AND "store_sales"."ss_sales_price" <= 150.00
+    AND "store_sales"."ss_sales_price" >= 100.00
+  )
 JOIN "customer_address" AS "customer_address"
   ON (
     "customer_address"."ca_country" = 'United States'
@@ -5852,179 +5697,9 @@ JOIN "customer_address" AS "customer_address"
     AND "store_sales"."ss_net_profit" <= 2000
     AND "store_sales"."ss_net_profit" >= 0
   )
-CROSS JOIN "date_dim" AS "date_dim"
-JOIN "customer_demographics" AS "customer_demographics"
-  ON (
-    "customer_address"."ca_country" = 'United States'
-    AND "customer_address"."ca_state" IN ('OK', 'PA', 'CA')
-    AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-    AND "store_sales"."ss_net_profit" <= 25000
-    AND "store_sales"."ss_net_profit" >= 50
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = '2 yr Degree'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "date_dim"."d_year" = 1999
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-      )
-      OR (
-        "date_dim"."d_year" = 1999
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Secondary'
-            AND "customer_demographics"."cd_marital_status" = 'W'
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-        )
-      )
-    )
-  )
-  OR (
-    (
-      (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('CO', 'TN', 'ND')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 3000
-        AND "store_sales"."ss_net_profit" >= 150
-      )
-      OR (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('TX', 'NE', 'MO')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 2000
-        AND "store_sales"."ss_net_profit" >= 0
-      )
-    )
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = '2 yr Degree'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "date_dim"."d_year" = 1999
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-      )
-      OR (
-        "date_dim"."d_year" = 1999
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Secondary'
-            AND "customer_demographics"."cd_marital_status" = 'W'
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-        )
-      )
-    )
-  )
-JOIN "store" AS "store"
-  ON (
-    "customer_address"."ca_country" = 'United States'
-    AND "customer_address"."ca_state" IN ('OK', 'PA', 'CA')
-    AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-    AND "store_sales"."ss_net_profit" <= 25000
-    AND "store_sales"."ss_net_profit" >= 50
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = '2 yr Degree'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-      )
-      OR (
-        "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Secondary'
-            AND "customer_demographics"."cd_marital_status" = 'W'
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-        )
-      )
-    )
-  )
-  OR (
-    (
-      (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('CO', 'TN', 'ND')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 3000
-        AND "store_sales"."ss_net_profit" >= 150
-      )
-      OR (
-        "customer_address"."ca_country" = 'United States'
-        AND "customer_address"."ca_state" IN ('TX', 'NE', 'MO')
-        AND "store_sales"."ss_addr_sk" = "customer_address"."ca_address_sk"
-        AND "store_sales"."ss_net_profit" <= 2000
-        AND "store_sales"."ss_net_profit" >= 0
-      )
-    )
-    AND (
-      (
-        "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-        AND "customer_demographics"."cd_education_status" = '2 yr Degree'
-        AND "customer_demographics"."cd_marital_status" = 'D'
-        AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_sales_price" <= 200.00
-        AND "store_sales"."ss_sales_price" >= 150.00
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-      )
-      OR (
-        "store"."s_store_sk" = "store_sales"."ss_store_sk"
-        AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-        AND (
-          (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
-            AND "customer_demographics"."cd_marital_status" = 'M'
-            AND "store_sales"."ss_sales_price" <= 100.00
-            AND "store_sales"."ss_sales_price" >= 50.00
-          )
-          OR (
-            "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-            AND "customer_demographics"."cd_education_status" = 'Secondary'
-            AND "customer_demographics"."cd_marital_status" = 'W'
-            AND "store_sales"."ss_sales_price" <= 150.00
-            AND "store_sales"."ss_sales_price" >= 100.00
-          )
-        )
-      )
-    )
-  );
+JOIN "date_dim" AS "date_dim"
+  ON "date_dim"."d_year" = 1999
+  AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk";
 
 --------------------------------------
 -- TPC-DS 49
@@ -11609,7 +11284,7 @@ ORDER  BY Substr(r_reason_desc, 1, 20),
           Avg(wr_refunded_cash),
           Avg(wr_fee)
 LIMIT 100;
-WITH "cd1" AS (
+WITH "cd2" AS (
   SELECT
     "customer_demographics"."cd_demo_sk" AS "cd_demo_sk",
     "customer_demographics"."cd_marital_status" AS "cd_marital_status",
@@ -11622,235 +11297,67 @@ SELECT
   AVG("web_returns"."wr_refunded_cash") AS "_col_2",
   AVG("web_returns"."wr_fee") AS "_col_3"
 FROM "web_sales" AS "web_sales"
-JOIN "customer_address" AS "customer_address"
-  ON (
-    "customer_address"."ca_country" = 'United States'
-    AND "customer_address"."ca_state" IN ('FL', 'WI', 'KS')
-    AND "web_sales"."ws_net_profit" <= 250
-    AND "web_sales"."ws_net_profit" >= 50
-  )
-  OR (
-    "customer_address"."ca_country" = 'United States'
-    AND "customer_address"."ca_state" IN ('KY', 'ME', 'IL')
-    AND "web_sales"."ws_net_profit" <= 200
-    AND "web_sales"."ws_net_profit" >= 100
-  )
-  OR (
-    "customer_address"."ca_country" = 'United States'
-    AND "customer_address"."ca_state" IN ('OK', 'NE', 'MN')
-    AND "web_sales"."ws_net_profit" <= 300
-    AND "web_sales"."ws_net_profit" >= 150
-  )
-CROSS JOIN "web_page" AS "web_page"
-CROSS JOIN "reason" AS "reason"
-CROSS JOIN "date_dim" AS "date_dim"
-CROSS JOIN "cd1" AS "cd1"
-CROSS JOIN "cd1" AS "cd2"
 JOIN "web_returns" AS "web_returns"
-  ON (
+  ON "web_sales"."ws_item_sk" = "web_returns"."wr_item_sk"
+  AND "web_sales"."ws_order_number" = "web_returns"."wr_order_number"
+JOIN "web_page" AS "web_page"
+  ON "web_sales"."ws_web_page_sk" = "web_page"."wp_web_page_sk"
+JOIN "cd2" AS "cd2"
+  ON "cd2"."cd_demo_sk" = "web_returns"."wr_returning_cdemo_sk"
+JOIN "cd2" AS "cd1"
+  ON "cd1"."cd_demo_sk" = "web_returns"."wr_refunded_cdemo_sk"
+  AND (
     (
-      "customer_address"."ca_country" = 'United States'
-      AND "customer_address"."ca_state" IN ('FL', 'WI', 'KS')
-      AND "web_sales"."ws_net_profit" <= 250
-      AND "web_sales"."ws_net_profit" >= 50
-      AND (
-        (
-          "cd1"."cd_demo_sk" = "web_returns"."wr_refunded_cdemo_sk"
-          AND "cd1"."cd_education_status" = "cd2"."cd_education_status"
-          AND "cd1"."cd_education_status" = 'Advanced Degree'
-          AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-          AND "cd1"."cd_marital_status" = 'M'
-          AND "cd2"."cd_demo_sk" = "web_returns"."wr_returning_cdemo_sk"
-          AND "customer_address"."ca_address_sk" = "web_returns"."wr_refunded_addr_sk"
-          AND "date_dim"."d_year" = 2001
-          AND "web_sales"."ws_item_sk" = "web_returns"."wr_item_sk"
-          AND "web_sales"."ws_order_number" = "web_returns"."wr_order_number"
-          AND "web_sales"."ws_sales_price" <= 200.00
-          AND "web_sales"."ws_sales_price" >= 150.00
-          AND "web_sales"."ws_sold_date_sk" = "date_dim"."d_date_sk"
-          AND "web_sales"."ws_web_page_sk" = "web_page"."wp_web_page_sk"
-        )
-        OR (
-          "cd1"."cd_demo_sk" = "web_returns"."wr_refunded_cdemo_sk"
-          AND "cd2"."cd_demo_sk" = "web_returns"."wr_returning_cdemo_sk"
-          AND "customer_address"."ca_address_sk" = "web_returns"."wr_refunded_addr_sk"
-          AND "date_dim"."d_year" = 2001
-          AND "web_sales"."ws_item_sk" = "web_returns"."wr_item_sk"
-          AND "web_sales"."ws_order_number" = "web_returns"."wr_order_number"
-          AND "web_sales"."ws_sold_date_sk" = "date_dim"."d_date_sk"
-          AND "web_sales"."ws_web_page_sk" = "web_page"."wp_web_page_sk"
-          AND (
-            (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Primary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'W'
-              AND "web_sales"."ws_sales_price" <= 150.00
-              AND "web_sales"."ws_sales_price" >= 100.00
-            )
-            OR (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Secondary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'D'
-              AND "web_sales"."ws_sales_price" <= 100.00
-              AND "web_sales"."ws_sales_price" >= 50.00
-            )
-          )
-        )
-      )
+      "cd1"."cd_education_status" = "cd2"."cd_education_status"
+      AND "cd1"."cd_education_status" = 'Advanced Degree'
+      AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
+      AND "cd1"."cd_marital_status" = 'M'
+      AND "web_sales"."ws_sales_price" <= 200.00
+      AND "web_sales"."ws_sales_price" >= 150.00
     )
     OR (
-      (
-        (
-          "cd1"."cd_demo_sk" = "web_returns"."wr_refunded_cdemo_sk"
-          AND "cd1"."cd_education_status" = "cd2"."cd_education_status"
-          AND "cd1"."cd_education_status" = 'Advanced Degree'
-          AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-          AND "cd1"."cd_marital_status" = 'M'
-          AND "cd2"."cd_demo_sk" = "web_returns"."wr_returning_cdemo_sk"
-          AND "customer_address"."ca_address_sk" = "web_returns"."wr_refunded_addr_sk"
-          AND "date_dim"."d_year" = 2001
-          AND "web_sales"."ws_item_sk" = "web_returns"."wr_item_sk"
-          AND "web_sales"."ws_order_number" = "web_returns"."wr_order_number"
-          AND "web_sales"."ws_sales_price" <= 200.00
-          AND "web_sales"."ws_sales_price" >= 150.00
-          AND "web_sales"."ws_sold_date_sk" = "date_dim"."d_date_sk"
-          AND "web_sales"."ws_web_page_sk" = "web_page"."wp_web_page_sk"
-        )
-        OR (
-          "cd1"."cd_demo_sk" = "web_returns"."wr_refunded_cdemo_sk"
-          AND "cd2"."cd_demo_sk" = "web_returns"."wr_returning_cdemo_sk"
-          AND "customer_address"."ca_address_sk" = "web_returns"."wr_refunded_addr_sk"
-          AND "date_dim"."d_year" = 2001
-          AND "web_sales"."ws_item_sk" = "web_returns"."wr_item_sk"
-          AND "web_sales"."ws_order_number" = "web_returns"."wr_order_number"
-          AND "web_sales"."ws_sold_date_sk" = "date_dim"."d_date_sk"
-          AND "web_sales"."ws_web_page_sk" = "web_page"."wp_web_page_sk"
-          AND (
-            (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Primary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'W'
-              AND "web_sales"."ws_sales_price" <= 150.00
-              AND "web_sales"."ws_sales_price" >= 100.00
-            )
-            OR (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Secondary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'D'
-              AND "web_sales"."ws_sales_price" <= 100.00
-              AND "web_sales"."ws_sales_price" >= 50.00
-            )
-          )
-        )
-      )
-      AND (
-        (
-          "customer_address"."ca_country" = 'United States'
-          AND "customer_address"."ca_state" IN ('KY', 'ME', 'IL')
-          AND "web_sales"."ws_net_profit" <= 200
-          AND "web_sales"."ws_net_profit" >= 100
-        )
-        OR (
-          "customer_address"."ca_country" = 'United States'
-          AND "customer_address"."ca_state" IN ('OK', 'NE', 'MN')
-          AND "web_sales"."ws_net_profit" <= 300
-          AND "web_sales"."ws_net_profit" >= 150
-        )
-      )
+      "cd1"."cd_education_status" = "cd2"."cd_education_status"
+      AND "cd1"."cd_education_status" = 'Primary'
+      AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
+      AND "cd1"."cd_marital_status" = 'W'
+      AND "web_sales"."ws_sales_price" <= 150.00
+      AND "web_sales"."ws_sales_price" >= 100.00
+    )
+    OR (
+      "cd1"."cd_education_status" = "cd2"."cd_education_status"
+      AND "cd1"."cd_education_status" = 'Secondary'
+      AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
+      AND "cd1"."cd_marital_status" = 'D'
+      AND "web_sales"."ws_sales_price" <= 100.00
+      AND "web_sales"."ws_sales_price" >= 50.00
     )
   )
+JOIN "customer_address" AS "customer_address"
+  ON "customer_address"."ca_address_sk" = "web_returns"."wr_refunded_addr_sk"
   AND (
     (
       "customer_address"."ca_country" = 'United States'
       AND "customer_address"."ca_state" IN ('FL', 'WI', 'KS')
       AND "web_sales"."ws_net_profit" <= 250
       AND "web_sales"."ws_net_profit" >= 50
-      AND (
-        (
-          "cd1"."cd_education_status" = "cd2"."cd_education_status"
-          AND "cd1"."cd_education_status" = 'Advanced Degree'
-          AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-          AND "cd1"."cd_marital_status" = 'M'
-          AND "reason"."r_reason_sk" = "web_returns"."wr_reason_sk"
-          AND "web_sales"."ws_sales_price" <= 200.00
-          AND "web_sales"."ws_sales_price" >= 150.00
-        )
-        OR (
-          "reason"."r_reason_sk" = "web_returns"."wr_reason_sk"
-          AND (
-            (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Primary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'W'
-              AND "web_sales"."ws_sales_price" <= 150.00
-              AND "web_sales"."ws_sales_price" >= 100.00
-            )
-            OR (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Secondary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'D'
-              AND "web_sales"."ws_sales_price" <= 100.00
-              AND "web_sales"."ws_sales_price" >= 50.00
-            )
-          )
-        )
-      )
     )
     OR (
-      (
-        (
-          "cd1"."cd_education_status" = "cd2"."cd_education_status"
-          AND "cd1"."cd_education_status" = 'Advanced Degree'
-          AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-          AND "cd1"."cd_marital_status" = 'M'
-          AND "reason"."r_reason_sk" = "web_returns"."wr_reason_sk"
-          AND "web_sales"."ws_sales_price" <= 200.00
-          AND "web_sales"."ws_sales_price" >= 150.00
-        )
-        OR (
-          "reason"."r_reason_sk" = "web_returns"."wr_reason_sk"
-          AND (
-            (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Primary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'W'
-              AND "web_sales"."ws_sales_price" <= 150.00
-              AND "web_sales"."ws_sales_price" >= 100.00
-            )
-            OR (
-              "cd1"."cd_education_status" = "cd2"."cd_education_status"
-              AND "cd1"."cd_education_status" = 'Secondary'
-              AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
-              AND "cd1"."cd_marital_status" = 'D'
-              AND "web_sales"."ws_sales_price" <= 100.00
-              AND "web_sales"."ws_sales_price" >= 50.00
-            )
-          )
-        )
-      )
-      AND (
-        (
-          "customer_address"."ca_country" = 'United States'
-          AND "customer_address"."ca_state" IN ('KY', 'ME', 'IL')
-          AND "web_sales"."ws_net_profit" <= 200
-          AND "web_sales"."ws_net_profit" >= 100
-        )
-        OR (
-          "customer_address"."ca_country" = 'United States'
-          AND "customer_address"."ca_state" IN ('OK', 'NE', 'MN')
-          AND "web_sales"."ws_net_profit" <= 300
-          AND "web_sales"."ws_net_profit" >= 150
-        )
-      )
+      "customer_address"."ca_country" = 'United States'
+      AND "customer_address"."ca_state" IN ('KY', 'ME', 'IL')
+      AND "web_sales"."ws_net_profit" <= 200
+      AND "web_sales"."ws_net_profit" >= 100
+    )
+    OR (
+      "customer_address"."ca_country" = 'United States'
+      AND "customer_address"."ca_state" IN ('OK', 'NE', 'MN')
+      AND "web_sales"."ws_net_profit" <= 300
+      AND "web_sales"."ws_net_profit" >= 150
     )
   )
+JOIN "date_dim" AS "date_dim"
+  ON "date_dim"."d_year" = 2001 AND "web_sales"."ws_sold_date_sk" = "date_dim"."d_date_sk"
+JOIN "reason" AS "reason"
+  ON "reason"."r_reason_sk" = "web_returns"."wr_reason_sk"
 GROUP BY
   "reason"."r_reason_desc"
 ORDER BY
@@ -12112,38 +11619,7 @@ WITH "store_sales_2" AS (
     "store_sales"."ss_hdemo_sk" AS "ss_hdemo_sk",
     "store_sales"."ss_store_sk" AS "ss_store_sk"
   FROM "store_sales" AS "store_sales"
-), "store_2" AS (
-  SELECT
-    "store"."s_store_sk" AS "s_store_sk",
-    "store"."s_store_name" AS "s_store_name"
-  FROM "store" AS "store"
-  WHERE
-    "store"."s_store_name" = 'ese'
-), "s1" AS (
-  SELECT
-    COUNT(*) AS "h8_30_to_9"
-  FROM "store_sales_2" AS "store_sales"
-  CROSS JOIN "time_dim" AS "time_dim"
-  CROSS JOIN "store_2" AS "store"
-  JOIN "household_demographics" AS "household_demographics"
-    ON "household_demographics"."hd_dep_count" = -1
-    AND (
-      "household_demographics"."hd_dep_count" = -1
-      AND "household_demographics"."hd_vehicle_count" <= 1
-      AND "time_dim"."t_minute" >= 30
-      OR "household_demographics"."hd_dep_count" = 2
-      AND "household_demographics"."hd_vehicle_count" <= 4
-      AND "time_dim"."t_minute" >= 30
-    )
-    AND "household_demographics"."hd_dep_count" = 2
-    AND "household_demographics"."hd_dep_count" = 3
-    AND "household_demographics"."hd_vehicle_count" <= 1
-    AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
-    AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
-    AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
-    AND "time_dim"."t_hour" = 8
-    AND "time_dim"."t_minute" >= 30
-), "household_demographics_3" AS (
+), "household_demographics_2" AS (
   SELECT
     "household_demographics"."hd_demo_sk" AS "hd_demo_sk",
     "household_demographics"."hd_dep_count" AS "hd_dep_count",
@@ -12162,10 +11638,29 @@ WITH "store_sales_2" AS (
       "household_demographics"."hd_dep_count" = 3
       AND "household_demographics"."hd_vehicle_count" <= 5
     )
+), "store_2" AS (
+  SELECT
+    "store"."s_store_sk" AS "s_store_sk",
+    "store"."s_store_name" AS "s_store_name"
+  FROM "store" AS "store"
+  WHERE
+    "store"."s_store_name" = 'ese'
+), "s1" AS (
+  SELECT
+    COUNT(*) AS "h8_30_to_9"
+  FROM "store_sales_2" AS "store_sales"
+  JOIN "household_demographics_2" AS "household_demographics"
+    ON "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
+  JOIN "time_dim" AS "time_dim"
+    ON "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
+    AND "time_dim"."t_hour" = 8
+    AND "time_dim"."t_minute" >= 30
+  JOIN "store_2" AS "store"
+    ON "store_sales"."ss_store_sk" = "store"."s_store_sk"
 ), "s2" AS (
   SELECT
     COUNT(*) AS "h9_to_9_30"
-  FROM "store_sales_2" AS "store_sales", "household_demographics_3" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
+  FROM "store_sales_2" AS "store_sales", "household_demographics_2" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
   WHERE
     "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
     AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
@@ -12175,7 +11670,7 @@ WITH "store_sales_2" AS (
 ), "s3" AS (
   SELECT
     COUNT(*) AS "h9_30_to_10"
-  FROM "store_sales_2" AS "store_sales", "household_demographics_3" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
+  FROM "store_sales_2" AS "store_sales", "household_demographics_2" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
   WHERE
     "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
     AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
@@ -12185,7 +11680,7 @@ WITH "store_sales_2" AS (
 ), "s4" AS (
   SELECT
     COUNT(*) AS "h10_to_10_30"
-  FROM "store_sales_2" AS "store_sales", "household_demographics_3" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
+  FROM "store_sales_2" AS "store_sales", "household_demographics_2" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
   WHERE
     "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
     AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
@@ -12195,7 +11690,7 @@ WITH "store_sales_2" AS (
 ), "s5" AS (
   SELECT
     COUNT(*) AS "h10_30_to_11"
-  FROM "store_sales_2" AS "store_sales", "household_demographics_3" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
+  FROM "store_sales_2" AS "store_sales", "household_demographics_2" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
   WHERE
     "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
     AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
@@ -12205,7 +11700,7 @@ WITH "store_sales_2" AS (
 ), "s6" AS (
   SELECT
     COUNT(*) AS "h11_to_11_30"
-  FROM "store_sales_2" AS "store_sales", "household_demographics_3" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
+  FROM "store_sales_2" AS "store_sales", "household_demographics_2" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
   WHERE
     "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
     AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
@@ -12215,7 +11710,7 @@ WITH "store_sales_2" AS (
 ), "s7" AS (
   SELECT
     COUNT(*) AS "h11_30_to_12"
-  FROM "store_sales_2" AS "store_sales", "household_demographics_3" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
+  FROM "store_sales_2" AS "store_sales", "household_demographics_2" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
   WHERE
     "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
     AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
@@ -12225,7 +11720,7 @@ WITH "store_sales_2" AS (
 ), "s8" AS (
   SELECT
     COUNT(*) AS "h12_to_12_30"
-  FROM "store_sales_2" AS "store_sales", "household_demographics_3" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
+  FROM "store_sales_2" AS "store_sales", "household_demographics_2" AS "household_demographics", "time_dim" AS "time_dim", "store_2" AS "store"
   WHERE
     "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
     AND "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"

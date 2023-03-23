@@ -4,17 +4,13 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
-from sqlglot.helper import csv, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 PASSING_TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
     TokenType.COLUMN,
     TokenType.RETURNING,
 }
-
-
-def _limit_sql(self, expression):
-    return self.fetch_sql(exp.Fetch(direction="FIRST", count=expression.expression))
 
 
 def _parse_xml_table(self) -> exp.XMLTable:
@@ -126,7 +122,6 @@ class Oracle(Dialect):
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.ILike: no_ilike_sql,
-            exp.Limit: _limit_sql,
             exp.Matches: rename_func("DECODE"),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
@@ -138,28 +133,7 @@ class Oracle(Dialect):
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }
 
-        def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
-            return csv(
-                *sqls,
-                *[self.sql(sql) for sql in expression.args.get("joins") or []],
-                self.sql(expression, "match"),
-                *[self.sql(sql) for sql in expression.args.get("laterals") or []],
-                self.sql(expression, "where"),
-                self.sql(expression, "group"),
-                self.sql(expression, "having"),
-                self.sql(expression, "qualify"),
-                self.seg("WINDOW ") + self.expressions(expression, "windows", flat=True)
-                if expression.args.get("windows")
-                else "",
-                self.sql(expression, "distribute"),
-                self.sql(expression, "sort"),
-                self.sql(expression, "cluster"),
-                self.sql(expression, "order"),
-                self.sql(expression, "offset"),  # offset before limit in oracle
-                self.sql(expression, "limit"),
-                self.sql(expression, "lock"),
-                sep="",
-            )
+        LIMIT_FETCH = "FETCH"
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"

@@ -194,8 +194,9 @@ class TestPostgres(Validator):
             write={
                 "postgres": "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",
                 "presto": "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",
-                "hive": "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",
-                "spark": "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",
+                "hive": "SELECT * FROM x LIMIT 1",
+                "spark": "SELECT * FROM x LIMIT 1",
+                "sqlite": "SELECT * FROM x LIMIT 1",
             },
         )
         self.validate_all(

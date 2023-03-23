@@ -110,6 +110,10 @@ class Generator:
     # Whether or not MERGE ... WHEN MATCHED BY SOURCE is allowed
     MATCHED_BY_SOURCE = True
 
+    # Whether or not limit and fetch are supported
+    # "ALL", "LIMIT", "FETCH"
+    LIMIT_FETCH = "ALL"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1322,6 +1326,15 @@ class Generator:
         return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}"
 
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
+        limit = expression.args.get("limit")
+
+        if self.LIMIT_FETCH == "LIMIT" and isinstance(limit, exp.Fetch):
+            limit = exp.Limit(expression=limit.args.get("count"))
+        elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
+            limit = exp.Fetch(direction="FIRST", count=limit.expression)
+
+        fetch = isinstance(limit, exp.Fetch)
+
         return csv(
             *sqls,
             *[self.sql(sql) for sql in expression.args.get("joins") or []],
@@ -1338,8 +1351,8 @@ class Generator:
             self.sql(expression, "sort"),
             self.sql(expression, "cluster"),
             self.sql(expression, "order"),
-            self.sql(expression, "limit"),
-            self.sql(expression, "offset"),
+            self.sql(expression, "offset") if fetch else self.sql(limit),
+            self.sql(limit) if fetch else self.sql(expression, "offset"),
             self.sql(expression, "lock"),
             self.sql(expression, "sample"),
             sep="",

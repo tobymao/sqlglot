@@ -212,5 +212,7 @@ class DuckDB(Dialect):
             "except": "EXCLUDE",
         }
 
+        LIMIT_FETCH = "LIMIT"
+
         def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:
             return super().tablesample_sql(expression, seed_prefix="REPEATABLE")

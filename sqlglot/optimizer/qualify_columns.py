@@ -73,7 +73,7 @@ def _expand_using(scope, resolver):
     names = {join.this.alias for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
-    # Mapping of automatically joined column names to source names
+    # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables = {}
 
     for join in joins:
@@ -112,11 +112,12 @@ def _expand_using(scope, resolver):
                 )
             )
 
-            tables = column_tables.setdefault(identifier, [])
+            # Set all values in the dict to None, because we only care about the key ordering
+            tables = column_tables.setdefault(identifier, {})
             if table not in tables:
-                tables.append(table)
+                tables[table] = None
             if join_table not in tables:
-                tables.append(join_table)
+                tables[join_table] = None
 
         join.args.pop("using")
         join.set("on", exp.and_(*conditions))
@@ -268,11 +269,6 @@ def _expand_stars(scope, resolver, using_column_tables):
     replace_columns = {}
     coalesced_columns = set()
 
-    # Create a mapping of automatically joined column names to sets of
-    # the corresponding tables, to make the lookup more efficient
-    ordered_column_tables = using_column_tables
-    using_column_tables = {name: set(tables) for name, tables in using_column_tables.items()}
-
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
@@ -300,7 +296,7 @@ def _expand_stars(scope, resolver, using_column_tables):
 
                         coalesced_columns.add(name)
 
-                        tables = ordered_column_tables[name]
+                        tables = using_column_tables[name]
                         coalesce = [exp.column(name, table=table) for table in tables]
 
                         new_selections.append(

@@ -125,6 +125,7 @@ class TestDuckDB(Validator):
             "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a)"
         )
 
+        self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
             "WITH 'x' AS (SELECT 1) SELECT * FROM x",

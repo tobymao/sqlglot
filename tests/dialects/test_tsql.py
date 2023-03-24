@@ -568,15 +568,21 @@ WHERE
             write={"spark": "LAST_DAY(ADD_MONTHS(CURRENT_TIMESTAMP(), -1))"},
         )
 
-    def test_variables(self):
-        # In TSQL @, # can be used as a prefix for variables/identifiers
-        expr = parse_one("@x", read="tsql")
-        self.assertIsInstance(expr, exp.Column)
-        self.assertIsInstance(expr.this, exp.Identifier)
-
+    def test_identifier_prefixes(self):
         expr = parse_one("#x", read="tsql")
         self.assertIsInstance(expr, exp.Column)
         self.assertIsInstance(expr.this, exp.Identifier)
+        self.assertEqual(expr.sql("tsql"), "#x")
+
+        expr = parse_one("@x", read="tsql")
+        self.assertIsInstance(expr, exp.Parameter)
+        self.assertIsInstance(expr.this, exp.Var)
+        self.assertEqual(expr.sql("tsql"), "@x")
+
+        table = parse_one("select * from @x", read="tsql").args["from"].expressions[0]
+        self.assertIsInstance(table, exp.Table)
+        self.assertIsInstance(table.this, exp.Parameter)
+        self.assertIsInstance(table.this.this, exp.Var)
 
     def test_system_time(self):
         self.validate_all(

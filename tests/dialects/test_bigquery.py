@@ -15,6 +15,9 @@ class TestBigQuery(Validator):
         )
 
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
+        self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
+        self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})
+        self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all(
             "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
             write={

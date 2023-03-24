@@ -255,17 +255,20 @@ class BigQuery(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
-            exp.DataType.Type.TINYINT: "INT64",
-            exp.DataType.Type.SMALLINT: "INT64",
-            exp.DataType.Type.INT: "INT64",
             exp.DataType.Type.BIGINT: "INT64",
-            exp.DataType.Type.DECIMAL: "NUMERIC",
-            exp.DataType.Type.FLOAT: "FLOAT64",
-            exp.DataType.Type.DOUBLE: "FLOAT64",
             exp.DataType.Type.BOOLEAN: "BOOL",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.VARCHAR: "STRING",
+            exp.DataType.Type.CHAR: "STRING",
+            exp.DataType.Type.DECIMAL: "NUMERIC",
+            exp.DataType.Type.DOUBLE: "FLOAT64",
+            exp.DataType.Type.FLOAT: "FLOAT64",
+            exp.DataType.Type.INT: "INT64",
+            exp.DataType.Type.NCHAR: "STRING",
             exp.DataType.Type.NVARCHAR: "STRING",
+            exp.DataType.Type.NVARCHAR: "STRING",
+            exp.DataType.Type.SMALLINT: "INT64",
+            exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.TINYINT: "INT64",
+            exp.DataType.Type.VARCHAR: "STRING",
         }
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore

@@ -80,6 +80,7 @@ class DuckDB(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "~": TokenType.RLIKE,
             ":=": TokenType.EQ,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,

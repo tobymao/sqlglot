@@ -30,10 +30,10 @@ def qualify_columns(expression, schema):
         resolver = Resolver(scope, schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
-        _expand_using(scope, resolver)
+        using_column_tables = _expand_using(scope, resolver)
         _qualify_columns(scope, resolver)
         if not isinstance(scope.expression, exp.UDTF):
-            _expand_stars(scope, resolver)
+            _expand_stars(scope, resolver, using_column_tables)
             _qualify_outputs(scope)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
@@ -73,7 +73,7 @@ def _expand_using(scope, resolver):
     names = {join.this.alias for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
-    # Mapping of automatically joined column names to source names
+    # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables = {}
 
     for join in joins:
@@ -112,11 +112,12 @@ def _expand_using(scope, resolver):
                 )
             )
 
-            tables = column_tables.setdefault(identifier, [])
+            # Set all values in the dict to None, because we only care about the key ordering
+            tables = column_tables.setdefault(identifier, {})
             if table not in tables:
-                tables.append(table)
+                tables[table] = None
             if join_table not in tables:
-                tables.append(join_table)
+                tables[join_table] = None
 
         join.args.pop("using")
         join.set("on", exp.and_(*conditions))
@@ -133,6 +134,8 @@ def _expand_using(scope, resolver):
                     replacement = exp.alias_(replacement, alias=column.name)
 
                 scope.replace(column, replacement)
+
+    return column_tables
 
 
 def _expand_group_by(scope, resolver):
@@ -258,12 +261,13 @@ def _qualify_columns(scope, resolver):
             column.set("table", column_table)
 
 
-def _expand_stars(scope, resolver):
+def _expand_stars(scope, resolver, using_column_tables):
     """Expand stars to lists of column selections"""
 
     new_selections = []
     except_columns = {}
     replace_columns = {}
+    coalesced_columns = set()
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
@@ -286,7 +290,20 @@ def _expand_stars(scope, resolver):
             if columns and "*" not in columns:
                 table_id = id(table)
                 for name in columns:
-                    if name not in except_columns.get(table_id, set()):
+                    if name in using_column_tables and table in using_column_tables[name]:
+                        if name in coalesced_columns:
+                            continue
+
+                        coalesced_columns.add(name)
+                        tables = using_column_tables[name]
+                        coalesce = [exp.column(name, table=table) for table in tables]
+
+                        new_selections.append(
+                            exp.alias_(
+                                exp.Coalesce(this=coalesce[0], expressions=coalesce[1:]), alias=name
+                            )
+                        )
+                    elif name not in except_columns.get(table_id, set()):
                         alias_ = replace_columns.get(table_id, {}).get(name, name)
                         column = exp.column(name, table)
                         new_selections.append(alias(column, alias_) if alias_ != name else column)

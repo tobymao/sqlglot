@@ -282,6 +282,30 @@ SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b WHERE COALES
 SELECT b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
 
+SELECT * FROM x JOIN y USING(b);
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT x.* FROM x JOIN y USING(b);
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT * FROM x LEFT JOIN y USING(b);
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x LEFT JOIN y AS y ON x.b = y.b;
+
+SELECT b FROM x JOIN y USING(b);
+SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT b, c FROM x JOIN y USING(b);
+SELECT COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT b, c FROM y JOIN z USING(b, c);
+SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.b = z.b AND y.c = z.c;
+
+SELECT * FROM y JOIN z USING(b, c);
+SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.b = z.b AND y.c = z.c;
+
+SELECT * FROM y JOIN z USING(b, c) WHERE b = 2 AND c = 3;
+SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.b = z.b AND y.c = z.c WHERE COALESCE(y.b, z.b) = 2 AND COALESCE(y.c, z.c) = 3;
+
 --------------------------------------
 -- Hint with table reference
 --------------------------------------

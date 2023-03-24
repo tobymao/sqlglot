@@ -11,7 +11,7 @@ from sqlglot.optimizer.simplify import flatten, uniq_sort
 logger = logging.getLogger("sqlglot")
 
 
-def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_distance: int = 128):
+def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int = 128):
     """
     Rewrite sqlglot AST into conjunctive normal form or disjunctive normal form.
 
@@ -23,7 +23,7 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
 
     Args:
         expression: expression to normalize
-        dnf: rewrite in disjunctive normal form instead. if none then it will choose the closest form.
+        dnf: rewrite in disjunctive normal form instead.
         max_distance (int): the maximal estimated distance from cnf/dnf to attempt conversion
     Returns:
         sqlglot.Expression: normalized expression
@@ -32,20 +32,14 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
 
     for node, *_ in tuple(expression.walk(prune=lambda e, *_: isinstance(e, exp.Connector))):
         if isinstance(node, exp.Connector):
-            if dnf is None:
-                dnf_distance = normalization_distance(node, dnf=True)
-                cnf_distance = normalization_distance(node, dnf=False)
-                dnf = cnf_distance > dnf_distance
-                distance = dnf_distance if dnf else cnf_distance
-            else:
-                distance = normalization_distance(node, dnf=dnf)
-
             if normalized(node, dnf=dnf):
                 continue
 
+            distance = normalization_distance(node, dnf=dnf)
+
             if distance > max_distance:
-                logger.error(
-                    f"Optimization Error: Skipping normalization because distance {distance} exceeds max {max_distance}"
+                logger.info(
+                    f"Skipping normalization because distance {distance} exceeds max {max_distance}"
                 )
                 return expression
 
@@ -54,7 +48,7 @@ def normalize(expression: exp.Expression, dnf: t.Optional[bool] = None, max_dist
             try:
                 node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
             except OptimizeError as e:
-                logger.error(f"Optimization Error: %s", e)
+                logger.info(e)
                 node.replace(original)
                 if root:
                     return original

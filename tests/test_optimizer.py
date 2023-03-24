@@ -1,4 +1,3 @@
-import logging
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
@@ -48,7 +47,6 @@ class TestOptimizer(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
         cls.conn = duckdb.connect()
         cls.conn.execute(
             """
@@ -78,10 +76,6 @@ class TestOptimizer(unittest.TestCase):
         INSERT INTO w VALUES ('a', 'b');
         """
         )
-
-    @classmethod
-    def tearDownClass(cls):
-        logging.disable(logging.NOTSET)
 
     def setUp(self):
         self.schema = {

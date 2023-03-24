@@ -6357,41 +6357,41 @@ WITH "tmp1" AS (
     SUM("store_sales"."ss_sales_price") AS "sum_sales",
     AVG(SUM("store_sales"."ss_sales_price")) OVER (PARTITION BY "item"."i_manufact_id") AS "avg_quarterly_sales"
   FROM "item" AS "item"
-  CROSS JOIN "store_sales" AS "store_sales"
+  JOIN "store_sales" AS "store_sales"
+    ON "store_sales"."ss_item_sk" = "item"."i_item_sk"
   JOIN "date_dim" AS "date_dim"
-    ON (
-      "date_dim"."d_month_seq" IN (1199, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1210)
-      AND "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
-      AND "item"."i_category" IN ('Women', 'Music', 'Men')
-      AND "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
-    )
-    OR (
-      "date_dim"."d_month_seq" IN (1199, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1210)
-      AND "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
-      AND "item"."i_category" IN ('Books', 'Children', 'Electronics')
-      AND "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
-    )
-  JOIN "store" AS "store"
     ON "date_dim"."d_month_seq" IN (1199, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1210)
-    AND "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
-    AND "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
-    AND "item"."i_category" IN ('Books', 'Children', 'Electronics')
-    AND "item"."i_category" IN ('Women', 'Music', 'Men')
-    AND "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
-    AND "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
-    AND "store_sales"."ss_item_sk" = "item"."i_item_sk"
     AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-    AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
+  JOIN "store" AS "store"
+    ON "store_sales"."ss_store_sk" = "store"."s_store_sk"
   WHERE
     (
       "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
-      AND "item"."i_category" IN ('Women', 'Music', 'Men')
-      AND "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
+      OR "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
     )
-    OR (
-      "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
-      AND "item"."i_category" IN ('Books', 'Children', 'Electronics')
-      AND "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
+    AND (
+      "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
+      OR "item"."i_category" IN ('Books', 'Children', 'Electronics')
+    )
+    AND (
+      "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
+      OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
+    )
+    AND (
+      "item"."i_category" IN ('Books', 'Children', 'Electronics')
+      OR "item"."i_category" IN ('Women', 'Music', 'Men')
+    )
+    AND (
+      "item"."i_category" IN ('Books', 'Children', 'Electronics')
+      OR "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
+    )
+    AND (
+      "item"."i_category" IN ('Women', 'Music', 'Men')
+      OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
+    )
+    AND (
+      "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
+      OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
     )
   GROUP BY
     "item"."i_manufact_id",
@@ -7561,41 +7561,41 @@ WITH "tmp1" AS (
     SUM("store_sales"."ss_sales_price") AS "sum_sales",
     AVG(SUM("store_sales"."ss_sales_price")) OVER (PARTITION BY "item"."i_manager_id") AS "avg_monthly_sales"
   FROM "item" AS "item"
-  CROSS JOIN "store_sales" AS "store_sales"
+  JOIN "store_sales" AS "store_sales"
+    ON "store_sales"."ss_item_sk" = "item"."i_item_sk"
   JOIN "date_dim" AS "date_dim"
-    ON (
-      "date_dim"."d_month_seq" IN (1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1210, 1211)
-      AND "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
-      AND "item"."i_category" IN ('Women', 'Music', 'Men')
-      AND "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
-    )
-    OR (
-      "date_dim"."d_month_seq" IN (1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1210, 1211)
-      AND "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
-      AND "item"."i_category" IN ('Books', 'Children', 'Electronics')
-      AND "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
-    )
-  JOIN "store" AS "store"
     ON "date_dim"."d_month_seq" IN (1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1210, 1211)
-    AND "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
-    AND "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
-    AND "item"."i_category" IN ('Books', 'Children', 'Electronics')
-    AND "item"."i_category" IN ('Women', 'Music', 'Men')
-    AND "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
-    AND "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
-    AND "store_sales"."ss_item_sk" = "item"."i_item_sk"
     AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
-    AND "store_sales"."ss_store_sk" = "store"."s_store_sk"
+  JOIN "store" AS "store"
+    ON "store_sales"."ss_store_sk" = "store"."s_store_sk"
   WHERE
     (
       "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
-      AND "item"."i_category" IN ('Women', 'Music', 'Men')
-      AND "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
+      OR "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
     )
-    OR (
-      "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
-      AND "item"."i_category" IN ('Books', 'Children', 'Electronics')
-      AND "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
+    AND (
+      "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
+      OR "item"."i_category" IN ('Books', 'Children', 'Electronics')
+    )
+    AND (
+      "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
+      OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
+    )
+    AND (
+      "item"."i_category" IN ('Books', 'Children', 'Electronics')
+      OR "item"."i_category" IN ('Women', 'Music', 'Men')
+    )
+    AND (
+      "item"."i_category" IN ('Books', 'Children', 'Electronics')
+      OR "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
+    )
+    AND (
+      "item"."i_category" IN ('Women', 'Music', 'Men')
+      OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
+    )
+    AND (
+      "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
+      OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
     )
   GROUP BY
     "item"."i_manager_id",
@@ -11628,16 +11628,19 @@ WITH "store_sales_2" AS (
   WHERE
     (
       "household_demographics"."hd_dep_count" = -1
-      AND "household_demographics"."hd_vehicle_count" <= 1
+      OR "household_demographics"."hd_dep_count" = 2
+      OR "household_demographics"."hd_dep_count" = 3
     )
-    OR (
+    AND (
       "household_demographics"."hd_dep_count" = 2
-      AND "household_demographics"."hd_vehicle_count" <= 4
+      OR "household_demographics"."hd_dep_count" = 3
+      OR "household_demographics"."hd_vehicle_count" <= 1
     )
-    OR (
+    AND (
       "household_demographics"."hd_dep_count" = 3
-      AND "household_demographics"."hd_vehicle_count" <= 5
+      OR "household_demographics"."hd_vehicle_count" <= 4
     )
+    AND "household_demographics"."hd_vehicle_count" <= 5
 ), "store_2" AS (
   SELECT
     "store"."s_store_sk" AS "s_store_sk",

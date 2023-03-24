@@ -4,6 +4,7 @@ from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     locate_to_strposition,
+    max_or_greatest,
     min_or_least,
     no_ilike_sql,
     no_paren_current_date_sql,
@@ -390,6 +391,7 @@ class MySQL(Dialect):
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ILike: no_ilike_sql,
+            exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.TableSample: no_tablesample_sql,
             exp.TryCast: no_trycast_sql,

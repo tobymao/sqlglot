@@ -6,6 +6,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    max_or_greatest,
     min_or_least,
     parse_date_delta,
     rename_func,
@@ -435,6 +436,7 @@ class TSQL(Dialect):
             exp.NumberToStr: _format_sql,
             exp.TimeToStr: _format_sql,
             exp.GroupConcat: _string_agg_sql,
+            exp.Max: max_or_greatest,
             exp.Min: min_or_least,
         }
 

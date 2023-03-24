@@ -370,6 +370,12 @@ class TestPresto(Validator):
         self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
         self.validate_all(
+            "SELECT JSON_OBJECT(KEY 'key1' VALUE 1, KEY 'key2' VALUE TRUE)",
+            write={
+                "presto": "SELECT JSON_OBJECT('key1': 1, 'key2': TRUE)",
+            },
+        )
+        self.validate_all(
             "ARRAY_AGG(x ORDER BY y DESC)",
             write={
                 "hive": "COLLECT_LIST(x)",

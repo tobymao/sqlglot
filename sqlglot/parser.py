@@ -674,6 +674,7 @@ class Parser(metaclass=_Parser):
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "EXTRACT": lambda self: self._parse_extract(),
+        "JSON_OBJECT": lambda self: self._parse_json_object(),
         "POSITION": lambda self: self._parse_position(),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
@@ -3336,6 +3337,47 @@ class Parser(metaclass=_Parser):
             this, to = to, this
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+
+    def _parse_json_key_value(self) -> t.Optional[exp.Expression]:
+        self._match_text_seq("KEY")
+        key = self._parse_field()
+        self._match(TokenType.COLON)
+        self._match_text_seq("VALUE")
+        value = self._parse_field()
+        if not key and not value:
+            return None
+        return self.expression(exp.JSONKeyValue, this=key, expression=value)
+
+    def _parse_json_object(self) -> exp.Expression:
+        expressions = self._parse_csv(self._parse_json_key_value)
+
+        null_handling = None
+        if self._match_text_seq("NULL", "ON", "NULL"):
+            null_handling = "NULL ON NULL"
+        elif self._match_text_seq("ABSENT", "ON", "NULL"):
+            null_handling = "ABSENT ON NULL"
+
+        unique_keys = None
+        if self._match_text_seq("WITH", "UNIQUE"):
+            unique_keys = True
+        elif self._match_text_seq("WITHOUT", "UNIQUE"):
+            unique_keys = False
+
+        self._match_text_seq("KEYS")
+
+        return_type = self._match_text_seq("RETURNING") and self._parse_type()
+        format_json = self._match_text_seq("FORMAT", "JSON")
+        encoding = self._match_text_seq("ENCODING") and self._parse_var()
+
+        return self.expression(
+            exp.JSONObject,
+            expressions=expressions,
+            null_handling=null_handling,
+            unique_keys=unique_keys,
+            return_type=return_type,
+            format_json=format_json,
+            encoding=encoding,
+        )
 
     def _parse_position(self, haystack_first: bool = False) -> exp.Expression:
         args = self._parse_csv(self._parse_bitwise)

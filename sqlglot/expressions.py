@@ -3611,6 +3611,21 @@ class Initcap(Func):
     pass
 
 
+class JSONKeyValue(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
+class JSONObject(Func):
+    arg_types = {
+        "expressions": False,
+        "null_handling": False,
+        "unique_keys": False,
+        "return_type": False,
+        "format_json": False,
+        "encoding": False,
+    }
+
+
 class JSONBContains(Binary):
     _sql_names = ["JSONB_CONTAINS"]
 

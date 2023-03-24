@@ -1590,6 +1590,25 @@ class Generator:
             exp.Case(ifs=[expression.copy()], default=expression.args.get("false"))
         )
 
+    def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
+        return f"{self.sql(expression, 'this')}: {self.sql(expression, 'expression')}"
+
+    def jsonobject_sql(self, expression: exp.JSONObject) -> str:
+        expressions = self.expressions(expression)
+        null_handling = expression.args.get("null_handling")
+        null_handling = f" {null_handling}" if null_handling else ""
+        unique_keys = expression.args.get("unique_keys")
+        if unique_keys is not None:
+            unique_keys = f" {'WITH' if unique_keys else 'WITHOUT'} UNIQUE KEYS"
+        else:
+            unique_keys = ""
+        return_type = self.sql(expression, "return_type")
+        return_type = f" RETURNING {return_type}" if return_type else ""
+        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
+        encoding = self.sql(expression, "encoding")
+        encoding = f" ENCODING {encoding}" if encoding else ""
+        return f"JSON_OBJECT({expressions}{null_handling}{unique_keys}{return_type}{format_json}{encoding})"
+
     def in_sql(self, expression: exp.In) -> str:
         query = expression.args.get("query")
         unnest = expression.args.get("unnest")

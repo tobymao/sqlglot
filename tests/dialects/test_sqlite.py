@@ -59,6 +59,9 @@ class TestSQLite(Validator):
         self.validate_all("SELECT LIKE(y, x)", write={"sqlite": "SELECT x LIKE y"})
         self.validate_all("SELECT GLOB('*y*', 'xyz')", write={"sqlite": "SELECT 'xyz' GLOB '*y*'"})
         self.validate_all(
+            "SELECT LIKE('%y%', 'xyz', '')", write={"sqlite": "SELECT 'xyz' LIKE '%y%' ESCAPE ''"}
+        )
+        self.validate_all(
             "CURRENT_DATE",
             read={
                 "": "CURRENT_DATE",

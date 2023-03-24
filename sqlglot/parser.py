@@ -19,7 +19,7 @@ from sqlglot.trie import in_trie, new_trie
 logger = logging.getLogger("sqlglot")
 
 
-def parse_var_map(args):
+def parse_var_map(args: t.Sequence) -> exp.Expression:
     keys = []
     values = []
     for i in range(0, len(args), 2):
@@ -29,6 +29,11 @@ def parse_var_map(args):
         keys=exp.Array(expressions=keys),
         values=exp.Array(expressions=values),
     )
+
+
+def parse_like(args):
+    like = exp.Like(this=seq_get(args, 1), expression=seq_get(args, 0))
+    return exp.Escape(this=like, expression=seq_get(args, 2)) if len(args) > 2 else like
 
 
 def binary_range_parser(
@@ -79,7 +84,7 @@ class Parser(metaclass=_Parser):
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "IFNULL": exp.Coalesce.from_arg_list,
-        "LIKE": lambda args: exp.Like(this=seq_get(args, 1), expression=seq_get(args, 0)),
+        "LIKE": parse_like,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),

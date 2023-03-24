@@ -295,7 +295,6 @@ def _expand_stars(scope, resolver, using_column_tables):
                             continue
 
                         coalesced_columns.add(name)
-
                         tables = using_column_tables[name]
                         coalesce = [exp.column(name, table=table) for table in tables]
 

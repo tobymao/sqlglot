@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.dialect import Dialect, min_or_least
+from sqlglot.dialects.dialect import Dialect, max_or_greatest, min_or_least
 from sqlglot.tokens import TokenType
 
 
@@ -128,6 +128,7 @@ class Teradata(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }

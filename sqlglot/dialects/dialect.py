@@ -430,6 +430,11 @@ def min_or_least(self: Generator, expression: exp.Min) -> str:
     return rename_func(name)(self, expression)
 
 
+def max_or_greatest(self: Generator, expression: exp.Max) -> str:
+    name = "GREATEST" if expression.expressions else "MAX"
+    return rename_func(name)(self, expression)
+
+
 def count_if_to_sum(self: Generator, expression: exp.CountIf) -> str:
     cond = expression.this
 

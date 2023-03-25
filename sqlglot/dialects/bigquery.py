@@ -264,7 +264,6 @@ class BigQuery(Dialect):
             exp.DataType.Type.INT: "INT64",
             exp.DataType.Type.NCHAR: "STRING",
             exp.DataType.Type.NVARCHAR: "STRING",
-            exp.DataType.Type.NVARCHAR: "STRING",
             exp.DataType.Type.SMALLINT: "INT64",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TINYINT: "INT64",

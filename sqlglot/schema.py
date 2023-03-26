@@ -306,11 +306,11 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         return self._type_mapping_cache[schema_type]
 
 
-def ensure_schema(schema: t.Any) -> Schema:
+def ensure_schema(schema: t.Any, dialect: DialectType = None) -> Schema:
     if isinstance(schema, Schema):
         return schema
 
-    return MappingSchema(schema)
+    return MappingSchema(schema, dialect=dialect)
 
 
 def ensure_column_mapping(mapping: t.Optional[ColumnMapping]):

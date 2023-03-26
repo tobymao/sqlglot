@@ -80,7 +80,7 @@ def optimize(
     Returns:
         sqlglot.Expression: optimized expression
     """
-    schema = ensure_schema(schema or sqlglot.schema)
+    schema = ensure_schema(schema or sqlglot.schema, dialect=dialect)
     possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
     expression = exp.maybe_parse(expression, dialect=dialect, copy=True)
     for rule in rules:

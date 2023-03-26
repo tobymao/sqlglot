@@ -57,7 +57,7 @@ def execute(
             for name, table in tables_.mapping.items()
         }
 
-    schema = ensure_schema(schema)
+    schema = ensure_schema(schema, dialect=read)
 
     if tables_.supported_table_args and tables_.supported_table_args != schema.supported_table_args:
         raise ExecuteError("Tables must support the same table args as schema")

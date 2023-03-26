@@ -92,6 +92,9 @@ SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
 SELECT COALESCE(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
 SELECT COALESCE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY COALESCE(x.a);
 
+SELECT a + 1 AS d FROM x WHERE d > 1;
+SELECT x.a + 1 AS d FROM x AS x WHERE x.a + 1 > 1;
+
 SELECT a AS a, b FROM x ORDER BY a;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
 

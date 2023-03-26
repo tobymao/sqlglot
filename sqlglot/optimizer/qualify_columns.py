@@ -35,6 +35,7 @@ def qualify_columns(expression, schema):
         if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver, using_column_tables)
             _qualify_outputs(scope)
+        _expand_alias_refs(scope, resolver)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
 
@@ -138,10 +139,8 @@ def _expand_using(scope, resolver):
     return column_tables
 
 
-def _expand_group_by(scope, resolver):
-    group = scope.expression.args.get("group")
-    if not group:
-        return
+def _expand_alias_refs(scope, resolver):
+    selects = {}
 
     # Replace references to select aliases
     def transform(node, *_):
@@ -153,9 +152,11 @@ def _expand_group_by(scope, resolver):
                 node.set("table", table)
                 return node
 
-            selects = {s.alias_or_name: s for s in scope.selects}
-
+            if not selects:
+                for s in scope.selects:
+                    selects[s.alias_or_name] = s
             select = selects.get(node.name)
+
             if select:
                 scope.clear_cache()
                 if isinstance(select, exp.Alias):
@@ -164,7 +165,20 @@ def _expand_group_by(scope, resolver):
 
         return node
 
-    group.transform(transform, copy=False)
+    where = scope.expression.args.get("where")
+    if where:
+        where.transform(transform, copy=False)
+
+    group = scope.expression.args.get("group")
+    if group:
+        group.transform(transform, copy=False)
+
+
+def _expand_group_by(scope, resolver):
+    group = scope.expression.args.get("group")
+    if not group:
+        return
+
     group.set("expressions", _expand_positional_references(scope, group.expressions))
     scope.expression.set("group", group)
 
@@ -234,18 +248,24 @@ def _qualify_columns(scope, resolver):
                 column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
 
     columns_missing_from_scope = []
+
     # Determine whether each reference in the order by clause is to a column or an alias.
-    for ordered in scope.find_all(exp.Ordered):
-        for column in ordered.find_all(exp.Column):
-            if (
-                not column.table
-                and column.parent is not ordered
-                and column.name in resolver.all_columns
-            ):
-                columns_missing_from_scope.append(column)
+    order = scope.expression.args.get("order")
+
+    if order:
+        for ordered in order.expressions:
+            for column in ordered.find_all(exp.Column):
+                if (
+                    not column.table
+                    and column.parent is not ordered
+                    and column.name in resolver.all_columns
+                ):
+                    columns_missing_from_scope.append(column)
 
     # Determine whether each reference in the having clause is to a column or an alias.
-    for having in scope.find_all(exp.Having):
+    having = scope.expression.args.get("having")
+
+    if having:
         for column in having.find_all(exp.Column):
             if (
                 not column.table

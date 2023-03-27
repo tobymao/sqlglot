@@ -404,7 +404,6 @@ class MySQL(Dialect):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
-            exp.JSONExtract: rename_func("JSON_EXTRACT"),
             exp.JSONExtractScalar: rename_func("JSON_EXTRACT"),
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,

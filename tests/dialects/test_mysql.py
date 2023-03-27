@@ -16,6 +16,7 @@ class TestMySQL(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("x ->> '$.name'")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(TRAILING 'bla' FROM ' XXX ')")

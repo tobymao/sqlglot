@@ -812,11 +812,13 @@ class TestDialect(Validator):
         self.validate_all(
             "JSON_EXTRACT(x, 'y')",
             read={
+                "mysql": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
                 "starrocks": "x -> 'y'",
             },
             write={
+                "mysql": "JSON_EXTRACT(x, 'y')",
                 "oracle": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x -> 'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
@@ -830,6 +832,7 @@ class TestDialect(Validator):
                 "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
             },
             write={
+                "mysql": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x ->> 'y'",
                 "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
             },

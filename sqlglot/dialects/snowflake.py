@@ -276,6 +276,9 @@ class Snowflake(Dialect):
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
             exp.DateAdd: lambda self, e: self.func("DATEADD", e.text("unit"), e.expression, e.this),
+            exp.DateDiff: lambda self, e: self.func(
+                "DATEDIFF", e.text("unit"), e.expression, e.this
+            ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
             exp.If: rename_func("IFF"),

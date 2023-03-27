@@ -530,6 +530,7 @@ class TestSnowflake(Validator):
                 "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
             },
         )
+        self.validate_identity("DATEDIFF(DAY, 5, CAST('2008-12-25' AS DATE))")
 
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")

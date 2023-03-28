@@ -234,6 +234,7 @@ class Parser(metaclass=_Parser):
         TokenType.ONLY,
         TokenType.OPTIONS,
         TokenType.ORDINALITY,
+        TokenType.PARTITION,
         TokenType.PERCENT,
         TokenType.PIVOT,
         TokenType.PRAGMA,

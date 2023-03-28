@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
+    arrow_json_extract_scalar_sql,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -391,6 +392,7 @@ class MySQL(Dialect):
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ILike: no_ilike_sql,
+            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.TableSample: no_tablesample_sql,
@@ -404,7 +406,6 @@ class MySQL(Dialect):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
-            exp.JSONExtractScalar: rename_func("JSON_EXTRACT"),
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Trim: _trim_sql,

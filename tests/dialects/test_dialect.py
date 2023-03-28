@@ -832,9 +832,19 @@ class TestDialect(Validator):
                 "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
             },
             write={
-                "mysql": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x ->> 'y'",
                 "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
+            },
+        )
+        self.validate_all(
+            "JSON_EXTRACT_SCALAR(stream_data, '$.data.results')",
+            read={
+                "hive": "GET_JSON_OBJECT(stream_data, '$.data.results')",
+                "mysql": "stream_data ->> '$.data.results'",
+            },
+            write={
+                "hive": "GET_JSON_OBJECT(stream_data, '$.data.results')",
+                "mysql": "stream_data ->> '$.data.results'",
             },
         )
         self.validate_all(

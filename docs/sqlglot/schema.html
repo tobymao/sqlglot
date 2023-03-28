@@ -427,11 +427,11 @@
 </span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_type_mapping_cache</span><span class="p">[</span><span class="n">schema_type</span><span class="p">]</span>
 </span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>
 </span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>
-</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a><span class="k">def</span> <span class="nf">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Schema</span><span class="p">:</span>
+</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a><span class="k">def</span> <span class="nf">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Schema</span><span class="p">:</span>
 </span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">Schema</span><span class="p">):</span>
 </span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a>        <span class="k">return</span> <span class="n">schema</span>
 </span><span id="L-312"><a href="#L-312"><span class="linenos">312</span></a>
-</span><span id="L-313"><a href="#L-313"><span class="linenos">313</span></a>    <span class="k">return</span> <span class="n">MappingSchema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+</span><span id="L-313"><a href="#L-313"><span class="linenos">313</span></a>    <span class="k">return</span> <span class="n">MappingSchema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
 </span><span id="L-314"><a href="#L-314"><span class="linenos">314</span></a>
 </span><span id="L-315"><a href="#L-315"><span class="linenos">315</span></a>
 </span><span id="L-316"><a href="#L-316"><span class="linenos">316</span></a><span class="k">def</span> <span class="nf">ensure_column_mapping</span><span class="p">(</span><span class="n">mapping</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">ColumnMapping</span><span class="p">]):</span>
@@ -1358,17 +1358,17 @@ are assumed to be visible. The nesting should mirror that of the schema:
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">ensure_schema</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">schema</span><span class="p">:</span> <span class="n">Any</span></span><span class="return-annotation">) -> <span class="n"><a href="#Schema">sqlglot.schema.Schema</a></span>:</span></span>
+        <span class="name">ensure_schema</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">schema</span><span class="p">:</span> <span class="n">Any</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n"><a href="#Schema">sqlglot.schema.Schema</a></span>:</span></span>
 
                 <label class="view-source-button" for="ensure_schema-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#ensure_schema"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ensure_schema-310"><a href="#ensure_schema-310"><span class="linenos">310</span></a><span class="k">def</span> <span class="nf">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Schema</span><span class="p">:</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ensure_schema-310"><a href="#ensure_schema-310"><span class="linenos">310</span></a><span class="k">def</span> <span class="nf">ensure_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Schema</span><span class="p">:</span>
 </span><span id="ensure_schema-311"><a href="#ensure_schema-311"><span class="linenos">311</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">Schema</span><span class="p">):</span>
 </span><span id="ensure_schema-312"><a href="#ensure_schema-312"><span class="linenos">312</span></a>        <span class="k">return</span> <span class="n">schema</span>
 </span><span id="ensure_schema-313"><a href="#ensure_schema-313"><span class="linenos">313</span></a>
-</span><span id="ensure_schema-314"><a href="#ensure_schema-314"><span class="linenos">314</span></a>    <span class="k">return</span> <span class="n">MappingSchema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+</span><span id="ensure_schema-314"><a href="#ensure_schema-314"><span class="linenos">314</span></a>    <span class="k">return</span> <span class="n">MappingSchema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
 </span></pre></div>
 
 

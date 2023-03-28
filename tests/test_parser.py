@@ -360,7 +360,7 @@ class TestParser(unittest.TestCase):
     @patch("sqlglot.parser.logger")
     def test_create_table_error(self, logger):
         parse_one(
-            """CREATE TABLE PARTITION""",
+            """CREATE TABLE SELECT""",
             error_level=ErrorLevel.WARN,
         )
 

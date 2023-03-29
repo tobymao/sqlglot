@@ -95,22 +95,24 @@
 </span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>            <span class="s2">&quot;DATEDIFF&quot;</span><span class="p">:</span> <span class="n">parse_date_delta</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">),</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="p">}</span>
 </span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateAdd</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="p">}</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateAdd</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="p">}</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
 </span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="p">}</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -135,22 +137,24 @@
 </span><span id="Databricks-17"><a href="#Databricks-17"><span class="linenos">17</span></a>            <span class="s2">&quot;DATEDIFF&quot;</span><span class="p">:</span> <span class="n">parse_date_delta</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">),</span>
 </span><span id="Databricks-18"><a href="#Databricks-18"><span class="linenos">18</span></a>        <span class="p">}</span>
 </span><span id="Databricks-19"><a href="#Databricks-19"><span class="linenos">19</span></a>
-</span><span id="Databricks-20"><a href="#Databricks-20"><span class="linenos">20</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
-</span><span id="Databricks-21"><a href="#Databricks-21"><span class="linenos">21</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks-22"><a href="#Databricks-22"><span class="linenos">22</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
-</span><span id="Databricks-23"><a href="#Databricks-23"><span class="linenos">23</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateAdd</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
-</span><span id="Databricks-24"><a href="#Databricks-24"><span class="linenos">24</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
-</span><span id="Databricks-25"><a href="#Databricks-25"><span class="linenos">25</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
-</span><span id="Databricks-26"><a href="#Databricks-26"><span class="linenos">26</span></a>        <span class="p">}</span>
-</span><span id="Databricks-27"><a href="#Databricks-27"><span class="linenos">27</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
-</span><span id="Databricks-28"><a href="#Databricks-28"><span class="linenos">28</span></a>
-</span><span id="Databricks-29"><a href="#Databricks-29"><span class="linenos">29</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+</span><span id="Databricks-20"><a href="#Databricks-20"><span class="linenos">20</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="Databricks-21"><a href="#Databricks-21"><span class="linenos">21</span></a>
+</span><span id="Databricks-22"><a href="#Databricks-22"><span class="linenos">22</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
+</span><span id="Databricks-23"><a href="#Databricks-23"><span class="linenos">23</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks-24"><a href="#Databricks-24"><span class="linenos">24</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+</span><span id="Databricks-25"><a href="#Databricks-25"><span class="linenos">25</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateAdd</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
+</span><span id="Databricks-26"><a href="#Databricks-26"><span class="linenos">26</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
+</span><span id="Databricks-27"><a href="#Databricks-27"><span class="linenos">27</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+</span><span id="Databricks-28"><a href="#Databricks-28"><span class="linenos">28</span></a>        <span class="p">}</span>
+</span><span id="Databricks-29"><a href="#Databricks-29"><span class="linenos">29</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
 </span><span id="Databricks-30"><a href="#Databricks-30"><span class="linenos">30</span></a>
-</span><span id="Databricks-31"><a href="#Databricks-31"><span class="linenos">31</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Databricks-32"><a href="#Databricks-32"><span class="linenos">32</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks-33"><a href="#Databricks-33"><span class="linenos">33</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="Databricks-34"><a href="#Databricks-34"><span class="linenos">34</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="Databricks-35"><a href="#Databricks-35"><span class="linenos">35</span></a>        <span class="p">}</span>
+</span><span id="Databricks-31"><a href="#Databricks-31"><span class="linenos">31</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+</span><span id="Databricks-32"><a href="#Databricks-32"><span class="linenos">32</span></a>
+</span><span id="Databricks-33"><a href="#Databricks-33"><span class="linenos">33</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Databricks-34"><a href="#Databricks-34"><span class="linenos">34</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks-35"><a href="#Databricks-35"><span class="linenos">35</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="Databricks-36"><a href="#Databricks-36"><span class="linenos">36</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="Databricks-37"><a href="#Databricks-37"><span class="linenos">37</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -192,6 +196,8 @@
 </span><span id="Databricks.Parser-16"><a href="#Databricks.Parser-16"><span class="linenos">16</span></a>            <span class="s2">&quot;DATE_ADD&quot;</span><span class="p">:</span> <span class="n">parse_date_delta</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateAdd</span><span class="p">),</span>
 </span><span id="Databricks.Parser-17"><a href="#Databricks.Parser-17"><span class="linenos">17</span></a>            <span class="s2">&quot;DATEDIFF&quot;</span><span class="p">:</span> <span class="n">parse_date_delta</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">),</span>
 </span><span id="Databricks.Parser-18"><a href="#Databricks.Parser-18"><span class="linenos">18</span></a>        <span class="p">}</span>
+</span><span id="Databricks.Parser-19"><a href="#Databricks.Parser-19"><span class="linenos">19</span></a>
+</span><span id="Databricks.Parser-20"><a href="#Databricks.Parser-20"><span class="linenos">20</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
 </span></pre></div>
 
 
@@ -248,16 +254,16 @@ Default: "nulls_are_small"</li>
 
     </div>
     <a class="headerlink" href="#Databricks.Generator"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Generator-20"><a href="#Databricks.Generator-20"><span class="linenos">20</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
-</span><span id="Databricks.Generator-21"><a href="#Databricks.Generator-21"><span class="linenos">21</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks.Generator-22"><a href="#Databricks.Generator-22"><span class="linenos">22</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
-</span><span id="Databricks.Generator-23"><a href="#Databricks.Generator-23"><span class="linenos">23</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateAdd</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
-</span><span id="Databricks.Generator-24"><a href="#Databricks.Generator-24"><span class="linenos">24</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
-</span><span id="Databricks.Generator-25"><a href="#Databricks.Generator-25"><span class="linenos">25</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
-</span><span id="Databricks.Generator-26"><a href="#Databricks.Generator-26"><span class="linenos">26</span></a>        <span class="p">}</span>
-</span><span id="Databricks.Generator-27"><a href="#Databricks.Generator-27"><span class="linenos">27</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
-</span><span id="Databricks.Generator-28"><a href="#Databricks.Generator-28"><span class="linenos">28</span></a>
-</span><span id="Databricks.Generator-29"><a href="#Databricks.Generator-29"><span class="linenos">29</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Generator-22"><a href="#Databricks.Generator-22"><span class="linenos">22</span></a>    <span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
+</span><span id="Databricks.Generator-23"><a href="#Databricks.Generator-23"><span class="linenos">23</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks.Generator-24"><a href="#Databricks.Generator-24"><span class="linenos">24</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+</span><span id="Databricks.Generator-25"><a href="#Databricks.Generator-25"><span class="linenos">25</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateAdd</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
+</span><span id="Databricks.Generator-26"><a href="#Databricks.Generator-26"><span class="linenos">26</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DateDiff</span><span class="p">:</span> <span class="n">generate_date_delta_with_unit_sql</span><span class="p">,</span>
+</span><span id="Databricks.Generator-27"><a href="#Databricks.Generator-27"><span class="linenos">27</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">ToChar</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+</span><span id="Databricks.Generator-28"><a href="#Databricks.Generator-28"><span class="linenos">28</span></a>        <span class="p">}</span>
+</span><span id="Databricks.Generator-29"><a href="#Databricks.Generator-29"><span class="linenos">29</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">)</span>  <span class="c1"># Remove the ELIMINATE_QUALIFY transformation</span>
+</span><span id="Databricks.Generator-30"><a href="#Databricks.Generator-30"><span class="linenos">30</span></a>
+</span><span id="Databricks.Generator-31"><a href="#Databricks.Generator-31"><span class="linenos">31</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
 </span></pre></div>
 
 
@@ -490,8 +496,10 @@ Default: True</li>
                 <dd id="Databricks.Generator.gt_sql" class="function"><a href="../generator.html#Generator.gt_sql">gt_sql</a></dd>
                 <dd id="Databricks.Generator.gte_sql" class="function"><a href="../generator.html#Generator.gte_sql">gte_sql</a></dd>
                 <dd id="Databricks.Generator.ilike_sql" class="function"><a href="../generator.html#Generator.ilike_sql">ilike_sql</a></dd>
+                <dd id="Databricks.Generator.ilikeany_sql" class="function"><a href="../generator.html#Generator.ilikeany_sql">ilikeany_sql</a></dd>
                 <dd id="Databricks.Generator.is_sql" class="function"><a href="../generator.html#Generator.is_sql">is_sql</a></dd>
                 <dd id="Databricks.Generator.like_sql" class="function"><a href="../generator.html#Generator.like_sql">like_sql</a></dd>
+                <dd id="Databricks.Generator.likeany_sql" class="function"><a href="../generator.html#Generator.likeany_sql">likeany_sql</a></dd>
                 <dd id="Databricks.Generator.similarto_sql" class="function"><a href="../generator.html#Generator.similarto_sql">similarto_sql</a></dd>
                 <dd id="Databricks.Generator.lt_sql" class="function"><a href="../generator.html#Generator.lt_sql">lt_sql</a></dd>
                 <dd id="Databricks.Generator.lte_sql" class="function"><a href="../generator.html#Generator.lte_sql">lte_sql</a></dd>
@@ -549,11 +557,11 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Databricks.Tokenizer"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Tokenizer-31"><a href="#Databricks.Tokenizer-31"><span class="linenos">31</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Databricks.Tokenizer-32"><a href="#Databricks.Tokenizer-32"><span class="linenos">32</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks.Tokenizer-33"><a href="#Databricks.Tokenizer-33"><span class="linenos">33</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="Databricks.Tokenizer-34"><a href="#Databricks.Tokenizer-34"><span class="linenos">34</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="Databricks.Tokenizer-35"><a href="#Databricks.Tokenizer-35"><span class="linenos">35</span></a>        <span class="p">}</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Tokenizer-33"><a href="#Databricks.Tokenizer-33"><span class="linenos">33</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Databricks.Tokenizer-34"><a href="#Databricks.Tokenizer-34"><span class="linenos">34</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks.Tokenizer-35"><a href="#Databricks.Tokenizer-35"><span class="linenos">35</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="Databricks.Tokenizer-36"><a href="#Databricks.Tokenizer-36"><span class="linenos">36</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="Databricks.Tokenizer-37"><a href="#Databricks.Tokenizer-37"><span class="linenos">37</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 

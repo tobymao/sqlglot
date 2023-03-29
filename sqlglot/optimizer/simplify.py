@@ -356,7 +356,7 @@ def _simplify_binary(expression, a, b):
         if boolean:
             return boolean
     elif a.is_string and b.is_string:
-        boolean = eval_boolean(expression, a, b)
+        boolean = eval_boolean(expression, a.this, b.this)
 
         if boolean:
             return boolean

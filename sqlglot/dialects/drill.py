@@ -101,6 +101,8 @@ class Drill(Dialect):
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "drill"),
         }
 
+        LOG_DEFAULTS_TO_LN = True
+
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

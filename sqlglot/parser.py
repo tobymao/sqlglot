@@ -1046,6 +1046,7 @@ class Parser(metaclass=_Parser):
             temporary=temporary,
             materialized=materialized,
             cascade=self._match(TokenType.CASCADE),
+            constraints=self._match_text_seq("CONSTRAINTS"),
         )
 
     def _parse_exists(self, not_: bool = False) -> t.Optional[bool]:
@@ -3803,6 +3804,8 @@ class Parser(metaclass=_Parser):
             expression = self._parse_foreign_key()
         elif kind == TokenType.PRIMARY_KEY or self._match(TokenType.PRIMARY_KEY):
             expression = self._parse_primary_key()
+        else:
+            expression = None
 
         return self.expression(exp.AddConstraint, this=this, expression=expression)
 
@@ -3861,12 +3864,15 @@ class Parser(metaclass=_Parser):
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
 
         if parser:
-            return self.expression(
-                exp.AlterTable,
-                this=this,
-                exists=exists,
-                actions=ensure_list(parser(self)),
-            )
+            actions = ensure_list(parser(self))
+
+            if not self._curr:
+                return self.expression(
+                    exp.AlterTable,
+                    this=this,
+                    exists=exists,
+                    actions=actions,
+                )
         return self._parse_as_command(start)
 
     def _parse_merge(self) -> exp.Expression:

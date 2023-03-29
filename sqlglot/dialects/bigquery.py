@@ -213,6 +213,9 @@ class BigQuery(Dialect):
             ),
         }
 
+        LOGARITHM_BASE_FIRST = False
+        LOGARITHM_DEFAULTS_TO_LN = True
+
     class Generator(generator.Generator):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

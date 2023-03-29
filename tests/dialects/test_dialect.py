@@ -1511,6 +1511,45 @@ SELECT
             },
         )
 
+    def test_logarithm(self):
+        self.validate_all(
+            "LOG(x)",
+            read={
+                "duckdb": "LOG(x)",
+                "postgres": "LOG(x)",
+                "redshift": "LOG(x)",
+                "sqlite": "LOG(x)",
+                "teradata": "LOG(x)",
+            },
+        )
+        self.validate_all(
+            "LN(x)",
+            read={
+                "bigquery": "LOG(x)",
+                "clickhouse": "LOG(x)",
+                "databricks": "LOG(x)",
+                "drill": "LOG(x)",
+                "mysql": "LOG(x)",
+                "tsql": "LOG(x)",
+            },
+        )
+        self.validate_all(
+            "LOG(b, n)",
+            read={
+                "bigquery": "LOG(n, b)",
+                "databricks": "LOG(b, n)",
+                "drill": "LOG(b, n)",
+                "hive": "LOG(b, n)",
+                "mysql": "LOG(b, n)",
+                "oracle": "LOG(b, n)",
+                "postgres": "LOG(b, n)",
+                "snowflake": "LOG(b, n)",
+                "spark": "LOG(b, n)",
+                "sqlite": "LOG(b, n)",
+                "tsql": "LOG(n, b)",
+            },
+        )
+
     def test_count_if(self):
         self.validate_identity("COUNT_IF(DISTINCT cond)")
 

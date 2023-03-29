@@ -676,6 +676,7 @@ class Parser(metaclass=_Parser):
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
+        "LOG": lambda self: self._parse_logarithm(),
         "POSITION": lambda self: self._parse_position(),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
@@ -732,6 +733,9 @@ class Parser(metaclass=_Parser):
     STRICT_CAST = True
 
     CONVERT_TYPE_FIRST = False
+
+    LOGARITHM_BASE_FIRST = True
+    LOGARITHM_DEFAULTS_TO_LN = False
 
     __slots__ = (
         "error_level",
@@ -3379,6 +3383,19 @@ class Parser(metaclass=_Parser):
             return_type=return_type,
             format_json=format_json,
             encoding=encoding,
+        )
+
+    def _parse_logarithm(self) -> exp.Expression:
+        # Default argument order is base, expression
+        args = self._parse_csv(self._parse_range)
+
+        if len(args) > 1:
+            if not self.LOGARITHM_BASE_FIRST:
+                args.reverse()
+            return exp.Log.from_arg_list(args)
+
+        return self.expression(
+            exp.Ln if self.LOGARITHM_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)
         )
 
     def _parse_position(self, haystack_first: bool = False) -> exp.Expression:

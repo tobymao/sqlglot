@@ -168,13 +168,11 @@ def _expand_alias_refs(scope, resolver):
     for select in scope.expression.selects:
         select.transform(transform, copy=False)
 
-    where = scope.expression.args.get("where")
-    if where:
-        where.transform(transform, copy=False)
+    for modifier in ("where", "group"):
+        part = scope.expression.args.get(modifier)
 
-    group = scope.expression.args.get("group")
-    if group:
-        group.transform(transform, copy=False)
+        if part:
+            part.transform(transform, copy=False)
 
 
 def _expand_group_by(scope, resolver):

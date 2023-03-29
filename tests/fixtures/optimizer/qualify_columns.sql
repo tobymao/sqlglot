@@ -95,6 +95,9 @@ SELECT COALESCE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY COALESCE
 SELECT a + 1 AS d FROM x WHERE d > 1;
 SELECT x.a + 1 AS d FROM x AS x WHERE x.a + 1 > 1;
 
+SELECT a + 1 AS d, d + 2 FROM x;
+SELECT x.a + 1 AS d, x.a + 1 + 2 AS _col_1 FROM x AS x;
+
 SELECT a AS a, b FROM x ORDER BY a;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a;
 

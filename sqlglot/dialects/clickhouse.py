@@ -68,6 +68,8 @@ class ClickHouse(Dialect):
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}  # type: ignore
 
+        LOG_DEFAULTS_TO_LN = True
+
         def _parse_in(
             self, this: t.Optional[exp.Expression], is_global: bool = False
         ) -> exp.Expression:

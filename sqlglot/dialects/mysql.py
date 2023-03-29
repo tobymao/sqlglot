@@ -290,6 +290,8 @@ class MySQL(Dialect):
             "SWAPS",
         }
 
+        LOG_DEFAULTS_TO_LN = True
+
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
             if target:
                 if isinstance(target, str):

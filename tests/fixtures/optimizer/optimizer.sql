@@ -461,3 +461,43 @@ SELECT
   *
 FROM "db1"."tbl" AS "tbl"
 CROSS JOIN "db2"."tbl" AS "tbl_2";
+
+SELECT
+*,
+IFF(
+  IFF(
+	uploaded_at >= '2022-06-16',
+	'workday',
+	'bamboohr'
+  ) = source_system,
+  1,
+  0
+) AS sort_order
+FROM
+unioned
+WHERE
+(
+  source_system = 'workday'
+  AND '9999-01-01' >= '2022-06-16'
+)
+OR (
+  source_system = 'bamboohr'
+  AND '0001-01-01' < '2022-06-16'
+) QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY unique_filter_key
+  ORDER BY
+	sort_order DESC,
+	1
+) = 1;
+SELECT
+  *,
+  IFF(
+    IFF("unioned"."uploaded_at" >= '2022-06-16', 'workday', 'bamboohr') = "unioned"."source_system",
+    1,
+    0
+  ) AS "sort_order"
+FROM "unioned" AS "unioned"
+WHERE
+  "unioned"."source_system" = 'bamboohr' OR "unioned"."source_system" = 'workday'
+QUALIFY
+  ROW_NUMBER() OVER (PARTITION BY "unioned"."unique_filter_key" ORDER BY "unioned"."sort_order" DESC, 1) = 1;

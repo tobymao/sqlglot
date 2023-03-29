@@ -2214,26 +2214,34 @@ WITH "item_2" AS (
   FROM "cte_4" AS "cte_4"
 ), "cte_8" AS (
   SELECT
-    1 AS "_"
+    "catalog_sales"."cs_quantity" AS "quantity",
+    "catalog_sales"."cs_list_price" AS "list_price"
   FROM "catalog_sales" AS "catalog_sales"
   JOIN "d1" AS "date_dim"
     ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
   UNION ALL
   SELECT
-    1 AS "_"
+    "web_sales"."ws_quantity" AS "quantity",
+    "web_sales"."ws_list_price" AS "list_price"
   FROM "web_sales" AS "web_sales"
   JOIN "d1" AS "date_dim"
     ON "web_sales"."ws_sold_date_sk" = "date_dim"."d_date_sk"
 ), "x" AS (
   SELECT
-    1 AS "_"
+    "store_sales"."ss_quantity" AS "quantity",
+    "store_sales"."ss_list_price" AS "list_price"
   FROM "store_sales" AS "store_sales"
   JOIN "d1" AS "date_dim"
     ON "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
   UNION ALL
   SELECT
-    "cte_8"."_" AS "_"
+    "cte_8"."quantity" AS "quantity",
+    "cte_8"."list_price" AS "list_price"
   FROM "cte_8" AS "cte_8"
+), "avg_sales" AS (
+  SELECT
+    AVG("x"."quantity" * "x"."list_price") AS "average_sales"
+  FROM "x" AS "x"
 ), "_u_0" AS (
   SELECT
     "item"."i_item_sk" AS "ss_item_sk"
@@ -2246,8 +2254,8 @@ WITH "item_2" AS (
     "item"."i_item_sk"
 ), "_u_1" AS (
   SELECT
-    "average_sales" AS "average_sales"
-  FROM "x" AS "x"
+    "avg_sales"."average_sales" AS "average_sales"
+  FROM "avg_sales"
 ), "date_dim_2" AS (
   SELECT
     "date_dim"."d_date_sk" AS "d_date_sk",

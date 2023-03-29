@@ -165,6 +165,9 @@ def _expand_alias_refs(scope, resolver):
 
         return node
 
+    for select in scope.expression.selects:
+        select.transform(transform, copy=False)
+
     where = scope.expression.args.get("where")
     if where:
         where.transform(transform, copy=False)

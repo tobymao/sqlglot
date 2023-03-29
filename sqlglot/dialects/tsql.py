@@ -313,8 +313,8 @@ class TSQL(Dialect):
             TokenType.END: lambda self: self._parse_command(),
         }
 
-        LOGARITHM_BASE_FIRST = False
-        LOGARITHM_DEFAULTS_TO_LN = True
+        LOG_BASE_FIRST = False
+        LOG_DEFAULTS_TO_LN = True
 
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):

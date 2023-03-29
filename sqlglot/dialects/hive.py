@@ -253,11 +253,6 @@ class Hive(Dialect):
             "FROM_UNIXTIME": format_time_lambda(exp.UnixToStr, "hive", True),
             "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,
             "LOCATE": locate_to_strposition,
-            "LOG": (
-                lambda args: exp.Log.from_arg_list(args)
-                if len(args) > 1
-                else exp.Ln.from_arg_list(args)
-            ),
             "MAP": parse_var_map,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
             "PERCENTILE": exp.Quantile.from_arg_list,
@@ -276,6 +271,8 @@ class Hive(Dialect):
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
+
+        LOG_DEFAULTS_TO_LN = True
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {

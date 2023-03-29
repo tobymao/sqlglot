@@ -213,8 +213,8 @@ class BigQuery(Dialect):
             ),
         }
 
-        LOGARITHM_BASE_FIRST = False
-        LOGARITHM_DEFAULTS_TO_LN = True
+        LOG_BASE_FIRST = False
+        LOG_DEFAULTS_TO_LN = True
 
     class Generator(generator.Generator):
         TRANSFORMS = {

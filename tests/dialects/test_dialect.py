@@ -1529,6 +1529,7 @@ SELECT
                 "clickhouse": "LOG(x)",
                 "databricks": "LOG(x)",
                 "drill": "LOG(x)",
+                "hive": "LOG(x)",
                 "mysql": "LOG(x)",
                 "tsql": "LOG(x)",
             },

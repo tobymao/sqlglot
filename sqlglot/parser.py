@@ -734,8 +734,8 @@ class Parser(metaclass=_Parser):
 
     CONVERT_TYPE_FIRST = False
 
-    LOGARITHM_BASE_FIRST = True
-    LOGARITHM_DEFAULTS_TO_LN = False
+    LOG_BASE_FIRST = True
+    LOG_DEFAULTS_TO_LN = False
 
     __slots__ = (
         "error_level",
@@ -3390,12 +3390,12 @@ class Parser(metaclass=_Parser):
         args = self._parse_csv(self._parse_range)
 
         if len(args) > 1:
-            if not self.LOGARITHM_BASE_FIRST:
+            if not self.LOG_BASE_FIRST:
                 args.reverse()
             return exp.Log.from_arg_list(args)
 
         return self.expression(
-            exp.Ln if self.LOGARITHM_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)
+            exp.Ln if self.LOG_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)
         )
 
     def _parse_position(self, haystack_first: bool = False) -> exp.Expression:

@@ -815,6 +815,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
 
         self.assertIsInstance(like, exp.LikeAny)
         self.assertIsInstance(ilike, exp.ILikeAny)
+        like.sql()  # check that this doesn't raise
 
     def test_match_recognize(self):
         for row in (

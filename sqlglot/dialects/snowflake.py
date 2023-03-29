@@ -319,12 +319,6 @@ class Snowflake(Dialect):
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        def ilikeany_sql(self, expression: exp.ILikeAny) -> str:
-            return self.binary(expression, "ILIKE ANY")
-
-        def likeany_sql(self, expression: exp.LikeAny) -> str:
-            return self.binary(expression, "LIKE ANY")
-
         def except_op(self, expression):
             if not expression.args.get("distinct", False):
                 self.unsupported("EXCEPT with All is not supported in Snowflake")

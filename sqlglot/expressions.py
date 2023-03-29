@@ -3798,8 +3798,10 @@ class RegexpILike(Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 
+# https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.split.html
+# limit is the number of times a pattern is applied
 class RegexpSplit(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "limit": False}
 
 
 class Repeat(Func):

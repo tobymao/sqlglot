@@ -212,6 +212,7 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
+        self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
             "CAST(x AS TIMESTAMP)", read={"trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)"}

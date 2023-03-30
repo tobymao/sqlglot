@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -203,6 +205,7 @@ class MySQL(Dialect):
                 this=self._parse_lambda(),
                 separator=self._match(TokenType.SEPARATOR) and self._parse_field(),
             ),
+            "MATCH": lambda self: self._parse_match_against(),
         }
 
         PROPERTY_PARSERS = {
@@ -291,6 +294,31 @@ class MySQL(Dialect):
         }
 
         LOG_DEFAULTS_TO_LN = True
+
+        def _parse_match_against(self) -> t.Optional[exp.Expression]:
+            index = self._index
+            expressions = self._parse_csv(self._parse_id_var)
+
+            if not self._match_text_seq(")", "AGAINST", "("):
+                self._retreat(index)
+                return None
+
+            this = self._parse_string()
+
+            if self._match_text_seq("IN", "NATURAL", "LANGUAGE", "MODE"):
+                modifier = "IN NATURAL LANGUAGE MODE"
+                if self._match_text_seq("WITH", "QUERY", "EXPANSION"):
+                    modifier = f"{modifier} WITH QUERY EXPANSION"
+            elif self._match_text_seq("IN", "BOOLEAN", "MODE"):
+                modifier = "IN BOOLEAN MODE"
+            elif self._match_text_seq("WITH", "QUERY", "EXPANSION"):
+                modifier = "WITH QUERY EXPANSION"
+            else:
+                modifier = None
+
+            return self.expression(
+                exp.MatchAgainst, this=this, expressions=expressions, modifier=modifier
+            )
 
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
             if target:
@@ -429,7 +457,12 @@ class MySQL(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
-        def show_sql(self, expression):
+        def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
+            modifier = expression.args.get("modifier")
+            modifier = f" {modifier}" if modifier else ""
+            return f"{self.func('MATCH', *expression.expressions)} AGAINST({self.sql(expression, 'this')}{modifier})"
+
+        def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""
             global_ = " GLOBAL" if expression.args.get("global") else ""
@@ -469,13 +502,13 @@ class MySQL(Dialect):
 
             return f"SHOW{full}{global_}{this}{target}{types}{db}{query}{log}{position}{channel}{mutex_or_status}{like}{where}{offset}{limit}"
 
-        def _prefixed_sql(self, prefix, expression, arg):
+        def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
             sql = self.sql(expression, arg)
             if not sql:
                 return ""
             return f" {prefix} {sql}"
 
-        def _oldstyle_limit_sql(self, expression):
+        def _oldstyle_limit_sql(self, expression: exp.Show) -> str:
             limit = self.sql(expression, "limit")
             offset = self.sql(expression, "offset")
             if limit:

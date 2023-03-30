@@ -3703,6 +3703,11 @@ class VarMap(Func):
     is_var_len_args = True
 
 
+# https://dev.mysql.com/doc/refman/8.0/en/fulltext-search.html
+class MatchAgainst(Func):
+    arg_types = {"this": True, "expressions": True, "modifier": False}
+
+
 class Matches(Func):
     """Oracle/Snowflake decode.
     https://docs.oracle.com/cd/B19306_01/server.102/b14200/functions040.htm

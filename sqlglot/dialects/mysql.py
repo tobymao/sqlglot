@@ -298,7 +298,7 @@ class MySQL(Dialect):
         def _parse_match_against(self) -> exp.Expression:
             expressions = self._parse_csv(self._parse_id_var)
 
-            self._match_text_seq(")", "AGAINST", "("):
+            self._match_text_seq(")", "AGAINST", "(")
 
             this = self._parse_string()
 

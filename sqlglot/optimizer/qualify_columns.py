@@ -143,12 +143,12 @@ def _expand_alias_refs(scope, resolver):
     selects = {}
 
     # Replace references to select aliases
-    def transform(node, *_):
+    def transform(node, source_first=True):
         if isinstance(node, exp.Column) and not node.table:
             table = resolver.get_table(node.name)
 
             # Source columns get priority over select aliases
-            if table:
+            if source_first and table:
                 node.set("table", table)
                 return node
 
@@ -163,16 +163,22 @@ def _expand_alias_refs(scope, resolver):
                     select = select.this
                 return select.copy()
 
+            node.set("table", table)
+
         return node
 
     for select in scope.expression.selects:
         select.transform(transform, copy=False)
 
-    for modifier in ("where", "group"):
+    for modifier, source_first in (
+        ("where", True),
+        ("group", True),
+        ("having", False),
+    ):
         part = scope.expression.args.get(modifier)
 
         if part:
-            part.transform(transform, copy=False)
+            part.transform(transform, copy=False, source_first=source_first)
 
 
 def _expand_group_by(scope, resolver):

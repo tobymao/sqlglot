@@ -207,7 +207,14 @@ class TestMySQL(Validator):
     def test_match_against(self):
         self.validate_all(
             "MATCH(col1, col2, col3) AGAINST('abc')",
-            write={"mysql": "MATCH(col1, col2, col3) AGAINST('abc')"},
+            read={
+                "": "MATCH(col1, col2, col3) AGAINST('abc')",
+                "mysql": "MATCH(col1, col2, col3) AGAINST('abc')",
+            },
+            write={
+                "": "MATCH(col1, col2, col3) AGAINST('abc')",
+                "mysql": "MATCH(col1, col2, col3) AGAINST('abc')",
+            },
         )
         self.validate_all(
             "MATCH(col1, col2) AGAINST('abc' IN NATURAL LANGUAGE MODE)",

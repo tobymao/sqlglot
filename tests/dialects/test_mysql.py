@@ -204,6 +204,37 @@ class TestMySQL(Validator):
             },
         )
 
+    def test_match_against(self):
+        self.validate_all(
+            "MATCH(col1, col2, col3) AGAINST('abc')",
+            read={
+                "": "MATCH(col1, col2, col3) AGAINST('abc')",
+                "mysql": "MATCH(col1, col2, col3) AGAINST('abc')",
+            },
+            write={
+                "": "MATCH(col1, col2, col3) AGAINST('abc')",
+                "mysql": "MATCH(col1, col2, col3) AGAINST('abc')",
+            },
+        )
+        self.validate_all(
+            "MATCH(col1, col2) AGAINST('abc' IN NATURAL LANGUAGE MODE)",
+            write={"mysql": "MATCH(col1, col2) AGAINST('abc' IN NATURAL LANGUAGE MODE)"},
+        )
+        self.validate_all(
+            "MATCH(col1, col2) AGAINST('abc' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION)",
+            write={
+                "mysql": "MATCH(col1, col2) AGAINST('abc' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION)"
+            },
+        )
+        self.validate_all(
+            "MATCH(col1, col2) AGAINST('abc' IN BOOLEAN MODE)",
+            write={"mysql": "MATCH(col1, col2) AGAINST('abc' IN BOOLEAN MODE)"},
+        )
+        self.validate_all(
+            "MATCH(col1, col2) AGAINST('abc' WITH QUERY EXPANSION)",
+            write={"mysql": "MATCH(col1, col2) AGAINST('abc' WITH QUERY EXPANSION)"},
+        )
+
     def test_mysql(self):
         self.validate_all(
             "SELECT a FROM tbl FOR UPDATE",

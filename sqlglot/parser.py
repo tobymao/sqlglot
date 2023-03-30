@@ -677,6 +677,7 @@ class Parser(metaclass=_Parser):
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "LOG": lambda self: self._parse_logarithm(),
+        "MATCH": lambda self: self._parse_match_against(),
         "POSITION": lambda self: self._parse_position(),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
@@ -3396,6 +3397,28 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Ln if self.LOG_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)
+        )
+
+    def _parse_match_against(self) -> exp.Expression:
+        expressions = self._parse_csv(self._parse_id_var)
+
+        self._match_text_seq(")", "AGAINST", "(")
+
+        this = self._parse_string()
+
+        if self._match_text_seq("IN", "NATURAL", "LANGUAGE", "MODE"):
+            modifier = "IN NATURAL LANGUAGE MODE"
+            if self._match_text_seq("WITH", "QUERY", "EXPANSION"):
+                modifier = f"{modifier} WITH QUERY EXPANSION"
+        elif self._match_text_seq("IN", "BOOLEAN", "MODE"):
+            modifier = "IN BOOLEAN MODE"
+        elif self._match_text_seq("WITH", "QUERY", "EXPANSION"):
+            modifier = "WITH QUERY EXPANSION"
+        else:
+            modifier = None
+
+        return self.expression(
+            exp.MatchAgainst, this=this, expressions=expressions, modifier=modifier
         )
 
     def _parse_position(self, haystack_first: bool = False) -> exp.Expression:

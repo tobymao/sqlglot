@@ -946,7 +946,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding.
         # Multiple consecutive comments are preserved by appending them to the current comments list.
-        if comment_start_line == self._prev_token_line:
+        if comment_start_line == self._prev_token_line or self._end:
             self.tokens[-1].comments.extend(self._comments)
             self._comments = []
             self._prev_token_line = self._line

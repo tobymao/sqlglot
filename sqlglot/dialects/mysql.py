@@ -295,13 +295,10 @@ class MySQL(Dialect):
 
         LOG_DEFAULTS_TO_LN = True
 
-        def _parse_match_against(self) -> t.Optional[exp.Expression]:
-            index = self._index
+        def _parse_match_against(self) -> exp.Expression:
             expressions = self._parse_csv(self._parse_id_var)
 
-            if not self._match_text_seq(")", "AGAINST", "("):
-                self._retreat(index)
-                return None
+            self._match_text_seq(")", "AGAINST", "("):
 
             this = self._parse_string()
 

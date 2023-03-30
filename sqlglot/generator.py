@@ -1591,6 +1591,11 @@ class Generator:
             exp.Case(ifs=[expression.copy()], default=expression.args.get("false"))
         )
 
+    def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
+        modifier = expression.args.get("modifier")
+        modifier = f" {modifier}" if modifier else ""
+        return f"{self.func('MATCH', *expression.expressions)} AGAINST({self.sql(expression, 'this')}{modifier})"
+
     def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
         return f"{self.sql(expression, 'this')}: {self.sql(expression, 'expression')}"
 

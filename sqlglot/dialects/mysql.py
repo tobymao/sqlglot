@@ -429,7 +429,7 @@ class MySQL(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
-        def show_sql(self, expression):
+        def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""
             global_ = " GLOBAL" if expression.args.get("global") else ""
@@ -469,13 +469,13 @@ class MySQL(Dialect):
 
             return f"SHOW{full}{global_}{this}{target}{types}{db}{query}{log}{position}{channel}{mutex_or_status}{like}{where}{offset}{limit}"
 
-        def _prefixed_sql(self, prefix, expression, arg):
+        def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
             sql = self.sql(expression, arg)
             if not sql:
                 return ""
             return f" {prefix} {sql}"
 
-        def _oldstyle_limit_sql(self, expression):
+        def _oldstyle_limit_sql(self, expression: exp.Show) -> str:
             limit = self.sql(expression, "limit")
             offset = self.sql(expression, "offset")
             if limit:

@@ -203,7 +203,6 @@ class MySQL(Dialect):
                 this=self._parse_lambda(),
                 separator=self._match(TokenType.SEPARATOR) and self._parse_field(),
             ),
-            "MATCH": lambda self: self._parse_match_against(),
         }
 
         PROPERTY_PARSERS = {
@@ -292,28 +291,6 @@ class MySQL(Dialect):
         }
 
         LOG_DEFAULTS_TO_LN = True
-
-        def _parse_match_against(self) -> exp.Expression:
-            expressions = self._parse_csv(self._parse_id_var)
-
-            self._match_text_seq(")", "AGAINST", "(")
-
-            this = self._parse_string()
-
-            if self._match_text_seq("IN", "NATURAL", "LANGUAGE", "MODE"):
-                modifier = "IN NATURAL LANGUAGE MODE"
-                if self._match_text_seq("WITH", "QUERY", "EXPANSION"):
-                    modifier = f"{modifier} WITH QUERY EXPANSION"
-            elif self._match_text_seq("IN", "BOOLEAN", "MODE"):
-                modifier = "IN BOOLEAN MODE"
-            elif self._match_text_seq("WITH", "QUERY", "EXPANSION"):
-                modifier = "WITH QUERY EXPANSION"
-            else:
-                modifier = None
-
-            return self.expression(
-                exp.MatchAgainst, this=this, expressions=expressions, modifier=modifier
-            )
 
         def _parse_show_mysql(self, this, target=False, full=None, global_=None):
             if target:
@@ -451,11 +428,6 @@ class MySQL(Dialect):
         }
 
         LIMIT_FETCH = "LIMIT"
-
-        def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
-            modifier = expression.args.get("modifier")
-            modifier = f" {modifier}" if modifier else ""
-            return f"{self.func('MATCH', *expression.expressions)} AGAINST({self.sql(expression, 'this')}{modifier})"
 
         def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"

@@ -462,6 +462,7 @@ SELECT
 FROM "db1"."tbl" AS "tbl"
 CROSS JOIN "db2"."tbl" AS "tbl_2";
 
+# execute: false
 SELECT
 *,
 IFF(

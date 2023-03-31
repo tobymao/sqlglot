@@ -27,12 +27,18 @@ SELECT x.a AS a FROM x AS x;
 SELECT a AS b FROM x;
 SELECT x.a AS b FROM x AS x;
 
+# execute: false
 SELECT 1, 2 + 3 FROM x;
 SELECT 1 AS "1", 2 + 3 AS _col_1 FROM x AS x;
 
+# execute: false
 SELECT a + b FROM x;
 SELECT x.a + x.b AS _col_0 FROM x AS x;
 
+SELECT l.a FROM x l WHERE a IN (select a FROM x ORDER by a);
+SELECT l.a AS a FROM x AS l WHERE l.a IN (SELECT x.a AS a FROM x AS x ORDER BY a);
+
+# execute: false
 SELECT a, SUM(b) FROM x WHERE a > 1 AND b > 1 GROUP BY a;
 SELECT x.a AS a, SUM(x.b) AS _col_1 FROM x AS x WHERE x.a > 1 AND x.b > 1 GROUP BY x.a;
 
@@ -45,6 +51,7 @@ SELECT SUM(x.a) AS a FROM x AS x HAVING SUM(x.a) > 3;
 SELECT SUM(a) AS c FROM x HAVING c > 3;
 SELECT SUM(x.a) AS c FROM x AS x HAVING SUM(x.a) > 3;
 
+# execute: false
 SELECT SUM(a) AS a FROM x HAVING a > 3;
 SELECT SUM(x.a) AS a FROM x AS x HAVING SUM(x.a) > 3;
 
@@ -60,9 +67,11 @@ SELECT x.a AS j, x.b AS a FROM x AS x ORDER BY x.a;
 SELECT SUM(a) AS c, SUM(b) AS d FROM x ORDER BY 1, 2;
 SELECT SUM(x.a) AS c, SUM(x.b) AS d FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
 
+# execute: false
 SELECT CAST(a AS INT) FROM x ORDER BY a;
 SELECT CAST(x.a AS INT) AS a FROM x AS x ORDER BY a;
 
+# execute: false
 SELECT SUM(a), SUM(b) AS c FROM x ORDER BY 1, 2;
 SELECT SUM(x.a) AS _col_0, SUM(x.b) AS c FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
 
@@ -75,6 +84,7 @@ SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
 SELECT a, b FROM x ORDER BY 1, 2;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a, x.b;
 
+# execute: false
 SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
@@ -87,6 +97,7 @@ SELECT COALESCE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY COALESCE
 SELECT a + 1 AS d FROM x WHERE d > 1;
 SELECT x.a + 1 AS d FROM x AS x WHERE x.a + 1 > 1;
 
+# execute: false
 SELECT a + 1 AS d, d + 2 FROM x;
 SELECT x.a + 1 AS d, x.a + 1 + 2 AS _col_1 FROM x AS x;
 
@@ -102,14 +113,17 @@ SELECT x.a AS a FROM x AS x ORDER BY x.b;
 SELECT SUM(a) AS a FROM x ORDER BY SUM(a);
 SELECT SUM(x.a) AS a FROM x AS x ORDER BY SUM(x.a);
 
+# execute: false
 SELECT AGGREGATE(ARRAY(a, x.b), 0, (x, acc) -> x + acc + a) AS sum_agg FROM x;
 SELECT AGGREGATE(ARRAY(x.a, x.b), 0, (x, acc) -> x + acc + x.a) AS sum_agg FROM x AS x;
 
 # dialect: starrocks
+# execute: false
 SELECT DATE_TRUNC('week', a) AS a FROM x;
 SELECT DATE_TRUNC('week', x.a) AS a FROM x AS x;
 
 # dialect: bigquery
+# execute: false
 SELECT DATE_TRUNC(a, MONTH) AS a FROM x;
 SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 
@@ -164,6 +178,7 @@ SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM 
 SELECT a FROM x WHERE b IN (SELECT c FROM y);
 SELECT x.a AS a FROM x AS x WHERE x.b IN (SELECT y.c AS c FROM y AS y);
 
+# execute: false
 SELECT (SELECT c FROM y) FROM x;
 SELECT (SELECT y.c AS c FROM y AS y) AS _col_0 FROM x AS x;
 
@@ -242,9 +257,11 @@ WITH z AS ((SELECT x.b AS b FROM x AS x UNION ALL SELECT y.b AS b FROM y AS y) O
 --------------------------------------
 -- Except and Replace
 --------------------------------------
+# execute: false
 SELECT * REPLACE(a AS d) FROM x;
 SELECT x.a AS d, x.b AS b FROM x AS x;
 
+# execute: false
 SELECT * EXCEPT(b) REPLACE(a AS d) FROM x;
 SELECT x.a AS d FROM x AS x;
 
@@ -306,19 +323,24 @@ SELECT /*+ BROADCAST(y) */ x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 --------------------------------------
 -- UDTF
 --------------------------------------
+# execute: false
 SELECT c FROM x LATERAL VIEW EXPLODE (a) AS c;
 SELECT _q_0.c AS c FROM x AS x LATERAL VIEW EXPLODE(x.a) _q_0 AS c;
 
+# execute: false
 SELECT c FROM xx LATERAL VIEW EXPLODE (a) AS c;
 SELECT _q_0.c AS c FROM xx AS xx LATERAL VIEW EXPLODE(xx.a) _q_0 AS c;
 
+# execute: false
 SELECT c FROM x LATERAL VIEW EXPLODE (a) t AS c;
 SELECT t.c AS c FROM x AS x LATERAL VIEW EXPLODE(x.a) t AS c;
 
+# execute: false
 SELECT aa FROM x, UNNEST(a) AS t(aa);
 SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
 
 # dialect: bigquery
+# execute: false
 SELECT aa FROM x, UNNEST(a) AS aa;
 SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
 
@@ -326,6 +348,7 @@ SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
 SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(b, ',')) AS i(b);
 SELECT x.a AS a, i.b AS b FROM x AS x CROSS JOIN UNNEST(SPLIT(x.b, ',')) AS i(b);
 
+# execute: false
 SELECT c FROM (SELECT 1 a) AS x LATERAL VIEW EXPLODE(a) AS c;
 SELECT _q_0.c AS c FROM (SELECT 1 AS a) AS x LATERAL VIEW EXPLODE(x.a) _q_0 AS c;
 

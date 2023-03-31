@@ -3400,7 +3400,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_match_against(self) -> exp.Expression:
-        expressions = self._parse_csv(self._parse_id_var)
+        expressions = self._parse_csv(self._parse_column)
 
         self._match_text_seq(")", "AGAINST", "(")
 

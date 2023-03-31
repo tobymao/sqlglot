@@ -106,7 +106,6 @@ class TestOptimizer(unittest.TestCase):
             ):
                 title = meta.get("title") or f"{i}, {sql}"
                 dialect = meta.get("dialect")
-                execute = execute if meta.get("execute") is None else False
                 leave_tables_isolated = meta.get("leave_tables_isolated")
 
                 func_kwargs = {**kwargs}
@@ -114,7 +113,13 @@ class TestOptimizer(unittest.TestCase):
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
-                results[future] = (sql, title, expected, dialect, execute)
+                results[future] = (
+                    sql,
+                    title,
+                    expected,
+                    dialect,
+                    execute if meta.get("execute") is None else False,
+                )
 
         for future in as_completed(results):
             optimized = future.result()

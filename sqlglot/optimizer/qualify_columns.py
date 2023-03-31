@@ -164,21 +164,20 @@ def _expand_alias_refs(scope, resolver):
                 return select.copy()
 
             node.set("table", table)
+        elif isinstance(node, exp.Expression) and not isinstance(node, exp.Subqueryable):
+            exp.replace_children(node, transform, source_first)
 
         return node
 
     for select in scope.expression.selects:
-        select.transform(transform, copy=False)
+        transform(select)
 
     for modifier, source_first in (
         ("where", True),
         ("group", True),
         ("having", False),
     ):
-        part = scope.expression.args.get(modifier)
-
-        if part:
-            part.transform(transform, copy=False, source_first=source_first)
+        transform(scope.expression.args.get(modifier), source_first=source_first)
 
 
 def _expand_group_by(scope, resolver):

@@ -234,6 +234,10 @@ class TestMySQL(Validator):
             "MATCH(col1, col2) AGAINST('abc' WITH QUERY EXPANSION)",
             write={"mysql": "MATCH(col1, col2) AGAINST('abc' WITH QUERY EXPANSION)"},
         )
+        self.validate_all(
+            "MATCH(a.b) AGAINST('abc')",
+            write={"mysql": "MATCH(a.b) AGAINST('abc')"},
+        )
 
     def test_mysql(self):
         self.validate_all(

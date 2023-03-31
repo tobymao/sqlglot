@@ -1036,8 +1036,8 @@ def from_json(
 def to_json(col: ColumnOrName, options: t.Optional[t.Dict[str, str]] = None) -> Column:
     if options is not None:
         options_col = create_map([lit(x) for x in _flatten(options.items())])
-        return Column.invoke_anonymous_function(col, "TO_JSON", options_col)
-    return Column.invoke_anonymous_function(col, "TO_JSON")
+        return Column.invoke_expression_over_column(col, expression.JSONFormat, options=options_col)
+    return Column.invoke_expression_over_column(col, expression.JSONFormat)
 
 
 def schema_of_json(col: ColumnOrName, options: t.Optional[t.Dict[str, str]] = None) -> Column:

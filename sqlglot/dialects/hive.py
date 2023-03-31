@@ -261,6 +261,7 @@ class Hive(Dialect):
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,
             "TO_DATE": format_time_lambda(exp.TsOrDsToDate, "hive"),
+            "TO_JSON": exp.JSONFormat.from_arg_list,
             "UNIX_TIMESTAMP": format_time_lambda(exp.StrToUnix, "hive", True),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
@@ -305,6 +306,7 @@ class Hive(Dialect):
             exp.Join: _unnest_to_explode_sql,
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
+            exp.JSONFormat: rename_func("TO_JSON"),
             exp.Map: var_map_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,

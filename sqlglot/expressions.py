@@ -3647,6 +3647,11 @@ class JSONBExtractScalar(JSONExtract):
     _sql_names = ["JSONB_EXTRACT_SCALAR"]
 
 
+class JSONFormat(Func):
+    arg_types = {"this": False, "options": False}
+    _sql_names = ["JSON_FORMAT"]
+
+
 class Least(Func):
     arg_types = {"expressions": False}
     is_var_len_args = True

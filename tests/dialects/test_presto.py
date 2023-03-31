@@ -539,6 +539,16 @@ class TestPresto(Validator):
                 "hive": "SELECT a, b, c, d, SUM(y) FROM z GROUP BY d, GROUPING SETS ((b, c)), CUBE (a), ROLLUP (a)",
             },
         )
+        self.validate_all(
+            "JSON_FORMAT(x)",
+            read={
+                "spark": "TO_JSON(x)",
+            },
+            write={
+                "presto": "JSON_FORMAT(x)",
+                "spark": "TO_JSON(x)",
+            },
+        )
 
     def test_encode_decode(self):
         self.validate_all(

@@ -144,7 +144,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             decode_to_case,
             "SELECT DECODE(tbl.col, 'some_string', 'foo')",
-            "SELECT CASE WHEN a = 'some_string' THEN 'foo' END",
+            "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
             read="redshift",
         )
 

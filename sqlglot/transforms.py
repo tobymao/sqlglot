@@ -114,8 +114,8 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
 
 def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expression:
     """
-    Some dialects only allow the precision for parameterized types to be defined in the DDL and not in other expressions.
-    This transforms removes the precision from parameterized types in expressions.
+    Some dialects only allow the precision for parameterized types to be defined in the DDL and not in
+    other expressions. This transforms removes the precision from parameterized types in expressions.
     """
     return expression.transform(
         lambda node: exp.DataType(
@@ -133,9 +133,15 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     )
 
 
-# https://docs.oracle.com/cd/B19306_01/server.102/b14200/functions040.htm
 def decode_to_case(expression: exp.Expression) -> exp.Expression:
-    """Transforms the Snowflake/Oracle/Redshift DECODE function into a CASE expression."""
+    """
+    Transforms the Snowflake/Oracle/Redshift DECODE function into a CASE expression. Note that NULL
+    needs special treatment in CASE expressions, since we need to explicitly check for them using
+    the `IS NULL` predicate, instead of relying on pattern matching.
+
+    - https://stackoverflow.com/a/3209948/17518317
+    - https://docs.snowflake.com/en/sql-reference/functions/decode
+    """
     if isinstance(expression, exp.Matches):
         from sqlglot.optimizer.simplify import simplify
 

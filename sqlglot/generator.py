@@ -8,6 +8,7 @@ from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.helper import apply_index_offset, csv, seq_get, should_identify
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
+from sqlglot.transforms import DECODE_TO_CASE
 
 logger = logging.getLogger("sqlglot")
 
@@ -55,6 +56,7 @@ class Generator:
     """
 
     TRANSFORMS = {
+        **DECODE_TO_CASE,  # type: ignore
         exp.DateAdd: lambda self, e: self.func(
             "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
         ),

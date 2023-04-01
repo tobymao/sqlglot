@@ -141,6 +141,12 @@ class TestTransforms(unittest.TestCase):
             "SELECT CASE WHEN a = 2 THEN 'two' END",
             read="snowflake",
         )
+        self.validate(
+            decode_to_case,
+            "SELECT DECODE(tbl.col, 'some_string', 'foo')",
+            "SELECT CASE WHEN a = 'some_string' THEN 'foo' END",
+            read="redshift",
+        )
 
     def test_remove_precision_parameterized_types(self):
         self.validate(

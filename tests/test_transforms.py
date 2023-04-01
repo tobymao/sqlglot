@@ -12,11 +12,9 @@ from sqlglot.transforms import (
 class TestTransforms(unittest.TestCase):
     maxDiff = None
 
-    def validate(self, transform, sql, target, read=None, write=None):
+    def validate(self, transform, sql, target):
         with self.subTest(sql):
-            self.assertEqual(
-                parse_one(sql, read=read).transform(transform).sql(dialect=write), target
-            )
+            self.assertEqual(parse_one(sql).transform(transform).sql(), target)
 
     def test_unalias_group(self):
         self.validate(

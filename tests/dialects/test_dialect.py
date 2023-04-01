@@ -290,6 +290,60 @@ class TestDialect(Validator):
             read={"postgres": "INET '127.0.0.1/32'"},
         )
 
+    def test_decode(self):
+        self.validate_identity("DECODE(bin, charset)")
+
+        self.validate_all(
+            "SELECT DECODE(a, 1, 'one')",
+            write={
+                "": "SELECT CASE WHEN a = 1 THEN 'one' END",
+                "oracle": "SELECT CASE WHEN a = 1 THEN 'one' END",
+                "redshift": "SELECT CASE WHEN a = 1 THEN 'one' END",
+                "snowflake": "SELECT CASE WHEN a = 1 THEN 'one' END",
+                "spark": "SELECT CASE WHEN a = 1 THEN 'one' END",
+            },
+        )
+        self.validate_all(
+            "SELECT DECODE(a, 1, 'one', 'default')",
+            write={
+                "": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+                "oracle": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+                "redshift": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+                "snowflake": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+                "spark": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+            },
+        )
+        self.validate_all(
+            "SELECT DECODE(a, NULL, 'null')",
+            write={
+                "": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+                "oracle": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+                "redshift": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+                "snowflake": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+                "spark": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+            },
+        )
+        self.validate_all(
+            "SELECT DECODE(a, b, c)",
+            write={
+                "": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+                "oracle": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+                "redshift": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+                "snowflake": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+                "spark": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+            },
+        )
+        self.validate_all(
+            "SELECT DECODE(tbl.col, 'some_string', 'foo')",
+            write={
+                "": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+                "oracle": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+                "redshift": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+                "snowflake": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+                "spark": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+            },
+        )
+
     def test_if_null(self):
         self.validate_all(
             "SELECT IFNULL(1, NULL) FROM foo",

@@ -133,48 +133,6 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     )
 
 
-def decode_to_case(expression: exp.Expression) -> exp.Expression:
-    """
-    Transforms the Snowflake/Oracle/Redshift DECODE function into a CASE expression. Note that NULL
-    needs special treatment in CASE expressions, since we need to explicitly check for them using
-    the `IS NULL` predicate, instead of relying on pattern matching.
-
-    - https://stackoverflow.com/a/3209948/17518317
-    - https://docs.snowflake.com/en/sql-reference/functions/decode
-    """
-    if isinstance(expression, exp.Matches):
-        from sqlglot.optimizer.simplify import simplify
-
-        select = expression.this
-        expressions = expression.expressions
-
-        ifs = []
-        for search, result in zip(expressions[::2], expressions[1::2]):
-            search = simplify(search)
-
-            if isinstance(search, exp.Literal):
-                ifs.append(exp.If(this=exp.EQ(this=select, expression=search), true=result))
-            elif isinstance(search, exp.Null):
-                ifs.append(exp.If(this=exp.Is(this=select, expression=exp.Null()), true=result))
-            else:
-                cond = exp.or_(
-                    exp.EQ(this=select, expression=search),
-                    exp.and_(
-                        exp.Is(this=select, expression=exp.Null()),
-                        exp.Is(this=search, expression=exp.Null()),
-                    ),
-                )
-                ifs.append(exp.If(this=cond, true=result))
-
-        case = exp.Case(ifs=ifs)
-        if len(expressions) % 2 == 1:
-            case.set("default", expressions[-1])
-
-        return case
-
-    return expression
-
-
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
     to_sql: t.Callable[[Generator, exp.Expression], str],
@@ -215,7 +173,6 @@ def delegate(attr: str) -> t.Callable:
 UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
 ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on], delegate("select_sql"))}
 ELIMINATE_QUALIFY = {exp.Select: preprocess([eliminate_qualify], delegate("select_sql"))}
-DECODE_TO_CASE = {exp.Matches: preprocess([decode_to_case], delegate("case_sql"))}
 REMOVE_PRECISION_PARAMETERIZED_TYPES = {
     exp.Cast: preprocess([remove_precision_parameterized_types], delegate("cast_sql"))
 }

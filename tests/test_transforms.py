@@ -2,7 +2,6 @@ import unittest
 
 from sqlglot import parse_one
 from sqlglot.transforms import (
-    decode_to_case,
     eliminate_distinct_on,
     eliminate_qualify,
     remove_precision_parameterized_types,
@@ -108,44 +107,6 @@ class TestTransforms(unittest.TestCase):
             eliminate_qualify,
             "SELECT c2, SUM(c3) OVER (PARTITION BY c2) AS r FROM t1 WHERE c3 < 4 GROUP BY c2, c3 HAVING SUM(c1) > 3 QUALIFY r IN (SELECT MIN(c1) FROM test GROUP BY c2 HAVING MIN(c1) > 3)",
             "SELECT c2, r FROM (SELECT c2, SUM(c3) OVER (PARTITION BY c2) AS r, c1 FROM t1 WHERE c3 < 4 GROUP BY c2, c3 HAVING SUM(c1) > 3) AS _t WHERE r IN (SELECT MIN(c1) FROM test GROUP BY c2 HAVING MIN(c1) > 3)",
-        )
-
-    def test_decode_to_case(self):
-        self.validate(
-            decode_to_case,
-            "SELECT DECODE(a, 1, 'one')",
-            "SELECT CASE WHEN a = 1 THEN 'one' END",
-            read="snowflake",
-        )
-        self.validate(
-            decode_to_case,
-            "SELECT DECODE(a, 1, 'one', 'default')",
-            "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
-            read="oracle",
-        )
-        self.validate(
-            decode_to_case,
-            "SELECT DECODE(a, NULL, 'null')",
-            "SELECT CASE WHEN a IS NULL THEN 'null' END",
-            read="redshift",
-        )
-        self.validate(
-            decode_to_case,
-            "SELECT DECODE(a, b, c)",
-            "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
-            read="snowflake",
-        )
-        self.validate(
-            decode_to_case,
-            "SELECT DECODE(a, 1 + 1, 'two')",
-            "SELECT CASE WHEN a = 2 THEN 'two' END",
-            read="snowflake",
-        )
-        self.validate(
-            decode_to_case,
-            "SELECT DECODE(tbl.col, 'some_string', 'foo')",
-            "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
-            read="redshift",
         )
 
     def test_remove_precision_parameterized_types(self):

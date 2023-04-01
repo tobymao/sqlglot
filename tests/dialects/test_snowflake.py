@@ -376,14 +376,10 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "DECODE(x, a, b, c, d)",
-            read={
-                "": "MATCHES(x, a, b, c, d)",
-            },
+            "DECODE(x, a, b, c, d, e)",
             write={
-                "": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
-                "oracle": "DECODE(x, a, b, c, d)",
-                "snowflake": "DECODE(x, a, b, c, d)",
+                "": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
+                "snowflake": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
             },
         )
 

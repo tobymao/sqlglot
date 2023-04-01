@@ -69,7 +69,7 @@ class TestRedshift(Validator):
         self.validate_all(
             "DECODE(x, a, b, c, d)",
             write={
-                "": "CASE WHEN x = a OR x IS NULL AND a IS NULL THEN b WHEN x = c OR x IS NULL AND c IS NULL THEN d END",
+                "": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
                 "oracle": "DECODE(x, a, b, c, d)",
                 "redshift": "DECODE(x, a, b, c, d)",
                 "snowflake": "DECODE(x, a, b, c, d)",

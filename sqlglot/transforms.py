@@ -157,11 +157,11 @@ def decode_to_case(expression: exp.Expression) -> exp.Expression:
             elif isinstance(search, exp.Null):
                 ifs.append(exp.If(this=exp.Is(this=select, expression=exp.Null()), true=result))
             else:
-                cond = exp.Or(
-                    this=exp.EQ(this=select, expression=search),
-                    expression=exp.And(
-                        this=exp.Is(this=select, expression=exp.Null()),
-                        expression=exp.Is(this=search, expression=exp.Null()),
+                cond = exp.or_(
+                    exp.EQ(this=select, expression=search),
+                    exp.and_(
+                        exp.Is(this=select, expression=exp.Null()),
+                        exp.Is(this=search, expression=exp.Null()),
                     ),
                 )
                 ifs.append(exp.If(this=cond, true=result))

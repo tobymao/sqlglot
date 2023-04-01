@@ -132,7 +132,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             decode_to_case,
             "SELECT DECODE(a, b, c)",
-            "SELECT CASE WHEN a = b OR a IS NULL AND b IS NULL THEN c END",
+            "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
             read="snowflake",
         )
         self.validate(

@@ -178,6 +178,10 @@ class Snowflake(Dialect):
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
+            "CONVERT_TIMEZONE": lambda args: exp.AtTimeZone(
+                this=seq_get(args, 1),
+                zone=seq_get(args, 0),
+            ),
             "DATE_TRUNC": date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2),
@@ -274,6 +278,9 @@ class Snowflake(Dialect):
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
+            exp.AtTimeZone: lambda self, e: self.func(
+                "CONVERT_TIMEZONE", e.args.get("zone"), e.this
+            ),
             exp.DateAdd: lambda self, e: self.func("DATEADD", e.text("unit"), e.expression, e.this),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,

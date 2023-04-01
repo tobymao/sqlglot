@@ -217,6 +217,9 @@ class BigQuery(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
+            exp.AtTimeZone: lambda self, e: self.func(
+                "TIMESTAMP", self.func("DATETIME", e.this, e.args.get("zone"))
+            ),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),

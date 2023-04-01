@@ -74,6 +74,17 @@ class TestDuckDB(Validator):
                 "spark": "TO_TIMESTAMP(x, 'M/d/yy h:mm a')",
             },
         )
+        self.validate_all(
+            "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
+            read={
+                "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
+            },
+            write={
+                "bigquery": "TIMESTAMP(DATETIME(CAST(start AS TIMESTAMPTZ), 'America/New_York'))",
+                "duckdb": "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
+                "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
+            },
+        )
 
     def test_sample(self):
         self.validate_all(

@@ -114,8 +114,8 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
 
 def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expression:
     """
-    Some dialects only allow the precision for parameterized types to be defined in the DDL and not in other expressions.
-    This transforms removes the precision from parameterized types in expressions.
+    Some dialects only allow the precision for parameterized types to be defined in the DDL and not in
+    other expressions. This transforms removes the precision from parameterized types in expressions.
     """
     return expression.transform(
         lambda node: exp.DataType(

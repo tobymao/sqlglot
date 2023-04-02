@@ -69,9 +69,11 @@ class TestRedshift(Validator):
         self.validate_all(
             "DECODE(x, a, b, c, d)",
             write={
-                "": "MATCHES(x, a, b, c, d)",
-                "oracle": "DECODE(x, a, b, c, d)",
-                "snowflake": "DECODE(x, a, b, c, d)",
+                "": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
+                "oracle": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
+                "redshift": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
+                "snowflake": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
+                "spark": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d END",
             },
         )
         self.validate_all(
@@ -97,9 +99,6 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
-        self.validate_identity(
-            "SELECT DECODE(COL1, 'replace_this', 'with_this', 'replace_that', 'with_that')"
-        )
         self.validate_identity("CAST('bla' AS SUPER)")
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")
         self.validate_identity("CAST('foo' AS HLLSKETCH)")

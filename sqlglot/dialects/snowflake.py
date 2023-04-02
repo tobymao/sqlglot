@@ -194,7 +194,6 @@ class Snowflake(Dialect):
                 expression=seq_get(args, 1),
                 unit=seq_get(args, 0),
             ),
-            "DECODE": exp.Matches.from_arg_list,
             "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
@@ -294,7 +293,6 @@ class Snowflake(Dialect):
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
-            exp.Matches: rename_func("DECODE"),
             exp.StrPosition: lambda self, e: self.func(
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),

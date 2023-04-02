@@ -674,6 +674,7 @@ class Parser(metaclass=_Parser):
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
+        "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "LOG": lambda self: self._parse_logarithm(),
@@ -3344,6 +3345,51 @@ class Parser(metaclass=_Parser):
             this, to = to, this
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+
+    def _parse_decode(self) -> t.Optional[exp.Expression]:
+        """
+        There are generally two variants of the DECODE function:
+
+        - DECODE(bin, charset)
+        - DECODE(expression, search, result [, search, result] ... [, default])
+
+        The second variant will always be parsed into a CASE expression. Note that NULL
+        needs special treatment, since we need to explicitly check for it with `IS NULL`,
+        instead of relying on pattern matching.
+        """
+        args = self._parse_csv(self._parse_conjunction)
+
+        if len(args) < 3:
+            return self.expression(exp.Decode, this=seq_get(args, 0), charset=seq_get(args, 1))
+
+        expression, *expressions = args
+        if not expression:
+            return None
+
+        ifs = []
+        for search, result in zip(expressions[::2], expressions[1::2]):
+            if not search or not result:
+                return None
+
+            if isinstance(search, exp.Literal):
+                ifs.append(
+                    exp.If(this=exp.EQ(this=expression.copy(), expression=search), true=result)
+                )
+            elif isinstance(search, exp.Null):
+                ifs.append(
+                    exp.If(this=exp.Is(this=expression.copy(), expression=exp.Null()), true=result)
+                )
+            else:
+                cond = exp.or_(
+                    exp.EQ(this=expression.copy(), expression=search),
+                    exp.and_(
+                        exp.Is(this=expression.copy(), expression=exp.Null()),
+                        exp.Is(this=search.copy(), expression=exp.Null()),
+                    ),
+                )
+                ifs.append(exp.If(this=cond, true=result))
+
+        return exp.Case(ifs=ifs, default=expressions[-1] if len(expressions) % 2 == 1 else None)
 
     def _parse_json_key_value(self) -> t.Optional[exp.Expression]:
         self._match_text_seq("KEY")

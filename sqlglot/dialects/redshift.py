@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
-from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -30,7 +29,6 @@ class Redshift(Postgres):
                 expression=seq_get(args, 1),
                 unit=seq_get(args, 0),
             ),
-            "DECODE": exp.Matches.from_arg_list,
             "NVL": exp.Coalesce.from_arg_list,
         }
 
@@ -89,7 +87,6 @@ class Redshift(Postgres):
             ),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
-            exp.Matches: rename_func("DECODE"),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
         }
 

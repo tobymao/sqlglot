@@ -6,6 +6,11 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT HLL(*)")
+        self.validate_identity("SELECT HLL(a)")
+        self.validate_identity("SELECT HLL(DISTINCT t.a)")
+        self.validate_identity("SELECT HLL(a, b, c)")
+        self.validate_identity("SELECT HLL(DISTINCT a, b, c)")
         self.validate_identity("$x")
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_identity("PUT file:///dir/tmp.csv @%table")

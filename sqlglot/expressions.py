@@ -3290,6 +3290,13 @@ class Anonymous(Func):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/hll
+# https://docs.aws.amazon.com/redshift/latest/dg/r_HLL_function.html
+class Hll(AggFunc):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
 class ApproxDistinct(AggFunc):
     arg_types = {"this": True, "accuracy": False}
 

@@ -908,7 +908,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char])  # type: ignore
+                self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
                 return
             self._scan_var()
             return
@@ -921,7 +921,8 @@ class Tokenizer(metaclass=_Tokenizer):
             return
 
         self._advance(size - 1)
-        self._add(self.KEYWORDS[word.upper()])
+        word = word.upper()
+        self._add(self.KEYWORDS[word], text=word)
 
     def _scan_comment(self, comment_start: str) -> bool:
         if comment_start not in self._COMMENTS:  # type: ignore

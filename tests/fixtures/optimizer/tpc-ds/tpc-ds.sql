@@ -6145,7 +6145,7 @@ WITH web_v1 AS
 (
          SELECT   ws_item_sk item_sk,
                   d_date,
-                  sum(Sum(ws_sales_price)) OVER (partition BY ws_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row) cume_sales
+                  sum(Sum(ws_sales_price)) OVER (partition BY ws_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW) cume_sales
          FROM     web_sales ,
                   date_dim
          WHERE    ws_sold_date_sk=d_date_sk
@@ -6156,7 +6156,7 @@ WITH web_v1 AS
 (
          SELECT   ss_item_sk item_sk,
                   d_date,
-                  sum(sum(ss_sales_price)) OVER (partition BY ss_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row) cume_sales
+                  sum(sum(ss_sales_price)) OVER (partition BY ss_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW) cume_sales
          FROM     store_sales ,
                   date_dim
          WHERE    ss_sold_date_sk=d_date_sk
@@ -6171,8 +6171,8 @@ FROM     (
                            d_date ,
                            web_sales ,
                            store_sales ,
-                           max(web_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row)   web_cumulative ,
-                           max(store_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row) store_cumulative
+                           max(web_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW)   web_cumulative ,
+                           max(store_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW) store_cumulative
                   FROM     (
                                            SELECT
                                                            CASE
@@ -6206,7 +6206,7 @@ WITH "date_dim_2" AS (
   SELECT
     "web_sales"."ws_item_sk" AS "item_sk",
     "date_dim"."d_date" AS "d_date",
-    SUM(SUM("web_sales"."ws_sales_price")) OVER (PARTITION BY "web_sales"."ws_item_sk" ORDER BY "date_dim"."d_date" rows BETWEEN UNBOUNDED PRECEDING AND CURRENT row) AS "cume_sales"
+    SUM(SUM("web_sales"."ws_sales_price")) OVER (PARTITION BY "web_sales"."ws_item_sk" ORDER BY "date_dim"."d_date" rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "cume_sales"
   FROM "web_sales" AS "web_sales"
   JOIN "date_dim_2" AS "date_dim"
     ON "web_sales"."ws_sold_date_sk" = "date_dim"."d_date_sk"
@@ -6219,7 +6219,7 @@ WITH "date_dim_2" AS (
   SELECT
     "store_sales"."ss_item_sk" AS "item_sk",
     "date_dim"."d_date" AS "d_date",
-    SUM(SUM("store_sales"."ss_sales_price")) OVER (PARTITION BY "store_sales"."ss_item_sk" ORDER BY "date_dim"."d_date" rows BETWEEN UNBOUNDED PRECEDING AND CURRENT row) AS "cume_sales"
+    SUM(SUM("store_sales"."ss_sales_price")) OVER (PARTITION BY "store_sales"."ss_item_sk" ORDER BY "date_dim"."d_date" rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "cume_sales"
   FROM "store_sales" AS "store_sales"
   JOIN "date_dim_2" AS "date_dim"
     ON "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
@@ -6242,12 +6242,12 @@ WITH "date_dim_2" AS (
       WHEN NOT "web"."item_sk" IS NULL
       THEN "web"."item_sk"
       ELSE "store"."item_sk"
-    END ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END rows BETWEEN UNBOUNDED PRECEDING AND CURRENT row) AS "web_cumulative",
+    END ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "web_cumulative",
     MAX("store"."cume_sales") OVER (PARTITION BY CASE
       WHEN NOT "web"."item_sk" IS NULL
       THEN "web"."item_sk"
       ELSE "store"."item_sk"
-    END ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END rows BETWEEN UNBOUNDED PRECEDING AND CURRENT row) AS "store_cumulative"
+    END ORDER BY CASE WHEN NOT "web"."d_date" IS NULL THEN "web"."d_date" ELSE "store"."d_date" END rows BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "store_cumulative"
   FROM "web_v1" AS "web"
   FULL JOIN "store_v1" AS "store"
     ON "web"."d_date" = "store"."d_date" AND "web"."item_sk" = "store"."item_sk"

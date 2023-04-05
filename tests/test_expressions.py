@@ -194,30 +194,31 @@ class TestExpressions(unittest.TestCase):
     def test_replace_placeholders(self):
         self.assertEqual(
             exp.replace_placeholders(
-                parse_one("select * from :tbl1 JOIN :tbl2 ON :col1 = :col2 WHERE :col3 > 100"),
-                tbl1="foo",
-                tbl2="bar",
-                col1="a",
-                col2="b",
-                col3="c",
+                parse_one("select * from :tbl1 JOIN :tbl2 ON :col1 = :str1 WHERE :col2 > :int1"),
+                tbl1=exp.to_identifier("foo"),
+                tbl2=exp.to_identifier("bar"),
+                col1=exp.to_identifier("a"),
+                col2=exp.to_identifier("c"),
+                str1="b",
+                int1=100,
             ).sql(),
-            "SELECT * FROM foo JOIN bar ON a = b WHERE c > 100",
+            "SELECT * FROM foo JOIN bar ON a = 'b' WHERE c > 100",
         )
         self.assertEqual(
             exp.replace_placeholders(
-                parse_one("select * from ? JOIN ? ON ? = ? WHERE ? > 100"),
-                "foo",
-                "bar",
-                "a",
+                parse_one("select * from ? JOIN ? ON ? = ? WHERE ? = 'bla'"),
+                exp.to_identifier("foo"),
+                exp.to_identifier("bar"),
+                exp.to_identifier("a"),
                 "b",
-                "c",
+                "bla",
             ).sql(),
-            "SELECT * FROM foo JOIN bar ON a = b WHERE c > 100",
+            "SELECT * FROM foo JOIN bar ON a = 'b' WHERE 'bla' = 'bla'",
         )
         self.assertEqual(
             exp.replace_placeholders(
                 parse_one("select * from ? WHERE ? > 100"),
-                "foo",
+                exp.to_identifier("foo"),
             ).sql(),
             "SELECT * FROM foo WHERE ? > 100",
         )
@@ -229,12 +230,12 @@ class TestExpressions(unittest.TestCase):
         )
         self.assertEqual(
             exp.replace_placeholders(
-                parse_one("select * from (SELECT :col1 FROM ?) WHERE :col2 > 100"),
-                "tbl1",
-                "tbl2",
+                parse_one("select * from (SELECT :col1 FROM ?) WHERE :col2 > ?"),
+                exp.to_identifier("tbl1"),
+                100,
                 "tbl3",
-                col1="a",
-                col2="b",
+                col1=exp.to_identifier("a"),
+                col2=exp.to_identifier("b"),
                 col3="c",
             ).sql(),
             "SELECT * FROM (SELECT a FROM tbl1) WHERE b > 100",

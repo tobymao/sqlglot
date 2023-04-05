@@ -432,6 +432,12 @@ class TestDuckDB(Validator):
                 "snowflake": "CAST(COL AS ARRAY)",
             },
         )
+        self.validate_all(
+            "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[])",
+            write={
+                "SELECT CAST(LIST_VALUE({'a': 1}) AS STRUCT(a BIGINT)[])",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(

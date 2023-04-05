@@ -2636,7 +2636,7 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
             maybe_func = True
 
-        if not nested and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
+        if self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             this = exp.DataType(
                 this=exp.DataType.Type.ARRAY,
                 expressions=[exp.DataType.build(type_token.value, expressions=expressions)],

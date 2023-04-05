@@ -4996,9 +4996,10 @@ def replace_placeholders(expression, *args, **kwargs):
     Examples:
         >>> from sqlglot import exp, parse_one
         >>> replace_placeholders(
-        ...     parse_one("select * from :tbl where ? = ?"), "a", "b", tbl="foo"
+        ...     parse_one("select * from :tbl where ? = ?"),
+        ...     exp.to_identifier("str_col"), "b", tbl=exp.to_identifier("foo")
         ... ).sql()
-        'SELECT * FROM foo WHERE a = b'
+        "SELECT * FROM foo WHERE str_col = 'b'"
 
     Returns:
         The mapped expression.
@@ -5009,10 +5010,10 @@ def replace_placeholders(expression, *args, **kwargs):
             if node.name:
                 new_name = kwargs.get(node.name)
                 if new_name:
-                    return to_identifier(new_name)
+                    return convert(new_name)
             else:
                 try:
-                    return to_identifier(next(args))
+                    return convert(next(args))
                 except StopIteration:
                     pass
         return node

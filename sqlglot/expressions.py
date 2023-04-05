@@ -949,7 +949,7 @@ class Column(Condition):
 
 
 class ColumnPosition(Expression):
-    arg_types = {"this": True, "position": True}
+    arg_types = {"this": False, "position": True}
 
 
 class ColumnDef(Expression):

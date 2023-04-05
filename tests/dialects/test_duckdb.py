@@ -439,9 +439,9 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "CAST([STRUCT_PACK(a := 1)] AS STRUCT(a BIGINT)[][])",
+            "CAST([[STRUCT_PACK(a := 1)]] AS STRUCT(a BIGINT)[][])",
             write={
-                "duckdb": "CAST(LIST_VALUE({'a': 1}) AS STRUCT(a BIGINT)[][])",
+                "duckdb": "CAST(LIST_VALUE(LIST_VALUE({'a': 1})) AS STRUCT(a BIGINT)[][])",
             },
         )
 

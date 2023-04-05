@@ -948,12 +948,17 @@ class Column(Condition):
         return Dot.build(parts)
 
 
+class ColumnPosition(Expression):
+    arg_types = {"this": True, "position": True}
+
+
 class ColumnDef(Expression):
     arg_types = {
         "this": True,
         "kind": False,
         "constraints": False,
         "exists": False,
+        "position": False,
     }
 
 

@@ -468,8 +468,9 @@ class Generator:
 
     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
         this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
         position = self.sql(expression, "position")
-        return f"{position} {this}"
+        return f"{position}{this}"
 
     def columndef_sql(self, expression: exp.ColumnDef) -> str:
         column = self.sql(expression, "this")

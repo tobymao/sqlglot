@@ -466,6 +466,11 @@ class Generator:
             if part
         )
 
+    def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
+        this = self.sql(expression, "this")
+        position = self.sql(expression, "position")
+        return f"{position} {this}"
+
     def columndef_sql(self, expression: exp.ColumnDef) -> str:
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
@@ -473,8 +478,10 @@ class Generator:
         exists = "IF NOT EXISTS " if expression.args.get("exists") else ""
         kind = f" {kind}" if kind else ""
         constraints = f" {constraints}" if constraints else ""
+        position = self.sql(expression, "position")
+        position = f" {position}" if position else ""
 
-        return f"{exists}{column}{kind}{constraints}"
+        return f"{exists}{column}{kind}{constraints}{position}"
 
     def columnconstraint_sql(self, expression: exp.ColumnConstraint) -> str:
         this = self.sql(expression, "this")

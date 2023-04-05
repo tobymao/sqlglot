@@ -45,7 +45,7 @@ v11.5.0
 - Improvement: Various simplifications in the executor (e.g. scan, join).
 
 v11.4.0
-______
+------
 
 - Breaking/Improvement: Canonicalization now only quotes when safe.
 

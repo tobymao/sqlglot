@@ -3860,6 +3860,14 @@ class Parser(metaclass=_Parser):
         if expression:
             expression.set("exists", exists_column)
 
+            # https://docs.databricks.com/delta/update-schema.html#explicitly-update-schema-to-add-columns
+            if self._match_texts(("FIRST", "AFTER")):
+                position = self._prev.text
+                column_position = self.expression(
+                    exp.ColumnPosition, this=self._parse_column(), position=position
+                )
+                expression.set("position", column_position)
+
         return expression
 
     def _parse_drop_column(self) -> t.Optional[exp.Expression]:

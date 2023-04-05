@@ -1,6 +1,49 @@
 Changelog
 =========
 
+v11.5.0
+------
+
+- Breaking/Improvement: replace_placeholders now uses exp.convert instead of exp.to_identifier.
+
+- New: Added support for the HLL aggregate function (Snowflake, Redshift).
+
+- New: Added support for MATCH ... AGAINST ... expression (MySQL).
+
+- New: Added TPC-DS in the test suite.
+
+- New: Added support for BigQuery's SELECT AS [STRUCT|VALUE] expression.
+
+- Improvement: Allow parsing `[]` for [nested types](https://github.com/tobymao/sqlglot/commit/709421aab7ef427619eb5feb95988a0f36792b84).
+
+- Improvement: [Normalize](https://github.com/tobymao/sqlglot/commit/58fdbf05f5e7627936ebf2036410c60396d6da72) keyword texts in the tokenizer.
+
+- Improvement: Parse DECODE function into CASE expression when it has >2 args.
+
+- Improvement: [Don't expand aliases in inner scopes](https://github.com/tobymao/sqlglot/commit/9a574b0e79e7532fd49929cf86396d4485091118).
+
+- Improvement: [Allow HAVING to alias selects](https://github.com/tobymao/sqlglot/commit/2b3eb31ca2ecb81a70bb462ff3987f0749a32d0e).
+
+- Improvement: Added support for the limit argument in Spark's SPLIT function.
+
+- Improvement: [Fix](https://github.com/tobymao/sqlglot/commit/68aea4ab95586723ed0c3d3ab0281577cc71e40c) related to expanding forward references in selects.
+
+- Improvement: Generate ->> for JSON_EXTRACT_SCALAR (MySQL).
+
+- Improvement: [Fix](https://github.com/tobymao/sqlglot/commit/68aea4ab95586723ed0c3d3ab0281577cc71e40c) related to expanding alias  references in the WHERE clause.
+
+- Improvement: Fixed transpilation of some char types to Bigquery.
+
+- Improvement: [Map MAX to GREATEST conditionally for some dialects](https://github.com/tobymao/sqlglot/commit/27483e9f3b7f3043ba1b325d58aa864db54255f1).
+
+- Improvement: Make normalize default to CNF.
+
+- Improvement: Fixed star expansion when USING clause is present.
+
+- Improvement: Various performance improvements in the optimizer.
+
+- Improvement: Various simplifications in the executor (e.g. scan, join).
+
 v11.4.0
 ______
 

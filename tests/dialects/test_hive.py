@@ -689,3 +689,11 @@ class TestHive(Validator):
         self.validate_identity("'\\z'")
         self.validate_identity("'\\\z'")
         self.validate_identity("'\\\\z'")
+
+    def test_data_type(self):
+        self.validate_all(
+            "CAST(a AS BIT)",
+            write={
+                "hive": "CAST(a AS BOOLEAN)",
+            },
+        )

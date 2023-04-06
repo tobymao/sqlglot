@@ -1,3 +1,4 @@
+import datetime
 import unittest
 from datetime import date
 
@@ -578,3 +579,28 @@ class TestExecutor(unittest.TestCase):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})
         self.assertEqual(result.columns, ("A",))
         self.assertEqual(result.rows, [(1,)])
+
+    def test_date_functions(self):
+        for sql, expected in [
+            ("YEAR(CURRENT_TIMESTAMP)", datetime.datetime.now().year),
+            ("MONTH(CURRENT_TIMESTAMP)", datetime.datetime.now().month),
+            ("DAY(CURRENT_TIMESTAMP)", datetime.datetime.now().day),
+            ("YEAR(GETDATE())", datetime.datetime.now().year),
+            ("MONTH(GETDATE())", datetime.datetime.now().month),
+            ("DAY(GETDATE())", datetime.datetime.now().day),
+            ("YEAR(CURRENT_TIMESTAMP) + 1", datetime.datetime.now().year + 1),
+            (
+                "YEAR(CURRENT_TIMESTAMP) IN (YEAR(CURRENT_TIMESTAMP) + 1, YEAR(CURRENT_TIMESTAMP) * 10)",
+                False,
+            ),
+            ("YEAR(CURRENT_TIMESTAMP) = (YEAR(CURRENT_TIMESTAMP))", True),
+            ("YEAR(CURRENT_TIMESTAMP) <> (YEAR(CURRENT_TIMESTAMP))", False),
+            ("YEAR(GETDATE()) + 1", datetime.datetime.now().year + 1),
+            ("YEAR(GETDATE()) IN (YEAR(GETDATE()) + 1, YEAR(GETDATE()) * 10)", False),
+            ("YEAR(GETDATE()) = (YEAR(GETDATE()))", True),
+            ("YEAR(GETDATE()) <> (YEAR(GETDATE()))", False),
+        ]:
+            with self.subTest(sql):
+                result = execute(f"SELECT {sql}")
+                self.assertEqual(result.rows, [(expected,)])
+        return

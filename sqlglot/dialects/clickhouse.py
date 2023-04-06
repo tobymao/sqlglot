@@ -46,17 +46,21 @@ class ClickHouse(Dialect):
                 time=seq_get(args, 1),
                 decay=seq_get(params, 0),
             ),
-            "MAP": parse_var_map,
-            "HISTOGRAM": lambda params, args: exp.Histogram(
-                this=seq_get(args, 0), bins=seq_get(params, 0)
-            ),
             "GROUPUNIQARRAY": lambda params, args: exp.GroupUniqArray(
                 this=seq_get(args, 0), size=seq_get(params, 0)
             ),
+            "HISTOGRAM": lambda params, args: exp.Histogram(
+                this=seq_get(args, 0), bins=seq_get(params, 0)
+            ),
+            "MAP": parse_var_map,
+            "MATCH": exp.RegexpLike.from_arg_list,
             "QUANTILE": lambda params, args: exp.Quantile(this=args, quantile=params),
             "QUANTILES": lambda params, args: exp.Quantiles(parameters=params, expressions=args),
             "QUANTILEIF": lambda params, args: exp.QuantileIf(parameters=params, expressions=args),
         }
+
+        FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS.pop("MATCH")
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
@@ -135,6 +139,7 @@ class ClickHouse(Dialect):
             exp.Quantile: lambda self, e: f"quantile{self._param_args_sql(e, 'quantile', 'this')}",
             exp.Quantiles: lambda self, e: f"quantiles{self._param_args_sql(e, 'parameters', 'expressions')}",
             exp.QuantileIf: lambda self, e: f"quantileIf{self._param_args_sql(e, 'parameters', 'expressions')}",
+            exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
         }

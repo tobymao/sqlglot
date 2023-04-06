@@ -294,6 +294,8 @@ class TSQL(Dialect):
             "REPLICATE": exp.Repeat.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
+            "SUSER_NAME": exp.CurrentUser.from_arg_list,
+            "SUSER_SNAME": exp.CurrentUser.from_arg_list,
         }
 
         VAR_LENGTH_DATATYPES = {

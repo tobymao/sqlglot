@@ -127,6 +127,10 @@ SELECT DATE_TRUNC('week', x.a) AS a FROM x AS x;
 SELECT DATE_TRUNC(a, MONTH) AS a FROM x;
 SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 
+# execute: false
+SELECT x FROM READ_PARQUET('path.parquet', hive_partition=1);
+SELECT _q_0.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS _q_0;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

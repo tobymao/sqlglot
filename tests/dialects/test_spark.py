@@ -345,3 +345,13 @@ TBLPROPERTIES (
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
             write={"spark": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
+
+    def test_current_user(self):
+        self.validate_all(
+            "CURRENT_USER",
+            write={"spark": "CURRENT_USER()"},
+        )
+        self.validate_all(
+            "CURRENT_USER()",
+            write={"spark": "CURRENT_USER()"},
+        )

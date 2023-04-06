@@ -173,4 +173,9 @@ ENV = {
     "SUBSTRING": substring,
     "TIMESTRTOTIME": null_if_any(lambda arg: datetime.datetime.fromisoformat(arg)),
     "UPPER": null_if_any(lambda arg: arg.upper()),
+    "YEAR" : null_if_any(lambda arg: arg.year),
+    "MONTH" : null_if_any(lambda arg: arg.month),
+    "DAY" : null_if_any(lambda arg: arg.day),
+    "CURRENTTIMESTAMP" : datetime.datetime.now,
+    "GETDATE": datetime.datetime.now,
 }

@@ -435,6 +435,7 @@ user_id price
 See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/sqlglot/blob/main/posts/python_sql_engine.md).
 
 ## Used By
+* [SQLMesh](https://github.com/TobikoData/sqlmesh)
 * [Fugue](https://github.com/fugue-project/fugue)
 * [ibis](https://github.com/ibis-project/ibis)
 * [mysql-mimic](https://github.com/kelsin/mysql-mimic)

@@ -282,6 +282,7 @@ class Hive(Dialect):
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "BINARY",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.BIT: "BOOLEAN",
         }
 
         TRANSFORMS = {
@@ -345,6 +346,7 @@ class Hive(Dialect):
             exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
+            exp.National: lambda self, e: self.sql(e, "this"),
         }
 
         PROPERTIES_LOCATION = {

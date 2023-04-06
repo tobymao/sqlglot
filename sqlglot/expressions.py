@@ -3452,6 +3452,10 @@ class CurrentTimestamp(Func):
     arg_types = {"this": False}
 
 
+class CurrentUser(Func):
+    arg_types = {"this": False}
+
+
 class DateAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 

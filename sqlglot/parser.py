@@ -105,6 +105,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_DATETIME: exp.CurrentDate,
         TokenType.CURRENT_TIME: exp.CurrentTime,
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
+        TokenType.CURRENT_USER: exp.CurrentUser,
     }
 
     NESTED_TYPE_TOKENS = {
@@ -285,6 +286,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_DATETIME,
         TokenType.CURRENT_TIMESTAMP,
         TokenType.CURRENT_TIME,
+        TokenType.CURRENT_USER,
         TokenType.FILTER,
         TokenType.FIRST,
         TokenType.FORMAT,

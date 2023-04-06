@@ -547,11 +547,11 @@ WHERE
     def test_string(self):
         self.validate_all(
             "SELECT N'test'",
-            write={"spark": "SELECT N'test'"},
+            write={"spark": "SELECT 'test'"},
         )
         self.validate_all(
             "SELECT n'test'",
-            write={"spark": "SELECT N'test'"},
+            write={"spark": "SELECT 'test'"},
         )
         self.validate_all(
             "SELECT '''test'''",
@@ -620,4 +620,14 @@ WHERE
             write={
                 "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME ALL AS alias""",
             },
+        )
+
+    def test_current_user(self):
+        self.validate_all(
+            "SUSER_NAME()",
+            write={"spark": "CURRENT_USER()"},
+        )
+        self.validate_all(
+            "SUSER_SNAME()",
+            write={"spark": "CURRENT_USER()"},
         )

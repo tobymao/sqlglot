@@ -2961,6 +2961,11 @@ class Parser(metaclass=_Parser):
         else:
             this = self._parse_select_or_expression()
 
+            if isinstance(this, exp.EQ):
+                left = this.this
+                if isinstance(left, exp.Column):
+                    left.replace(exp.Var(this=left.text("this")))
+
         if self._match(TokenType.IGNORE_NULLS):
             this = self.expression(exp.IgnoreNulls, this=this)
         else:

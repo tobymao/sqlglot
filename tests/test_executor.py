@@ -514,6 +514,8 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(result.rows, [(3,)])
 
     def test_scalar_functions(self):
+        now = datetime.datetime.now()
+
         for sql, expected in [
             ("CONCAT('a', 'b')", "ab"),
             ("CONCAT('a', NULL)", None),
@@ -570,6 +572,26 @@ class TestExecutor(unittest.TestCase):
             ("NULL IS NOT NULL", False),
             ("NULL = NULL", None),
             ("NULL <> NULL", None),
+            ("YEAR(CURRENT_TIMESTAMP)", now.year),
+            ("MONTH(CURRENT_TIME)", now.month),
+            ("DAY(CURRENT_DATETIME())", now.day),
+            ("YEAR(CURRENT_DATE())", now.year),
+            ("MONTH(CURRENT_DATE())", now.month),
+            ("DAY(CURRENT_DATE())", now.day),
+            ("YEAR(CURRENT_TIMESTAMP) + 1", now.year + 1),
+            (
+                "YEAR(CURRENT_TIMESTAMP) IN (YEAR(CURRENT_TIMESTAMP) + 1, YEAR(CURRENT_TIMESTAMP) * 10)",
+                False,
+            ),
+            ("YEAR(CURRENT_TIMESTAMP) = (YEAR(CURRENT_TIMESTAMP))", True),
+            ("YEAR(CURRENT_TIMESTAMP) <> (YEAR(CURRENT_TIMESTAMP))", False),
+            ("YEAR(CURRENT_DATE()) + 1", now.year + 1),
+            (
+                "YEAR(CURRENT_DATE()) IN (YEAR(CURRENT_DATE()) + 1, YEAR(CURRENT_DATE()) * 10)",
+                False,
+            ),
+            ("YEAR(CURRENT_DATE()) = (YEAR(CURRENT_DATE()))", True),
+            ("YEAR(CURRENT_DATE()) <> (YEAR(CURRENT_DATE()))", False),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")
@@ -579,28 +601,3 @@ class TestExecutor(unittest.TestCase):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})
         self.assertEqual(result.columns, ("A",))
         self.assertEqual(result.rows, [(1,)])
-
-    def test_date_functions(self):
-        for sql, expected in [
-            ("YEAR(CURRENT_TIMESTAMP)", datetime.datetime.now().year),
-            ("MONTH(CURRENT_TIMESTAMP)", datetime.datetime.now().month),
-            ("DAY(CURRENT_TIMESTAMP)", datetime.datetime.now().day),
-            ("YEAR(GETDATE())", datetime.datetime.now().year),
-            ("MONTH(GETDATE())", datetime.datetime.now().month),
-            ("DAY(GETDATE())", datetime.datetime.now().day),
-            ("YEAR(CURRENT_TIMESTAMP) + 1", datetime.datetime.now().year + 1),
-            (
-                "YEAR(CURRENT_TIMESTAMP) IN (YEAR(CURRENT_TIMESTAMP) + 1, YEAR(CURRENT_TIMESTAMP) * 10)",
-                False,
-            ),
-            ("YEAR(CURRENT_TIMESTAMP) = (YEAR(CURRENT_TIMESTAMP))", True),
-            ("YEAR(CURRENT_TIMESTAMP) <> (YEAR(CURRENT_TIMESTAMP))", False),
-            ("YEAR(GETDATE()) + 1", datetime.datetime.now().year + 1),
-            ("YEAR(GETDATE()) IN (YEAR(GETDATE()) + 1, YEAR(GETDATE()) * 10)", False),
-            ("YEAR(GETDATE()) = (YEAR(GETDATE()))", True),
-            ("YEAR(GETDATE()) <> (YEAR(GETDATE()))", False),
-        ]:
-            with self.subTest(sql):
-                result = execute(f"SELECT {sql}")
-                self.assertEqual(result.rows, [(expected,)])
-        return

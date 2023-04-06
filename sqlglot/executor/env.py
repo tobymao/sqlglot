@@ -176,6 +176,8 @@ ENV = {
     "YEAR": null_if_any(lambda arg: arg.year),
     "MONTH": null_if_any(lambda arg: arg.month),
     "DAY": null_if_any(lambda arg: arg.day),
+    "CURRENTDATETIME": datetime.datetime.now,
     "CURRENTTIMESTAMP": datetime.datetime.now,
-    "GETDATE": datetime.datetime.now,
+    "CURRENTTIME": datetime.datetime.now,
+    "CURRENTDATE": datetime.date.today,
 }

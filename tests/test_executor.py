@@ -588,12 +588,13 @@ class TestExecutor(unittest.TestCase):
             ("YEAR(GETDATE())", datetime.datetime.now().year),
             ("MONTH(GETDATE())", datetime.datetime.now().month),
             ("DAY(GETDATE())", datetime.datetime.now().day),
-
             ("YEAR(CURRENT_TIMESTAMP) + 1", datetime.datetime.now().year + 1),
-            ("YEAR(CURRENT_TIMESTAMP) IN (YEAR(CURRENT_TIMESTAMP) + 1, YEAR(CURRENT_TIMESTAMP) * 10)", False),
+            (
+                "YEAR(CURRENT_TIMESTAMP) IN (YEAR(CURRENT_TIMESTAMP) + 1, YEAR(CURRENT_TIMESTAMP) * 10)",
+                False,
+            ),
             ("YEAR(CURRENT_TIMESTAMP) = (YEAR(CURRENT_TIMESTAMP))", True),
             ("YEAR(CURRENT_TIMESTAMP) <> (YEAR(CURRENT_TIMESTAMP))", False),
-
             ("YEAR(GETDATE()) + 1", datetime.datetime.now().year + 1),
             ("YEAR(GETDATE()) IN (YEAR(GETDATE()) + 1, YEAR(GETDATE()) * 10)", False),
             ("YEAR(GETDATE()) = (YEAR(GETDATE()))", True),

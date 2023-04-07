@@ -20,6 +20,7 @@ class Node:
     expression: exp.Expression
     source: exp.Expression
     downstream: t.List[Node] = field(default_factory=list)
+    alias: str = ""
 
     def walk(self) -> t.Iterator[Node]:
         yield self
@@ -70,6 +71,7 @@ def lineage(
     optimized = optimize(expression, schema=schema, rules=rules)
     scope = build_scope(optimized)
     tables: t.Dict[str, Node] = {}
+    aliases = {dt.alias: dt.comments[0][len("source: ") :] for dt in scope.derived_tables}
 
     def to_node(
         column_name: str,
@@ -95,6 +97,7 @@ def lineage(
             name=f"{scope_name}.{column_name}" if scope_name else column_name,
             source=source,
             expression=select,
+            alias=aliases.get(scope_name, ""),
         )
 
         if upstream:

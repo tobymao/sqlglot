@@ -17,4 +17,10 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */",
         )
+        self.assertEqual(node.alias, "")
+        self.assertEqual(
+            node.downstream[0].source.sql(),
+            "SELECT x.a AS a FROM x AS x",
+        )
+        self.assertEqual(node.downstream[0].alias, "y")
         self.assertGreater(len(node.to_html()._repr_html_()), 1000)

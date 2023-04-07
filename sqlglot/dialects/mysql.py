@@ -4,6 +4,7 @@ from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
+    format_time_lambda,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -115,6 +116,7 @@ class MySQL(Dialect):
         "%k": "%-H",
         "%l": "%-I",
         "%T": "%H:%M:%S",
+        "%W": "%a",
     }
 
     class Tokenizer(tokens.Tokenizer):
@@ -187,7 +189,7 @@ class MySQL(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_ADD": _date_add(exp.DateAdd),
-            "DATE_FORMAT": exp.DateToDateStr.from_arg_list,
+            "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
             "DATE_SUB": _date_add(exp.DateSub),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "LEFT": lambda args: exp.Substring(
@@ -394,10 +396,9 @@ class MySQL(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.DateDiff: lambda self, e: f"DATEDIFF({self.format_args(e.this, e.expression)})",
+            exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateSub: _date_add_sql("SUB"),
-            exp.DateToDateStr: rename_func("DATE_FORMAT"),
             exp.DateTrunc: _date_trunc_sql,
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
@@ -413,6 +414,7 @@ class MySQL(Dialect):
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.TableSample: no_tablesample_sql,
+            exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),

@@ -20,7 +20,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.expressions import Literal
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import binary_range_parser
-from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 
@@ -116,24 +115,6 @@ def _parse_date_part(self: parser.Parser) -> t.Optional[exp.Expression]:
     return self.expression(exp.Extract, this=this, expression=expression)
 
 
-def _datetodatestr_sql(self: generator.Generator, expression: exp.DateToDateStr) -> str:
-    date_format = expression.args.get("format")
-    if not date_format:
-        return f"TO_CHAR({self.sql(expression, 'this')})"
-
-    date_format = date_format.name if isinstance(date_format, exp.Expression) else date_format
-
-    # Try to convert formats like '%Y-%m' (MySQL) to Snowflake's time mapping.
-    # https://docs.snowflake.com/en/sql-reference/functions-conversion#label-date-time-format-conversion
-    if "%" in date_format:
-        date_format = format_time(
-            date_format, t.cast(t.Dict[str, str], Snowflake.inverse_time_mapping)
-        )
-
-    this = exp.Cast(this=expression.this, to=exp.DataType.build("timestamp"))
-    return f"TO_CHAR({self.sql(this)}, '{date_format}')"
-
-
 # https://docs.snowflake.com/en/sql-reference/functions/div0
 def _div0_to_if(args: t.Sequence) -> exp.Expression:
     cond = exp.EQ(this=seq_get(args, 1), expression=exp.Literal.number(0))
@@ -178,9 +159,8 @@ class Snowflake(Dialect):
         "MM": "%m",
         "mm": "%m",
         "DD": "%d",
-        "dd": "%d",
-        "d": "%-d",
-        "DY": "%w",
+        "dd": "%-d",
+        "DY": "%a",
         "dy": "%w",
         "HH24": "%H",
         "hh24": "%H",
@@ -309,7 +289,6 @@ class Snowflake(Dialect):
                 "DATEDIFF", e.text("unit"), e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateToDateStr: _datetodatestr_sql,
             exp.DataType: _datatype_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.If: rename_func("IFF"),
@@ -325,6 +304,9 @@ class Snowflake(Dialect):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
+            exp.TimeToStr: lambda self, e: self.func(
+                "TO_CHAR", exp.cast(e.this, "timestamp"), self.format_time(e)
+            ),
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),

@@ -183,7 +183,7 @@ class Generator:
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
-    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
+    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where)
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (

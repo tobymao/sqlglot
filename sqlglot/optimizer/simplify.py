@@ -347,8 +347,9 @@ def _simplify_binary(expression, a, b):
         if isinstance(expression, exp.Mul):
             return exp.Literal.number(a * b)
         if isinstance(expression, exp.Div):
+            # engines have differing int div behavior so intdiv is not safe
             if isinstance(a, int) and isinstance(b, int):
-                return exp.Literal.number(a // b)
+                return None
             return exp.Literal.number(a / b)
 
         boolean = eval_boolean(expression, a, b)
@@ -491,7 +492,7 @@ def _flat_simplify(expression, simplifier, root=True):
 
                 if result:
                     queue.remove(b)
-                    queue.append(result)
+                    queue.appendleft(result)
                     break
             else:
                 operands.append(a)

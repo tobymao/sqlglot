@@ -239,6 +239,50 @@ class TestMySQL(Validator):
             write={"mysql": "MATCH(a.b) AGAINST('abc')"},
         )
 
+    def test_date_format(self):
+        self.validate_all(
+            "SELECT DATE_FORMAT('2017-06-15', '%Y')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'yyyy')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2017-06-15', '%m')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2017-06-15', '%m')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'mm')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2017-06-15', '%d')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2017-06-15', '%d')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'dd')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2017-06-15', '%Y-%m-%d')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y-%m-%d')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'yyyy-mm-dd')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2017-06-15 22:23:34', '%H')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2017-06-15 22:23:34', '%H')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15 22:23:34' AS TIMESTAMPNTZ), 'hh24')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2017-06-15', '%w')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2017-06-15', '%w')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'dy')",
+            },
+        )
+
     def test_mysql(self):
         self.validate_all(
             "SELECT a FROM tbl FOR UPDATE",

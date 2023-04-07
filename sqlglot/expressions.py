@@ -3555,7 +3555,7 @@ class DateStrToDate(Func):
 
 
 class DateToDateStr(Func):
-    pass
+    arg_types = {"this": True, "format": False}
 
 
 class DateToDi(Func):

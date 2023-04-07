@@ -2977,8 +2977,16 @@ class Parser(metaclass=_Parser):
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         index = self._index
-        if not self._match(TokenType.L_PAREN) or self._match(TokenType.SELECT):
+
+        try:
+            if self._parse_select(nested=True):
+                return this
+        except Exception:
+            pass
+        finally:
             self._retreat(index)
+
+        if not self._match(TokenType.L_PAREN):
             return this
 
         args = self._parse_csv(

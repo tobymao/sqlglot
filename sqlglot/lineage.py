@@ -71,7 +71,7 @@ def lineage(
     optimized = optimize(expression, schema=schema, rules=rules)
     scope = build_scope(optimized)
     tables: t.Dict[str, Node] = {}
-    aliases = {dt.alias: dt.comments[0][len("source: ") :] for dt in scope.derived_tables}
+    aliases = {dt.alias: dt.comments[0].split()[1] for dt in scope.derived_tables}
 
     def to_node(
         column_name: str,

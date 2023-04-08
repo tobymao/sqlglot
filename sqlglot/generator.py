@@ -730,7 +730,10 @@ class Generator:
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         cascade = " CASCADE" if expression.args.get("cascade") else ""
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
-        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{cascade}{constraints}"
+        purge = " PURGE" if expression.args.get("purge") else ""
+        return (
+            f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{cascade}{constraints}{purge}"
+        )
 
     def except_sql(self, expression: exp.Except) -> str:
         return self.prepend_ctes(

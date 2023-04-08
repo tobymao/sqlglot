@@ -1057,6 +1057,7 @@ class Parser(metaclass=_Parser):
             materialized=materialized,
             cascade=self._match(TokenType.CASCADE),
             constraints=self._match_text_seq("CONSTRAINTS"),
+            purge=self._match_text_seq("PURGE"),
         )
 
     def _parse_exists(self, not_: bool = False) -> t.Optional[bool]:

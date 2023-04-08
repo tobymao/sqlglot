@@ -1197,6 +1197,7 @@ class Drop(Expression):
         "materialized": False,
         "cascade": False,
         "constraints": False,
+        "purge": False,
     }
 
 

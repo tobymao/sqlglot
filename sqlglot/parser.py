@@ -607,7 +607,7 @@ class Parser(metaclass=_Parser):
         "STABLE": lambda self: self.expression(
             exp.VolatilityProperty, this=exp.Literal.string("STABLE")
         ),
-        "STORED": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+        "STORED": lambda self: self._parse_stored(),
         "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
         "TEMPORARY": lambda self: self._parse_temporary(global_=False),
@@ -1226,6 +1226,21 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Property, this=key, value=self._parse_column())
 
         return None
+
+    def _parse_stored(self) -> exp.Expression:
+        self._match(TokenType.ALIAS)
+
+        input_format = self._parse_string() if self._match_text_seq("INPUTFORMAT") else None
+        output_format = self._parse_string() if self._match_text_seq("OUTPUTFORMAT") else None
+
+        return self.expression(
+            exp.FileFormatProperty,
+            this=self.expression(
+                exp.InputOutputFormat, input_format=input_format, output_format=output_format
+            )
+            if input_format or output_format
+            else self._parse_var_or_string() or self._parse_number() or self._parse_id_var(),
+        )
 
     def _parse_property_assignment(self, exp_class: t.Type[exp.Expression]) -> exp.Expression:
         self._match(TokenType.EQ)

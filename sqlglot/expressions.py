@@ -1582,6 +1582,10 @@ class FreespaceProperty(Property):
     arg_types = {"this": True, "percent": False}
 
 
+class InputOutputFormat(Expression):
+    arg_types = {"input_format": False, "output_format": False}
+
+
 class IsolatedLoadingProperty(Property):
     arg_types = {
         "no": True,

@@ -209,7 +209,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             -- comment 2
             AND bla;
             """,
-            "SELECT a FROM b WHERE foo AND bar /* comment 1 */ AND bla /* comment 2 */",
+            "SELECT a FROM b WHERE foo AND /* comment 1 */ bar AND /* comment 2 */ bla",
         )
         self.validate(
             """

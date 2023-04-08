@@ -323,11 +323,14 @@ class Generator:
         return comment
 
     def maybe_comment(
-        self, sql: str, expression: exp.Expression, comments: t.Optional[t.List[str]] = None
+        self,
+        sql: str,
+        expression: t.Optional[exp.Expression] = None,
+        comments: t.Optional[t.List[str]] = None,
     ) -> str:
-        comments = (comments or expression.comments) if self._comments else None
+        comments = (comments or (expression and expression.comments)) if self._comments else None  # type: ignore
 
-        if not comments:
+        if not comments or isinstance(expression, exp.Binary):
             return sql
 
         sep = "\n" if self.pretty else " "
@@ -1725,7 +1728,7 @@ class Generator:
             return self.binary(expression, op)
 
         sqls = []
-        comments = {id(expression)}
+        comments = set()
 
         for e in tuple(expression.flatten(unnest=False)):
             sql = self.sql(e)
@@ -1958,6 +1961,7 @@ class Generator:
         return f"USE{kind}{this}"
 
     def binary(self, expression: exp.Binary, op: str) -> str:
+        op = self.maybe_comment(op, comments=expression.comments)
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
 
     def function_fallback_sql(self, expression: exp.Func) -> str:

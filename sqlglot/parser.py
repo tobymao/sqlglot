@@ -266,6 +266,8 @@ class Parser(metaclass=_Parser):
         *NO_PAREN_FUNCTIONS,
     }
 
+    INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.END}
+
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.APPLY,
         TokenType.FULL,
@@ -2589,7 +2591,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_type(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.INTERVAL):
-            return self.expression(exp.Interval, this=self._parse_term(), unit=self._parse_field())
+            return self.expression(
+                exp.Interval,
+                this=self._parse_term(),
+                unit=self._parse_field(tokens=self.INTERVAL_VARS),
+            )
 
         index = self._index
         type_token = self._parse_types(check_func=True)
@@ -2833,8 +2839,16 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _parse_field(self, any_token: bool = False) -> t.Optional[exp.Expression]:
-        return self._parse_primary() or self._parse_function() or self._parse_id_var(any_token)
+    def _parse_field(
+        self,
+        any_token: bool = False,
+        tokens: t.Optional[t.Collection[TokenType]] = None,
+    ) -> t.Optional[exp.Expression]:
+        return (
+            self._parse_primary()
+            or self._parse_function()
+            or self._parse_id_var(any_token=any_token, tokens=tokens)
+        )
 
     def _parse_function(
         self, functions: t.Optional[t.Dict[str, t.Callable]] = None

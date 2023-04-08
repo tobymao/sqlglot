@@ -131,6 +131,7 @@ INTERVAL '-1' CURRENT_DATE
 INTERVAL '-31' CAST(GETDATE() AS DATE)
 INTERVAL 2 months
 INTERVAL (1 + 3) DAYS
+CASE WHEN TRUE THEN INTERVAL '15 days' END
 CAST('45' AS INTERVAL DAYS)
 FILTER(a, x -> x.a.b.c.d.e.f.g)
 FILTER(a, x -> FOO(x.a.b.c.d.e.f.g) + x.a.b.c.d.e.f.g)

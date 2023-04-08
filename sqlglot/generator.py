@@ -772,6 +772,13 @@ class Generator:
             text = f"{self.identifier_start}{text}{self.identifier_end}"
         return text
 
+    def inputoutputformat_sql(self, expression: exp.InputOutputFormat) -> str:
+        input_format = self.sql(expression, "input_format")
+        input_format = f"INPUTFORMAT {input_format}" if input_format else ""
+        output_format = self.sql(expression, "output_format")
+        output_format = f"OUTPUTFORMAT {output_format}" if output_format else ""
+        return self.sep().join((input_format, output_format))
+
     def national_sql(self, expression: exp.National) -> str:
         return f"N{self.sql(expression, 'this')}"
 

@@ -300,7 +300,7 @@ class Hive(Dialect):
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
-            exp.FileFormatProperty: lambda self, e: f"STORED AS {e.name.upper()}",
+            exp.FileFormatProperty: lambda self, e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
             exp.If: if_sql,
             exp.Index: _index_sql,
             exp.ILike: no_ilike_sql,

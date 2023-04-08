@@ -243,7 +243,7 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "CREATE TABLE test STORED = 'PARQUET' AS SELECT 1",
+            "CREATE TABLE test STORED AS 'PARQUET' AS SELECT 1",
             write={
                 "duckdb": "CREATE TABLE test AS SELECT 1",
                 "presto": "CREATE TABLE test WITH (FORMAT='PARQUET') AS SELECT 1",

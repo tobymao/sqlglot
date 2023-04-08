@@ -218,6 +218,22 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             """,
             "SELECT a FROM b WHERE foo /* comment 1 */",
         )
+        self.validate(
+            """
+            select a from b
+            where foo
+            -- comment 1
+            and bar
+            -- comment 2
+            and bla
+            """,
+            """SELECT
+  a
+FROM b
+WHERE
+  foo /* comment 1 */ AND bar AND bla /* comment 2 */""",
+            pretty=True,
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

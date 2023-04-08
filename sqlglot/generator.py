@@ -322,8 +322,10 @@ class Generator:
         comment = comment + " " if comment[-1].strip() else comment
         return comment
 
-    def maybe_comment(self, sql: str, expression: exp.Expression) -> str:
-        comments = expression.comments if self._comments else None
+    def maybe_comment(
+        self, sql: str, expression: exp.Expression, comments: t.Optional[t.List[str]] = None
+    ) -> str:
+        comments = (comments or expression.comments) if self._comments else None
 
         if not comments:
             return sql
@@ -1722,7 +1724,18 @@ class Generator:
         if not self.pretty:
             return self.binary(expression, op)
 
-        sqls = tuple(self.sql(e) for e in expression.flatten(unnest=False))
+        sqls = []
+        comments = {id(expression)}
+
+        for e in tuple(expression.flatten(unnest=False)):
+            sql = self.sql(e)
+
+            if id(e.parent) not in comments:
+                comments.add(id(e.parent))
+                sql = self.maybe_comment(sql, e, e.parent.comments)
+
+            sqls.append(sql)
+
         sep = "\n" if self.text_width(sqls) > self._max_text_width else " "
         return f"{sep}{op} ".join(sqls)
 

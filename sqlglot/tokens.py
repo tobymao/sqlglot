@@ -315,7 +315,7 @@ class TokenType(AutoName):
 
 
 class Token:
-    __slots__ = ("token_type", "text", "line", "col", "comments")
+    __slots__ = ("token_type", "text", "line", "col", "end", "comments")
 
     @classmethod
     def number(cls, number: int) -> Token:
@@ -343,14 +343,22 @@ class Token:
         text: str,
         line: int = 1,
         col: int = 1,
+        end: int = 0,
         comments: t.List[str] = [],
     ) -> None:
         self.token_type = token_type
         self.text = text
         self.line = line
-        self.col = col - len(text)
+        size = len(text)
+        self.col = col - size
         self.col = self.col if self.col > 1 else 1
+        self.end = end if end else size
         self.comments = comments
+
+    @property
+    def start(self) -> int:
+        """Returns the start of the token."""
+        return self.end - len(self.text)
 
     def __repr__(self) -> str:
         attributes = ", ".join(f"{k}: {getattr(self, k)}" for k in self.__slots__)
@@ -850,6 +858,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._text if text is None else text,
                 self._line,
                 self._col,
+                self._current,
                 self._comments,
             )
         )

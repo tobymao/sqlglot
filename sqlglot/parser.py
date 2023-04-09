@@ -898,8 +898,8 @@ class Parser(metaclass=_Parser):
         error level setting.
         """
         token = token or self._curr or self._prev or Token.string("")
-        start = self._find_token(token)
-        end = start + len(token.text)
+        start = token.start
+        end = token.end
         start_context = self.sql[max(start - self.error_message_context, 0) : start]
         highlight = self.sql[start:end]
         end_context = self.sql[end : end + self.error_message_context]
@@ -961,22 +961,7 @@ class Parser(metaclass=_Parser):
             self.raise_error(error_message)
 
     def _find_sql(self, start: Token, end: Token) -> str:
-        return self.sql[self._find_token(start) : self._find_token(end) + len(end.text)]
-
-    def _find_token(self, token: Token) -> int:
-        line = 1
-        col = 1
-        index = 0
-
-        while line < token.line or col < token.col:
-            if Tokenizer.WHITE_SPACE.get(self.sql[index]) == TokenType.BREAK:
-                line += 1
-                col = 1
-            else:
-                col += 1
-            index += 1
-
-        return index
+        return self.sql[start.start : end.end]
 
     def _advance(self, times: int = 1) -> None:
         self._index += times

@@ -129,6 +129,7 @@ class Oracle(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
+            exp.IfNull: lambda self, e: f"NVL({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
         }
 
         LIMIT_FETCH = "FETCH"

@@ -7,8 +7,13 @@ class TestOracle(Validator):
     def test_oracle(self):
         self.validate_identity("SELECT * FROM V$SESSION")
 
-    def test_functions(self):
-        self.validate_identity("SELECT NVL(NULL, 1) FROM dual")
+        self.validate_all(
+            "NVL(NULL, 1)",
+            write={
+                "oracle": "NVL(NULL, 1)",
+                "": "IFNULL(NULL, 1)",
+            },
+        )
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")

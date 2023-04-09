@@ -1727,17 +1727,10 @@ class Generator:
         if not self.pretty:
             return self.binary(expression, op)
 
-        sqls = []
-        comments = set()
-
-        for e in tuple(expression.flatten(unnest=False)):
-            sql = self.sql(e)
-
-            if id(e.parent) not in comments:
-                comments.add(id(e.parent))
-                sql = self.maybe_comment(sql, e, e.parent.comments)
-
-            sqls.append(sql)
+        sqls = tuple(
+            self.maybe_comment(self.sql(e), e, e.parent.comments) if i != 1 else self.sql(e)
+            for i, e in enumerate(expression.flatten(unnest=False))
+        )
 
         sep = "\n" if self.text_width(sqls) > self._max_text_width else " "
         return f"{sep}{op} ".join(sqls)

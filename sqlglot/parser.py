@@ -652,6 +652,7 @@ class Parser(metaclass=_Parser):
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
         "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
+        "REFERENCES": lambda self: self._parse_references(match=False),
         "TITLE": lambda self: self.expression(
             exp.TitleColumnConstraint, this=self._parse_var_or_string()
         ),
@@ -3109,12 +3110,10 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:
-        this = self._parse_references()
-        if this:
-            return this
-
         if self._match(TokenType.CONSTRAINT):
             this = self._parse_id_var()
+        else:
+            this = None
 
         if self._match_texts(self.CONSTRAINT_PARSERS):
             return self.expression(
@@ -3194,8 +3193,8 @@ class Parser(metaclass=_Parser):
 
         return options
 
-    def _parse_references(self) -> t.Optional[exp.Expression]:
-        if not self._match(TokenType.REFERENCES):
+    def _parse_references(self, match=True) -> t.Optional[exp.Expression]:
+        if match and not self._match(TokenType.REFERENCES):
             return None
 
         expressions = None

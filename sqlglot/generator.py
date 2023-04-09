@@ -183,7 +183,7 @@ class Generator:
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
-    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.Binary)
+    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where)
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
@@ -322,10 +322,15 @@ class Generator:
         comment = comment + " " if comment[-1].strip() else comment
         return comment
 
-    def maybe_comment(self, sql: str, expression: exp.Expression) -> str:
-        comments = expression.comments if self._comments else None
+    def maybe_comment(
+        self,
+        sql: str,
+        expression: t.Optional[exp.Expression] = None,
+        comments: t.Optional[t.List[str]] = None,
+    ) -> str:
+        comments = (comments or (expression and expression.comments)) if self._comments else None  # type: ignore
 
-        if not comments:
+        if not comments or isinstance(expression, exp.Binary):
             return sql
 
         sep = "\n" if self.pretty else " "
@@ -1722,7 +1727,18 @@ class Generator:
         if not self.pretty:
             return self.binary(expression, op)
 
-        sqls = tuple(self.sql(e) for e in expression.flatten(unnest=False))
+        sqls = []
+        comments = set()
+
+        for e in tuple(expression.flatten(unnest=False)):
+            sql = self.sql(e)
+
+            if id(e.parent) not in comments:
+                comments.add(id(e.parent))
+                sql = self.maybe_comment(sql, e, e.parent.comments)
+
+            sqls.append(sql)
+
         sep = "\n" if self.text_width(sqls) > self._max_text_width else " "
         return f"{sep}{op} ".join(sqls)
 
@@ -1945,6 +1961,7 @@ class Generator:
         return f"USE{kind}{this}"
 
     def binary(self, expression: exp.Binary, op: str) -> str:
+        op = self.maybe_comment(op, comments=expression.comments)
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
 
     def function_fallback_sql(self, expression: exp.Func) -> str:

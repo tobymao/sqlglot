@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -6,6 +7,7 @@ class TestMySQL(Validator):
 
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
+        self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")

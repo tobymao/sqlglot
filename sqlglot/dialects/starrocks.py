@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import arrow_json_extract_sql, rename_func
+from sqlglot.dialects.dialect import (
+    approx_count_distinct_sql,
+    arrow_json_extract_sql,
+    rename_func,
+)
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 
@@ -10,6 +14,7 @@ class StarRocks(MySQL):
     class Parser(MySQL.Parser):  # type: ignore
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
+            "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
@@ -25,6 +30,7 @@ class StarRocks(MySQL):
 
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,  # type: ignore
+            exp.ApproxDistinct: approx_count_distinct_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.DateDiff: rename_func("DATEDIFF"),

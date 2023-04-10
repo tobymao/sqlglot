@@ -1,4 +1,3 @@
-from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 

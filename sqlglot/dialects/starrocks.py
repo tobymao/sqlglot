@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import arrow_json_extract_sql, rename_func, approx_count_distinct_sql
+from sqlglot.dialects.dialect import (
+    approx_count_distinct_sql,
+    arrow_json_extract_sql,
+    rename_func,
+)
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 

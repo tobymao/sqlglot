@@ -163,8 +163,8 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(schema.column_names("test"), ["x", "y"])
 
     def test_schema_get_column_type(self):
-        schema = MappingSchema({"a": {"b": "varchar"}})
-        self.assertEqual(schema.get_column_type("a", "b").this, exp.DataType.Type.VARCHAR)
+        schema = MappingSchema({"A": {"b": "varchar"}})
+        self.assertEqual(schema.get_column_type("a", "B").this, exp.DataType.Type.VARCHAR)
         self.assertEqual(
             schema.get_column_type(exp.Table(this="a"), exp.Column(this="b")).this,
             exp.DataType.Type.VARCHAR,
@@ -213,3 +213,11 @@ class TestSchema(unittest.TestCase):
         # Clickhouse supports both `` and "" for identifier quotes; sqlglot uses "" when generating sql
         schema = MappingSchema(schema={"x": {"`y`": "INT"}}, dialect="clickhouse")
         self.assertEqual(schema.column_names(exp.Table(this="x")), ["y"])
+
+        # Check that add_table normalizes both the table and the column names to be added/updated
+        schema = MappingSchema()
+        schema.add_table("Foo", {"SomeColumn": "INT", '"SomeColumn"': "DOUBLE"})
+
+        table_foo = exp.Table(this="fOO")
+
+        self.assertEqual(schema.column_names(table_foo), ["somecolumn", "SomeColumn"])

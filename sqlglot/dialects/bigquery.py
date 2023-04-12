@@ -23,13 +23,20 @@ from sqlglot.tokens import TokenType
 E = t.TypeVar("E", bound=exp.Expression)
 
 
-def _date_add(expression_class: t.Type[E]) -> t.Callable[[t.Sequence], E]:
-    def func(args):
-        interval = seq_get(args, 1)
+def date_add(expression_class: t.Type[E]) -> t.Callable[[t.Sequence], t.Optional[E]]:
+    def func(args: t.Sequence) -> t.Optional[E]:
+        if len(args) < 2:
+            return None
+
+        interval = args[1]
+        expression = interval.this
+        if expression and expression.is_string:
+            expression = exp.Literal.number(expression.this)
+
         return expression_class(
-            this=seq_get(args, 0),
-            expression=interval.this,
-            unit=interval.args.get("unit"),
+            this=args[0],
+            expression=expression,
+            unit=exp.Literal.string(interval.text("unit")),
         )
 
     return func
@@ -161,8 +168,8 @@ class BigQuery(Dialect):
                 unit=exp.Literal.string(seq_get(args, 1).name),  # type: ignore
                 this=seq_get(args, 0),
             ),
-            "DATE_ADD": _date_add(exp.DateAdd),
-            "DATETIME_ADD": _date_add(exp.DatetimeAdd),
+            "DATE_ADD": date_add(exp.DateAdd),
+            "DATETIME_ADD": date_add(exp.DatetimeAdd),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
@@ -174,12 +181,12 @@ class BigQuery(Dialect):
                 if re.compile(str(seq_get(args, 1))).groups == 1
                 else None,
             ),
-            "TIME_ADD": _date_add(exp.TimeAdd),
-            "TIMESTAMP_ADD": _date_add(exp.TimestampAdd),
-            "DATE_SUB": _date_add(exp.DateSub),
-            "DATETIME_SUB": _date_add(exp.DatetimeSub),
-            "TIME_SUB": _date_add(exp.TimeSub),
-            "TIMESTAMP_SUB": _date_add(exp.TimestampSub),
+            "TIME_ADD": date_add(exp.TimeAdd),
+            "TIMESTAMP_ADD": date_add(exp.TimestampAdd),
+            "DATE_SUB": date_add(exp.DateSub),
+            "DATETIME_SUB": date_add(exp.DatetimeSub),
+            "TIME_SUB": date_add(exp.TimeSub),
+            "TIMESTAMP_SUB": date_add(exp.TimestampSub),
             "PARSE_TIMESTAMP": lambda args: exp.StrToTime(
                 this=seq_get(args, 1), format=seq_get(args, 0)
             ),

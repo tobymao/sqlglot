@@ -275,6 +275,7 @@ class Snowflake(Dialect):
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
         MATCHED_BY_SOURCE = False
+        SINGLE_STRING_INTERVAL = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

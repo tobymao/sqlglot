@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens
+from sqlglot.dialects.bigquery import date_add
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
@@ -75,18 +76,6 @@ def _trim_sql(self, expression):
     remove_chars = f"{remove_chars} " if remove_chars else ""
     from_part = "FROM " if trim_type or remove_chars else ""
     return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
-
-
-def _date_add(expression_class):
-    def func(args):
-        interval = seq_get(args, 1)
-        return expression_class(
-            this=seq_get(args, 0),
-            expression=interval.this,
-            unit=exp.Literal.string(interval.text("unit").lower()),
-        )
-
-    return func
 
 
 def _date_add_sql(kind):
@@ -188,9 +177,9 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "DATE_ADD": _date_add(exp.DateAdd),
+            "DATE_ADD": date_add(exp.DateAdd),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
-            "DATE_SUB": _date_add(exp.DateSub),
+            "DATE_SUB": date_add(exp.DateSub),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "LEFT": lambda args: exp.Substring(
                 this=seq_get(args, 0), start=exp.Literal.number(1), length=seq_get(args, 1)

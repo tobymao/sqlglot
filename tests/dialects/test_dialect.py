@@ -561,25 +561,25 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "DATE_ADD(x, 1, 'day')",
+            "DATE_ADD(x, 1, 'DAY')",
             read={
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
-                "snowflake": "DATEADD('day', 1, x)",
+                "snowflake": "DATEADD('DAY', 1, x)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "drill": "DATE_ADD(x, INTERVAL 1 DAY)",
-                "duckdb": "x + INTERVAL 1 day",
+                "duckdb": "x + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
-                "postgres": "x + INTERVAL '1' day",
-                "presto": "DATE_ADD('day', 1, x)",
-                "snowflake": "DATEADD(day, 1, x)",
+                "postgres": "x + INTERVAL '1' DAY",
+                "presto": "DATE_ADD('DAY', 1, x)",
+                "snowflake": "DATEADD(DAY, 1, x)",
                 "spark": "DATE_ADD(x, 1)",
-                "sqlite": "DATE(x, '1 day')",
+                "sqlite": "DATE(x, '1 DAY')",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
-                "tsql": "DATEADD(day, 1, x)",
+                "tsql": "DATEADD(DAY, 1, x)",
             },
         )
         self.validate_all(

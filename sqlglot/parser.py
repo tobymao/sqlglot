@@ -2557,6 +2557,27 @@ class Parser(metaclass=_Parser):
             return this
         return self.expression(exp.Escape, this=this, expression=self._parse_string())
 
+    def _parse_interval(self) -> t.Optional[exp.Expression]:
+        if not self._match(TokenType.INTERVAL):
+            return None
+
+        this = self._parse_term()
+        unit = self._parse_field(tokens=self.INTERVAL_VARS)
+
+        # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
+        # each INTERVAL expression into this canonical form so it's easy to transpile
+        if this:
+            if this.is_number:
+                this = exp.Literal.string(this.name)
+
+            # Try to not clutter Snowflake's multi-part intervals like INTERVAL '1 day, 1 year'
+            parts = this.name.split()
+            if not unit and len(parts) <= 2:
+                this = exp.Literal.string(seq_get(parts, 0))
+                unit = exp.to_identifier(seq_get(parts, 1))
+
+        return self.expression(exp.Interval, this=this, unit=unit)
+
     def _parse_bitwise(self) -> t.Optional[exp.Expression]:
         this = self._parse_term()
 
@@ -2592,12 +2613,9 @@ class Parser(metaclass=_Parser):
         return self._parse_at_time_zone(self._parse_type())
 
     def _parse_type(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.INTERVAL):
-            return self.expression(
-                exp.Interval,
-                this=self._parse_term(),
-                unit=self._parse_field(tokens=self.INTERVAL_VARS),
-            )
+        interval = self._parse_interval()
+        if interval:
+            return interval
 
         index = self._index
         type_token = self._parse_types(check_func=True)

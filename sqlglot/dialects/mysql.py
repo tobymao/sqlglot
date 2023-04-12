@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.bigquery import date_add
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
@@ -13,6 +12,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    parse_date_delta_with_interval,
     rename_func,
     strposition_to_locate_sql,
 )
@@ -177,9 +177,9 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "DATE_ADD": date_add(exp.DateAdd),
+            "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
-            "DATE_SUB": date_add(exp.DateSub),
+            "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "LEFT": lambda args: exp.Substring(
                 this=seq_get(args, 0), start=exp.Literal.number(1), length=seq_get(args, 1)

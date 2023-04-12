@@ -379,13 +379,33 @@ def parse_date_delta(
 ) -> t.Callable[[t.Sequence], E]:
     def inner_func(args: t.Sequence) -> E:
         unit_based = len(args) == 3
-        this = seq_get(args, 2) if unit_based else seq_get(args, 0)
-        expression = seq_get(args, 1) if unit_based else seq_get(args, 1)
-        unit = seq_get(args, 0) if unit_based else exp.Literal.string("DAY")
-        unit = unit_mapping.get(unit.name.lower(), unit) if unit_mapping else unit  # type: ignore
-        return exp_class(this=this, expression=expression, unit=unit)
+        this = args[2] if unit_based else seq_get(args, 0)
+        unit = args[0] if unit_based else exp.Literal.string("DAY")
+        unit = unit_mapping.get(unit.name.lower(), unit) if unit_mapping else unit
+        return exp_class(this=this, expression=seq_get(args, 1), unit=unit)
 
     return inner_func
+
+
+def parse_date_delta_with_interval(
+    expression_class: t.Type[E],
+) -> t.Callable[[t.Sequence], t.Optional[E]]:
+    def func(args: t.Sequence) -> t.Optional[E]:
+        if len(args) < 2:
+            return None
+
+        interval = args[1]
+        expression = interval.this
+        if expression and expression.is_string:
+            expression = exp.Literal.number(expression.this)
+
+        return expression_class(
+            this=args[0],
+            expression=expression,
+            unit=exp.Literal.string(interval.text("unit")),
+        )
+
+    return func
 
 
 def date_trunc_to_time(args: t.Sequence) -> exp.DateTrunc | exp.TimestampTrunc:

@@ -333,6 +333,9 @@ WHERE
         )
 
     def test_time(self):
+        self.validate("INTERVAL '1 day'", "INTERVAL '1' day")
+        self.validate("INTERVAL 1 day", "INTERVAL '1' day")
+        self.validate("INTERVAL 2 months", "INTERVAL '2' months")
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
         self.validate("TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)")
         self.validate(

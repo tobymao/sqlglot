@@ -285,6 +285,7 @@ class TestBigQuery(Validator):
             "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
             write={
                 "postgres": "CURRENT_DATE - INTERVAL '1' DAY",
+                "bigquery": "DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY)",
             },
         )
         self.validate_all(

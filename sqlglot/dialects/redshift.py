@@ -64,6 +64,8 @@ class Redshift(Postgres):
         }
 
     class Generator(Postgres.Generator):
+        SINGLE_STRING_INTERVAL = True
+
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BINARY: "VARBYTE",

@@ -186,7 +186,7 @@ class TestMySQL(Validator):
         self.validate_all(
             'SELECT "2021-01-01" + INTERVAL 1 MONTH',
             write={
-                "mysql": "SELECT '2021-01-01' + INTERVAL 1 MONTH",
+                "mysql": "SELECT '2021-01-01' + INTERVAL '1' MONTH",
             },
         )
 

@@ -110,8 +110,10 @@ class Generator:
     # Whether or not MERGE ... WHEN MATCHED BY SOURCE is allowed
     MATCHED_BY_SOURCE = True
 
-    # Whether or not limit and fetch are supported
-    # "ALL", "LIMIT", "FETCH"
+    # Whether or not the INTERVAL expression works only with values like '1 day'
+    SINGLE_STRING_INTERVAL = False
+
+    # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
     TYPE_MAPPING = {
@@ -184,6 +186,7 @@ class Generator:
     }
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where)
+
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
@@ -1659,6 +1662,13 @@ class Generator:
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression: exp.Interval) -> str:
+        unit = self.sql(expression, "unit")
+        unit = f" {unit}" if unit else ""
+
+        if self.SINGLE_STRING_INTERVAL:
+            this = expression.this.name if expression.this else ""
+            return f"INTERVAL '{this}{unit}'"
+
         this = expression.args.get("this")
         if this:
             this = (
@@ -1668,8 +1678,7 @@ class Generator:
             )
         else:
             this = ""
-        unit = self.sql(expression, "unit")
-        unit = f" {unit}" if unit else ""
+
         return f"INTERVAL{this}{unit}"
 
     def return_sql(self, expression: exp.Return) -> str:

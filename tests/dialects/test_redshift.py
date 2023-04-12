@@ -5,6 +5,8 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity("SELECT INTERVAL '5 days'")
+        self.validate_all("SELECT INTERVAL '5 days'", read={"": "SELECT INTERVAL '5' days"})
         self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})
         self.validate_all(
             "DATEADD('day', ndays, caldate)", write={"redshift": "DATEADD(day, ndays, caldate)"}

@@ -16,7 +16,7 @@ from sqlglot.tokens import TokenType
 
 def _date_add_sql(self, expression):
     modifier = expression.expression
-    modifier = expression.name if modifier.is_string else self.sql(modifier)
+    modifier = modifier.name if modifier.is_string else self.sql(modifier)
     unit = expression.args.get("unit")
     modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
     return self.func("DATE", expression.this, modifier)

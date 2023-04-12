@@ -164,6 +164,14 @@ SELECT x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
 SELECT a, c FROM x, y;
 SELECT x.a AS a, y.c AS c FROM x AS x, y AS y;
 
+# execute: false
+SELECT x FROM t JOIN t ON 1 = 1;
+SELECT t_2.x AS x FROM t AS t JOIN t AS t_2 ON 1 = 1;
+
+# execute: false
+SELECT x FROM t AS t1 JOIN t AS t_2 ON 1 = 1;
+SELECT t_2.x AS x FROM t AS t1 JOIN t AS t_2 ON 1 = 1;
+
 --------------------------------------
 -- Unions
 --------------------------------------

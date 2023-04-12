@@ -9,5 +9,6 @@ SELECT q.a FROM (SELECT x.b FROM x) AS z JOIN (SELECT a FROM z) AS q ON z.b = q.
 SELECT b FROM x AS a CROSS JOIN y AS b CROSS JOIN y AS c;
 SELECT x.a FROM x JOIN y USING (a);
 SELECT a, SUM(b) FROM x GROUP BY 3;
-SELECT p FROM (SELECT x from xx) y CROSS JOIN yy CROSS JOIN zz
-select a from (select * from x cross join y);
+SELECT p FROM (SELECT x FROM xx) y CROSS JOIN yy CROSS JOIN zz;
+SELECT a FROM (SELECT * FROM x CROSS JOIN y);
+SELECT o FROM e AS t1 JOIN (SELECT * FROM t2 AS t2) AS e;

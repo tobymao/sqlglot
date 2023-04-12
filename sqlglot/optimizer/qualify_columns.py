@@ -405,8 +405,9 @@ class Resolver:
 
         Args:
             column_name: The column name to find the table for.
+
         Returns:
-            The table name if it can be found/inferred.
+            The table name, if it can be found/inferred.
         """
         if self._unambiguous_columns is None:
             self._unambiguous_columns = self._get_unambiguous_columns(
@@ -416,13 +417,25 @@ class Resolver:
         table_name = self._unambiguous_columns.get(column_name)
 
         if not table_name:
-            sources_without_schema = tuple(
-                source
-                for source, columns in self._get_all_source_columns().items()
-                if not columns or "*" in columns
-            )
-            if len(sources_without_schema) == 1:
-                table_name = sources_without_schema[0]
+            source_name_to_alias = {}
+
+            # Set of pairs (source_name, is_table)
+            distinct_sources_without_schema = set()
+            for source_alias, columns in self._get_all_source_columns().items():
+                if not columns or "*" in columns:
+                    source = self.scope.sources[source_alias]
+
+                    if isinstance(source, exp.Table):
+                        # We check for Func (e.g. READ_PARQUET) because the .name will yield ""
+                        name = source_alias if isinstance(source.this, exp.Func) else source.name
+                        distinct_sources_without_schema.add((name, True))
+                        source_name_to_alias[name] = source_alias
+                    else:
+                        distinct_sources_without_schema.add((source_alias, False))
+                        source_name_to_alias[source_alias] = source_alias
+
+            if len(distinct_sources_without_schema) == 1:
+                table_name = source_name_to_alias[next(iter(distinct_sources_without_schema))[0]]
 
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)

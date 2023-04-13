@@ -13,7 +13,7 @@ class TestRedshift(Validator):
                 "": "SELECT CURRENT_TIMESTAMP",
                 "postgres": "SELECT CURRENT_TIMESTAMP",
                 "redshift": "SELECT SYSDATE",
-            }
+            },
         )
         self.validate_all("SELECT INTERVAL '5 days'", read={"": "SELECT INTERVAL '5' days"})
         self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})

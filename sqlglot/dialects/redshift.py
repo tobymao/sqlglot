@@ -64,6 +64,10 @@ class Redshift(Postgres):
             "VARBYTE": TokenType.VARBINARY,
         }
 
+        # Redshift allows # to appear as a table identifier prefix
+        SINGLE_TOKENS = Postgres.Tokenizer.SINGLE_TOKENS.copy()
+        SINGLE_TOKENS.pop("#")
+
     class Generator(Postgres.Generator):
         SINGLE_STRING_INTERVAL = True
 

@@ -56,6 +56,7 @@ class Redshift(Postgres):
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
+            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
             "TIME": TokenType.TIMESTAMP,
             "TIMETZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
@@ -81,6 +82,7 @@ class Redshift(Postgres):
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,  # type: ignore
             **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
+            exp.CurrentTimestamp: lambda self, e: "SYSDATE",
             exp.DateAdd: lambda self, e: self.func(
                 "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this
             ),

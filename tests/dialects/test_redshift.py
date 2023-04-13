@@ -8,6 +8,14 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT INTERVAL '5 days'")
 
         self.validate_all(
+            "SELECT SYSDATE",
+            write={
+                "": "SELECT CURRENT_TIMESTAMP()",
+                "postgres": "SELECT CURRENT_TIMESTAMP",
+                "redshift": "SELECT SYSDATE",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_PART(minute, timestamp '2023-01-04 04:05:06.789')",
             write={
                 "postgres": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",

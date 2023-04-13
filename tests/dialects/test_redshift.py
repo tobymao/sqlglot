@@ -5,6 +5,7 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity("SELECT * FROM #x")
         self.validate_identity("SELECT INTERVAL '5 days'")
 
         self.validate_all(

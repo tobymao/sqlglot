@@ -39,3 +39,6 @@ A OR ((((B OR C) AND (B OR D)) OR C) AND (((B OR C) AND (B OR D)) OR D));
 
 (A AND B) OR (C OR (D AND E));
 (A OR C OR D) AND (A OR C OR E) AND (B OR C OR D) AND (B OR C OR E);
+
+SELECT * FROM x WHERE (A AND B) OR C;
+SELECT * FROM x WHERE (A OR C) AND (B OR C);

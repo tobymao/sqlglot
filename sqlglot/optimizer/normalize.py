@@ -46,7 +46,9 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
             root = node is expression
             original = node.copy()
             try:
-                node = while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
+                node = node.replace(
+                    while_changing(node, lambda e: distributive_law(e, dnf, max_distance, cache))
+                )
             except OptimizeError as e:
                 logger.info(e)
                 node.replace(original)

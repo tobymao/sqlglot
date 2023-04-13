@@ -106,10 +106,11 @@ def _expand_using(scope, resolver):
                 if columns and join_columns:
                     raise OptimizeError(f"Cannot automatically join: {identifier}")
 
+            table = table or source_table
             conditions.append(
                 exp.condition(
                     exp.EQ(
-                        this=exp.column(identifier, table=table or source_table),
+                        this=exp.column(identifier, table=table),
                         expression=exp.column(identifier, table=join_table),
                     )
                 )

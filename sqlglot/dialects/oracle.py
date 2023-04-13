@@ -78,6 +78,12 @@ class Oracle(Dialect):
             "XMLTABLE": _parse_xml_table,
         }
 
+        TYPE_LITERAL_PARSERS = {
+            exp.DataType.Type.DATE: lambda self, this, _: self.expression(
+                exp.DateStrToDate, this=this
+            )
+        }
+
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()
             if column:
@@ -119,6 +125,9 @@ class Oracle(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
+            exp.DateStrToDate: lambda self, e: self.func(
+                "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
+            ),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.ILike: no_ilike_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",

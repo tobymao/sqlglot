@@ -718,6 +718,8 @@ class Parser(metaclass=_Parser):
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
 
+    TYPE_LITERAL_PARSERS: t.Dict[exp.DataType.Type, t.Callable] = {}
+
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
@@ -2618,16 +2620,19 @@ class Parser(metaclass=_Parser):
             return interval
 
         index = self._index
-        type_token = self._parse_types(check_func=True)
+        data_type = self._parse_types(check_func=True)
         this = self._parse_column()
 
-        if type_token:
+        if data_type:
             if isinstance(this, exp.Literal):
-                return self.expression(exp.Cast, this=this, to=type_token)
-            if not type_token.args.get("expressions"):
+                parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
+                if parser:
+                    return parser(self, this, data_type)
+                return self.expression(exp.Cast, this=this, to=data_type)
+            if not data_type.args.get("expressions"):
                 self._retreat(index)
                 return self._parse_column()
-            return type_token
+            return data_type
 
         return this
 

@@ -317,6 +317,21 @@ SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z 
 SELECT * FROM y JOIN z USING(b, c) WHERE b = 2 AND c = 3;
 SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.b = z.b AND y.c = z.c WHERE COALESCE(y.b, z.b) = 2 AND COALESCE(y.c, z.c) = 3;
 
+-- We can safely convert `b` to `x.b` in the following two queries, because the original queries
+-- would be invalid if `b` also existed in `t`'s schema (which we don't know), due to ambiguity.
+
+# execute: false
+SELECT b FROM x JOIN t USING(a);
+SELECT x.b AS b FROM x AS x JOIN t AS t ON x.a = t.a;
+
+# execute: false
+SELECT b FROM t JOIN x USING(a);
+SELECT x.b AS b FROM t AS t JOIN x AS x ON t.a = x.a;
+
+# execute: false
+SELECT a FROM t1 JOIN t2 USING(a);
+SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
+
 --------------------------------------
 -- Hint with table reference
 --------------------------------------

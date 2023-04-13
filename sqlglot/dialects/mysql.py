@@ -4,6 +4,7 @@ from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
+    datestrtodate_sql,
     format_time_lambda,
     locate_to_strposition,
     max_or_greatest,
@@ -387,6 +388,7 @@ class MySQL(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
             exp.DayOfMonth: rename_func("DAYOFMONTH"),

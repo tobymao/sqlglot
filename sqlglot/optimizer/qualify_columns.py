@@ -93,6 +93,7 @@ def _expand_using(scope, resolver):
                     if column not in columns:
                         columns[column] = k
 
+        source_table = ordered[-1]
         ordered.append(join_table)
         join_columns = resolver.get_source_columns(join_table)
         conditions = []
@@ -102,12 +103,13 @@ def _expand_using(scope, resolver):
             table = columns.get(identifier)
 
             if not table or identifier not in join_columns:
-                raise OptimizeError(f"Cannot automatically join: {identifier}")
+                if columns and join_columns:
+                    raise OptimizeError(f"Cannot automatically join: {identifier}")
 
             conditions.append(
                 exp.condition(
                     exp.EQ(
-                        this=exp.column(identifier, table=table),
+                        this=exp.column(identifier, table=table or source_table),
                         expression=exp.column(identifier, table=join_table),
                     )
                 )

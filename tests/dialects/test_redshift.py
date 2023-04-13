@@ -10,7 +10,7 @@ class TestRedshift(Validator):
         self.validate_all(
             "SELECT SYSDATE",
             write={
-                "": "SELECT CURRENT_TIMESTAMP",
+                "": "SELECT CURRENT_TIMESTAMP()",
                 "postgres": "SELECT CURRENT_TIMESTAMP",
                 "redshift": "SELECT SYSDATE",
             },

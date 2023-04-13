@@ -15,6 +15,16 @@ class TestOracle(Validator):
             },
         )
 
+        self.validate_all(
+            "DATE '2022-01-01'",
+            write={
+                "": "DATE_STR_TO_DATE('2022-01-01')",
+                "mysql": "CAST('2022-01-01' AS DATE)",
+                "oracle": "TO_DATE('2022-01-01', 'YYYY-MM-DD')",
+                "postgres": "CAST('2022-01-01' AS DATE)",
+            },
+        )
+
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)")

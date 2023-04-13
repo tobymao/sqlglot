@@ -103,7 +103,11 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
             if isinstance(expr, exp.Window):
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(expr.copy(), alias), copy=False)
-                expr.replace(exp.column(alias))
+                column = exp.column(alias)
+                if isinstance(expr.parent, exp.Qualify):
+                    qualify_filters = column
+                else:
+                    expr.replace(column)
             elif expr.name not in expression.named_selects:
                 expression.select(expr.copy(), copy=False)
 

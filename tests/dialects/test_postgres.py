@@ -10,7 +10,6 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE test (foo HSTORE)")
         self.validate_identity("CREATE TABLE test (foo JSONB)")
         self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
-
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
@@ -117,6 +116,22 @@ class TestPostgres(Validator):
         self.validate_identity("x ~ 'y'")
         self.validate_identity("x ~* 'y'")
 
+        self.validate_all(
+            "SELECT DATE_PART('minute', timestamp '2023-01-04 04:05:06.789')",
+            write={
+                "postgres": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+                "redshift": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+                "snowflake": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMPNTZ))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_PART('month', date '20220502')",
+            write={
+                "postgres": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
+                "redshift": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
+                "snowflake": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
+            },
+        )
         self.validate_all(
             "SELECT (DATE '2016-01-10', DATE '2016-02-01') OVERLAPS (DATE '2016-01-20', DATE '2016-02-10')",
             write={

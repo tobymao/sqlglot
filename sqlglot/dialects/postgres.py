@@ -254,13 +254,18 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "NOW": exp.CurrentTimestamp.from_arg_list,
-            "TO_TIMESTAMP": _to_timestamp,
-            "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
-            "GENERATE_SERIES": _generate_series,
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "GENERATE_SERIES": _generate_series,
+            "NOW": exp.CurrentTimestamp.from_arg_list,
+            "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
+            "TO_TIMESTAMP": _to_timestamp,
+        }
+
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "DATE_PART": lambda self: self._parse_date_part(),
         }
 
         BITWISE = {
@@ -279,6 +284,16 @@ class Postgres(Dialect):
             TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
             TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
         }
+
+        def _parse_date_part(self) -> exp.Expression:
+            part = self._parse_var_or_string()
+            self._match(TokenType.COMMA)
+            value = self._parse_bitwise()
+
+            if part and part.is_string:
+                part = exp.Var(this=part.name)
+
+            return self.expression(exp.Extract, this=part, expression=value)
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

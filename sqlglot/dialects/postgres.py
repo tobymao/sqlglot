@@ -20,7 +20,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
-from sqlglot.transforms import delegate, preprocess
+from sqlglot.transforms import preprocess
 
 DATE_DIFF_FACTOR = {
     "MICROSECOND": " * 1000000",
@@ -317,7 +317,6 @@ class Postgres(Dialect):
                     _auto_increment_to_serial,
                     _serial_to_generated,
                 ],
-                delegate("columndef_sql"),
             ),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,

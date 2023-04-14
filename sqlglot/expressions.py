@@ -5035,13 +5035,18 @@ def replace_placeholders(expression, *args, **kwargs):
     return expression.transform(_replace_placeholders, iter(args), **kwargs)
 
 
-def expand(expression: Expression, sources: t.Dict[str, Subqueryable], copy=True) -> Expression:
+def expand(
+    expression: Expression, sources: t.Dict[str, Subqueryable], copy: bool = True
+) -> Expression:
     """Transforms an expression by expanding all referenced sources into subqueries.
 
     Examples:
         >>> from sqlglot import parse_one
         >>> expand(parse_one("select * from x AS z"), {"x": parse_one("select * from y")}).sql()
         'SELECT * FROM (SELECT * FROM y) AS z /* source: x */'
+
+        >>> expand(parse_one("select * from x AS z"), {"x": parse_one("select * from y"), "y": parse_one("select * from z")}).sql()
+        'SELECT * FROM (SELECT * FROM (SELECT * FROM z) AS y /* source: y */) AS z /* source: x */'
 
     Args:
         expression: The expression to expand.
@@ -5059,7 +5064,7 @@ def expand(expression: Expression, sources: t.Dict[str, Subqueryable], copy=True
             if source:
                 subquery = source.subquery(node.alias or name)
                 subquery.comments = [f"source: {name}"]
-                return subquery
+                return subquery.transform(_expand, copy=False)
         return node
 
     return expression.transform(_expand, copy=copy)

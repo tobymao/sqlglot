@@ -60,29 +60,26 @@ def lineage(
     expression = maybe_parse(sql, dialect=dialect)
 
     if sources:
-        expression = exp.expand(
-            expression,
-            {
-                k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect))
-                for k, v in sources.items()
-            },
-        )
+        parsed_sources = {
+            k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect)) for k, v in sources.items()
+        }
+        expression = exp.expand(expression, parsed_sources)
 
     optimized = optimize(expression, schema=schema, rules=rules)
     scope = build_scope(optimized)
-    tables: t.Dict[str, Node] = {}
-    aliases = {
-        dt.alias: dt.comments[0].split()[1]
-        for dt in scope.derived_tables
-        if dt.comments and dt.comments[0].startswith("source: ")
-    }
 
     def to_node(
         column_name: str,
         scope: Scope,
         scope_name: t.Optional[str] = None,
         upstream: t.Optional[Node] = None,
+        alias: t.Optional[str] = None,
     ) -> Node:
+        aliases = {
+            dt.alias: dt.comments[0].split()[1]
+            for dt in scope.derived_tables
+            if dt.comments and dt.comments[0].startswith("source: ")
+        }
         if isinstance(scope.expression, exp.Union):
             for scope in scope.union_scopes:
                 node = to_node(
@@ -90,6 +87,7 @@ def lineage(
                     scope=scope,
                     scope_name=scope_name,
                     upstream=upstream,
+                    alias=aliases.get(scope_name),
                 )
             return node
 
@@ -101,7 +99,7 @@ def lineage(
             name=f"{scope_name}.{column_name}" if scope_name else column_name,
             source=source,
             expression=select,
-            alias=aliases.get(scope_name, ""),
+            alias=alias or "",
         )
 
         if upstream:
@@ -110,18 +108,17 @@ def lineage(
         for c in set(select.find_all(exp.Column)):
             table = c.table
             source = scope.sources[table]
+            if source.expression and sources:
+                expression = exp.expand(source.expression, parsed_sources)
+                optimized = optimize(expression, schema=schema, rules=rules)
+                source = build_scope(optimized)
 
             if isinstance(source, Scope):
                 to_node(
-                    c.name,
-                    scope=source,
-                    scope_name=table,
-                    upstream=node,
+                    c.name, scope=source, scope_name=table, upstream=node, alias=aliases.get(table)
                 )
             else:
-                if table not in tables:
-                    tables[table] = Node(name=c.sql(), source=source, expression=source)
-                node.downstream.append(tables[table])
+                node.downstream.append(Node(name=c.sql(), source=source, expression=source))
 
         return node
 

@@ -293,7 +293,9 @@ def no_properties_sql(self: Generator, expression: exp.Properties) -> str:
     return ""
 
 
-def no_comment_column_constraint_sql(self: Generator, expression: exp.CommentColumnConstraint) -> str:
+def no_comment_column_constraint_sql(
+    self: Generator, expression: exp.CommentColumnConstraint
+) -> str:
     self.unsupported("CommentColumnConstraint unsupported")
     return ""
 

@@ -345,6 +345,12 @@ class TestDuckDB(Validator):
                 "bigquery": "ARRAY_CONCAT([1, 2], [3, 4])",
             },
         )
+        self.validate_all(
+            "SELECT CAST(CAST(x AS DATE) AS DATE) + INTERVAL 1 DAY",
+            read={
+                "hive": "SELECT DATE_ADD(TO_DATE(x), 1)",
+            },
+        )
 
         with self.assertRaises(UnsupportedError):
             transpile(

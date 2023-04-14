@@ -15,7 +15,7 @@ class TestLineage(unittest.TestCase):
         )
         self.assertEqual(
             node.source.sql(),
-            "SELECT z.a AS a FROM (SELECT y.a AS a FROM y AS y) AS z /* source: z */",
+            "SELECT z.a AS a FROM (SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */) AS z /* source: z */",
         )
         self.assertEqual(node.alias, "")
 

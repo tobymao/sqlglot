@@ -60,10 +60,13 @@ def lineage(
     expression = maybe_parse(sql, dialect=dialect)
 
     if sources:
-        parsed_sources = {
-            k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect)) for k, v in sources.items()
-        }
-        expression = exp.expand(expression, parsed_sources)
+        expression = exp.expand(
+            expression,
+            {
+                k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect))
+                for k, v in sources.items()
+            },
+        )
 
     optimized = optimize(expression, schema=schema, rules=rules)
     scope = build_scope(optimized)
@@ -108,10 +111,6 @@ def lineage(
         for c in set(select.find_all(exp.Column)):
             table = c.table
             source = scope.sources[table]
-            if source.expression and sources:
-                expression = exp.expand(source.expression, parsed_sources)
-                optimized = optimize(expression, schema=schema, rules=rules)
-                source = build_scope(optimized)
 
             if isinstance(source, Scope):
                 to_node(

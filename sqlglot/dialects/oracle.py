@@ -7,11 +7,6 @@ from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sq
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
-PASSING_TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
-    TokenType.COLUMN,
-    TokenType.RETURNING,
-}
-
 
 def _parse_xml_table(self) -> exp.XMLTable:
     this = self._parse_string()
@@ -22,9 +17,7 @@ def _parse_xml_table(self) -> exp.XMLTable:
     if self._match_text_seq("PASSING"):
         # The BY VALUE keywords are optional and are provided for semantic clarity
         self._match_text_seq("BY", "VALUE")
-        passing = self._parse_csv(
-            lambda: self._parse_table(alias_tokens=PASSING_TABLE_ALIAS_TOKENS)
-        )
+        passing = self._parse_csv(self._parse_column)
 
     by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
 

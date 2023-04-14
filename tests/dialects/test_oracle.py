@@ -108,3 +108,28 @@ FROM XMLTABLE(
             },
             pretty=True,
         )
+
+    def test_match_recognize(self):
+        self.validate_identity(
+            """SELECT
+  *
+FROM sales_history
+MATCH_RECOGNIZE (
+  PARTITION BY product
+  ORDER BY
+    tstamp
+  MEASURES
+    STRT.tstamp AS start_tstamp,
+    LAST(UP.tstamp) AS peak_tstamp,
+    LAST(DOWN.tstamp) AS end_tstamp,
+    MATCH_NUMBER() AS mno
+  ONE ROW PER MATCH
+  AFTER MATCH SKIP TO LAST DOWN
+  PATTERN (STRT UP+ FLAT* DOWN+)
+  DEFINE
+    UP AS UP.units_sold > PREV(UP.units_sold),
+    FLAT AS FLAT.units_sold = PREV(FLAT.units_sold),
+    DOWN AS DOWN.units_sold < PREV(DOWN.units_sold)
+) MR""",
+            pretty=True,
+        )

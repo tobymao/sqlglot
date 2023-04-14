@@ -362,6 +362,14 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT a FROM x CROSS JOIN UNNEST(ARRAY(y)) AS t (a) CROSS JOIN b",
+            write={
+                "presto": "SELECT a FROM x CROSS JOIN UNNEST(ARRAY[y]) AS t(a) CROSS JOIN b",
+                "hive": "SELECT a FROM x CROSS JOIN b LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
+            },
+        )
+
     def test_presto(self):
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
         self.validate_identity("SELECT * FROM (VALUES (1))")

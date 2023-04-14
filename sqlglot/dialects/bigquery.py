@@ -225,9 +225,7 @@ class BigQuery(Dialect):
             exp.IntDiv: rename_func("DIV"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
-            exp.Select: transforms.preprocess(
-                [_unqualify_unnest], transforms.delegate("select_sql")
-            ),
+            exp.Select: transforms.preprocess([_unqualify_unnest]),
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),

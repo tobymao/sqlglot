@@ -137,9 +137,32 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     )
 
 
+def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
+    """Convert cross join unnest into lateral view explode. Used in presto -> hive"""
+    if isinstance(expression, exp.Select):
+        for join in expression.args.get("joins") or []:
+            unnest = join.this
+
+            if isinstance(unnest, exp.Unnest):
+                alias = unnest.args.get("alias")
+                udtf = exp.Posexplode if unnest.args.get("ordinality") else exp.Explode
+
+                expression.args["joins"].remove(join)
+
+                for e, column in zip(unnest.expressions, alias.columns if alias else []):
+                    expression.append(
+                        "laterals",
+                        exp.Lateral(
+                            this=udtf(this=e),
+                            view=True,
+                            alias=exp.TableAlias(this=alias.this, columns=[column]),  # type: ignore
+                        ),
+                    )
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
-    to_sql: t.Callable[[Generator, exp.Expression], str],
 ) -> t.Callable[[Generator, exp.Expression], str]:
     """
     Creates a new transform by chaining a sequence of transformations and converts the resulting
@@ -147,36 +170,23 @@ def preprocess(
 
     Args:
         transforms: sequence of transform functions. These will be called in order.
-        to_sql: final transform that converts the resulting expression to a SQL string.
 
     Returns:
         Function that can be used as a generator transform.
     """
 
-    def _to_sql(self, expression):
+    def _to_sql(self, expression: exp.Expression) -> str:
         expression = transforms[0](expression.copy())
         for t in transforms[1:]:
             expression = t(expression)
-        return to_sql(self, expression)
+        return getattr(self, expression.key + "_sql")(expression)
 
     return _to_sql
 
 
-def delegate(attr: str) -> t.Callable:
-    """
-    Create a new method that delegates to `attr`. This is useful for creating `Generator.TRANSFORMS`
-    functions that delegate to existing generator methods.
-    """
-
-    def _transform(self, *args, **kwargs):
-        return getattr(self, attr)(*args, **kwargs)
-
-    return _transform
-
-
-UNALIAS_GROUP = {exp.Group: preprocess([unalias_group], delegate("group_sql"))}
-ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on], delegate("select_sql"))}
-ELIMINATE_QUALIFY = {exp.Select: preprocess([eliminate_qualify], delegate("select_sql"))}
+UNALIAS_GROUP = {exp.Group: preprocess([unalias_group])}
+ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on])}
+ELIMINATE_QUALIFY = {exp.Select: preprocess([eliminate_qualify])}
 REMOVE_PRECISION_PARAMETERIZED_TYPES = {
-    exp.Cast: preprocess([remove_precision_parameterized_types], delegate("cast_sql"))
+    exp.Cast: preprocess([remove_precision_parameterized_types])
 }

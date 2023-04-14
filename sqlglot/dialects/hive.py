@@ -127,24 +127,6 @@ def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str
     return f"TO_DATE({this})"
 
 
-def _unnest_to_explode_sql(self: generator.Generator, expression: exp.Join) -> str:
-    unnest = expression.this
-    if isinstance(unnest, exp.Unnest):
-        alias = unnest.args.get("alias")
-        udtf = exp.Posexplode if unnest.args.get("ordinality") else exp.Explode
-        return "".join(
-            self.sql(
-                exp.Lateral(
-                    this=udtf(this=expression),
-                    view=True,
-                    alias=exp.TableAlias(this=alias.this, columns=[column]),  # type: ignore
-                )
-            )
-            for expression, column in zip(unnest.expressions, alias.columns if alias else [])
-        )
-    return self.join_sql(expression)
-
-
 def _index_sql(self: generator.Generator, expression: exp.Index) -> str:
     this = self.sql(expression, "this")
     table = self.sql(expression, "table")
@@ -289,6 +271,9 @@ class Hive(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
             **transforms.ELIMINATE_QUALIFY,  # type: ignore
+            exp.Select: transforms.preprocess(
+                [transforms.eliminate_qualify, transforms.unnest_to_explode]
+            ),
             exp.Property: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayConcat: rename_func("CONCAT"),
@@ -304,7 +289,6 @@ class Hive(Dialect):
             exp.If: if_sql,
             exp.Index: _index_sql,
             exp.ILike: no_ilike_sql,
-            exp.Join: _unnest_to_explode_sql,
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
             exp.JSONFormat: rename_func("TO_JSON"),

@@ -5064,7 +5064,7 @@ def expand(
             if source:
                 subquery = source.subquery(node.alias or name)
                 subquery.comments = [f"source: {name}"]
-                return subquery.transform(_expand, copy=copy)
+                return subquery.transform(_expand, copy=False)
         return node
 
     return expression.transform(_expand, copy=copy)

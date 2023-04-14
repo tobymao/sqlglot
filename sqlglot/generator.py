@@ -1339,7 +1339,7 @@ class Generator:
             f"{self.sql(definition, 'alias')} AS {self.sql(definition, 'this')}"
             for definition in expression.args.get("define", [])
         ]
-        definitions = t.cast(str, self.expressions(sqls=definition_sqls))
+        definitions = self.expressions(sqls=definition_sqls)
         define = self.seg(f"DEFINE{self.seg(definitions)}") if definitions else ""
         body = "".join(
             (

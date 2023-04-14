@@ -1971,13 +1971,18 @@ class Parser(metaclass=_Parser):
         else:
             pattern = None
 
-        parse_alias_reverse = lambda: self.expression(
-            exp.Alias,
-            alias=self._parse_id_var(any_token=True),
-            this=self._match(TokenType.ALIAS) and self._parse_conjunction(),
+        define = (
+            self._parse_csv(
+                lambda: self.expression(
+                    exp.Alias,
+                    alias=self._parse_id_var(any_token=True),
+                    this=self._match(TokenType.ALIAS) and self._parse_conjunction(),
+                )
+            )
+            if self._match_text_seq("DEFINE")
+            else None
         )
 
-        define = self._parse_csv(parse_alias_reverse) if self._match_text_seq("DEFINE") else None
         self._match_r_paren()
 
         return self.expression(

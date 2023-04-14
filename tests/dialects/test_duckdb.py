@@ -149,6 +149,12 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "CREATE TABLE IF NOT EXISTS table (cola INT COMMENT 'cola', colb STRING) USING ICEBERG PARTITIONED BY (colb)",
+            write={
+                "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
+            },
+        )
+        self.validate_all(
             "LIST_VALUE(0, 1, 2)",
             read={
                 "spark": "ARRAY(0, 1, 2)",

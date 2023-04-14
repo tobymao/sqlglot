@@ -842,11 +842,13 @@ MATCH_RECOGNIZE (
   PARTITION BY a, b
   ORDER BY
     x DESC
-  MEASURES y AS b
+  MEASURES
+    y AS b
   {row}
   {after}
   PATTERN (^ S1 S2*? ( {{- S3 -}} S4 )+ | PERMUTE(S1, S2){{1,2}} $)
-  DEFINE x AS y
+  DEFINE
+    x AS y
 )""",
                     pretty=True,
                 )

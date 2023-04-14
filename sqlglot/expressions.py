@@ -1476,6 +1476,7 @@ class MatchRecognize(Expression):
         "after": False,
         "pattern": False,
         "define": False,
+        "alias": False,
     }
 
 
@@ -3167,9 +3168,9 @@ class Neg(Unary):
     pass
 
 
-# Special Functions
 class Alias(Expression):
-    arg_types = {"this": True, "alias": False}
+    # "reverse" controls the relative order of "this" and "alias" for SQL generation
+    arg_types = {"this": True, "alias": False, "reverse": False}
 
     @property
     def output_name(self):

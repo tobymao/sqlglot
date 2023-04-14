@@ -1329,16 +1329,16 @@ class Generator:
     def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
         partition = self.partition_by_sql(expression)
         order = self.sql(expression, "order")
-        measures = self.sql(expression, "measures")
-        measures = self.seg(f"MEASURES {measures}") if measures else ""
+        measures = self.expressions(expression, "measures")
+        measures = self.seg(f"MEASURES{self.seg(measures)}") if measures else ""
         rows = self.sql(expression, "rows")
         rows = self.seg(rows) if rows else ""
         after = self.sql(expression, "after")
         after = self.seg(after) if after else ""
         pattern = self.sql(expression, "pattern")
         pattern = self.seg(f"PATTERN ({pattern})") if pattern else ""
-        define = self.sql(expression, "define")
-        define = self.seg(f"DEFINE {define}") if define else ""
+        define = self.expressions(expression, "define")
+        define = self.seg(f"DEFINE{self.seg(define)}") if define else ""
         body = "".join(
             (
                 partition,
@@ -1350,7 +1350,9 @@ class Generator:
                 define,
             )
         )
-        return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}"
+        alias = self.sql(expression, "alias")
+        alias = f" {alias}" if alias else ""
+        return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}"
 
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
         limit = expression.args.get("limit")
@@ -1714,9 +1716,11 @@ class Generator:
         return f"NOT {self.sql(expression, 'this')}"
 
     def alias_sql(self, expression: exp.Alias) -> str:
-        to_sql = self.sql(expression, "alias")
-        to_sql = f" AS {to_sql}" if to_sql else ""
-        return f"{self.sql(expression, 'this')}{to_sql}"
+        reverse = expression.args.get("reverse")
+        left = self.sql(expression, "alias" if reverse else "this")
+        right = self.sql(expression, "this" if reverse else "alias")
+        right = f" AS {right}" if right else ""
+        return f"{left}{right}"
 
     def aliases_sql(self, expression: exp.Aliases) -> str:
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"

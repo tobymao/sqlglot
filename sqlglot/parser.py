@@ -1912,6 +1912,7 @@ class Parser(metaclass=_Parser):
     def _parse_match_recognize(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.MATCH_RECOGNIZE):
             return None
+
         self._match_l_paren()
 
         partition = self._parse_partition_by()
@@ -1974,7 +1975,6 @@ class Parser(metaclass=_Parser):
             exp.Alias,
             alias=self._parse_id_var(any_token=True),
             this=self._match(TokenType.ALIAS) and self._parse_conjunction(),
-            reverse=True,
         )
 
         define = self._parse_csv(parse_alias_reverse) if self._match_text_seq("DEFINE") else None

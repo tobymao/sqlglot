@@ -703,9 +703,7 @@ class Generator:
                 nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
                 if expression.args.get("values") is not None:
                     delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")
-                    values = (
-                        f"{delimiters[0]}{self.expressions(expression, 'values')}{delimiters[1]}"
-                    )
+                    values = f"{delimiters[0]}{self.expressions(expression, key='values')}{delimiters[1]}"
             else:
                 nested = f"({interior})"
 
@@ -721,7 +719,7 @@ class Generator:
         this = self.sql(expression, "this")
         this = f" FROM {this}" if this else ""
         using_sql = (
-            f" USING {self.expressions(expression, 'using', sep=', USING ')}"
+            f" USING {self.expressions(expression, key='using', sep=', USING ')}"
             if expression.args.get("using")
             else ""
         )
@@ -1329,7 +1327,7 @@ class Generator:
     def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
         partition = self.partition_by_sql(expression)
         order = self.sql(expression, "order")
-        measures = self.expressions(expression, "measures")
+        measures = self.expressions(expression, key="measures")
         measures = self.seg(f"MEASURES{self.seg(measures)}") if measures else ""
         rows = self.sql(expression, "rows")
         rows = self.seg(rows) if rows else ""
@@ -1337,8 +1335,12 @@ class Generator:
         after = self.seg(after) if after else ""
         pattern = self.sql(expression, "pattern")
         pattern = self.seg(f"PATTERN ({pattern})") if pattern else ""
-        define = self.expressions(expression, "define")
-        define = self.seg(f"DEFINE{self.seg(define)}") if define else ""
+        definition_sqls = [
+            f"{self.sql(definition, 'alias')} AS {self.sql(definition, 'this')}"
+            for definition in expression.args.get("define", [])
+        ]
+        definitions = t.cast(str, self.expressions(sqls=definition_sqls))
+        define = self.seg(f"DEFINE{self.seg(definitions)}") if definitions else ""
         body = "".join(
             (
                 partition,
@@ -1373,7 +1375,7 @@ class Generator:
             self.sql(expression, "group"),
             self.sql(expression, "having"),
             self.sql(expression, "qualify"),
-            self.seg("WINDOW ") + self.expressions(expression, "windows", flat=True)
+            self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
             if expression.args.get("windows")
             else "",
             self.sql(expression, "distribute"),
@@ -1606,7 +1608,7 @@ class Generator:
 
     def primarykey_sql(self, expression: exp.ForeignKey) -> str:
         expressions = self.expressions(expression, flat=True)
-        options = self.expressions(expression, "options", flat=True, sep=" ")
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
         return f"PRIMARY KEY ({expressions}){options}"
 
@@ -1690,7 +1692,7 @@ class Generator:
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)
         expressions = f"({expressions})" if expressions else ""
-        options = self.expressions(expression, "options", flat=True, sep=" ")
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
         return f"REFERENCES {this}{expressions}{options}"
 
@@ -1716,11 +1718,9 @@ class Generator:
         return f"NOT {self.sql(expression, 'this')}"
 
     def alias_sql(self, expression: exp.Alias) -> str:
-        reverse = expression.args.get("reverse")
-        left = self.sql(expression, "alias" if reverse else "this")
-        right = self.sql(expression, "this" if reverse else "alias")
-        right = f" AS {right}" if right else ""
-        return f"{left}{right}"
+        alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else ""
+        return f"{self.sql(expression, 'this')}{alias}"
 
     def aliases_sql(self, expression: exp.Aliases) -> str:
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"
@@ -1829,13 +1829,13 @@ class Generator:
         actions = expression.args["actions"]
 
         if isinstance(actions[0], exp.ColumnDef):
-            actions = self.expressions(expression, "actions", prefix="ADD COLUMN ")
+            actions = self.expressions(expression, key="actions", prefix="ADD COLUMN ")
         elif isinstance(actions[0], exp.Schema):
-            actions = self.expressions(expression, "actions", prefix="ADD COLUMNS ")
+            actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):
-            actions = self.expressions(expression, "actions", flat=True)
+            actions = self.expressions(expression, key="actions", flat=True)
         else:
-            actions = self.expressions(expression, "actions")
+            actions = self.expressions(expression, key="actions")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {actions}"
@@ -1998,14 +1998,15 @@ class Generator:
 
     def expressions(
         self,
-        expression: exp.Expression,
+        expression: t.Optional[exp.Expression] = None,
         key: t.Optional[str] = None,
+        sqls: t.Optional[t.List[str]] = None,
         flat: bool = False,
         indent: bool = True,
         sep: str = ", ",
         prefix: str = "",
     ) -> str:
-        expressions = expression.args.get(key or "expressions")
+        expressions = expression.args.get(key or "expressions") if expression else sqls
 
         if not expressions:
             return ""

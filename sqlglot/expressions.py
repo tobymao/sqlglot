@@ -3169,8 +3169,7 @@ class Neg(Unary):
 
 
 class Alias(Expression):
-    # "reverse" controls the relative order of "this" and "alias" for SQL generation
-    arg_types = {"this": True, "alias": False, "reverse": False}
+    arg_types = {"this": True, "alias": False}
 
     @property
     def output_name(self):

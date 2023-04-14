@@ -1912,14 +1912,13 @@ class Parser(metaclass=_Parser):
     def _parse_match_recognize(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.MATCH_RECOGNIZE):
             return None
+
         self._match_l_paren()
 
         partition = self._parse_partition_by()
         order = self._parse_order()
         measures = (
-            self._parse_alias(self._parse_conjunction())
-            if self._match_text_seq("MEASURES")
-            else None
+            self._parse_csv(self._parse_expression) if self._match_text_seq("MEASURES") else None
         )
 
         if self._match_text_seq("ONE", "ROW", "PER", "MATCH"):
@@ -1973,8 +1972,17 @@ class Parser(metaclass=_Parser):
             pattern = None
 
         define = (
-            self._parse_alias(self._parse_conjunction()) if self._match_text_seq("DEFINE") else None
+            self._parse_csv(
+                lambda: self.expression(
+                    exp.Alias,
+                    alias=self._parse_id_var(any_token=True),
+                    this=self._match(TokenType.ALIAS) and self._parse_conjunction(),
+                )
+            )
+            if self._match_text_seq("DEFINE")
+            else None
         )
+
         self._match_r_paren()
 
         return self.expression(
@@ -1986,6 +1994,7 @@ class Parser(metaclass=_Parser):
             after=after,
             pattern=pattern,
             define=define,
+            alias=self._parse_table_alias(),
         )
 
     def _parse_lateral(self) -> t.Optional[exp.Expression]:

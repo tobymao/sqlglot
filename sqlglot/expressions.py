@@ -1476,6 +1476,7 @@ class MatchRecognize(Expression):
         "after": False,
         "pattern": False,
         "define": False,
+        "alias": False,
     }
 
 
@@ -3167,7 +3168,6 @@ class Neg(Unary):
     pass
 
 
-# Special Functions
 class Alias(Expression):
     arg_types = {"this": True, "alias": False}
 

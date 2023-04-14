@@ -149,6 +149,12 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "CREATE TABLE IF NOT EXISTS table (cola INT COMMENT 'cola', colb STRING) USING ICEBERG PARTITIONED BY (colb)",
+            write={
+                "duckdb": "CREATE TABLE IF NOT EXISTS table (cola INT, colb TEXT)",
+            },
+        )
+        self.validate_all(
             "LIST_VALUE(0, 1, 2)",
             read={
                 "spark": "ARRAY(0, 1, 2)",
@@ -337,6 +343,12 @@ class TestDuckDB(Validator):
                 "spark": "CONCAT(ARRAY(1, 2), ARRAY(3, 4))",
                 "snowflake": "ARRAY_CAT([1, 2], [3, 4])",
                 "bigquery": "ARRAY_CONCAT([1, 2], [3, 4])",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(CAST(x AS DATE) AS DATE) + INTERVAL 1 DAY",
+            read={
+                "hive": "SELECT DATE_ADD(TO_DATE(x), 1)",
             },
         )
 

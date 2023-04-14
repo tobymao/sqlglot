@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_sql,
     datestrtodate_sql,
     format_time_lambda,
+    no_comment_column_constraint_sql,
     no_pivot_sql,
     no_properties_sql,
     no_safe_divide_sql,
@@ -23,7 +24,7 @@ from sqlglot.tokens import TokenType
 
 
 def _ts_or_ds_add(self, expression):
-    this = expression.args.get("this")
+    this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 
@@ -150,6 +151,7 @@ class DuckDB(Dialect):
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),

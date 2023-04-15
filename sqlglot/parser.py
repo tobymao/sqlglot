@@ -1645,7 +1645,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Delete,
-            this=self._parse_table(schema=True),
+            this=self._parse_table(),
             using=self._parse_csv(lambda: self._match(TokenType.USING) and self._parse_table()),
             where=self._parse_where(),
             returning=self._parse_returning(),

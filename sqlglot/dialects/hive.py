@@ -177,6 +177,7 @@ class Hive(Dialect):
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
         ENCODE = "utf-8"
+        IDENTIFIER_CAN_START_WITH_DIGIT = True
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
@@ -199,9 +200,8 @@ class Hive(Dialect):
             "BD": "DECIMAL",
         }
 
-        IDENTIFIER_CAN_START_WITH_DIGIT = True
-
     class Parser(parser.Parser):
+        LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False
 
         FUNCTIONS = {
@@ -255,9 +255,11 @@ class Hive(Dialect):
             ),
         }
 
-        LOG_DEFAULTS_TO_LN = True
-
     class Generator(generator.Generator):
+        LIMIT_FETCH = "LIMIT"
+        TABLESAMPLE_WITH_METHOD = False
+        TABLESAMPLE_SIZE_IS_PERCENT = True
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TEXT: "STRING",
@@ -340,8 +342,6 @@ class Hive(Dialect):
             exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
-        LIMIT_FETCH = "LIMIT"
-
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
             return self.func(
                 "COLLECT_LIST",
@@ -362,4 +362,5 @@ class Hive(Dialect):
                 expression = exp.DataType.build("text")
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
+
             return super().datatype_sql(expression)

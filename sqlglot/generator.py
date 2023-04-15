@@ -113,6 +113,12 @@ class Generator:
     # Whether or not the INTERVAL expression works only with values like '1 day'
     SINGLE_STRING_INTERVAL = False
 
+    # Whether or not the TABLESAMPLE clause supports a method name, like BERNOULLI
+    TABLESAMPLE_WITH_METHOD = True
+
+    # Whether or not to treat the number in TABLESAMPLE (50) as a percentage
+    TABLESAMPLE_SIZE_IS_PERCENT = False
+
     # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
@@ -1069,7 +1075,7 @@ class Generator:
             this = self.sql(expression, "this")
             alias = ""
         method = self.sql(expression, "method")
-        method = f"{method.upper()} " if method else ""
+        method = f"{method.upper()} " if method and self.TABLESAMPLE_WITH_METHOD else ""
         numerator = self.sql(expression, "bucket_numerator")
         denominator = self.sql(expression, "bucket_denominator")
         field = self.sql(expression, "bucket_field")
@@ -1080,6 +1086,8 @@ class Generator:
         rows = self.sql(expression, "rows")
         rows = f"{rows} ROWS" if rows else ""
         size = self.sql(expression, "size")
+        if size and self.TABLESAMPLE_SIZE_IS_PERCENT:
+            size = f"{size} PERCENT"
         seed = self.sql(expression, "seed")
         seed = f" {seed_prefix} ({seed})" if seed else ""
         kind = expression.args.get("kind", "TABLESAMPLE")

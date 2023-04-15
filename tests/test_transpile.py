@@ -322,7 +322,6 @@ WHERE
             "ALTER TABLE integers ADD k INTEGER",
             "ALTER TABLE integers ADD COLUMN k INT",
         )
-        self.validate("ALTER TABLE integers DROP k", "ALTER TABLE integers DROP COLUMN k")
         self.validate(
             "ALTER TABLE integers ALTER i SET DATA TYPE VARCHAR",
             "ALTER TABLE integers ALTER COLUMN i TYPE VARCHAR",

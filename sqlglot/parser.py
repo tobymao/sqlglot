@@ -1025,16 +1025,13 @@ class Parser(metaclass=_Parser):
         self._parse_query_modifiers(expression)
         return expression
 
-    def _parse_drop(self, default_kind: t.Optional[str] = None) -> t.Optional[exp.Expression]:
+    def _parse_drop(self) -> t.Optional[exp.Expression]:
         start = self._prev
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match(TokenType.MATERIALIZED)
         kind = self._match_set(self.CREATABLES) and self._prev.text
         if not kind:
-            if default_kind:
-                kind = default_kind
-            else:
-                return self._parse_as_command(start)
+            return self._parse_as_command(start)
 
         return self.expression(
             exp.Drop,
@@ -3932,7 +3929,10 @@ class Parser(metaclass=_Parser):
         return expression
 
     def _parse_drop_column(self) -> t.Optional[exp.Expression]:
-        return self._match(TokenType.DROP) and self._parse_drop(default_kind="COLUMN")
+        drop = self._match(TokenType.DROP) and self._parse_drop()
+        if drop and not isinstance(drop, exp.Command):
+            drop.set("kind", drop.args.get("kind", "COLUMN"))
+        return drop
 
     # https://docs.aws.amazon.com/athena/latest/ug/alter-table-drop-partition.html
     def _parse_drop_partition(self, exists: t.Optional[bool] = None) -> exp.Expression:

@@ -119,12 +119,13 @@ class MySQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "MEDIUMTEXT": TokenType.MEDIUMTEXT,
+            "CHARSET": TokenType.CHARACTER_SET,
+            "LONGBLOB": TokenType.LONGBLOB,
             "LONGTEXT": TokenType.LONGTEXT,
             "MEDIUMBLOB": TokenType.MEDIUMBLOB,
-            "LONGBLOB": TokenType.LONGBLOB,
-            "START": TokenType.BEGIN,
+            "MEDIUMTEXT": TokenType.MEDIUMTEXT,
             "SEPARATOR": TokenType.SEPARATOR,
+            "START": TokenType.BEGIN,
             "_ARMSCII8": TokenType.INTRODUCER,
             "_ASCII": TokenType.INTRODUCER,
             "_BIG5": TokenType.INTRODUCER,
@@ -385,7 +386,6 @@ class MySQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.CurrentDate: no_paren_current_date_sql,
-            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateStrToDate: datestrtodate_sql,

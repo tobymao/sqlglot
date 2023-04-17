@@ -1053,6 +1053,11 @@ class NotNullColumnConstraint(ColumnConstraintKind):
     arg_types = {"allow_null": False}
 
 
+# https://dev.mysql.com/doc/refman/5.7/en/timestamp-initialization.html
+class OnUpdateColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class PrimaryKeyColumnConstraint(ColumnConstraintKind):
     arg_types = {"desc": False}
 
@@ -1652,6 +1657,10 @@ class ReturnsProperty(Property):
     arg_types = {"this": True, "is_table": False, "table": False}
 
 
+class RowFormatProperty(Property):
+    arg_types = {"this": True}
+
+
 class RowFormatDelimitedProperty(Property):
     # https://cwiki.apache.org/confluence/display/hive/languagemanual+dml
     arg_types = {
@@ -1732,6 +1741,7 @@ class Properties(Expression):
         "LOCATION": LocationProperty,
         "PARTITIONED_BY": PartitionedByProperty,
         "RETURNS": ReturnsProperty,
+        "ROW_FORMAT": RowFormatProperty,
         "SORTKEY": SortKeyProperty,
         "TABLE_FORMAT": TableFormatProperty,
     }

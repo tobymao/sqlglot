@@ -8,6 +8,9 @@ from sqlglot.trie import in_trie, new_trie
 
 
 class TokenType(AutoName):
+    # autocompletion
+    CURSOR = auto()
+
     L_PAREN = auto()
     R_PAREN = auto()
     L_BRACKET = auto()
@@ -799,7 +802,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._scan()
         return self.tokens
 
-    def _scan(self, until: t.Optional[t.Callable] = None) -> None:
+    def _scan(self, until: t.Optional[t.Callable] = None, scan_for_cursor_token: bool= False) -> None:
         while self.size and not self._end:
             self._start = self._current
             self._advance()
@@ -813,7 +816,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 elif self._char in self._IDENTIFIERS:
                     self._scan_identifier(self._IDENTIFIERS[self._char])
                 else:
-                    self._scan_keywords()
+                    self._scan_keywords(scan_for_cursor_token)
 
             if until and until():
                 break
@@ -879,7 +882,7 @@ class Tokenizer(metaclass=_Tokenizer):
             if text:
                 self._add(TokenType.STRING, text)
 
-    def _scan_keywords(self) -> None:
+    def _scan_keywords(self, scan_for_cursor_token: bool= False) -> None:
         size = 0
         word = None
         chars = self._text
@@ -924,7 +927,7 @@ class Tokenizer(metaclass=_Tokenizer):
             if self._char in self.SINGLE_TOKENS:
                 self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
                 return
-            self._scan_var()
+            self._scan_var(scan_for_cursor_token)
             return
 
         if self._scan_string(word):
@@ -1105,18 +1108,23 @@ class Tokenizer(metaclass=_Tokenizer):
 
         self._add(TokenType.IDENTIFIER, text)
 
-    def _scan_var(self) -> None:
+    def _scan_var(self, scan_for_cursor_token: bool = False) -> None:
         while True:
             char = self._peek.strip()  # type: ignore
             if char and char not in self.SINGLE_TOKENS:
                 self._advance()
             else:
                 break
-        self._add(
-            TokenType.VAR
-            if self._prev_token_type == TokenType.PARAMETER
-            else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
-        )
+        if scan_for_cursor_token and "<cursor>" in self._text:
+            self._add(
+                TokenType.CURSOR
+            )
+        else:
+            self._add(
+                TokenType.VAR
+                if self._prev_token_type == TokenType.PARAMETER
+                else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
+            )
 
     def _extract_string(self, delimiter: str) -> str:
         text = ""

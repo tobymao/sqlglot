@@ -794,12 +794,12 @@ class Tokenizer(metaclass=_Tokenizer):
         self._prev_token_comments: t.List[str] = []
         self._prev_token_type = None
 
-    def tokenize(self, sql: str) -> t.List[Token]:
+    def tokenize(self, sql: str, scan_for_cursor_token: bool= False) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
         self.reset()
         self.sql = sql
         self.size = len(sql)
-        self._scan()
+        self._scan(scan_for_cursor_token=scan_for_cursor_token)
         return self.tokens
 
     def _scan(self, until: t.Optional[t.Callable] = None, scan_for_cursor_token: bool= False) -> None:
@@ -1115,7 +1115,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance()
             else:
                 break
-        if scan_for_cursor_token and "<cursor>" in self._text:
+        if scan_for_cursor_token and "$cursor$" in self._text: # selected '$' because it can't be a char in SINGLE_TOKENS
             self._add(
                 TokenType.CURSOR
             )

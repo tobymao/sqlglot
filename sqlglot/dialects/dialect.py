@@ -161,6 +161,9 @@ class Dialect(metaclass=_Dialect):
 
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
+    
+    def parse_yif(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
+        return self.parser(**opts).parse(self.tokenize(sql, True), sql)
 
     def parse_into(
         self, expression_type: exp.IntoType, sql: str, **opts
@@ -173,8 +176,8 @@ class Dialect(metaclass=_Dialect):
     def transpile(self, sql: str, **opts) -> t.List[str]:
         return [self.generate(expression, **opts) for expression in self.parse(sql)]
 
-    def tokenize(self, sql: str) -> t.List[Token]:
-        return self.tokenizer.tokenize(sql)
+    def tokenize(self, sql: str, scan_for_cursor_token: bool= False) -> t.List[Token]:
+        return self.tokenizer.tokenize(sql, scan_for_cursor_token)
 
     @property
     def tokenizer(self) -> Tokenizer:

@@ -602,6 +602,7 @@ class Parser(metaclass=_Parser):
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
+        "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SORTKEY": lambda self: self._parse_sortkey(),
         "STABLE": lambda self: self.expression(
@@ -650,6 +651,8 @@ class Parser(metaclass=_Parser):
         "LIKE": lambda self: self._parse_create_like(),
         "NOT": lambda self: self._parse_not_constraint(),
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
+        "ON": lambda self: self._match(TokenType.UPDATE)
+        and self.expression(exp.OnUpdateColumnConstraint, this=self._parse_function()),
         "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "REFERENCES": lambda self: self._parse_references(match=False),

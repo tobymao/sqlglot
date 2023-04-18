@@ -378,6 +378,7 @@ class TestPresto(Validator):
         self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
         self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' day"})
+        self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})
         self.validate_all(
             "SELECT JSON_OBJECT(KEY 'key1' VALUE 1, KEY 'key2' VALUE TRUE)",
             write={

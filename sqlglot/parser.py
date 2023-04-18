@@ -875,7 +875,6 @@ class Parser(metaclass=_Parser):
             f"Failed to parse into {expression_types}",
             errors=merge_errors(errors),
         ) from errors[-1]
-    
 
     def _parse(
         self,
@@ -1053,25 +1052,14 @@ class Parser(metaclass=_Parser):
         if self._match_set(self.STATEMENT_PARSERS):
             return self.STATEMENT_PARSERS[self._prev.token_type](self)
 
+        if self._match_set(Tokenizer.COMMANDS):
+            return self._parse_command()
+
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
-
         self._parse_query_modifiers(expression)
         return expression
     
-
-    def _parse_statement_yif(self) -> t.Optional[exp.Expression]:
-        if self._curr is None:
-            return None
-
-        if self._match_set(self.STATEMENT_PARSERS):
-            return self.STATEMENT_PARSERS[self._prev.token_type](self)
-
-        expression = self._parse_expression()
-        expression = self._parse_set_operations(expression) if expression else self._parse_select()
-
-        self._parse_query_modifiers(expression)
-        return expression
 
     def _parse_drop(self) -> t.Optional[exp.Expression]:
         start = self._prev
@@ -1758,7 +1746,7 @@ class Parser(metaclass=_Parser):
         # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
         # Source: https://prestodb.io/docs/current/sql/values.html
         return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
-    
+
     def _parse_select(
         self, nested: bool = False, table: bool = False, parse_subquery_alias: bool = True
     ) -> t.Optional[exp.Expression]:

@@ -163,7 +163,7 @@ class Dialect(metaclass=_Dialect):
         return self.parser(**opts).parse(self.tokenize(sql), sql)
     
     def parse_yif(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
-        return self.parser(**opts).parse(self.tokenize(sql, True), sql)
+        return self.parser(**opts).parse_yif(self.tokenize(sql, True), sql)
 
     def parse_into(
         self, expression_type: exp.IntoType, sql: str, **opts

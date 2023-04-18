@@ -267,7 +267,7 @@ class Parser(metaclass=_Parser):
         *NO_PAREN_FUNCTIONS,
     }
 
-    INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.END}
+    INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.ALIAS, TokenType.END}
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.APPLY,
@@ -2573,8 +2573,10 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.INTERVAL):
             return None
 
-        this = self._parse_term()
-        unit = self._parse_field(tokens=self.INTERVAL_VARS)
+        this = self._parse_primary()
+        unit = self._parse_function() or self._parse_id_var(
+            any_token=False, tokens=self.INTERVAL_VARS
+        )
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile

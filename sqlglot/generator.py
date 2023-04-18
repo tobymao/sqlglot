@@ -114,6 +114,9 @@ class Generator:
     # Whether or not the INTERVAL expression works only with values like '1 day'
     SINGLE_STRING_INTERVAL = False
 
+    # Whether or not the plural form of date parts like day (i.e. "days") is supported in INTERVALs
+    INTERVAL_ALLOWS_PLURAL_FORM = True
+
     # Whether or not the TABLESAMPLE clause supports a method name, like BERNOULLI
     TABLESAMPLE_WITH_METHOD = True
 
@@ -136,6 +139,18 @@ class Generator:
     STAR_MAPPING = {
         "except": "EXCEPT",
         "replace": "REPLACE",
+    }
+
+    TIME_PART_SINGULARS = {
+        "microseconds": "microsecond",
+        "seconds": "second",
+        "minutes": "minute",
+        "hours": "hour",
+        "days": "day",
+        "weeks": "week",
+        "months": "month",
+        "quarters": "quarter",
+        "years": "year",
     }
 
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}
@@ -1677,6 +1692,8 @@ class Generator:
 
     def interval_sql(self, expression: exp.Interval) -> str:
         unit = self.sql(expression, "unit")
+        if not self.INTERVAL_ALLOWS_PLURAL_FORM:
+            unit = self.TIME_PART_SINGULARS.get(unit.lower(), unit)
         unit = f" {unit}" if unit else ""
 
         if self.SINGLE_STRING_INTERVAL:

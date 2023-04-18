@@ -231,6 +231,7 @@ class Presto(Dialect):
         FUNCTION_PARSERS.pop("TRIM")
 
     class Generator(generator.Generator):
+        INTERVAL_ALLOWS_PLURAL_FORM = False
         STRUCT_DELIMITER = ("(", ")")
 
         PROPERTIES_LOCATION = {
@@ -315,7 +316,7 @@ class Presto(Dialect):
 
         def interval_sql(self, expression: exp.Interval) -> str:
             unit = self.sql(expression, "unit")
-            if expression.this and unit == "week":
+            if expression.this and unit.lower().startswith("week"):
                 return f"({expression.this.name} * INTERVAL '7' day)"
             return super().interval_sql(expression)
 

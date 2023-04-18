@@ -106,7 +106,33 @@ class TestPresto(Validator):
             },
         )
 
+    def test_interval_plural_to_singular(self):
+        # Microseconds, weeks and quarters are not supported in Presto/Trino INTERVAL literals
+        unit_to_expected = {
+            "SeCoNds": "second",
+            "minutes": "minute",
+            "hours": "hour",
+            "days": "day",
+            "months": "month",
+            "years": "year",
+        }
+
+        for unit, expected in unit_to_expected.items():
+            self.validate_all(
+                f"SELECT INTERVAL '1' {unit}",
+                write={
+                    "bigquery": f"SELECT INTERVAL '1' {expected}",
+                    "presto": f"SELECT INTERVAL '1' {expected}",
+                    "trino": f"SELECT INTERVAL '1' {expected}",
+                },
+            )
+
     def test_time(self):
+        self.validate_identity("FROM_UNIXTIME(a, b)")
+        self.validate_identity("FROM_UNIXTIME(a, b, c)")
+        self.validate_identity("TRIM(a, b)")
+        self.validate_identity("VAR_POP(a)")
+
         self.validate_all(
             "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
             write={
@@ -158,10 +184,6 @@ class TestPresto(Validator):
                 "spark": "FROM_UNIXTIME(x)",
             },
         )
-        self.validate_identity("FROM_UNIXTIME(a, b)")
-        self.validate_identity("FROM_UNIXTIME(a, b, c)")
-        self.validate_identity("TRIM(a, b)")
-        self.validate_identity("VAR_POP(a)")
         self.validate_all(
             "TO_UNIXTIME(x)",
             write={
@@ -379,6 +401,7 @@ class TestPresto(Validator):
 
         self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' day"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})
+        self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' WEEKS"})
         self.validate_all(
             "SELECT JSON_OBJECT(KEY 'key1' VALUE 1, KEY 'key2' VALUE TRUE)",
             write={

@@ -75,11 +75,10 @@ class AbstractMappingSchema(t.Generic[T]):
         mapping: dict | None = None,
     ) -> None:
         self.mapping = mapping or {}
-        self.mapping_trie = self._build_trie(self.mapping)
+        self.mapping_trie = new_trie(
+            tuple(reversed(t)) for t in flatten_schema(self.mapping, depth=self._depth())
+        )
         self._supported_table_args: t.Tuple[str, ...] = tuple()
-
-    def _build_trie(self, schema: t.Dict) -> t.Dict:
-        return new_trie(tuple(reversed(t)) for t in flatten_schema(schema, depth=self._depth()))
 
     def _depth(self) -> int:
         return dict_depth(self.mapping)
@@ -199,12 +198,14 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         if schema and not normalized_column_mapping:
             return
 
+        parts = self.table_parts(normalized_table)
+
         _nested_set(
             self.mapping,
-            list(reversed(self.table_parts(normalized_table))),
+            tuple(reversed(parts)),
             normalized_column_mapping,
         )
-        self.mapping_trie = self._build_trie(self.mapping)
+        new_trie([parts], self.mapping_trie)
 
     def column_names(self, table: exp.Table | str, only_visible: bool = False) -> t.List[str]:
         table_ = self._normalize_table(self._ensure_table(table))
@@ -383,7 +384,7 @@ def _nested_get(
     return d
 
 
-def _nested_set(d: t.Dict, keys: t.List[str], value: t.Any) -> t.Dict:
+def _nested_set(d: t.Dict, keys: t.Sequence[str], value: t.Any) -> t.Dict:
     """
     In-place set a value for a nested dictionary
 

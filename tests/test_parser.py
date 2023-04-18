@@ -18,11 +18,11 @@ class TestParser(unittest.TestCase):
 
     def test_a(self):
         # parse_yif("select top col_1, col_2 from table_1", 'postgres') # this one should error
-        parse_yif("select col_1, col_2 from table_1")
-        parse_yif("select col_1, sfd$cursor$ from table_1")
-        parse_yif("select col_1 sfd$cursor$ a a a a a a a a a a")
-        parse_yif("select $cursor$ from table_1")
-        parse_yif("select col_1 from table_1 join table_2")
+        parse_yif("select col_1, col_2 from table_1", 'postgres')
+        parse_yif("select col_1, sfd$cursor$ from table_1", 'postgres')
+        parse_yif("select col_1 sfd$cursor$ a a a a a a a a a a", 'postgres')
+        parse_yif("select $cursor$ from table_1", 'postgres')
+        parse_yif("select col_1 from table_1 join table_2", 'postgres')
 
     def test_parse_into_error(self):
         expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>]"

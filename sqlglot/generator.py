@@ -1683,7 +1683,7 @@ class Generator:
             this = expression.this.name if expression.this else ""
             return f"INTERVAL '{this}{unit}'"
 
-        this = expression.args.get("this")
+        this = expression.this
         if this:
             this = (
                 f" {this}"

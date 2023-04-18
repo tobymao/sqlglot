@@ -4288,5 +4288,8 @@ class Parser(metaclass=_Parser):
                         break
                     parent = parent.parent
                 else:
-                    column.replace(dot_or_id)
+                    if column is node:
+                        node = dot_or_id
+                    else:
+                        column.replace(dot_or_id)
         return node

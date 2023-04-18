@@ -112,6 +112,8 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(lambda_expr.this.this, exp.Dot)
         self.assertEqual(lambda_expr.sql(), "x -> x.id = id")
 
+        self.assertIsNone(parse_one("FILTER([], x -> x)").find(exp.Column))
+
     def test_transactions(self):
         expression = parse_one("BEGIN TRANSACTION")
         self.assertIsNone(expression.this)

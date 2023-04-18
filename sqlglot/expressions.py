@@ -2829,6 +2829,7 @@ class DataType(Expression):
         USMALLINT = auto()
         BIGINT = auto()
         UBIGINT = auto()
+        BIGNUMERIC = auto()
         FLOAT = auto()
         DOUBLE = auto()
         DECIMAL = auto()

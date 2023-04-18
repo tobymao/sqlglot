@@ -122,6 +122,7 @@ class Parser(metaclass=_Parser):
         TokenType.SMALLINT,
         TokenType.INT,
         TokenType.BIGINT,
+        TokenType.BIGNUMERIC,
         TokenType.FLOAT,
         TokenType.DOUBLE,
         TokenType.CHAR,

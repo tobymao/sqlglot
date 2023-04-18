@@ -84,6 +84,7 @@ class TokenType(AutoName):
     UINT = auto()
     BIGINT = auto()
     UBIGINT = auto()
+    BIGNUMERIC = auto()
     FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()

@@ -13,6 +13,9 @@ class TestBigQuery(Validator):
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM `t`) AS a UNPIVOT((c) FOR c_name IN (v1, v2))"
         )
+        self.validate_identity(
+            "CREATE TABLE db.example_table (x BIGNUMERIC) PARTITION BY x CLUSTER BY x",
+        )
 
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
         self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})

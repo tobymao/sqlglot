@@ -267,7 +267,7 @@ class Parser(metaclass=_Parser):
         *NO_PAREN_FUNCTIONS,
     }
 
-    INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.ALIAS, TokenType.END}
+    INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.END}
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.APPLY,

@@ -925,9 +925,16 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
-                return
-            self._scan_var(scan_for_cursor_token)
+                if scan_for_cursor_token and self._char == "<" and self._peek == "<":
+                    self._advance()
+                    self._add(
+                        TokenType.CURSOR
+                    )
+                    return
+                else:
+                    self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
+                    return
+            self._scan_var(True)
             return
 
         if self._scan_string(word):
@@ -1108,23 +1115,23 @@ class Tokenizer(metaclass=_Tokenizer):
 
         self._add(TokenType.IDENTIFIER, text)
 
-    def _scan_var(self, scan_for_cursor_token: bool = False) -> None:
+
+    def _scan_var(self, scan_for_cursor_token: bool = False ) -> None:
         while True:
             char = self._peek.strip()  # type: ignore
             if char and char not in self.SINGLE_TOKENS:
                 self._advance()
             else:
+                if scan_for_cursor_token and char == "<" and (self._current + 1 < self.size) and self.sql[self._current + 1] == "<":
+                    self._advance(2)
+                    self._add(TokenType.CURSOR)
+                    return
                 break
-        if scan_for_cursor_token and "$cursor$" in self._text: # selected '$' because it can't be a char in SINGLE_TOKENS
-            self._add(
-                TokenType.CURSOR
-            )
-        else:
-            self._add(
-                TokenType.VAR
-                if self._prev_token_type == TokenType.PARAMETER
-                else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
-            )
+        self._add(
+            TokenType.VAR
+            if self._prev_token_type == TokenType.PARAMETER
+            else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
+        )
 
     def _extract_string(self, delimiter: str) -> str:
         text = ""

@@ -857,24 +857,28 @@ class Parser(metaclass=_Parser):
         self.sql = sql or ""
         total = len(raw_tokens)
         chunks: t.List[t.List[Token]] = [[]]
+        cursor_positions: t.List[int] = [-1]
 
         for i, token in enumerate(raw_tokens):
             if token.token_type == TokenType.SEMICOLON:
                 if i < total - 1:
                     chunks.append([])
+                    cursor_positions.append(-1)
             else:
+                if token.token_type == TokenType.CURSOR:
+                    cursor_positions[-1] = i
                 chunks[-1].append(token)
 
         expressions = []
 
-        for tokens in chunks:
+        for i, tokens in enumerate(chunks):
             self._index = -1
             self._tokens = tokens
-            self._advance()
+            self._advance(cursor_position = cursor_positions[i])
 
             expressions.append(parse_method(self))
 
-            if self._index < len(self._tokens):
+            if self._index < (len(self._tokens) if cursor_positions[i] == -1 else cursor_positions[i]):
                 self.raise_error("Invalid expression / Unexpected token")
 
             self.check_errors()
@@ -965,9 +969,12 @@ class Parser(metaclass=_Parser):
     def _find_sql(self, start: Token, end: Token) -> str:
         return self.sql[start.start : end.end]
 
-    def _advance(self, times: int = 1) -> None:
+    def _advance(self, times: int = 1, cursor_position: int = -1) -> None:
         self._index += times
-        self._curr = seq_get(self._tokens, self._index)
+        if cursor_position != -1 and self._index == cursor_position:
+            self._curr = None
+        else:
+            self._curr = seq_get(self._tokens, self._index)
         self._next = seq_get(self._tokens, self._index + 1)
         if self._index > 0:
             self._prev = self._tokens[self._index - 1]

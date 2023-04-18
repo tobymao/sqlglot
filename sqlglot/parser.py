@@ -1057,9 +1057,9 @@ class Parser(metaclass=_Parser):
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
+
         self._parse_query_modifiers(expression)
         return expression
-    
 
     def _parse_drop(self) -> t.Optional[exp.Expression]:
         start = self._prev

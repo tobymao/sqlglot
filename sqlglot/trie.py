@@ -3,7 +3,7 @@ import typing as t
 key = t.Sequence[t.Hashable]
 
 
-def new_trie(keywords: t.Iterable[key]) -> t.Dict:
+def new_trie(keywords: t.Iterable[key], trie: t.Optional[t.Dict] = None) -> t.Dict:
     """
     Creates a new trie out of a collection of keywords.
 
@@ -16,11 +16,12 @@ def new_trie(keywords: t.Iterable[key]) -> t.Dict:
 
     Args:
         keywords: the keywords to create the trie from.
+        trie: a trie to mutate instead of creating a new one
 
     Returns:
         The trie corresponding to `keywords`.
     """
-    trie: t.Dict = {}
+    trie = {} if trie is None else trie
 
     for key in keywords:
         current = trie

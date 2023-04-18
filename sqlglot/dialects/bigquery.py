@@ -206,6 +206,10 @@ class BigQuery(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
     class Generator(generator.Generator):
+        EXPLICIT_UNION = True
+        INTERVAL_ALLOWS_PLURAL_FORM = False
+        LIMIT_FETCH = "LIMIT"
+
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
@@ -263,13 +267,11 @@ class BigQuery(Dialect):
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.VARCHAR: "STRING",
         }
+
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         }
-
-        EXPLICIT_UNION = True
-        LIMIT_FETCH = "LIMIT"
 
         def array_sql(self, expression: exp.Array) -> str:
             first_arg = seq_get(expression.expressions, 0)

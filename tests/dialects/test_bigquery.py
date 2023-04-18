@@ -360,6 +360,7 @@ class TestBigQuery(Validator):
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")
+        self.validate_identity("CAST(x AS BIGNUMERIC)")
 
     def test_user_defined_functions(self):
         self.validate_identity(

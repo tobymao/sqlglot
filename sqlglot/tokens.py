@@ -87,6 +87,7 @@ class TokenType(AutoName):
     FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()
+    BIGDECIMAL = auto()
     CHAR = auto()
     NCHAR = auto()
     VARCHAR = auto()
@@ -669,6 +670,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "INT8": TokenType.BIGINT,
         "DEC": TokenType.DECIMAL,
         "DECIMAL": TokenType.DECIMAL,
+        "BIGDECIMAL": TokenType.BIGDECIMAL,
+        "BIGNUMERIC": TokenType.BIGDECIMAL,
         "MAP": TokenType.MAP,
         "NULLABLE": TokenType.NULLABLE,
         "NUMBER": TokenType.DECIMAL,

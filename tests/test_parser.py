@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from sqlglot import Parser, exp, parse, parse_one
+from sqlglot import Parser, exp, parse, parse_one, parse_yif
 from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import assert_logger_contains
 
@@ -15,6 +15,14 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
+
+    def test_a(self):
+        # parse_yif("select top col_1, col_2 from table_1", 'postgres') # this one should error
+        parse_yif("select col_1, col_2 from table_1")
+        parse_yif("select col_1, sfd$cursor$ from table_1")
+        parse_yif("select col_1 sfd$cursor$ a a a a a a a a a a")
+        parse_yif("select $cursor$ from table_1")
+        parse_yif("select col_1 from table_1 join table_2")
 
     def test_parse_into_error(self):
         expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>]"

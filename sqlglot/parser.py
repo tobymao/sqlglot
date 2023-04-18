@@ -145,6 +145,7 @@ class Parser(metaclass=_Parser):
         TokenType.DATETIME,
         TokenType.DATE,
         TokenType.DECIMAL,
+        TokenType.BIGDECIMAL,
         TokenType.UUID,
         TokenType.GEOGRAPHY,
         TokenType.GEOMETRY,

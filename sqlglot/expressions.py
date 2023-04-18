@@ -2832,6 +2832,7 @@ class DataType(Expression):
         FLOAT = auto()
         DOUBLE = auto()
         DECIMAL = auto()
+        BIGDECIMAL = auto()
         BIT = auto()
         BOOLEAN = auto()
         JSON = auto()

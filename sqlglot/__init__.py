@@ -175,11 +175,7 @@ def parse_yif(
     """
 
     dialect = Dialect.get_or_raise(read)()
-
-    if into:
-        result = dialect.parse_into(into, sql, **opts)
-    else:
-        result = dialect.parse_yif(sql, **opts)
+    result = dialect.parse_yif(sql, **opts)
 
     for expression in result:
         if not expression:

@@ -828,7 +828,7 @@ class Parser(metaclass=_Parser):
         Returns:
             The list of syntax trees.
         """
-        return self._parse(
+        return self._parse_single_yif(
             parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql
         )
     
@@ -883,6 +883,28 @@ class Parser(metaclass=_Parser):
             f"Failed to parse into {expression_types}",
             errors=merge_errors(errors),
         ) from errors[-1]
+
+
+    def _parse_single_yif(
+        self,
+        parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
+        raw_tokens: t.List[Token],
+        sql: t.Optional[str] = None,
+    ) -> t.List[t.Optional[exp.Expression]]:
+        self.reset()
+        self.sql = sql or ""
+        total = len(raw_tokens)
+
+        self._index = -1
+        self._tokens = raw_tokens
+        self._advance()
+        expression = parse_method(self)
+
+        if self._index < (len(self._tokens) if self._cursor_position == -1 else self._cursor_position):
+            self.raise_error("Invalid expression / Unexpected token")
+
+        self.check_errors()
+        return [expression]
 
     def _parse(
         self,
@@ -1017,11 +1039,14 @@ class Parser(metaclass=_Parser):
 
     def _advance(self, times: int = 1) -> None:
         self._index += times
-        if self._cursor_position != -1 and self._index == self._cursor_position:
+        next_token = seq_get(self._tokens, self._index)
+        if next_token is not None and next_token.token_type == TokenType.CURSOR:
+            self._cursor_position = self._index
             self._curr = None
             self._has_reached_cursor = True
         else:
-            self._curr = seq_get(self._tokens, self._index)
+            self._curr = next_token
+
         self._next = seq_get(self._tokens, self._index + 1)
         if self._index > 0:
             self._prev = self._tokens[self._index - 1]

@@ -776,7 +776,6 @@ class Parser(metaclass=_Parser):
         "_show_trie",
         "_set_trie",
         "_cursor_position",
-        "_has_reached_cursor",
         "_has_hit_error_after_cursor",
         "_suggestion_options",
     )
@@ -812,14 +811,13 @@ class Parser(metaclass=_Parser):
         self._next = None
         self._prev = None
         self._prev_comments = None
-        self._has_reached_cursor = False
         self._has_hit_error_after_cursor = False
         self._suggestion_options = set()
 
 
     def parse_yif(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.Optional[exp.Expression]:
         """
         Parses a list of tokens and returns a list of syntax trees, one tree
         per parsed SQL statement.
@@ -893,7 +891,7 @@ class Parser(metaclass=_Parser):
         parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
         raw_tokens: t.List[Token],
         sql: t.Optional[str] = None,
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.Optional[exp.Expression]:
         self.reset()
         self.sql = sql or ""
         total = len(raw_tokens)
@@ -911,7 +909,8 @@ class Parser(metaclass=_Parser):
         suggestions = self._suggestion_options.intersection(self.tokenizer.TOKEN_TO_KEYWORD.keys())
         if TokenType.IDENTIFIER in self._suggestion_options:
             suggestions.add(TokenType.IDENTIFIER)
-        return [expression]
+        return expression
+
 
     def _parse(
         self,
@@ -923,33 +922,27 @@ class Parser(metaclass=_Parser):
         self.sql = sql or ""
         total = len(raw_tokens)
         chunks: t.List[t.List[Token]] = [[]]
-        cursor_positions: t.List[int] = [-1]
 
         for i, token in enumerate(raw_tokens):
             if token.token_type == TokenType.SEMICOLON:
                 if i < total - 1:
                     chunks.append([])
-                    cursor_positions.append(-1)
             else:
-                if token.token_type == TokenType.CURSOR:
-                    cursor_positions[-1] = i
                 chunks[-1].append(token)
 
         expressions = []
 
-        for i, tokens in enumerate(chunks):
+        for tokens in chunks:
             self._index = -1
             self._tokens = tokens
-            self._cursor_position = cursor_positions[i]
             self._advance()
 
             expressions.append(parse_method(self))
 
-            if self._index < (len(self._tokens) if self._cursor_position == -1 else self._cursor_position):
+            if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")
 
             self.check_errors()
-
         return expressions
 
     def check_errors(self) -> None:
@@ -970,7 +963,7 @@ class Parser(metaclass=_Parser):
         Appends an error in the list of recorded errors or raises it, depending on the chosen
         error level setting.
         """
-        if self._has_reached_cursor:
+        if self._cursor_position != -1:
             self._has_hit_error_after_cursor = True
             return
 
@@ -1050,7 +1043,6 @@ class Parser(metaclass=_Parser):
         if next_token is not None and next_token.token_type == TokenType.CURSOR:
             self._cursor_position = self._index
             self._curr = None
-            self._has_reached_cursor = True
         else:
             self._curr = next_token
 
@@ -4281,11 +4273,17 @@ class Parser(metaclass=_Parser):
                 return subparser
         self._retreat(index)
         return None
+    
+    def _add_to_suggestion_options(self, new_item: t.Union[str, t.Set, t.List, t.Dict]):
+        if self._cursor_position != -1 and not self._has_hit_error_after_cursor:
+                if isinstance(new_item, (list, set, dict)):
+                    self._suggestion_options.union(set(new_item))
+                else:
+                    self._suggestion_options.add(new_item)
 
     def _match(self, token_type, advance=True):
         if not self._curr:
-            if self._has_reached_cursor and not self._has_hit_error_after_cursor:
-                self._suggestion_options.add(token_type)
+            self._add_to_suggestion_options(token_type)
             return None
 
         if self._curr.token_type == token_type:
@@ -4297,8 +4295,7 @@ class Parser(metaclass=_Parser):
 
     def _match_set(self, types, advance=True):
         if not self._curr:
-            if self._has_reached_cursor and not self._has_hit_error_after_cursor:
-                self._suggestion_options.union(types)
+            self._add_to_suggestion_options(types)
             return None
 
         if self._curr.token_type in types:
@@ -4309,9 +4306,8 @@ class Parser(metaclass=_Parser):
         return None
 
     def _match_pair(self, token_type_a, token_type_b, advance=True):
-        if not self._curr or not self._next:
-            if self._has_reached_cursor and not self._has_hit_error_after_cursor:
-                self._suggestion_options.add(token_type_a)  
+        if not self._curr or not self._next:            
+            self._add_to_suggestion_options(token_type_a)
             return None
 
         if self._curr.token_type == token_type_a and self._next.token_type == token_type_b:
@@ -4338,8 +4334,8 @@ class Parser(metaclass=_Parser):
             if advance:
                 self._advance()
             return True
-        if self._has_reached_cursor and not self._has_hit_error_after_cursor:
-            self._suggestion_options.union(set(texts))
+        
+        self._add_to_suggestion_options(texts)
         return False
 
     def _match_text_seq(self, *texts, advance=True):

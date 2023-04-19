@@ -161,28 +161,12 @@ def parse_yif(
     into: t.Optional[exp.IntoType] = None,
     **opts,
 ) -> Expression:
-    """
-    Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.
-
-    Args:
-        sql: the SQL code string to parse.
-        read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
-        into: the SQLGlot Expression to parse into.
-        **opts: other `sqlglot.parser.Parser` options.
-
-    Returns:
-        The syntax tree for the first parsed statement.
-    """
-
     dialect = Dialect.get_or_raise(read)()
     result = dialect.parse_yif(sql, **opts)
-
-    for expression in result:
-        if not expression:
-            raise ParseError(f"No expression was parsed from '{sql}'")
-        return expression
-    else:
+    if not result:
         raise ParseError(f"No expression was parsed from '{sql}'")
+    return result
+
 
 def transpile(
     sql: str,

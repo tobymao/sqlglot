@@ -746,14 +746,11 @@ class Parser(metaclass=_Parser):
     LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
 
-    EXPECTED_FOLLOWUPS = {
-        TokenType.SELECT: {TokenType.STAR, TokenType.ALIAS, TokenType.STRUCT, TokenType.VALUES, TokenType.HINT, TokenType.ALL, TokenType.DISTINCT, TokenType.TOP, TokenType.LIMIT, TokenType.FETCH, TokenType.COLUMN, TokenType.INTO, TokenType.FROM},
-        TokenType.HINT: {TokenType.STAR, TokenType.SLASH},
-        TokenType.DISTINCT: {TokenType.ON},
-        TokenType.TOP: {TokenType.NUMBER,TokenType.PLACEHOLDER, TokenType.PARAMETER, TokenType.COLON},
-        TokenType.LIMIT: {TokenType.PLUS, TokenType.NOT, TokenType.TILDA, TokenType.DASH, TokenType.AT_TIME_ZONE},
-        TokenType.INTO: {TokenType.TEMPORARY, TokenType.UNLOGGED, TokenType.TABLE},
-        TokenType.FROM: {TokenType.TABLE}
+
+    KEYWORDS_TO_IDENTIFIER_TYPE = {
+        TokenType.SELECT: TokenType.COLUMN,
+        TokenType.WHERE: TokenType.COLUMN,
+        TokenType.FROM: TokenType.TABLE,
     }
 
     __slots__ = (
@@ -778,6 +775,7 @@ class Parser(metaclass=_Parser):
         "_cursor_position",
         "_has_hit_error_after_cursor",
         "_suggestion_options",
+        "_last_keyword",
     )
 
     def __init__(
@@ -813,6 +811,7 @@ class Parser(metaclass=_Parser):
         self._prev_comments = None
         self._has_hit_error_after_cursor = False
         self._suggestion_options = set()
+        self._last_keyword = None
 
 
     def parse_yif(
@@ -896,7 +895,8 @@ class Parser(metaclass=_Parser):
 
         suggestions = self._suggestion_options.intersection(self.tokenizer.TOKEN_TO_KEYWORD.keys())
         if TokenType.IDENTIFIER in self._suggestion_options:
-            suggestions.add(TokenType.IDENTIFIER)
+            resolved_identifier = self.KEYWORDS_TO_IDENTIFIER_TYPE[self._last_keyword.token_type] if (self._last_keyword and self._last_keyword.token_type in self.KEYWORDS_TO_IDENTIFIER_TYPE) else TokenType.IDENTIFIER
+            suggestions.add(resolved_identifier)
         return expression
 
 
@@ -1029,10 +1029,13 @@ class Parser(metaclass=_Parser):
     def _advance(self, times: int = 1) -> None:
         self._index += times
         next_token = seq_get(self._tokens, self._index)
+
         if next_token is not None and next_token.token_type == TokenType.CURSOR:
             self._cursor_position = self._index
             self._curr = None
         else:
+            if next_token is not None and next_token.token_type in self.tokenizer.TOKEN_TO_KEYWORD:
+                self._last_keyword = next_token
             self._curr = next_token
 
         self._next = seq_get(self._tokens, self._index + 1)
@@ -2190,7 +2193,6 @@ class Parser(metaclass=_Parser):
                 table = self._parse_id_var()
 
         if not table:
-            self._add_to_suggestion_options(TokenType.TABLE)
             self.raise_error(f"Expected table name but got {self._curr}")
 
         return self.expression(

@@ -192,6 +192,7 @@ class Dialect(metaclass=_Dialect):
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
                 "null_ordering": self.null_ordering,
+                "tokenizer": self.tokenizer,
                 **opts,
             },
         )

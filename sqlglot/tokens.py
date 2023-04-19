@@ -731,6 +731,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "VACUUM": TokenType.COMMAND,
     }
 
+    TOKEN_TO_KEYWORD = {value: key for key, value in KEYWORDS.items()}
+
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {
         " ": TokenType.SPACE,
         "\t": TokenType.SPACE,

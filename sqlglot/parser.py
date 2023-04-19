@@ -757,6 +757,7 @@ class Parser(metaclass=_Parser):
     }
 
     __slots__ = (
+        "tokenizer",
         "error_level",
         "error_message_context",
         "sql",
@@ -782,6 +783,7 @@ class Parser(metaclass=_Parser):
 
     def __init__(
         self,
+        tokenizer: t.Optional[Tokenizer] = None,
         error_level: t.Optional[ErrorLevel] = None,
         error_message_context: int = 100,
         index_offset: int = 0,
@@ -790,6 +792,7 @@ class Parser(metaclass=_Parser):
         max_errors: int = 3,
         null_ordering: t.Optional[str] = None,
     ):
+        self.tokenizer = tokenizer
         self.error_level = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
@@ -904,6 +907,10 @@ class Parser(metaclass=_Parser):
             self.raise_error("Invalid expression / Unexpected token")
 
         self.check_errors()
+
+        suggestions = self._suggestion_options.intersection(self.tokenizer.TOKEN_TO_KEYWORD.keys())
+        if TokenType.IDENTIFIER in self._suggestion_options:
+            suggestions.add(TokenType.IDENTIFIER)
         return [expression]
 
     def _parse(

@@ -2175,6 +2175,7 @@ class Parser(metaclass=_Parser):
 
         if not table:
             self.raise_error(f"Expected table name but got {self._curr}")
+            self._suggestion_options.add(TokenType.TABLE)
 
         return self.expression(
             exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
@@ -3873,6 +3874,7 @@ class Parser(metaclass=_Parser):
         items = [parse_result] if parse_result is not None else []
 
         while self._match(sep):
+            self._suggestion_options = set()
             if parse_result and self._prev_comments:
                 parse_result.comments = self._prev_comments
 

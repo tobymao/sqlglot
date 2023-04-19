@@ -776,7 +776,7 @@ class Parser(metaclass=_Parser):
         "_set_trie",
         "_cursor_position",
         "_has_reached_cursor",
-        "_has_reached_class_after_cursor",
+        "_has_hit_error_after_cursor",
         "_suggestion_options",
     )
 
@@ -810,7 +810,7 @@ class Parser(metaclass=_Parser):
         self._prev = None
         self._prev_comments = None
         self._has_reached_cursor = False
-        self._has_reached_class_after_cursor = False
+        self._has_hit_error_after_cursor = False
         self._suggestion_options = set()
 
 
@@ -942,6 +942,7 @@ class Parser(metaclass=_Parser):
         error level setting.
         """
         if self._has_reached_cursor:
+            self._has_hit_error_after_cursor = True
             return
 
         token = token or self._curr or self._prev or Token.string("")
@@ -988,8 +989,6 @@ class Parser(metaclass=_Parser):
         if comments:
             instance.comments = comments
         self.validate_expression(instance)
-        if self._has_reached_cursor:
-            self._has_reached_class_after_cursor = True
         return instance
 
     def validate_expression(
@@ -1006,8 +1005,12 @@ class Parser(metaclass=_Parser):
         if self.error_level == ErrorLevel.IGNORE:
             return
 
-        for error_message in expression.error_messages(args):
-            self.raise_error(error_message)
+        error_messages = expression.error_messages(args)
+        if not error_messages and not self._has_hit_error_after_cursor:
+            self._suggestion_options = set()
+        else:
+            for error_message in error_messages:
+                self.raise_error(error_message)
 
     def _find_sql(self, start: Token, end: Token) -> str:
         return self.sql[start.start : end.end]
@@ -1800,7 +1803,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
             limit = self._parse_limit(top=True)
-            expressions = self._parse_csv(self._parse_expression)
+            expressions = self._parse_csv(self._parse_expression, should_expect_non_null_value=True)
 
             this = self.expression(
                 exp.Select,
@@ -2174,8 +2177,8 @@ class Parser(metaclass=_Parser):
                 table = self._parse_id_var()
 
         if not table:
-            self.raise_error(f"Expected table name but got {self._curr}")
             self._suggestion_options.add(TokenType.TABLE)
+            self.raise_error(f"Expected table name but got {self._curr}")
 
         return self.expression(
             exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
@@ -3868,7 +3871,7 @@ class Parser(metaclass=_Parser):
         return self._parse_csv(self._parse_expression)
 
     def _parse_csv(
-        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
+        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA, should_expect_non_null_value: bool = False
     ) -> t.List[t.Optional[exp.Expression]]:
         parse_result = parse_method()
         items = [parse_result] if parse_result is not None else []
@@ -3881,6 +3884,8 @@ class Parser(metaclass=_Parser):
             parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)
+            elif should_expect_non_null_value:
+                self.raise_error(f"Expected non-null value")
 
         return items
 
@@ -4247,7 +4252,7 @@ class Parser(metaclass=_Parser):
 
     def _match(self, token_type, advance=True):
         if not self._curr:
-            if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+            if self._has_reached_cursor and not self._has_hit_error_after_cursor:
                 self._suggestion_options.add(token_type)
             return None
 
@@ -4260,7 +4265,7 @@ class Parser(metaclass=_Parser):
 
     def _match_set(self, types, advance=True):
         if not self._curr:
-            if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+            if self._has_reached_cursor and not self._has_hit_error_after_cursor:
                 self._suggestion_options.union(types)
             return None
 
@@ -4273,7 +4278,7 @@ class Parser(metaclass=_Parser):
 
     def _match_pair(self, token_type_a, token_type_b, advance=True):
         if not self._curr or not self._next:
-            if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+            if self._has_reached_cursor and not self._has_hit_error_after_cursor:
                 self._suggestion_options.add(token_type_a)  
             return None
 
@@ -4301,7 +4306,7 @@ class Parser(metaclass=_Parser):
             if advance:
                 self._advance()
             return True
-        if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+        if self._has_reached_cursor and not self._has_hit_error_after_cursor:
             self._suggestion_options.union(set(texts))
         return False
 

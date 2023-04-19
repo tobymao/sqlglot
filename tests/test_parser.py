@@ -19,6 +19,10 @@ class TestParser(unittest.TestCase):
     def test_not_working(self):
         with self.assertRaises(ParseError) as ctx:
             parse_yif("select * from <>")
+        with self.assertRaises(ParseError) as ctx:
+            parse_yif("select")
+        with self.assertRaises(ParseError) as ctx:
+            parse_yif("select col_1, from table_1", 'postgres')
 
     def test_working(self):
         parse_yif("select col_1, sfd<< from table_1", 'postgres')
@@ -30,9 +34,10 @@ class TestParser(unittest.TestCase):
         parse_yif("select * from <<", 'postgres')
 
     def test_individual(self):
-        parse_yif("select asian from", 'postgres')
-        # parse_yif("select a from <<", 'postgres')
-
+        parse_yif("select asian, a<< from table_1", 'postgres')
+        parse_yif("select asian from table_2222 <<", 'postgres')
+        parse_yif("select asian from <<", 'postgres')
+        parse_yif("select asian <<", 'postgres')
 
     def test_parse_into_error(self):
         expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>]"

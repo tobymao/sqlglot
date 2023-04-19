@@ -2086,7 +2086,7 @@ class Select(Subqueryable):
     arg_types = {
         "with": False,
         "kind": False,
-        "expressions": False,
+        "expressions": True,
         "hint": False,
         "distinct": False,
         "into": False,

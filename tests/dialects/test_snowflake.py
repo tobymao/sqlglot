@@ -13,7 +13,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT HLL(DISTINCT t.a)")
         self.validate_identity("SELECT HLL(a, b, c)")
         self.validate_identity("SELECT HLL(DISTINCT a, b, c)")
-        self.validate_identity("$x")
+        self.validate_identity("$x")  # parameter
+        self.validate_identity("a$b")  # valid snowflake identifier
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_identity("PUT file:///dir/tmp.csv @%table")
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")

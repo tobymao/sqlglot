@@ -1076,7 +1076,8 @@ class Parser(metaclass=_Parser):
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
 
-        self._parse_query_modifiers(expression)
+        # Commenting this out for now to ensure that "select asian <<" does not suggest modifiers like WHERE, LIMIT
+        # self._parse_query_modifiers(expression)
         return expression
 
     def _parse_drop(self) -> t.Optional[exp.Expression]:
@@ -1822,8 +1823,7 @@ class Parser(metaclass=_Parser):
             from_ = self._parse_from()
             if from_:
                 this.set("from", from_)
-
-            self._parse_query_modifiers(this)
+                self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
             this = self._parse_table() if table else self._parse_select(nested=True)
             self._parse_query_modifiers(this)

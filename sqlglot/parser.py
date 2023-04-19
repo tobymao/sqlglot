@@ -774,6 +774,10 @@ class Parser(metaclass=_Parser):
         "_prev_comments",
         "_show_trie",
         "_set_trie",
+        "_cursor_position",
+        "_has_reached_cursor",
+        "_has_reached_class_after_cursor",
+        "_suggestion_options",
     )
 
     def __init__(
@@ -800,10 +804,14 @@ class Parser(metaclass=_Parser):
         self.errors = []
         self._tokens = []
         self._index = 0
+        self._cursor_position = -1
         self._curr = None
         self._next = None
         self._prev = None
         self._prev_comments = None
+        self._has_reached_cursor = False
+        self._has_reached_class_after_cursor = False
+        self._suggestion_options = set()
 
 
     def parse_yif(
@@ -903,11 +911,12 @@ class Parser(metaclass=_Parser):
         for i, tokens in enumerate(chunks):
             self._index = -1
             self._tokens = tokens
-            self._advance(cursor_position = cursor_positions[i])
+            self._cursor_position = cursor_positions[i]
+            self._advance()
 
             expressions.append(parse_method(self))
 
-            if self._index < (len(self._tokens) if cursor_positions[i] == -1 else cursor_positions[i]):
+            if self._index < (len(self._tokens) if self._cursor_position == -1 else self._cursor_position):
                 self.raise_error("Invalid expression / Unexpected token")
 
             self.check_errors()
@@ -932,6 +941,9 @@ class Parser(metaclass=_Parser):
         Appends an error in the list of recorded errors or raises it, depending on the chosen
         error level setting.
         """
+        if self._has_reached_cursor:
+            return
+
         token = token or self._curr or self._prev or Token.string("")
         start = token.start
         end = token.end
@@ -976,6 +988,8 @@ class Parser(metaclass=_Parser):
         if comments:
             instance.comments = comments
         self.validate_expression(instance)
+        if self._has_reached_cursor:
+            self._has_reached_class_after_cursor = True
         return instance
 
     def validate_expression(
@@ -998,10 +1012,11 @@ class Parser(metaclass=_Parser):
     def _find_sql(self, start: Token, end: Token) -> str:
         return self.sql[start.start : end.end]
 
-    def _advance(self, times: int = 1, cursor_position: int = -1) -> None:
+    def _advance(self, times: int = 1) -> None:
         self._index += times
-        if cursor_position != -1 and self._index == cursor_position:
+        if self._cursor_position != -1 and self._index == self._cursor_position:
             self._curr = None
+            self._has_reached_cursor = True
         else:
             self._curr = seq_get(self._tokens, self._index)
         self._next = seq_get(self._tokens, self._index + 1)
@@ -4230,6 +4245,8 @@ class Parser(metaclass=_Parser):
 
     def _match(self, token_type, advance=True):
         if not self._curr:
+            if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+                self._suggestion_options.add(token_type)
             return None
 
         if self._curr.token_type == token_type:
@@ -4241,6 +4258,8 @@ class Parser(metaclass=_Parser):
 
     def _match_set(self, types, advance=True):
         if not self._curr:
+            if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+                self._suggestion_options.union(types)
             return None
 
         if self._curr.token_type in types:
@@ -4252,6 +4271,8 @@ class Parser(metaclass=_Parser):
 
     def _match_pair(self, token_type_a, token_type_b, advance=True):
         if not self._curr or not self._next:
+            if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+                self._suggestion_options.add(token_type_a)  
             return None
 
         if self._curr.token_type == token_type_a and self._next.token_type == token_type_b:
@@ -4278,6 +4299,8 @@ class Parser(metaclass=_Parser):
             if advance:
                 self._advance()
             return True
+        if self._has_reached_cursor and not self._has_reached_class_after_cursor:
+            self._suggestion_options.union(set(texts))
         return False
 
     def _match_text_seq(self, *texts, advance=True):

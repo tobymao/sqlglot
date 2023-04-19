@@ -16,8 +16,9 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
 
-    def test_a(self):
-        parse_yif("select * from")
+    def test_not_working(self):
+        with self.assertRaises(ParseError) as ctx:
+            parse_yif("select * from <>")
 
     def test_working(self):
         parse_yif("select col_1, sfd<< from table_1", 'postgres')
@@ -25,8 +26,12 @@ class TestParser(unittest.TestCase):
         parse_yif("select col_1, col_2 from table_1", 'postgres')
         parse_yif("select << from table_1", 'postgres')
         parse_yif("select col_1 sfd<< a a a a a a a a a a", 'postgres')
+        parse_yif("select col_1 sfd<< limit where from", 'postgres')
+        parse_yif("select * from <<")
 
-
+    def test_individual(self):
+        parse_yif("select << from")
+        # parse_yif("select a from <<")
 
 
     def test_parse_into_error(self):

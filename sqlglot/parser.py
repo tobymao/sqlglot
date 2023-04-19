@@ -3361,6 +3361,9 @@ class Parser(metaclass=_Parser):
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
+        elif to.this == exp.DataType.Type.DATE:
+            if self._match(TokenType.FORMAT):
+                to.set("format", self._parse_conjunction())
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 

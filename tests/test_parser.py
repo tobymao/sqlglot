@@ -27,11 +27,11 @@ class TestParser(unittest.TestCase):
         parse_yif("select << from table_1", 'postgres')
         parse_yif("select col_1 sfd<< a a a a a a a a a a", 'postgres')
         parse_yif("select col_1 sfd<< limit where from", 'postgres')
-        parse_yif("select * from <<")
+        parse_yif("select * from <<", 'postgres')
 
     def test_individual(self):
-        parse_yif("select << from")
-        # parse_yif("select a from <<")
+        parse_yif("select asian from", 'postgres')
+        # parse_yif("select a from <<", 'postgres')
 
 
     def test_parse_into_error(self):

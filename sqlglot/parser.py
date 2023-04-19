@@ -818,17 +818,6 @@ class Parser(metaclass=_Parser):
     def parse_yif(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
     ) -> t.Optional[exp.Expression]:
-        """
-        Parses a list of tokens and returns a list of syntax trees, one tree
-        per parsed SQL statement.
-
-        Args:
-            raw_tokens: the list of tokens.
-            sql: the original SQL string, used to produce helpful debug messages.
-
-        Returns:
-            The list of syntax trees.
-        """
         return self._parse_single_yif(
             parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql
         )
@@ -894,7 +883,6 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         self.reset()
         self.sql = sql or ""
-        total = len(raw_tokens)
 
         self._index = -1
         self._tokens = raw_tokens
@@ -943,6 +931,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Invalid expression / Unexpected token")
 
             self.check_errors()
+
         return expressions
 
     def check_errors(self) -> None:
@@ -2201,7 +2190,7 @@ class Parser(metaclass=_Parser):
                 table = self._parse_id_var()
 
         if not table:
-            self._suggestion_options.add(TokenType.TABLE)
+            self._add_to_suggestion_options(TokenType.TABLE)
             self.raise_error(f"Expected table name but got {self._curr}")
 
         return self.expression(
@@ -4274,7 +4263,7 @@ class Parser(metaclass=_Parser):
         self._retreat(index)
         return None
     
-    def _add_to_suggestion_options(self, new_item: t.Union[str, t.Set, t.List, t.Dict]):
+    def _add_to_suggestion_options(self, new_item: t.Union[str, TokenType, t.Set, t.List, t.Dict]):
         if self._cursor_position != -1 and not self._has_hit_error_after_cursor:
                 if isinstance(new_item, (list, set, dict)):
                     self._suggestion_options.union(set(new_item))

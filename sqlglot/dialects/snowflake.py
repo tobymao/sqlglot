@@ -272,6 +272,8 @@ class Snowflake(Dialect):
             "$": TokenType.PARAMETER,
         }
 
+        VAR_SINGLE_TOKENS = {"$"}
+
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
         MATCHED_BY_SOURCE = False

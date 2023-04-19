@@ -442,6 +442,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "#": TokenType.HASH,
     }
 
+    VAR_SINGLE_TOKENS: t.Set[str] = set()
+
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
 
     BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []
@@ -1111,7 +1113,7 @@ class Tokenizer(metaclass=_Tokenizer):
     def _scan_var(self) -> None:
         while True:
             char = self._peek.strip()  # type: ignore
-            if char and char not in self.SINGLE_TOKENS:
+            if char and (char in self.VAR_SINGLE_TOKENS or char not in self.SINGLE_TOKENS):
                 self._advance()
             else:
                 break

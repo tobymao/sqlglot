@@ -715,6 +715,9 @@ class Generator:
     def hexstring_sql(self, expression: exp.HexString) -> str:
         return self.sql(expression, "this")
 
+    def bytestring_sql(self, expression: exp.ByteString) -> str:
+        return self.sql(expression, "this")
+
     def datatype_sql(self, expression: exp.DataType) -> str:
         type_value = expression.this
         type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)

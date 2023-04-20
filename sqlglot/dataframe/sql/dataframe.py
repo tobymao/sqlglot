@@ -355,7 +355,11 @@ class DataFrame:
         cols = self._ensure_and_normalize_cols(cols)
         kwargs["append"] = kwargs.get("append", False)
         if self.expression.args.get("joins"):
-            ambiguous_cols = [col for col in cols if not col.column_expression.table]
+            ambiguous_cols = [
+                col
+                for col in cols
+                if isinstance(col.column_expression, exp.Column) and not col.column_expression.table
+            ]
             if ambiguous_cols:
                 join_table_identifiers = [
                     x.this for x in get_tables_from_expression_with_join(self.expression)

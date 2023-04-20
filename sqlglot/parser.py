@@ -897,8 +897,27 @@ class Parser(metaclass=_Parser):
         if TokenType.IDENTIFIER in self._suggestion_options:
             resolved_identifier = self.KEYWORDS_TO_IDENTIFIER_TYPE[self._last_keyword.token_type] if (self._last_keyword and self._last_keyword.token_type in self.KEYWORDS_TO_IDENTIFIER_TYPE) else TokenType.IDENTIFIER
             suggestions.add(resolved_identifier)
+
+        if TokenType.COLUMN in suggestions:
+            from_clause = expression.find(exp.From)
+            if from_clause is None:
+                while self._index < (len(raw_tokens) -1) and from_clause is None:
+                    self._advance()
+                    from_clause = self._parse_from(expression)
+            
+            if from_clause is not None:
+                from_tables = list(from_clause.find_all(exp.Table))
+                join_clauses = expression.find_all(exp.Join)
+                join_tables = [table for join_clause in join_clauses for table in join_clause.find_all(exp.Table)]
+                all_tables = from_tables + join_tables
+                table_names = [self._get_table_name_and_alias(table) for table in all_tables]
+
         return expression
 
+
+    def _get_table_name_and_alias(self, table: exp.Table)-> t.Tuple[str]:
+        id = table.find(exp.Identifier)
+        return (id.alias_or_name, table.alias_or_name if table.alias_or_name != id.alias_or_name else None)
 
     def _parse(
         self,
@@ -1968,13 +1987,17 @@ class Parser(metaclass=_Parser):
             exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
         )
 
-    def _parse_from(self) -> t.Optional[exp.Expression]:
+    def _parse_from(self, parent_exp: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.FROM):
             return None
 
-        return self.expression(
+        expression = self.expression(
             exp.From, comments=self._prev_comments, expressions=self._parse_csv(self._parse_table)
         )
+        if parent_exp is not None:
+            parent_exp.set("from", expression)
+            self._parse_query_modifiers(parent_exp)
+        return expression
 
     def _parse_match_recognize(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.MATCH_RECOGNIZE):

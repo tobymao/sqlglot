@@ -34,6 +34,8 @@ class TestParser(unittest.TestCase):
         parse_yif("select * from <<", 'postgres')
 
     def test_individual(self):
+        parse_yif("select asian, abbb from table_1 as tototot join table_2 as tatata join table_3 as momomo where <<", 'postgres')
+        parse_yif("select asian, << from table_1 as tototot join table_2 as tatata join table_3 as momomo", 'postgres')
         parse_yif("select asian, a<< from table_1", 'postgres')
         parse_yif("select asian from table_2222 <<", 'postgres')
         parse_yif("select asian from <<", 'postgres')

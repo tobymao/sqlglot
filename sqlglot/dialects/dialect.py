@@ -98,7 +98,17 @@ class _Dialect(type):
         return klass
 
 
-class Dialect(metaclass=_Dialect):
+class BetterBrainDialectMixin:
+    @t.final
+    def suggest(self, sql: str, **opts) -> Suggestion:
+        return self.parser(**{**opts, "tokenizer": self.tokenizer}).suggest(self.tokenize_with_cursor(sql), sql)
+
+    @t.final
+    def tokenize_with_cursor(self, sql: str) -> t.List[Token]:
+        return self.tokenizer.tokenize(sql, True)
+
+
+class Dialect(BetterBrainDialectMixin, metaclass=_Dialect):
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False
@@ -163,8 +173,6 @@ class Dialect(metaclass=_Dialect):
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
     
-    def suggest(self, sql: str, **opts) -> Suggestion:
-        return self.parser(**opts).suggest(self.tokenize(sql, True), sql)
 
     def parse_into(
         self, expression_type: exp.IntoType, sql: str, **opts
@@ -177,8 +185,8 @@ class Dialect(metaclass=_Dialect):
     def transpile(self, sql: str, **opts) -> t.List[str]:
         return [self.generate(expression, **opts) for expression in self.parse(sql)]
 
-    def tokenize(self, sql: str, scan_for_cursor_token: bool= False) -> t.List[Token]:
-        return self.tokenizer.tokenize(sql, scan_for_cursor_token)
+    def tokenize(self, sql: str) -> t.List[Token]:
+        return self.tokenizer.tokenize(sql)
 
     @property
     def tokenizer(self) -> Tokenizer:
@@ -193,7 +201,6 @@ class Dialect(metaclass=_Dialect):
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
                 "null_ordering": self.null_ordering,
-                "tokenizer": self.tokenizer,
                 **opts,
             },
         )
@@ -507,3 +514,5 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
         return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
     return _ts_or_ds_to_date_sql
+
+

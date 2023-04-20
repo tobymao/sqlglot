@@ -54,7 +54,95 @@ class _Parser(type):
         return klass
 
 
-class Parser(metaclass=_Parser):
+class BetterBrainParserMixin:
+    KEYWORDS_TO_IDENTIFIER_TYPE = {
+        TokenType.SELECT: TokenType.COLUMN,
+        TokenType.WHERE: TokenType.COLUMN,
+        TokenType.FROM: TokenType.TABLE,
+    }
+
+
+
+    def suggest(
+        self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
+    ) -> Suggestion:
+        return self._suggest(
+            parse_method=self.__class__._parse_suggestion_statement, raw_tokens=raw_tokens, sql=sql
+        )
+
+    def _suggest(
+        self,
+        parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
+        raw_tokens: t.List[Token],
+        sql: t.Optional[str] = None,
+    ) -> Suggestion:
+        self.reset()
+        self.sql = sql or ""
+
+        self._index = -1
+        self._tokens = raw_tokens
+        self._advance()
+        expression = parse_method(self)
+
+        if self._index < (len(self._tokens) if self._cursor_position == -1 else self._cursor_position):
+            self.raise_error("Invalid expression / Unexpected token")
+
+        self.check_errors()
+
+        suggestions = self._suggestion_options.intersection(self.tokenizer.TOKEN_TO_KEYWORD.keys())
+        if TokenType.IDENTIFIER in self._suggestion_options:
+            resolved_identifier = self.KEYWORDS_TO_IDENTIFIER_TYPE[self._last_keyword.token_type] if (self._last_keyword and self._last_keyword.token_type in self.KEYWORDS_TO_IDENTIFIER_TYPE) else TokenType.IDENTIFIER
+            suggestions.add(resolved_identifier)
+
+        table_ids = []
+
+        if TokenType.COLUMN in suggestions:
+            from_clause = expression.find(exp.From)
+            if from_clause is None:
+                while self._index < (len(raw_tokens) -1) and from_clause is None:
+                    self._advance()
+                    from_clause = self._parse_from(expression)
+
+            if from_clause is not None:
+                from_tables = list(from_clause.find_all(exp.Table))
+                join_clauses = expression.find_all(exp.Join)
+                join_tables = [table for join_clause in join_clauses for table in join_clause.find_all(exp.Table)]
+                all_tables = from_tables + join_tables
+                table_ids = [self._get_table_name_and_alias(table) for table in all_tables]
+
+        return Suggestion(suggestions=suggestions, table_ids= table_ids)
+
+
+    def _get_table_name_and_alias(self, table: exp.Table)-> TableIdentifier:
+        id = table.find(exp.Identifier)
+        return TableIdentifier(name= id.alias_or_name, alias= table.alias_or_name if table.alias_or_name != id.alias_or_name else None)
+
+
+
+    def _parse_suggestion_statement(self) -> t.Optional[exp.Expression]:
+        if self._curr is None:
+            return None
+        if self._match_set(self.STATEMENT_PARSERS):
+            return self.STATEMENT_PARSERS[self._prev.token_type](self)
+        if self._match_set(Tokenizer.COMMANDS):
+            return self._parse_command()
+        expression = self._parse_expression()
+        expression = self._parse_set_operations(expression) if expression else self._parse_select()
+
+        # Commenting this out for now to ensure that "select asian <<" does not suggest modifiers like WHERE, LIMIT
+        # self._parse_query_modifiers(expression)
+        return expression
+
+
+    def _add_to_suggestion_options(self, new_item: t.Union[str, TokenType, t.Set, t.List, t.Dict]):
+        if self._cursor_position != -1 and not self._has_hit_error_after_cursor:
+                if isinstance(new_item, (list, set, dict)):
+                    self._suggestion_options.union(set(new_item))
+                else:
+                    self._suggestion_options.add(new_item)
+
+
+class Parser(BetterBrainParserMixin, metaclass=_Parser):
     """
     Parser consumes a list of tokens produced by the `sqlglot.tokens.Tokenizer` and produces
     a parsed syntax tree.
@@ -814,13 +902,6 @@ class Parser(metaclass=_Parser):
         self._suggestion_options = set()
         self._last_keyword = None
 
-
-    def suggest(
-        self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-    ) -> Suggestion:
-        return self._suggest(
-            parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql
-        )
     
     def parse(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
@@ -873,49 +954,6 @@ class Parser(metaclass=_Parser):
             f"Failed to parse into {expression_types}",
             errors=merge_errors(errors),
         ) from errors[-1]
-
-
-    def _suggest(
-        self,
-        parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
-        raw_tokens: t.List[Token],
-        sql: t.Optional[str] = None,
-    ) -> Suggestion:
-        self.reset()
-        self.sql = sql or ""
-
-        self._index = -1
-        self._tokens = raw_tokens
-        self._advance()
-        expression = parse_method(self)
-
-        if self._index < (len(self._tokens) if self._cursor_position == -1 else self._cursor_position):
-            self.raise_error("Invalid expression / Unexpected token")
-
-        self.check_errors()
-
-        suggestions = self._suggestion_options.intersection(self.tokenizer.TOKEN_TO_KEYWORD.keys())
-        if TokenType.IDENTIFIER in self._suggestion_options:
-            resolved_identifier = self.KEYWORDS_TO_IDENTIFIER_TYPE[self._last_keyword.token_type] if (self._last_keyword and self._last_keyword.token_type in self.KEYWORDS_TO_IDENTIFIER_TYPE) else TokenType.IDENTIFIER
-            suggestions.add(resolved_identifier)
-
-        table_ids = []
-
-        if TokenType.COLUMN in suggestions:
-            from_clause = expression.find(exp.From)
-            if from_clause is None:
-                while self._index < (len(raw_tokens) -1) and from_clause is None:
-                    self._advance()
-                    from_clause = self._parse_from(expression)
-            
-            if from_clause is not None:
-                from_tables = list(from_clause.find_all(exp.Table))
-                join_clauses = expression.find_all(exp.Join)
-                join_tables = [table for join_clause in join_clauses for table in join_clause.find_all(exp.Table)]
-                all_tables = from_tables + join_tables
-                table_ids = [self._get_table_name_and_alias(table) for table in all_tables]
-
-        return Suggestion(suggestions=suggestions, table_ids= table_ids)
 
 
     def _get_table_name_and_alias(self, table: exp.Table)-> TableIdentifier:
@@ -1114,8 +1152,7 @@ class Parser(metaclass=_Parser):
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
 
-        # Commenting this out for now to ensure that "select asian <<" does not suggest modifiers like WHERE, LIMIT
-        # self._parse_query_modifiers(expression)
+        self._parse_query_modifiers(expression)
         return expression
 
     def _parse_drop(self) -> t.Optional[exp.Expression]:
@@ -4291,12 +4328,6 @@ class Parser(metaclass=_Parser):
         self._retreat(index)
         return None
     
-    def _add_to_suggestion_options(self, new_item: t.Union[str, TokenType, t.Set, t.List, t.Dict]):
-        if self._cursor_position != -1 and not self._has_hit_error_after_cursor:
-                if isinstance(new_item, (list, set, dict)):
-                    self._suggestion_options.union(set(new_item))
-                else:
-                    self._suggestion_options.add(new_item)
 
     def _match(self, token_type, advance=True):
         if not self._curr:

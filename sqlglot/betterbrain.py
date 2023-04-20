@@ -2,6 +2,9 @@ from dataclasses import dataclass
 import typing as t
 from sqlglot.tokens import TokenType
 
+
+
+
 @dataclass
 class TableIdentifier:
     name: str

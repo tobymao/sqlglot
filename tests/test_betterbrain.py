@@ -61,6 +61,8 @@ class TestBetterBrain(unittest.TestCase):
             sql_suggest("select")
         with self.assertRaises(ParseError) as ctx:
             sql_suggest("select col_1, from table_1", 'postgres')
+        with self.assertRaises(ParseError) as ctx:
+            sql_suggest("select col_1 where << from table_1", 'postgres')
 
     def test_individual(self):
         suggestion = sql_suggest("select asian, abbb from table_1 as tototot join table_2 as tatata join table_3 as momomo where <<", 'postgres')

@@ -39,6 +39,8 @@ class TestTeradata(Validator):
             write={"teradata": "CREATE OR REPLACE VIEW a AS (SELECT b FROM c)"},
         )
 
+        self.validate_identity("CREATE VOLATILE TABLE a")
+
     def test_insert(self):
         self.validate_all(
             "INS INTO x SELECT * FROM y", write={"teradata": "INSERT INTO x SELECT * FROM y"}

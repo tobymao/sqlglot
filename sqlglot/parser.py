@@ -563,7 +563,7 @@ class Parser(metaclass=_Parser):
         ),
         "DEFINER": lambda self: self._parse_definer(),
         "DETERMINISTIC": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
+            exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
         "DISTKEY": lambda self: self._parse_distkey(),
         "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
@@ -574,7 +574,7 @@ class Parser(metaclass=_Parser):
         "FREESPACE": lambda self: self._parse_freespace(),
         "GLOBAL": lambda self: self._parse_temporary(global_=True),
         "IMMUTABLE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
+            exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
         "JOURNAL": lambda self: self._parse_journal(
             no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
@@ -607,7 +607,7 @@ class Parser(metaclass=_Parser):
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SORTKEY": lambda self: self._parse_sortkey(),
         "STABLE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("STABLE")
+            exp.StabilityProperty, this=exp.Literal.string("STABLE")
         ),
         "STORED": lambda self: self._parse_stored(),
         "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
@@ -616,7 +616,7 @@ class Parser(metaclass=_Parser):
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
         "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         "VOLATILE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
+            exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
         ),
         "WITH": lambda self: self._parse_with_property(),
     }
@@ -1062,7 +1062,6 @@ class Parser(metaclass=_Parser):
             TokenType.OR, TokenType.REPLACE
         )
         unique = self._match(TokenType.UNIQUE)
-        volatile = self._match(TokenType.VOLATILE)
 
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
@@ -1171,7 +1170,6 @@ class Parser(metaclass=_Parser):
             kind=create_token.text,
             replace=replace,
             unique=unique,
-            volatile=volatile,
             expression=expression,
             exists=exists,
             properties=properties,
@@ -1194,6 +1192,13 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_property(self) -> t.Optional[exp.Expression]:
+        if self._prev.token_type in (
+            TokenType.CREATE,
+            TokenType.REPLACE,
+            TokenType.UNIQUE,
+        ) and self._match(TokenType.VOLATILE):
+            return exp.VolatileProperty()
+
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 

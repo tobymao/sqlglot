@@ -76,7 +76,8 @@ class Generator:
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.TemporaryProperty: lambda self, e: f"{'GLOBAL ' if e.args.get('global_') else ''}TEMPORARY",
         exp.TransientProperty: lambda self, e: "TRANSIENT",
-        exp.VolatilityProperty: lambda self, e: e.name,
+        exp.StabilityProperty: lambda self, e: e.name,
+        exp.VolatileProperty: lambda self, e: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda self, e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
@@ -200,10 +201,11 @@ class Generator:
         exp.SetProperty: exp.Properties.Location.POST_CREATE,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
+        exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
-        exp.VolatilityProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
@@ -652,7 +654,6 @@ class Generator:
 
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
-        volatile = " VOLATILE" if expression.args.get("volatile") else ""
 
         postcreate_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_CREATE):
@@ -663,7 +664,7 @@ class Generator:
                 wrapped=False,
             )
 
-        modifiers = "".join((replace, unique, volatile, postcreate_props_sql))
+        modifiers = "".join((replace, unique, postcreate_props_sql))
 
         postexpression_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):

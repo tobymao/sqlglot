@@ -198,7 +198,7 @@ class BigQuery(Dialect):
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,  # type: ignore
             "NOT DETERMINISTIC": lambda self: self.expression(
-                exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
+                exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
             ),
         }
 
@@ -244,7 +244,7 @@ class BigQuery(Dialect):
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Create: _create_sql,
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
-            exp.VolatilityProperty: lambda self, e: f"DETERMINISTIC"
+            exp.StabilityProperty: lambda self, e: f"DETERMINISTIC"
             if e.name == "IMMUTABLE"
             else "NOT DETERMINISTIC",
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),

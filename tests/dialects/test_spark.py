@@ -215,6 +215,13 @@ TBLPROPERTIES (
         self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
+            "TIMESTAMP(x)",
+            write={
+                "": "CAST(x AS TIMESTAMP)",
+                "spark": "CAST(x AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
             "CAST(x AS TIMESTAMP)", read={"trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)"}
         )
         self.validate_all(

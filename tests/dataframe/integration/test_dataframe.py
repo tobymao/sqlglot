@@ -276,6 +276,7 @@ class TestDataframeFunc(DataFrameValidator):
             self.df_spark_employee.store_id,
             self.df_spark_store.store_name,
             self.df_spark_store["num_sales"],
+            F.lit("literal_value"),
         )
         dfs_joined = self.df_sqlglot_employee.join(
             self.df_sqlglot_store,
@@ -289,6 +290,7 @@ class TestDataframeFunc(DataFrameValidator):
             self.df_sqlglot_employee.store_id,
             self.df_sqlglot_store.store_name,
             self.df_sqlglot_store["num_sales"],
+            SF.lit("literal_value"),
         )
         self.compare_spark_with_sqlglot(df_joined, dfs_joined)
 

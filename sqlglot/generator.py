@@ -208,7 +208,7 @@ class Generator:
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
-    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where)
+    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
@@ -713,6 +713,9 @@ class Generator:
         return self.sql(expression, "this")
 
     def hexstring_sql(self, expression: exp.HexString) -> str:
+        return self.sql(expression, "this")
+
+    def bytestring_sql(self, expression: exp.ByteString) -> str:
         return self.sql(expression, "this")
 
     def datatype_sql(self, expression: exp.DataType) -> str:

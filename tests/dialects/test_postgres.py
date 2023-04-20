@@ -106,6 +106,12 @@ class TestPostgres(Validator):
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+        self.validate_all(
+            "e'x'",
+            write={
+                "mysql": "x",
+            },
+        )
         self.validate_identity("""SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)""")
         self.validate_identity(
             "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"

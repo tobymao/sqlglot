@@ -1380,6 +1380,7 @@ class Join(Expression):
         "kind": False,
         "using": False,
         "natural": False,
+        "hint": False,
     }
 
     @property

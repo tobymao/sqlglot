@@ -108,6 +108,8 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_USER: exp.CurrentUser,
     }
 
+    JOIN_HINTS = set()  # type: set[TokenType]
+
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
         TokenType.MAP,
@@ -306,6 +308,7 @@ class Parser(metaclass=_Parser):
         TokenType.ROW,
         TokenType.UNNEST,
         TokenType.VAR,
+        TokenType.HASH,
         TokenType.LEFT,
         TokenType.RIGHT,
         TokenType.DATE,
@@ -1867,7 +1870,10 @@ class Parser(metaclass=_Parser):
             join = self._parse_join()
             comma = None if table else self._match(TokenType.COMMA)
             if lateral:
-                this.append("laterals", lateral)
+                if isinstance(lateral, exp.Join):
+                    this.append("joins", lateral)
+                else:
+                    this.append("laterals", lateral)
             if join:
                 this.append("joins", join)
             if comma:
@@ -2053,9 +2059,15 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Expression]:
+        index = self._index
         natural, side, kind = self._parse_join_side_and_kind()
 
+        hint = None
+        if self._match_set(self.JOIN_HINTS):
+            hint = exp.Hint(this=self._prev.text)
+
         if not skip_join_token and not self._match(TokenType.JOIN):
+            self._retreat(index)
             return None
 
         kwargs: t.Dict[
@@ -2068,6 +2080,8 @@ class Parser(metaclass=_Parser):
             kwargs["side"] = side.text
         if kind:
             kwargs["kind"] = kind.text
+        if hint:
+            kwargs["hint"] = hint
 
         if self._match(TokenType.ON):
             kwargs["on"] = self._parse_conjunction()

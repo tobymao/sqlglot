@@ -42,6 +42,7 @@ class TokenType(AutoName):
     ARROW = auto()
     DARROW = auto()
     FARROW = auto()
+    HASHTAG = auto()
     HASH = auto()
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
@@ -225,6 +226,7 @@ class TokenType(AutoName):
     LIMIT = auto()
     LOAD_DATA = auto()
     LOCAL = auto()
+    LOOP = auto()
     MAP = auto()
     MATCH_RECOGNIZE = auto()
     MATERIALIZED = auto()
@@ -268,6 +270,7 @@ class TokenType(AutoName):
     RESPECT_NULLS = auto()
     RETURNING = auto()
     REFERENCES = auto()
+    REMOTE = auto()
     RIGHT = auto()
     RLIKE = auto()
     ROLLBACK = auto()
@@ -439,7 +442,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "'": TokenType.QUOTE,
         "`": TokenType.IDENTIFIER,
         '"': TokenType.IDENTIFIER,
-        "#": TokenType.HASH,
+        "#": TokenType.HASHTAG,
     }
 
     VAR_SINGLE_TOKENS: t.Set[str] = set()
@@ -550,6 +553,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
+        "HASH": TokenType.HASH,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
         "IGNORE NULLS": TokenType.IGNORE_NULLS,
@@ -572,6 +576,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIMIT": TokenType.LIMIT,
         "LOAD DATA": TokenType.LOAD_DATA,
         "LOCAL": TokenType.LOCAL,
+        "LOOP": TokenType.LOOP,
         "MATERIALIZED": TokenType.MATERIALIZED,
         "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,
@@ -612,6 +617,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "REPLACE": TokenType.REPLACE,
         "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "REFERENCES": TokenType.REFERENCES,
+        "REMOTE": TokenType.REMOTE,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
         "ROLLBACK": TokenType.ROLLBACK,

@@ -270,7 +270,7 @@ class Postgres(Dialect):
 
         BITWISE = {
             **parser.Parser.BITWISE,  # type: ignore
-            TokenType.HASH: exp.BitwiseXor,
+            TokenType.HASHTAG: exp.BitwiseXor,
         }
 
         FACTOR = {

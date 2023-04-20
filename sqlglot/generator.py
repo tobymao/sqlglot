@@ -730,10 +730,11 @@ class Generator:
                 if expression.args.get("values") is not None:
                     delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")
                     values = f"{delimiters[0]}{self.expressions(expression, key='values')}{delimiters[1]}"
-            elif expression.args.get("format"):
-                nested = f" FORMAT {self.sql(expression, 'format')}"
             else:
                 nested = f"({interior})"
+        else:
+            if expression.args.get("format"):
+                nested = f" FORMAT {self.sql(expression, 'format')}"
 
         return f"{type_sql}{nested}{values}"
 

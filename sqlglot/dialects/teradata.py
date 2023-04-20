@@ -161,13 +161,3 @@ class Teradata(Dialect):
             each_sql = f" EACH {each_sql}" if each_sql else ""
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"
-
-        def cast_sql(self, expression: exp.Cast) -> str:
-            if (
-                isinstance(expression, exp.Cast)
-                and isinstance(expression.to, exp.DataType)
-                and expression.to.is_type(exp.DataType.Type.DATE)
-                and expression.to.args.get("format")
-            ):
-                return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')} FORMAT {self.sql(expression.to, 'format')})"
-            return super().cast_sql(expression)

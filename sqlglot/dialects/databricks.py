@@ -30,11 +30,7 @@ class Databricks(Spark):
         PARAMETER_TOKEN = "$"
 
         def cast_sql(self, expression: exp.Cast) -> str:
-            if (
-                isinstance(expression, exp.Cast)
-                and expression.to.is_type(exp.DataType.Type.DATE)
-                and expression.to.args.get("format")
-            ):
+            if expression.to.is_type(exp.DataType.Type.DATE) and expression.to.args.get("format"):
                 return self.func("DATE_FORMAT", expression.this, expression.to.args.get("format"))
 
             return super(Spark.Generator, self).cast_sql(expression)

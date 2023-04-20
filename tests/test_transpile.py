@@ -234,6 +234,27 @@ WHERE
   foo /* comment 1 */ AND bar AND bla /* comment 2 */""",
             pretty=True,
         )
+        self.validate(
+            """
+            -- test
+            WITH v AS (
+              SELECT
+                1 AS literal
+            )
+            SELECT
+              *
+            FROM v
+            """,
+            """/* test */
+WITH v AS (
+  SELECT
+    1 AS literal
+)
+SELECT
+  *
+FROM v""",
+            pretty=True,
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

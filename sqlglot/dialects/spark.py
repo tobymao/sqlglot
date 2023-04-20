@@ -94,6 +94,10 @@ class Spark(Hive):
                 unit=exp.var(seq_get(args, 0)),
             ),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
+            "TIMESTAMP": lambda args: exp.Cast(
+                this=seq_get(args, 0),
+                to="timestamp",
+            ),
         }
 
         FUNCTION_PARSERS = {

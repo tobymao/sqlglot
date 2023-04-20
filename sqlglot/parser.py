@@ -1804,6 +1804,7 @@ class Parser(metaclass=_Parser):
         if not skip_with_token and not self._match(TokenType.WITH):
             return None
 
+        comments = self._prev_comments
         recursive = self._match(TokenType.RECURSIVE)
 
         expressions = []
@@ -1815,7 +1816,9 @@ class Parser(metaclass=_Parser):
             else:
                 self._match(TokenType.WITH)
 
-        return self.expression(exp.With, expressions=expressions, recursive=recursive)
+        return self.expression(
+            exp.With, comments=comments, expressions=expressions, recursive=recursive
+        )
 
     def _parse_cte(self) -> exp.Expression:
         alias = self._parse_table_alias()

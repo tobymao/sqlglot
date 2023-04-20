@@ -78,5 +78,8 @@ class TestTeradata(Validator):
             write={
                 "teradata": "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",
                 "databricks": "DATE_FORMAT('1992-01', 'YYYY-DD')",
+                "mysql": "DATE_FORMAT('1992-01', 'YYYY-DD')",
+                "spark": "DATE_FORMAT('1992-01', 'YYYY-DD')",
+                "": "CAST('1992-01' AS DATE)",
             },
         )

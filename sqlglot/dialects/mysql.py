@@ -477,3 +477,9 @@ class MySQL(Dialect):
                 limit_offset = f"{offset}, {limit}" if offset else limit
                 return f" LIMIT {limit_offset}"
             return ""
+
+        def cast_sql(self, expression: exp.Cast) -> str:
+            if expression.to.is_type(exp.DataType.Type.DATE) and expression.to.args.get("format"):
+                return self.func("DATE_FORMAT", expression.this, expression.to.args.get("format"))
+
+            return super().cast_sql(expression)

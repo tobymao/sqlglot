@@ -179,8 +179,11 @@ class Spark(Hive):
             ):
                 schema = f"'{self.sql(expression, 'to')}'"
                 return self.func("FROM_JSON", expression.this.this, schema)
+
             if expression.to.is_type(exp.DataType.Type.JSON):
                 return self.func("TO_JSON", expression.this)
+            elif expression.to.is_type(exp.DataType.Type.DATE) and expression.to.args.get("format"):
+                return self.func("DATE_FORMAT", expression.this, expression.to.args.get("format"))
 
             return super(Spark.Generator, self).cast_sql(expression)
 

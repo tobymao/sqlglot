@@ -4,6 +4,7 @@ import typing as t
 from enum import Enum
 
 from sqlglot import exp
+from sqlglot.betterbrain import Suggestion
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
@@ -162,8 +163,8 @@ class Dialect(metaclass=_Dialect):
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
     
-    def parse_yif(self, sql: str, **opts) -> t.Optional[exp.Expression]:
-        return self.parser(**opts).parse_yif(self.tokenize(sql, True), sql)
+    def suggest(self, sql: str, **opts) -> Suggestion:
+        return self.parser(**opts).suggest(self.tokenize(sql, True), sql)
 
     def parse_into(
         self, expression_type: exp.IntoType, sql: str, **opts

@@ -15,6 +15,7 @@ from sqlglot.helper import (
 )
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
+from sqlglot.betterbrain import Suggestion, TableIdentifier
 
 logger = logging.getLogger("sqlglot")
 
@@ -814,10 +815,10 @@ class Parser(metaclass=_Parser):
         self._last_keyword = None
 
 
-    def parse_yif(
+    def suggest(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-    ) -> t.Optional[exp.Expression]:
-        return self._parse_single_yif(
+    ) -> Suggestion:
+        return self._suggest(
             parse_method=self.__class__._parse_statement, raw_tokens=raw_tokens, sql=sql
         )
     
@@ -874,12 +875,12 @@ class Parser(metaclass=_Parser):
         ) from errors[-1]
 
 
-    def _parse_single_yif(
+    def _suggest(
         self,
         parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
         raw_tokens: t.List[Token],
         sql: t.Optional[str] = None,
-    ) -> t.Optional[exp.Expression]:
+    ) -> Suggestion:
         self.reset()
         self.sql = sql or ""
 
@@ -898,6 +899,8 @@ class Parser(metaclass=_Parser):
             resolved_identifier = self.KEYWORDS_TO_IDENTIFIER_TYPE[self._last_keyword.token_type] if (self._last_keyword and self._last_keyword.token_type in self.KEYWORDS_TO_IDENTIFIER_TYPE) else TokenType.IDENTIFIER
             suggestions.add(resolved_identifier)
 
+        table_ids = []
+
         if TokenType.COLUMN in suggestions:
             from_clause = expression.find(exp.From)
             if from_clause is None:
@@ -910,14 +913,14 @@ class Parser(metaclass=_Parser):
                 join_clauses = expression.find_all(exp.Join)
                 join_tables = [table for join_clause in join_clauses for table in join_clause.find_all(exp.Table)]
                 all_tables = from_tables + join_tables
-                table_names = [self._get_table_name_and_alias(table) for table in all_tables]
+                table_ids = [self._get_table_name_and_alias(table) for table in all_tables]
 
-        return expression
+        return Suggestion(suggestions=suggestions, table_ids= table_ids)
 
 
-    def _get_table_name_and_alias(self, table: exp.Table)-> t.Tuple[str]:
+    def _get_table_name_and_alias(self, table: exp.Table)-> TableIdentifier:
         id = table.find(exp.Identifier)
-        return (id.alias_or_name, table.alias_or_name if table.alias_or_name != id.alias_or_name else None)
+        return TableIdentifier(name= id.alias_or_name, alias= table.alias_or_name if table.alias_or_name != id.alias_or_name else None)
 
     def _parse(
         self,

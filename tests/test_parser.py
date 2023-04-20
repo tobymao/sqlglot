@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from sqlglot import Parser, exp, parse, parse_one, parse_yif
+from sqlglot import Parser, exp, parse, parse_one
 from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import assert_logger_contains
 
@@ -15,31 +15,6 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
-
-    def test_not_working(self):
-        with self.assertRaises(ParseError) as ctx:
-            parse_yif("select * from <>")
-        with self.assertRaises(ParseError) as ctx:
-            parse_yif("select")
-        with self.assertRaises(ParseError) as ctx:
-            parse_yif("select col_1, from table_1", 'postgres')
-
-    def test_working(self):
-        parse_yif("select col_1, sfd<< from table_1", 'postgres')
-        parse_yif("select col_1 from table_1 join table_2", 'postgres')
-        parse_yif("select col_1, col_2 from table_1", 'postgres')
-        parse_yif("select << from table_1", 'postgres')
-        parse_yif("select col_1 sfd<< a a a a a a a a a a", 'postgres')
-        parse_yif("select col_1 sfd<< limit where from", 'postgres')
-        parse_yif("select * from <<", 'postgres')
-
-    def test_individual(self):
-        parse_yif("select asian, abbb from table_1 as tototot join table_2 as tatata join table_3 as momomo where <<", 'postgres')
-        parse_yif("select asian, << from table_1 as tototot join table_2 as tatata join table_3 as momomo", 'postgres')
-        parse_yif("select asian, a<< from table_1", 'postgres')
-        parse_yif("select asian from table_2222 <<", 'postgres')
-        parse_yif("select asian from <<", 'postgres')
-        parse_yif("select asian <<", 'postgres')
 
     def test_parse_into_error(self):
         expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>]"

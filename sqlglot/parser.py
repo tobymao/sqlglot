@@ -108,7 +108,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_USER: exp.CurrentUser,
     }
 
-    JOIN_HINTS = set()  # type: set[TokenType]
+    JOIN_HINTS: t.Set[str] = set()
 
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
@@ -2063,7 +2063,7 @@ class Parser(metaclass=_Parser):
         natural, side, kind = self._parse_join_side_and_kind()
 
         hint = None
-        if self._match_set(self.JOIN_HINTS):
+        if self._match_texts(self.JOIN_HINTS):
             hint = exp.Hint(this=self._prev.text)
 
         if not skip_join_token and not self._match(TokenType.JOIN):

@@ -301,10 +301,10 @@ class TSQL(Dialect):
         }
 
         JOIN_HINTS = {
-            TokenType.LOOP,
-            TokenType.HASH,
-            TokenType.MERGE,
-            TokenType.REMOTE,
+            "LOOP",
+            "HASH",
+            "MERGE",
+            "REMOTE",
         }
 
         VAR_LENGTH_DATATYPES = {

@@ -126,6 +126,9 @@ class Generator:
     # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
+    # Whether or not DATE datatype formats (e.g., "CAST('01/1999' as DATE FORMAT 'yyyy-mm')") are supported
+    DATE_DATATYPE_FORMAT = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -732,6 +735,9 @@ class Generator:
                     values = f"{delimiters[0]}{self.expressions(expression, key='values')}{delimiters[1]}"
             else:
                 nested = f"({interior})"
+        else:
+            if self.DATE_DATATYPE_FORMAT and expression.args.get("format"):
+                nested = f" FORMAT {self.sql(expression, 'format')}"
 
         return f"{type_sql}{nested}{values}"
 

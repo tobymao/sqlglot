@@ -71,3 +71,15 @@ class TestTeradata(Validator):
         )
 
         self.validate_identity("CREATE TABLE z (a SYSUDTLIB.INT)")
+
+    def test_cast(self):
+        self.validate_all(
+            "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",
+            write={
+                "teradata": "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",
+                "databricks": "DATE_FORMAT('1992-01', 'YYYY-DD')",
+                "mysql": "DATE_FORMAT('1992-01', 'YYYY-DD')",
+                "spark": "DATE_FORMAT('1992-01', 'YYYY-DD')",
+                "": "CAST('1992-01' AS DATE)",
+            },
+        )

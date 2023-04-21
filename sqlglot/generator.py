@@ -205,7 +205,7 @@ class Generator:
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
-        exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }

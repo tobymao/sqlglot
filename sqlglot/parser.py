@@ -47,8 +47,8 @@ def binary_range_parser(
 
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
-        if attrs["__qualname__"] != "Parser" and clsname != "BetterBrainParserMixin":
-            bases = (BetterBrainParserMixin,)
+        if attrs["__qualname__"] != "Parser" and clsname != "BetterBrainParser":
+            bases = (BetterBrainParser,)
         klass = super().__new__(cls, clsname, bases, attrs)
         klass._show_trie = new_trie(key.split(" ") for key in klass.SHOW_PARSERS)
         klass._set_trie = new_trie(key.split(" ") for key in klass.SET_PARSERS)
@@ -4303,7 +4303,7 @@ class Parser(metaclass=_Parser):
         return node
 
 
-class BetterBrainParserMixin(Parser):
+class BetterBrainParser(Parser):
     KEYWORDS_TO_IDENTIFIER_TYPE = {
         TokenType.SELECT: TokenType.COLUMN,
         TokenType.WHERE: TokenType.COLUMN,

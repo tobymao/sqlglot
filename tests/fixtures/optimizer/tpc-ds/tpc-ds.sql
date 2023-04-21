@@ -2500,7 +2500,7 @@ JOIN "date_dim" AS "date_dim"
   ON "catalog_sales"."cs_ship_date_sk" = "date_dim"."d_date_sk"
   AND "date_dim"."d_date" >= '2002-3-01'
   AND CAST("date_dim"."d_date" AS DATE) <= (
-    CAST('2002-3-01' AS DATE) + INTERVAL '60' "day"
+    CAST('2002-3-01' AS DATE) + INTERVAL '60' day
   )
 JOIN "customer_address" AS "customer_address"
   ON "catalog_sales"."cs_ship_addr_sk" = "customer_address"."ca_address_sk"
@@ -9420,7 +9420,7 @@ JOIN "date_dim" AS "date_dim_2"
   AND "date_dim_2"."d_year" = 2002
 JOIN "date_dim" AS "date_dim_3"
   ON "catalog_sales"."cs_ship_date_sk" = "date_dim_3"."d_date_sk"
-  AND "date_dim_3"."d_date" > CONCAT("date_dim_2"."d_date", INTERVAL '5' "day")
+  AND "date_dim_3"."d_date" > CONCAT("date_dim_2"."d_date", INTERVAL '5' day)
 LEFT JOIN "promotion" AS "promotion"
   ON "catalog_sales"."cs_promo_sk" = "promotion"."p_promo_sk"
 LEFT JOIN "catalog_returns" AS "catalog_returns"
@@ -12200,7 +12200,7 @@ JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date" >= '2000-3-01'
   AND "web_sales"."ws_ship_date_sk" = "date_dim"."d_date_sk"
   AND CAST("date_dim"."d_date" AS DATE) <= (
-    CAST('2000-3-01' AS DATE) + INTERVAL '60' "day"
+    CAST('2000-3-01' AS DATE) + INTERVAL '60' day
   )
 JOIN "customer_address" AS "customer_address"
   ON "customer_address"."ca_state" = 'MT'
@@ -12295,7 +12295,7 @@ JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date" >= '2000-4-01'
   AND "web_sales"."ws_ship_date_sk" = "date_dim"."d_date_sk"
   AND CAST("date_dim"."d_date" AS DATE) <= (
-    CAST('2000-4-01' AS DATE) + INTERVAL '60' "day"
+    CAST('2000-4-01' AS DATE) + INTERVAL '60' day
   )
 JOIN "customer_address" AS "customer_address"
   ON "customer_address"."ca_state" = 'IN'

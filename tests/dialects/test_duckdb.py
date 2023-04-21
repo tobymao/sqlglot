@@ -251,7 +251,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "POWER(CAST(2 AS SMALLINT), 3)",
+            "POWER(TRY_CAST(2 AS SMALLINT), 3)",
             read={
                 "hive": "POW(2S, 3)",
                 "spark": "POW(2S, 3)",
@@ -420,7 +420,7 @@ class TestDuckDB(Validator):
             "CAST(x AS DATE) + INTERVAL (7 * -1) DAY", read={"spark": "DATE_SUB(x, 7)"}
         )
         self.validate_all(
-            "CAST(1 AS DOUBLE)",
+            "TRY_CAST(1 AS DOUBLE)",
             read={
                 "hive": "1d",
                 "spark": "1d",

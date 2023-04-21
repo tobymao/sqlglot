@@ -116,8 +116,6 @@ class Teradata(Dialect):
             return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 
     class Generator(generator.Generator):
-        DATE_DATATYPE_FORMAT = True
-
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",

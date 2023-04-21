@@ -2807,6 +2807,7 @@ class DataType(Expression):
         "nested": False,
         "values": False,
         "prefix": False,
+        "format": False,
     }
 
     class Type(AutoName):

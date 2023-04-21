@@ -7,7 +7,7 @@ from sqlglot import exp
 from sqlglot.betterbrain import Suggestion
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
-from sqlglot.parser import Parser
+from sqlglot.parser import BetterBrainParserMixin, Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer
 from sqlglot.trie import new_trie
@@ -53,6 +53,19 @@ class _Dialect(type):
         return cls.classes.get(key, default)
 
     def __new__(cls, clsname, bases, attrs):
+        new_attrs = {}
+        for attr_name, attr_value in attrs.items():
+            if isinstance(attr_value, type) and attr_name == "Parser":
+                new_attrs[attr_name] = cls(
+                    attr_name,
+                    (*attr_value.__bases__, BetterBrainParserMixin),
+                    dict(attr_value.__dict__)
+                )
+
+        for attr_name, attr_value in new_attrs.items():
+            attrs[attr_name] = attr_value
+
+        bases = (*bases, BetterBrainDialectMixin)
         klass = super().__new__(cls, clsname, bases, attrs)
         enum = Dialects.__members__.get(clsname.upper())
         cls.classes[enum.value if enum is not None else clsname.lower()] = klass
@@ -108,7 +121,7 @@ class BetterBrainDialectMixin:
         return self.tokenizer.tokenize(sql, True)
 
 
-class Dialect(BetterBrainDialectMixin, metaclass=_Dialect):
+class Dialect(metaclass=_Dialect):
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False

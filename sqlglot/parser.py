@@ -2579,9 +2579,7 @@ class Parser(metaclass=_Parser):
             return None
 
         this = self._parse_primary()
-        unit = self._parse_function() or self._parse_id_var(
-            any_token=False, tokens=self.INTERVAL_VARS
-        )
+        unit = self._parse_function() or self._parse_var()
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
@@ -2593,7 +2591,7 @@ class Parser(metaclass=_Parser):
             parts = this.name.split()
             if not unit and len(parts) <= 2:
                 this = exp.Literal.string(seq_get(parts, 0))
-                unit = exp.to_identifier(seq_get(parts, 1))
+                unit = self.expression(exp.Var, this=seq_get(parts, 1))
 
         return self.expression(exp.Interval, this=this, unit=unit)
 

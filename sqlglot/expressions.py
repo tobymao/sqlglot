@@ -1392,6 +1392,10 @@ class Join(Expression):
         return self.text("side").upper()
 
     @property
+    def hint(self):
+        return self.text("hint").upper()
+
+    @property
     def alias_or_name(self):
         return self.this.alias_or_name
 

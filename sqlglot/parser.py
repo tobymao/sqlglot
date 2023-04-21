@@ -2063,7 +2063,7 @@ class Parser(metaclass=_Parser):
 
         hint = None
         if self._match_texts(self.JOIN_HINTS):
-            hint = exp.Hint(this=self._prev.text)
+            hint = self._prev.text
 
         if not skip_join_token and not self._match(TokenType.JOIN):
             self._retreat(index)

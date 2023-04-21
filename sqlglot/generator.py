@@ -208,6 +208,8 @@ class Generator:
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
+    WITH_JOIN_HINT = False
+
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
@@ -1198,6 +1200,7 @@ class Generator:
                     "NATURAL" if expression.args.get("natural") else None,
                     expression.side,
                     expression.kind,
+                    expression.hint if self.WITH_JOIN_HINT else None,
                     "JOIN",
                 )
                 if op

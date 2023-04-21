@@ -663,3 +663,4 @@ WHERE
             "SELECT x FROM a INNER MERGE JOIN b ON b.id = a.id",
             write={"spark": "SELECT x FROM a INNER JOIN b ON b.id = a.id"},
         )
+        self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")

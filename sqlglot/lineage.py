@@ -103,14 +103,18 @@ def lineage(
                 select = maybe_select
                 break
             elif isinstance(maybe_select, exp.Star):
-                # If we get a `*`, make a note but keep moving.
+                # If we get a `*`, make a note but keep moving. This means we will prefer
+                # an exact match if both a `*` and an exact match exist:
+                #   "x", WITH foo AS (SELECT *, x FROM bar) SELECT x from foo
+                #     => SELECT x FROM bar
                 select = maybe_select
         if not select:
             raise ValueError(f"Could not find {column_name} in {scope.expression.sql()}")
 
         # For better ergonomics in our node labels, replace the full select with a version that
         # has only the column we care about.
-        #   "x", SELECT x, y FROM foo => "x", SELECT x FROM foo
+        #   "x", SELECT x, y FROM foo
+        #     => "x", SELECT x FROM foo
         source = optimize(scope.expression.select(select, append=False), schema=schema, rules=rules)
         select = source.selects[0]
 

@@ -94,7 +94,17 @@ def lineage(
                 )
             return node
 
-        select = next(select for select in scope.selects if select.alias_or_name == column_name)
+        select = None
+        for maybe_select in scope.selects:
+            if maybe_select.alias_or_name == column_name:
+                # If we get an exact match, stop searching.
+                select = maybe_select
+                break
+            elif isinstance(maybe_select, exp.Star):
+                # If we get a `*`, make a note but keep moving.
+                select = maybe_select
+        if not select:
+            raise ValueError(f"Could not find {column_name} in {scope.expression.sql()}")
         source = optimize(scope.expression.select(select, append=False), schema=schema, rules=rules)
         select = source.selects[0]
 

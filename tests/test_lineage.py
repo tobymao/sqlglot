@@ -108,3 +108,9 @@ class TestLineage(unittest.TestCase):
             "SELECT * FROM x AS x",
         )
         self.assertEqual(downstream.alias, "")
+
+    def test_lineage_external_col(self) -> None:
+        lineage(
+            "a",
+            "WITH y AS (SELECT * FROM x) SELECT a FROM y JOIN z USING (uid)",
+        )

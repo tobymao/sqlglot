@@ -1914,14 +1914,13 @@ class Parser(metaclass=_Parser):
             exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
         )
     
-    def _parse_from(self, parent_exp: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
+    def _parse_from(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.FROM):
             return None
 
         return self.expression(
             exp.From, comments=self._prev_comments, expressions=self._parse_csv(self._parse_table)
         )
-
 
     def _parse_match_recognize(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.MATCH_RECOGNIZE):
@@ -3833,7 +3832,8 @@ class Parser(metaclass=_Parser):
         return self._parse_csv(self._parse_expression)
 
     def _parse_csv(
-        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA) -> t.List[t.Optional[exp.Expression]]:
+        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
+    ) -> t.List[t.Optional[exp.Expression]]:
         parse_result = parse_method()
         items = [parse_result] if parse_result is not None else []
 
@@ -4217,6 +4217,7 @@ class Parser(metaclass=_Parser):
             if advance:
                 self._advance()
             return True
+
         return None
 
     def _match_set(self, types, advance=True):
@@ -4227,6 +4228,7 @@ class Parser(metaclass=_Parser):
             if advance:
                 self._advance()
             return True
+
         return None
 
     def _match_pair(self, token_type_a, token_type_b, advance=True):
@@ -4237,6 +4239,7 @@ class Parser(metaclass=_Parser):
             if advance:
                 self._advance(2)
             return True
+
         return None
 
     def _match_l_paren(self, expression=None):
@@ -4309,7 +4312,6 @@ class BetterBrainParser(Parser):
         TokenType.WHERE: TokenType.COLUMN,
         TokenType.FROM: TokenType.TABLE,
     }
-
 
 
     def suggest(

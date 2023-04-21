@@ -40,9 +40,6 @@ class Dialects(str, Enum):
     TERADATA = "teradata"
 
 
-
-
-
 class _Dialect(type):
     classes: t.Dict[str, t.Type[Dialect]] = {}
 
@@ -168,7 +165,6 @@ class Dialect(metaclass=_Dialect):
 
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
-    
 
     def parse_into(
         self, expression_type: exp.IntoType, sql: str, **opts

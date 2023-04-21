@@ -369,6 +369,8 @@ class Token:
 
 class _Tokenizer(type):
     def __new__(cls, clsname, bases, attrs):  # type: ignore
+        if attrs["__qualname__"] != "Tokenizer" and clsname != "BetterBrainTokenizer":
+            bases = (BetterBrainTokenizer,)
         klass = super().__new__(cls, clsname, bases, attrs)
 
         klass._QUOTES = {
@@ -795,33 +797,30 @@ class Tokenizer(metaclass=_Tokenizer):
         self._prev_token_comments: t.List[str] = []
         self._prev_token_type = None
 
-    def tokenize(self, sql: str, scan_for_cursor_token: bool= False) -> t.List[Token]:
+    def tokenize(self, sql: str) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
         self.reset()
         self.sql = sql
         self.size = len(sql)
-        self._scan(scan_for_cursor_token=scan_for_cursor_token)
+        self._scan()
         return self.tokens
 
-    def _scan(self, until: t.Optional[t.Callable] = None, scan_for_cursor_token: bool= False) -> None:
+    def _scan(self, until: t.Optional[t.Callable] = None) -> None:
         while self.size and not self._end:
             self._start = self._current
             self._advance()
-
             if self._char is None:
                 break
-
             if self._char not in self.WHITE_SPACE:
                 if self._char.isdigit():
                     self._scan_number()
                 elif self._char in self._IDENTIFIERS:
                     self._scan_identifier(self._IDENTIFIERS[self._char])
                 else:
-                    self._scan_keywords(scan_for_cursor_token)
+                    self._scan_keywords()
 
             if until and until():
                 break
-
         if self.tokens:
             self.tokens[-1].comments.extend(self._comments)
 
@@ -883,7 +882,7 @@ class Tokenizer(metaclass=_Tokenizer):
             if text:
                 self._add(TokenType.STRING, text)
 
-    def _scan_keywords(self, scan_for_cursor_token: bool= False) -> None:
+    def _scan_keywords(self) -> None:
         size = 0
         word = None
         chars = self._text
@@ -892,25 +891,21 @@ class Tokenizer(metaclass=_Tokenizer):
         skip = False
         trie = self.KEYWORD_TRIE
         single_token = char in self.SINGLE_TOKENS
-
         while chars:
             if skip:
                 result = 1
             else:
                 result, trie = in_trie(trie, char.upper())  # type: ignore
-
             if result == 0:
                 break
             if result == 2:
                 word = chars
             size += 1
             end = self._current - 1 + size
-
             if end < self.size:
                 char = self.sql[end]
                 single_token = single_token or char in self.SINGLE_TOKENS
                 is_space = char in self.WHITE_SPACE
-
                 if not is_space or not prev_space:
                     if is_space:
                         char = " "
@@ -921,21 +916,13 @@ class Tokenizer(metaclass=_Tokenizer):
                     skip = True
             else:
                 chars = " "
-
         word = None if not single_token and chars[-1] not in self.WHITE_SPACE else word
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
-                if scan_for_cursor_token and self._char == "<" and self._peek == "<":
-                    self._advance()
-                    self._add(
-                        TokenType.CURSOR
-                    )
-                    return
-                else:
-                    self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
-                    return
-            self._scan_var(True)
+                self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
+                return
+            self._scan_var()
             return
 
         if self._scan_string(word):
@@ -944,7 +931,6 @@ class Tokenizer(metaclass=_Tokenizer):
             return
         if self._scan_comment(word):
             return
-
         self._advance(size - 1)
         word = word.upper()
         self._add(self.KEYWORDS[word], text=word)
@@ -1117,16 +1103,13 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.IDENTIFIER, text)
 
 
-    def _scan_var(self, scan_for_cursor_token: bool = False ) -> None:
+
+    def _scan_var(self) -> None:
         while True:
             char = self._peek.strip()  # type: ignore
             if char and char not in self.SINGLE_TOKENS:
                 self._advance()
             else:
-                if scan_for_cursor_token and char == "<" and (self._current + 1 < self.size) and self.sql[self._current + 1] == "<":
-                    self._advance(2)
-                    self._add(TokenType.CURSOR)
-                    return
                 break
         self._add(
             TokenType.VAR
@@ -1163,3 +1146,110 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance()
 
         return text
+
+
+class BetterBrainTokenizer(Tokenizer):
+
+    def tokenize(self, sql: str, scan_for_cursor_token: bool= False) -> t.List[Token]:
+        """Returns a list of tokens corresponding to the SQL string `sql`."""
+        self.reset()
+        self.sql = sql
+        self.size = len(sql)
+        self._scan(scan_for_cursor_token=scan_for_cursor_token)
+        return self.tokens
+    
+    def _scan(self, until: t.Optional[t.Callable] = None, scan_for_cursor_token: bool= False) -> None:
+        while self.size and not self._end:
+            self._start = self._current
+            self._advance()
+            if self._char is None:
+                break
+            if self._char not in self.WHITE_SPACE:
+                if self._char.isdigit():
+                    self._scan_number()
+                elif self._char in self._IDENTIFIERS:
+                    self._scan_identifier(self._IDENTIFIERS[self._char])
+                else:
+                    self._scan_keywords(scan_for_cursor_token)
+
+            if until and until():
+                break
+        if self.tokens:
+            self.tokens[-1].comments.extend(self._comments)
+
+    def _scan_keywords(self, scan_for_cursor_token: bool= False) -> None:
+        size = 0
+        word = None
+        chars = self._text
+        char = chars
+        prev_space = False
+        skip = False
+        trie = self.KEYWORD_TRIE
+        single_token = char in self.SINGLE_TOKENS
+        while chars:
+            if skip:
+                result = 1
+            else:
+                result, trie = in_trie(trie, char.upper())  # type: ignore
+            if result == 0:
+                break
+            if result == 2:
+                word = chars
+            size += 1
+            end = self._current - 1 + size
+            if end < self.size:
+                char = self.sql[end]
+                single_token = single_token or char in self.SINGLE_TOKENS
+                is_space = char in self.WHITE_SPACE
+                if not is_space or not prev_space:
+                    if is_space:
+                        char = " "
+                    chars += char
+                    prev_space = is_space
+                    skip = False
+                else:
+                    skip = True
+            else:
+                chars = " "
+        word = None if not single_token and chars[-1] not in self.WHITE_SPACE else word
+
+        if not word:
+            if self._char in self.SINGLE_TOKENS:
+                if scan_for_cursor_token and self._char == "<" and self._peek == "<":
+                    self._advance()
+                    self._add(
+                        TokenType.CURSOR
+                    )
+                    return
+                else:
+                    self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
+                    return
+            self._scan_var(True)
+            return
+
+        if self._scan_string(word):
+            return
+        if self._scan_formatted_string(word):
+            return
+        if self._scan_comment(word):
+            return
+        self._advance(size - 1)
+        word = word.upper()
+        self._add(self.KEYWORDS[word], text=word)
+
+    def _scan_var(self, scan_for_cursor_token: bool = False ) -> None:
+        while True:
+            char = self._peek.strip()  # type: ignore
+            if char and char not in self.SINGLE_TOKENS:
+                self._advance()
+            else:
+                if scan_for_cursor_token and char == "<" and (self._current + 1 < self.size) and self.sql[self._current + 1] == "<":
+                    self._advance(2)
+                    self._add(TokenType.CURSOR)
+                    return
+                break
+        self._add(
+            TokenType.VAR
+            if self._prev_token_type == TokenType.PARAMETER
+            else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
+        )

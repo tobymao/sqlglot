@@ -4,14 +4,14 @@ import typing as t
 from enum import Enum
 
 from sqlglot import exp
-from sqlglot.betterbrain_parser import BetterBrainParserMixin
+from sqlglot.betterbrain import Suggestion
+from sqlglot.parser import BetterBrainParserMixin
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
-from sqlglot.tokens import Token, Tokenizer
+from sqlglot.tokens import BetterBrainTokenizer, Token, Tokenizer
 from sqlglot.trie import new_trie
-from sqlglot.betterbrain_dialect import BetterBrainDialectMixin
 
 E = t.TypeVar("E", bound=exp.Expression)
 
@@ -40,6 +40,9 @@ class Dialects(str, Enum):
     TERADATA = "teradata"
 
 
+
+
+
 class _Dialect(type):
     classes: t.Dict[str, t.Type[Dialect]] = {}
 
@@ -54,19 +57,8 @@ class _Dialect(type):
         return cls.classes.get(key, default)
 
     def __new__(cls, clsname, bases, attrs):
-        new_attrs = {}
-        for attr_name, attr_value in attrs.items():
-            if isinstance(attr_value, type) and attr_name == "Parser":
-                new_attrs[attr_name] = cls(
-                    attr_name,
-                    (*attr_value.__bases__, BetterBrainParserMixin),
-                    dict(attr_value.__dict__)
-                )
-
-        for attr_name, attr_value in new_attrs.items():
-            attrs[attr_name] = attr_value
-
-        bases = (*bases, BetterBrainDialectMixin)
+        if clsname != "Dialect" and clsname != "BetterBrainDialectMixin":
+            bases = (BetterBrainDialectMixin,)
         klass = super().__new__(cls, clsname, bases, attrs)
         enum = Dialects.__members__.get(clsname.upper())
         cls.classes[enum.value if enum is not None else clsname.lower()] = klass
@@ -75,8 +67,8 @@ class _Dialect(type):
         klass.inverse_time_mapping = {v: k for k, v in klass.time_mapping.items()}
         klass.inverse_time_trie = new_trie(klass.inverse_time_mapping)
 
-        klass.tokenizer_class = getattr(klass, "Tokenizer", Tokenizer)
-        klass.parser_class = getattr(klass, "Parser", Parser)
+        klass.tokenizer_class = getattr(klass, "Tokenizer", BetterBrainTokenizer)
+        klass.parser_class = getattr(klass, "Parser", BetterBrainParserMixin)
         klass.generator_class = getattr(klass, "Generator", Generator)
 
         klass.quote_start, klass.quote_end = list(klass.tokenizer_class._QUOTES.items())[0]
@@ -521,3 +513,11 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
 
 
 
+class BetterBrainDialectMixin(Dialect):
+    @t.final
+    def suggest(self, sql: str, **opts) -> Suggestion:
+        return self.parser(**{**opts, "tokenizer": self.tokenizer}).suggest(self.tokenize_with_cursor(sql), sql)
+
+    @t.final
+    def tokenize_with_cursor(self, sql: str) -> t.List[Token]:
+        return self.tokenizer.tokenize(sql, True)

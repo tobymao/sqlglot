@@ -10,7 +10,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.betterbrain import Suggestion
-from sqlglot.dialects.dialect import Dialect as Dialect, Dialects as Dialects
+from sqlglot.dialects.dialect import BetterBrainDialectMixin, Dialect as Dialect, Dialects as Dialects
 from sqlglot.diff import diff as diff
 from sqlglot.errors import (
     ErrorLevel as ErrorLevel,
@@ -162,7 +162,7 @@ def sql_suggest(
     into: t.Optional[exp.IntoType] = None,
     **opts,
 ) -> Suggestion:
-    dialect = Dialect.get_or_raise(read)()
+    dialect = BetterBrainDialectMixin.get_or_raise(read)()
     return dialect.suggest(sql, **opts)
 
 

@@ -127,7 +127,7 @@ class Generator:
     LIMIT_FETCH = "ALL"
 
     # Whether or not DATE datatype formats (e.g., "CAST('01/1999' as DATE FORMAT 'yyyy-mm')") are supported
-    DATE_DATATYPE_FORMAT = False
+    DATE_DATATYPE_FORMAT = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",

@@ -130,18 +130,15 @@ def lineage(
             source = scope.sources.get(table)
 
             if isinstance(source, Scope):
-                # If the table itself came from a scope, recurse into that one using the unaliased column name.
+                # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
                 to_node(
                     c.name, scope=source, scope_name=table, upstream=node, alias=aliases.get(table)
                 )
-            elif source:
-                # Else, if we found a source that's not a scope, we've reached the end of the line.
-                node.downstream.append(Node(name=c.sql(), source=source, expression=source))
             else:
-                # If a source is not found, we can't go any further - this column's lineage is
-                # unknown. This can happen if the definition of a source used in a query is
-                # not passed into the `sources` map.
-                source = exp.Placeholder()
+                # The source is not a scope - we've reached the end of the line. At this point, if a source is not found
+                # it means this column's lineage is unknown. This can happen if the definition of a source used in a query
+                # is not passed into the `sources` map.
+                source = source or exp.Placeholder()
                 node.downstream.append(Node(name=c.sql(), source=source, expression=source))
 
         return node

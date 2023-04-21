@@ -127,15 +127,21 @@ def lineage(
         # Find all columns that went into creating this one to list their lineage nodes.
         for c in set(select.find_all(exp.Column)):
             table = c.table
-            source = scope.sources[table]
+            source = scope.sources.get(table)
 
-            # If the table itself came from a scope, recurse into that one using the unaliased column name.
-            # Else, we've reached the end of the line - just create a node.
             if isinstance(source, Scope):
+                # If the table itself came from a scope, recurse into that one using the unaliased column name.
                 to_node(
                     c.name, scope=source, scope_name=table, upstream=node, alias=aliases.get(table)
                 )
+            elif source:
+                # Else, if we found a source that's not a scope, we've reached the end of the line.
+                node.downstream.append(Node(name=c.sql(), source=source, expression=source))
             else:
+                # If a source is not found, we can't go any further - this column's lineage is
+                # unknown. This can happen if the definition of a source used in a query is
+                # not passed into the `sources` map.
+                source = exp.Placeholder()
                 node.downstream.append(Node(name=c.sql(), source=source, expression=source))
 
         return node

@@ -6,6 +6,7 @@ from enum import auto
 from sqlglot.helper import AutoName
 from sqlglot.trie import in_trie, new_trie
 
+
 class TokenType(AutoName):
     # autocompletion
     CURSOR = auto()

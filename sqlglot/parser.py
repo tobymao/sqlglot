@@ -749,7 +749,6 @@ class Parser(metaclass=_Parser):
     LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
 
-
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -798,7 +797,6 @@ class Parser(metaclass=_Parser):
         self._next = None
         self._prev = None
         self._prev_comments = None
-
     
     def parse(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
@@ -852,7 +850,6 @@ class Parser(metaclass=_Parser):
             errors=merge_errors(errors),
         ) from errors[-1]
 
-
     def _parse(
         self,
         parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
@@ -905,7 +902,6 @@ class Parser(metaclass=_Parser):
         Appends an error in the list of recorded errors or raises it, depending on the chosen
         error level setting.
         """
-
         token = token or self._curr or self._prev or Token.string("")
         start = token.start
         end = token.end
@@ -965,6 +961,7 @@ class Parser(metaclass=_Parser):
         """
         if self.error_level == ErrorLevel.IGNORE:
             return
+
         for error_message in expression.error_messages(args):
             self.raise_error(error_message)
 

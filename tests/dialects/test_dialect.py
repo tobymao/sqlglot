@@ -632,13 +632,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
-            read={
-                "postgres": "DATE_TRUNC('day', x::DATE)",
-                "starrocks": "DATE_TRUNC('day', x::DATE)",
-            },
+            "TIMESTAMP_TRUNC(TRY_CAST(x AS DATE), day)",
+            read={"postgres": "DATE_TRUNC('day', x::DATE)"},
         )
-
+        self.validate_all(
+            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
+            read={"starrocks": "DATE_TRUNC('day', x::DATE)"},
+        )
         self.validate_all(
             "DATE_TRUNC('week', x)",
             write={

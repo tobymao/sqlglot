@@ -308,7 +308,6 @@ class Parser(metaclass=_Parser):
         TokenType.ROW,
         TokenType.UNNEST,
         TokenType.VAR,
-        TokenType.HASH,
         TokenType.LEFT,
         TokenType.RIGHT,
         TokenType.DATE,

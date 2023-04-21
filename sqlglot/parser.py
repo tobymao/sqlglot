@@ -751,7 +751,6 @@ class Parser(metaclass=_Parser):
 
 
     __slots__ = (
-        "tokenizer",
         "error_level",
         "error_message_context",
         "sql",
@@ -769,15 +768,10 @@ class Parser(metaclass=_Parser):
         "_prev_comments",
         "_show_trie",
         "_set_trie",
-        "_cursor_position",
-        "_has_hit_error_after_cursor",
-        "_suggestion_options",
-        "_last_keyword",
     )
 
     def __init__(
         self,
-        tokenizer: t.Optional[Tokenizer] = None,
         error_level: t.Optional[ErrorLevel] = None,
         error_message_context: int = 100,
         index_offset: int = 0,
@@ -786,7 +780,6 @@ class Parser(metaclass=_Parser):
         max_errors: int = 3,
         null_ordering: t.Optional[str] = None,
     ):
-        self.tokenizer = tokenizer
         self.error_level = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context = error_message_context
         self.index_offset = index_offset
@@ -801,14 +794,10 @@ class Parser(metaclass=_Parser):
         self.errors = []
         self._tokens = []
         self._index = 0
-        self._cursor_position = -1
         self._curr = None
         self._next = None
         self._prev = None
         self._prev_comments = None
-        self._has_hit_error_after_cursor = False
-        self._suggestion_options = set()
-        self._last_keyword = None
 
     
     def parse(
@@ -4312,7 +4301,46 @@ class BetterBrainParser(Parser):
         TokenType.WHERE: TokenType.COLUMN,
         TokenType.FROM: TokenType.TABLE,
     }
+    __slots__ = (
+        "tokenizer",
+        "error_level",
+        "error_message_context",
+        "sql",
+        "errors",
+        "index_offset",
+        "unnest_column_only",
+        "alias_post_tablesample",
+        "max_errors",
+        "null_ordering",
+        "_tokens",
+        "_index",
+        "_curr",
+        "_next",
+        "_prev",
+        "_prev_comments",
+        "_show_trie",
+        "_set_trie",
+        "_cursor_position",
+        "_has_hit_error_after_cursor",
+        "_suggestion_options",
+        "_last_keyword",
+    )
 
+    def __init__(
+        self,
+        **kwargs
+    ):
+        tokenizer = kwargs.pop("tokenizer", None)
+        super(BetterBrainParser, self).__init__(**kwargs)
+        self.tokenizer = tokenizer
+        self.reset()
+
+    def reset(self):
+        super().reset()
+        self._cursor_position = -1
+        self._has_hit_error_after_cursor = False
+        self._suggestion_options = set()
+        self._last_keyword = None
 
     def suggest(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None

@@ -809,8 +809,10 @@ class Tokenizer(metaclass=_Tokenizer):
         while self.size and not self._end:
             self._start = self._current
             self._advance()
+
             if self._char is None:
                 break
+
             if self._char not in self.WHITE_SPACE:
                 if self._char.isdigit():
                     self._scan_number()
@@ -821,6 +823,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
             if until and until():
                 break
+
         if self.tokens:
             self.tokens[-1].comments.extend(self._comments)
 
@@ -891,21 +894,25 @@ class Tokenizer(metaclass=_Tokenizer):
         skip = False
         trie = self.KEYWORD_TRIE
         single_token = char in self.SINGLE_TOKENS
+
         while chars:
             if skip:
                 result = 1
             else:
                 result, trie = in_trie(trie, char.upper())  # type: ignore
+
             if result == 0:
                 break
             if result == 2:
                 word = chars
             size += 1
             end = self._current - 1 + size
+
             if end < self.size:
                 char = self.sql[end]
                 single_token = single_token or char in self.SINGLE_TOKENS
                 is_space = char in self.WHITE_SPACE
+
                 if not is_space or not prev_space:
                     if is_space:
                         char = " "
@@ -916,6 +923,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     skip = True
             else:
                 chars = " "
+
         word = None if not single_token and chars[-1] not in self.WHITE_SPACE else word
 
         if not word:
@@ -931,6 +939,7 @@ class Tokenizer(metaclass=_Tokenizer):
             return
         if self._scan_comment(word):
             return
+
         self._advance(size - 1)
         word = word.upper()
         self._add(self.KEYWORDS[word], text=word)
@@ -1101,8 +1110,6 @@ class Tokenizer(metaclass=_Tokenizer):
             text += self._char  # type: ignore
 
         self._add(TokenType.IDENTIFIER, text)
-
-
 
     def _scan_var(self) -> None:
         while True:

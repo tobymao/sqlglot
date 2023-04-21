@@ -4,13 +4,14 @@ import typing as t
 from enum import Enum
 
 from sqlglot import exp
-from sqlglot.betterbrain import Suggestion
+from sqlglot.betterbrain_parser import BetterBrainParserMixin
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
-from sqlglot.parser import BetterBrainParserMixin, Parser
+from sqlglot.parser import Parser
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer
 from sqlglot.trie import new_trie
+from sqlglot.betterbrain_dialect import BetterBrainDialectMixin
 
 E = t.TypeVar("E", bound=exp.Expression)
 
@@ -109,16 +110,6 @@ class _Dialect(type):
             ] = lambda self, e: f"{be_start}{self.sql(e, 'this')}{be_end}"
 
         return klass
-
-
-class BetterBrainDialectMixin:
-    @t.final
-    def suggest(self, sql: str, **opts) -> Suggestion:
-        return self.parser(**{**opts, "tokenizer": self.tokenizer}).suggest(self.tokenize_with_cursor(sql), sql)
-
-    @t.final
-    def tokenize_with_cursor(self, sql: str) -> t.List[Token]:
-        return self.tokenizer.tokenize(sql, True)
 
 
 class Dialect(metaclass=_Dialect):
@@ -527,5 +518,6 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
         return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
     return _ts_or_ds_to_date_sql
+
 
 

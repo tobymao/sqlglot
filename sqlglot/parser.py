@@ -18,6 +18,8 @@ from sqlglot.trie import in_trie, new_trie
 
 logger = logging.getLogger("sqlglot")
 
+E = t.TypeVar("E", bound=exp.Expression)
+
 
 def parse_var_map(args: t.Sequence) -> exp.Expression:
     keys = []
@@ -927,8 +929,8 @@ class Parser(metaclass=_Parser):
         self.errors.append(error)
 
     def expression(
-        self, exp_class: t.Type[exp.Expression], comments: t.Optional[t.List[str]] = None, **kwargs
-    ) -> exp.Expression:
+        self, exp_class: t.Type[E], comments: t.Optional[t.List[str]] = None, **kwargs
+    ) -> E:
         """
         Creates a new, validated Expression.
 
@@ -984,7 +986,7 @@ class Parser(metaclass=_Parser):
         if index != self._index:
             self._advance(index - self._index)
 
-    def _parse_command(self) -> exp.Expression:
+    def _parse_command(self) -> exp.Command:
         return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
 
     def _parse_comment(self, allow_exists: bool = True) -> exp.Expression:
@@ -1029,7 +1031,7 @@ class Parser(metaclass=_Parser):
         self._parse_query_modifiers(expression)
         return expression
 
-    def _parse_drop(self) -> t.Optional[exp.Expression]:
+    def _parse_drop(self) -> t.Optional[exp.Drop | exp.Command]:
         start = self._prev
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match(TokenType.MATERIALIZED)
@@ -4065,7 +4067,7 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.INSERT):
                 _this = self._parse_star()
                 if _this:
-                    then = self.expression(exp.Insert, this=_this)
+                    then: t.Optional[exp.Expression] = self.expression(exp.Insert, this=_this)
                 else:
                     then = self.expression(
                         exp.Insert,

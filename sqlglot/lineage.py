@@ -94,6 +94,8 @@ def lineage(
                 )
             return node
 
+        # Find the specific select clause that is the source of the column we want.
+        # This can either be a specific, named select or a generic `*` clause.
         select = None
         for maybe_select in scope.selects:
             if maybe_select.alias_or_name == column_name:
@@ -105,23 +107,30 @@ def lineage(
                 select = maybe_select
         if not select:
             raise ValueError(f"Could not find {column_name} in {scope.expression.sql()}")
+
+        # For better ergonomics in our node labels, replace the full select with a version that
+        # has only the column we care about.
+        #   "x", SELECT x, y FROM foo => "x", SELECT x FROM foo
         source = optimize(scope.expression.select(select, append=False), schema=schema, rules=rules)
         select = source.selects[0]
 
+        # Create the node for this step in the lineage chain, and attach it to the previous one.
         node = Node(
             name=f"{scope_name}.{column_name}" if scope_name else column_name,
             source=source,
             expression=select,
             alias=alias or "",
         )
-
         if upstream:
             upstream.downstream.append(node)
 
+        # Find all columns that went into creating this one to list their lineage nodes.
         for c in set(select.find_all(exp.Column)):
             table = c.table
             source = scope.sources[table]
 
+            # If the table itself came from a scope, recurse into that one using the unaliased column name.
+            # Else, we've reached the end of the line - just create a node.
             if isinstance(source, Scope):
                 to_node(
                     c.name, scope=source, scope_name=table, upstream=node, alias=aliases.get(table)

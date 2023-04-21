@@ -176,7 +176,7 @@ class Column:
         return isinstance(self.expression, exp.Column)
 
     @property
-    def column_expression(self) -> exp.Column:
+    def column_expression(self) -> t.Union[exp.Column, exp.Literal]:
         return self.expression.unalias()
 
     @property

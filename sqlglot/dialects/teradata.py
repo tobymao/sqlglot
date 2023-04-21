@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.dialect import Dialect, max_or_greatest, min_or_least
+from sqlglot.dialects.dialect import (
+    Dialect,
+    format_time_lambda,
+    max_or_greatest,
+    min_or_least,
+)
 from sqlglot.tokens import TokenType
 
 
@@ -115,6 +122,14 @@ class Teradata(Dialect):
 
             return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 
+        def _parse_cast(self, strict: bool) -> exp.Expression:
+            cast = t.cast(exp.Cast, super()._parse_cast(strict))
+            if cast.to.this == exp.DataType.Type.DATE and self._match(TokenType.FORMAT):
+                return format_time_lambda(exp.TimeToStr, "teradata")(
+                    [cast.this, self._parse_string()]
+                )
+            return cast
+
     class Generator(generator.Generator):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
@@ -130,6 +145,7 @@ class Teradata(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
+            exp.TimeToStr: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 

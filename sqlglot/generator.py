@@ -210,7 +210,7 @@ class Generator:
 
     WITH_JOIN_HINT = False
 
-    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where)
+    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 

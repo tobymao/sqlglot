@@ -405,7 +405,7 @@ class Parser(metaclass=_Parser):
     COLUMN_OPERATORS = {
         TokenType.DOT: None,
         TokenType.DCOLON: lambda self, this, to: self.expression(
-            exp.Cast,
+            exp.Cast if self.STRICT_CAST else exp.TryCast,
             this=this,
             to=to,
         ),
